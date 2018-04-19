@@ -1386,6 +1386,34 @@ class AutoTestCopter(AutoTest):
             # wait for disarm
             self.mav.motors_disarmed_wait()
 
+            self.start_test("Set modes using mode switch")
+            fltmode_ch = 5
+            self.set_parameter("FLTMODE_CH", fltmode_ch)
+            # mavutil.mavlink.COPTER_MODE_BRAKE:
+            self.set_parameter("FLTMODE6", 17)
+            # mavutil.mavlink.COPTER_MODE_ACRO:
+            self.set_parameter("FLTMODE5", 1)
+            self.set_rc(fltmode_ch, 1800) # PWM for mode6
+            self.wait_mode("BRAKE")
+            self.set_rc(fltmode_ch, 1700) # PWM for mode5
+            self.wait_mode("ACRO")
+            self.set_rc(fltmode_ch, 1800) # PWM for mode6
+            self.wait_mode("BRAKE")
+            self.set_rc(fltmode_ch, 1700) # PWM for mode5
+            self.wait_mode("ACRO") # this is important for the last bit of the next test!
+
+            self.start_test("Set modes using auxillary switches")
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.set_parameter("RC9_OPTION", 18) # land
+            self.set_parameter("RC10_OPTION", 52) # guided
+            self.set_rc(9, 1900)
+            self.wait_mode("LAND")
+            self.set_rc(10, 1900)
+            self.wait_mode("GUIDED")
+            self.set_rc(10, 1000) # this re-polls the mode switch
+            self.wait_mode("ACRO")
+
             log_filepath = self.buildlogs_path("ArduCopter-log.bin")
             if not self.log_download(log_filepath):
                 failed_test_msg = "log_download failed"

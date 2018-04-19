@@ -113,6 +113,11 @@ RC_Channels::RC_Channels(void)
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channels[i].ch_in = i;
     }
+
+    if (_singleton != nullptr) {
+        AP_HAL::panic("RC_Channels must be singleton");
+    }
+    _singleton = this;
 }
 
 uint16_t RC_Channels::get_radio_in(const uint8_t chan)
@@ -185,4 +190,16 @@ bool RC_Channels::set_overrides(int16_t *overrides, const uint8_t len)
 bool RC_Channels::receiver_bind(const int dsmMode)
 {
     return hal.rcin->rc_bind(dsmMode);
+}
+
+// singleton instance
+RC_Channels *RC_Channels::_singleton;
+
+namespace AP {
+
+RC_Channels &rc()
+{
+    return *RC_Channels::get_singleton();
+}
+
 }

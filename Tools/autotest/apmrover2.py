@@ -560,6 +560,34 @@ class AutoTestRover(AutoTest):
                 self.progress("Failed servo relay events")
                 failed = True
 
+            # test setting of modes through mode switch
+            self.start_test("Set modes using mode switch")
+            self.set_parameter("MODE_CH", 8)
+            # mavutil.mavlink.ROVER_MODE_HOLD:
+            self.set_parameter("MODE6", 4)
+            # mavutil.mavlink.ROVER_MODE_ACRO
+            self.set_parameter("MODE5", 1)
+            self.set_rc(8, 1800) # PWM for mode6
+            self.wait_mode("HOLD")
+            self.set_rc(8, 1700) # PWM for mode5
+            self.wait_mode("ACRO")
+            self.set_rc(8, 1800) # PWM for mode6
+            self.wait_mode("HOLD")
+            self.set_rc(8, 1700) # PWM for mode5
+            self.wait_mode("ACRO") # important for last bit in the next test!
+
+            self.start_test("Set modes using auxillary switches")
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.set_parameter("RC9_OPTION", 50) # steering
+            self.set_parameter("RC10_OPTION", 51) # hold
+            self.set_rc(9, 1900)
+            self.wait_mode("STEERING")
+            self.set_rc(10, 1900)
+            self.wait_mode("HOLD")
+            self.set_rc(10, 1000) # this re-polls the mode switch
+            self.wait_mode("ACRO")
+
             # Throttle Failsafe
             self.progress("#")
             self.progress("########## Test Failsafe ##########")

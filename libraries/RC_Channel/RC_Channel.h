@@ -102,6 +102,8 @@ public:
     
     bool min_max_configured() const;
     
+    AP_Int16    option; // e.g. activate EPM gripper / enable fence
+
 private:
 
     // pwm is stored here
@@ -140,6 +142,11 @@ public:
     // constructor
     RC_Channels(void);
 
+    // get singleton instance
+    static RC_Channels *get_singleton() {
+        return _singleton;
+    }
+
     static const struct AP_Param::GroupInfo var_info[];
 
     static RC_Channel *rc_channel(uint8_t chan) {
@@ -159,9 +166,14 @@ public:
     static bool set_overrides(int16_t *overrides, const uint8_t len);  // set multiple overrides at once
 
     static void set_pwm_all(void);
-    
+
 private:
+    static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
     RC_Channel obj_channels[NUM_RC_CHANNELS];
+};
+
+namespace AP {
+    RC_Channels &rc();
 };

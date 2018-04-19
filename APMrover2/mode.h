@@ -13,6 +13,20 @@ class Mode
 {
 public:
 
+    // Auto Pilot modes
+    // ----------------
+    enum number {
+        MANUAL       = 0,
+        ACRO         = 1,
+        STEERING     = 3,
+        HOLD         = 4,
+        AUTO         = 10,
+        RTL          = 11,
+        SMART_RTL    = 12,
+        GUIDED       = 15,
+        INITIALISING = 16
+    };
+
     // Constructor
     Mode();
 

@@ -102,7 +102,7 @@ public:
         k_param_pilot_speed_up,    // renamed from k_param_pilot_velocity_z_max
         k_param_circle_rate,                // deprecated - remove
         k_param_rangefinder_gain,
-        k_param_ch8_option,
+        k_param_ch8_option_old, // deprecated
         k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
         k_param_angle_max,
@@ -211,10 +211,10 @@ public:
         k_param_serial2_baud_old, // deprecated
         k_param_serial2_protocol, // deprecated
         k_param_serial_manager,
-        k_param_ch9_option,
-        k_param_ch10_option,
-        k_param_ch11_option,
-        k_param_ch12_option,
+        k_param_ch9_option_old,
+        k_param_ch10_option_old,
+        k_param_ch11_option_old,
+        k_param_ch12_option_old,
         k_param_takeoff_trigger_dz,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
@@ -241,7 +241,7 @@ public:
         k_param_frame_type,
         k_param_optflow_enabled,    // deprecated
         k_param_fs_batt_voltage,    // unused - moved to AP_BattMonitor
-        k_param_ch7_option,
+        k_param_ch7_option_old,
         k_param_auto_slew_rate,     // deprecated - can be deleted
         k_param_rangefinder_type_old,     // deprecated
         k_param_super_simple = 155,
@@ -441,12 +441,6 @@ public:
     AP_Int16        radio_tuning_high;
     AP_Int16        radio_tuning_low;
     AP_Int8         frame_type;
-    AP_Int8         ch7_option;
-    AP_Int8         ch8_option;
-    AP_Int8         ch9_option;
-    AP_Int8         ch10_option;
-    AP_Int8         ch11_option;
-    AP_Int8         ch12_option;
     AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;

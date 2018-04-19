@@ -124,6 +124,11 @@ class AutoTest(ABC):
                         self.buildlogs_path("%s-valgrind.log" %
                                             self.log_name))
 
+    def start_test(self, description):
+        self.progress("#")
+        self.progress("########## %s  ##########" % description)
+        self.progress("#")
+
     #################################################
     # GENERAL UTILITIES
     #################################################

@@ -34,7 +34,8 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (copter.check_if_auxsw_mode_used(AUXSW_MOTOR_INTERLOCK) && copter.check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+    if (copter.rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::MOTOR_INTERLOCK) &&
+        copter.rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::MOTOR_ESTOP)){
         if (display_failure) {
             gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Interlock/E-Stop Conflict");
         }
@@ -169,8 +170,8 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
     // check various parameter values
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
 
-        // ensure ch7 and ch8 have different functions
-        if (copter.check_duplicate_auxsw()) {
+        // ensure all rc channels have different functions
+        if (copter.rcswitch.duplicate_options_exist()) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Duplicate Aux Switch Options");
             }
@@ -597,10 +598,10 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
-    if (!copter.check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP)){
+    if (!copter.rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::MOTOR_ESTOP)){
         copter.set_motor_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
-    } else if (copter.check_if_auxsw_mode_used(AUXSW_MOTOR_ESTOP) && copter.ap.motor_emergency_stop){
+    } else if (copter.rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::MOTOR_ESTOP) && copter.ap.motor_emergency_stop){
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Emergency Stopped");
         return false;
     }

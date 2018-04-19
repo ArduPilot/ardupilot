@@ -198,7 +198,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
 #endif
@@ -339,7 +339,7 @@ void Copter::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (check_if_auxsw_mode_used(AUXSW_LOST_COPTER_SOUND)) {
+    if (rcswitch.find_channel_for_option(AP_RCSwitch::aux_func::LOST_COPTER_SOUND)) {
         return;
     }
 
