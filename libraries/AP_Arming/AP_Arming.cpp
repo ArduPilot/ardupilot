@@ -455,7 +455,28 @@ bool AP_Arming::hardware_safety_check(bool report)
 
 bool AP_Arming::rc_calibration_checks(bool report)
 {
-    return true;
+    bool check_passed = true;
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        const RC_Channel *ch = RC_Channels::rc_channel(i);
+        if (ch == nullptr) {
+            continue;
+        }
+        const uint16_t trim = ch->get_radio_trim();
+        if (ch->get_radio_min() > trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d minimum is greater than trim", i + 1);
+            }
+            check_passed = false;
+        }
+        if (ch->get_radio_max() < trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d maximum is less than trim", i + 1);
+            }
+            check_passed = false;
+        }
+    }
+
+    return check_passed;
 }
 
 bool AP_Arming::manual_transmitter_checks(bool report)
