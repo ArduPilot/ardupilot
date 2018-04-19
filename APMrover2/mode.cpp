@@ -7,6 +7,7 @@ Mode::Mode() :
     g2(rover.g2),
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
+    channel_yaw(rover.channel_yaw),
     mission(rover.mission),
     attitude_control(rover.g2.attitude_control)
 { }
@@ -44,12 +45,13 @@ bool Mode::enter()
     return _enter();
 }
 
-void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out, float &yaw_out)
 {
     // no RC input means no throttle and centered steering
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
         steering_out = 0;
         throttle_out = 0;
+        yaw_out = 0;
         return;
     }
 
@@ -60,8 +62,10 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
             // (this is the same as PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING below)
+
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
+            yaw_out = rover.channel_yaw->get_control_in();
             break;
         }
 
@@ -83,6 +87,8 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
         case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
+            yaw_out = rover.channel_yaw->get_control_in();
+
             break;
 
         case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {

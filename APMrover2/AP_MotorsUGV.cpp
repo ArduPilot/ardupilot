@@ -145,18 +145,29 @@ void AP_MotorsUGV::setup_servo_output()
 // set steering as a value from -4500 to +4500
 void AP_MotorsUGV::set_steering(float steering)
 {
-    _steering = constrain_float(steering, -4500.0f, 4500.0f);
+    _steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
 }
 
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
+    /*
     // sanity check throttle min and max
     _throttle_min = constrain_int16(_throttle_min, 0, 20);
     _throttle_max = constrain_int16(_throttle_max, 30, 100);
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
+    */
+
+    _throttle = (throttle - (110)) * (2000 - 1000) / (-110 - (110)) + 1000;
+
+}
+
+//SET YAW FUNCTION TEST
+void AP_MotorsUGV::set_yaw(float yaw)
+{
+    _yaw = (yaw - (-4700)) * (2000 - 1000) / (4700 - (-4700)) + 1000;
 }
 
 /*
@@ -173,6 +184,10 @@ bool AP_MotorsUGV::have_skid_steering() const
 
 void AP_MotorsUGV::output(bool armed, float dt)
 {
+    int speed_wheel_1, speed_wheel_2, speed_wheel_3;
+    double theta, Vx, Vy, magnitude;
+
+/*
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
         armed = false;
@@ -185,16 +200,34 @@ void AP_MotorsUGV::output(bool armed, float dt)
     slew_limit_throttle(dt);
 
     // output for regular steering/throttle style frames
-    output_regular(armed, _steering, _throttle);
+    output_regular(armed, _steering, _throttle, _yaw);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle);
+*/
+
+    magnitude = safe_sqrt((_throttle*_throttle)+(_steering*_steering));
+    theta = atan2(_throttle,_steering);
+    Vx = -(cos(theta)*magnitude);
+    Vy = -(sin(theta)*magnitude);
+    speed_wheel_1 = (-Vx) + _yaw;
+    speed_wheel_2 = ((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + _yaw;
+    speed_wheel_3 = ((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + _yaw;
+
+    SRV_Channels::set_output_pwm(SRV_Channel::k_elevator, (speed_wheel_1 - (1991)) * (2000 - (1000)) / (4046 - (1991)) + (1000));
+    SRV_Channels::set_output_pwm(SRV_Channel::k_rudder, (speed_wheel_2 - (1372)) * (2000 - (1000)) / (2676 - (1372)) + (1000));
+    SRV_Channels::set_output_pwm(SRV_Channel::k_aileron, (speed_wheel_3 - (-1193)) * (2000 - (1000)) / (110 - (-1193)) + (1000));
+
+    hal.console->printf("OUTPUT is %lf \n", _throttle);
+
 
     // send values to the PWM timers for output
-    SRV_Channels::calc_pwm();
+    //SRV_Channels::calc_pwm();
     SRV_Channels::cork();
-    SRV_Channels::output_ch_all();
+    //SRV_Channels::output_ch_all();
     SRV_Channels::push();
+
+
 }
 
 // test steering or throttle output as a percentage of the total (range -100 to +100)

@@ -153,6 +153,7 @@ private:
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_aux;
+    RC_Channel *channel_yaw;
 
     DataFlash_Class DataFlash;
 

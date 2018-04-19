@@ -42,6 +42,9 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
+    //SET YAW FUNCTION TEST
+    void set_yaw(float yaw);
+
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
@@ -108,4 +111,5 @@ protected:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
+    float   _yaw;
 };
