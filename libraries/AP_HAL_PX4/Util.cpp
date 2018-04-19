@@ -98,6 +98,8 @@ enum PX4Util::safety_state PX4Util::safety_switch_state(void)
 
 void PX4Util::set_system_clock(uint64_t time_utc_usec)
 {
+    _system_time_was_set = true;
+
     timespec ts;
     ts.tv_sec = time_utc_usec/1.0e6f;
     ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
