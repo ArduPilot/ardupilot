@@ -268,8 +268,8 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
         now,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
-        current_loc.alt * 10,           // millimeters above ground
+        ap.depth_sensor_present ? (ahrs.get_home().alt + current_loc.alt) * 10UL : 0, // millimeters above sea level
+        ap.depth_sensor_present ? current_loc.alt * 10 : 0, // millimeters above ground
         vel.x * 100,                    // X speed cm/s (+ve North)
         vel.y * 100,                    // Y speed cm/s (+ve East)
         vel.z * 100,                    // Z speed cm/s (+ve Down)
