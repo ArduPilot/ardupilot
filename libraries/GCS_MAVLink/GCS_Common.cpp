@@ -1897,7 +1897,7 @@ void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg)
     mavlink_vision_position_estimate_t m;
     mavlink_msg_vision_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
@@ -1905,7 +1905,7 @@ void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
     mavlink_global_vision_position_estimate_t m;
     mavlink_msg_global_vision_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
@@ -1913,19 +1913,19 @@ void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
     mavlink_vicon_position_estimate_t m;
     mavlink_msg_vicon_position_estimate_decode(msg, &m);
 
-    _handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
 }
 
 // there are several messages which all have identical fields in them.
 // This function provides common handling for the data contained in
 // these packets
-void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t usec,
-                                                               const float x,
-                                                               const float y,
-                                                               const float z,
-                                                               const float roll,
-                                                               const float pitch,
-                                                               const float yaw)
+void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t usec,
+                                                              const float x,
+                                                              const float y,
+                                                              const float z,
+                                                              const float roll,
+                                                              const float pitch,
+                                                              const float yaw)
 {
     // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
     // or a new message 
@@ -1950,16 +1950,16 @@ void GCS_MAVLINK::_handle_common_vision_position_estimate_data(const uint64_t us
                                timestamp_ms,
                                reset_timestamp_ms);
 
-    _log_vision_position_estimate_data(usec, x, y, z, roll, pitch, yaw);
+    log_vision_position_estimate_data(usec, x, y, z, roll, pitch, yaw);
 }
 
-void GCS_MAVLINK::_log_vision_position_estimate_data(const uint64_t usec,
-                                                               const float x,
-                                                               const float y,
-                                                               const float z,
-                                                               const float roll,
-                                                               const float pitch,
-                                                               const float yaw)
+void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
+                                                    const float x,
+                                                    const float y,
+                                                    const float z,
+                                                    const float roll,
+                                                    const float pitch,
+                                                    const float yaw)
 {
     DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
                                            "smmmrrr", "F000000", "Qffffff",
@@ -2004,7 +2004,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
     float yaw;
     attitude.to_euler(roll, pitch, yaw);
 
-    _log_vision_position_estimate_data(m.time_usec, m.x, m.y, m.z, roll, pitch, yaw);
+    log_vision_position_estimate_data(m.time_usec, m.x, m.y, m.z, roll, pitch, yaw);
 }
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
