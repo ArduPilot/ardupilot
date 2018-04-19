@@ -1460,6 +1460,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
             // param3 : throttle (range depends upon param2)
             // param4 : timeout (in seconds)
+            if (sub.handle_do_motor_test(packet)) {
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
 
 #if GRIPPER_ENABLED == ENABLED

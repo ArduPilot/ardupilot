@@ -745,6 +745,10 @@ private:
     void surface_run();
 
     void convert_old_parameters(void);
+    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool init_motor_test();
+    bool verify_motor_test();
+
 
     bool control_check_barometer();
 
