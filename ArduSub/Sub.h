@@ -707,6 +707,12 @@ private:
     uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
+    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool init_motor_test();
+    bool verify_motor_test();
+
+    uint32_t last_do_motor_test_fail_ms = 0;
+    uint32_t last_do_motor_test_ms = 0;
 
     bool control_check_barometer();
 
