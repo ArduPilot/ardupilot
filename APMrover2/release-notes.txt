@@ -1,5 +1,22 @@
 APMrover2 Release Notes:
 ========================
+Rover V3.3.0-rc1 19-Apr-2018
+Changes from 3.2.3:
+1) Simple object avoidance support
+2) Circular and polygon fence support
+3) Pivot turn improvements
+    a) Heading control used to aim at new target 
+    b) ATC_STR_ACC_MAX limits maximum rotational acceleration
+    c) ATC_STR_RAT_MAX limits maximum rotation rate
+4) Allow ACRO mode without GPS for skid-steering vehicles (reverts to manual throttle)
+5) MOT_THR_MIN used as deadzone
+6) Parameter default changes:
+    a) PIVOT_TURN_ANGLE default raised from 30 to 60 degrees
+    b) ATC_STR_RAT_P and I reduced to 0.2
+    c) ATC_STR_RAT_FILT and ATC_SPEED_FILT reduced from 50hz to 10hz to better match vehicle response time
+7) Boats report themselves as boats allowing ground stations to display boat icon on map
+8) ChibiOS support
+--------------------------------
 Rover V3.2.3 09-Apr-2018 / V3.2.3-rc1/rc2 02-Apr-2018
 Changes from 3.2.2:
 1) Waypoint origin uses previous waypoint or vehicle stopping point
