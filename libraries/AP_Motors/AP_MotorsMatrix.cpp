@@ -677,3 +677,27 @@ void AP_MotorsMatrix::thrust_compensation(void)
         _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
     }
 }
+
+// set_output - spin a motor connected to the specified output channel.
+//  If a motor output channel is remapped, the mapped channel is used.
+//  Returns true if motor output is set, false otherwise
+
+bool AP_MotorsMatrix::set_output(uint8_t output_channel, int16_t pwm)
+{
+    if (!armed()) {
+        return false;
+    }
+
+    // Is channel in supported range?
+    if (output_channel > AP_MOTORS_MAX_NUM_MOTORS -1) {
+        return false;
+    }
+
+    // Is motor enabled?
+    if (!motor_enabled[output_channel]) {
+        return false;
+    }
+
+    rc_write(output_channel, pwm); // output
+    return true;
+}

@@ -44,6 +44,9 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t            get_motor_mask();
 
+    // set_output - Set a motor output (should only be performed during testing)
+    bool                set_output(uint8_t motor, int16_t pwm);
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing();
