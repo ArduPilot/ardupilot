@@ -835,8 +835,6 @@ public:
     bool is_autopilot() const override { return true; }
     bool landing_gear_should_be_deployed() const override { return true; };
 
-    float get_land_descent_speed();
-    bool landing_with_GPS();
     void do_not_use_GPS();
 
 protected:
