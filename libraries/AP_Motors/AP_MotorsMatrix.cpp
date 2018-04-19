@@ -299,6 +299,31 @@ void AP_MotorsMatrix::output_test_seq(uint8_t motor_seq, int16_t pwm)
     }
 }
 
+// output_test_num - spin a motor connected to the specified output channel
+//  (should only be performed during testing)
+//  If a motor output channel is remapped, the mapped channel is used.
+//  Returns true if motor output is set, false otherwise
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+bool AP_MotorsMatrix::output_test_num(uint8_t output_channel, int16_t pwm)
+{
+    if (!armed()) {
+        return false;
+    }
+
+    // Is channel in supported range?
+    if (output_channel > AP_MOTORS_MAX_NUM_MOTORS -1) {
+        return false;
+    }
+
+    // Is motor enabled?
+    if (!motor_enabled[output_channel]) {
+        return false;
+    }
+
+    rc_write(output_channel, pwm); // output
+    return true;
+}
+
 // add_motor
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {

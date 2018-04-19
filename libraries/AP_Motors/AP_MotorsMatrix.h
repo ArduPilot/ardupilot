@@ -34,6 +34,13 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
+    // output_test_num - spin a motor connected to the specified output channel
+    //  (should only be performed during testing)
+    //  If a motor output channel is remapped, the mapped channel is used.
+    //  Returns true if motor output is set, false otherwise
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    bool                output_test_num(uint8_t motor, int16_t pwm);
+
     // output_to_motors - sends minimum values out to the motors
     void                output_to_motors();
 
