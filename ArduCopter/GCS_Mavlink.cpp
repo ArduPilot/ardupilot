@@ -160,7 +160,7 @@ void NOINLINE Copter::send_location(mavlink_channel_t chan)
         current_loc.alt * 10,           // millimeters above ground
         vel.x * 100,                    // X speed cm/s (+ve North)
         vel.y * 100,                    // Y speed cm/s (+ve East)
-        vel.z * 100,                    // Z speed cm/s (+ve Down)
+       -vel.z * 100,                    // Z speed cm/s (+ve Up)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
 }
 
