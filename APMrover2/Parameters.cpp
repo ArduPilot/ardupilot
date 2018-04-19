@@ -124,7 +124,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0 360
     // @Increment: 1
     // @User: Standard
-    GSCALAR(pivot_turn_angle,   "PIVOT_TURN_ANGLE",  30),
+    GSCALAR(pivot_turn_angle,   "PIVOT_TURN_ANGLE",  60),
 
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
