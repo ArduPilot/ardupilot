@@ -837,7 +837,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_PARAM_VALUE: {
+#if MOUNT == ENABLED
         sub.camera_mount.handle_param_value(msg);
+#endif
         break;
     }
 

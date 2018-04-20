@@ -2,6 +2,8 @@
 
 #include <AP_Common/AP_Common.h>
 
+#include <AP_Gripper/AP_Gripper.h>
+
 // Global parameter class.
 //
 class Parameters {
