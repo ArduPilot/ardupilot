@@ -9,35 +9,42 @@
 #include "AP_Relay.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define RELAY1_PIN_DEFAULT 13
-#define RELAY2_PIN_DEFAULT -1
+  #define RELAY1_PIN_DEFAULT 13
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
-#define RELAY1_PIN_DEFAULT 111
-#define RELAY2_PIN_DEFAULT -1
+  #define RELAY1_PIN_DEFAULT 111
+
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-#define RELAY1_PIN_DEFAULT -1
-#define RELAY2_PIN_DEFAULT -1
 #else
-#define RELAY1_PIN_DEFAULT 54
-#define RELAY2_PIN_DEFAULT 55
+  #define RELAY1_PIN_DEFAULT 54
+  #define RELAY2_PIN_DEFAULT 55
 #endif
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#define RELAY1_PIN_DEFAULT 33
-#define RELAY2_PIN_DEFAULT -1
+  #define RELAY1_PIN_DEFAULT 33
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #ifdef HAL_BOARD_SUBTYPE_LINUX_BLUE
-#define RELAY1_PIN_DEFAULT 57
-#define RELAY2_PIN_DEFAULT 49
-#define RELAY3_PIN_DEFAULT 116
-#define RELAY4_PIN_DEFAULT 113
+  #define RELAY1_PIN_DEFAULT 57
+  #define RELAY2_PIN_DEFAULT 49
+  #define RELAY3_PIN_DEFAULT 116
+  #define RELAY4_PIN_DEFAULT 113
 #endif
-#else
-// no relay for this board
-#define RELAY1_PIN_DEFAULT -1
-#define RELAY2_PIN_DEFAULT -1
-#define RELAY3_PIN_DEFAULT -1
-#define RELAY4_PIN_DEFAULT -1
+
+#ifndef RELAY1_PIN_DEFAULT
+  #define RELAY1_PIN_DEFAULT -1
+#endif
+#ifndef RELAY2_PIN_DEFAULT
+  #define RELAY2_PIN_DEFAULT -1
+#endif
+#ifndef RELAY3_PIN_DEFAULT
+  #define RELAY3_PIN_DEFAULT -1
+#endif
+#ifndef RELAY4_PIN_DEFAULT
+  #define RELAY4_PIN_DEFAULT -1
+#endif
+
 #endif
 
 const AP_Param::GroupInfo AP_Relay::var_info[] = {
@@ -71,7 +78,7 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
 
     // @Param: DEFAULT
     // @DisplayName: Default relay state
-    // @Description: The state of the relay on boot. 
+    // @Description: The state of the relay on boot.
     // @User: Standard
     // @Values: 0:Off,1:On,2:NoChange
     AP_GROUPINFO("DEFAULT",  4, AP_Relay, _default, 0),
