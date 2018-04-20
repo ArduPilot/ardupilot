@@ -166,8 +166,7 @@ class AutoTestCopter(AutoTest):
         return ret
 
     def hover(self, hover_throttle=1500):
-        self.set_rc(3, hover_throttle)
-        return True
+        return self.set_rc(3, hover_throttle)
 
     # loiter - fly south west, then loiter within 5m position and altitude
     def loiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
