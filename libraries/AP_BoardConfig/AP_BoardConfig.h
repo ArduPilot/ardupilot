@@ -10,9 +10,13 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_MINDPXV2)
 #define AP_FEATURE_BOARD_DETECT 1
-#define AP_FEATURE_SAFETY_BUTTON 1
 #else
 #define AP_FEATURE_BOARD_DETECT 0
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_GPIO_PIN_SAFETY_IN)
+#define AP_FEATURE_SAFETY_BUTTON 1
+#else
 #define AP_FEATURE_SAFETY_BUTTON 0
 #endif
 
@@ -154,7 +158,7 @@ private:
     
     AP_Int16 vehicleSerialNumber;
 
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
+#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || AP_FEATURE_SAFETY_BUTTON
     struct {
         AP_Int8 pwm_count;
         AP_Int8 safety_enable;
@@ -182,8 +186,6 @@ private:
 #endif
     
 
-    void board_init_safety(void);
-    void board_setup_safety_mask(void);
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
@@ -191,6 +193,11 @@ private:
 
 #endif // AP_FEATURE_BOARD_DETECT
 
+#if AP_FEATURE_SAFETY_BUTTON
+    void board_init_safety(void);
+    void board_setup_safety_mask(void);
+#endif
+    
     void board_setup_uart(void);
     void board_setup_sbus(void);
     void board_setup(void);
