@@ -218,7 +218,7 @@ void AP_MotorsUGV::output(bool armed, float dt)
     SRV_Channels::set_output_pwm(SRV_Channel::k_rudder, (speed_wheel_2 - (1372)) * (2000 - (1000)) / (2676 - (1372)) + (1000));
     SRV_Channels::set_output_pwm(SRV_Channel::k_aileron, (speed_wheel_3 - (-1193)) * (2000 - (1000)) / (110 - (-1193)) + (1000));
 
-    hal.console->printf("OUTPUT is %lf \n", _throttle);
+    hal.console->printf("OUTPUT is %lf \n", _yaw);
 
 
     // send values to the PWM timers for output

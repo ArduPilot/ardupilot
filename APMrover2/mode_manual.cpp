@@ -11,6 +11,8 @@ void ModeManual::update()
     g2.motors.set_steering(desired_steering);
     g2.motors.set_yaw(desired_yaw);
 
+
     // mark us as in_reverse when using a negative throttle to stop AHRS getting off
     //rover.set_reverse(is_negative(g2.motors.get_throttle()));
+
 }

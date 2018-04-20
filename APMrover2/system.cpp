@@ -2,7 +2,6 @@
 The init_ardupilot function processes everything we need for an in - air restart
     We will determine later if we are actually on the ground and process a
     ground start in that case.
-
 *****************************************************************************/
 
 #include "Rover.h"
