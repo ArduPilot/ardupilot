@@ -189,10 +189,12 @@ void Rover::startup_ground(void)
     mission.init();
 
     // initialise DataFlash library
+#if LOGGING_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
+#endif
 
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive
