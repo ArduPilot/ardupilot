@@ -22,16 +22,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if AP_FEATURE_BOARD_DETECT
-
-AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
-
+#if AP_FEATURE_SAFETY_BUTTON
 /*
   init safety state
  */
 void AP_BoardConfig::board_init_safety()
 {
-#if AP_FEATURE_SAFETY_BUTTON
     if (state.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
@@ -41,8 +37,13 @@ void AP_BoardConfig::board_init_safety()
             hal.scheduler->delay(20);
         }
     }
-#endif
 }
+#endif
+
+
+#if AP_FEATURE_BOARD_DETECT
+
+AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
 extern "C" {
