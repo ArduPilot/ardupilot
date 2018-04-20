@@ -159,6 +159,17 @@ void Sub::fifty_hz_loop()
 
     // Update rc input/output
     RC_Channels::set_pwm_all();
+
+    if (control_mode == MANUAL) { // rate limit inputs in manual mode
+        float dt = 0.02f; // 50Hz
+        channel_roll->limit_slew_rate(g.rc_slew_rate, dt);
+        channel_pitch->limit_slew_rate(g.rc_slew_rate, dt);
+        channel_throttle->limit_slew_rate(g.rc_slew_rate, dt);
+        channel_yaw->limit_slew_rate(g.rc_slew_rate, dt);
+        channel_forward->limit_slew_rate(g.rc_slew_rate, dt);
+        channel_lateral->limit_slew_rate(g.rc_slew_rate, dt);
+    }
+
     SRV_Channels::output_ch_all();
 }
 
