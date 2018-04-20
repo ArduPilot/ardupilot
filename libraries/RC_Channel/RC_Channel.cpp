@@ -112,7 +112,7 @@ RC_Channel::get_reverse(void) const
 void
 RC_Channel::set_pwm(int16_t pwm)
 {
-    radio_in = pwm;
+    set_radio_in(pwm);
 
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
@@ -348,4 +348,20 @@ bool RC_Channel::min_max_configured() const
         return true;
     }
     return false;
+}
+
+void RC_Channel::limit_slew_rate(float slew_rate, float dt)
+{
+    if (slew_rate > 0 && dt > 0) {
+        uint16_t max_change = (get_radio_max() - get_radio_min()) * slew_rate * dt * 0.01;
+        if (max_change == 0 || dt > 1) {
+            // always allow some change. If dt > 1 then assume we
+            // are just starting out, and only allow a small
+            // change for this loop
+            max_change = 1;
+        }
+
+        // force last pwm value after radio_in change
+        radio_in = constrain_int16(radio_in, last_pwm - max_change, last_pwm + max_change);
+    }
 }

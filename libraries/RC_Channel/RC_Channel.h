@@ -77,7 +77,7 @@ public:
     bool       in_trim_dz();
 
     int16_t    get_radio_in() const { return radio_in;}
-    void       set_radio_in(int16_t val) {radio_in = val;}
+    void       set_radio_in(int16_t val) { last_pwm = radio_in; radio_in = val; }
 
     int16_t    get_control_in() const { return control_in;}
     void       set_control_in(int16_t val) { control_in = val;}
@@ -101,11 +101,15 @@ public:
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
     
     bool min_max_configured() const;
-    
+
+    // limit rate of change with slew_rate as maximum rate of change (percent of range per second)
+    void limit_slew_rate(float slew_rate, float dt);
+
 private:
 
     // pwm is stored here
     int16_t     radio_in;
+    int16_t     last_pwm;
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
