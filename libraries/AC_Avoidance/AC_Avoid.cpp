@@ -197,7 +197,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float veh_angle_max)
 
     float roll_positive = 0.0f;    // maximum positive roll value
     float roll_negative = 0.0f;    // minimum negative roll value
-    float pitch_positive = 0.0f;   // maximum position pitch value
+    float pitch_positive = 0.0f;   // maximum positive pitch value
     float pitch_negative = 0.0f;   // minimum negative pitch value
 
     // get maximum positive and negative roll and pitch percentages from proximity sensor
