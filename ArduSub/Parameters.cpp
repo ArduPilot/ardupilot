@@ -398,6 +398,15 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_SPEED_DEFAULT),
 
+    // @Param: MANUAL_SLEW_RATE
+    // @DisplayName: RC Channel Update Slew Rate
+    // @Description: This is slew rate in %/s that will be used in manual mode to avoid large step outputs on the motors. Set to zero to disable.
+    // @Units: %/s
+    // @Range: 0 500
+    // @Increment: 10
+    // @User: Advanced
+    GSCALAR(manual_slew_rate, "MANUAL_SLEW_RATE", 100),
+
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
     // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.
