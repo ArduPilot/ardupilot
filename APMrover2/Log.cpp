@@ -345,5 +345,6 @@ void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Rover::Log_Write_Steering() {}
 void Rover::Log_Write_WheelEncoder() {}
 void Rover::Log_Write_Proximity() {}
+void Rover::Log_Write_Vehicle_Startup_Messages() {}
 
 #endif  // LOGGING_ENABLED

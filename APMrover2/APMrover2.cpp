@@ -82,7 +82,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,   1500),
     SCHED_TASK(compass_cal_update,     50,    200),
     SCHED_TASK(accel_cal_update,       10,    200),
+#if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
+#endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200),
