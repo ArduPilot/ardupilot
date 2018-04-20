@@ -433,9 +433,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('SIM_BATT_VOLTAGE', 10)
 
         # wait for LAND mode
-        new_mode = self.wait_mode('LAND', 300)
-        if new_mode == 'LAND':
-            success = True
+        success = self.wait_mode('LAND', 300)
 
         # disable battery failsafe
         self.set_parameter('BATT_FS_LOW_ACT', 0)

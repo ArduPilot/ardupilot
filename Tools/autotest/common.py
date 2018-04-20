@@ -594,7 +594,7 @@ class AutoTest(ABC):
                 hastimeout = self.get_sim_time() > tstart + timeout
             self.mav.wait_heartbeat()
         self.progress("Got mode %s" % mode)
-        return self.mav.flightmode
+        return self.mav.flightmode.upper() == mode.upper()
 
     def wait_ready_to_arm(self, timeout=None):
         # wait for EKF checks to pass
