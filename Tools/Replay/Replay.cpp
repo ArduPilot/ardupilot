@@ -63,7 +63,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
     // @Group: ARSPD_
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed,                               "ARSPD_",   AP_Airspeed),
+    GOBJECT(airspeed,                               "ARSP_",   AP_Airspeed),
 
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
