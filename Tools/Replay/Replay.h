@@ -180,10 +180,6 @@ private:
     FILE *xfopen(const char *f, const char *mode);
 };
 
-enum {
-    LOG_CHEK_MSG=100
-};
-
 /*
   Replay specific log structures
  */
