@@ -31,7 +31,7 @@ void ModeGuided::update()
             if (!_reached_destination || (rover.is_boat() && !near_wp)) {
                 // drive towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
             } else {
                 stop_vehicle();
             }
@@ -48,7 +48,7 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
-                calc_throttle(_desired_speed, true);
+                calc_throttle(_desired_speed, true, true);
             } else {
                 stop_vehicle();
                 g2.motors.set_steering(0.0f);
@@ -67,7 +67,7 @@ void ModeGuided::update()
                 // run steering and throttle controllers
                 float steering_out = attitude_control.get_steering_out_rate(radians(_desired_yaw_rate_cds / 100.0f), g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, _desired_speed < 0);
                 g2.motors.set_steering(steering_out * 4500.0f);
-                calc_throttle(_desired_speed, true);
+                calc_throttle(_desired_speed, true, true);
             } else {
                 stop_vehicle();
                 g2.motors.set_steering(0.0f);
