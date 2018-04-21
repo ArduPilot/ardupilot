@@ -432,8 +432,8 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         // could not get speed so assume stopped
         _stopped = true;
     } else {
-        // if vehicle drops below _stop_speed consider it stopped
-        if (fabsf(speed) <= fabsf(_stop_speed)) {
+        // if desired speed is zero and vehicle drops below _stop_speed consider it stopped
+        if (is_zero(_desired_speed) && fabsf(speed) <= fabsf(_stop_speed)) {
             _stopped = true;
         }
     }
@@ -489,14 +489,14 @@ float AR_AttitudeControl::get_desired_speed() const
 // get acceleration limited desired speed
 float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed) const
 {
-    // return zero if no recent calls to speed controller
+    // return input value if no recent calls to speed controller
     const uint32_t now = AP_HAL::millis();
     if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS) || !is_positive(_throttle_accel_max)) {
         return desired_speed;
     }
 
     // calculate dt
-    float dt = (now - _speed_last_ms) / 1000.0f;
+    const float dt = (now - _speed_last_ms) / 1000.0f;
 
     // acceleration limit desired speed
     const float speed_change_max = _throttle_accel_max * dt;
