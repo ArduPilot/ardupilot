@@ -54,5 +54,5 @@ void ModeSteering::update()
     calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
 
     // run speed to throttle controller
-    calc_throttle(target_speed, false);
+    calc_throttle(target_speed, false, true);
 }
