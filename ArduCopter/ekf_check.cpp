@@ -136,14 +136,14 @@ void Copter::failsafe_ekf_event()
     failsafe.ekf = true;
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_EKFINAV, ERROR_CODE_FAILSAFE_OCCURRED);
 
-    // does this mode require position?
-    if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    // sometimes LAND *does* require GPS so ensure we are in non-GPS land
+    if (control_mode == LAND && landing_with_GPS()) {
+        mode_land.do_not_use_GPS();
         return;
     }
 
-    // sometimes LAND *does* require GPS:
-    if (control_mode == LAND && landing_with_GPS()) {
-        mode_land.do_not_use_GPS();
+    // does this mode require position?
+    if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;
     }
 
