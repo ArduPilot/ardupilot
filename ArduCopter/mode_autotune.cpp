@@ -47,6 +47,7 @@
 #define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the copter to be level
+#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time we require the copter to be level
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -487,11 +488,11 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
         if (!currently_level()) {
-            step_start_time = millis();
+            step_stop_time = millis()+AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
         }
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
-        if (millis() - step_start_time >= AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+        if ((millis() - step_start_time > AUTOTUNE_LEVEL_TIMEOUT_MS) || (millis() > step_stop_time)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             step = TWITCHING;
@@ -869,6 +870,7 @@ void Copter::ModeAutoTune::autotune_attitude_control()
         // reset testing step
         step = WAITING_FOR_LEVEL;
         step_start_time = millis();
+        step_stop_time = millis()+AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
         break;
     }
 }
