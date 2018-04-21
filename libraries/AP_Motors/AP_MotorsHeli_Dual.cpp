@@ -529,12 +529,12 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     servo6_out = 2*servo6_out - 1;
 
     // actually move the servos
-    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(servo1_out, _swash_servo_1));
-    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(servo2_out, _swash_servo_2));
-    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(servo3_out, _swash_servo_3));
-    rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(servo4_out, _swash_servo_4));
-    rc_write(AP_MOTORS_MOT_5, calc_pwm_output_1to1(servo5_out, _swash_servo_5));
-    rc_write(AP_MOTORS_MOT_6, calc_pwm_output_1to1(servo6_out, _swash_servo_6));
+    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1_swash_servo(servo1_out, _swash_servo_1));
+    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1_swash_servo(servo2_out, _swash_servo_2));
+    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1_swash_servo(servo3_out, _swash_servo_3));
+    rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1_swash_servo(servo4_out, _swash_servo_4));
+    rc_write(AP_MOTORS_MOT_5, calc_pwm_output_1to1_swash_servo(servo5_out, _swash_servo_5));
+    rc_write(AP_MOTORS_MOT_6, calc_pwm_output_1to1_swash_servo(servo6_out, _swash_servo_6));
 }
 
 

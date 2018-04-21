@@ -184,6 +184,10 @@ protected:
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;
 
+    // convert input in -1 to +1 range to pwm output for swashplate servos. .  Special handling of trim is required 
+    // to keep travel between the swashplate servos consistent.
+    int16_t calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo);
+
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
