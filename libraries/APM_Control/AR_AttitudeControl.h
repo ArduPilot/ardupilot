@@ -73,6 +73,7 @@ public:
     void set_throttle_limits(float throttle_accel_max, float throttle_decel_max);
 
     // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
+    //   desired_speed argument should already have been passed through get_desired_speed_accel_limited function
     //   motor_limit should be true if motors have hit their upper or lower limits
     //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
     float get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
@@ -93,6 +94,9 @@ public:
 
     // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
     float get_desired_speed() const;
+
+    // get acceleration limited desired speed
+    float get_desired_speed_accel_limited(float desired_speed) const;
 
     // get minimum stopping distance (in meters) given a speed (in m/s)
     float get_stopping_distance(float speed);
