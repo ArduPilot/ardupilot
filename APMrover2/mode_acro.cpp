@@ -35,10 +35,7 @@ void ModeAcro::update()
         // convert pilot throttle input to desired speed
         float target_speed = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
-        // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
-        rover.g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
-
-        calc_throttle(target_speed, false);
+        calc_throttle(target_speed, false, true);
     }
 }
 
