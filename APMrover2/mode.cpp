@@ -169,11 +169,19 @@ void Mode::set_desired_speed_to_default(bool rtl)
     _desired_speed = get_speed_default(rtl);
 }
 
-void Mode::calc_throttle(float target_speed, bool nudge_allowed)
+void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
 {
     // add in speed nudging
     if (nudge_allowed) {
         target_speed = calc_speed_nudge(target_speed, g.speed_cruise, g.throttle_cruise * 0.01f);
+    }
+
+    // get acceleration limited target speed
+    target_speed = attitude_control.get_desired_speed_accel_limited(target_speed);
+
+    // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
+    if (avoidance_enabled) {
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
     }
 
     // call throttle controller and convert output to -100 to +100 range
