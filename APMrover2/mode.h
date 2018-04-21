@@ -116,7 +116,7 @@ protected:
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed, bool nudge_allowed = true);
+    virtual void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
 
     // performs a controlled stop. returns true once vehicle has stopped
     bool stop_vehicle();
@@ -194,7 +194,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed, bool nudge_allowed = true);
+    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
