@@ -373,9 +373,13 @@ void Sub::failsafe_gcs_check()
     if (g.failsafe_gcs == FS_GCS_DISARM) {
         init_disarm_motors();
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
-        set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE);
+        if (!set_mode(ALT_HOLD, MODE_REASON_GCS_FAILSAFE)) {
+            init_disarm_motors();
+        }
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
-        set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE);
+        if (!set_mode(SURFACE, MODE_REASON_GCS_FAILSAFE)) {
+            init_disarm_motors();
+        }
     }
 }
 
