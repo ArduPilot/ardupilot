@@ -724,21 +724,23 @@ void Replay::log_check_generate(void)
     _vehicle.EKF2.getVelNED(-1,velocity);
     _vehicle.EKF2.getLLH(loc);
 
-    struct log_Chek packet = {
-        LOG_PACKET_HEADER_INIT(LOG_CHEK_MSG),
-        time_us : AP_HAL::micros64(),
-        roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
-        pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
-        yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
-        lat     : loc.lat,
-        lng     : loc.lng,
-        alt     : loc.alt*0.01f,
-        vnorth  : velocity.x,
-        veast   : velocity.y,
-        vdown   : velocity.z
+    _vehicle.dataflash.Log_Write(
+        "CHEK",
+        "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
+        "sdddDUmnnn",
+        "FBBBGGB000",
+        "QccCLLffff",
+        AP_HAL::micros64(),
+        (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+        (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+        (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+        loc.lat,
+        loc.lng,
+        loc.alt*0.01f,
+        velocity.x,
+        velocity.y,
+        velocity.z
     };
-
-    _vehicle.dataflash.WriteBlock(&packet, sizeof(packet));
 }
 
 
