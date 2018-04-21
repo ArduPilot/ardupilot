@@ -233,7 +233,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "r:p:ha:g:A:", options);
+    GetOptLong gopt(argc, argv, "r:p:ha:g:A:n", options);
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
