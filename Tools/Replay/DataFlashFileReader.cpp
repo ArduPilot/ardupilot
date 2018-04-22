@@ -88,11 +88,6 @@ bool DataFlashFileReader::update(char type[5])
         return handle_log_format_msg(f);
     }
 
-    if (!done_format_msgs) {
-        done_format_msgs = true;
-        end_format_msgs();
-    }
-
     const struct log_Format &f = formats[hdr[2]];
     if (f.length == 0) {
         // can't just throw these away as the format specifies the
