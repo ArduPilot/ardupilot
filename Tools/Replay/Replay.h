@@ -68,6 +68,8 @@ public:
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
+    struct LogStructure log_structure[256] = {
+    };
     DataFlash_Class dataflash{unused};
 
 private:
@@ -118,14 +120,21 @@ private:
     SITL::SITL sitl;
 #endif
 
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, nottypes};
+    LogReader logreader{_vehicle.ahrs,
+            _vehicle.ins,
+            _vehicle.compass,
+            _vehicle.gps,
+            _vehicle.airspeed,
+            _vehicle.dataflash,
+            _vehicle.log_structure,
+            0,
+            nottypes};
 
     FILE *ekf1f;
     FILE *ekf2f;
     FILE *ekf3f;
     FILE *ekf4f;
 
-    bool done_parameters;
     bool done_baro_init;
     bool done_home_init;
     int32_t arm_time_ms = -1;
@@ -161,6 +170,7 @@ private:
 
     void set_ins_update_rate(uint16_t update_rate);
     void inhibit_gyro_cal();
+    void force_log_disarmed();
 
     void usage(void);
     void set_user_parameters(void);
@@ -178,6 +188,8 @@ private:
     void flush_and_exit();
 
     FILE *xfopen(const char *f, const char *mode);
+
+    bool seen_non_fmt;
 };
 
 /*
