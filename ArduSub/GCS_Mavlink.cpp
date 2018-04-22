@@ -1315,7 +1315,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_FAILED;
                 }
             } else if (is_equal(packet.param3,1.0f)) {
-                if (!sub.control_check_barometer() || sub.motors.armed()) {
+                if (sub.motors.armed()) {
+                    sub.gcs_send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
+                    result = MAV_RESULT_FAILED;
+                } else if (!sub.control_check_barometer()) {
                     result = MAV_RESULT_FAILED;
                 } else {
                     sub.init_barometer(true);
