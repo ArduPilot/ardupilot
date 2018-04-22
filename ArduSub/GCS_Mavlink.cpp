@@ -872,6 +872,11 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
 
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro()
 {
+    if (sub.motors.armed()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
+        return MAV_RESULT_FAILED;
+    }
+
     if (!sub.control_check_barometer()) {
         return MAV_RESULT_FAILED;
     }
