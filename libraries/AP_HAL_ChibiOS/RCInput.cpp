@@ -35,6 +35,12 @@ void RCInput::init()
     sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);
     rcin_prot.init();
 #endif
+
+#if HAL_USE_EICU == TRUE
+    sig_reader.init(&RCININT_EICU_TIMER, RCININT_EICU_CHANNEL);
+    rcin_prot.init();
+#endif
+
     _init = true;
 }
 
@@ -166,7 +172,7 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if HAL_USE_ICU == TRUE
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     uint32_t width_s0, width_s1;
 
     while(sig_reader.read(width_s0, width_s1)) {
