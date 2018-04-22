@@ -578,6 +578,7 @@ def write_I2C_config(f):
 def write_PWM_config(f):
     '''write PWM config defines'''
     rc_in = None
+    rc_in_int = None
     alarm = None
     pwm_out = []
     pwm_timers = []
@@ -586,6 +587,8 @@ def write_PWM_config(f):
         if p.type.startswith('TIM'):
             if p.has_extra('RCIN'):
                 rc_in = p
+            elif p.has_extra('RCININT'):
+                rc_in_int = p
             elif p.has_extra('ALARM'):
                 alarm = p
             else:
@@ -620,6 +623,21 @@ def write_PWM_config(f):
         f.write('#define STM32_RCIN_DMA_STREAM STM32_TIM_TIM%u_CH%u_DMA_STREAM\n' % (n, int(chan_str)))
         f.write('#define STM32_RCIN_DMA_CHANNEL STM32_TIM_TIM%u_CH%u_DMA_CHAN\n' % (n, int(chan_str)))
         f.write('\n')
+        
+    if rc_in_int is not None:
+        a = rc_in_int.label.split('_')
+        chan_str = a[1][2:]
+        timer_str = a[0][3:]
+        if not is_int(chan_str) or not is_int(timer_str):
+            error("Bad timer channel %s" % rc_in.label)
+        n = int(a[0][3:])
+        f.write('// RC input config\n')
+        f.write('#define HAL_USE_EICU TRUE\n')
+        f.write('#define STM32_EICU_USE_TIM%u TRUE\n' % n)
+        f.write('#define RCININT_EICU_TIMER EICUD%u\n' % n)
+        f.write('#define RCININT_EICU_CHANNEL EICU_CHANNEL_%u\n' % int(chan_str))
+        f.write('\n')
+
     if alarm is not None:
 
         a = alarm.label.split('_')
@@ -972,7 +990,7 @@ def build_peripheral_list():
                 if label[-1] == 'N':
                     label = label[:-1]
                 peripherals.append(label)
-            elif not p.has_extra('ALARM'):
+            elif not p.has_extra('ALARM') and not p.has_extra('RCININT'):
                 # get the TIMn_UP DMA channels for DShot
                 label = type + '_UP'
                 if not label in peripherals:
