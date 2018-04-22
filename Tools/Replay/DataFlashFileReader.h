@@ -22,8 +22,6 @@ public:
 
 protected:
     int fd = -1;
-    bool done_format_msgs = false;
-    virtual void end_format_msgs(void) {}
 
     struct log_Format formats[LOGREADER_MAX_FORMATS] {};
 

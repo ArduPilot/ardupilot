@@ -100,22 +100,16 @@ void ReplayVehicle::load_parameters(void)
     AP_Param::set_default_by_name("LOG_FILE_BUFSIZE", 60);
 }
 
-static const struct LogStructure min_log_structure[] = {
-    { LOG_FORMAT_MSG, sizeof(log_Format),
-      "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },
-    { LOG_PARAMETER_MSG, sizeof(log_Parameter),
-      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--" },
-    { LOG_MESSAGE_MSG, sizeof(log_Message),
-      "MSG",  "QZ",     "TimeUS,Message", "s-", "F-" },
-};
-
 void ReplayVehicle::setup(void) 
 {
     load_parameters();
-    
-    // we pass a minimal log structure, as we will be outputting the
-    // log structures we need manually, to prevent FMT duplicates
-    dataflash.Init(min_log_structure, ARRAY_SIZE(min_log_structure));
+
+    // we pass an empty log structure, filling the structure in with
+    // either the format present in the log (if we do not emit the
+    // message as a product of Replay), or the format understood in
+    // the current code (if we do emit the message in the normal
+    // places in the EKF, for example)
+    dataflash.Init(log_structure, 0);
 
     ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
@@ -539,6 +533,7 @@ void Replay::setup()
     _vehicle.setup();
 
     inhibit_gyro_cal();
+    force_log_disarmed();
 
     if (log_info.update_rate == 400) {
         // assume copter for 400Hz
@@ -560,6 +555,12 @@ void Replay::set_ins_update_rate(uint16_t _update_rate) {
 void Replay::inhibit_gyro_cal() {
     if (!logreader.set_parameter("INS_GYR_CAL", AP_InertialSensor::GYRO_CAL_NEVER)) {
         ::fprintf(stderr, "Failed to set GYR_CAL parameter\n");
+        abort();
+    }
+}
+void Replay::force_log_disarmed() {
+    if (!logreader.set_parameter("LOG_DISARMED", 1)) {
+        ::fprintf(stderr, "Failed to set LOG_DISARMED parameter\n");
         abort();
     }
 }
@@ -625,15 +626,10 @@ void Replay::write_ekf_logs(void)
 
 void Replay::read_sensors(const char *type)
 {
-    if (!done_parameters && !streq(type,"FMT") && !streq(type,"PARM")) {
-        done_parameters = true;
+    if (streq(type, "PARM")) {
         set_user_parameters();
     }
 
-    if (done_parameters && streq(type, "PARM")) {
-        set_user_parameters();
-    }
-    
     if (!done_home_init) {
         if (streq(type, "GPS") &&
             (_vehicle.gps.status() >= AP_GPS::GPS_OK_FIX_3D) && done_baro_init) {
@@ -667,13 +663,21 @@ void Replay::read_sensors(const char *type)
         }
     } 
 
+    static bool ekf_force_started = false;
+    if (!ekf_force_started) {
+        if (log_info.have_imt2 ||
+            log_info.have_imt) {
+            _vehicle.ahrs.force_ekf_start();
+            ::fprintf(stderr, "EKF force-started at %u\n", AP_HAL::micros());
+            ekf_force_started = true;
+        }
+    }
+
     bool run_ahrs = false;
     if (log_info.have_imt2) {
         run_ahrs = streq(type, "IMT2");
-        _vehicle.ahrs.force_ekf_start();
     } else if (log_info.have_imt) {
         run_ahrs = streq(type, "IMT");
-        _vehicle.ahrs.force_ekf_start();
     } else if (log_info.have_imu2) {
         run_ahrs = streq(type, "IMU2");
     } else {
@@ -740,7 +744,7 @@ void Replay::log_check_generate(void)
         velocity.x,
         velocity.y,
         velocity.z
-    };
+        );
 }
 
 
@@ -828,11 +832,15 @@ void Replay::loop()
     }
     last_timestamp = AP_HAL::micros64();
 
-    read_sensors(type);
-
-    if (!streq(type,"ATT")) {
-        return;
+    if (streq(type, "FMT")) {
+        if (!seen_non_fmt) {
+            return;
+        }
+    } else {
+        seen_non_fmt = true;
     }
+
+    read_sensors(type);
 }
 
 
