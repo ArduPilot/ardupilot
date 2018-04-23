@@ -4,16 +4,19 @@ ACRO_TURN_RATE,120
 ARMING_REQUIRE,0
 #MIN 4S SOLO BATTERY
 ARMING_VOLT_MIN,13
-#default aux ch to match documentation
+ATC_ACCEL_MAX,2.0
 ATC_SPEED_P,0.2
 ATC_SPEED_I,0.2
 ATC_SPEED_D,0.0
 ATC_SPEED_FILT,10
+ATC_STR_ANG_P,2.0
 ATC_STR_RAT_FF,0.2
 ATC_STR_RAT_P,0.0
 ATC_STR_RAT_I,0.1
 ATC_STR_RAT_D,0.0
 ATC_STR_RAT_FILT,20
+ATC_STR_RAT_MAX,120
+#default aux ch to match documentation
 AUX_CH,7
 #cube power brick - 4s solo battery - SMBus hardware side not yet supported
 BATT_AMP_OFFSET,0
