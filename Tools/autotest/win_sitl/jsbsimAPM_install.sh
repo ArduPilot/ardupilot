@@ -11,3 +11,4 @@ cp src/JSBSim.exe /usr/local/bin
 cd ../ardupilot
 git submodule update --init --recursive
 ./modules/waf/waf-light configure --board=sitl
+echo 'export PATH=$PATH:$HOME/ardupilot/Tools/autotest' >> ~/.bashrc
