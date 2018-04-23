@@ -23,10 +23,12 @@ public:
     // constructor
     DataFlash_MAVLink(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
         DataFlash_Backend(front, writer),
-        _max_blocks_per_send_blocks(8),
-        _blockcount(32) // this may get reduced in Init if allocation fails
+        _max_blocks_per_send_blocks(8)
         ,_perf_packing(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DM_packing"))
-        { }
+        {
+            _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
+            // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
+        }
 
     // initialisation
     void Init() override;
