@@ -221,12 +221,12 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
 
     if (!is_equal(test_type, (float)MOTOR_TEST_ORDER_BOARD) &&
         !is_equal(test_type, (float)MOTOR_TEST_ORDER_DEFAULT)) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "bad test type %0.2f", test_type);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "bad test type %0.2f", (double)test_type);
         return false; // test type not supported here
     }
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PILOT)) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "bad throtle type %0.2f", throttle_type);
+        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "bad throttle type %0.2f", (double)throttle_type);
 
         return false; // throttle type not supported here
     }
