@@ -50,6 +50,13 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
 
+    // @Param: _MAV_BUFSIZE
+    // @DisplayName: Maximum DataFlash MAVLink Backend buffer size
+    // @Description: Maximum amount of memory to allocate to DataFlash-over-mavlink
+    // @User: Advanced
+    // @Units: kB
+    AP_GROUPINFO("_MAV_BUFSIZE",  5, DataFlash_Class, _params.mav_bufsize,       8),
+
     AP_GROUPEND
 };
 
