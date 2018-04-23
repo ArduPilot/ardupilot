@@ -82,16 +82,9 @@ void AP_DEVO_Telem::send_frames(uint8_t control_mode)
     }
 
     const AP_GPS &gps = AP::gps();
+    Location loc;
 
-    if (gps.status() >= (enum AP_GPS::GPS_Status)GPS_FIX_TYPE_3D_FIX) {
-#if 0
-        // GPS version, tested, working
-        Location loc = gps.location();
-#else
-        // AHRS version, untested
-        Location loc;
-        _ahrs.get_position(loc);
-#endif
+    if (_ahrs.get_position(loc)) {
         devoPacket.lat = gpsDdToDmsFormat(loc.lat);
         devoPacket.lon = gpsDdToDmsFormat(loc.lng);
         devoPacket.speed = (int16_t)(gps.ground_speed() * DEVO_SPEED_FACTOR * 100.0f);  // * 100 for cm
