@@ -70,8 +70,8 @@ bool JSBSim::create_templates(void)
     if (created_templates) {
         return true;
     }
-    control_port = 5505 + instance*10;
-    fdm_port = 5504 + instance*10;
+    control_port = 5505 + (instance - 1) * 10;
+    fdm_port = 5504 + (instance -1) * 10;
 
     asprintf(&jsbsim_script, "%s/jsbsim_start_%u.xml", autotest_dir, instance);
     asprintf(&jsbsim_fgout,  "%s/jsbsim_fgout_%u.xml", autotest_dir, instance);

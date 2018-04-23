@@ -50,7 +50,7 @@ void SITL_State::_usage(void)
            "\t--speedup|-s SPEEDUP     set simulation speedup\n"
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
-           "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
+           "\t--instance|-I N          set instance of SITL (adds 10*(instance-1) to all port numbers and change SYSID_MYGCS), limited to 255.\n"
            // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
@@ -131,7 +131,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
     int opt;
     float speedup = 1.0f;
-    _instance = 0;
+    _instance = 1;
     _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = "-35.363261,149.165230,584,353";
@@ -243,25 +243,34 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
-            _instance = atoi(gopt.optarg);
+            const int instance = atoi(gopt.optarg);
+            _instance = static_cast<uint8_t>(instance);
+            const int32_t port_offset = (instance - 1) * 10;
             if (_base_port == BASE_PORT) {
-                _base_port += _instance * 10;
+                _base_port += port_offset;
             }
             if (_rcin_port == RCIN_PORT) {
-                _rcin_port += _instance * 10;
+                _rcin_port += port_offset;
             }
             if (_fg_view_port == FG_VIEW_PORT) {
-                _fg_view_port += _instance * 10;
+                _fg_view_port += port_offset;
             }
             if (simulator_port_in == SIM_IN_PORT) {
-                simulator_port_in += _instance * 10;
+                simulator_port_in += port_offset;
             }
             if (simulator_port_out == SIM_OUT_PORT) {
-                simulator_port_out += _instance * 10;
+                simulator_port_out += port_offset;
             }
             if (_irlock_port == IRLOCK_PORT) {
-                _irlock_port += _instance * 10;
+                _irlock_port += port_offset;
             }
+            if (instance < 1 || instance > 255) {
+                fprintf(stderr, "You must specify an instance-id greater than 0 and less than 256\n");
+                exit(1);
+            }
+            char sysid[18];
+            snprintf(sysid, sizeof(sysid), "SYSID_THISMAV=%s", gopt.optarg);
+            _set_param_default(sysid);
         }
         break;
         case 'P':
