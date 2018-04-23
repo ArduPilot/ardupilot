@@ -216,7 +216,7 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     float motor_number = command.param1;
     float throttle_type = command.param2;
     float throttle = command.param3;
-    float timeout_s = command.param4;
+    // float timeout_s = command.param4; // not used
     float test_type = command.param5;
 
     if (!is_equal(test_type, (float)MOTOR_TEST_ORDER_BOARD) &&
