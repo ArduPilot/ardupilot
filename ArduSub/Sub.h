@@ -320,6 +320,8 @@ private:
 
     AP_Arming_Sub arming {ahrs, barometer, compass, battery};
 
+    uint32_t last_control_mode_update_us; // dt tracking for control mode updates
+
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
