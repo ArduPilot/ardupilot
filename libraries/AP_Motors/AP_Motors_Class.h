@@ -75,15 +75,16 @@ public:
     // get motor interlock status.  true means motors run, false motors don't run
     bool                get_interlock() const { return _flags.interlock; }
 
-    // set_roll, set_pitch, set_yaw, set_throttle
-    void                set_roll(float roll_in) { _roll_in = roll_in; };        // range -1 ~ +1
-    void                set_pitch(float pitch_in) { _pitch_in = pitch_in; };    // range -1 ~ +1
-    void                set_yaw(float yaw_in) { _yaw_in = yaw_in; };            // range -1 ~ +1
-    void                set_throttle(float throttle_in) { _throttle_in = throttle_in; };   // range 0 ~ 1
-    void                set_throttle_avg_max(float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max,0.0f,1.0f); };   // range 0 ~ 1
-    void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
-    void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
-    void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
+    // set roll, pitch, yaw etc input demands to motor mixer
+    void set_roll      (float roll_in)      { _last_roll_in = _roll_in; _roll_in = roll_in; };                 // range -1 ~ +1
+    void set_pitch     (float pitch_in)     { _last_pitch_in = _pitch_in; _pitch_in = pitch_in; };             // range -1 ~ +1
+    void set_yaw       (float yaw_in)       { _last_yaw_in = _yaw_in; _yaw_in = yaw_in; };                     // range -1 ~ +1
+    void set_throttle  (float throttle_in)  { _last_throttle_in = throttle_in; _throttle_in = throttle_in; };  // range 0 ~ 1
+    void set_forward   (float forward_in)   { _last_forward_in = _forward_in; _forward_in = forward_in; };     // range -1 ~ +1
+    void set_lateral   (float lateral_in)   { _last_lateral_in = _lateral_in; _lateral_in = lateral_in; };     // range -1 ~ +1
+
+    void set_throttle_avg_max (float throttle_avg_max) { _throttle_avg_max = constrain_float(throttle_avg_max,0.0f,1.0f); };   // range 0 ~ 1
+    void set_throttle_filter_cutoff (float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
@@ -161,6 +162,18 @@ public:
                     PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
+    // Limit the rate of change on all inputs to the mixer
+    // max_rate is the maximum allowed rate of change as a percentage of the range per second
+    // dt is the time delta in seconds between calls
+    void limit_demand_slew_rate(float max_rate, float dt) {
+        limit_value_slew_rate(_last_roll_in, _roll_in, 2.0f, max_rate, dt);
+        limit_value_slew_rate(_last_pitch_in, _pitch_in, 2.0f, max_rate, dt);
+        limit_value_slew_rate(_last_throttle_in, _throttle_in, 1.0f, max_rate, dt); // Throttle is range 1.0, where others are 2.0
+        limit_value_slew_rate(_last_yaw_in, _yaw_in, 2.0f, max_rate, dt);
+        limit_value_slew_rate(_last_forward_in, _forward_in, 2.0f, max_rate, dt);
+        limit_value_slew_rate(_last_lateral_in, _lateral_in, 2.0f, max_rate, dt);
+    }
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
@@ -183,6 +196,30 @@ protected:
     // convert input in 0 to +1 range to pwm output
     int16_t calc_pwm_output_0to1(float input, const SRV_Channel *servo);
 
+    // Apply rate of change limiting to an input
+    // max_rate is the maximum allowed rate of change as a percentage of the range per second
+    // dt is the time delta in seconds between calls
+    void limit_value_slew_rate(float& previous, float& current, float range, float max_rate, float dt) {
+        if (max_rate <= 0) {
+            return; // nothing to do
+        }
+
+        if (is_equal(previous, current)) {
+            return; // no change
+        }
+
+        float max_change = range * max_rate * dt * 0.01f;
+
+        if (is_zero(max_change) || dt > 1) {
+            // always allow some (0.1%) change. If dt > 1 then assume we
+            // are just starting out, and only allow a small
+            // change for this loop
+            max_change = 0.001 * range;
+        }
+        
+        current = constrain_float(current, previous - max_change, previous + max_change);
+    }
+
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
@@ -199,6 +236,15 @@ protected:
     float               _throttle_in;               // last throttle input from set_throttle caller
     float               _forward_in;                // last forward input from set_forward caller
     float               _lateral_in;                // last lateral input from set_lateral caller
+
+    // Previous inputs used for rate-of-change limiting
+    float               _last_roll_in;
+    float               _last_pitch_in;
+    float               _last_yaw_in;
+    float               _last_throttle_in;
+    float               _last_forward_in;
+    float               _last_lateral_in;
+
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
