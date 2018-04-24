@@ -48,7 +48,7 @@ void loop()
     radio_trim = RC_Channels::get_radio_in(0);
 
     while (true) {
-        RC_Channels::set_pwm_all(); // poll the radio for new values
+        RC_Channels::read_input(); // poll the radio for new values
         radio_in = RC_Channels::get_radio_in(0);
         error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
