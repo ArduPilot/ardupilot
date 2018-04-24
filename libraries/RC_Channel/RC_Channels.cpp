@@ -139,14 +139,20 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 }
 
 /*
-  call read() and set_pwm() on all channels
+  call read() and set_pwm() on all channels if there is new data
  */
-void
-RC_Channels::set_pwm_all(void)
+bool
+RC_Channels::read_input(void)
 {
+    if (!hal.rcin->new_input()) {
+        return false;
+    }
+
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channels[i].set_pwm(channels[i].read());
     }
+
+    return true;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)
@@ -157,11 +163,6 @@ uint8_t RC_Channels::get_valid_channel_count(void)
 int16_t RC_Channels::get_receiver_rssi(void)
 {
     return hal.rcin->get_rssi();
-}
-
-bool RC_Channels::has_new_input(void)
-{
-    return hal.rcin->new_input();
 }
 
 void RC_Channels::clear_overrides(void)
