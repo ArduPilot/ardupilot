@@ -28,6 +28,9 @@ public:
     const char* get_custom_defaults_file() const override {
         return sitlState->defaults_path;
     }
+
+    uint64_t get_hw_rtc() const override;
+
 private:
     SITL_State *sitlState;
 };
