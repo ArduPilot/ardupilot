@@ -1241,26 +1241,21 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
     if (!_hil_mode) {
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
-            _delta_velocity_valid[i] = false;
-            _delta_angle_valid[i] = false;
-        }
+        // mark sensors unhealthy and let update() in each backend
+        memset(_gyro_healthy,           0, sizeof(_gyro_healthy[0]) * INS_MAX_INSTANCES);
+        memset(_accel_healthy,          0, sizeof(_accel_healthy[0]) * INS_MAX_INSTANCES);
+        memset(_delta_velocity_valid,   0, sizeof(_delta_velocity_valid[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_valid,      0, sizeof(_delta_angle_valid[0]) * INS_MAX_INSTANCES);
+
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
 
         // clear accumulators
-        for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-            _delta_velocity_acc[i].zero();
-            _delta_velocity_acc_dt[i] = 0;
-            _delta_angle_acc[i].zero();
-            _delta_angle_acc_dt[i] = 0;
-        }
+        memset(_delta_velocity_acc_dt,  0, sizeof(_delta_velocity_acc_dt[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_acc_dt,     0, sizeof(_delta_angle_acc_dt[0]) * INS_MAX_INSTANCES);
+        memset(_delta_velocity_acc,     0, sizeof(_delta_velocity_acc[0]) * INS_MAX_INSTANCES);
+        memset(_delta_angle_acc,        0, sizeof(_delta_angle_acc[0]) * INS_MAX_INSTANCES);
 
         if (!_startup_error_counts_set) {
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -1275,22 +1270,21 @@ void AP_InertialSensor::update(void)
             }
         }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
-                _accel_startup_error_count[i] = _accel_error_count[i];
-            }
-            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
-                _gyro_startup_error_count[i] = _gyro_error_count[i];
-            }
-        }
-
         // adjust health status if a sensor has a non-zero error count
         // but another sensor doesn't.
         bool have_zero_accel_error_count = false;
         bool have_zero_gyro_error_count = false;
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            // accel
+            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
+                _accel_startup_error_count[i] = _accel_error_count[i];
+            }
             if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
                 have_zero_accel_error_count = true;
+            }
+            // gyro
+            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
+                _gyro_startup_error_count[i] = _gyro_error_count[i];
             }
             if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
                 have_zero_gyro_error_count = true;
@@ -1309,18 +1303,8 @@ void AP_InertialSensor::update(void)
         }
 
         // set primary to first healthy accel and gyro
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
-                _primary_gyro = i;
-                break;
-            }
-        }
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
-                _primary_accel = i;
-                break;
-            }
-        }
+        _primary_gyro = find_primary_gyro();
+        _primary_accel = find_primary_accel();
     }
 
     // apply notch filter to primary gyro
@@ -1329,6 +1313,33 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+}
+
+int8_t AP_InertialSensor::find_primary_gyro() const {
+    if(_primary_gyro >= 0 && _gyro_healthy[_primary_gyro]) {
+        return _primary_gyro;
+    }
+
+    // set primary to first healthy accel and gyro
+    for (int8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (_gyro_healthy[i] && _use[i]) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+int8_t AP_InertialSensor::find_primary_accel() const {
+    if(_primary_accel >= 0 && _accel_healthy[_primary_accel]) {
+        return _primary_accel;
+    }
+
+    for (int8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (_accel_healthy[i] && _use[i]) {
+            return i;
+        }
+    }
+    return 0;
 }
 
 /*
