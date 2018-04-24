@@ -32,4 +32,7 @@ void Sub::manual_run()
     motors.set_throttle(channel_throttle->norm_input());
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
+
+    float dt =  ((float)(micros() - last_control_mode_update_us)) / 1e6;
+    motors.limit_demand_slew_rate(g.manual_slew_rate, dt);
 }
