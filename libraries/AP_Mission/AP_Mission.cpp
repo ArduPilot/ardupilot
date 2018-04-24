@@ -4,6 +4,7 @@
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -480,7 +481,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.index = 0;
         cmd.id = MAV_CMD_NAV_WAYPOINT;
         cmd.p1 = 0;
-        cmd.content.location = _ahrs.get_home();
+        cmd.content.location = AP::ahrs().get_home();
     }else{
         // Find out proper location in memory by using the start_byte position + the index
         // we can load a command, we don't process it yet
@@ -546,7 +547,7 @@ void AP_Mission::write_home_to_storage()
 {
     Mission_Command home_cmd = {};
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
-    home_cmd.content.location = _ahrs.get_home();
+    home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
 }
 
@@ -1715,7 +1716,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
 {
     struct Location current_loc;
 
-    if (!_ahrs.get_position(current_loc)) {
+    if (!AP::ahrs().get_position(current_loc)) {
         return 0;
     }
 
