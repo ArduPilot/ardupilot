@@ -152,14 +152,12 @@ public:
 
     static uint8_t get_valid_channel_count(void);                      // returns the number of valid channels in the last read
     static int16_t get_receiver_rssi(void);                            // returns [0, 255] for receiver RSSI (0 is no link) if present, otherwise -1
-    static bool has_new_input(void);                                   // returns true if there has been new input since last checked
+    static bool read_input(void);                                      // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
     static bool receiver_bind(const int dsmMode);                      // puts the reciever in bind mode if present, returns true if success
     static bool set_override(const uint8_t chan, const int16_t value); // set a channels override value
     static bool set_overrides(int16_t *overrides, const uint8_t len);  // set multiple overrides at once
 
-    static void set_pwm_all(void);
-    
 private:
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;

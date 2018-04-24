@@ -51,7 +51,7 @@ void setup()
 
 void loop()
 {
-    RC_Channels::set_pwm_all();
+    RC_Channels::read_input();
     print_pwm();
     
     hal.scheduler->delay(20);
