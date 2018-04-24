@@ -95,9 +95,8 @@ void Copter::read_radio()
 {
     uint32_t tnow_ms = millis();
 
-    if (RC_Channels::has_new_input()) {
+    if (RC_Channels::read_input()) {
         ap.new_radio_frame = true;
-        RC_Channels::set_pwm_all();
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
