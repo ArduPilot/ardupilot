@@ -782,8 +782,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
     case MAV_CMD_MISSION_START:
         if (copter.motors->armed() && copter.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
             copter.set_auto_armed(true);
-            if (copter.mission.state() != AP_Mission::MISSION_RUNNING) {
-                copter.mission.start_or_resume();
+            if (copter.mode_auto.mission.state() != AP_Mission::MISSION_RUNNING) {
+                copter.mode_auto.mission.start_or_resume();
             }
             return MAV_RESULT_ACCEPTED;
         }
@@ -1490,7 +1490,7 @@ bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_m
 AP_Mission *GCS_MAVLINK_Copter::get_mission()
 {
 #if MODE_AUTO_ENABLED == ENABLED
-    return &copter.mission;
+    return &copter.mode_auto.mission;
 #else
     return nullptr;
 #endif

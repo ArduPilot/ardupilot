@@ -268,24 +268,6 @@ private:
     SITL::SITL sitl;
 #endif
 
-    // Mission library
-#if MODE_AUTO_ENABLED == ENABLED
-    AP_Mission mission{
-            FUNCTOR_BIND_MEMBER(&Copter::start_command, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::verify_command_callback, bool, const AP_Mission::Mission_Command &),
-            FUNCTOR_BIND_MEMBER(&Copter::exit_mission, void)};
-
-    bool start_command(const AP_Mission::Mission_Command& cmd) {
-        return mode_auto.start_command(cmd);
-    }
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd) {
-        return mode_auto.verify_command_callback(cmd);
-    }
-    void exit_mission() {
-        mode_auto.exit_mission();
-    }
-#endif
-
     // Arming/Disarming mangement class
     AP_Arming_Copter arming;
 
@@ -542,8 +524,8 @@ private:
     AP_LandingGear landinggear;
 
     // terrain handling
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain{mission, rally};
+#if AP_TERRAIN_AVAILABLE && AC_TERRAIN && MODE_AUTO_ENABLED == ENABLED
+    AP_Terrain terrain{mode_auto.mission, rally};
 #endif
 
     // Precision Landing
@@ -932,6 +914,7 @@ private:
     ModeAltHold mode_althold;
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
+    AP_Mission &mission = mode_auto.mission; // so parameters work only!
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;
