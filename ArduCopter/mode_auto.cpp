@@ -22,11 +22,11 @@
 // auto_init - initialise auto controller
 bool Copter::ModeAuto::init(bool ignore_checks)
 {
-    if ((copter.position_ok() && copter.mission.num_commands() > 1) || ignore_checks) {
+    if ((copter.position_ok() && mission.num_commands() > 1) || ignore_checks) {
         _mode = Auto_Loiter;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
-        if (motors->armed() && ap.land_complete && !copter.mission.starts_with_takeoff_cmd()) {
+        if (motors->armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
@@ -44,7 +44,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
         copter.mode_guided.limit_clear();
 
         // start/resume the mission (based on MIS_RESTART parameter)
-        copter.mission.start_or_resume();
+        mission.start_or_resume();
         return true;
     } else {
         return false;
@@ -380,7 +380,7 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: logging when new commands start/end
     if (copter.should_log(MASK_LOG_CMD)) {
-        copter.DataFlash.Log_Write_Mission_Cmd(copter.mission, cmd);
+        copter.DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     switch(cmd.id) {
@@ -513,23 +513,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     return true;
 }
 
-// verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
-//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-bool Copter::ModeAuto::verify_command_callback(const AP_Mission::Mission_Command& cmd)
-{
-    if (copter.flightmode == &copter.mode_auto) {
-        bool cmd_complete = verify_command(cmd);
-
-        // send message to GCS
-        if (cmd_complete) {
-            gcs().send_mission_item_reached_message(cmd.index);
-        }
-
-        return cmd_complete;
-    }
-    return false;
-}
-
 // exit_mission - function that is called once the mission completes
 void Copter::ModeAuto::exit_mission()
 {
@@ -602,7 +585,7 @@ bool Copter::ModeAuto::get_wp(Location_Class& destination)
 // update mission
 void Copter::ModeAuto::run_autopilot()
 {
-    copter.mission.update();
+    mission.update();
 }
 
 /*******************************************************************************
@@ -614,61 +597,83 @@ should move onto the next mission element.
 Return true if we do not recognize the command so that we move on to the next command
 *******************************************************************************/
 
+// verify_command - callback function called from ap-mission at 10hz or higher when a command is being run
+//      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
+    if (copter.flightmode != &copter.mode_auto) {
+        return false;
+    }
+
+    bool cmd_complete = false;
+
     switch (cmd.id) {
     //
     // navigation commands
     //
     case MAV_CMD_NAV_TAKEOFF:
-        return verify_takeoff();
+        cmd_complete = verify_takeoff();
+        break;
 
     case MAV_CMD_NAV_WAYPOINT:
-        return verify_nav_wp(cmd);
+        cmd_complete = verify_nav_wp(cmd);
+        break;
 
     case MAV_CMD_NAV_LAND:
-        return verify_land();
+        cmd_complete = verify_land();
+        break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        return verify_payload_place();
+        cmd_complete = verify_payload_place();
+        break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        return verify_loiter_unlimited();
+        cmd_complete = verify_loiter_unlimited();
+        break;
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_circle(cmd);
+        cmd_complete = verify_circle(cmd);
+        break;
 
     case MAV_CMD_NAV_LOITER_TIME:
-        return verify_loiter_time();
+        cmd_complete = verify_loiter_time();
+        break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
         return verify_loiter_to_alt();
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        return verify_RTL();
+        cmd_complete = verify_RTL();
+        break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
-        return verify_spline_wp(cmd);
+        cmd_complete = verify_spline_wp(cmd);
+        break;
 
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_NAV_GUIDED_ENABLE:
-        return verify_nav_guided_enable(cmd);
+        cmd_complete = verify_nav_guided_enable(cmd);
+        break;
 #endif
 
      case MAV_CMD_NAV_DELAY:
-        return verify_nav_delay(cmd);
+        cmd_complete = verify_nav_delay(cmd);
+        break;
 
     ///
     /// conditional commands
     ///
     case MAV_CMD_CONDITION_DELAY:
-        return verify_wait_delay();
+        cmd_complete = verify_wait_delay();
+        break;
 
     case MAV_CMD_CONDITION_DISTANCE:
-        return verify_within_distance();
+        cmd_complete = verify_within_distance();
+        break;
 
     case MAV_CMD_CONDITION_YAW:
-        return verify_yaw();
+        cmd_complete = verify_yaw();
+        break;
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -679,14 +684,24 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
-        return true;
+        cmd_complete = true;
+        break;
 
     default:
         // error message
         gcs().send_text(MAV_SEVERITY_WARNING,"Skipping invalid cmd #%i",cmd.id);
         // return true if we do not recognize the command so that we move on to the next command
-        return true;
+        cmd_complete = true;
+        break;
     }
+
+
+    // send message to GCS
+    if (cmd_complete) {
+        gcs().send_mission_item_reached_message(cmd.index);
+    }
+
+    return cmd_complete;
 }
 
 // auto_takeoff_run - takeoff in auto mode
@@ -1089,7 +1104,7 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
-    if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (loiter_time_max == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         copter.wp_nav->set_fast_waypoint(true);
     }
 }
@@ -1229,9 +1244,9 @@ void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // if previous command was a wp_nav command with no delay set stopped_at_start to false
     // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
-    uint16_t prev_cmd_idx = copter.mission.get_prev_nav_cmd_index();
+    uint16_t prev_cmd_idx = mission.get_prev_nav_cmd_index();
     if (prev_cmd_idx != AP_MISSION_CMD_INDEX_NONE) {
-        if (copter.mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
+        if (mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
             if ((temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) && temp_cmd.p1 == 0) {
                 stopped_at_start = false;
             }
@@ -1240,7 +1255,7 @@ void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // if there is no delay at the end of this segment get next nav command
     Location_Class next_loc;
-    if (cmd.p1 == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         next_loc = temp_cmd.content.location;
         // default lat, lon to first waypoint's lat, lon
         if (next_loc.lat == 0 && next_loc.lng == 0) {

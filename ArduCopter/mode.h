@@ -307,13 +307,13 @@ public:
 
     void payload_place_start();
 
-    // only out here temporarily
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void exit_mission();
-
     // for GCS_MAVLink to call:
     bool do_guided(const AP_Mission::Mission_Command& cmd);
+
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::exit_mission, void)};
 
 protected:
 
@@ -328,7 +328,9 @@ protected:
 
 private:
 
+    bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
 
     void takeoff_run();
     void wp_run();
@@ -434,7 +436,6 @@ private:
         float descend_start_altitude;
         float descend_max; // centimetres
     } nav_payload_place;
-
 };
 
 #if AUTOTUNE_ENABLED == ENABLED

@@ -233,7 +233,7 @@ void Copter::init_ardupilot()
 
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
-    mission.init();
+    mode_auto.mission.init();
 #endif
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
@@ -243,7 +243,7 @@ void Copter::init_ardupilot()
 
     // initialise DataFlash library
 #if MODE_AUTO_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
+    DataFlash.set_mission(&mode_auto.mission);
 #endif
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
