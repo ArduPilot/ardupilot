@@ -101,15 +101,13 @@ void Rover::rudder_arm_disarm_check()
 
 void Rover::read_radio()
 {
-    if (!RC_Channels::has_new_input()) {
+    if (!RC_Channels::read_input()) {
         // check if we lost RC link
         control_failsafe(channel_throttle->get_radio_in());
         return;
     }
 
     failsafe.last_valid_rc_ms = AP_HAL::millis();
-    // read the RC value
-    RC_Channels::set_pwm_all();
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
 
