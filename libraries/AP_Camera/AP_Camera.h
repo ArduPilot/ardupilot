@@ -72,7 +72,11 @@ public:
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
+    // count of number of cycles after which CAMERA_FEEDBACK should be sent
+    static volatile int16_t _delay_counter;
+
 private:
+    AP_Int8         _trigger_delay;     // Delay the CAMERA_FEEDBACK packet
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera

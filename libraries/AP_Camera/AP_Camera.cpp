@@ -99,6 +99,14 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
 
+    // @Param: TRIGG_DELAY
+    // @DisplayName: Trigger Delay for the geotag
+    // @Description: Delays the CAMERA_FEEDBACK message
+    // @user: Standard
+    // @units: cs
+    // @Range: 0 127
+    AP_GROUPINFO("TRIGG_DELAY", 11, AP_Camera, _trigger_delay, 0),
+
     AP_GROUPEND
 };
 
@@ -108,6 +116,7 @@ extern const AP_HAL::HAL& hal;
   static trigger var for PX4 callback
  */
 volatile bool   AP_Camera::_camera_triggered;
+volatile int16_t AP_Camera::_delay_counter;
 
 /// Servo operated camera
 void
@@ -117,6 +126,12 @@ AP_Camera::servo_pic()
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
 	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+        // To send CAMERA_FEEDBACK message after this many loops (assumes 50hz loops)
+	if (_relay_on == _feedback_polarity) {                // feedback on leading edge of trigger pulse
+            _delay_counter = constrain_int16(_trigger_delay/2,0,65);
+        } else {                                              // feedback on trailing edge of pulse
+            _delay_counter = constrain_int16(_trigger_delay/2 + _trigger_duration*5,0,320);
+        }
 }
 
 /// basic relay activation
@@ -131,6 +146,12 @@ AP_Camera::relay_pic()
 
     // leave a message that it should be active for this many loops (assumes 50hz loops)
     _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    // To send CAMERA_FEEDBACK message after this many loops (assumes 50hz loops)
+    if (_relay_on == _feedback_polarity) {                // feedback on leading edge of trigger pulse
+        _delay_counter = constrain_int16(_trigger_delay/2,0,65);
+    } else {                                              // feedback on trailing edge of trigger pulse
+        _delay_counter = constrain_int16(_trigger_delay/2 + _trigger_duration*5,0,320);
+    }
 }
 
 /// single entry point to take pictures
@@ -149,8 +170,6 @@ void AP_Camera::trigger_pic()
         relay_pic();                    // basic relay activation
         break;
     }
-
-    log_picture();
 }
 
 /// de-activate the trigger after some delay, but without using a delay() function
@@ -173,6 +192,14 @@ AP_Camera::trigger_pic_cleanup()
                 }
                 break;
         }
+    }
+
+    if (_delay_counter >= 0) {
+       // Call log_picture only when the counter goes to 0
+	if (_delay_counter == 0) {
+            log_picture();
+        }
+    _delay_counter--;
     }
 }
 
