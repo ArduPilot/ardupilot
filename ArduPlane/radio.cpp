@@ -171,7 +171,7 @@ void Plane::rudder_arm_disarm_check()
 
 void Plane::read_radio()
 {
-    if (!RC_Channels::has_new_input()) {
+    if (!RC_Channels::read_input()) {
         control_failsafe();
         return;
     }
@@ -183,8 +183,6 @@ void Plane::read_radio()
 
     failsafe.last_valid_rc_ms = millis();
 
-    RC_Channels::set_pwm_all();
-    
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
