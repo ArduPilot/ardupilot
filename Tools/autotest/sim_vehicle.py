@@ -577,7 +577,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
             sys.exit(1)
         path += "," + str(opts.add_param_file)
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
-    cmd.extend(["--defaults", path])
+    if path is not None:
+        cmd.extend(["--defaults", path])
 
     run_in_terminal_window(autotest, cmd_name, cmd)
 
