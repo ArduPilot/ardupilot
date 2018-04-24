@@ -947,7 +947,19 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_long_decode(msg, &packet);
 
         switch(packet.command) {
-
+////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+	case MAV_CMD_USER_1: {
+		//get letter time x y
+		int letter_raw = packet.param1;
+		char letter = 'A' - 1 + letter_raw;
+		float time = packet.param2;
+		float target_x = packet.param5;
+		float target_y = packet.param6;
+		gcs().send_text(MAV_SEVERITY_INFO,"[%.9f] TARGET FOUND: %c @ %.6f,%.6f",time,letter,target_x,target_y);
+	}
+/////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
         case MAV_CMD_NAV_TAKEOFF: {
             // param3 : horizontal navigation by pilot acceptable
             // param4 : yaw angle   (not supported)
