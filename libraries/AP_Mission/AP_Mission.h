@@ -18,7 +18,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <StorageManager/StorageManager.h>
 
 // definitions
@@ -281,8 +280,7 @@ public:
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
     // constructor
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
-        _ahrs(ahrs),
+    AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
@@ -545,9 +543,6 @@ private:
 
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
-
-    // references to external libraries
-    const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
