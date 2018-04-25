@@ -1,5 +1,7 @@
 # hw definition file for processing by chibios_pins.py
-# Omnibus F4 PRO, Omnibus F4 V3-V5 boards with F405 mcu, mpu6000 imu, bmp280 barometer and sdcard
+# Omnibus F4 PRO, Omnibus F4 V3 boards
+# with F405 mcu, mpu6000 imu, bmp280 barometer, 7456 series osd  and sdcard
+
 MCU STM32F4xx STM32F405xx
 
 HAL_CHIBIOS_ARCH_F405 1
@@ -77,7 +79,13 @@ PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 PC5 VBUS INPUT OPENDRAIN
 
+# "PPM" solder pad/resistor should be soldered and "S-BUS" resistor/solder pad removed
+# Overwise UART1 or UART6 or RCIN will not work
 PB8 TIM4_CH3 TIM4 RCININT PULLDOWN LOW
+
+#Omnibus F4 V3 and later had hw inverter on UART6
+#Overide it to use as GPS UART port
+PC8 SBUS_INVERT OUTPUT LOW
 
 # SPI Device table 
 SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ
@@ -101,13 +109,14 @@ define STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 8192
 
 # define default battery setup
-define HAL_BATT_VOLT_PIN 8
-define HAL_BATT_CURR_PIN 7
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
-define HAL_BATT_CURR_SCALE 38.0
+define HAL_BATT_CURR_SCALE 18.2
 
 define HAL_GPIO_A_LED_PIN 57
 
+#To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
 
 define BOARD_PWM_COUNT_DEFAULT 6
