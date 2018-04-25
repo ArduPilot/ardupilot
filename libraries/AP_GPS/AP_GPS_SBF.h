@@ -199,12 +199,12 @@ private:
     void log_ExtEventPVTGeodetic(const msg4007 &temp);
 
     enum {
-        SOFTWARE      = (1 << 3),
-        WATCHDOG      = (1 << 4),
-        CONGESTION    = (1 << 6),
-        MISSEDEVENT   = (1 << 8),
-        CPUOVERLOAD   = (1 << 9),
-        INVALIDCONFIG = (1 << 10),
-        OUTOFGEOFENCE = (1 << 11),
+        SOFTWARE      = (1 << 3),   // set upon detection of a software warning or  error. This bit is reset by the command  “lif, error”
+        WATCHDOG      = (1 << 4),   // set when the watch-dog expired at least once since the last power-on.
+        CONGESTION    = (1 << 6),   // set when an output data congestion has been detected on at least one of the communication ports of the receiver during the last second.
+        MISSEDEVENT   = (1 << 8),   // set when an external event congestion has been detected during the last second. It indicates that the receiver is receiving too many events on its EVENTx pins.
+        CPUOVERLOAD   = (1 << 9),   // set when the CPU load is larger than 90%. If this bit is set, receiver operation may be unreliable and the user must decrease the processing load by following the recommendations in the User Manual.
+        INVALIDCONFIG = (1 << 10),  // set if one or more configuration file (permission or channel configuration) is invalid or absent.
+        OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
 };
