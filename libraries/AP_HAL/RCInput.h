@@ -44,8 +44,6 @@ public:
      *  v > 0   -> set v as override.
      */
 
-    /* set_overrides: array starts at ch 0, for len channels */
-    virtual bool set_overrides(int16_t *overrides, uint8_t len) = 0;
     /* set_override: set just a specific channel */
     virtual bool set_override(uint8_t channel, int16_t override) = 0;
     /* clear_overrides: equivalent to setting all overrides to 0 */
