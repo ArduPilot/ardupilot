@@ -15,6 +15,7 @@
  */
 
 #include "SoftSigReaderInt.h"
+#include "hwdef/common/stm32_util.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
@@ -47,6 +48,8 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     channel_config.alvl = EICU_INPUT_ACTIVE_HIGH;
     channel_config.capture_cb = _irq_handler;
     eicuStart(_icu_drv, &icucfg);
+    //sets input filtering to 4 timer clock
+    stm32_timer_set_input_filter(_icu_drv->tim, chan, 2);
     eicuEnable(_icu_drv);
 }
 
