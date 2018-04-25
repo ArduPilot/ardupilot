@@ -87,28 +87,6 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
         AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
     }
 
-    if (strstr(frame_str, "pitch270")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_270;
-    }
-    if (strstr(frame_str, "pitch90")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_90;
-    }
-
-    switch (rotation) {
-    case ROTATION_NONE:
-        break;
-    case ROTATION_PITCH_90:
-        att_rotation.from_euler(0, radians(90), 0);
-        break;
-    case ROTATION_PITCH_270:
-        att_rotation.from_euler(0, radians(270), 0);
-        break;
-    default:
-        AP_HAL::panic("Unsupported flightaxis rotation %u\n", (unsigned)rotation);
-    }
-
     /* Create the thread that will be waiting for data from FlightAxis */
     mutex = hal.util->new_semaphore();
 
@@ -432,14 +410,6 @@ void FlightAxis::update(const struct sitl_input &input)
                state.m_accelerationBodyAY_MPS2,
                state.m_accelerationBodyAZ_MPS2);
 
-    if (rotation != ROTATION_NONE) {
-        dcm.transpose();
-        dcm = att_rotation * dcm;
-        dcm.transpose();
-        gyro.rotate(rotation);
-        accel_body.rotate(rotation);
-    }
-
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
     if (state.m_isTouchingGround) {
         Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
@@ -517,3 +487,4 @@ void FlightAxis::report_FPS(void)
         last_frame_count_s = state.m_currentPhysicsTime_SEC;
     }
 }
+

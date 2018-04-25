@@ -73,6 +73,10 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     last_wall_time_us = get_wall_time_us();
     frame_counter = 0;
 
+    // allow for orientation settings, such as with tailsitters
+    enum ap_var_type ptype;
+    ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
+
     terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
 }
 
@@ -387,6 +391,23 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
     }
 
+    if (ahrs_orientation != nullptr) {
+        enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
+
+        if (imu_rotation != ROTATION_NONE) {
+            Matrix3f m = dcm;
+            Matrix3f rot;
+            rot.from_rotation(imu_rotation);
+            m = m * rot.transposed();
+
+            m.to_euler(&r, &p, &y);
+            fdm.rollDeg  = degrees(r);
+            fdm.pitchDeg = degrees(p);
+            fdm.yawDeg   = degrees(y);
+            fdm.quaternion.from_rotation_matrix(m);
+        }
+    }
+    
     if (last_speedup != sitl->speedup && sitl->speedup > 0) {
         set_speedup(sitl->speedup);
         last_speedup = sitl->speedup;
@@ -784,5 +805,6 @@ void Aircraft::extrapolate_sensors(float delta_time)
     velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 }
+
 
 
