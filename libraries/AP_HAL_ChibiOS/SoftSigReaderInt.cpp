@@ -62,8 +62,8 @@ bool SoftSigReaderInt::read(uint32_t &widths0, uint32_t &widths1)
     uint16_t p0, p1;
     if (sigbuf.available() >= 2) {
         if (sigbuf.pop(p0)&&sigbuf.pop(p1)) {
-            widths0 = p0 - last_value;
-            widths1 = p1 - p0;
+            widths0 = uint16_t(p0 - last_value);
+            widths1 = uint16_t(p1 - p0);
             last_value = p1;
             return true;
         }
