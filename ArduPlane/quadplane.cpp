@@ -915,6 +915,9 @@ bool QuadPlane::is_flying(void)
     if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
         return true;
     }
+    if (in_tailsitter_vtol_transition()) {
+        return true;
+    }
     return false;
 }
 
