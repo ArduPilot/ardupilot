@@ -178,11 +178,6 @@ bool RC_Channels::set_override(const uint8_t chan, const int16_t value)
     return false;
 }
 
-bool RC_Channels::set_overrides(int16_t *overrides, const uint8_t len)
-{
-    return hal.rcin->set_overrides(overrides, len);
-}
-
 bool RC_Channels::receiver_bind(const int dsmMode)
 {
     return hal.rcin->rc_bind(dsmMode);
