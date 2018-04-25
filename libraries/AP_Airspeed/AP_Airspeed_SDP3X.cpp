@@ -204,28 +204,28 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         return press;
     }
 
-    float sign = 1;
+    float sign = 1.0f;
     
     // fix for tube order
     AP_Airspeed::pitot_tube_order tube_order = get_tube_order();
     switch (tube_order) {
     case AP_Airspeed::PITOT_TUBE_ORDER_NEGATIVE:
         press = -press;
-        sign = -1;
+        sign = -1.0f;
     //FALLTHROUGH;
     case AP_Airspeed::PITOT_TUBE_ORDER_POSITIVE:
         break;
     case AP_Airspeed::PITOT_TUBE_ORDER_AUTO:
     default:
-        if (press < 0) {
-            sign = -1;
+        if (press < 0.0f) {
+            sign = -1.0f;
             press = -press;
         }
         break;
     }
 
-    if (press <= 0) {
-        return 0;
+    if (press <= 0.0f) {
+        return 0.0f;
     }
 
     get_temperature(temperature);
@@ -246,19 +246,19 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
      */
     
     // flow through sensor
-    float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)powf(press, 0.68698f) + 1)) * 1.29f / rho_air;
+    float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)powf(press, 0.68698f) + 1.0f)) * 1.29f / rho_air;
     if (flow_SDP3X < 0.0f) {
         flow_SDP3X = 0.0f;
     }
 
     // diffential pressure through pitot tube
-    float dp_pitot = 28557670.0f - 28557670.0f / (1 + (float)powf((flow_SDP3X / 5027611.0f), 1.227924f));
+    float dp_pitot = 28557670.0f * (1.0f - 1.0f / (1.0f + (float)powf((flow_SDP3X / 5027611.0f), 1.227924f)));
 
     // uncorrected pressure
     float press_uncorrected = (press + dp_pitot) / SSL_AIR_DENSITY;
 
     // correction for speed at pitot-tube tip due to flow through sensor
-    float dv = 0.0331582 * flow_SDP3X;
+    float dv = 0.0331582f * flow_SDP3X;
 
     // airspeed ratio
     float ratio = get_airspeed_ratio();
