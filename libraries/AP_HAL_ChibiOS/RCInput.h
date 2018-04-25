@@ -51,7 +51,6 @@ public:
     }
         
     
-    bool set_overrides(int16_t *overrides, uint8_t len) override;
     bool set_override(uint8_t channel, int16_t override) override;
     void clear_overrides() override;
 
