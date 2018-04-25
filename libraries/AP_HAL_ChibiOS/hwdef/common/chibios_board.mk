@@ -128,7 +128,8 @@ CSRC = $(STARTUPSRC) \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/stdio.c \
-	   $(HWDEF)/common/hrt.c
+	   $(HWDEF)/common/hrt.c \
+	   $(HWDEF)/common/stm32_util.c
 
 ifeq ($(USE_FATFS),yes)
 CSRC += $(HWDEF)/common/posix.c
