@@ -563,6 +563,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         cmd.extend(opts.sitl_instance_args.split(" "))
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
+    path = None
     if "default_params_filename" in stuff:
         paths = stuff["default_params_filename"]
         if not isinstance(paths, list):
@@ -570,6 +571,13 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         paths = [os.path.join(autotest, x) for x in paths]
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
+    if opts.add_param_file:
+        if not os.path.isfile(opts.add_param_file):
+            print("The parameter file (%s) does not exist" % (opts.add_param_file,))
+            sys.exit(1)
+        path += "," + str(opts.add_param_file)
+        progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+    if path is not None:
         cmd.extend(["--defaults", path])
 
     run_in_terminal_window(autotest, cmd_name, cmd)
@@ -826,6 +834,10 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--add-param-file",
+                     type='string',
+                     default=None,
+                     help="Add a parameters file to use")
 parser.add_option_group(group_sim)
 
 
