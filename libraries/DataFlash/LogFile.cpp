@@ -198,23 +198,25 @@ void DataFlash_Class::Log_Write_RFND(const RangeFinder &rangefinder)
 // Write an RCIN packet
 void DataFlash_Class::Log_Write_RCIN(void)
 {
+    uint16_t values[16] = {};
+    rc().get_radio_in(values, 14);
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
         time_us       : AP_HAL::micros64(),
-        chan1         : RC_Channels::get_radio_in(0),
-        chan2         : RC_Channels::get_radio_in(1),
-        chan3         : RC_Channels::get_radio_in(2),
-        chan4         : RC_Channels::get_radio_in(3),
-        chan5         : RC_Channels::get_radio_in(4),
-        chan6         : RC_Channels::get_radio_in(5),
-        chan7         : RC_Channels::get_radio_in(6),
-        chan8         : RC_Channels::get_radio_in(7),
-        chan9         : RC_Channels::get_radio_in(8),
-        chan10        : RC_Channels::get_radio_in(9),
-        chan11        : RC_Channels::get_radio_in(10),
-        chan12        : RC_Channels::get_radio_in(11),
-        chan13        : RC_Channels::get_radio_in(12),
-        chan14        : RC_Channels::get_radio_in(13)
+        chan1         : values[0],
+        chan2         : values[1],
+        chan3         : values[2],
+        chan4         : values[3],
+        chan5         : values[4],
+        chan6         : values[5],
+        chan7         : values[6],
+        chan8         : values[7],
+        chan9         : values[8],
+        chan10        : values[9],
+        chan11        : values[10],
+        chan12        : values[11],
+        chan13        : values[12],
+        chan14        : values[13]
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
