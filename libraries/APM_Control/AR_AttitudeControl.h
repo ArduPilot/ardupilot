@@ -6,7 +6,7 @@
 #include <AC_PID/AC_P.h>
 
 // attitude control default definition
-#define AR_ATTCONTROL_STEER_ANG_P       1.00f
+#define AR_ATTCONTROL_STEER_ANG_P       2.50f
 #define AR_ATTCONTROL_STEER_RATE_FF     0.20f
 #define AR_ATTCONTROL_STEER_RATE_P      0.20f
 #define AR_ATTCONTROL_STEER_RATE_I      0.20f
@@ -14,7 +14,7 @@
 #define AR_ATTCONTROL_STEER_RATE_D      0.00f
 #define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
 #define AR_ATTCONTROL_STEER_RATE_MAX    360.0f
-#define AR_ATTCONTROL_STEER_ACCEL_MAX   360.0f
+#define AR_ATTCONTROL_STEER_ACCEL_MAX   180.0f
 #define AR_ATTCONTROL_THR_SPEED_P       0.20f
 #define AR_ATTCONTROL_THR_SPEED_I       0.20f
 #define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
