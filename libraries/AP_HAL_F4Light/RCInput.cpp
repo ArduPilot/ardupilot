@@ -274,7 +274,9 @@ uint16_t RCInput::read(uint8_t ch)
             
             if(!fs_flag) {
                 fs_flag=true;
+#ifdef DEBUG_BUILD
                 printf("\n failsafe! now=%lld last pulse=%lld last change=%lld\n",now, pulse, last);
+#endif
             }
         } else {
             fs_flag=false;
@@ -288,7 +290,9 @@ uint16_t RCInput::read(uint8_t ch)
             if(last_4 < 990 && data >1300 && data < 1700){
                 if(!aibao_fs_flag){
                     aibao_fs_flag=true;
+#ifdef DEBUG_BUILD
                     printf("\nAibao failsafe! ch4=%d ch2=%d\n",last_4, data);
+#endif
                 }
                 data = 901; // to know the source
             } else {
