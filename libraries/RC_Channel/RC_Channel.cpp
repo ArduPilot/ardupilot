@@ -112,7 +112,11 @@ RC_Channel::get_reverse(void) const
 void
 RC_Channel::set_pwm(int16_t pwm)
 {
-    radio_in = pwm;
+    if (has_override()) {
+        radio_in = override_value;
+    } else {
+        radio_in = pwm;
+    }
 
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
@@ -335,6 +339,22 @@ bool RC_Channel::in_trim_dz()
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
+void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
+{
+    last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
+    override_value = v;
+}
+
+void RC_Channel::clear_override()
+{
+    last_override_time = 0;
+    override_value = 0;
+}
+
+bool RC_Channel::has_override() const
+{
+    return (override_value > 0) && ((AP_HAL::millis() - last_override_time) < *RC_Channels::override_timeout * 1000);
+}
 
 bool RC_Channel::min_max_configured() const
 {
