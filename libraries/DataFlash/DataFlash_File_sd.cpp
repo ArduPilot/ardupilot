@@ -151,7 +151,8 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
         // likely to cause a crash.
 //        _write_fd.close();
         _write_fd.sync();
-        printf("\nLoging stopped\n");
+        printf("\nLoging aborted\n");
+        _open_error = true;
         _initialised = false;
     }
 }
@@ -820,6 +821,7 @@ uint16_t DataFlash_File::start_new_log(void)
             log_num = 1;
             if(was_ovf) {
                 _initialised = false; // no space
+                _open_error = true;   // don't try any more
                 printf("\nLoging stopped\n");
                 return 0xFFFF;
             }
