@@ -50,9 +50,6 @@ uint8_t RCInput::num_channels()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    if (_override[ch]) {
-        return _override[ch];
-    }
     if (ch >= _num_channels) {
         return 0;
     }
@@ -67,27 +64,6 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     }
     return len;
 }
-
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (override < 0) return false; /* -1: no change. */
-    if (channel < LINUX_RC_INPUT_NUM_CHANNELS) {
-        _override[channel] = override;
-        if (override != 0) {
-            rc_input_count++;
-            return true;
-        }
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < LINUX_RC_INPUT_NUM_CHANNELS; i++) {
-       _override[i] = 0;
-    }
-}
-
 
 /*
   process a PPM-sum pulse of the given width
