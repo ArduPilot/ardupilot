@@ -530,6 +530,48 @@ void AP_Mission::write_home_to_storage()
     write_cmd_to_storage(0,home_cmd);
 }
 
+MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_int_t& packet) {
+    uint8_t nan_mask;
+    switch (packet.command) {
+        case MAV_CMD_NAV_WAYPOINT:
+            nan_mask = ~(1 << 3); // param 4 can be nan
+            break;
+        case MAV_CMD_NAV_LAND:
+            nan_mask = ~(1 << 3); // param 4 can be nan
+            break;
+        case MAV_CMD_NAV_TAKEOFF:
+            nan_mask = ~(1 << 3); // param 4 can be nan
+            break;
+        case MAV_CMD_NAV_VTOL_TAKEOFF:
+            nan_mask = ~(1 << 3); // param 4 can be nan
+            break;
+        case MAV_CMD_NAV_VTOL_LAND:
+            nan_mask = ~((1 << 2) || (1 << 3)); // param 3 and 4 can be nan
+            break;
+        default:
+            nan_mask = 0xff;
+            break;
+    }
+
+    if (((nan_mask & (1 << 0)) && isnan(packet.param1)) ||
+        isinf(packet.param1)) {
+        return MAV_MISSION_INVALID_PARAM1;
+    }
+    if (((nan_mask & (1 << 1)) && isnan(packet.param2)) ||
+        isinf(packet.param2)) {
+        return MAV_MISSION_INVALID_PARAM2;
+    }
+    if (((nan_mask & (1 << 2)) && isnan(packet.param3)) ||
+        isinf(packet.param3)) {
+        return MAV_MISSION_INVALID_PARAM3;
+    }
+    if (((nan_mask & (1 << 3)) && isnan(packet.param4)) ||
+        isinf(packet.param4)) {
+        return MAV_MISSION_INVALID_PARAM4;
+    }
+    return MAV_MISSION_ACCEPTED;
+}
+
 // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
@@ -541,6 +583,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     cmd.index = packet.seq;
     cmd.id = packet.command;
     cmd.content.location.options = 0;
+
+    MAV_MISSION_RESULT param_check = sanity_check_params(packet);
+    if (param_check != MAV_MISSION_ACCEPTED) {
+        return param_check;
+    }
 
     // command specific conversions from mavlink packet to mission command
     switch (cmd.id) {
@@ -830,7 +877,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
                 return MAV_MISSION_INVALID_PARAM6_Y;
             }
         }
-        if (fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
+        if (isnan(packet.z) || fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
             return MAV_MISSION_INVALID_PARAM7;
         }
 
