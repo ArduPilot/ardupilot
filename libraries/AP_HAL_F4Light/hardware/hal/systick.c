@@ -135,7 +135,6 @@ extern void hal_go_next_task();
 #define NVIC_CCR (*(volatile uint32_t *)0xE000ED14)
 
 // new common exception code
-// TODO: we have task switching so if fault occures in task we can just remove task from queue
 //
 void __attribute__((noreturn)) __error(uint32_t num, uint32_t pc, uint32_t lr, uint32_t flag)
 {
@@ -191,32 +190,16 @@ void __attribute__((noreturn)) __error(uint32_t num, uint32_t pc, uint32_t lr, u
 
     hal_stop_multitask();
 
-#if 0
- #ifdef ERROR_USART
-    usart_putstr(ERROR_USART, "\r\n!!! Exception: ");
-  #ifdef DEBUG_BUILD
-    usart_putstr(ERROR_USART, faults[num]);
-  #else
-    usart_putudec(ERROR_USART, num);
-  #endif
-    usart_putstr(ERROR_USART, " at ");
-    usart_putudec(ERROR_USART, pc);
-    usart_putstr(ERROR_USART, " lr ");
-    usart_putudec(ERROR_USART, lr);
-    usart_putc(ERROR_USART, '\n');
-    usart_putc(ERROR_USART, '\r');
- #endif
-#else
- #ifdef DEBUG_BUILD
+#ifdef DEBUG_BUILD
     printf("\r\n!!! Exception: %s at %x LR=%x\n",faults[num], pc, lr);
- #else
+#else
     printf("\r\n!!! Exception: %d at %x LR=%x\n",num, pc, lr);
- #endif
 #endif
     error_throb(num);
 }
 
-#if 0 
+#if 0 // not removed for case if something will require Timer5
+
 uint32_t systick_micros(void)
 {
     volatile uint32_t fms, lms;

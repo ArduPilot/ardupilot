@@ -39,7 +39,7 @@ based on:
 #include <syscalls.h>
 #include <systick.h>
 
-/* _end and _eccm is set in the linker command file */
+/* _end and _eccm are set in the linker command file */
 extern caddr_t _end;
 extern caddr_t _eccm;
 
@@ -63,7 +63,7 @@ int _getpid(void)
 
 
 /*
- * sbrk -- changes heap size size. Get nbytes more
+ * sbrk -- changes heap size. Get nbytes more
  *         RAM. We just increment a pointer in what's
  *         left of memory on the board.
  */
@@ -108,8 +108,7 @@ static caddr_t _sbrk_ccm(int nbytes) {
 
     if(stack_bottom) top = (uint32_t)stack_bottom;
 
-    if ( top > (unsigned int)heap_ptr+nbytes) // there is place in stack, if stack in RAM it will be true too
-    {
+    if ( top > (unsigned int)heap_ptr+nbytes) {// there is place in stack, if stack in RAM it will be true too
         base = heap_ptr;
         heap_ptr += nbytes;
         __brkval_ccm = heap_ptr;
@@ -126,8 +125,7 @@ caddr_t sbrk_ccm(int nbytes) {
 
 
 caddr_t _sbrk(int nbytes) {
-    return _sbrk_ram(nbytes);
-    
+    return _sbrk_ram(nbytes);    
 }
 
 
