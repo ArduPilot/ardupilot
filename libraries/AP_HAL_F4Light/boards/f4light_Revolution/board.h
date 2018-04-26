@@ -178,6 +178,13 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 47 // PA0
 
+// input pins as servo outputs
+#define SERVO_PIN_7    5, // PB15  CH2_IN - PPM2 
+#define SERVO_PIN_8   12, // PC6  CH3_IN UART6
+#define SERVO_PIN_9   13, // PC7  CH4_IN UART6
+#define SERVO_PIN_10  14, // PC8  CH5_IN i2c
+#define SERVO_PIN_11  15, // PC9  CH6_IN i2c
+
 #define MOTOR_LAYOUT_DEFAULT 0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
