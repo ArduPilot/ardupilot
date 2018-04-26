@@ -36,6 +36,7 @@ class I2CBus : public DeviceBus {
 public:
     I2CConfig i2ccfg;
     uint8_t busnum;
+    uint32_t busclock;
     bool i2c_started;
     bool i2c_active;
     
