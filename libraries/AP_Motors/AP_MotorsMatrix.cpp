@@ -314,11 +314,6 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
 
-        // increment number of motors if this motor is being newly motor_enabled
-        if( !motor_enabled[motor_num] ) {
-            motor_enabled[motor_num] = true;
-        }
-
         // set roll, pitch, thottle factors and opposite motor (for stability patch)
         _roll_factor[motor_num] = roll_fac;
         _pitch_factor[motor_num] = pitch_fac;
@@ -328,7 +323,7 @@ void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitc
         _test_order[motor_num] = testing_order;
 
         // call parent class method
-        add_motor_num(motor_num);
+        motor_enabled[motor_num] = add_motor_num(motor_num);
     }
 }
 

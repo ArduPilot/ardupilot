@@ -193,17 +193,18 @@ int16_t AP_Motors::calc_pwm_output_0to1(float input, const SRV_Channel *servo)
 /*
   add a motor, setting up _motor_map and _motor_map_mask as needed
  */
-void AP_Motors::add_motor_num(int8_t motor_num)
+bool AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
         uint8_t chan;
         SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num),
-                                       chan) && chan != motor_num) {
+        if (SRV_Channels::find_channel((SRV_Channel::Aux_servo_function_t)(SRV_Channel::k_motor1+motor_num), chan)) {
             _motor_map[motor_num] = chan;
             _motor_map_mask |= 1U<<motor_num;
+            return true;
         }
     }
+    return false;
 }
