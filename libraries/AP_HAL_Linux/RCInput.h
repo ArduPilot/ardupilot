@@ -26,9 +26,6 @@ public:
         return _rssi;
     }
     
-    bool set_override(uint8_t channel, int16_t override);
-    void clear_overrides();
-
     // default empty _timer_tick, this is overridden by board
     // specific implementations
     virtual void _timer_tick() {}
@@ -61,9 +58,6 @@ protected:
     void _process_ppmsum_pulse(uint16_t width);
     void _process_sbus_pulse(uint16_t width_s0, uint16_t width_s1);
     void _process_dsm_pulse(uint16_t width_s0, uint16_t width_s1);
-
-    /* override state */
-    uint16_t _override[LINUX_RC_INPUT_NUM_CHANNELS];
 
     // state of ppm decoder
     struct {
