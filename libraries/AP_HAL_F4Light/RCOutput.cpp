@@ -23,6 +23,37 @@ using namespace F4Light;
 
 #define F4Light_OUT_CHANNELS 6 // motor's channels enabled by default
 
+
+#ifndef SERVO_PIN_5
+ #define SERVO_PIN_5 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_6
+ #define SERVO_PIN_6 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_7
+ #define SERVO_PIN_7 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_8
+ #define SERVO_PIN_8 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_9
+ #define SERVO_PIN_9 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_10
+ #define SERVO_PIN_10 ((uint8_t)-1)
+#endif
+
+#ifndef SERVO_PIN_11
+ #define SERVO_PIN_11 ((uint8_t)-1)
+#endif
+
+
+
 // #if FRAME_CONFIG == QUAD_FRAME // this is only QUAD layouts
 
 // ArduCopter
@@ -31,20 +62,15 @@ static const uint8_t output_channels_arducopter[]= {  // pin assignment
     SERVO_PIN_2, //Timer3/4  - 2
     SERVO_PIN_3, //Timer2/3  - 3
     SERVO_PIN_4, //Timer2/2  - 4
-#ifdef SERVO_PIN_5
-    SERVO_PIN_5, //Timer2/1
-#endif
-#ifdef SERVO_PIN_6
-    SERVO_PIN_6, //Timer2/0
-#endif
+    SERVO_PIN_5, 
+    SERVO_PIN_6,
 
     // servo channels on input port
-    4, // PB14  CH1_IN - PPM1 Use this channels asd servo only if you use DSM via UART as RC
-    5, // PB15  CH2_IN - PPM2 
-    12, // PC6  CH3_IN UART6
-    13, // PC7  CH4_IN UART6
-    14, // PC8  CH5_IN i2c
-    15, // PC9  CH6_IN i2c
+    SERVO_PIN_7, // PB15  CH2_IN - PPM2 
+    SERVO_PIN_8, // PC6  CH3_IN UART6
+    SERVO_PIN_9, // PC7  CH4_IN UART6
+    SERVO_PIN_10, // PC8  CH5_IN i2c
+    SERVO_PIN_11, // PC9  CH6_IN i2c
 };
 
 
@@ -56,20 +82,15 @@ static const uint8_t output_channels_openpilot[]= {  // pin assignment
     SERVO_PIN_4, //Timer2/2  - 4
     SERVO_PIN_1, //Timer3/3  - 1
     SERVO_PIN_3, //Timer2/3  - 3
-#ifdef SERVO_PIN_5
     SERVO_PIN_5, //Timer2/1
-#endif
-#ifdef SERVO_PIN_6
     SERVO_PIN_6, //Timer2/0
-#endif
 
     // servo channels on input port
-//    4, // PB14  CH1_IN - PPM1 Use this channels asd servo only if you use DSM via UART as RC
-    5, // PB15  CH2_IN - PPM2 
-    12, // PC6  CH3_IN UART6
-    13, // PC7  CH4_IN UART6
-    14, // PC8  CH5_IN i2c
-    15, // PC9  CH6_IN i2c
+    SERVO_PIN_7, // PB15  CH2_IN - PPM2 
+    SERVO_PIN_8, // PC6  CH3_IN UART6
+    SERVO_PIN_9, // PC7  CH4_IN UART6
+    SERVO_PIN_10, // PC8  CH5_IN i2c
+    SERVO_PIN_11, // PC9  CH6_IN i2c
 };
 
 
@@ -79,43 +100,32 @@ static const uint8_t output_channels_cleanflight[]= {  // pin assignment
     SERVO_PIN_3, //Timer2/3  - 3
     SERVO_PIN_4, //Timer2/2  - 4
     SERVO_PIN_1, //Timer3/3  - 1
-#ifdef SERVO_PIN_5
     SERVO_PIN_5, //Timer2/1
-#endif
-#ifdef SERVO_PIN_6
     SERVO_PIN_6, //Timer2/0
-#endif
 
     // servo channels on input port
-//    4, // PB14  CH1_IN - PPM1 Use this channels asd servo only if you use DSM via UART as RC
-    5, // PB15  CH2_IN - PPM2 
-    12, // PC6  CH3_IN UART6
-    13, // PC7  CH4_IN UART6
-    14, // PC8  CH5_IN i2c
-    15, // PC9  CH6_IN i2c
-
+    SERVO_PIN_7, // PB15  CH2_IN - PPM2 
+    SERVO_PIN_8, // PC6  CH3_IN UART6
+    SERVO_PIN_9, // PC7  CH4_IN UART6
+    SERVO_PIN_10, // PC8  CH5_IN i2c
+    SERVO_PIN_11, // PC9  CH6_IN i2c
 };
 
-// Arducopter,shifted 2 pins right to use up to 2 servos
+// Arducopter, shifted 2 pins right to use up to 2 servos
 static const uint8_t output_channels_servo[]= {  // pin assignment
     SERVO_PIN_3, //Timer2/3  - 1
     SERVO_PIN_4, //Timer2/2  - 2
-#ifdef SERVO_PIN_5
     SERVO_PIN_5, //Timer2/1  - 3
-#endif
-#ifdef SERVO_PIN_6
     SERVO_PIN_6, //Timer2/0  - 4
-#endif
     SERVO_PIN_1, //Timer3/3    servo1
     SERVO_PIN_2, //Timer3/4    servo2
 
     // servo channels on input port
-//    4, // PB14  CH1_IN - PPM1 Use this channels as servo only if you use DSM via UART as RC
-    5, // PB15  CH2_IN - PPM2 
-    12, // PC6  CH3_IN UART6
-    13, // PC7  CH4_IN UART6
-    14, // PC8  CH5_IN i2c
-    15, // PC9  CH6_IN i2c
+    SERVO_PIN_7, // PB15  CH2_IN - PPM2 
+    SERVO_PIN_8, // PC6  CH3_IN UART6
+    SERVO_PIN_9, // PC7  CH4_IN UART6
+    SERVO_PIN_10, // PC8  CH5_IN i2c
+    SERVO_PIN_11, // PC9  CH6_IN i2c
 };
 
 
@@ -176,29 +186,6 @@ void RCOutput::do_4way_if(AP_HAL::UARTDriver* uart) {
     esc4wayProcess(uart);
 }
 
-#ifdef DEBUG_INT
-extern "C" int printf(const char *msg, ...);
-
-static void isr_handler(){
-    uint32_t *sp;
-
-#define FRAME_SHIFT 10 // uses IRQ handler itself
-
-    asm volatile ("mov %0, sp\n\t"  : "=rm" (sp) );
-    
-    // Stack frame contains:
-    // r0, r1, r2, r3, r12, r14, the return address and xPSR
-    // - Stacked R0  = sp[0]
-    // - Stacked R1  = sp[1]
-    // - Stacked R2  = sp[2]
-    // - Stacked R3  = sp[3]
-    // - Stacked R12 = sp[4]
-    // - Stacked LR  = sp[5]
-    // - Stacked PC  = sp[6]
-    // - Stacked xPSR= sp[7]
-    printf("pc=%lx lr=%lx\n", sp[FRAME_SHIFT+6], sp[FRAME_SHIFT+5]);
-}
-#endif
 
 void RCOutput::lateInit(){ // 2nd stage with loaded parameters
 
@@ -210,14 +197,6 @@ void RCOutput::lateInit(){ // 2nd stage with loaded parameters
     output_channels = revo_motor_map[map];
     
     InitPWM();
-    
-#ifdef DEBUG_INT
-    uint8_t spin = output_channels[DEBUG_INT]; // motor 6 as button
-    GPIO::_pinMode(spin, INPUT_PULLUP);
-
-    Revo_handler h = { .vp = isr_handler  };  
-    GPIO::_attach_interrupt(spin, h.h, FALLING, 0);
-#endif
 }
 
 void RCOutput::InitPWM()
@@ -635,12 +614,6 @@ void RCOutput::enable_ch(uint8_t ch)
     }
 
     fill_timers(); // re-calculate list of used timers
-
-#ifdef DEBUG_INT
-    uint8_t spin = output_channels[DEBUG_INT]; // motor 6
-    GPIO::_pinMode(spin, INPUT_PULLUP);
-#endif
-    
 }
 
 void RCOutput::disable_ch(uint8_t ch)

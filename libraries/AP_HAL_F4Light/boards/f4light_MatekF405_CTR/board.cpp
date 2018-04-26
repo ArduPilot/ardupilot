@@ -151,18 +151,6 @@ extern const struct TIM_Channel PWM_Channels[] __FLASH__ =   {
     { // 1 RC_IN2
 	.pin         = PA2, // UART2 TX
     },
-    { // 2 RC_IN3
-	.pin         = (uint8_t)-1,
-    },
-    { // 3 RC_IN4
-	.pin         = (uint8_t)-1,
-    },
-    { // 4 RC_IN5
-	.pin         = (uint8_t)-1,
-    },
-    { // 5 RC_IN6
-	.pin         = (uint8_t)-1,
-    },
 };
 
 
