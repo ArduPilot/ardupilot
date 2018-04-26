@@ -306,7 +306,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Range: 0.1 10
     // @Increment: 0.01
     // @User: Standard
-    GSCALAR(turn_max_g,             "TURN_MAX_G",      1.0f),
+    GSCALAR(turn_max_g,             "TURN_MAX_G",      0.6f),
 
     // variables not in the g class which contain EEPROM saved variables
 
