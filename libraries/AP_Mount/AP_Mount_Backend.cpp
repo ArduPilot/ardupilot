@@ -83,7 +83,7 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
 // update_targets_from_rc - updates angle targets using input from receiver
 void AP_Mount_Backend::update_targets_from_rc()
 {
-#define rc_ch(i) RC_Channels::rc_channel(i-1)
+#define rc_ch(i) rc().channel(i-1)
 
     uint8_t roll_rc_in = _state._roll_rc_in;
     uint8_t tilt_rc_in = _state._tilt_rc_in;
