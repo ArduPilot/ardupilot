@@ -458,7 +458,7 @@ bool AP_Arming::rc_calibration_checks(bool report)
     bool check_passed = true;
     const uint8_t num_channels = RC_Channels::get_valid_channel_count();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        const RC_Channel *ch = RC_Channels::rc_channel(i);
+        const RC_Channel *ch = rc().channel(i);
         if (ch == nullptr) {
             continue;
         }
