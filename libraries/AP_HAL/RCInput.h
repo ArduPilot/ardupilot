@@ -44,11 +44,6 @@ public:
      *  v > 0   -> set v as override.
      */
 
-    /* set_override: set just a specific channel */
-    virtual bool set_override(uint8_t channel, int16_t override) = 0;
-    /* clear_overrides: equivalent to setting all overrides to 0 */
-    virtual void clear_overrides() = 0;
-
     /* execute receiver bind */
     virtual bool rc_bind(int dsmMode) { return false; }
 };
