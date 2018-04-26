@@ -21,7 +21,6 @@ void VRBRAINRCInput::init()
     if (_rc_sub == -1) {
         AP_HAL::panic("Unable to subscribe to input_rc");
     }
-    clear_overrides();
     pthread_mutex_init(&rcin_mutex, nullptr);
 }
 
@@ -33,12 +32,7 @@ bool VRBRAINRCInput::new_input()
         // don't consider input valid if we are in RC failsafe.
         valid = false;
     }
-    if (_override_valid) {
-        // if we have RC overrides active, then always consider it valid
-        valid = true;
-    }
     _last_read = _rcin.timestamp_last_signal;
-    _override_valid = false;
     pthread_mutex_unlock(&rcin_mutex);
     if (_rcin.input_source != last_input_source) {
         gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", input_source_name(_rcin.input_source));
@@ -57,19 +51,10 @@ uint8_t VRBRAINRCInput::num_channels()
 
 uint16_t VRBRAINRCInput::read(uint8_t ch)
 {
-    if (ch >= RC_INPUT_MAX_CHANNELS) {
+    if (ch >= MIN(RC_INPUT_MAX_CHANNELS, _rcin.channel_count)) {
         return 0;
     }
     pthread_mutex_lock(&rcin_mutex);
-    if (_override[ch]) {
-        uint16_t v = _override[ch];
-        pthread_mutex_unlock(&rcin_mutex);
-        return v;
-    }
-    if (ch >= _rcin.channel_count) {
-        pthread_mutex_unlock(&rcin_mutex);
-        return 0;
-    }
     uint16_t v = _rcin.values[ch];
     pthread_mutex_unlock(&rcin_mutex);
     return v;
@@ -84,28 +69,6 @@ uint8_t VRBRAINRCInput::read(uint16_t* periods, uint8_t len)
         periods[i] = read(i);
     }
     return len;
-}
-
-bool VRBRAINRCInput::set_override(uint8_t channel, int16_t override) {
-    if (override < 0) {
-        return false; /* -1: no change. */
-    }
-    if (channel >= RC_INPUT_MAX_CHANNELS) {
-        return false;
-    }
-    _override[channel] = override;
-    if (override != 0) {
-        _override_valid = true;
-        return true;
-    }
-    return false;
-}
-
-void VRBRAINRCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
-        set_override(i, 0);
-    }
 }
 
 const char *VRBRAINRCInput::input_source_name(uint8_t id) const
