@@ -186,7 +186,11 @@ float AP_RSSI::read_pin_rssi()
 // read the RSSI value from a PWM value on a RC channel
 float AP_RSSI::read_channel_rssi()
 {
-    uint16_t rssi_channel_value = RC_Channels::get_radio_in(rssi_channel-1);
+    RC_Channel *ch = rc().channel(rssi_channel-1);
+    if (ch == nullptr) {
+        return 0.0f;
+    }
+    uint16_t rssi_channel_value = ch->get_radio_in();
     float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
     return channel_rssi;    
 }
