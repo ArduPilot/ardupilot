@@ -280,6 +280,19 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // compatability functions for Plane:
+    static uint16_t get_radio_in(const uint8_t chan) {
+        RC_Channel *c = _singleton->channel(chan);
+        if (c == nullptr) {
+            return 0;
+        }
+        return c->get_radio_in();
+    }
+    static RC_Channel *rc_channel(const uint8_t chan) {
+        return _singleton->channel(chan);
+    }
+    //end compatability functions for Plane
+
     virtual RC_Channel *channel(uint8_t chan) = 0;
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
