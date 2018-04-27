@@ -55,7 +55,6 @@
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <RC_Channel/RC_Channel.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
@@ -66,6 +65,7 @@
 #include "config.h"
 #include "defines.h"
 
+#include "RC_Channel.h"
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Tracker.h"
@@ -127,7 +127,7 @@ private:
     /**
        antenna control channels
     */
-    RC_Channels rc_channels;
+    RC_Channels_Tracker rc_channels;
     SRV_Channels servo_channels;
 
     LowPassFilterFloat yaw_servo_out_filt;
