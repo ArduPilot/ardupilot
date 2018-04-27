@@ -476,7 +476,7 @@ MAV_TYPE Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
-            return MAV_TYPE_HEXAROTOR;
+            return MAV_TYPE_DODECAROTOR;
     }
     // unknown frame so return generic
     return MAV_TYPE_GENERIC;
