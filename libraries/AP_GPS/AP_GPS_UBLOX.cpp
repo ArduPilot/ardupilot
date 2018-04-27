@@ -1942,3 +1942,19 @@ bool AP_GPS_UBLOX::supports_F9_config(void) const
 {
     return _hardware_generation == UBLOX_F9 && _hardware_generation != UBLOX_UNKNOWN_HARDWARE_GENERATION;
 }
+
+void AP_GPS_UBLOX::inject_data(const uint8_t *data, uint16_t len)
+{
+    // not all backends have valid ports
+    if (port != nullptr) {
+        // There are deployed use cases with u-blox GPS's that are relying on injecting assistance data
+        // to speed up the time to fix, which requires immediately injecting data, rather then waiting
+        // on the GPS to be configured. Hence do not wait for is_configured() like on the base class
+        if (port->txspace() > len) {
+            last_injected_data_ms = AP_HAL::millis();
+            port->write(data, len);
+        } else {
+            Debug("GPS %d: Not enough TXSPACE", state.instance + 1);
+        }
+    }
+}

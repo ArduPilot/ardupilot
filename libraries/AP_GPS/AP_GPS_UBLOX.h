@@ -135,6 +135,8 @@ public:
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override;
 
+    void inject_data(const uint8_t *data, uint16_t len) override;
+
     const char *name() const override { return "u-blox"; }
 
     // support for retrieving RTCMv3 data from a moving baseline base
