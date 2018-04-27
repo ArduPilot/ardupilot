@@ -83,7 +83,7 @@ void Copter::motor_test_output()
         // sanity check throttle values
         if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX ) {
             // turn on motor to specified pwm vlaue
-            motors->output_test(motor_test_seq, pwm);
+            motors->output_test_seq(motor_test_seq, pwm);
         } else {
             motor_test_stop();
         }
