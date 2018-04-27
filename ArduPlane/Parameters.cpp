@@ -1138,7 +1138,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
-    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
+    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels_Plane),
     
 #if SOARING_ENABLED == ENABLED
     // @Group: SOAR_

@@ -40,7 +40,6 @@
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
-#include <RC_Channel/RC_Channel.h>     // RC Channel Library
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
@@ -109,6 +108,7 @@
 // Local modules
 #include "defines.h"
 
+#include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
 #include "avoidance_adsb.h"
 #include "AP_Arming.h"
@@ -150,6 +150,7 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
     friend class GCS_Plane;
+    friend class RC_Channels_Plane;
 
     Plane(void);
 
