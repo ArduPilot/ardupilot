@@ -84,6 +84,9 @@ void Plane::init_ardupilot()
     BoardConfig_CAN.init();
 #endif
 
+    // initialise rc channels including setting mode
+    rc().init();
+
     relay.init();
 
     // initialise notify system
