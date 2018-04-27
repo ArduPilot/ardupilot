@@ -134,25 +134,24 @@ class AutoTestQuadPlane(AutoTest):
         self.mavproxy.expect('Requesting [0-9]+ waypoints')
         self.mavproxy.send('mode AUTO\n')
         self.wait_mode('AUTO')
-        if not self.wait_waypoint(1, 19, max_dist=60, timeout=1200):
-            return False
+        self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
+
         self.mavproxy.expect('DISARMED')
         # wait for blood sample here
         self.mavproxy.send('wp set 20\n')
         self.arm_vehicle()
-        if not self.wait_waypoint(20, 34, max_dist=60, timeout=1200):
-            return False
+        self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
+
         self.mavproxy.expect('DISARMED')
         self.progress("Mission OK")
-        return True
 
     def autotest(self):
         """Autotest QuadPlane in SITL."""
         if not self.hasInit:
             self.init()
 
-        failed = False
-        e = 'None'
+        self.fail_list = []
+
         try:
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
@@ -174,16 +173,15 @@ class AutoTestQuadPlane(AutoTest):
             m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
             f = os.path.join(testdir,
                              "ArduPlane-Missions/Dalby-OBC2016-fence.txt")
-            if not self.fly_mission(m, f):
-                self.progress("Failed mission")
-                failed = True
+
+            self.run_test("Mission", lambda: self.fly_mission(m, f))
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")
-            failed = True
+            self.fail_list.append("Failed with timeout")
 
         self.close()
 
-        if failed:
-            self.progress("FAILED: %s" % e)
+        if len(self.fail_list):
+            self.progress("FAILED: %s" % self.fail_list)
             return False
         return True
