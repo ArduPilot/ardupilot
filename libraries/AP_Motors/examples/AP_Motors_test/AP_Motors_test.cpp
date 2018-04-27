@@ -112,9 +112,9 @@ void motor_order_test()
     motors.armed(true);
     for (int8_t i=1; i <= AP_MOTORS_MAX_NUM_MOTORS; i++) {
         hal.console->printf("Motor %d\n",(int)i);
-        motors.output_test(i, 1150);
+        motors.output_test_seq(i, 1150);
         hal.scheduler->delay(300);
-        motors.output_test(i, 1000);
+        motors.output_test_seq(i, 1000);
         hal.scheduler->delay(2000);
     }
     motors.armed(false);

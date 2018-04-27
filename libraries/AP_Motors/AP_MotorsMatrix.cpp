@@ -280,10 +280,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 }
 
-// output_test - spin a motor at the pwm value specified
+// output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsMatrix::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
