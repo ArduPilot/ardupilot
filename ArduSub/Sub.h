@@ -54,7 +54,6 @@
 #include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AC_AttitudeControl/AC_AttitudeControl_Sub.h> // Attitude control library
 #include <AC_AttitudeControl/AC_PosControl_Sub.h>      // Position control library
-#include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>             // Filter library
@@ -82,6 +81,7 @@
 #include "defines.h"
 #include "config.h"
 #include "GCS_Mavlink.h"
+#include "RC_Channel.h"         // RC Channel Library
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
@@ -130,6 +130,7 @@ public:
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Sub;
+    friend class RC_Channels_Sub;
 
     Sub(void);
 
