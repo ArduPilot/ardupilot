@@ -369,6 +369,10 @@ void Copter::ModeGuided::takeoff_run()
         return;
     }
 
+    if (wp_nav->reached_wp_destination()) {
+        pos_control_start();
+        return;
+    }
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
