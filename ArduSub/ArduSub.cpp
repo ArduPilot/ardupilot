@@ -158,7 +158,7 @@ void Sub::fifty_hz_loop()
     failsafe_sensors_check();
 
     // Update rc input/output
-    RC_Channels::read_input();
+    rc().read_input();
     SRV_Channels::output_ch_all();
 }
 
