@@ -5,11 +5,11 @@ set -e
 # work from either APM directory or above
 [ -d ArduPlane ] || cd APM
 
-export DOCS_OUTPUT_BASE=../buildlogs/docs
+export DOCS_OUTPUT_BASE=./docs
 
 (
-./docs/build-libs.sh
-./docs/build-arduplane.sh
-./docs/build-arducopter.sh
-./docs/build-apmrover2.sh
-) > ../buildlogs/build_docs.log 2>&1
+$DOCS_OUTPUT_BASE/build-libs.sh
+$DOCS_OUTPUT_BASE/build-arduplane.sh
+$DOCS_OUTPUT_BASE/build-arducopter.sh
+$DOCS_OUTPUT_BASE/build-apmrover2.sh
+) > $DOCS_OUTPUT_BASE/build_docs.log 2>&1
