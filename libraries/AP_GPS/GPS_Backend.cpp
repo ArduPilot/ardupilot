@@ -123,10 +123,18 @@ AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
 {
     // not all backends have valid ports
     if (port != nullptr) {
-        if (port->txspace() > len) {
-            port->write(data, len);
+        // Wait for the GPS to be fully configured before starting to inject RTCM correction data
+        // This deconflicts any chance for injected data to confuse the configuration process
+        // (IE if you inject something other then RTCM that get's ACK'd there is a chance of the
+        // configuration portion seeing this message and thinking it was NACK'd)
+        if (is_configured()) {
+            if (port->txspace() > len) {
+                port->write(data, len);
+            } else {
+                Debug("GPS %d: Not enough TXSPACE", state.instance + 1);
+            }
         } else {
-            Debug("GPS %d: Not enough TXSPACE", state.instance + 1);
+            Debug("GPS %d: Refusing to inject data until the GPS is configured", state.instance + 1);
         }
     }
 }
