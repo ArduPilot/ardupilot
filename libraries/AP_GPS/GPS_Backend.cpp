@@ -129,6 +129,7 @@ AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
         // configuration portion seeing this message and thinking it was NACK'd)
         if (is_configured()) {
             if (port->txspace() > len) {
+                last_injected_data_ms = AP_HAL::millis();
                 port->write(data, len);
             } else {
                 Debug("GPS %d: Not enough TXSPACE", state.instance + 1);

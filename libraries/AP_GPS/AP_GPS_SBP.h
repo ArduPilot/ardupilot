@@ -36,8 +36,6 @@ public:
     // Methods
     bool read() override;
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
-
     static bool _detect(struct SBP_detect_state &state, uint8_t data);
 
     const char *name() const override { return "SBP"; }
@@ -158,7 +156,6 @@ private:
     // Internal Received Messages State
     // ************************************************************************
     uint32_t last_heatbeat_received_ms;
-    uint32_t last_injected_data_ms;
 
     struct sbp_gps_time_t last_gps_time;
     struct sbp_dops_t     last_dops;

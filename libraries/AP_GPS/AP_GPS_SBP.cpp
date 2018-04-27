@@ -76,19 +76,6 @@ AP_GPS_SBP::read(void)
 
 }
 
-void
-AP_GPS_SBP::inject_data(const uint8_t *data, uint16_t len)
-{
-
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("PIKSI: Not enough TXSPACE");
-    }
-
-}
-
 //This attempts to reads all SBP messages from the incoming port.
 //Returns true if a new message was read, false if we failed to read a message.
 void

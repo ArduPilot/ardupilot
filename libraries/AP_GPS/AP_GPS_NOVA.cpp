@@ -290,17 +290,6 @@ AP_GPS_NOVA::process_message(void)
     return false;
 }
 
-void
-AP_GPS_NOVA::inject_data(const uint8_t *data, uint16_t len)
-{
-    if (port->txspace() > len) {
-        last_injected_data_ms = AP_HAL::millis();
-        port->write(data, len);
-    } else {
-        Debug("NOVA: Not enough TXSPACE");
-    }
-}
-
 #define CRC32_POLYNOMIAL 0xEDB88320L
 uint32_t AP_GPS_NOVA::CRC32Value(uint32_t icrc)
 {

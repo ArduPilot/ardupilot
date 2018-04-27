@@ -79,6 +79,8 @@ public:
         return _last_itow;
     }
 
+    uint32_t last_injected_data_ms = 0;
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
