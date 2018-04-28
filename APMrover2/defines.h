@@ -40,6 +40,7 @@ enum mode {
     ACRO         = 1,
     STEERING     = 3,
     HOLD         = 4,
+    LOITER       = 5,
     AUTO         = 10,
     RTL          = 11,
     SMART_RTL    = 12,

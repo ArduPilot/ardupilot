@@ -18,6 +18,9 @@ Mode *Rover::mode_from_mode_num(const enum mode num)
     case HOLD:
         ret = &mode_hold;
         break;
+    case LOITER:
+        ret = &mode_loiter;
+        break;
     case AUTO:
         ret = &mode_auto;
         break;
