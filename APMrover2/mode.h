@@ -303,6 +303,23 @@ public:
     bool requires_velocity() const override { return false; }
 };
 
+class ModeLoiter : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return LOITER; }
+    const char *name4() const override { return "LOIT"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+protected:
+
+    bool _enter() override;
+};
 
 class ModeManual : public Mode
 {
