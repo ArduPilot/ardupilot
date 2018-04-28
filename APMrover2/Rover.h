@@ -113,6 +113,7 @@ public:
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
+    friend class ModeLoiter;
     friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
@@ -372,6 +373,7 @@ private:
     ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
+    ModeLoiter mode_loiter;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
