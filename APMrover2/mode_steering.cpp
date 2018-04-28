@@ -47,9 +47,6 @@ void ModeSteering::update()
     // mark us as in_reverse when using a negative throttle
     rover.set_reverse(reversed);
 
-    // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
-    rover.g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
-
     // run lateral acceleration to steering controller
     calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
 
