@@ -27,4 +27,7 @@ public:
 
 protected:
 
+    // note that these callbacks are not presently used on Tracker:
+    int8_t flight_mode_channel_number() const override;
+
 };
