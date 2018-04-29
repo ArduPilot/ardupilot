@@ -34,7 +34,7 @@ public:
     void set_update_rate( uint16_t speed_hz ) override;
 
     // output_test - spin a motor at the pwm value specified
-    void output_test(uint8_t motor_seq, int16_t pwm) override;
+    virtual void output_test(uint8_t motor_seq, int16_t pwm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
