@@ -21,7 +21,7 @@ public:
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) {}
     void set_update_rate( uint16_t speed_hz ) {}
 
-    void output_test(uint8_t motor_seq, int16_t pwm) {}
+    virtual void output_test(uint8_t motor_seq, int16_t pwm) override {}
 
     // output_to_motors - sends output to named servos
     void output_to_motors();

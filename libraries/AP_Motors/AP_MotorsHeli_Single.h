@@ -63,7 +63,7 @@ public:
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void output_test(uint8_t motor_seq, int16_t pwm) override;
+    virtual void output_test(uint8_t motor_seq, int16_t pwm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
