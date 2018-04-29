@@ -923,8 +923,10 @@ void Compass::_detect_backends(void)
                                                           ROTATION_NONE), 
                 AP_Compass_IST8310::name, true);
 
+ #ifdef HAL_COMPASS_BMM150_I2C_ADDR
     ADD_BACKEND(DRIVER_BMM150, AP_Compass_BMM150::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_COMPASS_BMM150_I2C_ADDR)),
                 AP_Compass_BMM150::name, true);
+ #endif
 
     ADD_BACKEND(DRIVER_MAG3110, AP_Compass_MAG3110::probe(*this, hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_MAG3110_I2C_ADDR), ROTATION_NONE),
                 AP_Compass_MAG3110::name, true);
