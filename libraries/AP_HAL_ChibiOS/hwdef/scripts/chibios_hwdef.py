@@ -311,6 +311,13 @@ def enable_can(f):
     f.write('#define HAL_WITH_UAVCAN 1\n')
     env_vars['HAL_WITH_UAVCAN'] = '1'
 
+def has_sdcard_spi():
+    '''check for sdcard connected to spi bus'''
+    for dev in spidev:
+        if(dev[0] == 'sdcard'):
+            return True
+    return False
+
 def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
@@ -328,6 +335,13 @@ def write_mcu_config(f):
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
         build_flags.append('USE_FATFS=yes')
+    elif has_sdcard_spi():
+         f.write('// MMC via SPI available, enable POSIX filesystem support\n')
+         f.write('#define USE_POSIX\n\n')
+         f.write('#define HAL_USE_MMC_SPI TRUE\n')
+         f.write('#define HAL_USE_SDC FALSE\n')
+         f.write('#define HAL_SDCARD_SPI_HOOK TRUE\n')
+         build_flags.append('USE_FATFS=yes') 
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
         build_flags.append('USE_FATFS=no')
