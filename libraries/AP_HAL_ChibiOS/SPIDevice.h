@@ -88,11 +88,24 @@ public:
 
     bool set_chip_select(bool set) override;
 
+    bool acquire_bus(bool acquire, bool skip_cs);
+
+    SPIDriver * get_driver();
+
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // used to measure clock frequencies
     static void test_clock_freq(void);
 #endif
     
+#if HAL_USE_MMC_SPI == TRUE
+    //functions to be used by hal_mmc_spi.c sdcard driver
+    void spi_select();
+    void spi_unselect();
+    void spi_ignore(size_t n);
+    void spi_send(size_t n, const void *txbuf);
+    void spi_receive(size_t n, void *rxbuf);
+#endif
+
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
