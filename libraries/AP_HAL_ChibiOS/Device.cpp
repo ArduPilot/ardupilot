@@ -150,6 +150,12 @@ bool DeviceBus::adjust_timer(AP_HAL::Device::PeriodicHandle h, uint32_t period_u
 void DeviceBus::bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                                    uint8_t *&buf_rx, uint16_t rx_len)
 {
+    bouncebuffer_setup_tx(buf_tx, tx_len);
+    bouncebuffer_setup_rx(buf_rx, rx_len);
+}
+
+void DeviceBus::bouncebuffer_setup_tx(const uint8_t *&buf_tx, uint16_t tx_len)
+{
     if (buf_tx && !IS_DMA_SAFE(buf_tx)) {
         if (tx_len > bounce_buffer_tx_size) {
             if (bounce_buffer_tx_size) {
@@ -165,7 +171,10 @@ void DeviceBus::bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
         memcpy(bounce_buffer_tx, buf_tx, tx_len);
         buf_tx = bounce_buffer_tx;
     }
+}
 
+void DeviceBus::bouncebuffer_setup_rx(uint8_t *&buf_rx, uint16_t rx_len)
+{
     if (buf_rx && !IS_DMA_SAFE(buf_rx)) {
         if (rx_len > bounce_buffer_rx_size) {
             if (bounce_buffer_rx_size) {
