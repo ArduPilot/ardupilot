@@ -349,6 +349,24 @@ void Copter::ModeAuto::nav_guided_start()
 }
 #endif //NAV_GUIDED
 
+bool Copter::ModeAuto::is_landing() const
+{
+    switch(_mode) {
+    case Auto_Land:
+        return true;
+    case Auto_RTL:
+        return copter.mode_rtl.is_landing();
+    default:
+        return false;
+    }
+    return false;
+}
+
+bool Copter::ModeAuto::is_taking_off() const
+{
+    return _mode == Auto_TakeOff;
+}
+
 bool Copter::ModeAuto::landing_gear_should_be_deployed() const
 {
     switch(_mode) {
