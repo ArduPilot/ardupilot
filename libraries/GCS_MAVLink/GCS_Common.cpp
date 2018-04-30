@@ -1608,6 +1608,14 @@ void GCS_MAVLINK::send_heartbeat() const
         system_status());
 }
 
+void GCS_MAVLINK::send_extended_sys_state()
+{
+    mavlink_msg_extended_sys_state_send(
+        chan,
+        vtol_state(),
+        landed_state());
+}
+
 float GCS_MAVLINK::adjust_rate_for_stream_trigger(enum streams stream_num)
 {
     // send at a much lower rate while handling waypoints and

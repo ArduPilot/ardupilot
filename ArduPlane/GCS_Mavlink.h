@@ -50,4 +50,5 @@ private:
     MAV_STATE system_status() const override;
 
     uint8_t radio_in_rssi() const;
+    MAV_LANDED_STATE landed_state() const override { return MAV_LANDED_STATE_UNDEFINED;};
 };
