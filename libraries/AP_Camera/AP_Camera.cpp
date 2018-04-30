@@ -100,10 +100,10 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
 
     // @Param: TRIGG_DELAY
-    // @DisplayName: Trigger Delay for the geotag
-    // @Description: Delays the CAMERA_FEEDBACK message
-    // @user: Standard
-    // @units: cs
+    // @DisplayName: Trigger Delay for the geotag packet
+    // @Description: Delays the camera feedback message
+    // @User: Standard
+    // @Units: cs
     // @Range: 0 127
     AP_GROUPINFO("TRIGG_DELAY", 11, AP_Camera, _trigger_delay, 0),
 
