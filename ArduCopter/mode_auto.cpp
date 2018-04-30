@@ -222,6 +222,7 @@ void Copter::ModeAuto::land_start()
 
     // call location specific land start function
     land_start(stopping_point);
+    copter.is_landing = true;
 }
 
 // auto_land_start - initialises controller to implement a landing

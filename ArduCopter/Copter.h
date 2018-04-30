@@ -362,6 +362,8 @@ private:
     } takeoff_state_t;
     takeoff_state_t takeoff_state;
 
+    bool is_landing;
+
     // altitude below which we do no navigation in auto takeoff
     float auto_takeoff_no_nav_alt_cm;
 

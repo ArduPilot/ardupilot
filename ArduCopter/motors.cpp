@@ -283,6 +283,7 @@ void Copter::init_disarm_motors()
     hal.util->set_soft_armed(false);
 
     ap.in_arming_delay = false;
+    is_landing = false;
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
