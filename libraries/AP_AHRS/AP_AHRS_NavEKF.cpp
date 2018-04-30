@@ -1401,13 +1401,13 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
         // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
         break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
         break;
 #endif
         
