@@ -744,6 +744,7 @@ void Copter::ModeAuto::takeoff_run()
     }
 #else
     set_land_complete(false);
+    takeoff_state.running = !copter.wp_nav->reached_wp_destination();
 #endif
 
     // set motors to full range
