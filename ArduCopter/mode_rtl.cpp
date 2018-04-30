@@ -337,6 +337,11 @@ void Copter::ModeRTL::land_start()
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
+bool Copter::ModeRTL::is_landing() const
+{
+    return _state == RTL_Land;
+}
+
 bool Copter::ModeRTL::landing_gear_should_be_deployed() const
 {
     switch(_state) {
