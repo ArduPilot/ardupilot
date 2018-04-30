@@ -202,6 +202,7 @@ private:
     VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
+    uint32_t wind_start_delay_micros;
 
     // internal SITL model
     SITL::Aircraft *sitl_model;
