@@ -26,6 +26,10 @@ protected:
 
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
 
+    int32_t global_position_int_relative_alt() const {
+        return 0; // what if we have been picked up and carried somewhere?
+    }
+
 private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
