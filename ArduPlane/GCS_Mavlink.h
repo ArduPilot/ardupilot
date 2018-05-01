@@ -34,6 +34,7 @@ protected:
 
     virtual bool in_hil_mode() const override;
 
+    int32_t global_position_int_relative_alt() const;
     void send_attitude() const override;
 
 private:

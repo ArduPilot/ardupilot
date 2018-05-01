@@ -178,33 +178,6 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         0, 0, 0, 0);
 }
 
-void Plane::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time_ms;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.    
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time_ms = gps.last_fix_time_ms();
-    } else {
-        fix_time_ms = millis();
-    }
-    const Vector3f &vel = gps.velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time_ms,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        current_loc.alt * 10UL,         // millimeters above sea level
-        relative_altitude * 1.0e3f,    // millimeters above ground
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.z * 100,  // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
-}
-
 void Plane::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
@@ -423,11 +396,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_extended_status1(chan);
         CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         send_power_status();
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        plane.send_location(chan);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -1812,4 +1780,9 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
 {
     return plane.fwver;
+}
+
+int32_t GCS_MAVLINK_Plane::global_position_int_relative_alt() const
+{
+    return plane.relative_altitude * 1.0e3f;
 }
