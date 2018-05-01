@@ -42,9 +42,6 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
-    //SET YAW FUNCTION TEST
-    void set_yaw(float yaw);
-
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
@@ -80,6 +77,9 @@ protected:
     // output to regular steering and throttle channels
     void output_regular(bool armed, float steering, float throttle);
 
+    // output for omni rover frames
+    void output_omni(bool armed, float steering, float throttle);
+
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
 
@@ -111,5 +111,4 @@ protected:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
-    float   _yaw;
 };

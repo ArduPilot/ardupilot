@@ -5,8 +5,8 @@ void ModeAcro::update()
 {
 
     // convert pilot stick input into desired steering and throttle
-    float desired_steering, desired_throttle, desired_yaw;
-    get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle, desired_yaw);
+    float desired_steering, desired_throttle;
+    get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
 
     // set reverse flag backing up
     const bool reversed = is_negative(desired_throttle);

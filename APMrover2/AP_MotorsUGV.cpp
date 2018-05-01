@@ -145,29 +145,20 @@ void AP_MotorsUGV::setup_servo_output()
 // set steering as a value from -4500 to +4500
 void AP_MotorsUGV::set_steering(float steering)
 {
-    _steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+    _steering = constrain_float(steering, -4500.0f, 4500.0f);
 }
 
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
-    /*
+
     // sanity check throttle min and max
     _throttle_min = constrain_int16(_throttle_min, 0, 20);
     _throttle_max = constrain_int16(_throttle_max, 30, 100);
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
-    */
 
-    _throttle = (throttle - (110)) * (2000 - 1000) / (-110 - (110)) + 1000;
-
-}
-
-//SET YAW FUNCTION TEST
-void AP_MotorsUGV::set_yaw(float yaw)
-{
-    _yaw = (yaw - (-4700)) * (2000 - 1000) / (4700 - (-4700)) + 1000;
 }
 
 /*
@@ -184,10 +175,6 @@ bool AP_MotorsUGV::have_skid_steering() const
 
 void AP_MotorsUGV::output(bool armed, float dt)
 {
-    int speed_wheel_1, speed_wheel_2, speed_wheel_3;
-    double theta, Vx, Vy, magnitude;
-
-/*
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
         armed = false;
@@ -200,33 +187,19 @@ void AP_MotorsUGV::output(bool armed, float dt)
     slew_limit_throttle(dt);
 
     // output for regular steering/throttle style frames
-    output_regular(armed, _steering, _throttle, _yaw);
+    output_regular(armed, _steering, _throttle);
+
+    // OUTPUT FOR OMNI frame
+    output_omni(armed, _throttle, _steering);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle);
-*/
-
-    magnitude = safe_sqrt((_throttle*_throttle)+(_steering*_steering));
-    theta = atan2(_throttle,_steering);
-    Vx = -(cos(theta)*magnitude);
-    Vy = -(sin(theta)*magnitude);
-    speed_wheel_1 = (-Vx) + _yaw;
-    speed_wheel_2 = ((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + _yaw;
-    speed_wheel_3 = ((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + _yaw;
-
-    SRV_Channels::set_output_pwm(SRV_Channel::k_elevator, (speed_wheel_1 - (1991)) * (2000 - (1000)) / (4046 - (1991)) + (1000));
-    SRV_Channels::set_output_pwm(SRV_Channel::k_rudder, (speed_wheel_2 - (1372)) * (2000 - (1000)) / (2676 - (1372)) + (1000));
-    SRV_Channels::set_output_pwm(SRV_Channel::k_aileron, (speed_wheel_3 - (-1193)) * (2000 - (1000)) / (110 - (-1193)) + (1000));
-
-    hal.console->printf("OUTPUT is %lf \n", _yaw);
-
 
     // send values to the PWM timers for output
-    //SRV_Channels::calc_pwm();
+    SRV_Channels::calc_pwm();
     SRV_Channels::cork();
-    //SRV_Channels::output_ch_all();
+    SRV_Channels::output_ch_all();
     SRV_Channels::push();
-
 
 }
 
@@ -401,6 +374,35 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
+    hal.console->printf("throttle REGULAR  is: %lf \n", _throttle);
+    hal.console->printf("steering REGULAR  is: %lf \n", _steering);
+}
+
+void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
+{
+
+    if(!(rover.is_omni_rover())) {
+        return;
+    }
+
+    if (armed)
+    {
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor1, _throttle, _steering, 1);
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor2, _throttle, _steering, 2);
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor3, _throttle, _steering, 3);
+
+        /*
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+
+        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        */
+
+    }
+
+    hal.console->printf("throttle  is: %lf \n", _throttle);
+    hal.console->printf("steering  is: %lf \n", _steering);
+
 }
 
 // output to skid steering channels
@@ -412,6 +414,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // handle simpler disarmed case
     if (!armed) {
+
         if (_disarm_disable_pwm) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -425,6 +428,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // skid steering mixer
     float steering_scaled = steering / 4500.0f; // steering scaled -1 to +1
     float throttle_scaled = throttle / 100.0f;  // throttle scaled -1 to +1
+
 
     // apply constraints
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);

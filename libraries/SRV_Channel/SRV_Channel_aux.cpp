@@ -198,6 +198,53 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
     }
 }
 
+//Set output for omni rover frame
+
+void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, uint16_t value_1, uint16_t value_2, uint16_t motor_id)
+{
+    /*
+    if (!function_assigned(function)) {
+        return;
+    }
+    */
+    int motor_1, motor_2, motor_3;
+    double Vx, Vy, magnitude, theta, scaled_throttle, scaled_steering;
+
+    scaled_throttle = (value_1 - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
+    scaled_steering = (value_2 - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+
+    magnitude = safe_sqrt((scaled_throttle*scaled_throttle)+(1500*1500));
+    theta = atan2(scaled_throttle,1500);
+    Vx = -(cos(theta)*magnitude);
+    Vy = -(sin(theta)*magnitude);
+    //motor_1 = (((-Vx) + scaled_steering) - (1500)) * (2000 - (1000)) / (6000 - (1500)) + (1000);
+    //motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-750)) * (2000 - (1000)) / (3836 - (-750)) + (1000);
+    //motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-750)) * (2000 - (1000)) / (3663 - (-750)) + (1000);
+
+    motor_1 = (((-Vx) + scaled_steering) - (2999)) * (2000 - (1000)) / (3499 - (2999)) + (1000);
+    motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1616)) * (2000 - (1000)) / (2549 - (1616)) + (1000);
+    motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-549)) * (2000 - (1000)) / (383 - (-549)) + (1000);
+
+    //motor_1 = (-Vx) + scaled_steering;
+    //motor_2 = (((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering);
+    //motor_3 = (((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering);
+
+
+    if (motor_id == 1) {
+        SRV_Channels::set_output_pwm(function, motor_1);
+    }
+    if (motor_id == 2) {
+        SRV_Channels::set_output_pwm(function, motor_2);
+    }
+    if (motor_id == 3) {
+        SRV_Channels::set_output_pwm(function, motor_3);
+    }
+    hal.console->printf("motor1  is: %d \n", motor_1);
+    hal.console->printf("motor2  is: %d \n", motor_2);
+    hal.console->printf("motor3  is: %d \n", motor_3);
+
+}
+
 /*
   set radio_out for all channels matching the given function type
   trim the output assuming a 1500 center on the given value

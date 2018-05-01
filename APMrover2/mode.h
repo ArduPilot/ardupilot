@@ -103,7 +103,7 @@ protected:
 
     // decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500, throttle_out is in the range -100 ~ +100
-    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out, float &yaw_out);
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
 
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
@@ -145,7 +145,6 @@ protected:
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
-    class RC_Channel *&channel_yaw;
     class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 

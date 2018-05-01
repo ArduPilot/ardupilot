@@ -356,3 +356,9 @@ bool Rover::is_boat() const
 {
     return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
 }
+
+// returns true if vehicle is an omni rover
+bool Rover::is_omni_rover() const
+{
+    return ((enum omni_rover)g.omni_rover.get() == ON);
+}

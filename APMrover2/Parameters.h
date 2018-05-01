@@ -88,6 +88,7 @@ public:
         k_param_NavEKF2,
         k_param_g2,                 // 2nd block of parameters
         k_param_NavEKF3,
+        k_param_omni_rover,
 
         // 140: battery controls
         k_param_battery_monitoring = 140,   // deprecated, can be deleted
@@ -223,6 +224,7 @@ public:
 
     // sensor parameters
     AP_Int8     compass_enabled;
+    AP_Int8     omni_rover;
 
     // navigation parameters
     //

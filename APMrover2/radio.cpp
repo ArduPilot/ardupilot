@@ -9,12 +9,10 @@ void Rover::set_control_channels(void)
     channel_steer    = RC_Channels::rc_channel(rcmap.roll()-1);
     channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
     channel_aux      = RC_Channels::rc_channel(g.aux_channel-1);
-    channel_yaw      = RC_Channels::rc_channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
-    channel_yaw->set_angle(SERVO_MAX);
 
     // Allow to reconfigure ouput when not armed
     if (!arming.is_armed()) {
@@ -34,7 +32,6 @@ void Rover::init_rc_in()
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
-    channel_yaw->set_default_dead_zone(30);
 }
 
 void Rover::init_rc_out()
