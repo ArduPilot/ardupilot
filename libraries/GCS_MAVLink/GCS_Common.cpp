@@ -2717,6 +2717,35 @@ void GCS_MAVLINK::send_attitude() const
         omega.z);
 }
 
+int32_t GCS_MAVLINK::global_position_int_alt() const {
+    return global_position_current_loc.alt * 10UL;
+}
+int32_t GCS_MAVLINK::global_position_int_relative_alt() const {
+    const Location &home = AP::ahrs().get_home();
+    return (global_position_current_loc.alt - home.alt) * 10;
+}
+void GCS_MAVLINK::send_global_position_int()
+{
+    AP_AHRS &ahrs = AP::ahrs();
+
+    ahrs.get_position(global_position_current_loc); // return value ignored; we send stale data
+
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+
+    mavlink_msg_global_position_int_send(
+        chan,
+        AP_HAL::millis(),
+        global_position_current_loc.lat, // in 1E7 degrees
+        global_position_current_loc.lng, // in 1E7 degrees
+        global_position_int_alt(),       // millimeters above ground/sea level
+        global_position_int_relative_alt(), // millimeters above ground/sea level
+        vel.x * 100,                     // X speed cm/s (+ve North)
+        vel.y * 100,                     // Y speed cm/s (+ve East)
+        vel.z * 100,                     // Z speed cm/s (+ve Down)
+        ahrs.yaw_sensor);                // compass heading in 1/100 degree
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2748,6 +2777,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus();
         ret = true;
+        break;
+
+    case MSG_LOCATION:
+        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
+        send_global_position_int();
         break;
 
     case MSG_CURRENT_WAYPOINT:
