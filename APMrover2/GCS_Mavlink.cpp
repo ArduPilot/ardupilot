@@ -101,24 +101,6 @@ void Rover::send_extended_status1(mavlink_channel_t chan)
         0, 0, 0, 0);
 }
 
-void Rover::send_location(mavlink_channel_t chan)
-{
-    const uint32_t now = AP_HAL::millis();
-    Vector3f vel;
-    ahrs.get_velocity_NED(vel);
-    mavlink_msg_global_position_int_send(
-        chan,
-        now,
-        current_loc.lat,                    // in 1E7 degrees
-        current_loc.lng,                    // in 1E7 degrees
-        current_loc.alt * 10UL,             // millimeters above sea level
-        (current_loc.alt - home.alt) * 10,  // millimeters above home
-        vel.x * 100,   // X speed cm/s (+ve North)
-        vel.y * 100,   // Y speed cm/s (+ve East)
-        vel.z * 100,   // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
-}
-
 void Rover::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
@@ -296,11 +278,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        rover.send_location(chan);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
