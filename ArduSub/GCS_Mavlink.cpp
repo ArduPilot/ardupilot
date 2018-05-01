@@ -244,24 +244,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 
 }
 
-void NOINLINE Sub::send_location(mavlink_channel_t chan)
-{
-    const uint32_t now = AP_HAL::millis();
-    Vector3f vel;
-    ahrs.get_velocity_NED(vel);
-    mavlink_msg_global_position_int_send(
-        chan,
-        now,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        ap.depth_sensor_present ? (ahrs.get_home().alt + current_loc.alt) * 10UL : 0, // millimeters above sea level
-        ap.depth_sensor_present ? current_loc.alt * 10 : 0, // millimeters above ground
-        vel.x * 100,                    // X speed cm/s (+ve North)
-        vel.y * 100,                    // Y speed cm/s (+ve East)
-        vel.z * 100,                    // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);               // compass heading in 1/100 degree
-}
-
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
 {
     const Vector3f &targets = attitude_control.get_att_target_euler_cd();
@@ -478,11 +460,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        sub.send_location(chan);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -1485,6 +1462,19 @@ bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
 {
     return sub.fwver;
+}
+
+int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {
+    if (!sub.ap.depth_sensor_present) {
+        return 0;
+    }
+    return GCS_MAVLINK::global_position_int_alt();
+}
+int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
+    if (!sub.ap.depth_sensor_present) {
+        return 0;
+    }
+    return GCS_MAVLINK::global_position_int_relative_alt();
 }
 
 // dummy method to avoid linking AFS
