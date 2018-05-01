@@ -200,7 +200,7 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
 
 //Set output for omni rover frame
 
-void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, uint16_t value_1, uint16_t value_2, uint16_t motor_id)
+void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, float value_1, float value_2, uint16_t motor_id)
 {
     /*
     if (!function_assigned(function)) {
@@ -221,9 +221,9 @@ void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, u
     //motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-750)) * (2000 - (1000)) / (3836 - (-750)) + (1000);
     //motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-750)) * (2000 - (1000)) / (3663 - (-750)) + (1000);
 
-    motor_1 = (((-Vx) + scaled_steering) - (2999)) * (2000 - (1000)) / (3499 - (2999)) + (1000);
-    motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1616)) * (2000 - (1000)) / (2549 - (1616)) + (1000);
-    motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-549)) * (2000 - (1000)) / (383 - (-549)) + (1000);
+    motor_1 = (((-Vx) + scaled_steering) - (2500)) * (2000 - (1000)) / (3500 - (2500)) + (1000);
+    motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1121)) * (2000 - (1000)) / (2973 - (1121)) + (1000);
+    motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-1468)) * (2000 - (1000)) / (383 - (-1468)) + (1000);
 
     //motor_1 = (-Vx) + scaled_steering;
     //motor_2 = (((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering);
@@ -242,6 +242,9 @@ void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, u
     hal.console->printf("motor1  is: %d \n", motor_1);
     hal.console->printf("motor2  is: %d \n", motor_2);
     hal.console->printf("motor3  is: %d \n", motor_3);
+    //hal.console->printf("throttle  is: %lf \n", value_1);
+    //hal.console->printf("scaled throttle  is: %lf \n", scaled_throttle);
+
 
 }
 

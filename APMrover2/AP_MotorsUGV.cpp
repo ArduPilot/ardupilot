@@ -374,8 +374,6 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
         }
     }
-    hal.console->printf("throttle REGULAR  is: %lf \n", _throttle);
-    hal.console->printf("steering REGULAR  is: %lf \n", _steering);
 }
 
 void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
@@ -387,9 +385,13 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
 
     if (armed)
     {
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor1, _throttle, _steering, 1);
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor2, _throttle, _steering, 2);
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor3, _throttle, _steering, 3);
+        //SRV_Channels::set_output_omni(SRV_Channel::k_motor1, _throttle, _steering, 1);
+        //SRV_Channels::set_output_omni(SRV_Channel::k_motor2, _throttle, _steering, 2);
+        //SRV_Channels::set_output_omni(SRV_Channel::k_motor3, _throttle, _steering, 3);
+
+        SRV_Channels::set_output_omni(SRV_Channel::k_elevator, _throttle, _steering, 1);
+        SRV_Channels::set_output_omni(SRV_Channel::k_rudder, _throttle, _steering, 2);
+        SRV_Channels::set_output_omni(SRV_Channel::k_aileron, _throttle, _steering, 3);
 
         /*
         SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -400,8 +402,8 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
 
     }
 
-    hal.console->printf("throttle  is: %lf \n", _throttle);
-    hal.console->printf("steering  is: %lf \n", _steering);
+    //hal.console->printf("throttle  is: %lf \n", _throttle);
+    //hal.console->printf("steering  is: %lf \n", _steering);
 
 }
 
@@ -451,6 +453,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
+
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100

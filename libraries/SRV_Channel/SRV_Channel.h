@@ -274,7 +274,7 @@ public:
     static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, int16_t value);
 
     //Set output for omni rover frame
-    static void set_output_omni(SRV_Channel::Aux_servo_function_t function, uint16_t value_1, uint16_t value_2, uint16_t motor_id);
+    static void set_output_omni(SRV_Channel::Aux_servo_function_t function, float value_1, float value_2, uint16_t motor_id);
 
     // get scaled output for the given function type.
     static int16_t get_output_scaled(SRV_Channel::Aux_servo_function_t function);
