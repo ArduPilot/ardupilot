@@ -350,6 +350,10 @@ protected:
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 
+    // these two methods are called after current_loc is updated:
+    virtual int32_t global_position_int_alt() const;
+    virtual int32_t global_position_int_relative_alt() const;
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -522,7 +526,12 @@ private:
         uint32_t min_sample_counter;
         int64_t min_sample_us;
     } lag_correction;
-    
+
+    // we cache the current location and send it even if the AHRS has
+    // no idea where we are:
+    struct Location global_position_current_loc;
+
+    void send_global_position_int();
 };
 
 /// @class GCS
