@@ -98,28 +98,6 @@ void Tracker::send_extended_status1(mavlink_channel_t chan)
         0, 0, 0, 0);
 }
 
-void Tracker::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time;
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time = gps.last_fix_time_ms();
-    } else {
-        fix_time = AP_HAL::millis();
-    }
-    const Vector3f &vel = gps.velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        current_loc.alt * 10,        // millimeters above sea level
-        0,
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.z * 100,  // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
-}
-
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 {
 	float alt_diff = (g.alt_source == ALT_SOURCE_BARO) ? nav_status.alt_difference_baro : nav_status.alt_difference_gps;
@@ -160,11 +138,6 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        tracker.send_location(chan);
-        break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
