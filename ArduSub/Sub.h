@@ -476,7 +476,6 @@ private:
     void send_heartbeat(mavlink_channel_t chan);
     void send_limits_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
-    void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_radio_out(mavlink_channel_t chan);

@@ -30,6 +30,9 @@ protected:
     // override sending of scaled_pressure3 to send on-board temperature:
     void send_scaled_pressure3() override;
 
+    int32_t global_position_int_alt() const override;
+    int32_t global_position_int_relative_alt() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
