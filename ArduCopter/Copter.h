@@ -378,9 +378,6 @@ private:
     AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // Failsafe
     struct {
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
@@ -886,7 +883,6 @@ private:
     void compass_accumulate(void);
     void init_optflow();
     void update_optical_flow(void);
-    void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void init_proximity();

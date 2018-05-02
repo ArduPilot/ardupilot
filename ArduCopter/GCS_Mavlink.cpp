@@ -334,11 +334,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.send_nav_controller_output(chan);
         break;
 
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
-        send_radio_in(copter.receiver_rssi);
-        break;
-
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
