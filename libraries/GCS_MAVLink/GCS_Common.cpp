@@ -951,8 +951,14 @@ void GCS_MAVLINK::send_system_time()
 /*
   send RC_CHANNELS messages
  */
-void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
+void GCS_MAVLINK::send_radio_in()
 {
+    AP_RSSI *rssi = AP::rssi();
+    uint8_t receiver_rssi = 0;
+    if (rssi != nullptr) {
+        receiver_rssi = rssi->read_receiver_rssi_uint8();
+    }
+
     uint32_t now = AP_HAL::millis();
     mavlink_status_t *status = mavlink_get_channel_status(chan);
 
@@ -2672,6 +2678,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
         send_local_position();
+        break;
+
+    case MSG_RADIO_IN:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        send_radio_in();
         break;
 
     case MSG_AHRS:

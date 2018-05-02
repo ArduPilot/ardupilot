@@ -162,7 +162,7 @@ public:
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2();
     void send_system_time();
-    void send_radio_in(uint8_t receiver_rssi);
+    void send_radio_in();
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure();
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
