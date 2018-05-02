@@ -162,8 +162,9 @@ public:
     void send_heartbeat(void) const;
     void send_meminfo(void);
     void send_power_status(void);
-    void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
-    bool send_battery_status(const AP_BattMonitor &battery) const;
+    void send_battery_status(const AP_BattMonitor &battery,
+                             const uint8_t instance) const;
+    bool send_battery_status() const;
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
@@ -176,7 +177,7 @@ public:
     void send_scaled_pressure();
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
     void send_ahrs();
-    void send_battery2(const AP_BattMonitor &battery);
+    void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(const OpticalFlow &optflow);
 #endif
