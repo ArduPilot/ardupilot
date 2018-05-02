@@ -462,11 +462,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_EKF_STATUS_REPORT:
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        sub.ahrs.send_ekf_status_report(chan);
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         sub.send_pid_tuning(chan);
