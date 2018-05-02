@@ -175,11 +175,6 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
-    case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
-        send_heartbeat();
-        return true;
 
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
