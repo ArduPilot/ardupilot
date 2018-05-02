@@ -2935,6 +2935,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_battery2();
         break;
 
+    case MSG_EKF_STATUS_REPORT:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        AP::ahrs_navekf().send_ekf_status_report(chan);
+#endif
+        break;
+
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
         send_meminfo();
