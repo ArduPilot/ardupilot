@@ -198,37 +198,6 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
     }
 }
 
-//Set output for omni rover frame
-
-void SRV_Channels::set_output_omni(SRV_Channel::Aux_servo_function_t function, float value_1, float value_2, uint16_t motor_id)
-{
-    if (!function_assigned(function)) {
-        return;
-    }
-
-    int motor_1, motor_2, motor_3;
-    double Vx, Vy, magnitude, theta, scaled_throttle, scaled_steering;
-
-    magnitude = safe_sqrt((value_1*value_1)+(1500*1500));
-    theta = atan2(value_1,1500);
-    Vx = -(cos(theta)*magnitude);
-    Vy = -(sin(theta)*magnitude);
-
-    motor_1 = (((-Vx) + value_2) - (2500)) * (2000 - (1000)) / (3500 - (2500)) + (1000);
-    motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + value_2) - (1121)) * (2000 - (1000)) / (2973 - (1121)) + (1000);
-    motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + value_2) - (-1468)) * (2000 - (1000)) / (383 - (-1468)) + (1000);
-
-    if (motor_id == 1) {
-        SRV_Channels::set_output_pwm(function, motor_1);
-    }
-    if (motor_id == 2) {
-        SRV_Channels::set_output_pwm(function, motor_2);
-    }
-    if (motor_id == 3) {
-        SRV_Channels::set_output_pwm(function, motor_3);
-    }
-}
-
 /*
   set radio_out for all channels matching the given function type
   trim the output assuming a 1500 center on the given value

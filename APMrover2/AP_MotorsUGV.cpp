@@ -390,12 +390,25 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
 
     if (armed)
     {
-        throttle = get_omni_scaled_throttle(_throttle);
-        steering = get_omni_scaled_steering(_steering);
+        throttle = (_throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
+        steering = (_steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
 
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor1, throttle, steering, 1);
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor2, throttle, steering, 2);
-        SRV_Channels::set_output_omni(SRV_Channel::k_motor3, throttle, steering, 3);
+        int motor_1, motor_2, motor_3;
+        double Vx, Vy, magnitude, theta, scaled_throttle, scaled_steering;
+
+        magnitude = safe_sqrt((throttle*throttle)+(1500*1500));
+        theta = atan2(throttle,1500);
+        Vx = -(cos(theta)*magnitude);
+        Vy = -(sin(theta)*magnitude);
+
+        motor_1 = (((-Vx) + steering) - (2500)) * (2000 - (1000)) / (3500 - (2500)) + (1000);
+        motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + steering) - (1121)) * (2000 - (1000)) / (2973 - (1121)) + (1000);
+        motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + steering) - (-1468)) * (2000 - (1000)) / (383 - (-1468)) + (1000);
+
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor1, motor_1);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor2, motor_2);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor3, motor_3);
+
 
     } else {
         // handle disarmed case
@@ -562,21 +575,4 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
-}
-
-float AP_MotorsUGV::get_omni_scaled_throttle(float throttle)
-{
-    float scaled_throttle;
-    scaled_throttle = (throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
-
-    return scaled_throttle;
-
-}
-
-float AP_MotorsUGV::get_omni_scaled_steering(float steering)
-{
-    float  scaled_steering;
-    scaled_steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
-
-    return scaled_steering;
 }
