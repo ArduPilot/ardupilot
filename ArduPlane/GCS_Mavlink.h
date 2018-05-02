@@ -35,6 +35,8 @@ protected:
 
     virtual bool in_hil_mode() const override;
 
+    void send_attitude() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

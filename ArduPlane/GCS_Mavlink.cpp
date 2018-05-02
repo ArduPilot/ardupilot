@@ -109,16 +109,18 @@ MAV_STATE GCS_MAVLINK_Plane::system_status() const
 }
 
 
-void Plane::send_attitude(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_attitude() const
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     float r = ahrs.roll;
-    float p = ahrs.pitch - radians(g.pitch_trim_cd*0.01f);
+    float p = ahrs.pitch - radians(plane.g.pitch_trim_cd*0.01f);
     float y = ahrs.yaw;
     
-    if (quadplane.tailsitter_active()) {
-        r = quadplane.ahrs_view->roll;
-        p = quadplane.ahrs_view->pitch;
-        y = quadplane.ahrs_view->yaw;
+    if (plane.quadplane.tailsitter_active()) {
+        r = plane.quadplane.ahrs_view->roll;
+        p = plane.quadplane.ahrs_view->pitch;
+        y = plane.quadplane.ahrs_view->yaw;
     }
     
     const Vector3f &omega = ahrs.get_gyro();
@@ -421,11 +423,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_extended_status1(chan);
         CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         send_power_status();
-        break;
-
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        plane.send_attitude(chan);
         break;
 
     case MSG_LOCATION:
