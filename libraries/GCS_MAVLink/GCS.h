@@ -181,6 +181,7 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(const OpticalFlow &optflow);
 #endif
+    virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
     void send_vibration() const;
