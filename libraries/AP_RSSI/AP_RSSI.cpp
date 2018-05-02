@@ -97,11 +97,23 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 AP_RSSI::AP_RSSI()
 {       
     AP_Param::setup_object_defaults(this, var_info);
+    if (_s_instance) {
+        AP_HAL::panic("Too many RSSI sensors");
+    }
+    _s_instance = this;
 }
 
 // destructor
 AP_RSSI::~AP_RSSI(void)
 {       
+}
+
+/*
+ * Get the AP_RSSI singleton
+ */
+AP_RSSI *AP_RSSI::get_instance()
+{
+    return _s_instance;
 }
 
 // Initialize the rssi object and prepare it for use
@@ -200,3 +212,14 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     // value retrieved falls outside the user-supplied range.
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
 }
+
+AP_RSSI *AP_RSSI::_s_instance = nullptr;
+
+namespace AP {
+
+AP_RSSI *rssi()
+{
+    return AP_RSSI::get_instance();
+}
+
+};
