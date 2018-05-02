@@ -199,7 +199,6 @@ private:
 
     void one_second_loop();
     void ten_hz_logging_loop();
-    void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
