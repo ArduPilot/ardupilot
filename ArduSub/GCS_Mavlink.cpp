@@ -645,11 +645,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_pid_tuning(chan);
         break;
 
-    case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(sub.ins);
-        break;
-
     case MSG_BATTERY_STATUS:
         send_battery_status(sub.battery);
         break;
