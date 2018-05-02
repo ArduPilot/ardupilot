@@ -532,11 +532,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_nav_controller_output(chan);
         break;
 
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(0);
-        break;
-
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         sub.send_radio_out(chan);
