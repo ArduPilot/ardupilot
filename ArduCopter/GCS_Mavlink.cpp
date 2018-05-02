@@ -408,11 +408,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif // MOUNT == ENABLED
         break;
 
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(copter.battery);
-        break;
-
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
@@ -452,9 +447,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.adsb.send_adsb_vehicle(chan);
 #endif
         break;
-    case MSG_BATTERY_STATUS:
-        send_battery_status(copter.battery);
-        break;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
