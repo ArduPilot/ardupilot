@@ -106,9 +106,6 @@ void AP_MotorsUGV::init()
 
     // set safety output
     setup_safety_output();
-
-    // sanity check parameters
-    _vector_throttle_base = constrain_float(_vector_throttle_base, 0.0f, 100.0f);
 }
 
 // setup output in case of main CPU failure
@@ -162,9 +159,6 @@ void AP_MotorsUGV::set_steering(float steering)
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
-    // sanity check throttle min and max
-    _throttle_min = constrain_int16(_throttle_min, 0, 20);
-    _throttle_max = constrain_int16(_throttle_max, 30, 100);
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
@@ -188,6 +182,9 @@ void AP_MotorsUGV::output(bool armed, float dt)
     if (!hal.util->get_soft_armed()) {
         armed = false;
     }
+
+    // sanity check parameters
+    sanity_check_parameters();
 
     // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
     set_limits_from_input(armed, _steering, _throttle);
@@ -331,6 +328,14 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         return false;
     }
     return true;
+}
+
+// sanity check parameters
+void AP_MotorsUGV::sanity_check_parameters()
+{
+    _throttle_min = constrain_int16(_throttle_min, 0, 20);
+    _throttle_max = constrain_int16(_throttle_max, 30, 100);
+    _vector_throttle_base = constrain_float(_vector_throttle_base, 0.0f, 100.0f);
 }
 
 // setup pwm output type
