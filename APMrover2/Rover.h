@@ -264,9 +264,6 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // the time when the last HEARTBEAT message arrived from a GCS
     uint32_t last_heartbeat_ms;
 
@@ -525,7 +522,6 @@ private:
     void init_visual_odom();
     void update_visual_odom();
     void update_wheel_encoder();
-    void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void read_rangefinders(void);

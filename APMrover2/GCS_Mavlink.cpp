@@ -169,7 +169,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        receiver_rssi);
+        rssi.read_receiver_rssi_uint8());
 }
 
 void Rover::send_vfr_hud(mavlink_channel_t chan)
@@ -331,11 +331,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
         rover.send_servo_out(chan);
-        break;
-
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
-        send_radio_in(rover.receiver_rssi);
         break;
 
     case MSG_SERVO_OUTPUT_RAW:
