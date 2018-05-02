@@ -37,18 +37,18 @@ public:
 
     /* Output freq (1/period) control */
     virtual void     set_freq(uint32_t chmask, uint16_t freq_hz) = 0;
-    virtual uint16_t get_freq(uint8_t ch) = 0;
+    virtual uint16_t get_freq(uint8_t chan) = 0;
 
     /* Output active/highZ control, either by single channel at a time
      * or a mask of channels */
-    virtual void     enable_ch(uint8_t ch) = 0;
-    virtual void     disable_ch(uint8_t ch) = 0;
+    virtual void     enable_ch(uint8_t chan) = 0;
+    virtual void     disable_ch(uint8_t chan) = 0;
 
     /*
      * Output a single channel, possibly grouped with previous writes if
      * cork() has been called before.
      */
-    virtual void     write(uint8_t ch, uint16_t period_us) = 0;
+    virtual void     write(uint8_t chan, uint16_t period_us) = 0;
 
     /*
      * Delay subsequent calls to write() going to the underlying hardware in
@@ -67,11 +67,11 @@ public:
      * array of channels. On boards that have a separate IO controller,
      * this returns the latest output value that the IO controller has
      * reported */
-    virtual uint16_t read(uint8_t ch) = 0;
+    virtual uint16_t read(uint8_t chan) = 0;
     virtual void     read(uint16_t* period_us, uint8_t len) = 0;
 
     /* Read the current input state. This returns the last value that was written. */
-    virtual uint16_t read_last_sent(uint8_t ch) { return read(ch); }
+    virtual uint16_t read_last_sent(uint8_t chan) { return read(chan); }
     virtual void     read_last_sent(uint16_t* period_us, uint8_t len) { read(period_us, len); };
 
     /*
