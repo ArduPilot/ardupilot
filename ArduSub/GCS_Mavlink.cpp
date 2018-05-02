@@ -604,11 +604,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif // MOUNT == ENABLED
         break;
 
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(sub.battery);
-        break;
-
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
@@ -633,9 +628,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_pid_tuning(chan);
         break;
 
-    case MSG_BATTERY_STATUS:
-        send_battery_status(sub.battery);
-        break;
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
