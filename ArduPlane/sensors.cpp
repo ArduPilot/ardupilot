@@ -96,13 +96,6 @@ void Plane::read_airspeed(void)
     }
 }
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Plane::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
 /*
   update RPM sensors
  */

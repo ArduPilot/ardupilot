@@ -372,9 +372,6 @@ private:
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t throttle_nudge;
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
@@ -924,7 +921,6 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
-    void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
     void stats_update();
