@@ -1496,8 +1496,10 @@ void GCS_MAVLINK::send_local_position() const
 /*
   send VIBRATION message
  */
-void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
+void GCS_MAVLINK::send_vibration() const
 {
+    const AP_InertialSensor &ins = AP::ins();
+
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -2669,6 +2671,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
+        break;
+
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_vibration();
         break;
 
     default:
