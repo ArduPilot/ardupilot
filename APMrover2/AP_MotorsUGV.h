@@ -95,6 +95,12 @@ protected:
     // scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
     float get_scaled_throttle(float throttle) const;
 
+    // scale throttle for omni rover frames
+    float get_omni_scaled_throttle(float throttle);
+
+    // scale steering for omni rover frames
+    float get_omni_scaled_steering(float steering);
+
     // external references
     AP_ServoRelayEvents &_relayEvents;
 

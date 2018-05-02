@@ -148,7 +148,7 @@ enum frame_class {
     FRAME_BOAT = 2
 };
 
-// omni-rover test
+// omni-rover enum used for OMNI_ROVER parameter
 enum omni_rover {
     OFF = 0,
     ON = 1

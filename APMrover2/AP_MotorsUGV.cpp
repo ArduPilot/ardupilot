@@ -325,6 +325,14 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         }
         return false;
     }
+    // check if only one of the omni rover outputs has been configured
+    if ((SRV_Channels::function_assigned(SRV_Channel::k_motor1)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) &&
+            (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) &&
+            (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor3))) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check motor 1, motor2 and motor3 config");
+        }
+    }
     return true;
 }
 
@@ -385,26 +393,25 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
 
     if (armed)
     {
-        //SRV_Channels::set_output_omni(SRV_Channel::k_motor1, _throttle, _steering, 1);
-        //SRV_Channels::set_output_omni(SRV_Channel::k_motor2, _throttle, _steering, 2);
-        //SRV_Channels::set_output_omni(SRV_Channel::k_motor3, _throttle, _steering, 3);
+        throttle = get_omni_scaled_throttle(_throttle);
+        steering = get_omni_scaled_steering(_steering);
 
-        SRV_Channels::set_output_omni(SRV_Channel::k_elevator, _throttle, _steering, 1);
-        SRV_Channels::set_output_omni(SRV_Channel::k_rudder, _throttle, _steering, 2);
-        SRV_Channels::set_output_omni(SRV_Channel::k_aileron, _throttle, _steering, 3);
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor1, throttle, steering, 1);
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor2, throttle, steering, 2);
+        SRV_Channels::set_output_omni(SRV_Channel::k_motor3, throttle, steering, 3);
 
-        /*
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
-        */
-
+    } else {
+        // handle disarmed case
+        if (_disarm_disable_pwm) {
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor1, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor2, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor3, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        } else {
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor1, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor2, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor3, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        }
     }
-
-    //hal.console->printf("throttle  is: %lf \n", _throttle);
-    //hal.console->printf("steering  is: %lf \n", _steering);
-
 }
 
 // output to skid steering channels
@@ -561,4 +568,21 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
+}
+
+float AP_MotorsUGV::get_omni_scaled_throttle(float throttle)
+{
+    float scaled_throttle;
+    scaled_throttle = (throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
+
+    return scaled_throttle;
+
+}
+
+float AP_MotorsUGV::get_omni_scaled_steering(float steering)
+{
+    float  scaled_steering;
+    scaled_steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+
+    return scaled_steering;
 }
