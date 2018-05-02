@@ -89,20 +89,6 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-NOINLINE void Sub::send_attitude(mavlink_channel_t chan)
-{
-    const Vector3f &gyro = ins.get_gyro();
-    mavlink_msg_attitude_send(
-        chan,
-        millis(),
-        ahrs.roll,
-        ahrs.pitch,
-        ahrs.yaw,
-        gyro.x,
-        gyro.y,
-        gyro.z);
-}
-
 #if AC_FENCE == ENABLED
 NOINLINE void Sub::send_limits_status(mavlink_channel_t chan)
 {
@@ -492,11 +478,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
-        break;
-
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        sub.send_attitude(chan);
         break;
 
     case MSG_LOCATION:
