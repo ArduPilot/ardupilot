@@ -188,7 +188,8 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
-void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const
+void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
+                                      const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
@@ -209,8 +210,10 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8
 }
 
 // returns true if all battery instances were reported
-bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
+bool GCS_MAVLINK::send_battery_status() const
 {
+    const AP_BattMonitor &battery = AP::battery();
+
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
         CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
         send_battery_status(battery, i);
@@ -1322,8 +1325,10 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
 }
 
 // report battery2 state
-void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
+void GCS_MAVLINK::send_battery2()
 {
+    const AP_BattMonitor &battery = AP::battery();
+
     if (battery.num_instances() > 1) {
         int16_t current;
         if (battery.has_current(1)) {
@@ -2652,6 +2657,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         /* fall through */
     case MSG_MAG_CAL_REPORT:
         ret = try_send_compass_message(id);
+        break;
+
+    case MSG_BATTERY_STATUS:
+        send_battery_status();
+        break;
+
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        send_battery2();
         break;
 
     case MSG_EXTENDED_STATUS2:
