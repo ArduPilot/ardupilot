@@ -397,11 +397,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_fence_status(chan);
         break;
 
-    case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(rover.ins);
-        break;
-
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
         send_battery2(rover.battery);
