@@ -468,13 +468,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        plane.ahrs.send_ekf_status_report(chan);
-#endif
-        break;
-
     case MSG_GIMBAL_REPORT:
 #if MOUNT == ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
