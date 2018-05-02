@@ -303,13 +303,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
         break;
 
-    case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        rover.ahrs.send_ekf_status_report(chan);
-#endif
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         rover.send_pid_tuning(chan);
