@@ -47,4 +47,6 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+
+    uint8_t radio_in_rssi() const;
 };
