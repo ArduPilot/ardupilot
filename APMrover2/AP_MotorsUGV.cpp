@@ -151,14 +151,12 @@ void AP_MotorsUGV::set_steering(float steering)
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
-
     // sanity check throttle min and max
     _throttle_min = constrain_int16(_throttle_min, 0, 20);
     _throttle_max = constrain_int16(_throttle_max, 30, 100);
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
-
 }
 
 /*
@@ -200,7 +198,6 @@ void AP_MotorsUGV::output(bool armed, float dt)
     SRV_Channels::cork();
     SRV_Channels::output_ch_all();
     SRV_Channels::push();
-
 }
 
 // test steering or throttle output as a percentage of the total (range -100 to +100)
@@ -423,7 +420,6 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // handle simpler disarmed case
     if (!armed) {
-
         if (_disarm_disable_pwm) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
@@ -437,7 +433,6 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // skid steering mixer
     float steering_scaled = steering / 4500.0f; // steering scaled -1 to +1
     float throttle_scaled = throttle / 100.0f;  // throttle scaled -1 to +1
-
 
     // apply constraints
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
@@ -460,7 +455,6 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
-
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100

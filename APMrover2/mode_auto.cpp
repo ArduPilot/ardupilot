@@ -67,10 +67,10 @@ void ModeAuto::update()
         case Auto_HeadingAndSpeed:
         {
             if (!_reached_heading) {
-                // run steering `and throttle controllers
+                // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
                 calc_throttle(_desired_speed, true);
-                // check if we have                                                                        reached within 5 degrees of target
+                // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
                 stop_vehicle();
