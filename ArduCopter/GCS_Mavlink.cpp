@@ -456,11 +456,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.send_pid_tuning(chan);
         break;
 
-    case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(copter.ins);
-        break;
-
     case MSG_ADSB_VEHICLE:
 #if ADSB_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
