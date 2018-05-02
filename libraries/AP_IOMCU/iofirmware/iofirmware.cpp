@@ -9,7 +9,7 @@
 #include "iofirmware.h"
 #include "hal.h"
 extern const AP_HAL::HAL &hal;
-#pragma GCC optimize("O0")
+
 #define PKT_MAX_REGS 32
 AP_IOMCU_FW iomcu;
 /*
