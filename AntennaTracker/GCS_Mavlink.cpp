@@ -74,21 +74,6 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Tracker::send_attitude(mavlink_channel_t chan)
-{
-    Vector3f omega = ahrs.get_gyro();
-    mavlink_msg_attitude_send(
-        chan,
-        AP_HAL::millis(),
-        ahrs.roll,
-        ahrs.pitch,
-        ahrs.yaw,
-        omega.x,
-        omega.y,
-        omega.z);
-}
-
-
 void Tracker::send_extended_status1(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
@@ -175,11 +160,6 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
-
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        tracker.send_attitude(chan);
-        break;
 
     case MSG_LOCATION:
         CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
