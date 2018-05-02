@@ -513,11 +513,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(plane.battery);
-        break;
-
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         plane.send_wind(chan);
@@ -569,9 +564,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
         break;
-    case MSG_BATTERY_STATUS:
-        send_battery_status(plane.battery);
-        break;
+
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
         plane.send_aoa_ssa(chan);
