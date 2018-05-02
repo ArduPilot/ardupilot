@@ -74,6 +74,9 @@ public:
 
 protected:
 
+    // sanity check parameters
+    void sanity_check_parameters();
+
     // setup pwm output type
     void setup_pwm_type();
 
