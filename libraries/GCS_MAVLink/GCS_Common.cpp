@@ -2693,6 +2693,21 @@ bool GCS_MAVLINK::try_send_camera_message(const enum ap_message id)
     return ret;
 }
 
+void GCS_MAVLINK::send_attitude() const
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+    const Vector3f omega = ahrs.get_gyro();
+    mavlink_msg_attitude_send(
+        chan,
+        AP_HAL::millis(),
+        ahrs.roll,
+        ahrs.pitch,
+        ahrs.yaw,
+        omega.x,
+        omega.y,
+        omega.z);
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2702,6 +2717,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     bool ret = true;
 
     switch(id) {
+
+    case MSG_ATTITUDE:
+        CHECK_PAYLOAD_SIZE(ATTITUDE);
+        send_attitude();
+        break;
 
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
