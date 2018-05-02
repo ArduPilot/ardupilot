@@ -41,7 +41,18 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
+        if (_s_instance != nullptr) {
+            AP_HAL::panic("Too many SITL instances");
+        }
+        _s_instance = this;
     }
+
+    /* Do not allow copies */
+    SITL(const SITL &other) = delete;
+    SITL &operator=(const SITL&) = delete;
+
+    static SITL *_s_instance;
+    static SITL *get_instance() { return _s_instance; }
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -193,3 +204,8 @@ public:
 };
 
 } // namespace SITL
+
+
+namespace AP {
+    SITL::SITL *sitl();
+};
