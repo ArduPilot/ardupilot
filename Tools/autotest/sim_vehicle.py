@@ -604,14 +604,15 @@ def start_mavproxy(opts, stuff):
         if stuff["sitl-port"]:
             cmd.extend(["--sitl", simout_port])
 
-    ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
-    for port in ports:
-        if os.path.isfile("/ardupilot.vagrant"):
-            # We're running inside of a vagrant guest; forward our
-            # mavlink out to the containing host OS
-            cmd.extend(["--out", "10.0.2.2:" + str(port)])
-        else:
-            cmd.extend(["--out", "127.0.0.1:" + str(port)])
+    if not opts.no_extra_ports:
+        ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
+        for port in ports:
+            if os.path.isfile("/ardupilot.vagrant"):
+                # We're running inside of a vagrant guest; forward our
+                # mavlink out to the containing host OS
+                cmd.extend(["--out", "10.0.2.2:" + str(port)])
+            else:
+                cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -838,6 +839,11 @@ group_sim.add_option("", "--add-param-file",
                      type='string',
                      default=None,
                      help="Add a parameters file to use")
+group_sim.add_option("", "--no-extra-ports",
+                     action='store_true',
+                     dest='no_extra_ports',
+                     default=False,
+                     help="Disable setup of UDP 14550 and 14551 output")
 parser.add_option_group(group_sim)
 
 
