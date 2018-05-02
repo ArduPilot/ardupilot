@@ -159,6 +159,10 @@ void AP_MotorsUGV::set_steering(float steering)
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
+    // only allow setting throttle if armed
+    if (!hal.util->get_soft_armed()) {
+        return;
+    }
 
     // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
@@ -181,6 +185,7 @@ void AP_MotorsUGV::output(bool armed, float dt)
     // soft-armed overrides passed in armed status
     if (!hal.util->get_soft_armed()) {
         armed = false;
+        _throttle = 0.0f;
     }
 
     // sanity check parameters
