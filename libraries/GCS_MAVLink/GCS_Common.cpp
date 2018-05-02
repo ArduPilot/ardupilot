@@ -1544,7 +1544,7 @@ void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
 /*
   Send MAVLink heartbeat
  */
-void GCS_MAVLINK::send_heartbeat()
+void GCS_MAVLINK::send_heartbeat() const
 {
     mavlink_msg_heartbeat_send(
         chan,
@@ -2619,6 +2619,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
         ret = true;
+        break;
+
+    case MSG_HEARTBEAT:
+        CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        last_heartbeat_time = AP_HAL::millis();
+        send_heartbeat();
         break;
 
     case MSG_HWSTATUS:
