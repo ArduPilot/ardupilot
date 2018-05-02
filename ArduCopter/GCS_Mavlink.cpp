@@ -307,11 +307,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
 
     switch(id) {
-    case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
-        send_heartbeat();
-        break;
 
     case MSG_EXTENDED_STATUS1:
         // send extended status only once vehicle has been initialised
