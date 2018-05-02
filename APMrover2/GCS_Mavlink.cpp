@@ -388,9 +388,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_fence_status(chan);
         break;
 
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(rover.battery);
         break;
 
     case MSG_EKF_STATUS_REPORT:
@@ -403,10 +400,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         rover.send_pid_tuning(chan);
-        break;
-
-    case MSG_BATTERY_STATUS:
-        send_battery_status(rover.battery);
         break;
 
     default:
