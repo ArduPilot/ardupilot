@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hwdef.h>
+#include <hal.h>
 
 #define HAL_BOARD_NAME "ChibiOS"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
