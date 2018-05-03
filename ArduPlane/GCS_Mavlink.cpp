@@ -470,11 +470,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
