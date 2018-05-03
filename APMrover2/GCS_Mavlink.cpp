@@ -344,11 +344,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(rover.ins, rover.compass);
-        break;
-
     case MSG_RAW_IMU2:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure();
