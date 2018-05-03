@@ -102,7 +102,8 @@ protected:
     virtual void _exit() { return; }
 
     // decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
-    // steering_out is in the range -4500 ~ +4500, throttle_out is in the range -100 ~ +100
+    // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+    // throttle_out is in the range -100 ~ +100
     void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
 
     // calculate steering output to drive along line from origin to destination waypoint
