@@ -329,7 +329,7 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
 
     if (rover.use_pivot_steering(_yaw_error_cd)) {
         // for pivot turns use heading controller
-        calc_steering_to_heading(desired_heading, reversed);
+        calc_steering_to_heading(desired_heading);
     } else {
         // call lateral acceleration to steering controller
         calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
@@ -351,11 +351,8 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 
     // send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
-                                                                           g2.motors.have_skid_steering(),
-                                                                           g2.motors.have_vectored_thrust(),
                                                                            g2.motors.limit.steer_left,
-                                                                           g2.motors.limit.steer_right,
-                                                                           reversed);
+                                                                           g2.motors.limit.steer_right);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
@@ -364,11 +361,8 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
 {
     // calculate yaw error (in radians) and pass to steering angle controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
-                                                                         g2.motors.have_skid_steering(),
-                                                                         g2.motors.have_vectored_thrust(),
                                                                          g2.motors.limit.steer_left,
-                                                                         g2.motors.limit.steer_right,
-                                                                         reversed);
+                                                                         g2.motors.limit.steer_right);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
