@@ -1156,8 +1156,11 @@ void GCS_MAVLINK::send_scaled_pressure()
     }
 }
 
-void GCS_MAVLINK::send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass)
+void GCS_MAVLINK::send_sensor_offsets()
 {
+    const AP_InertialSensor &ins = AP::ins();
+    const Compass &compass = AP::compass();
+
     // run this message at a much lower rate - otherwise it
     // pointlessly wastes quite a lot of bandwidth
     static uint8_t counter;
@@ -2771,6 +2774,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_RAW_IMU1:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu();
+        break;
+
+    case MSG_RAW_IMU3:
+        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
+        send_sensor_offsets();
         break;
 
     case MSG_AHRS:
