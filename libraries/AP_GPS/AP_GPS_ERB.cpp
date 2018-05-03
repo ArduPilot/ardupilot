@@ -32,12 +32,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_ERB::AP_GPS_ERB(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    next_fix(AP_GPS::NO_FIX)
-{
-}
-
 // Process bytes available from the stream
 //
 // The stream is assumed to contain only messages we recognise.  If it

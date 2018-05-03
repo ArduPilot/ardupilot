@@ -27,7 +27,8 @@
 class AP_GPS_ERB : public AP_GPS_Backend
 {
 public:
-    AP_GPS_ERB(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+
+    using AP_GPS_Backend::AP_GPS_Backend;
 
     // Methods
     bool read() override;
@@ -150,5 +151,5 @@ private:
     bool _parse_gps();
 
     // used to update fix between status and position packets
-    AP_GPS::GPS_Status next_fix;
+    AP_GPS::GPS_Status next_fix = AP_GPS::NO_FIX;
 };
