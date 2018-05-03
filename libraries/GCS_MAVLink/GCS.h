@@ -174,7 +174,7 @@ public:
     void send_radio_in();
     void send_raw_imu();
     void send_scaled_pressure();
-    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
+    void send_sensor_offsets();
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
