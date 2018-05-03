@@ -525,11 +525,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_temperature(chan);
         break;
 
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(sub.ins, sub.compass);
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
