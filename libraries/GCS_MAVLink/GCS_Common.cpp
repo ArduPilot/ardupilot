@@ -1114,6 +1114,27 @@ void GCS_MAVLINK::send_raw_imu()
         mag.z);        
 }
 
+// sub overrides this to send on-board temperature
+void GCS_MAVLINK::send_scaled_pressure3()
+{
+    const AP_Baro &barometer = AP::baro();
+
+    if (barometer.num_instances() < 3) {
+        return;
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
+        return;
+    }
+
+    const float pressure = barometer.get_pressure(2);
+    mavlink_msg_scaled_pressure3_send(
+        chan,
+        AP_HAL::millis(),
+        pressure*0.01f, // hectopascal
+        (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
+        barometer.get_temperature(2)*100); // 0.01 degrees C
+}
+
 void GCS_MAVLINK::send_scaled_pressure()
 {
     uint32_t now = AP_HAL::millis();
@@ -1144,16 +1165,7 @@ void GCS_MAVLINK::send_scaled_pressure()
             barometer.get_temperature(1)*100); // 0.01 degrees C        
     }
 
-    if (barometer.num_instances() > 2 &&
-        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
-        pressure = barometer.get_pressure(2);
-        mavlink_msg_scaled_pressure3_send(
-            chan,
-            now,
-            pressure*0.01f, // hectopascal
-            (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
-            barometer.get_temperature(2)*100); // 0.01 degrees C        
-    }
+    send_scaled_pressure3();
 }
 
 void GCS_MAVLINK::send_sensor_offsets()
