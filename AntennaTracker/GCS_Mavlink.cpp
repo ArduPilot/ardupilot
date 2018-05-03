@@ -196,11 +196,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_servo_output_raw(false);
         break;
 
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         tracker.send_simstate(chan);
