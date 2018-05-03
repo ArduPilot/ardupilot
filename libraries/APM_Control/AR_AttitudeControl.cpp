@@ -173,7 +173,7 @@ AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
 
 // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
 // positive lateral acceleration is to the right.
-float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool skid_steering, bool vect_thrust, bool motor_limit_left, bool motor_limit_right, bool reversed)
+float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right)
 {
     // record desired accel for reporting purposes
     _steer_lat_accel_last_ms = AP_HAL::millis();
@@ -198,32 +198,24 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool s
     // Calculate the desired steering rate given desired_accel and speed
     float desired_rate = desired_accel / speed;
 
-    // invert rate if we are going backwards
-    if (reversed) {
-        desired_rate *= -1.0f;
-    }
-
-    return get_steering_out_rate(desired_rate, skid_steering, vect_thrust, motor_limit_left, motor_limit_right, reversed);
+    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
 }
 
 // return a steering servo output from -1 to +1 given a heading in radians
-float AR_AttitudeControl::get_steering_out_heading(float heading_rad, bool skid_steering, bool vect_thrust, bool motor_limit_left, bool motor_limit_right, bool reversed)
+float AR_AttitudeControl::get_steering_out_heading(float heading_rad, bool motor_limit_left, bool motor_limit_right)
 {
     // calculate heading error (in radians)
     const float yaw_error = wrap_PI(heading_rad - _ahrs.yaw);
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);
-    if (reversed) {
-        desired_rate = -desired_rate;
-    }
 
-    return get_steering_out_rate(desired_rate, skid_steering, vect_thrust, motor_limit_left, motor_limit_right, reversed);
+    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
 }
 
 // return a steering servo output from -1 to +1 given a
 // desired yaw rate in radians/sec. Positive yaw is to the right.
-float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_steering, bool vect_thrust, bool motor_limit_left, bool motor_limit_right, bool reversed)
+float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right)
 {
     // calculate dt
     const uint32_t now = AP_HAL::millis();
@@ -250,41 +242,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
         _desired_turn_rate = constrain_float(_desired_turn_rate, -_steer_rate_max, _steer_rate_max);
     }
 
-    float scaler = 1.0f;
-    bool low_speed = false;
-
-    // scaler to linearize output because turn rate increases as vehicle speed increases
-    // on non-skid steering and non-vectored thrust vehicles
-    if (!skid_steering && !vect_thrust) {
-
-        // get speed forward
-        float speed;
-        if (!get_forward_speed(speed)) {
-            // we expect caller will not try to control heading using rate control without a valid speed estimate
-            // on failure to get speed we do not attempt to steer
-            return 0.0f;
-        }
-
-        // only use positive speed. Use reverse flag instead of negative speeds.
-        speed = fabsf(speed);
-
-        // enforce minimum speed to stop oscillations when first starting to move
-        if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
-            low_speed = true;
-            speed = AR_ATTCONTROL_STEER_SPEED_MIN;
-        }
-
-        scaler = 1.0f / fabsf(speed);
-    }
-
-    // Calculate the steering rate error (rad/sec) and apply gain scaler
+    // Calculate the steering rate error (rad/sec)
     // We do this in earth frame to allow for rover leaning over in hard corners
-    float yaw_rate_earth = _ahrs.get_yaw_rate_earth();
-    // check if reversing
-    if (reversed) {
-        yaw_rate_earth *= -1.0f;
-    }
-    const float rate_error = (desired_rate - yaw_rate_earth) * scaler;
+    const float rate_error = (desired_rate - _ahrs.get_yaw_rate_earth());
 
     // record desired rate for logging purposes only
     _steer_rate_pid.set_desired_rate(desired_rate);
@@ -293,14 +253,14 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool skid_st
     _steer_rate_pid.set_input_filter_all(rate_error);
 
     // get feed-forward
-    const float ff = _steer_rate_pid.get_ff(desired_rate * scaler);
+    const float ff = _steer_rate_pid.get_ff(desired_rate);
 
     // get p
     const float p = _steer_rate_pid.get_p();
 
     // get i unless non-skid-steering rover at low speed or steering output has hit a limit
     float i = _steer_rate_pid.get_integrator();
-    if ((!low_speed || skid_steering) && ((is_negative(rate_error) && !motor_limit_left) || (is_positive(rate_error) && !motor_limit_right))) {
+    if ((is_negative(rate_error) && !motor_limit_left) || (is_positive(rate_error) && !motor_limit_right)) {
         i = _steer_rate_pid.get_i();
     }
 
