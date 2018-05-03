@@ -44,6 +44,9 @@ bool Mode::enter()
     return _enter();
 }
 
+// decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
+// steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+// throttle_out is in the range -100 ~ +100
 void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
 {
     // no RC input means no throttle and centered steering
@@ -57,11 +60,12 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     switch ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get())
     {
         case PILOT_STEER_TYPE_DEFAULT:
+        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
-            // (this is the same as PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING below)
             throttle_out = rover.channel_throttle->get_control_in();
-            steering_out = rover.channel_steer->get_control_in();
+            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
+            steering_out = steering_dir * rover.channel_steer->get_control_in();
             break;
         }
 
@@ -74,21 +78,13 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
             const float right_paddle = rover.channel_throttle->norm_input();
 
             throttle_out = 0.5f * (left_paddle + right_paddle) * 100.0f;
-
-            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * (left_paddle - right_paddle) * 0.5f * 4500.0f;
+            steering_out = (left_paddle - right_paddle) * 0.5f * 4500.0f;
             break;
         }
 
-        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
-            throttle_out = rover.channel_throttle->get_control_in();
-            steering_out = rover.channel_steer->get_control_in();
-            break;
-
         case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
             throttle_out = rover.channel_throttle->get_control_in();
-            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * rover.channel_steer->get_control_in();
+            steering_out = rover.channel_steer->get_control_in();
             break;
         }
     }
