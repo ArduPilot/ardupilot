@@ -27,6 +27,9 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
 
+    // override sending of scaled_pressure3 to send on-board temperature:
+    void send_scaled_pressure3() override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

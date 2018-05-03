@@ -351,9 +351,9 @@ void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
 #endif
 
 // Work around to get temperature sensor data out
-void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
-    if (!celsius.healthy()) {
+    if (!sub.celsius.healthy()) {
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -361,7 +361,7 @@ void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
         AP_HAL::millis(),
         0,
         0,
-        celsius.temperature() * 100);
+        sub.celsius.temperature() * 100);
 }
 
 bool GCS_MAVLINK_Sub::send_info()
@@ -517,12 +517,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         sub.send_vfr_hud(chan);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        sub.send_temperature(chan);
         break;
 
     case MSG_RPM:
