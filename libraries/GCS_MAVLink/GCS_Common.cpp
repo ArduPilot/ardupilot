@@ -1030,8 +1030,11 @@ void GCS_MAVLINK::send_radio_in()
         receiver_rssi);        
 }
 
-void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &compass)
+void GCS_MAVLINK::send_raw_imu()
 {
+    const AP_InertialSensor &ins = AP::ins();
+    const Compass &compass = AP::compass();
+
     const Vector3f &accel = ins.get_accel(0);
     const Vector3f &gyro = ins.get_gyro(0);
     Vector3f mag;
@@ -2763,6 +2766,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_radio_in();
+        break;
+
+    case MSG_RAW_IMU1:
+        CHECK_PAYLOAD_SIZE(RAW_IMU);
+        send_raw_imu();
         break;
 
     case MSG_AHRS:

@@ -172,7 +172,7 @@ public:
     void send_ahrs2();
     void send_system_time();
     void send_radio_in();
-    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
+    void send_raw_imu();
     void send_scaled_pressure();
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
     void send_ahrs();
