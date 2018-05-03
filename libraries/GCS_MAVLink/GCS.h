@@ -173,6 +173,7 @@ public:
     void send_system_time();
     void send_radio_in();
     void send_raw_imu();
+    virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
     void send_sensor_offsets();
     void send_ahrs();
