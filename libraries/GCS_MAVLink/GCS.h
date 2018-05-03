@@ -173,6 +173,8 @@ public:
     void send_ahrs2();
     void send_system_time();
     void send_radio_in();
+    // the first parameter here is the signature of e.g. mavlink_msg_raw_imu2_send:
+    void send_imu_n(void (*send_fn)(mavlink_channel_t chan, uint64_t time_usec, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag), uint64_t now, uint8_t offset);
     void send_raw_imu();
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();

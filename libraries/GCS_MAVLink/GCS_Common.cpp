@@ -1030,23 +1030,41 @@ void GCS_MAVLINK::send_radio_in()
         receiver_rssi);        
 }
 
-void GCS_MAVLINK::send_raw_imu()
+void GCS_MAVLINK::send_imu_n(void (*send_fn)(mavlink_channel_t chan, uint64_t time_usec, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag), uint64_t now, uint8_t offset)
 {
+    if (!HAVE_PAYLOAD_SPACE(chan, RAW_IMU)) {
+        // SCALED_IMU? are smaller than this
+        return;
+    }
+
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
 
-    const Vector3f &accel = ins.get_accel(0);
-    const Vector3f &gyro = ins.get_gyro(0);
-    Vector3f mag;
-    if (compass.get_count() >= 1) {
-        mag = compass.get_field(0);
-    } else {
-        mag.zero();
+    bool have_data = false;
+
+    Vector3f gyro = {};
+    if (ins.get_gyro_count() > offset) {
+        gyro = ins.get_gyro(offset);
+        have_data = true;
+    }
+    Vector3f accel = {};
+    if (ins.get_accel_count() > offset) {
+        accel = ins.get_accel(offset);
+        have_data = true;
+    }
+    Vector3f mag = {};
+    if (compass.get_count() > offset) {
+        mag = compass.get_field(offset);
+        have_data = true;
     }
 
-    mavlink_msg_raw_imu_send(
+    if (!have_data) {
+        return;
+    }
+
+    send_fn(
         chan,
-        AP_HAL::micros(),
+        now,
         accel.x * 1000.0f / GRAVITY_MSS,
         accel.y * 1000.0f / GRAVITY_MSS,
         accel.z * 1000.0f / GRAVITY_MSS,
@@ -1056,62 +1074,28 @@ void GCS_MAVLINK::send_raw_imu()
         mag.x,
         mag.y,
         mag.z);
+}
 
-    if (ins.get_gyro_count() <= 1 &&
-        ins.get_accel_count() <= 1 &&
-        compass.get_count() <= 1) {
-        return;
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU2)) {
-        return;
-    }
-    const Vector3f &accel2 = ins.get_accel(1);
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    if (compass.get_count() >= 2) {
-        mag = compass.get_field(1);
-    } else {
-        mag.zero();
-    }
-    mavlink_msg_scaled_imu2_send(
-        chan,
-        AP_HAL::millis(),
-        accel2.x * 1000.0f / GRAVITY_MSS,
-        accel2.y * 1000.0f / GRAVITY_MSS,
-        accel2.z * 1000.0f / GRAVITY_MSS,
-        gyro2.x * 1000.0f,
-        gyro2.y * 1000.0f,
-        gyro2.z * 1000.0f,
-        mag.x,
-        mag.y,
-        mag.z);        
+// a shim to convert time from uint64 down to uint32; RAW_IMU's time
+// field is millis, SCALED_IMU? are micros
+static void scaled_imu2_send_shim(mavlink_channel_t _chan, uint64_t now, int16_t a_x, int16_t a_y, int16_t a_z, int16_t g_x, int16_t g_y, int16_t g_z, int16_t m_x, int16_t m_y, int16_t m_z)
+{
+    mavlink_msg_scaled_imu2_send(_chan, now/1000, a_x, a_y, a_z, g_x, g_y, g_z, m_x, m_y, m_z);
+}
+// a shim to convert time from uint64 down to uint32; RAW_IMU's time
+// field is millis, SCALED_IMU? are micros
+static void scaled_imu3_send_shim(mavlink_channel_t _chan, uint64_t now, int16_t a_x, int16_t a_y, int16_t a_z, int16_t g_x, int16_t g_y, int16_t g_z, int16_t m_x, int16_t m_y, int16_t m_z)
+{
+    mavlink_msg_scaled_imu3_send(_chan, now/1000, a_x, a_y, a_z, g_x, g_y, g_z, m_x, m_y, m_z);
+}
 
-    if (ins.get_gyro_count() <= 2 &&
-        ins.get_accel_count() <= 2 &&
-        compass.get_count() <= 2) {
-        return;
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU3)) {
-        return;
-    }
-    const Vector3f &accel3 = ins.get_accel(2);
-    const Vector3f &gyro3 = ins.get_gyro(2);
-    if (compass.get_count() >= 3) {
-        mag = compass.get_field(2);
-    } else {
-        mag.zero();
-    }
-    mavlink_msg_scaled_imu3_send(
-        chan,
-        AP_HAL::millis(),
-        accel3.x * 1000.0f / GRAVITY_MSS,
-        accel3.y * 1000.0f / GRAVITY_MSS,
-        accel3.z * 1000.0f / GRAVITY_MSS,
-        gyro3.x * 1000.0f,
-        gyro3.y * 1000.0f,
-        gyro3.z * 1000.0f,
-        mag.x,
-        mag.y,
-        mag.z);        
+
+void GCS_MAVLINK::send_raw_imu()
+{
+    const uint64_t now = AP_HAL::micros();
+    send_imu_n(mavlink_msg_raw_imu_send, now, 0);
+    send_imu_n(scaled_imu2_send_shim, now, 1);
+    send_imu_n(scaled_imu3_send_shim, now, 2);
 }
 
 // sub overrides this to send on-board temperature
