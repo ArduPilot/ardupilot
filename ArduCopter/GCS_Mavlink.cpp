@@ -349,11 +349,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         send_scaled_pressure();
         break;
 
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(copter.ins, copter.compass);
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
