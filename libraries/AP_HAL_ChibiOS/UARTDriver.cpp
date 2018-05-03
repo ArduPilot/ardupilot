@@ -118,8 +118,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
     
-    hal.gpio->pinMode(2, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(3, HAL_GPIO_OUTPUT);
     if (sdef.serial == nullptr) {
         return;
     }
