@@ -475,11 +475,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_scaled_pressure();
         break;
 
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(plane.ins, plane.compass);
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
