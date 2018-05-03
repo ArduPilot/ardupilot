@@ -35,8 +35,10 @@ public:
     void setup_servo_output();
 
     // get or set steering as a value from -4500 to +4500
+    //   apply_scaling should be set to false for manual modes where
+    //   no scaling by speed or angle should e performed
     float get_steering() const { return _steering; }
-    void set_steering(float steering);
+    void set_steering(float steering, bool apply_scaling = true);
 
     // get or set throttle as a value from -100 to 100
     float get_throttle() const { return _throttle; }
@@ -52,7 +54,9 @@ public:
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
 
     // output to motors and steering servos
-    void output(bool armed, float dt);
+    // ground_speed should be the vehicle's speed over the surface in m/s
+    // dt should be expected time between calls to this function
+    void output(bool armed, float ground_speed, float dt);
 
     // test steering or throttle output as a percentage of the total (range -100 to +100)
     // used in response to DO_MOTOR_TEST mavlink command
@@ -84,7 +88,7 @@ protected:
     void setup_pwm_type();
 
     // output to regular steering and throttle channels
-    void output_regular(bool armed, float steering, float throttle);
+    void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
     // output for omni style frames
     void output_omni(bool armed, float steering, float throttle);
@@ -121,4 +125,5 @@ protected:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
+    bool    _scale_steering = true; // true if we should scale steering by speed or angle
 };
