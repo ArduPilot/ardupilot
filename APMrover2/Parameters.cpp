@@ -640,7 +640,7 @@ void Rover::load_parameters(void)
                                       Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
     const uint16_t old_aux_chan_mask = 0x3FFA;
     SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
-    hal.console->printf("load_all took %uus\n", micros() - before);
+    hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(NAVL1_PERIOD);
 }
