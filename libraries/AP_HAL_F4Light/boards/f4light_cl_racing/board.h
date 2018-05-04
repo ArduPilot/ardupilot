@@ -32,8 +32,8 @@
 
 #define BOARD_BUZZER_PIN        105  // PB4
 #define BUZZER_PWM_HZ           3800 // freq for passive buzzer
-#define HAL_BUZZER_ON           0
-#define HAL_BUZZER_OFF          1
+#define HAL_BUZZER_ON           1
+#define HAL_BUZZER_OFF          0
 
 #define BOARD_NR_USARTS         5
 #define BOARD_USART1_TX_PIN     23 
@@ -151,6 +151,12 @@
 # define BOARD_BATTERY_VOLT_PIN     8   // Battery voltage on A0 (PC2) D8
 # define BOARD_BATTERY_CURR_PIN     7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN 254
+
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
 
 #define BOARD_USB_DMINUS 108
 
