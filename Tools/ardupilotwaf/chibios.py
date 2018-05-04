@@ -54,7 +54,7 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("python {}/px_uploader.py {}".format(upload_tools, src))
+        return self.exec_command("python '{}/px_uploader.py {}'".format(upload_tools, src))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -84,8 +84,8 @@ class set_default_parameters(Task.Task):
 
 class generate_fw(Task.Task):
     color='CYAN'
-    run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
-    python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin --prototype ${BUILDROOT}/apj.prototype > ${TGT}'
+    run_str="${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
+    python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}.bin' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -242,7 +242,7 @@ def configure(cfg):
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     try:
-        cmd = 'python %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
+        cmd = "python '{0}' -D '{1}' '{2}'".format(hwdef_script, hwdef_out, hwdef)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
@@ -263,14 +263,14 @@ def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
-        rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
+        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat'",
         group='dynamic_sources',
         target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
@@ -283,7 +283,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f '${BOARD_MK}'",
         group='dynamic_sources',
         source=common_src,
         target='modules/ChibiOS/libch.a'
