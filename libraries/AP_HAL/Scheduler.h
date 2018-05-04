@@ -29,6 +29,11 @@ public:
      */
     virtual void     delay_microseconds_boost(uint16_t us) { delay_microseconds(us); }
 
+    /*
+      end the priority boost from delay_microseconds_boost()
+     */
+    virtual void     boost_end(void) {}
+    
     virtual void     register_delay_callback(AP_HAL::Proc,
                                              uint16_t min_time_ms) = 0;
 
