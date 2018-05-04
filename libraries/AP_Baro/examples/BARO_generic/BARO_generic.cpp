@@ -61,7 +61,7 @@ void loop()
                             (double)barometer.get_temperature(),
                             (double)barometer.get_altitude(),
                             (double)barometer.get_climb_rate(),
-                            read_time);
+                            (unsigned)read_time);
     } else {
         hal.scheduler->delay(1);
     }
