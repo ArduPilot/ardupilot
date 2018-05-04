@@ -9,6 +9,7 @@
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
 #define MAVLINK_SEPARATE_HELPERS
+#define MAVLINK_NO_CONVERSION_HELPERS
 
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
 
