@@ -1129,8 +1129,8 @@ struct PACKED log_DSTL {
 
 #define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
 #define CURR_FMT    "Qfffffcf"
-#define CURR_UNITS  "sv?A?JOw"
-#define CURR_MULTS  "F????/??"
+#define CURR_UNITS  "svvA?JOw"
+#define CURR_MULTS  "F000?/?0"
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
