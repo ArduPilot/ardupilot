@@ -203,10 +203,7 @@ def binary_path(step, debug=False):
         # cope with builds that don't have a specific binary
         return None
 
-    if debug:
-        binary_basedir = "sitl-debug"
-    else:
-        binary_basedir = "sitl"
+    binary_basedir = "sitl"
 
     binary = util.reltopdir(os.path.join('build', binary_basedir, 'bin', binary_name))
     if not os.path.exists(binary):
