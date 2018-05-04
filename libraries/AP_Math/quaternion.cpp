@@ -188,7 +188,7 @@ void Quaternion::rotate(const Vector3f &v)
 
 void Quaternion::to_axis_angle(Vector3f &v)
 {
-    float l = sqrt(sq(q2)+sq(q3)+sq(q4));
+    float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
     v = Vector3f(q2,q3,q4);
     if (!is_zero(l)) {
         v /= l;
