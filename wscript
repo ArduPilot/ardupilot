@@ -144,8 +144,6 @@ def configure(cfg):
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
     cfg.env.VARIANT = cfg.env.BOARD
-    if cfg.env.DEBUG:
-        cfg.env.VARIANT += '-debug'
 
     _set_build_context_variant(cfg.env.VARIANT)
     cfg.setenv(cfg.env.VARIANT)
