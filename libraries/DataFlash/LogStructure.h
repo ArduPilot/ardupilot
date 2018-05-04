@@ -1248,7 +1248,7 @@ Format characters in the format string for binary log messages
     { LOG_IMU3_MSG, sizeof(log_IMU), \
       "IMU3",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
-      "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBBBGG????" }, \
+      "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
       "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
