@@ -87,7 +87,7 @@ void SchedTest::one_hz_print(void)
  */
 void SchedTest::five_second_call(void)
 {
-    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), ins_counter);
+    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), (unsigned)ins_counter);
 }
 
 /*
