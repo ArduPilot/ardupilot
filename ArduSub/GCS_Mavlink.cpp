@@ -1,4 +1,5 @@
 #include "Sub.h"
+#include "AP_HAL/AnalogIn.h"
 
 #include "GCS_Mavlink.h"
 
@@ -255,6 +256,28 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         0, // comm drops %,
         0, // comm drops in pkts,
         0, 0, 0, 0);
+
+    // FMUV2 support only
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+    static const uint8_t max_channels = 6;
+    static const uint8_t pins[max_channels] = { 15, 14, 13, 12, 11, 10 };
+
+    float adcs[max_channels];
+
+    for (uint8_t i = 0; i < max_channels; i++) {
+        AP_HAL::AnalogSource* adc = hal.analogin->channel(pins[i]);
+        adcs[i] = adc->read_average();
+    }
+
+    mavlink_msg_ap_adc_send(
+            chan,
+            adcs[0],
+            adcs[1],
+            adcs[2],
+            adcs[3],
+            adcs[4],
+            adcs[5]);
+#endif
 
 }
 
