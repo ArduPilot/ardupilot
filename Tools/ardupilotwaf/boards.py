@@ -327,7 +327,6 @@ class chibios(Board):
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
             '-Os',
-            '-g',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -355,7 +354,6 @@ class chibios(Board):
         env.LINKFLAGS = [
             '-mcpu=cortex-m4',
             '-Os',
-            '-g',
             '-fomit-frame-pointer',
             '-falign-functions=16',
             '-ffunction-sections',
@@ -379,6 +377,14 @@ class chibios(Board):
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
             '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=0x400,--defsym=__main_stack_size__=0x400',
         ]
+
+        if cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-g',
+            ]
+            env.LINKFLAGS += [
+                '-g',
+            ]
 
         env.LIB += ['gcc', 'm']
 
