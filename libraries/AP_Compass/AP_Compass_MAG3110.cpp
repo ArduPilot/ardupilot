@@ -114,6 +114,9 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
 
     _initialised = true;
 
+    // perform an initial read
+    read();
+    
     /* register the compass instance in the frontend */
     _compass_instance = register_compass();
 
@@ -122,12 +125,13 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     _dev->set_device_type(DEVTYPE_MAG3110);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
+    set_external(_compass_instance, true);
+
     // read at 75Hz
     _dev->register_periodic_callback(13333, FUNCTOR_BIND_MEMBER(&AP_Compass_MAG3110::_update, void)); 
 
     return true;
 }
-
 
 bool AP_Compass_MAG3110::_hardware_init()
 {
@@ -195,7 +199,7 @@ bool AP_Compass_MAG3110::_read_sample()
 }
 
 
-#define MAG_SCALE 1.0/10000  // 1 Tesla full scale of +-10000
+#define MAG_SCALE (1.0f/10000 / 0.0001f * 1000)  // 1 Tesla full scale of +-10000, 1 Gauss = 0,0001 Tesla, library needs milliGauss
 
 void AP_Compass_MAG3110::_update()
 {
@@ -203,7 +207,7 @@ void AP_Compass_MAG3110::_update()
         return;
     }
 
-    Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * MAG_SCALE;
+    Vector3f raw_field = Vector3f((float)_mag_x, (float)_mag_y, (float)_mag_z) * MAG_SCALE;
 
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
@@ -251,7 +255,7 @@ void AP_Compass_MAG3110::read()
         return;
     }
 
-    Vector3f field(_mag_x_accum, _mag_y_accum, _mag_z_accum);
+    Vector3f field = Vector3f(_mag_x_accum, _mag_y_accum, _mag_z_accum);
     field /= _accum_count;
 
     _accum_count = 0;
