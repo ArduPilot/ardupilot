@@ -96,6 +96,14 @@
 
 //TODO add #define BOARD_HAS_UART3 ?
 
+
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
+
 //#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
 #define BOARD_I2C_BUS_EXT 1  // external I2C
 #define BOARD_I2C_BUS_SLOW 1   // slow down bus with this number
