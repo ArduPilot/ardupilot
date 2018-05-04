@@ -60,8 +60,8 @@ static float get_declination(float lat, float lon)
     lat = constrain_float(lat, -90, 90);
     lon = constrain_float(lon, -180, 180);
 
-    const int16_t latmin = floor(lat / 5) * 5;
-    const int16_t lonmin = floor(lon / 5) * 5;
+    const int16_t latmin = floorf(lat / 5) * 5;
+    const int16_t lonmin = floorf(lon / 5) * 5;
 
     const uint8_t latmin_index = (90 + latmin) / 5;
     const uint8_t lonmin_index = (180 + lonmin) / 5;
