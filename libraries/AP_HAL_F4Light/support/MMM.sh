@@ -64,7 +64,7 @@ make_plane(){
  cd $ROOT
 
  zip -r latest.zip Release
- git add latest.zip
+# git add latest.zip
 )
 
 
