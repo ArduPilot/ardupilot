@@ -24,6 +24,7 @@ public:
     float read_average() override;
     float read_latest() override;
     void set_pin(uint8_t p) override;
+    uint8_t get_pin() { return _pin; }
     float voltage_average() override;
     float voltage_latest() override;
     float voltage_average_ratiometric() override;

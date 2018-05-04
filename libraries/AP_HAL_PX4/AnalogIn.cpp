@@ -380,14 +380,16 @@ void PX4AnalogIn::_timer_tick(void)
 
 AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
 {
-    for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+    uint8_t j;
+    for (j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new PX4AnalogSource(pin, 0.0f);
-            return _channels[j];
+            break;
+        } else if (_channels[j]->get_pin() == pin){
+            break;
         }
     }
-    hal.console->printf("Out of analog channels\n");
-    return nullptr;
+    return _channels[j];
 }
 
 #endif // CONFIG_HAL_BOARD
