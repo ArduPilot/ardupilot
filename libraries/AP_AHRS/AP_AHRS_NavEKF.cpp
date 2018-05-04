@@ -80,6 +80,10 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
 
 void AP_AHRS_NavEKF::update(bool skip_ins_update)
 {
+    // drop back to normal priority if we were boosted by the INS
+    // calling delay_microseconds_boost()
+    hal.scheduler->boost_end();
+    
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type == 1) {
         _ekf_type.set(2);
