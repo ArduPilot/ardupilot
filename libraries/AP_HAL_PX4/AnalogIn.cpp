@@ -380,16 +380,15 @@ void PX4AnalogIn::_timer_tick(void)
 
 AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
 {
-    uint8_t j;
-    for (j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
+    for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new PX4AnalogSource(pin, 0.0f);
-            break;
+            return _channels[j]; // no existing match, create a new source
         } else if (_channels[j]->get_pin() == pin){
-            break;
+            return _channels[j]; // we have found an existing match
         }
     }
-    return _channels[j];
+    return nullptr; // Out of sources, no existing match
 }
 
 #endif // CONFIG_HAL_BOARD
