@@ -159,6 +159,12 @@
 # define BOARD_BATTERY_CURR_PIN         PC4  // Battery current
 # define BOARD_SONAR_SOURCE_ANALOG_PIN  PB1  // rssi PB1
 
+# define HAL_BATT_VOLT_PIN      PC5 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      PC4
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS 108
 
 
