@@ -178,7 +178,7 @@ void Rover::read_aux_switch()
 
                 // save command
                 if (mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(mission.num_commands()));
+                    hal.console->printf("Added waypoint %u", unsigned(mission.num_commands()));
                 }
             }
         }
