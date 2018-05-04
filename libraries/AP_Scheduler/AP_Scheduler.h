@@ -62,6 +62,9 @@ public:
     AP_Scheduler(const AP_Scheduler &other) = delete;
     AP_Scheduler &operator=(const AP_Scheduler&) = delete;
 
+    static AP_Scheduler *get_instance();
+    static AP_Scheduler *_s_instance;
+
     FUNCTOR_TYPEDEF(task_fn_t, void);
 
     struct Task {
@@ -200,4 +203,8 @@ private:
 
     // bitmask bit which indicates if we should log PERF message to dataflash
     uint32_t _log_performance_bit;
+};
+
+namespace AP {
+    AP_Scheduler &scheduler();
 };
