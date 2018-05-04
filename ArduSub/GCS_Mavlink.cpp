@@ -262,11 +262,15 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
     static const uint8_t max_channels = 6;
     static const uint8_t pins[max_channels] = { 15, 14, 13, 12, 11, 10 };
 
-    float adcs[max_channels];
+    uint16_t adcs[max_channels];
 
     for (uint8_t i = 0; i < max_channels; i++) {
         AP_HAL::AnalogSource* adc = hal.analogin->channel(pins[i]);
-        adcs[i] = adc->read_average();
+        if (adc != nullptr) {
+            adcs[i] = adc->read_average();
+        } else {
+            adcs[i] = 0;
+        }
     }
 
     mavlink_msg_ap_adc_send(
