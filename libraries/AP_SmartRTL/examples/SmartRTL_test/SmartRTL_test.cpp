@@ -110,7 +110,7 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     }
 
     // display overall results
-    hal.console->printf("%s: %s time:%u us\n", test_name, (num_points_match && points_match) ? "success" : "fail", time_us);
+    hal.console->printf("%s: %s time:%u us\n", test_name, (num_points_match && points_match) ? "success" : "fail", (unsigned)time_us);
 
     // display number of points
     hal.console->printf("   expected %u points, got %u\n", (unsigned)correct_path.size(), (unsigned)smart_rtl.get_num_points());
