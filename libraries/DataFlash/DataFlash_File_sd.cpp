@@ -805,7 +805,13 @@ uint16_t DataFlash_File::start_new_log(void)
         // opening failed
         printf("Log open fail for %s: %s\n",fname, SD.strError(SD.lastError));
         free(fname);
-
+        if(SD.lastError == FR_DISK_ERR) {
+                _initialised = false; // no space
+                _open_error = true;   // don't try any more
+                printf("\nLoging aborted\n");
+                return 0xFFFF;
+        }
+        
         log_num++;                          // if not at end - try to open next log
             
         if (log_num >= MAX_LOG_FILES) {
@@ -912,6 +918,13 @@ void DataFlash_File::_io_timer(void)
                 }
             }
         } else 
+#else
+        if(FR_INT_ERR == err || FR_NO_FILESYSTEM == err || FR_INVALID_OBJECT == err) { // internal error - bad filesystem
+            gcs().send_text(MAV_SEVERITY_INFO, "logging cancelled");
+            _initialised = false;
+            _open_error = true;
+        } else 
+                
 #endif
         {
             _busy = true; // Prep_MinSpace requires a long time and 1s task will kill process
