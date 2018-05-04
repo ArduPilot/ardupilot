@@ -63,6 +63,14 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
     _fastloop_fn(fastloop_fn)
 {
+    if (_s_instance) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Too many schedulers");
+#endif
+        return;
+    }
+    _s_instance = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 
     // only allow 50 to 2000 Hz
@@ -72,6 +80,15 @@ AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
         _loop_rate_hz.set(2000);
     }
     _last_loop_time_s = 1.0 / _loop_rate_hz;
+}
+
+/*
+ * Get the AP_Scheduler singleton
+ */
+AP_Scheduler *AP_Scheduler::_s_instance = nullptr;
+AP_Scheduler *AP_Scheduler::get_instance()
+{
+    return _s_instance;
 }
 
 // initialise the scheduler
@@ -283,3 +300,12 @@ void AP_Scheduler::Log_Write_Performance()
     };
     DataFlash_Class::instance()->WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+namespace AP {
+
+AP_Scheduler &scheduler()
+{
+    return *AP_Scheduler::get_instance();
+}
+
+};
