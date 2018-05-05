@@ -4091,6 +4091,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_ahrs3();
         break;
 
+    case MSG_NAV_CONTROLLER_OUTPUT:
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        send_nav_controller_output();
+        break;
+
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
