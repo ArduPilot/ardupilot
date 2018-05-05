@@ -110,6 +110,17 @@ RC_Channel::RC_Channel(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+const RC_Channels::OptionDefault RC_Channels::option_defaults[] {
+    { 1, RC_Channel::AUX_FUNC::ROLL },
+    { 2, RC_Channel::AUX_FUNC::PITCH },
+    { 3, RC_Channel::AUX_FUNC::THROTTLE },
+    { 4, RC_Channel::AUX_FUNC::YAW },
+};
+void RC_Channels::get_option_defaults(const struct RC_Channels::OptionDefault *&defaults, uint8_t &num_defaults) {
+    defaults = option_defaults;
+    num_defaults = ARRAY_SIZE(option_defaults);
+};
+
 void RC_Channel::set_range(uint16_t high)
 {
     type_in = RC_CHANNEL_TYPE_RANGE;
@@ -503,6 +514,12 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
     case AUX_FUNC::VTX_POWER:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -597,11 +614,20 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
 bool RC_Channel::read_aux()
 {
     const aux_func_t _option = (aux_func_t)option.get();
-    if (_option == AUX_FUNC::DO_NOTHING) {
-        // may wish to add special cases for other "AUXSW" things
-        // here e.g. RCMAP_ROLL etc once they become options
+    switch (_option) {
+    case AUX_FUNC::DO_NOTHING:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
+    case AUX_FUNC::MAINSAIL:
+    case AUX_FUNC::FORWARD:
+        // these are not actually auxillary functions, they're
+        // main-channel-inputs
         return false;
-    } else if (_option == AUX_FUNC::VTX_POWER) {
+    case AUX_FUNC::VTX_POWER: {
         int8_t position;
         if (read_6pos_switch(position)) {
             AP::vtx().change_power(position);
@@ -1144,6 +1170,13 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::STEER:
+    case AUX_FUNC::LATERAL:
+        break;
 
     case AUX_FUNC::RETRACT_MOUNT: {
 #if HAL_MOUNT_ENABLED
