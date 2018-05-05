@@ -25,13 +25,17 @@ public:
         }
     } rx_io_packet = {0}, tx_io_packet = {0};
 
+    void update();
+    void calculate_fw_crc(void);
+
+private:
     void pwm_out_update();
     void heater_update();
     void rcin_update();
-private:
+
     bool handle_code_write();
     bool handle_code_read();
-
+    void schedule_reboot(uint32_t time_ms);
     struct PACKED {
         /* default to RSSI ADC functionality */
         uint16_t features = 0;
@@ -39,17 +43,20 @@ private:
         uint16_t pwm_rates = 0;
         uint16_t pwm_defaultrate = 50;
         uint16_t pwm_altrate = 200;
-        uint16_t sbus_rate = 72;
         uint16_t relays_pad = 0;
         uint16_t vbatt_scale = 10000;
+        uint16_t reserved1;
+        uint16_t reserved2;
         uint16_t set_debug = 0;
         uint16_t reboot_bl = 0;
         uint16_t crc[2] = {0};
         uint16_t rc_thr_failsafe_us;
+        uint16_t reserved3;
         uint16_t pwm_reverse = 0;
         uint16_t trim_roll = 0;
         uint16_t trim_pitch = 0;
         uint16_t trim_yaw = 0;
+        uint16_t sbus_rate = 72;
         uint16_t ignore_safety = 0;
         uint16_t heater_duty_cycle = 0xFFFFU;
         uint16_t pwm_altclock = 1;
@@ -126,5 +133,9 @@ private:
     uint8_t last_offset;
     uint32_t fmu_data_received_time;
     uint32_t last_heater_ms;
+    uint32_t reboot_time;
+    bool do_reboot;
+    bool update_default_rate;
+    bool update_rcout_freq;
  };
 
