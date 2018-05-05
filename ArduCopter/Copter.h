@@ -85,6 +85,7 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
+
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -166,6 +167,11 @@
  #include <AP_RPM/AP_RPM.h>
 #endif
 
+#define TMRS_ENABLED  ENABLED
+#if TMRS_ENABLED == ENABLED
+	#include <AC_TMRS/AP_ADC121C021_Device.h>
+#endif
+
 // Local modules
 #include "Parameters.h"
 #if ADSB_ENABLED == ENABLED
@@ -234,6 +240,8 @@ private:
     AP_Baro barometer;
     Compass compass;
     AP_InertialSensor ins;
+
+    AP_ADC121C021_Device tmrs;
 
     RangeFinder rangefinder{serial_manager, ROTATION_PITCH_270};
     struct {
