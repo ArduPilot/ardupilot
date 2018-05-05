@@ -193,6 +193,7 @@ public:
     // found.  Rover overrides this!
     virtual void send_rangefinder() const;
     void send_proximity() const;
+    virtual void send_nav_controller_output() const = 0;
     void send_ahrs2();
     void send_ahrs3();
     void send_system_time();
