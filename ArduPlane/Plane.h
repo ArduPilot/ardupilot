@@ -123,7 +123,7 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap);
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);
@@ -629,7 +629,7 @@ private:
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
-    AP_AdvancedFailsafe_Plane afs {mission, gps, rcmap};
+    AP_AdvancedFailsafe_Plane afs {mission, gps};
 
     /*
       meta data to support counting the number of circles in a loiter
