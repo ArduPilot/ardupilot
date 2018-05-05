@@ -164,8 +164,12 @@ void GCS_MAVLINK_Plane::get_sensor_status_flags(uint32_t &present,
     health = plane.control_sensors_health;
 }
 
-void Plane::send_nav_controller_output(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
+    if (plane.control_mode == MANUAL) {
+        return;
+    }
+    const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.in_vtol_mode()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
         bool wp_nav_valid = quadplane.using_wp_nav();
@@ -178,18 +182,19 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
             wp_nav_valid ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0,
             wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0,
             (plane.control_mode != QSTABILIZE) ? quadplane.pos_control->get_alt_error() * 1.0e-2f : 0,
-            airspeed_error * 100,
+            plane.airspeed_error * 100,
             wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
     } else {
+        const AP_Navigation *nav_controller = plane.nav_controller;
         mavlink_msg_nav_controller_output_send(
             chan,
-            nav_roll_cd * 0.01f,
-            nav_pitch_cd * 0.01f,
+            plane.nav_roll_cd * 0.01f,
+            plane.nav_pitch_cd * 0.01f,
             nav_controller->nav_bearing_cd() * 0.01f,
             nav_controller->target_bearing_cd() * 0.01f,
-            MIN(auto_state.wp_distance, UINT16_MAX),
-            altitude_error_cm * 0.01f,
-            airspeed_error * 100,
+            MIN(plane.auto_state.wp_distance, UINT16_MAX),
+            plane.altitude_error_cm * 0.01f,
+            plane.airspeed_error * 100,
             nav_controller->crosstrack_error());
     }
 }
@@ -419,13 +424,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     }
 
     switch (id) {
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            plane.send_nav_controller_output(chan);
-        }
-        break;
 
     case MSG_SERVO_OUT:
 #if HIL_SUPPORT
