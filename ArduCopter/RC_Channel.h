@@ -42,8 +42,22 @@ public:
         return &obj_channels[chan];
     }
 
+    // primary input control channels
+    RC_Channel *channel_roll;
+    RC_Channel *channel_pitch;
+    RC_Channel *channel_throttle;
+    RC_Channel *channel_yaw;
+
 protected:
 
     int8_t flight_mode_channel_number() const override;
+
+    void init() override;
+
+    bool k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const override;
+
+private:
+
+    void default_dead_zones();
 
 };

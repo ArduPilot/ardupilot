@@ -3,6 +3,7 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
+#include "RC_Channel.h"
 
 // performs pre-arm checks. expects to be called at 1hz.
 void AP_Arming_Copter::update(void)

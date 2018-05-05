@@ -74,8 +74,6 @@ void Copter::init_ardupilot()
     input_manager.set_loop_rate(scheduler.get_loop_rate_hz());
 #endif
 
-    init_rc_in();               // sets up rc channels from radio
-
     // allocate the motors class
     allocate_motors();
 

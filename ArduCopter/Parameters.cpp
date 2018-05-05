@@ -669,10 +669,6 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECTVARPTR(motors, "MOT_",      &copter.motors_var_info),
 #endif
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
-
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp

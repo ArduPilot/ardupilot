@@ -55,7 +55,6 @@
 #include <AC_WPNav/AC_Loiter.h>
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #include <AP_BattMonitor/AP_BattMonitor.h>     // Battery monitor library
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
@@ -236,10 +235,10 @@ private:
     uint8_t command_ack_counter;
 
     // primary input control channels
-    RC_Channel *channel_roll;
-    RC_Channel *channel_pitch;
-    RC_Channel *channel_throttle;
-    RC_Channel *channel_yaw;
+    RC_Channel *&channel_roll = g2.rc_channels.channel_roll;
+    RC_Channel *&channel_pitch = g2.rc_channels.channel_pitch;
+    RC_Channel *&channel_throttle = g2.rc_channels.channel_throttle;
+    RC_Channel *&channel_yaw = g2.rc_channels.channel_yaw;
 
     AP_Logger logger;
 
@@ -377,8 +376,6 @@ private:
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode *flightmode;
     Mode::Number prev_control_mode;
-
-    RCMapper rcmap;
 
     // inertial nav alt when we armed
     float arming_altitude_m;
@@ -839,8 +836,6 @@ private:
     void update_precland();
 
     // radio.cpp
-    void default_dead_zones();
-    void init_rc_in();
     void init_rc_out();
     void enable_motor_output();
     void read_radio();
