@@ -41,8 +41,7 @@ do {                                            \
 
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
-#define RX_ERROR_MASK (SOFTWARE      | \
-                       CONGESTION    | \
+#define RX_ERROR_MASK (CONGESTION    | \
                        MISSEDEVENT   | \
                        CPUOVERLOAD   | \
                        INVALIDCONFIG | \
