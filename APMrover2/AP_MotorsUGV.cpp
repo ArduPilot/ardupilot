@@ -169,7 +169,7 @@ void AP_MotorsUGV::set_throttle(float throttle)
         return;
     }
 
-    // check throttle is between -_throttle_max ~ +_throttle_max but outside -throttle_min ~ +throttle_min
+    // check throttle is between -_throttle_max and  +_throttle_max
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
 
