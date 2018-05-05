@@ -86,12 +86,18 @@ void GCS_MAVLINK_Rover::get_sensor_status_flags(uint32_t &present,
     health = rover.control_sensors_health;
 }
 
-void Rover::send_nav_controller_output(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_nav_controller_output() const
 {
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return;
+    }
+
+    const Mode *control_mode = rover.control_mode;
+
     mavlink_msg_nav_controller_output_send(
         chan,
         0,  // roll
-        degrees(g2.attitude_control.get_desired_pitch()),
+        degrees(rover.g2.attitude_control.get_desired_pitch()),
         control_mode->nav_bearing(),
         control_mode->wp_bearing(),
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
@@ -317,11 +323,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     }
 
     switch (id) {
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        rover.send_nav_controller_output(chan);
-        break;
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);

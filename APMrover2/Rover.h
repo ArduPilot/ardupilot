@@ -437,7 +437,6 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
