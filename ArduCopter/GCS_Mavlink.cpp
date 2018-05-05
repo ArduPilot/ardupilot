@@ -129,9 +129,10 @@ void GCS_MAVLINK_Copter::get_sensor_status_flags(uint32_t &present,
     health = copter.control_sensors_health;
 }
 
-void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
+void GCS_MAVLINK_Copter::send_nav_controller_output() const
 {
-    const Vector3f &targets = attitude_control->get_att_target_euler_cd();
+    const Vector3f &targets = copter.attitude_control->get_att_target_euler_cd();
+    const Copter::Mode *flightmode = copter.flightmode;
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
@@ -139,7 +140,7 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
         targets.z * 1.0e-2f,
         flightmode->wp_bearing() * 1.0e-2f,
         MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
-        pos_control->get_alt_error() * 1.0e-2f,
+        copter.pos_control->get_alt_error() * 1.0e-2f,
         0,
         flightmode->crosstrack_error() * 1.0e-2f);
 }
@@ -253,11 +254,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
 
     switch(id) {
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        copter.send_nav_controller_output(chan);
-        break;
 
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
