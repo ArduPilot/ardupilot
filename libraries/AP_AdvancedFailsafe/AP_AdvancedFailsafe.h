@@ -51,10 +51,9 @@ public:
     };
 
     // Constructor
-    AP_AdvancedFailsafe(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap) :
+    AP_AdvancedFailsafe(AP_Mission &_mission, const AP_GPS &_gps) :
         mission(_mission),
         gps(_gps),
-        rcmap(_rcmap),
         _gps_loss_count(0),
         _comms_loss_count(0)
         {
@@ -96,7 +95,6 @@ protected:
 
     AP_Mission &mission;
     const AP_GPS &gps;
-    const RCMapper &rcmap;
 
     AP_Int8 _enable;
     // digital output pins for communicating with the failsafe board
