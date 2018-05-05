@@ -38,9 +38,12 @@ void Plane::set_control_channels(void)
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, aparm.throttle_min<0?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed
-    g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    if (!quadplane.enable) {
+        // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+        // take a proportion of speed. For quadplanes we use AP_Motors
+        // scaling
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    }
 }
 
 /*
