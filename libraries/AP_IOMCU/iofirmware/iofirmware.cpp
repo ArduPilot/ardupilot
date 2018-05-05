@@ -1,6 +1,4 @@
-//
-// Simple test for the AP_AHRS interface
-//
+//IO Controller Firmware
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -56,13 +54,14 @@ enum iopage {
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_REBOOT_BL    10
 #define PAGE_REG_SETUP_SBUS_RATE    19
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
-#define FORCE_SAFETY_MAGIC 22027
-
+#define FORCE_SAFETY_MAGIC              22027
+#define PX4IO_REBOOT_BL_MAGIC			14662
 void setup();
 void loop();
 
@@ -104,11 +103,14 @@ void dma_rx_end_cb(UARTDriver *uart)
 
 void idle_rx_handler(UARTDriver *uart) {
     volatile uint16_t sr = uart->usart->SR;
-    if (sr & (USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
+
+    if (sr & (USART_SR_LBD | USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
 		  USART_SR_NE |		/* noise error - we have lost a byte due to noise */
-		  USART_SR_FE)) {		/* framing error - start/stop bit lost or line break */
+		  USART_SR_FE |
+          USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
 		/* send a line break - this will abort transmission/reception on the other end */
         osalSysLockFromISR();
+        uart->usart->SR = ~USART_SR_LBD;
 		uart->usart->CR1 |= USART_CR1_SBK;
         num_rx_error++;
         uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
@@ -159,16 +161,25 @@ void setup(void)
     for (uint8_t i = 0; i< 14; i++) {
         hal.rcout->enable_ch(i);
     }
-    (void)uart_cfg;
+    iomcu.calculate_fw_crc();
     uartStart(&UARTD2, &uart_cfg);
     uartStartReceive(&UARTD2, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
 }
 
 void loop(void)
 {
-    iomcu.pwm_out_update();
-    iomcu.heater_update();
-    iomcu.rcin_update();
+    iomcu.update();
+}
+
+void AP_IOMCU_FW::update()
+{
+    if (do_reboot && (AP_HAL::millis() > reboot_time)) {
+        hal.scheduler->reboot(true);
+        while(true){}
+    }
+    pwm_out_update();
+    heater_update();
+    rcin_update();
 }
 
 void AP_IOMCU_FW::pwm_out_update()
@@ -202,6 +213,14 @@ void AP_IOMCU_FW::rcin_update()
         }
         rc_input.last_input_us = AP_HAL::micros();
     }
+    if (update_rcout_freq) {
+        hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+        update_rcout_freq = false;
+    }
+    if (update_default_rate) {
+        hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
+    }
+
 }
 
 void AP_IOMCU_FW::process_io_packet()
@@ -222,13 +241,25 @@ void AP_IOMCU_FW::process_io_packet()
         case CODE_READ:
         {
             num_code_read++;
-            handle_code_read();
+            if(!handle_code_read()) {
+                memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
+                tx_io_packet.count = 0;
+                tx_io_packet.code = CODE_ERROR;
+                tx_io_packet.crc = 0;
+                tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            }
         }
         break;
         case CODE_WRITE:
         {
             num_write_pkt++;
-            handle_code_write();
+            if(!handle_code_write()) {
+                memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
+                tx_io_packet.count = 0;
+                tx_io_packet.code = CODE_ERROR;
+                tx_io_packet.crc = 0;
+                tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
+            }
         }
         break;
         default:
@@ -312,11 +343,11 @@ bool AP_IOMCU_FW::handle_code_write()
                         rx_io_packet.regs[0] = 400;
                     }
                     reg_setup.pwm_altrate = rx_io_packet.regs[0];
-                    hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+                    update_rcout_freq = true;
                     break;
                 case PAGE_REG_SETUP_PWM_RATE_MASK:
                     reg_setup.pwm_rates = rx_io_packet.regs[0];
-                    hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+                    update_rcout_freq = true;
                     break;
                 case PAGE_REG_SETUP_DEFAULTRATE:
                     if (rx_io_packet.regs[0] < 25 && reg_setup.pwm_altclock == 1) {
@@ -327,7 +358,7 @@ bool AP_IOMCU_FW::handle_code_write()
                         rx_io_packet.regs[0] = 400;
                     }
                     reg_setup.pwm_defaultrate = rx_io_packet.regs[0];
-                    hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
+                    update_default_rate = true;
                     break;
                 case PAGE_REG_SETUP_SBUS_RATE:
                     break;
@@ -344,6 +375,20 @@ bool AP_IOMCU_FW::handle_code_write()
                     reg_setup.heater_duty_cycle = rx_io_packet.regs[0];
                     last_heater_ms = AP_HAL::millis();
                     break;
+                
+                case PAGE_REG_SETUP_REBOOT_BL:
+                    if (reg_status.flag_safety_off) {
+                        // don't allow reboot while armed
+                        return false;
+                    }
+
+                    // check the magic value
+                    if (rx_io_packet.regs[0] != PX4IO_REBOOT_BL_MAGIC) {
+                        return false;
+                    }
+                    schedule_reboot(100);
+                    break;
+
                 default:
                     break;
             }
@@ -368,6 +413,7 @@ bool AP_IOMCU_FW::handle_code_write()
                 //TODO: Oneshot support
                 break;
             }
+        
         default:
             break;
     }
@@ -377,6 +423,28 @@ bool AP_IOMCU_FW::handle_code_write()
     tx_io_packet.crc = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
     return true;
+}
+
+void AP_IOMCU_FW::schedule_reboot(uint32_t time_ms)
+{
+    do_reboot = true;
+    reboot_time = AP_HAL::millis() + time_ms;
+}
+
+void AP_IOMCU_FW::calculate_fw_crc(void)
+{
+#define APP_SIZE_MAX 0xf000
+#define APP_LOAD_ADDRESS 0x08001000
+	// compute CRC of the current firmware
+	uint32_t sum = 0;
+
+	for (unsigned p = 0; p < APP_SIZE_MAX; p += 4) {
+		uint32_t bytes = *(uint32_t *)(p + APP_LOAD_ADDRESS);
+		sum = crc_crc32(sum, (const uint8_t *)&bytes, sizeof(bytes));
+	}
+
+	reg_setup.crc[0] = sum & 0xFFFF;
+	reg_setup.crc[1] = sum >> 16;
 }
 
 AP_HAL_MAIN();
