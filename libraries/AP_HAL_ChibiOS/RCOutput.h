@@ -214,17 +214,21 @@ private:
     // offset of first local channel
     uint8_t chan_offset;
 
-    // total number of channels
-    uint8_t total_channels;
+    // total number of channels on FMU
+    uint8_t num_fmu_channels;
+
+    // number of active fmu channels
+    uint8_t active_fmu_channels;
+    
+    static const uint8_t max_channels = 16;
     
     // last sent values are for all channels
-    uint16_t last_sent[16];
+    uint16_t last_sent[max_channels];
     
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
-    uint16_t period[16];
-    uint16_t safe_pwm[16]; // pwm to use when safety is on
-    uint8_t num_channels;
+    uint16_t period[max_channels];
+    uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
