@@ -213,17 +213,17 @@ void GCS_MAVLINK_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
     return sub.get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
 }
 
-void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
-    const Vector3f &targets = attitude_control.get_att_target_euler_cd();
+    const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
-        wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
-        MIN(wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        pos_control.get_alt_error() * 1.0e-2f,
+        sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
+        MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
+        sub.pos_control.get_alt_error() * 1.0e-2f,
         0,
         0);
 }
@@ -379,11 +379,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_NAMED_FLOAT:
         send_info();
-        break;
-
-    case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-        sub.send_nav_controller_output(chan);
         break;
 
     case MSG_RPM:

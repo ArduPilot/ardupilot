@@ -478,7 +478,6 @@ private:
     void get_sensor_status_flags(uint32_t &control_sensors_present,
                                  uint32_t &control_sensors_enabled,
                                  uint32_t &control_sensors_health);
-    void send_nav_controller_output(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
     void send_rpm(mavlink_channel_t chan);
     void rpm_update();
