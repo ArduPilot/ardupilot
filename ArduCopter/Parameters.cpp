@@ -1004,7 +1004,7 @@ ParametersG2::ParametersG2(void)
     , proximity(copter.serial_manager)
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    ,afs(copter.mission, copter.gps, copter.rcmap)
+    ,afs(copter.mission, copter.gps)
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl()
