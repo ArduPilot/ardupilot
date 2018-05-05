@@ -59,7 +59,7 @@ void RCOutput::init()
                 group.chan[j] = CHAN_DISABLED;
             }
             if (group.chan[j] != CHAN_DISABLED) {
-                total_channels = MAX(total_channels, group.chan[j]+1);
+                num_fmu_channels = MAX(num_fmu_channels, group.chan[j]+1);
                 group.ch_mask |= (1U<<group.chan[j]);
             }
         }
@@ -74,7 +74,6 @@ void RCOutput::init()
         iomcu.init();
         // with IOMCU the local (FMU) channels start at 8
         chan_offset = 8;
-        total_channels += chan_offset;
     }
 #endif
     chMtxObjectInit(&trigger_mutex);
@@ -236,7 +235,7 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
 
 uint16_t RCOutput::get_freq(uint8_t chan)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return 0;
     }
 #if HAL_WITH_IO_MCU
@@ -260,7 +259,7 @@ uint16_t RCOutput::get_freq(uint8_t chan)
 
 void RCOutput::enable_ch(uint8_t chan)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return;
     }
     if (chan < chan_offset) {
@@ -280,7 +279,7 @@ void RCOutput::enable_ch(uint8_t chan)
 
 void RCOutput::disable_ch(uint8_t chan)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return;
     }
     if (chan < chan_offset) {
@@ -301,7 +300,7 @@ void RCOutput::disable_ch(uint8_t chan)
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return;
     }
     last_sent[chan] = period_us;
@@ -330,9 +329,12 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     chan -= chan_offset;
 
     period[chan] = period_us;
-    num_channels = MAX(chan+1, num_channels);
-    if (!corked) {
-        push_local();
+
+    if (chan < num_fmu_channels) {
+        active_fmu_channels = MAX(chan+1, active_fmu_channels);
+        if (!corked) {
+            push_local();
+        }
     }
 }
 
@@ -341,10 +343,10 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
  */
 void RCOutput::push_local(void)
 {
-    if (num_channels == 0) {
+    if (active_fmu_channels == 0) {
         return;
     }
-    uint16_t outmask = (1U<<num_channels)-1;
+    uint16_t outmask = (1U<<active_fmu_channels)-1;
     outmask &= en_mask;
 
     uint16_t widest_pulse = 0;
@@ -420,7 +422,7 @@ void RCOutput::push_local(void)
 
 uint16_t RCOutput::read(uint8_t chan)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return 0;
     }
 #if HAL_WITH_IO_MCU
@@ -434,8 +436,8 @@ uint16_t RCOutput::read(uint8_t chan)
 
 void RCOutput::read(uint16_t* period_us, uint8_t len)
 {
-    if (len > total_channels) {
-        len = total_channels;
+    if (len > max_channels) {
+        len = max_channels;
     }
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
@@ -453,7 +455,7 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 
 uint16_t RCOutput::read_last_sent(uint8_t chan)
 {
-    if (chan >= total_channels) {
+    if (chan >= max_channels) {
         return 0;
     }
     return last_sent[chan];
@@ -461,8 +463,8 @@ uint16_t RCOutput::read_last_sent(uint8_t chan)
 
 void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
 {
-    if (len > total_channels) {
-        len = total_channels;
+    if (len > max_channels) {
+        len = max_channels;
     }
     for (uint8_t i=0; i<len; i++) {
         period_us[i] = read_last_sent(i);
