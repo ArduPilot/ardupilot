@@ -177,6 +177,19 @@ void AP_MotorsUGV::set_throttle(float throttle)
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
 
+// get slew limited throttle
+// used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
+// same as private slew_limit_throttle method (see below) but does not update throttle state
+float AP_MotorsUGV::get_slew_limited_throttle(float throttle, float dt) const
+{
+    if (_slew_rate <= 0) {
+        return throttle;
+    }
+
+    const float throttle_change_max = MAX(1.0f, (float)_slew_rate * dt);
+    return constrain_float(throttle, _throttle_prev - throttle_change_max, _throttle_prev + throttle_change_max);
+}
+
 /*
   work out if skid steering is available
  */
@@ -601,16 +614,12 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 // slew limit throttle for one iteration
 void AP_MotorsUGV::slew_limit_throttle(float dt)
 {
-    if (_slew_rate > 0) {
-        // slew throttle
-        const float throttle_change_max = MAX(1.0f, (float)_slew_rate * dt);
-        if (_throttle > _throttle_prev + throttle_change_max) {
-            _throttle = _throttle_prev + throttle_change_max;
-            limit.throttle_upper = true;
-        } else if (_throttle < _throttle_prev - throttle_change_max) {
-            _throttle = _throttle_prev - throttle_change_max;
-            limit.throttle_lower = true;
-        }
+    const float throttle_orig = _throttle;
+    _throttle = get_slew_limited_throttle(_throttle, dt);
+    if (throttle_orig > _throttle) {
+        limit.throttle_upper = true;
+    } else if (throttle_orig < _throttle) {
+        limit.throttle_lower = true;
     }
     _throttle_prev = _throttle;
 }
