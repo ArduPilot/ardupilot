@@ -101,10 +101,13 @@ protected:
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
-    // decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
+    // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
     void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+
+    // decode pilot input steering and return steering_out and speed_out (in m/s)
+    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
 
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
@@ -139,6 +142,13 @@ protected:
 
     // calculate vehicle stopping location using current location, velocity and maximum acceleration
     void calc_stopping_location(Location& stopping_loc);
+
+protected:
+
+    // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+    // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+    // throttle_out is in the range -100 ~ +100
+    void get_pilot_input(float &steering_out, float &throttle_out);
 
     // references to avoid code churn:
     class AP_AHRS &ahrs;
