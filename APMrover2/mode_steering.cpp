@@ -3,12 +3,6 @@
 
 void ModeSteering::update()
 {
-    float desired_steering, desired_throttle;
-    get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
-
-    // convert pilot throttle input to desired speed (up to twice the cruise speed)
-    float target_speed = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
-
     // get speed forward
     float speed;
     if (!attitude_control.get_forward_speed(speed)) {
@@ -18,8 +12,11 @@ void ModeSteering::update()
         return;
     }
 
+    float desired_steering, desired_speed;
+    get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
+
     // determine if pilot is requesting pivot turn
-    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (!is_zero(desired_steering));
+    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(desired_speed) && (!is_zero(desired_steering));
 
     // In steering mode we control lateral acceleration directly.
     // For pivot steering vehicles we use the TURN_MAX_G parameter
@@ -39,7 +36,7 @@ void ModeSteering::update()
 
     // reverse target lateral acceleration if backing up
     bool reversed = false;
-    if (is_negative(target_speed)) {
+    if (is_negative(desired_speed)) {
         reversed = true;
         desired_lat_accel = -desired_lat_accel;
     }
@@ -51,5 +48,5 @@ void ModeSteering::update()
     calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
 
     // run speed to throttle controller
-    calc_throttle(target_speed, false, true);
+    calc_throttle(desired_speed, false, true);
 }
