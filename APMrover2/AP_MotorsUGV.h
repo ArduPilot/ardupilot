@@ -44,6 +44,11 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
+    // get slew limited throttle
+    // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
+    // same as private slew_limit_throttle method (see below) but does not update throttle state
+    float get_slew_limited_throttle(float throttle, float dt) const;
+
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
