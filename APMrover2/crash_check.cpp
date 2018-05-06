@@ -5,7 +5,10 @@ static const uint16_t CRASH_CHECK_TRIGGER_SEC = 2;   // 2 seconds blocked indica
 static const float CRASH_CHECK_THROTTLE_MIN = 5.0f;  // vehicle must have a throttle greater that 5% to be considered crashed
 static const float CRASH_CHECK_VEL_MIN = 0.08f;      // vehicle must have a velocity under 0.08 m/s or rad/s to be considered crashed
 static const float CRASH_ANGLE = 10;
+<<<<<<< HEAD
 
+=======
+>>>>>>> bb7fe07d404236597c812c338febcb88370470c8
 
 // crash_check - disarms motors if a crash or block has been detected
 // crashes are detected by the vehicle being static (no speed) for more than CRASH_CHECK_TRIGGER_SEC and motor are running
