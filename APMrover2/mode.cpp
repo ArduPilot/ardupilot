@@ -356,10 +356,10 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     float desired_lat_accel = rover.nav_controller->lateral_acceleration();
     float desired_heading = rover.nav_controller->target_bearing_cd();
     if (reversed) {
-        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor + 18000);
-    } else {
-        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
+        desired_heading = wrap_360_cd(desired_heading + 18000);
+        desired_lat_accel *= -1.0f;
     }
+    _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
     if (rover.use_pivot_steering(_yaw_error_cd)) {
         // for pivot turns use heading controller
@@ -376,6 +376,7 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
 void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reversed)
 {
     // add obstacle avoidance response to lateral acceleration target
+    // ToDo: replace this type of object avoidance with path planning
     if (!reversed) {
         lat_accel += (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
     }
