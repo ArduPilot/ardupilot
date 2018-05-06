@@ -187,12 +187,13 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool m
         return 0.0f;
     }
 
-    // only use positive speed. Use reverse flag instead of negative speeds.
-    speed = fabsf(speed);
-
     // enforce minimum speed to stop oscillations when first starting to move
-    if (speed < AR_ATTCONTROL_STEER_SPEED_MIN) {
-        speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+    if (fabsf(speed) < AR_ATTCONTROL_STEER_SPEED_MIN) {
+        if (is_negative(speed)) {
+            speed = -AR_ATTCONTROL_STEER_SPEED_MIN;
+        } else {
+            speed = AR_ATTCONTROL_STEER_SPEED_MIN;
+        }
     }
 
     // Calculate the desired steering rate given desired_accel and speed
