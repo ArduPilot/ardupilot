@@ -44,10 +44,10 @@ bool Mode::enter()
     return _enter();
 }
 
-// decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
+// decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
 // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
 // throttle_out is in the range -100 ~ +100
-void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+void Mode::get_pilot_input(float &steering_out, float &throttle_out)
 {
     // no RC input means no throttle and centered steering
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
@@ -88,6 +88,40 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
             break;
         }
     }
+}
+
+// decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+// steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+// throttle_out is in the range -100 ~ +100
+void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+{
+    // do basic conversion
+    get_pilot_input(steering_out, throttle_out);
+
+    // check for special case of input and output throttle being in opposite directions
+    float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
+    if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
+        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
+         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        steering_out *= -1;
+    }
+    throttle_out = throttle_out_limited;
+}
+
+// decode pilot steering and return steering_out and speed_out (in m/s)
+void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out)
+{
+    float desired_throttle;
+    get_pilot_input(steering_out, desired_throttle);
+    speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+    // check for special case of input and output throttle being in opposite directions
+    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out);
+    if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
+        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
+         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        steering_out *= -1;
+    }
+    speed_out = speed_out_limited;
 }
 
 // set desired location
