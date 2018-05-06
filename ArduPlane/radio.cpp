@@ -6,29 +6,29 @@
 /*
   allow for runtime change of control channel ordering
  */
-void Plane::set_control_channels(void)
+void RC_Channels_Plane::set_control_channels(void)
 {
-    if (g.rudder_only) {
+    init_channel(channel_pitch, RC_Channel::AUX_FUNC::PITCH, "Pitch");
+    init_channel(channel_throttle, RC_Channel::AUX_FUNC::THROTTLE, "Throttle");
+    init_channel(channel_rudder, RC_Channel::AUX_FUNC::YAW, "Yaw");
+    if (plane.g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
-        channel_roll = RC_Channels::rc_channel(rcmap.yaw()-1);
+        channel_roll = channel_rudder;
     } else {
-        channel_roll = RC_Channels::rc_channel(rcmap.roll()-1);
+        init_channel(channel_roll, RC_Channel::AUX_FUNC::ROLL, "Roll");
     }
-    channel_pitch    = RC_Channels::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_rudder   = RC_Channels::rc_channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_roll->set_angle(SERVO_MAX);
     channel_pitch->set_angle(SERVO_MAX);
     channel_rudder->set_angle(SERVO_MAX);
-    if (!have_reverse_thrust()) {
+    if (!plane.have_reverse_thrust()) {
         // normal operation
         channel_throttle->set_range(100);
     } else {
         // reverse thrust
-        if (have_reverse_throttle_rc_option) {
+        if (RC_Channel_Plane::have_reverse_throttle_rc_option) {
             // when we have a reverse throttle RC option setup we use throttle
             // as a range, and rely on the RC switch to get reverse thrust
             channel_throttle->set_range(100);
@@ -47,23 +47,27 @@ void Plane::set_control_channels(void)
     // update manual forward throttle channel assignment
     quadplane.rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
 
-    if (!arming.is_armed() && arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
+    if (!plane.arming.is_armed() && plane.arming.arming_required() == AP_Arming::Required::YES_MIN_PWM) {
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, plane.have_reverse_thrust()?SRV_Channel::Limit::TRIM:SRV_Channel::Limit::MIN);
     }
 
-    if (!quadplane.enable) {
+    if (!plane.quadplane.enabled()) {
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
         // scaling
-        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+        plane.g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
     }
 }
 
 /*
   initialise RC input channels
  */
-void Plane::init_rc_in()
+void RC_Channels_Plane::init()
 {
+    RC_Channels::init();
+
+    set_control_channels();
+
     // set rc dead zones
     channel_roll->set_default_dead_zone(30);
     channel_pitch->set_default_dead_zone(30);

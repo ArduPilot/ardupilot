@@ -8,7 +8,14 @@
 #define RC_CHANNELS_SUBCLASS RC_Channels_Plane
 #define RC_CHANNEL_SUBCLASS RC_Channel_Plane
 
+bool RC_Channel_Plane::have_reverse_throttle_rc_option;
+
 #include <RC_Channel/RC_Channels_VarInfo.h>
+
+bool RC_Channels_Plane::k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const {
+    k_param_rcmap = Parameters::k_param_rcmap_unused;
+    return true;
+}
 
 // note that this callback is not presently used on Plane:
 int8_t RC_Channels_Plane::flight_mode_channel_number() const
@@ -175,7 +182,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
-        plane.have_reverse_throttle_rc_option = true;
+        have_reverse_throttle_rc_option = true;
         // setup input throttle as a range. This is needed as init_aux_function is called
         // after set_control_channels()
         if (plane.channel_throttle) {

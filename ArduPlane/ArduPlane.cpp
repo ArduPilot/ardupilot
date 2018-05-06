@@ -257,10 +257,16 @@ extern AP_IOMCU iomcu;
 void Plane::one_second_loop()
 {
     // make it possible to change control channel ordering at runtime
-    set_control_channels();
+    g2.rc_channels.set_control_channels();
 
 #if HAL_WITH_IO_MCU
-    iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
+    iomcu.setup_mixing(channel_roll,
+                       channel_pitch,
+                       channel_throttle,
+                       channel_rudder,
+                       g.override_channel.get(),
+                       g.mixing_gain,
+                       g2.manual_rc_mask);
 #endif
 
     // make it possible to change orientation at runtime

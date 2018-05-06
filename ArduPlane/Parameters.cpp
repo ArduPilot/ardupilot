@@ -606,7 +606,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: RUDDER_ONLY
     // @DisplayName: Rudder only aircraft
-    // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the RCMAP_YAW channel (normally channel 4). The rudder servo should be attached to the RCMAP_YAW channel as well. Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
+    // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the yaw channel (normally channel 4). The rudder servo should be attached to the yaw channel as well. Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(rudder_only,             "RUDDER_ONLY",  0),
@@ -859,10 +859,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
-
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                "RCMAP_",         RCMapper),
 
     // @Group: SR0_
     // @Path: GCS_Mavlink.cpp

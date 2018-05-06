@@ -59,7 +59,6 @@
 
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_L1_Control/AP_L1_Control.h>
-#include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
@@ -176,16 +175,13 @@ private:
     Parameters g;
     ParametersG2 g2;
 
-    // mapping between input channels
-    RCMapper rcmap;
-
     // primary input channels
-    RC_Channel *channel_roll;
-    RC_Channel *channel_pitch;
-    RC_Channel *channel_throttle;
-    RC_Channel *channel_rudder;
-    RC_Channel *channel_flap;
-    RC_Channel *channel_airbrake;
+    RC_Channel *&channel_roll = g2.rc_channels.channel_roll;
+    RC_Channel *&channel_pitch = g2.rc_channels.channel_pitch;
+    RC_Channel *&channel_throttle = g2.rc_channels.channel_throttle;
+    RC_Channel *&channel_rudder = g2.rc_channels.channel_rudder;
+    RC_Channel *&channel_flap = g2.rc_channels.channel_flap;
+    RC_Channel *&channel_airbrake = g2.rc_channels.channel_airbrake;
 
     AP_Logger logger;
 
@@ -991,7 +987,6 @@ private:
 
     // radio.cpp
     void set_control_channels(void) override;
-    void init_rc_in();
     void init_rc_out_main();
     void init_rc_out_aux();
     void rudder_arm_disarm_check();
@@ -1083,7 +1078,6 @@ private:
 
     // reverse_thrust.cpp
     bool reversed_throttle;
-    bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
     bool have_reverse_thrust(void) const;
     int16_t get_throttle_input(bool no_deadzone=false) const;
