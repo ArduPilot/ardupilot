@@ -159,4 +159,4 @@ int32_t Copter::ModeSmartRTL::wp_bearing() const
     return wp_nav->get_wp_bearing_to_destination();
 }
 
-#endi
+#endif
