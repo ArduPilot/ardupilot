@@ -92,6 +92,11 @@ void Copter::ModeSmartRTL::path_follow_run()
         Vector3f next_point;
         if (g2.smart_rtl.pop_point(next_point)) {
             bool fast_waypoint = true;
+
+            if () {
+                
+            }
+
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 next_point.z -= 2.0f;
