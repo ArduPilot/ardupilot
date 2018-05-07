@@ -8,11 +8,9 @@
 // althold_init - initialise althold controller
 bool Sub::althold_init()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if(!control_check_barometer()) {
         return false;
     }
-#endif
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
