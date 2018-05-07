@@ -34,6 +34,11 @@ private:
     int32_t _t_fine;
     float _pressure;
     float _temperature;
+    float _mean_temperature;
+    uint8_t _mask;
+    bool temperature_ok(float temp);
+
+    AverageIntegralFilter<int32_t, int32_t, 10> _pressure_filter;
 
     // Internal calibration registers
     int16_t _t2, _t3, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9;
