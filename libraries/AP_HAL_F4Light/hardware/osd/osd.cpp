@@ -333,7 +333,7 @@ static bool diff_done;
 extern void heartBeat();
 extern void writePanels();
 
-void On100ms() {}
+void On100ms();
 void On20ms() {}
 void osd_loop();
 void vsync_ISR();
@@ -975,7 +975,63 @@ void osd_loop() {
     }
 }
 
+float avgRSSI(uint16_t d){
+    static uint8_t ind = -1;
+    static uint16_t RSSI_rawArray[8];
 
+    RSSI_rawArray[(++ind)%8] = d;
+    d=0;
+    for (uint8_t i=8;i!=0;)
+        d += RSSI_rawArray[--i];
+
+    return d/8.0;
+}
+
+void On100ms() {
+
+        byte ch = sets.RSSI_raw / 2;
+
+        uint16_t d;
+
+
+//DBG_PRINTF("\n RSSI ch=%d ", ch);
+
+        switch(ch) {
+
+        case 1: // analog RSSI from pin
+        case 2: // digital RSSI from pin
+
+        case 0:
+            d=osd_rssi; // mavlink
+            goto case_4;
+
+        case 3: // 3dr modem rssi
+            d=telem_rssi;
+            goto case_4;
+
+        case 4:
+        default:
+            d = chan_raw[7]; // ch 8
+
+//DBG_PRINTF("ch8_rssi=%d\n", d );
+
+case_4:
+            rssi_in = avgRSSI(d);
+
+// RSSI source is not pin so we can read it for sensor
+#if defined(USE_SENSORS)
+            if(SENSOR4_ON) {
+                if(fPulseSensor[3])
+                    d=pulseIn(RssiPin,HIGH,10000);
+                else
+                    d=analogRead(RssiPin);
+
+                sensorData[3] = (sensorData[3]*7 + d) /8;
+            }
+#endif
+            break;
+        }
+}
 
 
 void vsync_ISR(){
