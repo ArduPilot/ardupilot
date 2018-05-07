@@ -1232,7 +1232,7 @@ Format characters in the format string for binary log messages
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QCBCB", "TimeUS,Dist1,Orient1,Dist2,Orient2", "sm-m-", "FB-B-" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
-      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s--------------", "F--------------" }, \
+      "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s--------------", "C--------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
       "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
