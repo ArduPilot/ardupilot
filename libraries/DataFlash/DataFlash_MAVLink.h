@@ -33,7 +33,9 @@ public:
     // initialisation
     void Init() override;
 
-    bool logging_started() const override { return _logging_started; }
+    // in actual fact, we throw away everything until a client connects.
+    // This stops calls to start_new_log from the vehicles
+    bool logging_started() const override { return _initialised; }
 
     void stop_logging() override;
 
@@ -137,7 +139,6 @@ private:
     
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
-    bool _logging_started;
     uint32_t _last_response_time;
     uint32_t _last_send_time;
     uint8_t _next_block_number_to_resend;
