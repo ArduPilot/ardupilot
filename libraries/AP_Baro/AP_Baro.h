@@ -169,6 +169,9 @@ public:
     // simple atmospheric model
     static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 
+    // simple underwater atmospheric model
+    static void SimpleUnderWaterAtmosphere(float alt, float &rho, float &delta, float &theta);
+
     // set a pressure correction from AP_TempCalibration
     void set_pressure_correction(uint8_t instance, float p_correction);
 
