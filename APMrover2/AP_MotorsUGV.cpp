@@ -180,6 +180,17 @@ bool AP_MotorsUGV::have_skid_steering() const
     return false;
 }
 
+// returns true if omni rover
+bool AP_MotorsUGV::is_omni_rover() const
+{
+    if (SRV_Channels::function_assigned(SRV_Channel::k_motor1) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_motor2) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
+        return true;
+    }
+    return false;
+}
+
 void AP_MotorsUGV::output(bool armed, float dt)
 {
     // soft-armed overrides passed in armed status
@@ -199,6 +210,9 @@ void AP_MotorsUGV::output(bool armed, float dt)
 
     // output for regular steering/throttle style frames
     output_regular(armed, _steering, _throttle);
+
+    // output for omni style frames
+    output_omni(armed, _throttle, _steering);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle);
@@ -332,6 +346,14 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         }
         return false;
     }
+    // check if only one of the omni rover outputs has been configured
+    if ((SRV_Channels::function_assigned(SRV_Channel::k_motor1)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) ||
+        (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) ||
+        (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) != (SRV_Channels::function_assigned(SRV_Channel::k_motor3))) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check motor 1, motor2 and motor3 config");
+        }
+    }
     return true;
 }
 
@@ -394,6 +416,48 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 
     // always allow steering to move
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
+}
+
+// output for omni style frames
+void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
+{
+    if(!(is_omni_rover())) {
+        return;
+    }
+
+    if (armed) {
+        throttle = (_throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
+        steering = (_steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+
+        int16_t motor_1, motor_2, motor_3;
+        float Vx, Vy, magnitude, theta;
+
+        magnitude = safe_sqrt((throttle*throttle)+(1500*1500));
+        theta = atan2f(throttle,1500);
+        Vx = -(cosf(theta)*magnitude);
+        Vy = -(sinf(theta)*magnitude);
+
+        motor_1 = (((-Vx) + steering) - (2500)) * (2000 - (1000)) / (3500 - (2500)) + (1000);
+        motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + steering) - (1121)) * (2000 - (1000)) / (2973 - (1121)) + (1000);
+        motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + steering) - (-1468)) * (2000 - (1000)) / (383 - (-1468)) + (1000);
+
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor1, motor_1);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor2, motor_2);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor3, motor_3);
+
+
+    } else {
+        // handle disarmed case
+        if (_disarm_disable_pwm) {
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor1, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor2, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor3, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        } else {
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor1, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor2, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_motor3, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        }
+    }
 }
 
 // output to skid steering channels

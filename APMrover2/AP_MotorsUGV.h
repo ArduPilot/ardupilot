@@ -45,6 +45,9 @@ public:
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
+    //true if vehicle is an omni rover
+    bool is_omni_rover() const;
+
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
 
@@ -82,6 +85,9 @@ protected:
 
     // output to regular steering and throttle channels
     void output_regular(bool armed, float steering, float throttle);
+
+    // output for omni style frames
+    void output_omni(bool armed, float steering, float throttle);
 
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
