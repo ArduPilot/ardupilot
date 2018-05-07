@@ -50,10 +50,6 @@ void DataFlash_MAVLink::Init()
     stats_init();
 
     _initialised = true;
-    _logging_started = true; // in actual fact, we throw away
-                             // everything until a client connects.
-                             // This stops calls to start_new_log from
-                             // the vehicles
 }
 
 bool DataFlash_MAVLink::logging_failed() const
@@ -356,7 +352,7 @@ void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
 
 void DataFlash_MAVLink::stats_log()
 {
-    if (!_initialised || !_logging_started) {
+    if (!_initialised) {
         return;
     }
     if (stats.collection_count == 0) {
@@ -401,7 +397,7 @@ uint8_t DataFlash_MAVLink::queue_size(dm_block_queue_t queue)
 
 void DataFlash_MAVLink::stats_collect()
 {
-    if (!_initialised || !_logging_started) {
+    if (!_initialised) {
         return;
     }
     if (!semaphore->take_nonblocking()) {
@@ -476,7 +472,7 @@ bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
 
 void DataFlash_MAVLink::push_log_blocks()
 {
-    if (!_initialised || !_logging_started ||!_sending_to_client) {
+    if (!_initialised || !_sending_to_client) {
         return;
     }
 
@@ -500,7 +496,7 @@ void DataFlash_MAVLink::push_log_blocks()
 
 void DataFlash_MAVLink::do_resends(uint32_t now)
 {
-    if (!_initialised || !_logging_started ||!_sending_to_client) {
+    if (!_initialised || !_sending_to_client) {
         return;
     }
 
