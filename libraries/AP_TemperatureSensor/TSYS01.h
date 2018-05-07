@@ -12,7 +12,6 @@
 
 class TSYS01 {
 public:
-    TSYS01(void);
 
     bool init(void);
     float temperature(void) { return _temperature; } // temperature in degrees C
