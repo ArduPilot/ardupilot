@@ -90,6 +90,8 @@ known_units = {
              'd%'      : 'decipercent'           , # decipercent is strange, but "per-mille" is even more exotic
              'dB'      : 'decibel'               ,
 # compound
+
+             'kB'      : 'kilobytes'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
