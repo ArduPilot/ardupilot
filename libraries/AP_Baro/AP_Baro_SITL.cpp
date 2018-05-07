@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -16,6 +17,9 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
     _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     if (_sitl != nullptr) {
         _instance = _frontend.register_sensor();
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
+#endif
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
 }
@@ -94,14 +98,22 @@ void AP_Baro_SITL::_timer()
         sim_alt = _buffer[best_index].data;
     }
 
-    float sigma, delta, theta;
     const float p0 = 101325.0f;
+
+#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    float sigma, delta, theta;
 
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
     float p = p0 * delta;
     float T = 303.16f * theta - 273.16f;  // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     temperature_adjustment(p, T);
+#else
+    float rho, delta, theta;
+    AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
+    float p = p0 * delta;
+    float T = 303.16f * theta - 273.16f;  // Assume 30 degrees at sea level - converted to degrees Kelvin
+#endif
 
     _recent_press = p;
     _recent_temp = T;
