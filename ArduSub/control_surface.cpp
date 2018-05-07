@@ -3,11 +3,9 @@
 
 bool Sub::surface_init()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if(!control_check_barometer()) {
         return false;
     }
-#endif
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
