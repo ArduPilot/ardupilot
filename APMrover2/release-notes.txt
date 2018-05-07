@@ -1,5 +1,12 @@
 APMrover2 Release Notes:
 ========================
+Rover V3.3.0 07-May-2018
+Changes from 3.3.0-rc1:
+1) default parameter changes
+    a) TURN_MAX_G reduced from 1.0 to 0.6
+    b) ATC_STR_ANG_P increased from 1.0 to 2.5 (converts angle error to desired turn rate during pivot turns)
+    c) ATC_STR_ACC_MAX reduced from 360 to 180 deg/s/s (slows acceleration in pivot turns)
+--------------------------------
 Rover V3.3.0-rc1 19-Apr-2018
 Changes from 3.2.3:
 1) Simple object avoidance support
