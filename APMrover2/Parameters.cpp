@@ -308,6 +308,13 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(turn_max_g,             "TURN_MAX_G",      0.6f),
 
+    // @Param: OMNI_ROVER
+    // @DisplayName: Omni Rover
+    // @Description: For omnidirectional rover frames
+    // @Values: 0:OFF, 1:ON
+    // @User: Standard
+    GSCALAR(omni_rover, "OMNI_ROVER", 0),
+
     // variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_

@@ -149,5 +149,11 @@ enum frame_class {
     FRAME_BOAT = 2
 };
 
+// omni-rover enum used for OMNI_ROVER parameter
+enum omni_rover {
+    OFF = 0,
+    ON = 1
+};
+
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked
 #define AUX_SWITCH_PWM_TRIGGER_LOW  1200   // pwm value below which the ch7 or ch8 option will be disabled

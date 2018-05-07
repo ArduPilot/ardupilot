@@ -2,7 +2,6 @@
 The init_ardupilot function processes everything we need for an in - air restart
     We will determine later if we are actually on the ground and process a
     ground start in that case.
-
 *****************************************************************************/
 
 #include "Rover.h"
@@ -363,4 +362,10 @@ bool Rover::disarm_motors(void)
 bool Rover::is_boat() const
 {
     return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
+}
+
+// returns true if vehicle is an omni rover
+bool Rover::is_omni_rover() const
+{
+    return ((enum omni_rover)g.omni_rover.get() == ON);
 }

@@ -60,6 +60,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
             // (this is the same as PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING below)
+
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
             break;
@@ -83,6 +84,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
         case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
+
             break;
 
         case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
@@ -354,6 +356,8 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
     lat_accel = constrain_float(lat_accel, -g.turn_max_g * GRAVITY_MSS, g.turn_max_g * GRAVITY_MSS);
 
     // send final steering command to motor library
+    const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel, g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
+    g2.motors.set_steering(steering_out);
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
                                                                            g2.motors.have_skid_steering(),
                                                                            g2.motors.have_vectored_thrust(),
@@ -367,6 +371,8 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
 {
     // calculate yaw error (in radians) and pass to steering angle controller
+    const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f), g2.motors.have_skid_steering(), g2.motors.limit.steer_left, g2.motors.limit.steer_right, reversed);
+    g2.motors.set_steering(steering_out);
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
                                                                          g2.motors.have_skid_steering(),
                                                                          g2.motors.have_vectored_thrust(),

@@ -83,6 +83,9 @@ protected:
     // output to regular steering and throttle channels
     void output_regular(bool armed, float steering, float throttle);
 
+    // output for omni rover frames
+    void output_omni(bool armed, float steering, float throttle);
+
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
 
