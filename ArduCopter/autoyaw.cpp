@@ -160,7 +160,7 @@ void Copter::Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        roi = pv_location_to_vector(roi_location);
+        roi = copter.pv_location_to_vector(roi_location);
         auto_yaw.set_mode(AUTO_YAW_ROI);
 #endif  // MOUNT == ENABLED
     }
