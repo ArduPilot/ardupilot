@@ -128,7 +128,7 @@ void FlashTest::setup(void)
 
         if (erase_ok) {
             if (memcmp(mem_buffer, mem_mirror, sizeof(mem_buffer)) != 0) {
-                AP_HAL::panic("FATAL: data mis-match at i=%u", i);
+                AP_HAL::panic("FATAL: data mis-match at i=%u", (unsigned)i);
             }
         }
     }

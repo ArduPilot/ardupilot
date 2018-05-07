@@ -520,6 +520,9 @@ private:
     /// command list will be cleared if they do not match
     void check_eeprom_version();
 
+    /// sanity checks that the masked fields are not NaN's or infinite
+    static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
+
     // references to external libraries
     const AP_AHRS&   _ahrs;      // used only for home position
 

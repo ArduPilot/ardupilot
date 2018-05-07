@@ -158,7 +158,7 @@ void Sub::fifty_hz_loop()
     failsafe_sensors_check();
 
     // Update rc input/output
-    RC_Channels::set_pwm_all();
+    RC_Channels::read_input();
     SRV_Channels::output_ch_all();
 }
 
@@ -337,6 +337,18 @@ void Sub::update_altitude()
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }
+}
+
+bool Sub::control_check_barometer()
+{
+    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
+        return false;
+    } else if (failsafe.sensor_health) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
+        return false;
+    }
+    return true;
 }
 
 AP_HAL_MAIN_CALLBACKS(&sub);

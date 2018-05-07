@@ -60,3 +60,4 @@ LIBRARIES += AP_Beacon
 LIBRARIES += PID
 LIBRARIES += AP_Soaring
 LIBRARIES += AP_Gripper
+LIBRARIES += AP_Devo_Telem

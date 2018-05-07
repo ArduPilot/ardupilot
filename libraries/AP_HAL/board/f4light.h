@@ -1,5 +1,6 @@
 #include <AP_HAL_F4Light/hardware/hal/syscalls.h>
 #include <AP_HAL_F4Light/params.h>
+#include <AP_HAL_F4Light/wirish/boards.h>
 
 #define HAL_NEEDS_PARAM_HELPER
 
@@ -53,6 +54,7 @@
 
 
 #define HAL_MINIMIZE_FEATURES 1
+#define DEVO_TELEM_ENABLED ENABLED
 
  #define AC_TERRAIN             DISABLED // no SD card with POSIX IO
  #define PRECISION_LANDING      DISABLED

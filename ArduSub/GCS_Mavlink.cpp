@@ -268,8 +268,8 @@ void NOINLINE Sub::send_location(mavlink_channel_t chan)
         now,
         current_loc.lat,                // in 1E7 degrees
         current_loc.lng,                // in 1E7 degrees
-        (ahrs.get_home().alt + current_loc.alt) * 10UL,      // millimeters above sea level
-        current_loc.alt * 10,           // millimeters above ground
+        ap.depth_sensor_present ? (ahrs.get_home().alt + current_loc.alt) * 10UL : 0, // millimeters above sea level
+        ap.depth_sensor_present ? current_loc.alt * 10 : 0, // millimeters above ground
         vel.x * 100,                    // X speed cm/s (+ve North)
         vel.y * 100,                    // Y speed cm/s (+ve East)
         vel.z * 100,                    // Z speed cm/s (+ve Down)
@@ -872,7 +872,12 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
 
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro()
 {
-    if (!sub.sensor_health.depth) {
+    if (sub.motors.armed()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!sub.control_check_barometer()) {
         return MAV_RESULT_FAILED;
     }
 

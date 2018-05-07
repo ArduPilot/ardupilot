@@ -54,7 +54,7 @@ void AP_InertialSensor_Backend::_set_gyro_oversampling(uint8_t instance, uint8_t
   sensor may vary slightly from the system clock. This slowly adjusts
   the rate to the observed rate
 */
-void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz)
+void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const
 {
     uint32_t now = AP_HAL::micros();
     if (start_us == 0) {
@@ -105,7 +105,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     accel.z *= accel_scale.z;
 
     // rotate to body frame
-    accel.rotate(_imu._board_orientation);
+    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
+        accel = *_imu._custom_rotation * accel;
+    } else {
+        accel.rotate(_imu._board_orientation);
+    }
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
@@ -116,7 +120,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
     // gyro calibration is always assumed to have been done in sensor frame
     gyro -= _imu._gyro_offset[instance];
 
-    gyro.rotate(_imu._board_orientation);
+    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
+        gyro = *_imu._custom_rotation * gyro;
+    } else {
+        gyro.rotate(_imu._board_orientation);
+    }
 }
 
 /*
@@ -226,7 +234,9 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+        if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
+        }
     }
 }
 
@@ -319,6 +329,23 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     log_accel_raw(instance, sample_us, accel);
 }
 
+void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
+{
+    if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+        return;
+    }
+
+    _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
+}
+
+void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro)
+{
+    if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+        return;
+    }
+    _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
+}
+
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
     DataFlash_Class *dataflash = DataFlash_Class::instance();
@@ -338,7 +365,9 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
         };
         dataflash->WriteBlock(&pkt, sizeof(pkt));
     } else {
-        _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
+        if (!_imu.batchsampler.doing_sensor_rate_logging()) {
+            _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
+        }
     }
 }
 

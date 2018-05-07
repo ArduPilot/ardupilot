@@ -95,6 +95,12 @@
 
 #define BOARD_NR_GPIO_PINS      109
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
 // use soft I2C driver instead hardware
 //#define BOARD_SOFT_I2C2
 //#define BOARD_I2C_BUS_INT   1  // hardware internal I2C
@@ -150,6 +156,12 @@
 # define BOARD_BATTERY_CURR_PIN     7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN 254
 
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS 108
 
 
@@ -165,6 +177,8 @@
 #define SERVO_PIN_4 49 // PA2
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 22 // PA8
+
+#define MOTOR_LAYOUT_DEFAULT 0
 
 #define HAL_CONSOLE USB_Driver // console on USB
 //#define HAL_CONSOLE uart1Driver // console on radio

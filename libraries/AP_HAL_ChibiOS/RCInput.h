@@ -17,7 +17,6 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
-#include "SoftSigReader.h"
 #include "Semaphores.h"
 
 #ifdef HAL_RCINPUT_WITH_AP_RADIO
@@ -25,8 +24,15 @@
 #endif
 
 #if HAL_USE_ICU == TRUE
+#include "SoftSigReader.h"
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #endif
+
+#if HAL_USE_EICU == TRUE
+#include "SoftSigReaderInt.h"
+#include <AP_RCProtocol/AP_RCProtocol.h>
+#endif
+
 
 #ifndef RC_INPUT_MAX_CHANNELS
 #define RC_INPUT_MAX_CHANNELS 18
@@ -72,6 +78,11 @@ private:
 
 #if HAL_USE_ICU == TRUE
     ChibiOS::SoftSigReader sig_reader;
+    AP_RCProtocol rcin_prot;
+#endif
+
+#if HAL_USE_EICU == TRUE
+    ChibiOS::SoftSigReaderInt sig_reader;
     AP_RCProtocol rcin_prot;
 #endif
 

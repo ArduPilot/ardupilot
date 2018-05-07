@@ -600,7 +600,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     if (stream_trigger(STREAM_EXTENDED_STATUS)) {
         send_message(MSG_EXTENDED_STATUS1); // SYS_STATUS, POWER_STATUS
         send_message(MSG_EXTENDED_STATUS2); // MEMINFO
-        send_message(MSG_CURRENT_WAYPOINT);
+        send_message(MSG_CURRENT_WAYPOINT); // MISSION_CURRENT
         send_message(MSG_GPS_RAW);
         send_message(MSG_GPS_RTK);
         send_message(MSG_GPS2_RAW);
@@ -625,7 +625,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
 
     if (stream_trigger(STREAM_RC_CHANNELS)) {
         send_message(MSG_SERVO_OUTPUT_RAW);
-        send_message(MSG_RADIO_IN);
+        send_message(MSG_RADIO_IN); // RC_CHANNELS_RAW, RC_CHANNELS
     }
 
     if (gcs().out_of_time()) return;
@@ -633,7 +633,7 @@ GCS_MAVLINK_Copter::data_stream_send(void)
     if (stream_trigger(STREAM_EXTRA1)) {
         send_message(MSG_ATTITUDE);
         send_message(MSG_SIMSTATE); // SIMSTATE, AHRS2
-        send_message(MSG_PID_TUNING);
+        send_message(MSG_PID_TUNING); // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
     }
 
     if (gcs().out_of_time()) return;

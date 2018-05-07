@@ -708,6 +708,8 @@ private:
 
     void convert_old_parameters(void);
 
+    bool control_check_barometer();
+
     enum Failsafe_Action {
         Failsafe_Action_None    = 0,
         Failsafe_Action_Warn    = 1,

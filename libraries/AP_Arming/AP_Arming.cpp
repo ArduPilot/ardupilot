@@ -15,6 +15,7 @@
 
 #include "AP_Arming.h"
 #include <AP_Notify/AP_Notify.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
@@ -455,7 +456,28 @@ bool AP_Arming::hardware_safety_check(bool report)
 
 bool AP_Arming::rc_calibration_checks(bool report)
 {
-    return true;
+    bool check_passed = true;
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        const RC_Channel *ch = RC_Channels::rc_channel(i);
+        if (ch == nullptr) {
+            continue;
+        }
+        const uint16_t trim = ch->get_radio_trim();
+        if (ch->get_radio_min() > trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d minimum is greater than trim", i + 1);
+            }
+            check_passed = false;
+        }
+        if (ch->get_radio_max() < trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d maximum is less than trim", i + 1);
+            }
+            check_passed = false;
+        }
+    }
+
+    return check_passed;
 }
 
 bool AP_Arming::manual_transmitter_checks(bool report)
@@ -476,6 +498,33 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     }
 
     return true;
+}
+
+bool AP_Arming::servo_checks(bool report) const
+{
+    bool check_passed = true;
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        const SRV_Channel *ch = SRV_Channels::srv_channel(i);
+        if (ch == nullptr || ch->get_function() == SRV_Channel::k_none) {
+            continue;
+        }
+
+        const uint16_t trim = ch->get_trim();
+        if (ch->get_output_min() > trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: SERVO%d minimum is greater than trim", i + 1);
+            }
+            check_passed = false;
+        }
+        if (ch->get_output_max() < trim) {
+            if (report) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: SERVO%d maximum is less than trim", i + 1);
+            }
+            check_passed = false;
+        }
+    }
+
+    return check_passed;
 }
 
 bool AP_Arming::board_voltage_checks(bool report)
@@ -512,6 +561,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  battery_checks(report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
+        &  servo_checks(report)
         &  board_voltage_checks(report);
 }
 

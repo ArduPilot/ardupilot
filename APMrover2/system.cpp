@@ -24,7 +24,7 @@ void Rover::init_ardupilot()
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
                         fwver.fw_string,
-                        hal.util->available_memory());
+                        (unsigned)hal.util->available_memory());
 
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
@@ -80,6 +80,9 @@ void Rover::init_ardupilot()
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager, fwver.fw_string, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
+#endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.init(serial_manager);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -234,6 +237,10 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.update_control_mode(control_mode->mode_number());
+#endif
+
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == AUTO);
 #endif

@@ -84,6 +84,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 #include <AP_Rally/AP_Rally.h>
@@ -122,7 +123,7 @@
 class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps, const RCMapper &_rcmap);
+    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps);
 
     // called to set all outputs to termination state
     void terminate_vehicle(void);
@@ -390,6 +391,10 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    // DEVO-M telemetry support
+    AP_DEVO_Telem devo_telemetry {ahrs};
+#endif
 
     // Variables for extended status MAVLink messages
     uint32_t control_sensors_present;
@@ -624,7 +629,7 @@ private:
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
-    AP_AdvancedFailsafe_Plane afs {mission, gps, rcmap};
+    AP_AdvancedFailsafe_Plane afs {mission, gps};
 
     /*
       meta data to support counting the number of circles in a loiter

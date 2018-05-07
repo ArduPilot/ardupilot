@@ -109,7 +109,7 @@ uint32_t AP::PerfInfo::get_avg_time() const
 // get_stddev_time - return stddev of average loop time (in us)
 uint32_t AP::PerfInfo::get_stddev_time() const
 {
-    return sqrt((sigmasquared_time - (sigma_time*sigma_time)/loop_count) / loop_count);
+    return sqrtf((sigmasquared_time - (sigma_time*sigma_time)/loop_count) / loop_count);
 }
 
 // get_filtered_time - return low pass filtered loop time in seconds

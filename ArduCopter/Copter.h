@@ -147,6 +147,11 @@
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
 #endif
+
+#if DEVO_TELEM_ENABLED == ENABLED
+ #include <AP_Devo_Telem/AP_Devo_Telem.h>
+#endif
+
 #if ADVANCED_FAILSAFE == ENABLED
  # include "afs_copter.h"
 #endif
@@ -440,6 +445,9 @@ private:
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
+#endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    AP_DEVO_Telem devo_telemetry{ahrs};
 #endif
 
     // Variables for extended status MAVLink messages

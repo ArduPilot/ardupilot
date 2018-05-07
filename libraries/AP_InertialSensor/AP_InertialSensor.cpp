@@ -498,6 +498,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     _gyro_over_sampling[_gyro_count] = 1;
+    _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
 
     bool saved = _gyro_id[_gyro_count].load();
 
@@ -531,6 +532,7 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
     _accel_over_sampling[_accel_count] = 1;
+    _accel_raw_sampling_multiplier[_accel_count] = INT16_MAX/(16*GRAVITY_MSS);
 
     bool saved = _accel_id[_accel_count].load();
 
@@ -1781,7 +1783,11 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
         return false;
     }
     _accel_calibrator[_acc_body_aligned-1].get_sample_corrected(sample_num, ret);
-    ret.rotate(_board_orientation);
+    if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
+        ret = *_custom_rotation * ret;
+    } else {
+        ret.rotate(_board_orientation);
+    }
     return true;
 }
 
@@ -1806,7 +1812,11 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     }
     avg /= count;
     ret = avg;
-    ret.rotate(_board_orientation);
+    if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
+        ret = *_custom_rotation * ret;
+    } else {
+        ret.rotate(_board_orientation);
+    }
     return true;
 }
 

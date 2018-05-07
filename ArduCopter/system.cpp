@@ -106,6 +106,11 @@ void Copter::init_ardupilot()
                          &ap.value);
 #endif
 
+#if DEVO_TELEM_ENABLED == ENABLED
+    // setup devo
+    devo_telemetry.init(serial_manager);
+#endif
+
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
@@ -471,7 +476,7 @@ MAV_TYPE Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
-            return MAV_TYPE_HEXAROTOR;
+            return MAV_TYPE_DODECAROTOR;
     }
     // unknown frame so return generic
     return MAV_TYPE_GENERIC;

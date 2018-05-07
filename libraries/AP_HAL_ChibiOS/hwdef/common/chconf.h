@@ -43,7 +43,9 @@
  * @brief   System time counter resolution.
  * @note    Allowed values are 16 or 32 bits.
  */
+#ifndef CH_CFG_ST_RESOLUTION
 #define CH_CFG_ST_RESOLUTION                32
+#endif
 
 /**
  * @brief   System tick frequency.

@@ -181,9 +181,9 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_SLEW
     // @DisplayName: Takeoff throttle slew rate
-    // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle.
+    // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle. A value of -1 means no limit on slew rate in takeoff.
     // @Units: %/s
-    // @Range: 0 127
+    // @Range: -1 127
     // @Increment: 1
     // @User: User
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
