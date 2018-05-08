@@ -750,9 +750,6 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay = false;
-
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
