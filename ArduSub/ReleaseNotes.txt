@@ -1,7 +1,7 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 3.5.3-beta 29-April-2017
+Sub 3.5.3-beta 29-April-2018 / Sub 3.5.3 8-May-2018
 
 Changes from 3.5.2:
 
