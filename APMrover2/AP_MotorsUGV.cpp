@@ -148,6 +148,11 @@ void AP_MotorsUGV::setup_servo_output()
     // skid steering left/right throttle as -1000 to 1000 values
     SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
     SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
+
+    // k_motor1, k_motor2 and k_motor3 are in power percent so -100 ... 100
+    SRV_Channels::set_angle(SRV_Channel::k_motor1, 100);
+    SRV_Channels::set_angle(SRV_Channel::k_motor2, 100);
+    SRV_Channels::set_angle(SRV_Channel::k_motor3, 100);
 }
 
 // set steering as a value from -4500 to +4500
@@ -212,7 +217,7 @@ void AP_MotorsUGV::output(bool armed, float dt)
     output_regular(armed, _steering, _throttle);
 
     // output for omni style frames
-    output_omni(armed, _throttle, _steering);
+    output_omni(armed, _steering, _throttle);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle);
@@ -421,31 +426,22 @@ void AP_MotorsUGV::output_regular(bool armed, float steering, float throttle)
 // output for omni style frames
 void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
 {
-    if(!(is_omni_rover())) {
+    if (!is_omni_rover()) {
         return;
     }
-
     if (armed) {
-        throttle = (_throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
-        steering = (_steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
-
-        int16_t motor_1, motor_2, motor_3;
-        float Vx, Vy, magnitude, theta;
-
-        magnitude = safe_sqrt((throttle*throttle)+(1500*1500));
-        theta = atan2f(throttle,1500);
-        Vx = -(cosf(theta)*magnitude);
-        Vy = -(sinf(theta)*magnitude);
-
-        motor_1 = (((-Vx) + steering) - (2500)) * (2000 - (1000)) / (3500 - (2500)) + (1000);
-        motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + steering) - (1121)) * (2000 - (1000)) / (2973 - (1121)) + (1000);
-        motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + steering) - (-1468)) * (2000 - (1000)) / (383 - (-1468)) + (1000);
-
-        SRV_Channels::set_output_pwm(SRV_Channel::k_motor1, motor_1);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_motor2, motor_2);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_motor3, motor_3);
-
-
+        const float scaled_throttle = (throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
+        const float scaled_steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+        const float magnitude = safe_sqrt((scaled_throttle*scaled_throttle)+(1500*1500));
+        const float theta = atan2f(scaled_throttle,1500);
+        const float Vx = -(cosf(theta)*magnitude);
+        const float Vy = -(sinf(theta)*magnitude);
+        const int16_t motor_1 = (((-Vx) + scaled_steering) - (2500)) * (100 - (-100)) / (3500 - (2500)) + (-100);
+        const int16_t motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1121)) * (100 - (-100)) / (2973 - (1121)) + (-100);
+        const int16_t motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-1468)) * (100 - (-100)) / (383 - (-1468)) + (-100);
+        output_throttle(SRV_Channel::k_motor1, motor_1);
+        output_throttle(SRV_Channel::k_motor2, motor_2);
+        output_throttle(SRV_Channel::k_motor3, motor_3);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
@@ -510,7 +506,7 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle)
 {
     // sanity check servo function
-    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight) {
+    if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight && function != SRV_Channel::k_motor1 && function != SRV_Channel::k_motor2 && function != SRV_Channel::k_motor3) {
         return;
     }
 
@@ -530,10 +526,15 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         switch (function) {
             case SRV_Channel::k_throttle:
             case SRV_Channel::k_throttleLeft:
+            case SRV_Channel::k_motor1:
                 _relayEvents.do_set_relay(0, relay_high);
                 break;
             case SRV_Channel::k_throttleRight:
+            case SRV_Channel::k_motor2:
                 _relayEvents.do_set_relay(1, relay_high);
+                break;
+            case SRV_Channel::k_motor3:
+                _relayEvents.do_set_relay(2, relay_high);
                 break;
             default:
                 // do nothing
@@ -546,6 +547,9 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     // output to servo channel
     switch (function) {
         case SRV_Channel::k_throttle:
+        case SRV_Channel::k_motor1:
+        case SRV_Channel::k_motor2:
+        case SRV_Channel::k_motor3:
             SRV_Channels::set_output_scaled(function,  throttle);
             break;
         case SRV_Channel::k_throttleLeft:
