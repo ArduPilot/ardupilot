@@ -320,7 +320,7 @@ GCS_MAVLINK_Tracker::data_stream_send(void)
 {
     send_queued_parameters();
 
-    if (tracker.in_mavlink_delay) {
+    if (hal.scheduler->in_delay_callback()) {
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -703,7 +703,6 @@ void Tracker::mavlink_delay_cb()
         return;
     }
 
-    tracker.in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = AP_HAL::millis();
@@ -723,7 +722,6 @@ void Tracker::mavlink_delay_cb()
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     DataFlash.EnableWrites(true);
-    tracker.in_mavlink_delay = false;
 }
 
 /*
