@@ -15,7 +15,8 @@ Just see board's documentation.
 | UART2        | Serial4 |
 | UART5        | Serial5 |
 
-This board REQUIRES external Compass via I2C bus. 
+
+This board REQUIRES external Compass via I2C bus.
 
 ## OSD
 Built-in OSD can be configured via files in root directory of SD card:
@@ -30,9 +31,9 @@ Firmware supports connection to built-in OSD with CT from my MinimOSD (https://g
 
 How to get voltage/current reading(tested on omnibus, should work on other targets to):
 - BAT_MONITOR 4
-- BAT_VOLT_PIN 8
-- BAT_CURR_PIN 7
-- BAT_VOLT_MULT 11.0 (or 10.1 for apm power module)
-- BAT_AMP_PERVOLT 38.0 (or 17 for apm power module)
+- BAT_VOLT_PIN 10
+- BAT_CURR_PIN 11
+- BAT_VOLT_MULT 11.0
+- BAT_AMP_PERVOLT 38.0
 
 Don't try to configure Curr/Vol reading from Initial setup page of MP, because VOL/CURR variables will be reset.
