@@ -572,9 +572,6 @@ private:
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
 #endif
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
-
     // last valid RC input time
     uint32_t last_radio_update_ms;
 
