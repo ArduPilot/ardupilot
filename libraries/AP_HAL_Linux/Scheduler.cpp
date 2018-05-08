@@ -164,9 +164,7 @@ void Scheduler::delay(uint16_t ms)
         // this yields the CPU to other apps
         microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+            call_delay_cb();
         }
     }
 }
@@ -177,13 +175,6 @@ void Scheduler::delay_microseconds(uint16_t us)
         return;
     }
     microsleep(us);
-}
-
-void Scheduler::register_delay_callback(AP_HAL::Proc proc,
-                                             uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
