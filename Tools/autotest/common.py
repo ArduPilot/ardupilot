@@ -668,6 +668,19 @@ class AutoTest(ABC):
         self.progress("Failed to get EKF.flags=%u" % required_value)
         raise AutoTestTimeoutException()
 
+    def run_test(self, desc, function):
+        self.progress("#")
+        self.progress("########## %s ##########" % (desc))
+        self.progress("#")
+
+        try:
+            function()
+        except Exception as e:
+            self.progress('FAILED: "%s": %s' % (desc, type(e).__name__))
+            self.fail_list.append( (desc, e) )
+            return
+        self.progress('PASSED: "%s"' % desc)
+
     @abc.abstractmethod
     def init(self):
         """Initilialize autotest feature."""
