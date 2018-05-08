@@ -408,7 +408,8 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     // if we don't have at least 0.2ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 200) {
+    if (!hal.scheduler->in_delay_callback() &&
+        plane.scheduler.time_available_usec() < 200) {
         gcs().set_out_of_time(true);
         return false;
     }
@@ -688,7 +689,7 @@ GCS_MAVLINK_Plane::data_stream_send(void)
 
     if (gcs().out_of_time()) return;
 
-    if (plane.in_mavlink_delay) {
+    if (hal.scheduler->in_delay_callback()) {
 #if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
             // in HIL we need to keep sending servo values to ensure
@@ -1737,9 +1738,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 void Plane::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs().chan(0).initialised || in_mavlink_delay) return;
+    if (!gcs().chan(0).initialised) return;
 
-    in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
@@ -1760,7 +1760,6 @@ void Plane::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-    in_mavlink_delay = false;
 }
 
 /*
