@@ -199,7 +199,11 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                                (void *)this);
                     osalDbgAssert(!dma_allocated, "stream already allocated");
                     chSysUnlock();
+#if defined(STM32F7)
+                    dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
+#else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
+#endif // STM32F7
                 }
                 if (sdef.dma_tx) {
                     // we only allow for sharing of the TX DMA channel, not the RX
@@ -228,7 +232,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             sercfg.cr2 = USART_CR2_STOP1_BITS;
             sercfg.irq_cb = rx_irq_cb;
             sercfg.ctx = (void*)this;
-            
             sdStart((SerialDriver*)sdef.serial, &sercfg);
             if(sdef.dma_rx) {
                 //Configure serial driver to skip handling RX packets
@@ -272,7 +275,11 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                                            (void *)this);
     osalDbgAssert(!dma_allocated, "stream already allocated");
     chSysUnlock();
+#if defined(STM32F7)
+    dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
+#else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
+#endif // STM32F7
 #endif // HAL_USE_SERIAL
 }
 
@@ -311,6 +318,10 @@ void UARTDriver::rx_irq_cb(void* self)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
+#if defined(STM32F7)
+    //disable dma, triggering DMA transfer complete interrupt
+    uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
+#else
     volatile uint16_t sr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->SR;
     if(sr & USART_SR_IDLE) {
         volatile uint16_t dr = ((SerialDriver*)(uart_drv->sdef.serial))->usart->DR;
@@ -318,6 +329,7 @@ void UARTDriver::rx_irq_cb(void* self)
         //disable dma, triggering DMA transfer complete interrupt
         uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
     }
+#endif // STM32F7
 #endif // HAL_USE_SERIAL
 }
 
