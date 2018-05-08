@@ -2,6 +2,8 @@
 
 #include <AP_Common/AP_Common.h>
 
+#include "RC_Channel.h"
+
 // Global parameter class.
 //
 class Parameters {
@@ -159,7 +161,7 @@ public:
         k_param_mode4,
         k_param_mode5,
         k_param_mode6,
-        k_param_aux_channel,
+        k_param_aux_channel_old,
 
         //
         // 220: Waypoint data
@@ -261,7 +263,6 @@ public:
     AP_Int8     mode4;
     AP_Int8     mode5;
     AP_Int8     mode6;
-    AP_Int8     aux_channel;
 
     // Waypoints
     //
@@ -290,7 +291,7 @@ public:
     AP_Int8 sysid_enforce;
 
     // RC input channels
-    RC_Channels rc_channels;
+    RC_Channels_Rover rc_channels;
 
     // control over servo output ranges
     SRV_Channels servo_channels;
