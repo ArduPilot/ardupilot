@@ -19,10 +19,6 @@ void Scheduler::delay(uint16_t ms)
 void Scheduler::delay_microseconds(uint16_t us)
 {}
 
-void Scheduler::register_delay_callback(AP_HAL::Proc k,
-            uint16_t min_time_ms)
-{}
-
 void Scheduler::register_timer_process(AP_HAL::MemberProc k)
 {}
 
