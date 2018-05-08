@@ -50,7 +50,6 @@ public:
     void     delay(uint16_t ms);
     void     delay_microseconds(uint16_t us);
     void     delay_microseconds_boost(uint16_t us);
-    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
