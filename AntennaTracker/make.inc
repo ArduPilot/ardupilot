@@ -29,7 +29,6 @@ LIBRARIES += AP_BoardConfig
 LIBRARIES += AP_OpticalFlow
 LIBRARIES += AP_RangeFinder
 LIBRARIES += AP_Mount
-LIBRARIES += AP_RSSI
 LIBRARIES += AP_RPM
 LIBRARIES += AP_Frsky_Telem
 LIBRARIES += AP_Beacon
