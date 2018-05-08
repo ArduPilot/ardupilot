@@ -177,7 +177,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SIM_PORT_IN,
         CMDLINE_SIM_PORT_OUT,
         CMDLINE_IRLOCK_PORT,
-        CMDLINE_UAVCAN
     };
 
     const struct GetOptLong::option options[] = {
@@ -212,7 +211,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"sim-port-in",     true,   0, CMDLINE_SIM_PORT_IN},
         {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
-        {"uavcan",          true,   0, CMDLINE_UAVCAN},
         {0, false, 0, 0}
     };
 
@@ -299,9 +297,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_DEFAULTS:
             defaults_path = strdup(gopt.optarg);
-            break;
-        case CMDLINE_UAVCAN:
-            printf("CMDLINE_UAVCAN\n");
             break;
         case CMDLINE_UARTA:
         case CMDLINE_UARTB:

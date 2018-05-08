@@ -579,9 +579,6 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
     if path is not None:
         cmd.extend(["--defaults", path])
-    if opts.uavcan > 0:
-        cmd.append("--uavcan")
-        cmd.append(str(opts.uavcan))
 
     run_in_terminal_window(autotest, cmd_name, cmd)
 
@@ -847,10 +844,6 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
-group_sim.add_option("", "--uavcan-node",
-                     type='int',
-                     dest='uavcan',
-                     help="Specify UAVCAN node")
 parser.add_option_group(group_sim)
 
 
