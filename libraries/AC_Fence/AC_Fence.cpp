@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Fence enable/disable
     // @Description: Allows you to enable (1) or disable (0) the fence functionality
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled using polygon fence as stay-out zone
     // @User: Standard
     AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
 
@@ -249,20 +249,37 @@ bool AC_Fence::check_fence_polygon()
     }
 
     position = position * 100.0f;  // m to cm
-    if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
-        // check if this is a new breach
-        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-            // not a new breach
-            return false;
+    if (_enabled == AC_FENCE_ENABLED_NFZ) {
+        if (!_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
+            // check if this is a new breach
+            if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+                // not a new breach
+                return false;
+            }
+            // record that we have breached the polygon
+            record_breach(AC_FENCE_TYPE_POLYGON);
+            return true;
         }
-        // record that we have breached the polygon
-        record_breach(AC_FENCE_TYPE_POLYGON);
-        return true;
-    }
 
-    // inside boundary; clear breach if present
-    if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
-        clear_breach(AC_FENCE_TYPE_POLYGON);
+        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+            clear_breach(AC_FENCE_TYPE_POLYGON);
+        }
+    } else {
+        if (_poly_loader.boundary_breached(position, _boundary_num_points, _boundary, true)) {
+            // check if this is a new breach
+            if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+                // not a new breach
+                return false;
+            }
+            // record that we have breached the polygon
+            record_breach(AC_FENCE_TYPE_POLYGON);
+            return true;
+        }
+
+        // inside boundary; clear breach if present
+        if (_breached_fences & AC_FENCE_TYPE_POLYGON) {
+            clear_breach(AC_FENCE_TYPE_POLYGON);
+        }
     }
 
     return false;
@@ -377,8 +394,14 @@ bool AC_Fence::check_destination_within_fence(const Location_Class& loc)
         // check ekf has a good location
         Vector2f posNE;
         if (loc.get_vector_xy_from_origin_NE(posNE)) {
-            if (_poly_loader.boundary_breached(posNE, _boundary_num_points, _boundary, true)) {
-                return false;
+            if (_enabled == AC_FENCE_ENABLED_NFZ) {
+                if (!_poly_loader.boundary_breached(posNE, _boundary_num_points, _boundary, true)) {
+                    return false;
+                }
+            } else {
+                if (_poly_loader.boundary_breached(posNE, _boundary_num_points, _boundary, true)) {
+                    return false;
+                }
             }
         }
     }
@@ -456,7 +479,11 @@ Vector2f* AC_Fence::get_polygon_points(uint16_t& num_points) const
 /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
 bool AC_Fence::boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const
 {
-    return _poly_loader.boundary_breached(location, num_points, points, true);
+    if (_enabled == AC_FENCE_ENABLED_NFZ) {
+        return !_poly_loader.boundary_breached(location, num_points, points, true);
+    } else {
+        return _poly_loader.boundary_breached(location, num_points, points, true);
+    }
 }
 
 /// handler for polygon fence messages with GCS
