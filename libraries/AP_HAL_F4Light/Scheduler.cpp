@@ -36,9 +36,6 @@ AP_HAL::Proc  Scheduler::_failsafe  IN_CCM= NULL;
 Revo_IO    Scheduler::_io_proc[F4Light_SCHEDULER_MAX_IO_PROCS] IN_CCM;
 uint8_t    Scheduler::_num_io_proc IN_CCM=0;
 
-
-AP_HAL::Proc Scheduler::_delay_cb IN_CCM=NULL;
-uint16_t Scheduler::_min_delay_cb_ms IN_CCM=0;
 void *   Scheduler::_delay_cb_handle IN_CCM=0;
 
 uint32_t Scheduler::timer5_ovf_cnt IN_CCM=0;
@@ -269,8 +266,8 @@ void Scheduler::_delay(uint16_t ms)
     uint32_t now;
 
     while((now=_micros()) - start < dt) {
-        if (_delay_cb && _min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
-            _delay_cb();
+        if (_min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
+            call_delay_cb();
             yield(1000 - (_micros() - now)); // to not stop MAVlink callback
         } else {
             yield(dt); // for full time
@@ -355,8 +352,7 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_time_ms)
         init_done=true;
     }
 
-    _delay_cb        = proc;
-    _min_delay_cb_ms = min_time_ms;
+    AP_HAL::register_delay_callback(proc, min_time_ms);
 
 
 /* 
