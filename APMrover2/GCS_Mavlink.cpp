@@ -293,7 +293,8 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     // if we don't have at least 1ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (!rover.in_mavlink_delay && rover.scheduler.time_available_usec() < 1200) {
+    if (!hal.scheduler->in_delay_callback() &&
+        rover.scheduler.time_available_usec() < 1200) {
         gcs().set_out_of_time(true);
         return false;
     }
@@ -512,7 +513,7 @@ GCS_MAVLINK_Rover::data_stream_send(void)
       return;
     }
 
-    if (rover.in_mavlink_delay) {
+    if (hal.scheduler->in_delay_callback()) {
 #if HIL_MODE != HIL_MODE_DISABLED
         // in HIL we need to keep sending servo values to ensure
         // the simulator doesn't pause, otherwise our sensor
@@ -1328,11 +1329,10 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 void Rover::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs().chan(0).initialised || in_mavlink_delay) {
+    if (!gcs().chan(0).initialised) {
         return;
     }
 
-    in_mavlink_delay = true;
     // don't allow potentially expensive logging calls:
     DataFlash.EnableWrites(false);
 
@@ -1355,7 +1355,6 @@ void Rover::mavlink_delay_cb()
     check_usb_mux();
 
     DataFlash.EnableWrites(true);
-    in_mavlink_delay = false;
 }
 
 /*
