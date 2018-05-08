@@ -73,7 +73,6 @@
 #include <Filter/Filter.h>                          // Filter library
 #include <Filter/LowPassFilter.h>
 #include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
-#include <RC_Channel/RC_Channel.h>                  // RC Channel Library
 #include <StorageManager/StorageManager.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -96,6 +95,7 @@
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
+#include "RC_Channel.h"                  // RC Channel Library
 
 class Rover : public AP_HAL::HAL::Callbacks {
 public:
@@ -118,6 +118,9 @@ public:
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeFollow;
+
+    friend class RC_Channel_Rover;
+    friend class RC_Channels_Rover;
 
     Rover(void);
 
@@ -168,6 +171,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *modes;
+    const uint8_t num_modes = 6;
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -208,6 +212,9 @@ private:
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
+
+    // RC Channels:
+    RC_Channels_Rover &rc() { return g2.rc_channels; }
 
     // relay support
     AP_Relay relay;
@@ -279,9 +286,6 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
-
-    // CH7 auxiliary switches last known position
-    aux_switch_pos aux_ch7;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -428,14 +432,6 @@ private:
 
     // control_modes.cpp
     Mode *mode_from_mode_num(enum Mode::Number num);
-    void read_control_switch();
-    uint8_t readSwitch(void);
-    void reset_control_switch();
-    aux_switch_pos read_aux_switch_pos();
-    void init_aux_switch();
-    void do_aux_function_change_mode(Mode &mode,
-                                     const aux_switch_pos ch_flag);
-    void read_aux_switch();
 
     // crash_check.cpp
     void crash_check();
@@ -532,6 +528,8 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
+    void read_mode_switch();
+    void read_aux_all();
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,

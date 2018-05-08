@@ -13,24 +13,6 @@
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// CH 7 control
-enum ch7_option {
-    CH7_DO_NOTHING      = 0,
-    CH7_SAVE_WP         = 1,
-    CH7_LEARN_CRUISE    = 2,
-    CH7_ARM_DISARM      = 3,
-    CH7_MANUAL          = 4,
-    CH7_ACRO            = 5,
-    CH7_STEERING        = 6,
-    CH7_HOLD            = 7,
-    CH7_AUTO            = 8,
-    CH7_RTL             = 9,
-    CH7_SMART_RTL       = 10,
-    CH7_GUIDED          = 11,
-    CH7_LOITER          = 12,
-    CH7_FOLLOW          = 13
-};
-
 // HIL enumerations
 #define HIL_MODE_DISABLED 0
 #define HIL_MODE_SENSORS  1
@@ -113,13 +95,6 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND,
     MODE_REASON_FENCE_BREACH,
-};
-
-// values used by the ap.ch7_opt and ap.ch8_opt flags
-enum aux_switch_pos {
-    AUX_SWITCH_LOW,
-    AUX_SWITCH_MIDDLE,
-    AUX_SWITCH_HIGH
 };
 
 enum pilot_steer_type_t {
