@@ -70,7 +70,6 @@ public:
     void     delay_microseconds(uint16_t us) override;
     void     delay_microseconds_boost(uint16_t us) override;
     void     boost_end(void) override;
-    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms) override;
     void     register_timer_process(AP_HAL::MemberProc) override;
     void     register_io_process(AP_HAL::MemberProc) override;
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
@@ -99,8 +98,6 @@ public:
 private:
     bool _initialized;
     volatile bool _hal_initialized;
-    AP_HAL::Proc _delay_cb;
-    uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
     bool _called_boost;
     bool _priority_boosted;
