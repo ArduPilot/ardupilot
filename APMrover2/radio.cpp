@@ -6,10 +6,9 @@
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
-    channel_steer    = RC_Channels::rc_channel(rcmap.roll()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_aux      = RC_Channels::rc_channel(g.aux_channel-1);
-    channel_lateral  = RC_Channels::rc_channel(rcmap.yaw()-1);
+    channel_steer    = rc().channel(rcmap.roll()-1);
+    channel_throttle = rc().channel(rcmap.throttle()-1);
+    channel_lateral  = rc().channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
@@ -104,7 +103,7 @@ void Rover::rudder_arm_disarm_check()
 
 void Rover::read_radio()
 {
-    if (!RC_Channels::read_input()) {
+    if (!rc().read_input()) {
         // check if we lost RC link
         control_failsafe(channel_throttle->get_radio_in());
         return;
