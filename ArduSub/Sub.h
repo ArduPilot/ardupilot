@@ -436,9 +436,6 @@ private:
     AP_Terrain terrain{ahrs, mission, rally};
 #endif
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
-
     // Top-level logic
     // setup the var_info table
     AP_Param param_loader;

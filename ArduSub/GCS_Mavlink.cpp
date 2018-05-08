@@ -735,7 +735,7 @@ GCS_MAVLINK_Sub::data_stream_send(void)
         return;
     }
 
-    if (sub.in_mavlink_delay) {
+    if (hal.scheduler->in_delay_callback()) {
         // don't send any other stream types while in the delay callback
         return;
     }
@@ -1522,11 +1522,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 void Sub::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs().chan(0).initialised || in_mavlink_delay) {
+    if (!gcs().chan(0).initialised) {
         return;
     }
 
-    in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
@@ -1548,7 +1547,6 @@ void Sub::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-    in_mavlink_delay = false;
 }
 
 /*
