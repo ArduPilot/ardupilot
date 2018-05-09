@@ -2873,6 +2873,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_ahrs();
         break;
 
+    case MSG_VFR_HUD:
+        CHECK_PAYLOAD_SIZE(VFR_HUD);
+        send_vfr_hud();
+        break;
+
     case MSG_VIBRATION:
         CHECK_PAYLOAD_SIZE(VIBRATION);
         send_vibration();

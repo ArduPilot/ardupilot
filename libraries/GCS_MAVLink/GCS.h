@@ -184,6 +184,7 @@ public:
     virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
+    virtual void send_vfr_hud() {};
     void send_vibration() const;
     void send_named_float(const char *name, float value) const;
     void send_home() const;
