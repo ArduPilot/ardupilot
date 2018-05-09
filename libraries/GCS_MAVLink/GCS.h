@@ -166,10 +166,9 @@ public:
     void send_battery_status(const AP_BattMonitor &battery,
                              const uint8_t instance) const;
     bool send_battery_status() const;
-    void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
-    bool send_distance_sensor(const RangeFinder &rangefinder) const;
-    void send_rangefinder_downward(const RangeFinder &rangefinder) const;
-    bool send_proximity(const AP_Proximity &proximity) const;
+    bool send_distance_sensor() const;
+    void send_rangefinder_downward() const;
+    bool send_proximity() const;
     void send_ahrs2();
     void send_system_time();
     void send_radio_in();
@@ -458,6 +457,8 @@ private:
     
     // send an async parameter reply
     void send_parameter_reply(void);
+
+    void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
