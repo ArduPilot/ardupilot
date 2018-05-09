@@ -178,6 +178,12 @@ AP_Proximity::AP_Proximity(AP_SerialManager &_serial_manager) :
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Proximity must be singleton");
+    }
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _singleton = this;
 }
 
 // initialise the Proximity class. We do detection of attached sensors here
@@ -422,3 +428,13 @@ bool AP_Proximity::get_upward_distance(float &distance) const
 {
     return get_upward_distance(primary_instance, distance);
 }
+
+AP_Proximity::Proximity_Type AP_Proximity::get_type(uint8_t instance) const
+{
+    if (instance < PROXIMITY_MAX_INSTANCES) {
+        return (Proximity_Type)((uint8_t)_type[instance]);
+    }
+    return Proximity_Type_None;
+}
+
+AP_Proximity *AP_Proximity::_singleton;
