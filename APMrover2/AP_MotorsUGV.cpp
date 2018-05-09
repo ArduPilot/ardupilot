@@ -430,15 +430,27 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
         return;
     }
     if (armed) {
+        // scale throttle and steering to a 1000 to 2000 range for motor throttle calculations
         const float scaled_throttle = (throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
         const float scaled_steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+
+        // calculate desired vehicle speed and direction
+        // 1500 is a place-holder value for lateral movement input
         const float magnitude = safe_sqrt((scaled_throttle*scaled_throttle)+(1500*1500));
         const float theta = atan2f(scaled_throttle,1500);
+
+        // calculate X and Y vectors using the following the equations: vx = cos(θ) * magnitude and vy = sin(θ) * magnitude
         const float Vx = -(cosf(theta)*magnitude);
         const float Vy = -(sinf(theta)*magnitude);
+
+        // calculate output throttle for each motor and scale it back to a -100 to 100 range
+        // calculations are done using the following equations: MOTOR1 = –vx, MOTOR2 = 0.5 * v – √(3/2) * vy, MOTOR 3 = 0.5 * vx + √(3/2) * vy
+        // safe_sqrt((3)/2) used because the motors are 120 degrees apart in the frame, this setup is mandatory
         const int16_t motor_1 = (((-Vx) + scaled_steering) - (2500)) * (100 - (-100)) / (3500 - (2500)) + (-100);
         const int16_t motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1121)) * (100 - (-100)) / (2973 - (1121)) + (-100);
         const int16_t motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-1468)) * (100 - (-100)) / (383 - (-1468)) + (-100);
+
+        // send pwm value to each motor
         output_throttle(SRV_Channel::k_motor1, motor_1);
         output_throttle(SRV_Channel::k_motor2, motor_2);
         output_throttle(SRV_Channel::k_motor3, motor_3);
