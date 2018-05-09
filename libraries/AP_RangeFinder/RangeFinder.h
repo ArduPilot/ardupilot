@@ -157,8 +157,12 @@ public:
      */
     bool pre_arm_check() const;
 
+    static RangeFinder *get_singleton(void) { return _singleton; }
+
 
 private:
+    static RangeFinder *_singleton;
+
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances:3;
