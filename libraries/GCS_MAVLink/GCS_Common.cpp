@@ -221,7 +221,7 @@ bool GCS_MAVLINK::send_battery_status() const
     return true;
 }
 
-void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor) const
+void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
 {
     if (sensor == nullptr) {
         // should not happen
@@ -238,7 +238,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor) con
         sensor->max_distance_cm(),               // maximum distance the sensor can measure in centimeters
         sensor->distance_cm(),                   // current distance reading
         sensor->get_mav_distance_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
-        sensor->instance(),                      // onboard ID of the sensor == instance
+        instance,                                // onboard ID of the sensor == instance
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
         0);                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
 }
@@ -251,18 +251,9 @@ bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
         if (sensor == nullptr) {
             continue;
         }
-        send_distance_sensor(sensor);
+        send_distance_sensor(sensor, i);
     }
     return true;
-}
-
-void GCS_MAVLINK::send_distance_sensor_downward(const RangeFinder &rangefinder) const
-{
-    AP_RangeFinder_Backend *s = rangefinder.find_instance(ROTATION_PITCH_270);
-    if (s == nullptr) {
-        return;
-    }
-    send_distance_sensor(s);
 }
 
 void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
