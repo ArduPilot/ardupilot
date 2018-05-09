@@ -1727,6 +1727,45 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
     }
 }
 
+
+float GCS_MAVLINK::vfr_hud_airspeed() const
+{
+    // because most vehicles don't have airspeed sensors, we return a
+    // different sort of speed estimate in the relevant field for
+    // comparison's sake.
+    return AP::gps().ground_speed();
+}
+
+float GCS_MAVLINK::vfr_hud_climbrate() const
+{
+    return -vfr_hud_velned.z;
+}
+
+void GCS_MAVLINK::send_vfr_hud()
+{
+    AP_AHRS &ahrs = AP::ahrs();
+
+    // return values ignored; we send stale data
+    ahrs.get_position(global_position_current_loc);
+    ahrs.get_velocity_NED(vfr_hud_velned);
+
+    float alt;
+    if (vfr_hud_make_alt_relative()) {
+        ahrs.get_relative_position_D_home(alt);
+        alt = -alt;
+    } else {
+        alt = global_position_current_loc.alt / 100.0f;
+    }
+    mavlink_msg_vfr_hud_send(
+        chan,
+        vfr_hud_airspeed(),
+        ahrs.groundspeed(),
+        (ahrs.yaw_sensor / 100) % 360,
+        vfr_hud_throttle(),
+        alt,
+        vfr_hud_climbrate());
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2962,6 +3001,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
+        break;
+
+    case MSG_VFR_HUD:
+        CHECK_PAYLOAD_SIZE(VFR_HUD);
+        send_vfr_hud();
         break;
 
     case MSG_VIBRATION:
