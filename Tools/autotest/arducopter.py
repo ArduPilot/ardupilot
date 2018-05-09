@@ -934,8 +934,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1500)
 
         # fly the mission
-        if not self.wait_waypoint(0, num_wp-1, timeout=500):
-            self.land()
+        self.wait_waypoint(0, num_wp-1, timeout=500)
 
         # set throttle to minimum
         self.set_rc(3, 1000)
@@ -1142,6 +1141,9 @@ class AutoTestCopter(AutoTest):
 
             # Fly auto test
             self.run_test("Fly copter mission", self.fly_auto_test)
+
+            # land
+            self.run_test("Fly copter mission", self.land)
 
             # wait for disarm
             self.mav.motors_disarmed_wait()
