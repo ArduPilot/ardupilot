@@ -1975,8 +1975,9 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
-                                           "smmmrrr", "F000000", "Qffffff",
+    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+                                           "ssmmmrrr", "FF000000", "QQffffff",
+                                           (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
                                            (double)x,
                                            (double)y,
