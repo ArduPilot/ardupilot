@@ -132,8 +132,8 @@ class AutoTestPlane(AutoTest):
 
         # gain a bit of altitude
         self.wait_altitude(self.homeloc.alt+150,
-                                  self.homeloc.alt+180,
-                                  timeout=30)
+                           self.homeloc.alt+180,
+                           timeout=30)
 
         # level off
         self.set_rc(2, 1500)
@@ -165,10 +165,10 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.send('switch 2\n')
         self.wait_mode('RTL')
         self.wait_location(self.homeloc,
-                                  accuracy=120,
-                                  target_altitude=self.homeloc.alt+100,
-                                  height_accuracy=20,
-                                  timeout=180)
+                           accuracy=120,
+                           target_altitude=self.homeloc.alt+100,
+                           height_accuracy=20,
+                           timeout=180)
         self.progress("RTL Complete")
 
     def fly_LOITER(self, num_circles=4):
@@ -282,7 +282,7 @@ class AutoTestPlane(AutoTest):
                 self.wait_roll(150, accuracy=90)
                 self.wait_roll(0, accuracy=90)
             except Exception as e:
-                self.set_rc(1,1500)
+                self.set_rc(1, 1500)
                 raise e
             count -= 1
 
@@ -513,11 +513,15 @@ class AutoTestPlane(AutoTest):
 
             self.run_test("CIRCLE test", self.fly_CIRCLE)
 
-            self.run_test("Mission test", lambda: self.fly_mission(os.path.join(testdir, "ap1.txt"),
-                                    height_accuracy=10,
-                                    target_altitude=self.homeloc.alt+100))
+            self.run_test("Mission test",
+                          lambda: self.fly_mission(
+                              os.path.join(testdir, "ap1.txt"),
+                              height_accuracy=10,
+                              target_altitude=self.homeloc.alt+100))
 
-            self.run_test("Log download", lambda: self.log_download(self.buildlogs_path("ArduPlane-log.bin")))
+            self.run_test("Log download",
+                          lambda: self.log_download(
+                              self.buildlogs_path("ArduPlane-log.bin")))
 
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")

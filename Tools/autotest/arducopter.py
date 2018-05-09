@@ -460,7 +460,7 @@ class AutoTestCopter(AutoTest):
         # restore motor 1 to 100% efficiency
         self.mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
 
-        self.progress("Stability patch and Loiter OK for %u seconds" % holdtime)
+        self.progress("Stability patch and Loiter OK for %us" % holdtime)
 
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def fly_fence_test(self, timeout=180):
@@ -576,7 +576,8 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('arm check all\n')
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
-        """fly_gps_glitch_loiter_test. Fly south east in loiter and test reaction to gps glitch."""
+        """fly_gps_glitch_loiter_test. Fly south east in loiter and test
+        reaction to gps glitch."""
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
 
@@ -625,7 +626,6 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         tnow = tstart
         start_pos = self.sim_location()
-        success = True
 
         # initialise current glitch
         glitch_current = 0
@@ -1023,59 +1023,75 @@ class AutoTestCopter(AutoTest):
             self.run_test("Arm motors", self.arm_vehicle)
 
             # Takeoff
-            self.run_test("Takeoff to test fly Square", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test fly Square",
+                          lambda: self.takeoff(10))
 
             # Fly a square in Stabilize mode
-            self.run_test("Fly a square and save WPs with CH7", self.fly_square)
+            self.run_test("Fly a square and save WPs with CH7",
+                          self.fly_square)
 
             # save the stored mission to file
             global num_wp
-            num_wp = self.save_mission_to_file(os.path.join(testdir, "ch7_mission.txt"))
+            num_wp = self.save_mission_to_file(os.path.join(testdir,
+                                                            "ch7_mission.txt"))
             if not num_wp:
                 self.fail_list.append("save_mission_to_file")
                 self.progress("save_mission_to_file failed")
 
             # fly the stored mission
-            self.run_test("Fly CH7 saved mission", lambda: self.fly_mission(height_accuracy=0.5, target_altitude=10))
+            self.run_test("Fly CH7 saved mission",
+                          lambda: self.fly_mission(height_accuracy=0.5,
+                                                   target_altitude=10))
 
             # Throttle Failsafe
-            self.run_test("Test Failsafe", lambda: self.fly_throttle_failsafe)
+            self.run_test("Test Failsafe",
+                          lambda: self.fly_throttle_failsafe)
 
             # Takeoff
-            self.run_test("Takeoff to test battery failsafe", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test battery failsafe",
+                          lambda: self.takeoff(10))
 
             # Battery failsafe
-            self.run_test("Fly Battery Failsafe", lambda: self.fly_battery_failsafe)
+            self.run_test("Fly Battery Failsafe",
+                          lambda: self.fly_battery_failsafe)
 
             # Takeoff
-            self.run_test("Takeoff to test stability patch", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test stability patch",
+                          lambda: self.takeoff(10))
 
             # Stability patch
-            self.run_test("Fly stability patch", lambda: self.fly_stability_patch(30))
+            self.run_test("Fly stability patch",
+                          lambda: self.fly_stability_patch(30))
 
             # RTL
             self.run_test("RTL after stab patch", lambda: self.fly_RTL)
 
             # Takeoff
-            self.run_test("Takeoff to test horizontal fence", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test horizontal fence",
+                          lambda: self.takeoff(10))
 
             # Fence test
-            self.run_test("Test horizontal fence", lambda: self.fly_fence_test(180))
+            self.run_test("Test horizontal fence",
+                          lambda: self.fly_fence_test(180))
 
             # Fence test
-            self.run_test("Test Max Alt Fence", lambda: self.fly_alt_max_fence_test(180))
+            self.run_test("Test Max Alt Fence",
+                          lambda: self.fly_alt_max_fence_test(180))
 
             # Takeoff
-            self.run_test("Takeoff to test GPS glitch loiter", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test GPS glitch loiter",
+                          lambda: self.takeoff(10))
 
             # Fly GPS Glitch Loiter test
-            self.run_test("GPS Glitch Loiter Test", self.fly_gps_glitch_loiter_test)
+            self.run_test("GPS Glitch Loiter Test",
+                          self.fly_gps_glitch_loiter_test)
 
             # RTL after GPS Glitch Loiter test
             self.run_test("RTL after GPS Glitch Loiter test", self.fly_RTL)
 
             # Fly GPS Glitch test in auto mode
-            self.run_test("GPS Glitch Auto Test", self.fly_gps_glitch_auto_test)
+            self.run_test("GPS Glitch Auto Test",
+                          self.fly_gps_glitch_auto_test)
 
             # Takeoff
             self.run_test("Takeoff to test loiter", lambda: self.takeoff(10))
@@ -1087,13 +1103,15 @@ class AutoTestCopter(AutoTest):
             self.run_test("Loiter - climb to 30m", lambda: self.change_alt(30))
 
             # Loiter Descend
-            self.run_test("Loiter - descend to 20m", lambda: self.change_alt(20))
+            self.run_test("Loiter - descend to 20m",
+                          lambda: self.change_alt(20))
 
             # RTL
             self.run_test("RTL after Loiter climb/descend", self.fly_RTL)
 
             # Takeoff
-            self.run_test("Takeoff to test fly SIMPLE mode", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test fly SIMPLE mode",
+                          lambda: self.takeoff(10))
 
             # Simple mode
             self.run_test("Fly in SIMPLE mode", self.fly_simple)
@@ -1102,16 +1120,19 @@ class AutoTestCopter(AutoTest):
             self.run_test("RTL after SIMPLE mode", self.fly_RTL)
 
             # Takeoff
-            self.run_test("Takeoff to test circle in SUPER SIMPLE mode", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test circle in SUPER SIMPLE mode",
+                          lambda: self.takeoff(10))
 
             # Fly a circle in super simple mode
-            self.run_test("Fly a circle in SUPER SIMPLE mode", self.fly_super_simple)
+            self.run_test("Fly a circle in SUPER SIMPLE mode",
+                          self.fly_super_simple)
 
             # RTL
             self.run_test("RTL after SUPER SIMPLE mode", self.fly_RTL)
 
             # Takeoff
-            self.run_test("Takeoff to test CIRCLE mode", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test CIRCLE mode",
+                          lambda: self.takeoff(10))
 
             # Circle mode
             self.run_test("Fly CIRCLE mode", self.fly_circle)
@@ -1126,7 +1147,9 @@ class AutoTestCopter(AutoTest):
             self.mav.motors_disarmed_wait()
 
             # Download logs
-            self.run_test("log download", lambda: self.log_download(self.buildlogs_path("ArduCopter-log.bin")))
+            self.run_test("log download",
+                          lambda: self.log_download(
+                              self.buildlogs_path("ArduCopter-log.bin")))
 
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")
@@ -1169,7 +1192,9 @@ class AutoTestCopter(AutoTest):
             self.set_rc(8, 1000)
 
             # mission ends with disarm so should be ok to download logs now
-            self.run_test("log download", lambda: self.log_download(self.buildlogs_path("Helicopter-log.bin")))
+            self.run_test("log download",
+                          lambda: self.log_download(
+                              self.buildlogs_path("Helicopter-log.bin")))
 
         except pexpect.TIMEOUT as e:
             self.fail_list.append("Failed with timeout")
