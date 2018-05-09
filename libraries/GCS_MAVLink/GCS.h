@@ -168,7 +168,6 @@ public:
     bool send_battery_status() const;
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
-    void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
     void send_rangefinder_downward(const RangeFinder &rangefinder) const;
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2();
