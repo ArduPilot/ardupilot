@@ -499,12 +499,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_ahrs2();
         break;
 
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(plane.rangefinder);
-        send_distance_sensor(plane.rangefinder);
-        break;
-
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
