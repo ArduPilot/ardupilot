@@ -558,14 +558,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_sensor_offsets(sub.ins, sub.compass);
         break;
 
-    case MSG_RANGEFINDER:
-#if RANGEFINDER_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(sub.rangefinder);
-        send_distance_sensor(sub.rangefinder);
-#endif
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
