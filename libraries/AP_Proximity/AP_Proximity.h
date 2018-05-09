@@ -36,6 +36,9 @@ public:
 
     AP_Proximity(AP_SerialManager &_serial_manager);
 
+    AP_Proximity(const AP_Proximity &other) = delete;
+    AP_Proximity &operator=(const AP_Proximity) = delete;
+
     // Proximity driver types
     enum Proximity_Type {
         Proximity_Type_None    = 0,
@@ -124,10 +127,15 @@ public:
     bool get_upward_distance(uint8_t instance, float &distance) const;
     bool get_upward_distance(float &distance) const;
 
+    Proximity_Type get_type(uint8_t instance) const;
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
+    static AP_Proximity *get_singleton(void) { return _singleton; };
+
 private:
+    static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
     const RangeFinder *_rangefinder;
