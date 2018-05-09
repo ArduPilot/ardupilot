@@ -49,7 +49,7 @@ void SITL_State::_usage(void)
            "\t--speedup|-s SPEEDUP     set simulation speedup\n"
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
-           "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers and change SYSID_MYGCS), limited to 255.\n"
+           "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
            // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
@@ -244,8 +244,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             HALSITL::UARTDriver::_console = true;
             break;
         case 'I': {
-            const int instance = atoi(gopt.optarg);
-            _instance = static_cast<uint8_t>(instance);
+            _instance = atoi(gopt.optarg);
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
@@ -267,13 +266,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_irlock_port == IRLOCK_PORT) {
                 _irlock_port += _instance * 10;
             }
-            if (instance < 1 || instance > 255) {
-                fprintf(stderr, "You must specify an instance-id greater than 0 and less than 256\n");
-                exit(1);
-            }
-            char sysid[18];
-            snprintf(sysid, sizeof(sysid), "SYSID_THISMAV=%s", gopt.optarg);
-            _set_param_default(sysid);
         }
         break;
         case 'P':
