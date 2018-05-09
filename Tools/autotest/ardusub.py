@@ -167,9 +167,13 @@ class AutoTestSub(AutoTest):
 
             self.run_test("Dive manual", self.dive_manual)
 
-            self.run_test("Dive mission", lambda: self.dive_mission(os.path.join(testdir, "sub_mission.txt")))
+            self.run_test("Dive mission",
+                          lambda: self.dive_mission(
+                              os.path.join(testdir, "sub_mission.txt")))
 
-            self.run_test("Log download", lambda: self.log_download(self.buildlogs_path("ArduSub-log.bin")))
+            self.run_test("Log download",
+                          lambda: self.log_download(
+                              self.buildlogs_path("ArduSub-log.bin")))
 
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")

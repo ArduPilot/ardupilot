@@ -28,60 +28,75 @@ class ErrorException(Exception):
     """Base class for other exceptions"""
     pass
 
+
 class AutoTestTimeoutException(ErrorException):
     pass
+
 
 class WaitModeTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given mode change."""
     pass
 
+
 class WaitAltitudeTimout(AutoTestTimeoutException):
     """Thrown when fails to achieve given altitude range."""
     pass
+
 
 class WaitGroundSpeedTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given ground speed range."""
     pass
 
+
 class WaitRollTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given roll in degrees."""
     pass
+
 
 class WaitPitchTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given pitch in degrees."""
     pass
 
+
 class WaitHeadingTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given heading."""
     pass
+
 
 class WaitDistanceTimeout(AutoTestTimeoutException):
     """Thrown when fails to attain distance"""
     pass
 
+
 class WaitLocationTimeout(AutoTestTimeoutException):
     """Thrown when fails to attain location"""
     pass
+
 
 class WaitWaypointTimeout(AutoTestTimeoutException):
     """Thrown when fails to attain waypoint ranges"""
     pass
 
+
 class SetRCTimeout(AutoTestTimeoutException):
     """Thrown when fails to send RC commands"""
     pass
+
 
 class MsgRcvTimeoutException(AutoTestTimeoutException):
     """Thrown when fails to receive an expected message"""
     pass
 
+
 class NotAchievedException(ErrorException):
     """Thrown when fails to achieve a goal"""
     pass
 
+
 class PreconditionFailedException(ErrorException):
     """Thrown when a precondition for a test is not met"""
     pass
+
 
 class AutoTest(ABC):
     """Base abstract class.
@@ -677,7 +692,7 @@ class AutoTest(ABC):
             function()
         except Exception as e:
             self.progress('FAILED: "%s": %s' % (desc, type(e).__name__))
-            self.fail_list.append( (desc, e) )
+            self.fail_list.append((desc, e))
             return
         self.progress('PASSED: "%s"' % desc)
 

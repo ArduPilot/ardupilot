@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import os
 import pexpect
-import shutil
 import time
 
 from common import AutoTest
@@ -509,7 +508,8 @@ class AutoTestRover(AutoTest):
                           self.test_servorelayevents)
 
             self.run_test("Download logs", lambda:
-                          self.log_download(self.buildlogs_path("APMrover2-log.bin")))
+                          self.log_download(
+                              self.buildlogs_path("APMrover2-log.bin")))
     #        if not drive_left_circuit(self):
     #            self.progress("Failed left circuit")
     #            failed = True
@@ -519,7 +519,7 @@ class AutoTestRover(AutoTest):
 
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")
-            self.fail_list.append( ("*timeout*", None) )
+            self.fail_list.append(("*timeout*", None))
 
         self.close()
 
