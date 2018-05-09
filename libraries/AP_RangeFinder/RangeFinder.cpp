@@ -540,6 +540,13 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         state[i].orientation.set_default(orientation_default);
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Rangefinder must be singleton");
+    }
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _singleton = this;
 }
 
 /*
@@ -864,3 +871,5 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
     }
     return backend->get_mav_distance_sensor_type();
 }
+
+RangeFinder *RangeFinder::_singleton;
