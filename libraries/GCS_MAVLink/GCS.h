@@ -186,6 +186,7 @@ public:
     virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
+    void send_vfr_hud();
     void send_vibration() const;
     void send_named_float(const char *name, float value) const;
     void send_home() const;
@@ -367,6 +368,13 @@ protected:
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
     virtual int32_t global_position_int_relative_alt() const;
+
+    // these methods are called after vfr_hud_velned is updated
+    virtual bool vfr_hud_make_alt_relative() const { return false; }
+    virtual float vfr_hud_climbrate() const;
+    virtual float vfr_hud_airspeed() const;
+    virtual int16_t vfr_hud_throttle() const { return 0; }
+    Vector3f vfr_hud_velned;
 
 private:
 
