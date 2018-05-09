@@ -223,10 +223,6 @@ bool GCS_MAVLINK::send_battery_status() const
 
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
 {
-    if (sensor == nullptr) {
-        // should not happen
-        return;
-    }
     if (!sensor->has_data()) {
         return;
     }
@@ -243,22 +239,47 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         0);                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
 }
 
-bool GCS_MAVLINK::send_distance_sensor(const RangeFinder &rangefinder) const
+bool GCS_MAVLINK::send_distance_sensor() const
 {
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return true; // this is wrong, but pretend we sent data and don't requeue
+    }
+
+    // if we have a proximity backend that utilizes rangefinders cull sending them here,
+    // and allow the later proximity code to manage them
+    bool filter_possible_proximity_sensors = false;
+    AP_Proximity *proximity = AP_Proximity::get_singleton();
+    if (proximity != nullptr) {
+        for (uint8_t i = 0; i < proximity->num_sensors(); i++) {
+            if (proximity->get_type(i) == AP_Proximity::Proximity_Type_RangeFinder) {
+                filter_possible_proximity_sensors = true;
+            }
+        }
+    }
+
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        AP_RangeFinder_Backend *sensor = rangefinder.get_backend(i);
+        AP_RangeFinder_Backend *sensor = rangefinder->get_backend(i);
         if (sensor == nullptr) {
             continue;
         }
-        send_distance_sensor(sensor, i);
+        enum Rotation orient = sensor->orientation();
+        if (!filter_possible_proximity_sensors ||
+            (orient > ROTATION_YAW_315 && orient != ROTATION_PITCH_90)) {
+            send_distance_sensor(sensor, i);
+        }
     }
     return true;
 }
 
-void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) const
+void GCS_MAVLINK::send_rangefinder_downward() const
 {
-    AP_RangeFinder_Backend *s = rangefinder.find_instance(ROTATION_PITCH_270);
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return;
+    }
+    AP_RangeFinder_Backend *s = rangefinder->find_instance(ROTATION_PITCH_270);
     if (s == nullptr) {
         return;
     }
@@ -268,22 +289,25 @@ void GCS_MAVLINK::send_rangefinder_downward(const RangeFinder &rangefinder) cons
             s->voltage_mv() * 0.001f);
 }
 
-bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
+bool GCS_MAVLINK::send_proximity() const
 {
-    // return immediately if no proximity sensor is present
-    if (proximity.get_status() == AP_Proximity::Proximity_NotConnected) {
-        return false;
+    AP_Proximity *proximity = AP_Proximity::get_singleton();
+    if (proximity == nullptr || proximity->get_status() == AP_Proximity::Proximity_NotConnected) {
+        return true; // this is wrong, but pretend we sent data and don't requeue
     }
+
+    const uint16_t dist_min = (uint16_t)(proximity->distance_min() * 100.0f); // minimum distance the sensor can measure in centimeters
+    const uint16_t dist_max = (uint16_t)(proximity->distance_max() * 100.0f); // maximum distance the sensor can measure in centimeters
     // send horizontal distances
     AP_Proximity::Proximity_Distance_Array dist_array;
-    if (proximity.get_horizontal_distances(dist_array)) {
+    if (proximity->get_horizontal_distances(dist_array)) {
         for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
             CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
             mavlink_msg_distance_sensor_send(
                     chan,
                     AP_HAL::millis(),                               // time since system boot
-                    (uint16_t)(proximity.distance_min() * 100.0f),  // minimum distance the sensor can measure in centimeters
-                    (uint16_t)(proximity.distance_max() * 100.0f),  // maximum distance the sensor can measure in centimeters
+                    dist_min,                                       // minimum distance the sensor can measure in centimeters
+                    dist_max,                                       // maximum distance the sensor can measure in centimeters
                     (uint16_t)(dist_array.distance[i] * 100.0f),    // current distance reading
                     MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
                     PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
@@ -294,13 +318,13 @@ bool GCS_MAVLINK::send_proximity(const AP_Proximity &proximity) const
 
     // send upward distance
     float dist_up;
-    if (proximity.get_upward_distance(dist_up)) {
+    if (proximity->get_upward_distance(dist_up)) {
         CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
         mavlink_msg_distance_sensor_send(
                 chan,
                 AP_HAL::millis(),                                         // time since system boot
-                (uint16_t)(proximity.distance_min() * 100.0f),            // minimum distance the sensor can measure in centimeters
-                (uint16_t)(proximity.distance_max() * 100.0f),            // maximum distance the sensor can measure in centimeters
+                dist_min,                                                 // minimum distance the sensor can measure in centimeters
+                dist_max,                                                 // maximum distance the sensor can measure in centimeters
                 (uint16_t)(dist_up * 100.0f),                             // current distance reading
                 MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
                 PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
@@ -2670,6 +2694,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MEMINFO);
         send_meminfo();
         ret = true;
+        break;
+
+    case MSG_RANGEFINDER:
+        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+        send_rangefinder_downward();
+        ret = send_distance_sensor();
+        ret = ret && send_proximity();
         break;
 
     case MSG_CAMERA_FEEDBACK:
