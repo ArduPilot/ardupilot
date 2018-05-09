@@ -363,8 +363,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #if RANGEFINDER_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder_downward(copter.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(copter.rangefinder);
+        send_distance_sensor(copter.rangefinder);
 #endif
 #if PROXIMITY_ENABLED == ENABLED
         send_proximity(copter.g2.proximity);
