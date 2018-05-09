@@ -103,39 +103,27 @@ class AutoTestSub(AutoTest):
         self.set_rc(5, 1600)
         self.set_rc(6, 1550)
 
-        if not self.wait_distance(50, accuracy=7, timeout=200):
-            return False
-
+        self.wait_distance(50, accuracy=7, timeout=200)
         self.set_rc(4, 1550)
 
-        if not self.wait_heading(0):
-            return False
-
+        self.wait_heading(0)
         self.set_rc(4, 1500)
 
-        if not self.wait_distance(50, accuracy=7, timeout=100):
-            return False
-
+        self.wait_distance(50, accuracy=7, timeout=100)
         self.set_rc(4, 1550)
 
-        if not self.wait_heading(0):
-            return False
-
+        self.wait_heading(0)
         self.set_rc(4, 1500)
         self.set_rc(5, 1500)
         self.set_rc(6, 1100)
 
-        if not self.wait_distance(75, accuracy=7, timeout=100):
-            return False
-
+        self.wait_distance(75, accuracy=7, timeout=100)
         self.set_rc_default()
 
         self.disarm_vehicle()
         self.progress("Manual dive OK")
-        return True
 
     def dive_mission(self, filename):
-
         self.progress("Executing mission %s" % filename)
         self.mavproxy.send('wp load %s\n' % filename)
         self.mavproxy.expect('Flight plan received')
@@ -143,28 +131,23 @@ class AutoTestSub(AutoTest):
         self.mavproxy.expect('Saved [0-9]+ waypoints')
         self.set_rc_default()
 
-        if not self.arm_vehicle():
-            self.progress("Failed to ARM")
-            return False
+        self.arm_vehicle()
 
         self.mavproxy.send('mode auto\n')
         self.wait_mode('AUTO')
 
-        if not self.wait_waypoint(1, 5, max_dist=5):
-            return False
+        self.wait_waypoint(1, 5, max_dist=5)
 
         self.disarm_vehicle()
 
         self.progress("Mission OK")
-        return True
 
     def autotest(self):
         """Autotest ArduSub in SITL."""
         if not self.hasInit:
             self.init()
 
-        failed = False
-        e = 'None'
+        self.fail_list = []
         try:
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
@@ -179,25 +162,22 @@ class AutoTestSub(AutoTest):
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
             self.set_rc_default()
-            if not self.arm_vehicle():
-                self.progress("Failed to ARM")
-                failed = True
-            if not self.dive_manual():
-                self.progress("Failed manual dive")
-                failed = True
-            if not self.dive_mission(os.path.join(testdir, "sub_mission.txt")):
-                self.progress("Failed auto mission")
-                failed = True
-            if not self.log_download(self.buildlogs_path("ArduSub-log.bin")):
-                self.progress("Failed log download")
-                failed = True
+
+            self.run_test("Arm vehicle", self.arm_vehicle)
+
+            self.run_test("Dive manual", self.dive_manual)
+
+            self.run_test("Dive mission", lambda: self.dive_mission(os.path.join(testdir, "sub_mission.txt")))
+
+            self.run_test("Log download", lambda: self.log_download(self.buildlogs_path("ArduSub-log.bin")))
+
         except pexpect.TIMEOUT as e:
             self.progress("Failed with timeout")
-            failed = True
+            self.fail_list.append("Failed with timeout")
 
         self.close()
 
-        if failed:
-            self.progress("FAILED: %s" % e)
+        if len(self.fail_list):
+            self.progress("FAILED: %s" % self.fail_list)
             return False
         return True
