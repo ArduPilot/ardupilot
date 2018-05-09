@@ -5,8 +5,7 @@ Changes from 3.3.1-rc1:
 1) Vectored Thrust to improve attitude control for boats with rotating motors
 2) minor changes and bug fixes:
     a) remove jump forward when transitioning from forward to reverse
-    b) pivot turn while reversing fix
-    c) safety switch allows disarming motors (was disabled in 3.3.0)
+    b) safety switch allows disarming motors (was disabled in 3.3.0)
 --------------------------------
 Rover V3.3.0 07-May-2018
 Changes from 3.3.0-rc1:
