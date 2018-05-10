@@ -233,7 +233,7 @@ void AP_TempCalibration::update(void)
         break;
     case TC_ENABLE_LEARN:
         learn_calibration();
-        // fall through
+        FALLTHROUGH;
     case TC_ENABLE_USE:
         apply_calibration();
         break;

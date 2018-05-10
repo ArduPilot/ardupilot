@@ -9,9 +9,6 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
 
-        // set desired acceleration to zero
-        wp_nav->clear_pilot_desired_acceleration();
-
         // set target to current position
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
@@ -47,7 +44,7 @@ void Copter::ModeBrake::run()
 
     // relax stop target if we might be landed
     if (ap.land_complete_maybe) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     // if landed immediately disarm

@@ -2,6 +2,7 @@
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -19,7 +20,11 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 
     if (!state.external) {
         // and add in AHRS_ORIENTATION setting if not an external compass
-        mag.rotate(_compass._board_orientation);
+        if (_compass._board_orientation == ROTATION_CUSTOM && _compass._custom_rotation) {
+            mag = *_compass._custom_rotation * mag;
+        } else {
+            mag.rotate(_compass._board_orientation);
+        }
     } else {
         // add user selectable orientation
         mag.rotate((enum Rotation)state.orientation.get());
@@ -72,9 +77,13 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     if (_compass._per_motor.enabled() && i == 0) {
         // per-motor correction is only valid for first compass
         _compass._per_motor.compensate(state.motor_offset);
-    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE ||
-               _compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
-        state.motor_offset = mot * _compass._thr_or_curr;
+    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
+        state.motor_offset = mot * _compass._thr;
+    } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
+        AP_BattMonitor &battery = AP::battery();
+        if (battery.has_current()) {
+            state.motor_offset = mot * battery.current_amps();
+        }
     }
 
     /*
@@ -143,3 +152,45 @@ void AP_Compass_Backend::set_rotation(uint8_t instance, enum Rotation rotation)
 {
     _compass._state[instance].rotation = rotation;
 }
+
+static constexpr float FILTER_KOEF = 0.1f;
+
+/* Check that the compass value is valid by using a mean filter. If
+ * the value is further than filtrer_range from mean value, it is
+ * rejected. 
+*/
+bool AP_Compass_Backend::field_ok(const Vector3f &field)
+{
+
+    
+    if (field.is_inf() || field.is_nan()) {
+        return false;
+    }
+
+    const float range = (float)_compass.get_filter_range();
+    if (range <= 0) {
+        return true;
+    }
+
+    const float length = field.length();
+
+    if (is_zero(_mean_field_length)) {
+        _mean_field_length = length;
+        return true;
+    }
+
+    bool ret = true;
+    const float d = fabsf(_mean_field_length - length) / (_mean_field_length + length);  // diff divide by mean value in percent ( with the *200.0f on later line)
+    float koeff = FILTER_KOEF;
+
+    if (d * 200.0f > range) {  // check the difference from mean value outside allowed range
+        // printf("\nCompass field length error: mean %f got %f\n", (double)_mean_field_length, (double)length );
+        ret = false;
+        koeff /= (d * 10.0f);  // 2.5 and more, so one bad sample never change mean more than 4%
+        _error_count++;
+    }
+    _mean_field_length = _mean_field_length * (1 - koeff) + length * koeff;  // complimentary filter 1/k
+
+    return ret;
+}
+

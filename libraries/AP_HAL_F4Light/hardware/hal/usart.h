@@ -57,11 +57,6 @@ extern const usart_dev * const _UART4;
 extern const usart_dev * const _UART5;
 extern const usart_dev * const _USART6;
 
-//#define USART2_USED
-
-
-
-
 #define USART_F_RXNE 0x20
 #define USART_F_TXE  0x80
 #define USART_F_ORE  0x8

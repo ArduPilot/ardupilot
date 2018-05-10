@@ -57,7 +57,7 @@
 #define BOARD_SPEKTRUM_PWR_ON   1
 #define BOARD_SPEKTRUM_PWR_OFF  0
 
-
+#define BOARD_DSM_USART _UART5
 
    
 #define BOARD_NR_SPI            3
@@ -108,6 +108,12 @@
 #define BOARD_NR_GPIO_PINS      109
 
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
 #define BOARD_I2C_BUS_INT       0  // hardware I2C
 
 #define BOARD_I2C_BUS_EXT      2  // external soft I2C or flexiPort (by parameter)
@@ -148,17 +154,7 @@
 #define BOARD_DATAFLASH_NAME            "dataflash"
 #define BOARD_DATAFLASH_PAGES           0x2000
 #define BOARD_DATAFLASH_ERASE_SIZE (65536)// in bytes
-
-#if 0// use it as FAT and share it via USB
-#define BOARD_DATAFLASH_FATFS
-#define USB_MASSSTORAGE
-#define HAL_BOARD_LOG_DIRECTORY "0:/"
-#define HAL_BOARD_TERRAIN_DIRECTORY "0:/TERRAIN"
-//#define HAL_PARAM_DEFAULTS_PATH "0:/APM/defaults.parm"
-#else
-// old dataflash logs
-#endif
-
+#define HAL_BOARD_LOG_DIRECTORY "" // should be defined to logs works
 
 #define BOARD_UARTS_LAYOUT 1
 #define USE_SOFTSERIAL 1
@@ -168,6 +164,12 @@
 # define BOARD_BATTERY_VOLT_PIN         8   // Battery voltage on A0 (PC2) D8
 # define BOARD_BATTERY_CURR_PIN         7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN  254 // no sonar by default
+
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
 
 #define BOARD_USB_DMINUS                108
 
@@ -182,14 +184,22 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 47 // PA0
 
+// input pins as servo outputs
+#define SERVO_PIN_7    5 // PB15  CH2_IN - PPM2 
+#define SERVO_PIN_8   12 // PC6  CH3_IN UART6
+#define SERVO_PIN_9   13 // PC7  CH4_IN UART6
+#define SERVO_PIN_10  14 // PC8  CH5_IN i2c
+#define SERVO_PIN_11  15 // PC9  CH6_IN i2c
+
+#define MOTOR_LAYOUT_DEFAULT 0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 
-//#define HAL_CONSOLE USB_Driver // console on USB
-//#define HAL_CONSOLE_PORT 0 // USB
-#define HAL_CONSOLE uart1Driver // console on radio
-#define HAL_CONSOLE_PORT 1 // console on radio
+#define HAL_CONSOLE USB_Driver // console on USB
+#define HAL_CONSOLE_PORT 0 // USB
+//#define HAL_CONSOLE uart1Driver // console on radio
+//#define HAL_CONSOLE_PORT 1 // console on radio
 
 /*
     // @Param: FLEXI_I2C
@@ -198,9 +208,8 @@
     // @Values: 0:USART, 1:I2C
     // @User: Advanced
     AP_GROUPINFO("FLEXI_I2C",    6, AP_Param_Helper, _flexi_i2c, 0) \
-
-
 */
+
 #define BOARD_HAL_VARINFO \
     AP_GROUPINFO("FLEXI_I2C",    30, AP_Param_Helper, _flexi_i2c, 0),
     

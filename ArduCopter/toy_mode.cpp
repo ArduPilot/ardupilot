@@ -226,9 +226,9 @@ void ToyMode::update()
     bool power_button = false;
     bool left_change = false;
     
-    uint16_t ch5_in = hal.rcin->read(CH_5);
-    uint16_t ch6_in = hal.rcin->read(CH_6);
-    uint16_t ch7_in = hal.rcin->read(CH_7);
+    uint16_t ch5_in = RC_Channels::get_radio_in(CH_5);
+    uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
+    uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
 
     if (copter.failsafe.radio || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
@@ -489,11 +489,13 @@ void ToyMode::update()
         send_named_int("VIDEOTOG", 1);
         break;
 
-#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_ACRO:
+#if MODE_ACRO_ENABLED == ENABLED
         new_mode = ACRO;
-        break;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ACRO is disabled");
 #endif
+        break;
 
     case ACTION_MODE_ALTHOLD:
         new_mode = ALT_HOLD;
@@ -539,11 +541,13 @@ void ToyMode::update()
         new_mode = BRAKE;
         break;
 
-#if MODE_THROW_ENABLED == ENABLED
     case ACTION_MODE_THROW:
+#if MODE_THROW_ENABLED == ENABLED
         new_mode = THROW;
-        break;
+#else
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: THROW is disabled");
 #endif
+        break;
 
     case ACTION_MODE_FLIP:
         new_mode = FLIP;
@@ -711,7 +715,7 @@ void ToyMode::trim_update(void)
     }
     
     uint16_t chan[4];
-    if (hal.rcin->read(chan, 4) != 4) {
+    if (RC_Channels::get_radio_in(chan, 4) != 4) {
         trim.start_ms = 0;
         return;
     }

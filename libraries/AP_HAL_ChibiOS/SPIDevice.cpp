@@ -37,6 +37,11 @@ extern const AP_HAL::HAL& hal;
 #define SPI3_CLOCK  STM32_PCLK1
 #define SPI4_CLOCK  STM32_PCLK2
 
+// expected bus clock speeds
+static const uint32_t bus_clocks[4] = {
+    SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK
+};
+
 static const struct SPIDriverInfo {    
     SPIDriver *driver;
     uint8_t busid; // used for device IDs in parameters
@@ -56,15 +61,15 @@ SPIBus::SPIBus(uint8_t _bus) :
     // allow for sharing of DMA channels with other peripherals
     dma_handle = new Shared_DMA(spi_devices[bus].dma_channel_rx,
                                 spi_devices[bus].dma_channel_tx,
-                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void),
-                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void));
+                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void, Shared_DMA *),
+                                FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
         
 }
 
 /*
   allocate DMA channel
  */
-void SPIBus::dma_allocate(void)
+void SPIBus::dma_allocate(Shared_DMA *ctx)
 {
     // nothing to do as we call spiStart() on each transaction
 }
@@ -72,7 +77,7 @@ void SPIBus::dma_allocate(void)
 /*
   deallocate DMA channel
  */
-void SPIBus::dma_deallocate(void)
+void SPIBus::dma_deallocate(Shared_DMA *ctx)
 {
     // another non-SPI peripheral wants one of our DMA channels
     if (spi_started) {
@@ -148,51 +153,23 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 
 uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
 {
-    uint8_t i;
-    uint32_t spi_clock_freq;
-    switch(device_desc.bus) {
-        case 0:
-            spi_clock_freq = SPI1_CLOCK;
-            break;
-        case 1:
-            spi_clock_freq = SPI2_CLOCK;
-            break;
-        case 2:
-            spi_clock_freq = SPI4_CLOCK;
-            break;
-        case 3:
-            spi_clock_freq = SPI4_CLOCK;
-            break;
-        default:
-            spi_clock_freq = SPI1_CLOCK;
-            break;
+    uint32_t spi_clock_freq = SPI1_CLOCK;
+    uint8_t busid = spi_devices[device_desc.bus].busid;
+    if (busid > 0 && busid-1 < ARRAY_SIZE_SIMPLE(bus_clocks)) {
+        spi_clock_freq = bus_clocks[busid-1] / 2;
     }
 
-    for(i = 0; i <= 7; i++) {
-        spi_clock_freq /= 2;
-        if (spi_clock_freq <= _frequency) {
-            break;
-        }
+    // find first divisor that brings us below the desired SPI clock
+    uint32_t i = 0;
+    while (spi_clock_freq > _frequency && i<7) {
+        spi_clock_freq >>= 1;
+        i++;
     }
-    switch(i) {
-        case 0: //PCLK DIV 2
-            return 0;
-        case 1: //PCLK DIV 4
-            return SPI_CR1_BR_0;
-        case 2: //PCLK DIV 8
-            return SPI_CR1_BR_1;
-        case 3: //PCLK DIV 16
-            return SPI_CR1_BR_1 | SPI_CR1_BR_0;
-        case 4: //PCLK DIV 32
-            return SPI_CR1_BR_2;
-        case 5: //PCLK DIV 64
-            return SPI_CR1_BR_2 | SPI_CR1_BR_0;
-        case 6: //PCLK DIV 128
-            return SPI_CR1_BR_2 | SPI_CR1_BR_1;
-        case 7: //PCLK DIV 256
-        default:
-            return SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0;
-    }
+    
+    // assuming the bitrate bits are consecutive in the CR1 register,
+    // we can just multiply by BR_0 to get the right bits for the desired
+    // scaling
+    return i * SPI_CR1_BR_0;
 }
 
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -326,4 +303,40 @@ SPIDeviceManager::get_device(const char *name)
     return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
 }
 
-#endif
+
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+/*
+  test clock frequencies. This measures the actual SPI clock
+  frequencies on all configured SPI buses. Used during board bringup
+  to validate clock configuration
+ */
+void SPIDevice::test_clock_freq(void)
+{
+    // delay for USB to come up
+    hal.console->printf("Waiting for USB\n");
+    hal.scheduler->delay(1000);
+    hal.console->printf("SPI1_CLOCK=%u SPI2_CLOCK=%u SPI3_CLOCK=%u SPI4_CLOCK=%u\n",
+                        SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK);
+
+    // we will send 1024 bytes without any CS asserted and measure the
+    // time it takes to do the transfer
+    uint16_t len = 1024;
+    uint8_t *buf = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(spi_devices); i++) {
+        SPIConfig spicfg {};
+        // use a clock divisor of 256 for maximum resolution
+        spicfg.cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0; // clock / 256
+        spiAcquireBus(spi_devices[i].driver);
+        spiStart(spi_devices[i].driver, &spicfg);
+        uint32_t t0 = AP_HAL::micros();
+        spiExchange(spi_devices[i].driver, len, buf, buf);
+        uint32_t t1 = AP_HAL::micros();
+        spiStop(spi_devices[i].driver);
+        spiReleaseBus(spi_devices[i].driver);
+        hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(256ULL * 1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
+    }
+    hal.util->free_type(buf, len, AP_HAL::Util::MEM_DMA_SAFE);
+}
+#endif // HAL_SPI_CHECK_CLOCK_FREQ
+
+#endif // HAL_USE_SPI

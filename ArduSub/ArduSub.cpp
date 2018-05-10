@@ -61,7 +61,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &g2.gripper,       update,              10,  75),
+    SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,       update,              10,  75),
 #endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
@@ -80,6 +80,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Sub::_failsafe_priorities[5];
 
 void Sub::setup()
 {
@@ -157,7 +158,7 @@ void Sub::fifty_hz_loop()
     failsafe_sensors_check();
 
     // Update rc input/output
-    RC_Channels::set_pwm_all();
+    RC_Channels::read_input();
     SRV_Channels::output_ch_all();
 }
 
@@ -166,7 +167,7 @@ void Sub::fifty_hz_loop()
 void Sub::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if (g.compass_enabled) {
         // update compass with throttle value - used for compassmot
@@ -302,13 +303,8 @@ void Sub::update_GPS(void)
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
-
-            // log GPS message
-            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
-                DataFlash.Log_Write_GPS(gps, i);
-            }
-
             gps_updated = true;
+            break;
         }
     }
 
@@ -341,6 +337,20 @@ void Sub::update_altitude()
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }
+}
+
+bool Sub::control_check_barometer()
+{
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
+        return false;
+    } else if (failsafe.sensor_health) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
+        return false;
+    }
+#endif
+    return true;
 }
 
 AP_HAL_MAIN_CALLBACKS(&sub);

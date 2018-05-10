@@ -575,7 +575,7 @@ void NavEKF2::check_log_write(void)
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(AP::gps(), AP::gps().primary_sensor(), imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
@@ -778,7 +778,7 @@ int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
+bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
@@ -790,7 +790,7 @@ bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE)
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosD(int8_t instance, float &posD)
+bool NavEKF2::getPosD(int8_t instance, float &posD) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
@@ -800,7 +800,7 @@ bool NavEKF2::getPosD(int8_t instance, float &posD)
 }
 
 // return NED velocity in m/s
-void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
+void NavEKF2::getVelNED(int8_t instance, Vector3f &vel) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -809,7 +809,7 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel)
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
-float NavEKF2::getPosDownDerivative(int8_t instance)
+float NavEKF2::getPosDownDerivative(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     // return the value calculated from a complementary filer applied to the EKF height and vertical acceleration
@@ -828,7 +828,7 @@ void NavEKF2::getAccelNED(Vector3f &accelNED) const
 }
 
 // return body axis gyro bias estimates in rad/sec
-void NavEKF2::getGyroBias(int8_t instance, Vector3f &gyroBias)
+void NavEKF2::getGyroBias(int8_t instance, Vector3f &gyroBias) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -837,7 +837,7 @@ void NavEKF2::getGyroBias(int8_t instance, Vector3f &gyroBias)
 }
 
 // return body axis gyro scale factor error as a percentage
-void NavEKF2::getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale)
+void NavEKF2::getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -846,7 +846,7 @@ void NavEKF2::getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale)
 }
 
 // return tilt error convergence metric for the specified instance
-void NavEKF2::getTiltError(int8_t instance, float &ang)
+void NavEKF2::getTiltError(int8_t instance, float &ang) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -908,7 +908,7 @@ void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the individual Z-accel bias estimates in m/s^2
-void NavEKF2::getAccelZBias(int8_t instance, float &zbias)
+void NavEKF2::getAccelZBias(int8_t instance, float &zbias) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -917,7 +917,7 @@ void NavEKF2::getAccelZBias(int8_t instance, float &zbias)
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF2::getWind(int8_t instance, Vector3f &wind)
+void NavEKF2::getWind(int8_t instance, Vector3f &wind) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -926,7 +926,7 @@ void NavEKF2::getWind(int8_t instance, Vector3f &wind)
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF2::getMagNED(int8_t instance, Vector3f &magNED)
+void NavEKF2::getMagNED(int8_t instance, Vector3f &magNED) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -935,7 +935,7 @@ void NavEKF2::getMagNED(int8_t instance, Vector3f &magNED)
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ)
+void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -944,7 +944,7 @@ void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ)
 }
 
 // return the magnetometer in use for the specified instance
-uint8_t NavEKF2::getActiveMag(int8_t instance)
+uint8_t NavEKF2::getActiveMag(int8_t instance) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1047,7 +1047,7 @@ void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
 }
 
 // return the innovations for the specified instance
-void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov)
+void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1065,7 +1065,7 @@ void NavEKF2::getOutputTrackingError(int8_t instance, Vector3f &error) const
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset)
+void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1101,7 +1101,7 @@ void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, 
 
 // return data for debugging optical flow fusion
 void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
-                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr)
+                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1110,7 +1110,7 @@ void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
 }
 
 // return data for debugging range beacon fusion
-bool NavEKF2::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
+bool NavEKF2::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1166,7 +1166,7 @@ void NavEKF2::setTerrainHgtStable(bool val)
   7 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults)
+void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1187,7 +1187,7 @@ void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults)
   7 = unassigned
   7 = unassigned
 */
-void NavEKF2::getFilterTimeouts(int8_t instance, uint8_t &timeouts)
+void NavEKF2::getFilterTimeouts(int8_t instance, uint8_t &timeouts) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1200,7 +1200,7 @@ void NavEKF2::getFilterTimeouts(int8_t instance, uint8_t &timeouts)
 /*
   return filter status flags
 */
-void NavEKF2::getFilterStatus(int8_t instance, nav_filter_status &status)
+void NavEKF2::getFilterStatus(int8_t instance, nav_filter_status &status) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1213,7 +1213,7 @@ void NavEKF2::getFilterStatus(int8_t instance, nav_filter_status &status)
 /*
 return filter gps quality check status
 */
-void  NavEKF2::getFilterGpsStatus(int8_t instance, nav_gps_status &status)
+void  NavEKF2::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
@@ -1456,7 +1456,7 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 /*
   get timing statistics structure
 */
-void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
+void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing) const
 {
     if (instance < 0 || instance >= num_cores) {
         instance = primary;
@@ -1465,6 +1465,26 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing)
         core[instance].getTimingStatistics(timing);
     } else {
         memset(&timing, 0, sizeof(timing));
+    }
+}
+
+/*
+ * Write position and quaternion data from an external navigation system
+ *
+ * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
+ * quat       : quaternion describing the the rotation from navigation frame to body frame
+ * posErr     : 1-sigma spherical position error (m)
+ * angErr     : 1-sigma spherical angle error (rad)
+ * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+ * resetTime_ms : system time of the last position reset request (mSec)
+ *
+*/
+void NavEKF2::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+        }
     }
 }
 

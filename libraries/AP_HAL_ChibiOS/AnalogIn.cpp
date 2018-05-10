@@ -15,6 +15,10 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
+#include "ch.h"
+#include "hal.h"
+
+#if HAL_USE_ADC == TRUE
 
 #include "AnalogIn.h"
 
@@ -256,6 +260,9 @@ void AnalogIn::_timer_tick(void)
 
     /* read all channels available */
     read_adc(buf_adc);
+
+    // update power status flags
+    update_power_flags();
     
     // match the incoming channels to the currently active pins
     for (uint8_t i=0; i < ADC_GRP1_NUM_CHANNELS; i++) {
@@ -309,4 +316,50 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
     hal.console->printf("Out of analog channels\n");
     return nullptr;
 }
+
+/*
+  update power status flags
+ */
+void AnalogIn::update_power_flags(void)
+{
+    uint16_t flags = 0;
+
+#ifdef HAL_GPIO_PIN_VDD_BRICK_VALID
+    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID)) {
+        flags |= MAV_POWER_STATUS_BRICK_VALID;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VDD_SERVO_VALID
+    if (!palReadLine(HAL_GPIO_PIN_VDD_SERVO_VALID)) {
+        flags |= MAV_POWER_STATUS_SERVO_VALID;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VBUS
+	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+        flags |= MAV_POWER_STATUS_USB_CONNECTED;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VDD_5V_HIPOWER_OC
+    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_OC)) {
+        flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
+    }    
+#endif
+
+#ifdef HAL_GPIO_PIN_VDD_5V_PERIPH_OC
+    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_PERIPH_OC)) {
+        flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
+    }    
+#endif
+    if (_power_flags != 0 && 
+        _power_flags != flags && 
+        hal.util->get_soft_armed()) {
+        // the power status has changed while armed
+        flags |= MAV_POWER_STATUS_CHANGED;
+    }
+    _power_flags = flags;
+}
+#endif // HAL_USE_ADC
 

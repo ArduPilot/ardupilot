@@ -1,6 +1,29 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 3.5.3-beta 29-April-2018 / Sub 3.5.3 8-May-2018
+
+Changes from 3.5.2:
+
+- Add current and voltage monitoring to simulation (SITL)
+- Add current limiting
+- Add momentary relay and servo button functions
+- Add servo toggle button functions
+- Apply yaw input scaling via ACRO_YAW_P to manual mode
+- Remove some vehicle-specific parameter metadata that does not apply to Sub
+- Allow zero gains for attitude control
+- Allow system time to be set by SYSTEM_TIME message from GCS
+- Clarify and improve error messages for depth sensor problems
+- Do not report depth calculated via air pressure with on-board barometer
+- Add motor test functionality
+- Remove arbitrary scalars from inputs in manual mode - allow full power to motors in manual mode
+- Disarm motors if initial failsafe action fails to execute
+- Implement camera mount pan
+- Reduce default yaw input scaling by 25% (ACRO_YAW_P)
+- Suppress repeated printing of "GPS detected as MAV" messages when no mavlink gps is connected
+- Add RC_SLEW_RATE parameter for slewing input demands to motors mixer in manual mode
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5.2 31-October-2017
 
 Changes from 3.5.1:

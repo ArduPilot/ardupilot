@@ -54,7 +54,7 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("python {}/px_uploader.py {}".format(upload_tools, src))
+        return self.exec_command("python '{}/px_uploader.py' '{}'".format(upload_tools, src))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -65,17 +65,37 @@ class upload_fw(Task.Task):
 
 class set_default_parameters(Task.Task):
     color='CYAN'
-    run_str='python ${APJ_TOOL} --set-file ${DEFAULT_PARAMETERS} ${SRC}'
     always_run = True
     def keyword(self):
         return "apj_tool"
+    def run(self):
+        rel_default_parameters = self.env.get_flat('DEFAULT_PARAMETERS')
+        abs_default_parameters = os.path.join(self.env.SRCROOT, rel_default_parameters)
+        apj_tool = self.env.APJ_TOOL
+        sys.path.append(os.path.dirname(apj_tool))
+        from apj_tool import embedded_defaults
+        defaults = embedded_defaults(self.inputs[0].abspath())
+        if not defaults.find():
+            print("Error: Param defaults support not found in firmware")
+            sys.exit(1)
+        defaults.set_file(abs_default_parameters)
+        defaults.save()
+
 
 class generate_fw(Task.Task):
     color='CYAN'
-    run_str='${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
-    python ${UPLOAD_TOOLS}/px_mkfw.py --image ${SRC}.bin \
-    --prototype ${BUILDROOT}/apj.prototype > ${TGT} && \
-    ${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    run_str="${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
+    python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}.bin' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_abin(Task.Task):
+    '''build an abin file for skyviper firmware upload via web UI'''
+    color='CYAN'
+    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -91,9 +111,14 @@ def chibios_firmware(self):
     self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
     generate_fw_task = self.create_task('generate_fw',
-                            src=link_output,
-                            tgt=self.objcopy_target)
+                                        src=link_output,
+                                        tgt=self.objcopy_target)
     generate_fw_task.set_run_after(self.link_task)
+
+    if self.env.BUILD_ABIN:
+        abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
+        abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
+        abin_task.set_run_after(generate_fw_task)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
@@ -182,6 +207,7 @@ def configure(cfg):
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
+    env.SRCROOT = srcpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
     env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
@@ -216,10 +242,12 @@ def configure(cfg):
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     try:
-        cmd = 'python %s -D %s %s' % (hwdef_script, hwdef_out, hwdef)
+        cmd = "python '{0}' -D '{1}' '{2}'".format(hwdef_script, hwdef_out, hwdef)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
-        print("Failed to generate hwdef.h")
+        cfg.fatal("Failed to process hwdef.dat")
+    if ret != 0:
+        cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
 
     load_env_vars(cfg.env)
     if env.HAL_WITH_UAVCAN:
@@ -235,14 +263,14 @@ def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
-        rule='python ${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py -D ${BUILDROOT} ${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat',
+        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat'",
         group='dynamic_sources',
         target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule='touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f ${BOARD_MK}',
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target='modules/ChibiOS/include_dirs'
     )
@@ -255,7 +283,7 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_FATFS_FLAG} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f ${BOARD_MK}",
+        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f '${BOARD_MK}'",
         group='dynamic_sources',
         source=common_src,
         target='modules/ChibiOS/libch.a'

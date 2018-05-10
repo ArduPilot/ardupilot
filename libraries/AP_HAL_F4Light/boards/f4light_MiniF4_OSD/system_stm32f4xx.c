@@ -333,7 +333,7 @@ void SystemCoreClockUpdate(void)
   SystemCoreClock >>= tmp;
 }
 
-extern void __error(uint32_t num, uint32_t pc, uint32_t lr);
+extern void __error(uint32_t num, uint32_t pc, uint32_t lr, uint32_t flag);
 
 /**
   * @brief  Configures the System clock source, PLL Multiplier and Divider factors, 
@@ -466,7 +466,7 @@ void SetSysClock(uint8_t oc)
   else
   { /* If HSE fails to start-up, the application will have wrong clock
          configuration. User can add here some code to deal with this error */
-        __error(12,0,0);
+        __error(12,0,0,0);
   }
 
 /******************************************************************************/

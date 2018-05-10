@@ -26,6 +26,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// singleton instance
+AP_Motors *AP_Motors::_instance;
+
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
@@ -37,11 +40,11 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _throttle_avg_max(0.0f),
     _throttle_filter(),
     _spool_desired(DESIRED_SHUT_DOWN),
-    _batt_voltage(0.0f),
-    _batt_current(0.0f),
     _air_density_ratio(1.0f),
     _motor_fast_mask(0)
 {
+    _instance = this;
+    
     // init other flags
     _flags.armed = false;
     _flags.interlock = false;
@@ -83,20 +86,6 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
-    if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
-        // OneShot125 uses a PWM range from 125 to 250 usec
-        pwm /= 8;
-        /*
-          OneShot125 ESCs can be confused by pulses below 125 or above
-          250, making them fail the pulse type auto-detection. This
-          happens at least with BLHeli
-        */
-        if (pwm < 125) {
-            pwm = 125;
-        } else if (pwm > 250) {
-            pwm = 250;
-        }
-    }
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm(function, pwm);
 }
@@ -109,16 +98,39 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
     if (freq_hz > 50) {
         _motor_fast_mask |= mask;
     }
+
     mask = rc_map_mask(mask);
     hal.rcout->set_freq(mask, freq_hz);
-    if ((_pwm_type == PWM_TYPE_ONESHOT ||
-         _pwm_type == PWM_TYPE_ONESHOT125) &&
-        freq_hz > 50 &&
-        mask != 0) {
-        // tell HAL to do immediate output
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
-    } else if (_pwm_type == PWM_TYPE_BRUSHED) {
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+
+    switch (pwm_type(_pwm_type.get())) {
+    case PWM_TYPE_ONESHOT:
+        if (freq_hz > 50 && mask != 0) {
+            hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        }
+        break;
+    case PWM_TYPE_ONESHOT125:
+        if (freq_hz > 50 && mask != 0) {
+            hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        }
+        break;
+    case PWM_TYPE_BRUSHED:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        break;
+    case PWM_TYPE_DSHOT150:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
+        break;
+    case PWM_TYPE_DSHOT300:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
+        break;
+    case PWM_TYPE_DSHOT600:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
+        break;
+    case PWM_TYPE_DSHOT1200:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
+        break;
+    default:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
+        break;
     }
 }
 

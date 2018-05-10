@@ -29,6 +29,7 @@
 #define CH_NONE 255
 #endif
 
+class ByteBuffer;
 
 class AP_HAL::RCOutput {
 public:
@@ -110,6 +111,11 @@ public:
     virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
 
     /*
+      return ESC scaling value from set_esc_scaling()
+     */
+    virtual bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) { return false; }
+    
+    /*
       returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
      */
     virtual float    scale_esc_to_unity(uint16_t pwm) { return 0; }
@@ -126,17 +132,61 @@ public:
     virtual void timer_tick(void) { }
 
     /*
-      output modes. Allows for support of oneshot
+      setup for serial output to an ESC using the given
+      baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
+      databits. This is used for passthrough ESC configuration and
+      firmware flashing
+
+      While serial output is active normal output to this channel is
+      suspended. Output to some other channels (such as those in the
+      same channel timer group) may also be stopped, depending on the
+      implementation
+     */
+    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate) { return false; }
+
+    /*
+      write a set of bytes to an ESC, using settings from
+      serial_setup_output. This is a blocking call
+     */
+    virtual bool serial_write_bytes(const uint8_t *bytes, uint16_t len) { return false; }
+
+    /*
+      read a series of bytes from a port, using serial parameters from serial_setup_output()
+      return the number of bytes read. This is a blocking call
+     */
+    virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) { return 0; }
+    
+    /*
+      stop serial output. This restores the previous output mode for
+      the channel and any other channels that were stopped by
+      serial_setup_output()
+     */
+    virtual void serial_end(void) {}
+    
+    /*
+      output modes. Allows for support of PWM, oneshot and dshot 
      */
     enum output_mode {
+        MODE_PWM_NONE,
         MODE_PWM_NORMAL,
         MODE_PWM_ONESHOT,
-        MODE_PWM_BRUSHED
+        MODE_PWM_ONESHOT125,
+        MODE_PWM_BRUSHED,
+        MODE_PWM_DSHOT150,
+        MODE_PWM_DSHOT300,
+        MODE_PWM_DSHOT600,
+        MODE_PWM_DSHOT1200,
     };
-    virtual void    set_output_mode(enum output_mode mode) {}
+    virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 
     /*
       set default update rate
      */
     virtual void    set_default_rate(uint16_t rate_hz) {}
+
+    /*
+      enable telemetry request for a mask of channels. This is used
+      with DShot to get telemetry feedback
+     */
+    virtual void set_telem_request_mask(uint16_t mask) {}
 };

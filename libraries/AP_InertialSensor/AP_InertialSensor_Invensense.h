@@ -63,8 +63,14 @@ public:
         Invensense_ICM20608,
         Invensense_ICM20602,
         Invensense_ICM20789,
+        Invensense_ICM20689,
     };
-    
+
+    // acclerometers on Invensense sensors will return values up to
+    // 24G, but they are not guaranteed to be remotely linear past
+    // 16G
+    const uint16_t multiplier_accel = INT16_MAX/(26*GRAVITY_MSS);
+
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -95,7 +101,7 @@ private:
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
     bool _accumulate(uint8_t *samples, uint8_t n_samples);
-    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples);
 
     bool _check_raw_temp(int16_t t2);
 
@@ -110,6 +116,9 @@ private:
     
     float _temp_filtered;
     float _accel_scale;
+
+    float _fifo_accel_scale;
+    float _fifo_gyro_scale;
     LowPassFilter2pFloat _temp_filter;
 
     enum Rotation _rotation;
@@ -137,8 +146,8 @@ private:
     uint8_t *_fifo_buffer;
 
     /*
-      accumulators for fast sampling
-      See description in _accumulate_fast_sampling()
+      accumulators for sensor_rate sampling
+      See description in _accumulate_sensor_rate_sampling()
     */
     struct {
         Vector3f accel;

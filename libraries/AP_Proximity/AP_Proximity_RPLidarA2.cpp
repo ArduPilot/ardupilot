@@ -35,7 +35,7 @@
 #define RP_DEBUG_LEVEL 0
 
 #if RP_DEBUG_LEVEL
-  #include <GCS_MAVLINK/GCS.h>
+  #include <GCS_MAVLink/GCS.h>
   #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)

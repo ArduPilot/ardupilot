@@ -96,6 +96,13 @@
   #error XXX
 #endif
 
+
+//////////////////////////////////////////////////////////////////////////////
+//  VISUAL ODOMETRY
+#ifndef VISUAL_ODOMETRY_ENABLED
+# define VISUAL_ODOMETRY_ENABLED ENABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // STARTUP BEHAVIOUR
@@ -169,4 +176,12 @@
 
 #ifndef STATS_ENABLED
  # define STATS_ENABLED ENABLED
+#endif
+
+#ifndef DEVO_TELEM_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define DEVO_TELEM_ENABLED DISABLED
+#else
+ #define DEVO_TELEM_ENABLED ENABLED
+#endif
 #endif

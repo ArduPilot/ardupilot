@@ -20,15 +20,6 @@ static void failsafe_check_static()
 
 void Copter::init_ardupilot()
 {
-    if (!hal.gpio->usb_connected()) {
-        // USB is not connected, this means UART0 may be a Xbee, with
-        // its darned bricking problem. We can't write to it for at
-        // least one second after powering up. Simplest solution for
-        // now is to delay for 1 second. Something more elegant may be
-        // added later
-        delay(1000);
-    }
-
     // initialise serial port
     serial_manager.init_console();
 
@@ -112,7 +103,12 @@ void Copter::init_ardupilot()
     snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", fwver.fw_string, get_frame_string());
     frsky_telemetry.init(serial_manager, firmware_buf,
                          get_frame_mav_type(),
-                         &g.fs_batt_voltage, &g.fs_batt_mah, &ap.value);
+                         &ap.value);
+#endif
+
+#if DEVO_TELEM_ENABLED == ENABLED
+    // setup devo
+    devo_telemetry.init(serial_manager);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -179,6 +175,7 @@ void Copter::init_ardupilot()
 #endif
 #if AC_AVOID_ENABLED == ENABLED
     wp_nav->set_avoidance(&avoid);
+    loiter_nav->set_avoidance(&avoid);
 #endif
 
     attitude_control->parameter_sanity_check();
@@ -218,7 +215,8 @@ void Copter::init_ardupilot()
 
     // read Baro pressure at ground
     //-----------------------------
-    init_barometer(true);
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
+    barometer.calibrate();
 
     // initialise rangefinder
     init_rangefinder();
@@ -234,8 +232,10 @@ void Copter::init_ardupilot()
     // init visual odometry
     init_visual_odom();
 
+#if RPM_ENABLED == ENABLED
     // initialise AP_RPM library
     rpm_sensor.init();
+#endif
 
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
@@ -306,21 +306,6 @@ void Copter::startup_INS_ground()
 
     // reset ahrs including gyro bias
     ahrs.reset();
-}
-
-// calibrate gyros - returns true if successfully calibrated
-bool Copter::calibrate_gyros()
-{
-    // gyro offset calibration
-    copter.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (copter.ins.gyro_calibrated_ok_all()) {
-        copter.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
@@ -468,7 +453,7 @@ void Copter::set_default_frame_class()
 }
 
 // return MAV_TYPE corresponding to frame class
-uint8_t Copter::get_frame_mav_type()
+MAV_TYPE Copter::get_frame_mav_type()
 {
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -491,7 +476,7 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
             return MAV_TYPE_COAXIAL;
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
-            return MAV_TYPE_HEXAROTOR;
+            return MAV_TYPE_DODECAROTOR;
     }
     // unknown frame so return generic
     return MAV_TYPE_GENERIC;
@@ -624,6 +609,12 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
+    loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    if (loiter_nav == nullptr) {
+        AP_HAL::panic("Unable to allocate LoiterNav");
+    }
+    AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
+
 #if MODE_CIRCLE_ENABLED == ENABLED
     circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
     if (circle_nav == nullptr) {
@@ -653,7 +644,7 @@ void Copter::allocate_motors(void)
     }
 
     // brushed 16kHz defaults to 16kHz pulses
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
         g.rc_speed.set_default(16000);
     }
     

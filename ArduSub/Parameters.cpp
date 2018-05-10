@@ -95,29 +95,6 @@ const AP_Param::Info Sub::var_info[] = {
     GSCALAR(rangefinder_gain,     "RNGFND_GAIN",           RANGEFINDER_GAIN_DEFAULT),
 #endif
 
-    // @Param: FS_BATT_ENABLE
-    // @DisplayName: Battery Failsafe Enable
-    // @Description: Controls whether failsafe will be invoked when battery voltage or current runs low
-    // @Values: 0:Disabled,1:Warn only,2:Disarm,3:Enter surface mode
-    // @User: Standard
-    GSCALAR(failsafe_battery_enabled, "FS_BATT_ENABLE", FS_BATT_DISABLED),
-
-    // @Param: FS_BATT_VOLTAGE
-    // @DisplayName: Failsafe battery voltage
-    // @Description: Battery voltage to trigger failsafe. Set to 0 to disable battery voltage failsafe.
-    // @Units: V
-    // @Increment: 0.1
-    // @User: Standard
-    GSCALAR(fs_batt_voltage,        "FS_BATT_VOLTAGE", FS_BATT_VOLTAGE_DEFAULT),
-
-    // @Param: FS_BATT_MAH
-    // @DisplayName: Failsafe battery milliAmpHours
-    // @Description: Battery capacity remaining to trigger failsafe. Set to 0 to disable battery remaining failsafe.
-    // @Units: mA.h
-    // @Increment: 50
-    // @User: Standard
-    GSCALAR(fs_batt_mah,            "FS_BATT_MAH", FS_BATT_MAH_DEFAULT),
-
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls what action to take when GCS heartbeat is lost.
@@ -468,6 +445,10 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
     GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
 
+    // @Group: LOIT_
+    // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
+    GOBJECT(loiter_nav, "LOITER_", AC_Loiter),
+
 #if CIRCLE_NAV_ENABLED == ENABLED
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
@@ -675,6 +656,12 @@ ParametersG2::ParametersG2(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+const AP_Param::ConversionInfo conversion_table[] = {
+    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_VOLT" },
+    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_MAH" },
+    { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
+};
+
 void Sub::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
@@ -702,6 +689,7 @@ void Sub::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 

@@ -8,12 +8,9 @@
 // althold_init - initialise althold controller
 bool Sub::althold_init()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!ap.depth_sensor_present || failsafe.sensor_health) { // can't hold depth without a depth sensor, exit immediately.
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD DEPTH");
+    if(!control_check_barometer()) {
         return false;
     }
-#endif
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller

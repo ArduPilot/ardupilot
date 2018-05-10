@@ -23,6 +23,7 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
+#include "hwdef/common/usbcfg.h"
 
 #include <hwdef.h>
 
@@ -45,7 +46,12 @@ static ChibiOS::SPIDeviceManager spiDeviceManager;
 static Empty::SPIDeviceManager spiDeviceManager;
 #endif
 
+#if HAL_USE_ADC == TRUE
 static ChibiOS::AnalogIn analogIn;
+#else
+static Empty::AnalogIn analogIn;
+#endif
+
 #ifdef HAL_USE_EMPTY_STORAGE
 static Empty::Storage storageDriver;
 #else
@@ -108,10 +114,12 @@ extern const AP_HAL::HAL& hal;
 void hal_chibios_set_priority(uint8_t priority)
 {
     chSysLock();
+#if CH_CFG_USE_MUTEXES == TRUE
     if ((daemon_task->prio == daemon_task->realprio) || (priority > daemon_task->prio)) {
       daemon_task->prio = priority;
     }
     daemon_task->realprio = priority;
+#endif
     chSchRescheduleS();
     chSysUnlock();
 }
@@ -135,6 +143,12 @@ static THD_FUNCTION(main_loop,arg)
     ChibiOS::Shared_DMA::init();
     
     hal.uartA->begin(115200);
+
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // optional test of SPI clock frequencies
+    ChibiOS::SPIDevice::test_clock_freq();
+#endif
+    
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
@@ -152,7 +166,8 @@ static THD_FUNCTION(main_loop,arg)
     hal.scheduler->system_initialized();
 
     thread_running = true;
-    daemon_task->name = SKETCHNAME;
+    chRegSetThreadName(SKETCHNAME);
+    
     /*
       switch to high priority for main loop
      */
@@ -186,6 +201,10 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      *   RTOS is active.
      */
 
+#ifdef HAL_USB_PRODUCT_ID
+  setup_usb_strings();
+#endif
+    
 #ifdef HAL_STDOUT_SERIAL
     //STDOUT Initialistion
     SerialConfig stdoutcfg =

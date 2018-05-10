@@ -24,177 +24,6 @@ extern const AP_HAL::HAL& hal;
 
 
 /*
-  read and print a log entry using the format strings from the given structure
- */
-void DataFlash_Backend::_print_log_entry(uint8_t msg_type,
-                                         print_mode_fn print_mode,
-                                         AP_HAL::BetterStream *port)
-{
-    uint8_t i;
-    for (i=0; i<num_types(); i++) {
-        if (msg_type == structure(i)->msg_type) {
-            break;
-        }
-    }
-    if (i == num_types()) {
-        port->printf("UNKN, %u\n", (unsigned)msg_type);
-        return;
-    }
-    const struct LogStructure *log_structure = structure(i);
-    uint8_t msg_len = log_structure->msg_len - 3;
-    uint8_t pkt[msg_len];
-    if (!ReadBlock(pkt, msg_len)) {
-        return;
-    }
-    port->printf("%s, ", log_structure->name);
-    for (uint8_t ofs=0, fmt_ofs=0; ofs<msg_len; fmt_ofs++) {
-        char fmt = log_structure->format[fmt_ofs];
-        switch (fmt) {
-        case 'b': {
-            port->printf("%d", (int)pkt[ofs]);
-            ofs += 1;
-            break;
-        }
-        case 'B': {
-            port->printf("%u", (unsigned)pkt[ofs]);
-            ofs += 1;
-            break;
-        }
-        case 'h': {
-            int16_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%d", (int)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'H': {
-            uint16_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%u", (unsigned)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'i': {
-            int32_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%ld", (long)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'I': {
-            uint32_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%lu", (unsigned long)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'q': {
-            int64_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%lld", (long long)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'Q': {
-            uint64_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%llu", (unsigned long long)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'f': {
-            float v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%f", (double)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'd': {
-            double v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            // note that %f here *really* means a single-precision
-            // float, so we lose precision printing this double out
-            // dtoa_engine needed....
-            port->printf("%f", (double)v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'c': {
-            int16_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%.2f", (double)(0.01f*v));
-            ofs += sizeof(v);
-            break;
-        }
-        case 'C': {
-            uint16_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%.2f", (double)(0.01f*v));
-            ofs += sizeof(v);
-            break;
-        }
-        case 'e': {
-            int32_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%.2f", (double)(0.01f*v));
-            ofs += sizeof(v);
-            break;
-        }
-        case 'E': {
-            uint32_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            port->printf("%.2f", (double)(0.01f*v));
-            ofs += sizeof(v);
-            break;
-        }
-        case 'L': {
-            int32_t v;
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            print_latlon(port, v);
-            ofs += sizeof(v);
-            break;
-        }
-        case 'n': {
-            char v[5];
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            v[sizeof(v)-1] = 0;
-            port->printf("%s", v);
-            ofs += sizeof(v)-1;
-            break;
-        }
-        case 'N': {
-            char v[17];
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            v[sizeof(v)-1] = 0;
-            port->printf("%s", v);
-            ofs += sizeof(v)-1;
-            break;
-        }
-        case 'Z': {
-            char v[65];
-            memcpy(&v, &pkt[ofs], sizeof(v));
-            v[sizeof(v)-1] = 0;
-            port->printf("%s", v);
-            ofs += sizeof(v)-1;
-            break;
-        }
-        case 'M': {
-            print_mode(port, pkt[ofs]);
-            ofs += 1;
-            break;
-        }
-        default:
-            ofs = msg_len;
-            break;
-        }
-        if (ofs < msg_len) {
-            port->printf(", ");
-        }
-    }
-    port->printf("\n");
-}
-
-/*
   write a structure format to the log - should be in frontend
  */
 void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log_Format &pkt)
@@ -304,8 +133,9 @@ bool DataFlash_Backend::Log_Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void DataFlash_Class::Log_Write_GPS(const AP_GPS &gps, uint8_t i, uint64_t time_us)
+void DataFlash_Class::Log_Write_GPS(uint8_t i, uint64_t time_us)
 {
+    const AP_GPS &gps = AP::gps();
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
@@ -371,20 +201,20 @@ void DataFlash_Class::Log_Write_RCIN(void)
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
         time_us       : AP_HAL::micros64(),
-        chan1         : hal.rcin->read(0),
-        chan2         : hal.rcin->read(1),
-        chan3         : hal.rcin->read(2),
-        chan4         : hal.rcin->read(3),
-        chan5         : hal.rcin->read(4),
-        chan6         : hal.rcin->read(5),
-        chan7         : hal.rcin->read(6),
-        chan8         : hal.rcin->read(7),
-        chan9         : hal.rcin->read(8),
-        chan10        : hal.rcin->read(9),
-        chan11        : hal.rcin->read(10),
-        chan12        : hal.rcin->read(11),
-        chan13        : hal.rcin->read(12),
-        chan14        : hal.rcin->read(13)
+        chan1         : RC_Channels::get_radio_in(0),
+        chan2         : RC_Channels::get_radio_in(1),
+        chan3         : RC_Channels::get_radio_in(2),
+        chan4         : RC_Channels::get_radio_in(3),
+        chan5         : RC_Channels::get_radio_in(4),
+        chan6         : RC_Channels::get_radio_in(5),
+        chan7         : RC_Channels::get_radio_in(6),
+        chan8         : RC_Channels::get_radio_in(7),
+        chan9         : RC_Channels::get_radio_in(8),
+        chan10        : RC_Channels::get_radio_in(9),
+        chan11        : RC_Channels::get_radio_in(10),
+        chan12        : RC_Channels::get_radio_in(11),
+        chan13        : RC_Channels::get_radio_in(12),
+        chan14        : RC_Channels::get_radio_in(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -432,7 +262,7 @@ void DataFlash_Class::Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_ins
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     struct log_BARO pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
+        LOG_PACKET_HEADER_INIT(type),
         time_us       : time_us,
         altitude      : baro.get_altitude(baro_instance),
         pressure      : baro.get_pressure(baro_instance),
@@ -606,13 +436,19 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
 
 void DataFlash_Class::Log_Write_Power(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    uint8_t safety_and_armed = uint8_t(hal.util->safety_switch_state());
+    if (hal.util->get_soft_armed()) {
+        // encode armed state in bit 3
+        safety_and_armed |= 1U<<2;
+    }
     struct log_POWR pkt = {
         LOG_PACKET_HEADER_INIT(LOG_POWR_MSG),
         time_us : AP_HAL::micros64(),
         Vcc     : hal.analogin->board_voltage(),
         Vservo  : hal.analogin->servorail_voltage(),
-        flags   : hal.analogin->power_status_flags()
+        flags   : hal.analogin->power_status_flags(),
+        safety_and_arm : safety_and_armed
     };
     WriteBlock(&pkt, sizeof(pkt));
 #endif
@@ -1380,7 +1216,7 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
             velInnovVarZ : velBodyInnovVar.z
          };
         WriteBlock(&pkt11, sizeof(pkt11));
-        updateTime_ms = lastUpdateTime_ms;
+        lastUpdateTime_ms = updateTime_ms;
     }
 
     // log state variances every 0.49s
@@ -1700,10 +1536,11 @@ void DataFlash_Class::Log_Write_ESC(void)
                 struct log_Esc pkt = {
                     LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
                     time_us     : time_us,
-                    rpm         : (int16_t)(esc_status.esc[i].esc_rpm/10),
-                    voltage     : (int16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
-                    current     : (int16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
-                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f)
+                    rpm         : (int32_t)(esc_status.esc[i].esc_rpm/10),
+                    voltage     : (uint16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
+                    current     : (uint16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
+                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f),
+                    current_tot : 0
                 };
 
                 WriteBlock(&pkt, sizeof(pkt));
@@ -1863,6 +1700,9 @@ void DataFlash_Class::Log_Write_AOA_SSA(AP_AHRS &ahrs)
 // Write beacon sensor (position) data
 void DataFlash_Class::Log_Write_Beacon(AP_Beacon &beacon)
 {
+    if (!beacon.enabled()) {
+        return;
+    }
     // position
     Vector3f pos;
     float accuracy = 0.0f;

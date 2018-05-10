@@ -18,6 +18,9 @@ Mode *Rover::mode_from_mode_num(const enum mode num)
     case HOLD:
         ret = &mode_hold;
         break;
+    case LOITER:
+        ret = &mode_loiter;
+        break;
     case AUTO:
         ret = &mode_auto;
         break;
@@ -63,7 +66,7 @@ void Rover::read_control_switch()
     // as a spring loaded trainer switch).
     if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 &&
-         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the
             // switch changes for 2 reads. This prevents momentary
@@ -85,7 +88,7 @@ void Rover::read_control_switch()
 }
 
 uint8_t Rover::readSwitch(void) {
-    const uint16_t pulsewidth = hal.rcin->read(g.mode_channel - 1);
+    const uint16_t pulsewidth = RC_Channels::get_radio_in(g.mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) {
         return 255;  // This is an error condition
     }
@@ -175,7 +178,7 @@ void Rover::read_aux_switch()
 
                 // save command
                 if (mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(mission.num_commands()));
+                    hal.console->printf("Added waypoint %u", unsigned(mission.num_commands()));
                 }
             }
         }

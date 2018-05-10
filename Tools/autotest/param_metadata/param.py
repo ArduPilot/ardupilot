@@ -66,6 +66,7 @@ known_units = {
 # angle
              'deg'     : 'degrees'               ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s'   : 'degrees per second'    ,     # Not SI, but is some situations more user-friendly than radians
+             'deg/s/s' : 'degrees per square second',  # Not SI, but is some situations more user-friendly than radians
              'cdeg'    : 'centidegrees'          ,     # Not SI, but is some situations more user-friendly than radians
              'cdeg/s'  : 'centidegrees per second',    # Not SI, but is some situations more user-friendly than radians
              'cdeg/s/s': 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians
@@ -89,6 +90,8 @@ known_units = {
              'd%'      : 'decipercent'           , # decipercent is strange, but "per-mille" is even more exotic
              'dB'      : 'decibel'               ,
 # compound
+
+             'kB'      : 'kilobytes'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????

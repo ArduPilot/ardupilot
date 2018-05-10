@@ -158,8 +158,11 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     var2 = (((((temp_raw >> 4) - ((int32_t)_t1)) * ((temp_raw >> 4) - ((int32_t)_t1))) >> 12) * ((int32_t)_t3)) >> 14;
     _t_fine = var1 + var2;
     t = (_t_fine * 5 + 128) >> 8;
+
+    const float temp = ((float)t) / 100.0f;
+
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _temperature = ((float)t) / 100;
+        _temperature = temp;
         _sem->give();
     }
 }
@@ -187,8 +190,13 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     var2 = (((int64_t)_p8) * p) >> 19;
     p = ((p + var1 + var2) >> 8) + (((int64_t)_p7) << 4);
 
+
+    const float press = (float)p / 256.0f;
+    if (!pressure_ok(press)) {
+        return;
+    }
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure = (float)p / 25600;
+        _pressure = press;
         _has_sample = true;
         _sem->give();
     }

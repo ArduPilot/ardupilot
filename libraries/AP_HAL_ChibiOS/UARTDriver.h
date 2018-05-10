@@ -20,6 +20,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 #include "shared_dma.h"
+#include "Semaphores.h"
 
 #define RX_BOUNCE_BUFSIZE 128
 #define TX_BOUNCE_BUFSIZE 64
@@ -46,6 +47,14 @@ public:
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
+
+    // lock a port for exclusive use. Use a key of 0 to unlock
+    bool lock_port(uint32_t key) override;
+
+    // write to a locked port. If port is locked and key is not correct then 0 is returned
+    // and write is discarded
+    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
@@ -87,6 +96,9 @@ private:
 
     // index into uart_drivers table
     uint8_t serial_num;
+
+    // key for a locked port
+    uint32_t lock_key;
     
     uint32_t _baudrate;
     uint16_t tx_len;
@@ -108,7 +120,7 @@ private:
     uint8_t tx_bounce_buf[TX_BOUNCE_BUFSIZE];
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    mutex_t _write_mutex;
+    Semaphore _write_mutex;
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
     bool _in_timer;
@@ -124,7 +136,7 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
-
+    
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
     
@@ -132,10 +144,11 @@ private:
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
 
-    void dma_tx_allocate(void);
-    void dma_tx_deallocate(void);
+    void dma_tx_allocate(Shared_DMA *ctx);
+    void dma_tx_deallocate(Shared_DMA *ctx);
     void update_rts_line(void);
 
+    void check_dma_tx_completion(void);
     void write_pending_bytes_DMA(uint32_t n);
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);

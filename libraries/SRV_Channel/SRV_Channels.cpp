@@ -29,6 +29,12 @@ SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 
+#if HAL_SUPPORT_RCOUT_SERIAL
+AP_BLHeli *SRV_Channels::blheli_ptr;
+#endif
+
+uint16_t SRV_Channels::disabled_mask;
+
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
 Bitmask SRV_Channels::function_mask{SRV_Channel::k_nr_aux_servo_functions};
@@ -122,6 +128,12 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
 
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // @Group: _BLH_
+    // @Path: ../AP_BLHeli/AP_BLHeli.cpp
+    AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -143,6 +155,9 @@ SRV_Channels::SRV_Channels(void)
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr = &blheli;
+#endif
 }
 
 /*
@@ -210,4 +225,9 @@ void SRV_Channels::push()
 
     // give sbus library a chance to update
     sbus_ptr->update();
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // give blheli telemetry a chance to update
+    blheli_ptr->update_telemetry();
+#endif
 }

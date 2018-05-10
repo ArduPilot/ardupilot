@@ -20,6 +20,7 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Common/AP_FWVersion.h>
 
 // check if a message will fit in the payload space available
@@ -84,6 +85,15 @@ enum ap_message {
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
+// convenience macros for defining which ap_message ids are in which streams:
+#define MAV_STREAM_ENTRY(stream_name)           \
+    {                                           \
+        GCS_MAVLINK::stream_name,               \
+        stream_name ## _msgs,                   \
+        ARRAY_SIZE(stream_name ## _msgs)        \
+    }
+#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -91,18 +101,16 @@ enum ap_message {
 class GCS_MAVLINK
 {
 public:
+    friend class GCS;
     GCS_MAVLINK();
     void        update(uint32_t max_time_us=1000);
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
-    virtual void        data_stream_send(void) = 0;
+    void        data_stream_send();
     void        queued_param_send();
     void        queued_waypoint_send();
-    void        set_snoop(void (*_msg_snoop)(const mavlink_message_t* msg)) {
-        msg_snoop = _msg_snoop;
-    }
     // packetReceived is called on any successful decode of a mavlink message
     virtual void packetReceived(const mavlink_status_t &status,
                                 mavlink_message_t &msg);
@@ -151,10 +159,12 @@ public:
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
     // common send functions
+    void send_heartbeat(void) const;
     void send_meminfo(void);
     void send_power_status(void);
-    void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
-    bool send_battery_status(const AP_BattMonitor &battery) const;
+    void send_battery_status(const AP_BattMonitor &battery,
+                             const uint8_t instance) const;
+    bool send_battery_status() const;
     void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
     bool send_distance_sensor(const RangeFinder &rangefinder) const;
     void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
@@ -162,21 +172,20 @@ public:
     bool send_proximity(const AP_Proximity &proximity) const;
     void send_ahrs2();
     void send_system_time();
-    void send_radio_in(uint8_t receiver_rssi);
+    void send_radio_in();
     void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
     void send_scaled_pressure();
     void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
     void send_ahrs();
-    void send_battery2(const AP_BattMonitor &battery);
+    void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(const OpticalFlow &optflow);
 #endif
     void send_autopilot_version() const;
     void send_local_position() const;
-    void send_vibration(const AP_InertialSensor &ins) const;
+    void send_vibration() const;
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
-    void send_heartbeat(uint8_t type, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status);
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
@@ -187,9 +196,6 @@ public:
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
-
-    // send a PARAM_VALUE message to all active MAVLink connections.
-    static void send_parameter_value_all(const char *param_name, ap_var_type param_type, float param_value);
 
     // send queued parameters if needed
     void send_queued_parameters(void);
@@ -220,7 +226,20 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
+    // alternative protocol function handler
+    FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
+
+    struct stream_entries {
+        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
+        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const uint8_t num_ap_message_ids;
+    };
+    // vehicle subclass cpp files should define this:
+    static const struct stream_entries all_stream_entries[];
+
 protected:
+
+    virtual bool in_hil_mode() const { return false; }
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
@@ -229,11 +248,16 @@ protected:
     virtual AP_Rally *get_rally() const = 0;
     virtual Compass *get_compass() const = 0;
     virtual class AP_Camera *get_camera() const = 0;
-    virtual AP_ServoRelayEvents *get_servorelayevents() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
+    virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
     virtual void set_ekf_origin(const Location& loc) = 0;
+
+    virtual MAV_TYPE frame_type() const = 0;
+    virtual MAV_MODE base_mode() const = 0;
+    virtual uint32_t custom_mode() const = 0;
+    virtual MAV_STATE system_status() const = 0;
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
@@ -250,6 +274,7 @@ protected:
 
     void handle_request_data_stream(mavlink_message_t *msg, bool save);
 
+    virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
@@ -273,6 +298,7 @@ protected:
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
+    void handle_vision_position_delta(mavlink_message_t *msg);
 
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
@@ -296,11 +322,20 @@ protected:
     virtual uint32_t telem_delay() const = 0;
 
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
+
+    // generally this should not be overridden; Plane overrides it to ensure
+    // failsafe isn't triggered during calibation
+    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+
+    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro();
+
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_send_banner(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
 
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
@@ -312,6 +347,7 @@ protected:
     bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -321,6 +357,8 @@ private:
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
     MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
+
+    bool calibrate_gyros();
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
@@ -420,15 +458,29 @@ private:
     
     // send an async parameter reply
     void send_parameter_reply(void);
-    
-    
-    // a vehicle can optionally snoop on messages for other systems
-    static void (*msg_snoop)(const mavlink_message_t* msg);
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
     void handle_common_mission_message(mavlink_message_t *msg);
 
+    void handle_vicon_position_estimate(mavlink_message_t *msg);
+    void handle_vision_position_estimate(mavlink_message_t *msg);
+    void handle_global_vision_position_estimate(mavlink_message_t *msg);
+    void handle_att_pos_mocap(mavlink_message_t *msg);
+    void handle_common_vision_position_estimate_data(const uint64_t usec,
+                                                     const float x,
+                                                     const float y,
+                                                     const float z,
+                                                     const float roll,
+                                                     const float pitch,
+                                                     const float yaw);
+    void log_vision_position_estimate_data(const uint64_t usec,
+                                           const float x,
+                                           const float y,
+                                           const float z,
+                                           const float roll,
+                                           const float pitch,
+                                           const float yaw);
     void push_deferred_messages();
 
     void lock_channel(mavlink_channel_t chan, bool lock);
@@ -443,6 +495,15 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+    // alternative protocol handler support
+    struct {
+        GCS_MAVLINK::protocol_handler_fn_t handler;
+        uint32_t last_mavlink_ms;
+        uint32_t last_alternate_ms;
+        bool active;
+    } alternative;
+    
 };
 
 /// @class GCS
@@ -478,6 +539,11 @@ public:
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
+
+    void send_parameter_value(const char *param_name,
+                              ap_var_type param_type,
+                              float param_value);
+
     // push send_message() messages and queued statustext messages etc:
     void retry_deferred();
     void data_stream_send();
@@ -512,6 +578,10 @@ public:
     // static frsky_telem pointer to support queueing text messages
     AP_Frsky_Telem *frsky_telemetry_p;
 
+    
+    // install an alternative protocol handler
+    bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
+    
 private:
 
     static GCS *_singleton;
@@ -531,7 +601,6 @@ private:
 
     // true if we are running short on time in our main loop
     bool _out_of_time;
-
 };
 
 GCS &gcs();

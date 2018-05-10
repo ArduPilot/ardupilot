@@ -31,8 +31,8 @@ public:
     struct spi_dev_s *dev;
     uint8_t bus;
     SPIConfig spicfg;
-    void dma_allocate(void);
-    void dma_deallocate(void);
+    void dma_allocate(Shared_DMA *ctx);
+    void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
 };
 
@@ -88,6 +88,11 @@ public:
 
     bool set_chip_select(bool set) override;
 
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // used to measure clock frequencies
+    static void test_clock_freq(void);
+#endif
+    
 private:
     SPIBus &bus;
     SPIDesc &device_desc;

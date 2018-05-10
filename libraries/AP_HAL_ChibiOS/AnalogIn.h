@@ -24,6 +24,8 @@
 // number of samples on each channel to gather on each DMA callback
 #define ADC_DMA_BUF_DEPTH 8
 
+#if HAL_USE_ADC == TRUE
+
 class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class ChibiOS::AnalogIn;
@@ -62,8 +64,11 @@ public:
     float servorail_voltage(void) override { return _servorail_voltage; }
     uint16_t power_status_flags(void) override { return _power_flags; }
     static void adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n);
+
 private:
     void read_adc(uint32_t *val);
+    void update_power_flags(void);
+    
     int _battery_handle;
     int _servorail_handle;
     int _system_power_handle;
@@ -87,3 +92,5 @@ private:
     static uint32_t sample_sum[];
     static uint32_t sample_count;
 };
+
+#endif // HAL_USE_ADC

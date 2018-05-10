@@ -156,9 +156,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
 
-    // reset battery failsafe
-    set_failsafe_battery(false);
-
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
     // call notify update a few times to ensure the message gets out
@@ -176,14 +173,14 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
         ahrs.resetHeightDatum();
         Log_Write_Event(DATA_EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
         arming_altitude_m = 0;        
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
 

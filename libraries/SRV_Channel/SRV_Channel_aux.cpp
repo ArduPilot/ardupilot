@@ -50,7 +50,9 @@ void SRV_Channel::output_ch(void)
             }
         }
     }
-    hal.rcout->write(ch_num, output_pwm);
+    if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
+        hal.rcout->write(ch_num, output_pwm);
+    }
 }
 
 /*
@@ -164,6 +166,10 @@ void SRV_Channels::enable_aux_servos()
             hal.rcout->enable_ch(channels[i].ch_num);
         }
     }
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr->update();
+#endif
 }
 
 /// enable output channels using a channel mask

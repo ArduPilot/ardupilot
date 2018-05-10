@@ -272,13 +272,6 @@ void Plane::Log_Write_AETR()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Plane::Log_Write_GPS(uint8_t instance)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_GPS(gps, instance);
-    }
-}
-
 void Plane::Log_Write_IMU()
 {
     DataFlash.Log_Write_IMU();
@@ -292,13 +285,6 @@ void Plane::Log_Write_RC(void)
         DataFlash.Log_Write_RSSI(rssi);
     }
     Log_Write_AETR();
-}
-
-void Plane::Log_Write_Baro(void)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro();
-    }
 }
 
 // Write a AIRSPEED packet
@@ -325,7 +311,7 @@ void Plane::Log_Write_Home_And_Origin()
 #endif
 
     // log ahrs home if set
-    if (home_is_set != HOME_UNSET) {
+    if (ahrs.home_is_set()) {
         DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
     }
 }
@@ -389,6 +375,7 @@ void Plane::log_init(void)
 
 #else // LOGGING_ENABLED
 
+void Plane::Log_Write_AOA_SSA(void) {}
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
@@ -403,12 +390,11 @@ void Plane::Log_Write_Optflow() {}
  #endif
 
 void Plane::Log_Arm_Disarm() {}
-void Plane::Log_Write_GPS(uint8_t instance) {}
 void Plane::Log_Write_IMU() {}
 void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Baro(void) {}
 void Plane::Log_Write_Airspeed(void) {}
 void Plane::Log_Write_Home_And_Origin() {}
+void Plane::Log_Write_Vehicle_Startup_Messages() {}
 
 void Plane::log_init(void) {}
 

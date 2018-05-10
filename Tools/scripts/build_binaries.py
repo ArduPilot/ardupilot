@@ -9,7 +9,6 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 from __future__ import print_function
 
 import datetime
-import distutils.dir_util
 import optparse
 import os
 import re
@@ -156,13 +155,23 @@ is bob we will attempt to checkout bob-AVR'''
         except IOError as e:
             if e.errno != 2:
                 raise
+
+        # see if there's a hwdef.dat for this board:
+        if os.path.exists(os.path.join(self.basedir,
+                                       'libraries',
+                                       'AP_HAL_ChibiOS',
+                                       'hwdef',
+                                       board)):
+            self.progress("ChibiOS build: %s" % (board,))
+            return False
+
         self.progress("Skipping unsupported board %s" % (board,))
         return True
 
     def skip_frame(self, board, frame):
         '''returns true if this board/frame combination should not be built'''
         if frame == "heli":
-            if board in ["bebop", "aerofc-v1"]:
+            if board in ["bebop", "aerofc-v1", "skyviper-v2450"]:
                 self.progress("Skipping heli build for %s" % board)
                 return True
         return False
@@ -274,6 +283,15 @@ is bob we will attempt to checkout bob-AVR'''
         '''returns true if string exists in the contents of filepath'''
         return string in self.read_string_from_filepath(filepath)
 
+    def mkpath(self, path):
+        '''make directory path and all elements leading to it'''
+        '''distutils.dir_util.mkpath was playing up'''
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            if e.errno != 17:  # EEXIST
+                raise e
+
     def copyit(self, afile, adir, tag, src):
         '''copies afile into various places, adding metadata'''
         bname = os.path.basename(adir)
@@ -282,13 +300,13 @@ is bob we will attempt to checkout bob-AVR'''
         if tag == "latest":
             # we keep a permanent archive of all "latest" builds,
             # their path including a build timestamp:
-            distutils.dir_util.mkpath(adir)
+            self.mkpath(adir)
             self.progress("Copying %s to %s" % (afile, adir,))
             shutil.copy(afile, adir)
             self.addfwversion(adir, src)
         # the most recent build of every tag is kept around:
         self.progress("Copying %s to %s" % (afile, tdir))
-        distutils.dir_util.mkpath(tdir)
+        self.mkpath(tdir)
         self.addfwversion(tdir, src)
         shutil.copy(afile, tdir)
 
@@ -344,6 +362,9 @@ is bob we will attempt to checkout bob-AVR'''
                     continue
                 if self.skip_frame(board, frame):
                     continue
+
+                self.remove_tmpdir();
+
                 self.progress("Configuring for %s in %s" %
                               (board, self.buildroot))
                 try:
@@ -371,15 +392,20 @@ is bob we will attempt to checkout bob-AVR'''
                                          board,
                                          "bin",
                                          "".join([binaryname, framesuffix]))
-                px4_path = "".join([bare_path, ".px4"])
-                if os.path.exists(px4_path):
-                    path = px4_path
-                else:
-                    path = bare_path
-                try:
-                    self.copyit(path, ddir, tag, vehicle)
-                except Exception as e:
-                    self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
+                files_to_copy = []
+                for extension in [".px4", ".apj", ".abin"]:
+                    filepath = "".join([bare_path, extension])
+                    if os.path.exists(filepath):
+                        files_to_copy.append(filepath)
+                # only copy the elf if we don't have other files to copy
+                if os.path.exists(bare_path) and len(files_to_copy) == 0:
+                    files_to_copy.append(bare_path)
+
+                for path in files_to_copy:
+                    try:
+                        self.copyit(path, ddir, tag, vehicle)
+                    except Exception as e:
+                        self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
@@ -465,12 +491,21 @@ is bob we will attempt to checkout bob-AVR'''
     def common_boards(self):
         '''returns list of boards common to all vehicles'''
         # note that while we do not use these for AntennaTracker!
-        return ["erlebrain2", "navio", "navio2", "pxf", "pxfmini"]
+        return ["fmuv2",
+                "fmuv3",
+                "fmuv4",
+                "mindpx-v2",
+                "erlebrain2",
+                "navio",
+                "navio2",
+                "pxf",
+                "pxfmini"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
-        boards = self.common_boards()[:]
-        boards.extend(["aerofc-v1", "bebop"])
+        boards = []
+        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop"])
+        boards.extend(self.common_boards()[:])
         self.build_vehicle(tag,
                            "ArduCopter",
                            boards,
@@ -560,6 +595,11 @@ is bob we will attempt to checkout bob-AVR'''
                 self.progress("%s: %s=%s" % (filepath, name, value))
                 os.environ[name] = value
 
+    def remove_tmpdir(self):
+        if os.path.exists(self.tmpdir):
+            self.progress("Removing (%s)" % (self.tmpdir,))
+            shutil.rmtree(self.tmpdir)
+
     def run(self):
         self.validate()
 
@@ -572,9 +612,7 @@ is bob we will attempt to checkout bob-AVR'''
         os.environ["TMPDIR"] = self.tmpdir
 
         print(self.tmpdir)
-        if os.path.exists(self.tmpdir):
-            self.progress("Removing (%s)" % (self.tmpdir,))
-            shutil.rmtree(self.tmpdir)
+        self.remove_tmpdir();
 
         self.progress("Building in %s" % self.tmpdir)
 
@@ -590,8 +628,8 @@ is bob we will attempt to checkout bob-AVR'''
         self.hdate_ym = now.strftime("%Y-%m")
         self.hdate_ymdhm = now.strftime("%Y-%m-%d-%H:%m")
 
-        distutils.dir_util.mkpath(os.path.join("binaries", self.hdate_ym,
-                                               self.hdate_ymdhm))
+        self.mkpath(os.path.join("binaries", self.hdate_ym,
+                                 self.hdate_ymdhm))
         self.binaries = os.path.join(os.getcwd(), "..", "buildlogs",
                                      "binaries")
         self.basedir = os.getcwd()

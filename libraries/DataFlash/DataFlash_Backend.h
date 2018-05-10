@@ -8,7 +8,6 @@ class DataFlash_Backend
 {
 
 public:
-    FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
     DataFlash_Backend(DataFlash_Class &front,
@@ -43,13 +42,6 @@ public:
     virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs() = 0;
-    virtual void LogReadProcess(const uint16_t list_entry,
-                                uint16_t start_page, uint16_t end_page,
-                                print_mode_fn printMode,
-                                AP_HAL::BetterStream *port) = 0;
-    virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
     virtual bool logging_started(void) const = 0;
 
@@ -140,13 +132,6 @@ protected:
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz(const uint32_t now);
     virtual void periodic_fullrate(const uint32_t now);
-
-    /*
-    read and print a log entry using the format strings from the given structure
-    */
-    void _print_log_entry(uint8_t msg_type,
-                          print_mode_fn print_mode,
-                          AP_HAL::BetterStream *port);
 
     bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;

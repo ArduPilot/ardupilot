@@ -137,14 +137,21 @@ def build_parameters():
 def convert_gpx():
     """Convert any tlog files to GPX and KML."""
     mavlog = glob.glob(buildlogs_path("*.tlog"))
+    passed = True
     for m in mavlog:
         util.run_cmd(util.reltopdir("modules/mavlink/pymavlink/tools/mavtogpx.py") + " --nofixcheck " + m)
         gpx = m + '.gpx'
         kml = m + '.kml'
-        util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml), checkfail=False)
-        util.run_cmd('zip %s.kmz %s.kml' % (m, m), checkfail=False)
+        try:
+            util.run_cmd('gpsbabel -i gpx -f %s -o kml,units=m,floating=1,extrude=1 -F %s' % (gpx, kml))
+        except CalledProcessError as e:
+            passed = False
+        try:
+            util.run_cmd('zip %s.kmz %s.kml' % (m, m))
+        except CalledProcessError as e:
+            passed = False
         util.run_cmd("mavflightview.py --imagefile=%s.png %s" % (m, m))
-    return True
+    return passed
 
 
 def test_prerequisites():
@@ -196,10 +203,7 @@ def binary_path(step, debug=False):
         # cope with builds that don't have a specific binary
         return None
 
-    if debug:
-        binary_basedir = "sitl-debug"
-    else:
-        binary_basedir = "sitl"
+    binary_basedir = "sitl"
 
     binary = util.reltopdir(os.path.join('build', binary_basedir, 'bin', binary_name))
     if not os.path.exists(binary):
@@ -246,8 +250,8 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step.startswith("default"):
-        vehicle = step[8:]
+    if step.startswith("defaults"):
+        vehicle = step[9:]
         return get_default_params(vehicle, binary)
 
     fly_opts = {
@@ -377,7 +381,7 @@ def write_fullresults():
     vehicle_files = [ ('{vehicle} build log', '{vehicle}.txt'),
                       ('{vehicle} code size', '{vehicle}.sizes.txt'),
                       ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
-                      ('{vehicle} defaults', 'default_params/{vehicle}-defaults.parm'),
+                      ('{vehicle} defaults', '{vehicle}-defaults.parm'),
                       ('{vehicle} core', '{vehicle}.core'),
                       ('{vehicle} ELF', '{vehicle}.elf'),
     ]

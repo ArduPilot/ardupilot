@@ -36,9 +36,6 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(NavEKF2 &_EKF2,
     AP_AHRS_DCM(),
     EKF2(_EKF2),
     EKF3(_EKF3),
-    _ekf2_started(false),
-    _ekf3_started(false),
-    _force_ekf(false),
     _ekf_flags(flags)
 {
     _dcm_matrix.identity();
@@ -83,6 +80,10 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
 
 void AP_AHRS_NavEKF::update(bool skip_ins_update)
 {
+    // drop back to normal priority if we were boosted by the INS
+    // calling delay_microseconds_boost()
+    hal.scheduler->boost_end();
+    
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type == 1) {
         _ekf_type.set(2);
@@ -1164,6 +1165,13 @@ void  AP_AHRS_NavEKF::writeBodyFrameOdom(float quality, const Vector3f &delPos, 
     EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, posOffset);
 }
 
+// Write position and quaternion data from an external navigation system
+void AP_AHRS_NavEKF::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    EKF2.writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+}
+
+
 // inhibit GPS usage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
 {
@@ -1397,13 +1405,13 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
     switch (ekf_type()) {
     case EKF_TYPE_NONE:
         // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
         break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
         // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
         break;
 #endif
         

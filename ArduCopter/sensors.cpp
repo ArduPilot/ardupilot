@@ -1,23 +1,10 @@
 #include "Copter.h"
 
-void Copter::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    }else{
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // return barometric altitude in centimeters
 void Copter::read_barometer(void)
 {
     barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
+
     baro_alt = barometer.get_altitude() * 100.0f;
     baro_climbrate = barometer.get_climb_rate() * 100.0f;
 
@@ -89,12 +76,14 @@ bool Copter::rangefinder_alt_ok()
  */
 void Copter::rpm_update(void)
 {
+#if RPM_ENABLED == ENABLED
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
             DataFlash.Log_Write_RPM(rpm_sensor);
         }
     }
+#endif
 }
 
 // initialise compass
@@ -172,39 +161,6 @@ void Copter::update_optical_flow(void)
     }
 }
 #endif  // OPTFLOW == ENABLED
-
-// read_battery - check battery voltage and current and invoke failsafe if necessary
-// called at 10hz
-void Copter::read_battery(void)
-{
-    battery.read();
-
-    // update motors with voltage and current
-    if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
-        motors->set_voltage(battery.voltage());
-    }
-
-    if (battery.has_current()) {
-        compass.set_current(battery.current_amps());
-
-        motors->set_current(battery.current_amps());
-        motors->set_resistance(battery.get_resistance());
-        motors->set_voltage_resting_estimate(battery.voltage_resting_estimate());
-    }
-
-    // check for low voltage or current if the low voltage check hasn't already been triggered
-    // we only check when we're not powered by USB to avoid false alarms during bench tests
-    if (!ap.usb_connected && !failsafe.battery && battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        failsafe_battery_event();
-    }
-}
-
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Copter::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
 
 void Copter::compass_cal_update()
 {
@@ -305,9 +261,6 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
 #endif
-    if (copter.battery.healthy()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
 #if AC_FENCE == ENABLED
     if (copter.fence.sys_status_present()) {
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
@@ -358,7 +311,7 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
-    if (g.fs_batt_voltage > 0 || g.fs_batt_mah > 0) {
+    if (battery.num_instances() > 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 #if AC_FENCE == ENABLED
@@ -453,8 +406,9 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
 
-    if (copter.failsafe.battery) {
-         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;                                                                    }
+    if (!copter.battery.healthy() || copter.battery.has_failsafed()) {
+         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
 #if AC_FENCE == ENABLED
     if (copter.fence.sys_status_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;

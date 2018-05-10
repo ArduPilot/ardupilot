@@ -602,7 +602,7 @@ float Sub::get_auto_heading(void)
         float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        float desired_angle = wp_nav.get_loiter_bearing_to_target();
+        float desired_angle = pos_control.get_bearing_to_target();
 
         float angle_error = wrap_180_cd(desired_angle - track_bearing);
         float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
@@ -646,7 +646,7 @@ bool Sub::auto_terrain_recover_start()
     mission.stop();
 
     // Reset xy target
-    wp_nav.init_loiter_target();
+    loiter_nav.init_target();
 
     // Reset z axis controller
     pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
@@ -733,7 +733,7 @@ void Sub::auto_terrain_recover_run()
     }
 
     // run loiter controller
-    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     ///////////////////////
     // update xy targets //

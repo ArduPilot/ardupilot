@@ -50,6 +50,13 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
 
+    // @Param: _MAV_BUFSIZE
+    // @DisplayName: Maximum DataFlash MAVLink Backend buffer size
+    // @Description: Maximum amount of memory to allocate to DataFlash-over-mavlink
+    // @User: Advanced
+    // @Units: kB
+    AP_GROUPINFO("_MAV_BUFSIZE",  5, DataFlash_Class, _params.mav_bufsize,       8),
+
     AP_GROUPEND
 };
 
@@ -82,6 +89,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     _structures = structures;
 
 #if defined(HAL_BOARD_LOG_DIRECTORY)
+ #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
@@ -97,7 +105,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             _next_backend++;
         }
     }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT // restore dataflash logs
+ #elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT 
 
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
@@ -106,16 +114,21 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             new DFMessageWriter_DFLogStart(_firmware_string);
         if (message_writer != nullptr)  {
 
-            backends[_next_backend] = new DataFlash_Revo(*this, message_writer);
+  #if defined(BOARD_SDCARD_NAME) || defined(BOARD_DATAFLASH_FATFS)
+            backends[_next_backend] = new DataFlash_File(*this, message_writer, HAL_BOARD_LOG_DIRECTORY);
+  #else
+            backends[_next_backend] = new DataFlash_Revo(*this, message_writer); // restore dataflash logs
+  #endif
         }
 
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_Revo");
+            printf("Unable to open DataFlash_Revo");
         } else {
             _next_backend++;
         }
     }
-#endif
+ #endif
+#endif // HAL_BOARD_LOG_DIRECTORY
 
 #if DATAFLASH_MAVLINK_SUPPORT
     if (_params.backend_types == DATAFLASH_BACKEND_MAVLINK ||
@@ -522,38 +535,6 @@ uint16_t DataFlash_Class::get_num_logs(void) {
     return backends[0]->get_num_logs();
 }
 
-void DataFlash_Class::LogReadProcess(uint16_t log_num,
-                                     uint16_t start_page, uint16_t end_page,
-                                     print_mode_fn printMode,
-                                     AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->LogReadProcess(log_num, start_page, end_page, printMode, port);
-}
-void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->DumpPageInfo(port);
-}
-void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ShowDeviceInfo(port);
-}
-void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ListAvailableLogs(port);
-}
-
 /* we're started if any of the backends are started */
 bool DataFlash_Class::logging_started(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
@@ -583,7 +564,8 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
 }
 
 void DataFlash_Class::periodic_tasks() {
-     FOR_EACH_BACKEND(periodic_tasks());
+    handle_log_send();
+    FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -633,7 +615,7 @@ uint32_t DataFlash_Class::num_dropped() const
 
 void DataFlash_Class::internal_error() const {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    abort();
+    AP_HAL::panic("Internal DataFlash error");
 #endif
 }
 
@@ -903,7 +885,11 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
         case 'Z' : len += sizeof(char[64]); break;
         case 'q' : len += sizeof(int64_t); break;
         case 'Q' : len += sizeof(uint64_t); break;
-        default: return -1;
+        default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            AP_HAL::panic("Unknown format specifier (%c)", fmt[i]);
+#endif
+            return -1;
         }
     }
     return len;

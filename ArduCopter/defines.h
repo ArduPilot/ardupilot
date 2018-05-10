@@ -14,8 +14,8 @@
 enum autopilot_yaw_mode {
     AUTO_YAW_HOLD =             0,  // pilot controls the heading
     AUTO_YAW_LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
-    AUTO_YAW_ROI =              2,  // point towards a location held in roi_WP (no pilot input accepted)
-    AUTO_YAW_LOOK_AT_HEADING =  3,  // point towards a particular angle (not pilot input accepted)
+    AUTO_YAW_ROI =              2,  // point towards a location held in roi (no pilot input accepted)
+    AUTO_YAW_FIXED =            3,  // point towards a particular angle (no pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
     AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
@@ -265,21 +265,6 @@ enum FlipState {
     Flip_Abandon
 };
 
-// Throw stages
-enum ThrowModeStage {
-    Throw_Disarmed,
-    Throw_Detecting,
-    Throw_Uprighting,
-    Throw_HgtStabilise,
-    Throw_PosHold
-};
-
-// Throw types
-enum ThrowModeType {
-    ThrowType_Upward = 0,
-    ThrowType_Drop = 1
-};
-
 enum LandStateType {
     LandStateType_FlyToLocation = 0,
     LandStateType_Descending = 1
@@ -324,7 +309,6 @@ enum LoggingParameters {
      LOG_HELI_MSG,
      LOG_PRECLAND_MSG,
      LOG_GUIDEDTARGET_MSG,
-     LOG_THROW_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -474,13 +458,6 @@ enum LoggingParameters {
 #define FS_THR_ENABLED_ALWAYS_LAND                 3
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
-
-// Battery failsafe definitions (FS_BATT_ENABLE parameter)
-#define FS_BATT_DISABLED                    0       // battery failsafe disabled
-#define FS_BATT_LAND                        1       // switch to LAND mode on battery failsafe
-#define FS_BATT_RTL                         2       // switch to RTL mode on battery failsafe
-#define FS_BATT_SMARTRTL_OR_RTL             3       // switch to SmartRTL, if can't, switch to RTL
-#define FS_BATT_SMARTRTL_OR_LAND            4       // switch to SmartRTL, if can't, swtich to LAND
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0

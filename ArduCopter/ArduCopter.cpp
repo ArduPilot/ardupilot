@@ -141,7 +141,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75),
 #endif
 #if CAMERA == ENABLED
-    SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update,          50,  75),
+    SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update_trigger,  50,  75),
 #endif
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
@@ -150,8 +150,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &copter.ins,                 periodic,       400,  50),
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75),
-    SCHED_TASK(read_receiver_rssi,    10,     75),
+#if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
+#endif
     SCHED_TASK(compass_cal_update,   100,    100),
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100),
@@ -191,6 +192,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Copter::_failsafe_priorities[7];
 
 void Copter::setup()
 {
@@ -297,7 +299,7 @@ void Copter::throttle_loop()
 void Copter::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if(g.compass_enabled) {
         // update compass with throttle value - used for compassmot
@@ -353,9 +355,7 @@ void Copter::ten_hz_logging_loop()
         DataFlash.Log_Write_Proximity(g2.proximity);  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        if (g2.beacon.enabled()) {
-            DataFlash.Log_Write_Beacon(g2.beacon);
-        }
+        DataFlash.Log_Write_Beacon(g2.beacon);
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
@@ -467,13 +467,8 @@ void Copter::update_GPS(void)
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
-
-            // log GPS message
-            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
-                DataFlash.Log_Write_GPS(gps, i);
-            }
-
             gps_updated = true;
+            break;
         }
     }
 

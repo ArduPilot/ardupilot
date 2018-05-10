@@ -15,7 +15,7 @@ void Tracker::init_tracker()
 
     hal.console->printf("\n\nInit %s\n\nFree RAM: %u\n",
                         fwver.fw_string,
-                        hal.util->available_memory());
+                        (unsigned)hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
@@ -46,6 +46,7 @@ void Tracker::init_tracker()
     AP_Notify::flags.failsafe_battery = false;
 
     // init baro before we start the GCS, so that the CLI baro test works
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
 
     // we start by assuming USB connected, as we initialed the serial
@@ -79,7 +80,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer(true);
+    barometer.calibrate();
 
     // initialise DataFlash library
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));

@@ -96,8 +96,16 @@
 
 //TODO add #define BOARD_HAS_UART3 ?
 
-#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
-//#define BOARD_I2C_BUS_EXT 1  // external I2C
+
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
+
+//#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
+#define BOARD_I2C_BUS_EXT 1  // external I2C
 #define BOARD_I2C_BUS_SLOW 1   // slow down bus with this number
 
 #define BOARD_I2C1_DISABLE // lots of drivers tries to scan all buses, spoiling device setup
@@ -106,14 +114,14 @@
 #define HAL_BARO_BMP280_NAME "bmp280"
 #define BOARD_BMP280_CS_PIN 104
 
-#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
 #define BOARD_COMPASS_DEFAULT HAL_COMPASS_HMC5843
 #define BOARD_COMPASS_HMC5843_I2C_ADDR 0x1E
 #define BOARD_COMPASS_HMC5843_ROTATION ROTATION_NONE
 
-#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_INT
+#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_EXT
 #define HAL_COMPASS_HMC5843_I2C_ADDR    BOARD_COMPASS_HMC5843_I2C_ADDR
 #define HAL_COMPASS_HMC5843_ROTATION    BOARD_COMPASS_HMC5843_ROTATION
 
@@ -149,6 +157,12 @@
 # define BOARD_BATTERY_CURR_PIN     7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN 254
 
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      8
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS 108
 
 #define BOARD_SBUS_UART 1 // can use some UART as hardware inverted input
@@ -166,6 +180,8 @@
 #define SERVO_PIN_4 49 // PA2
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 22 // PA8
+
+#define MOTOR_LAYOUT_DEFAULT 0
 
 #if 1
  #define HAL_CONSOLE USB_Driver // console on USB

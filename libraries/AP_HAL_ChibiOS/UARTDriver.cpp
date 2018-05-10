@@ -62,7 +62,6 @@ _initialised(false)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
-    chMtxObjectInit(&_write_mutex);
 }
 
 /*
@@ -104,12 +103,14 @@ void UARTDriver::thread_init(void)
         // already initialised
         return;
     }
+#if CH_CFG_USE_HEAP == TRUE
     uart_thread_ctx = chThdCreateFromHeap(NULL,
                                           THD_WORKING_AREA_SIZE(2048),
                                           "apm_uart",
                                           APM_UART_PRIORITY,
                                           uart_thread,
                                            this);
+#endif
 }
 
 
@@ -117,8 +118,6 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
     
-    hal.gpio->pinMode(2, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(3, HAL_GPIO_OUTPUT);
     if (sdef.serial == nullptr) {
         return;
     }
@@ -208,8 +207,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     // cannot be shared
                     dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
                                                 SHARED_DMA_NONE,
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void),
-                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void));
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
+                                                FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
                 }
                 _device_initialised = true;
             }
@@ -261,7 +260,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     set_flow_control(_flow_control);
 }
 
-void UARTDriver::dma_tx_allocate(void)
+void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 {
 #if HAL_USE_SERIAL == TRUE
     osalDbgAssert(txdma == nullptr, "double DMA allocation");
@@ -277,7 +276,7 @@ void UARTDriver::dma_tx_allocate(void)
 #endif // HAL_USE_SERIAL
 }
 
-void UARTDriver::dma_tx_deallocate(void)
+void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
     dmaStreamRelease(txdma);
@@ -447,18 +446,18 @@ int16_t UARTDriver::read()
 /* Empty implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (!chMtxTryLock(&_write_mutex)) {
-        return -1;
+    if (lock_key != 0 || !_write_mutex.take_nonblocking()) {
+        return 0;
     }
     
     if (!_initialised) {
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
         return 0;
     }
 
     while (_writebuf.space() == 0) {
         if (!_blocking_writes) {
-            chMtxUnlock(&_write_mutex);
+            _write_mutex.give();
             return 0;
         }
         hal.scheduler->delay(1);
@@ -467,25 +466,25 @@ size_t UARTDriver::write(uint8_t c)
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    chMtxUnlock(&_write_mutex);
+    _write_mutex.give();
     return ret;
 }
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (!_initialised) {
+    if (!_initialised || lock_key != 0) {
 		return 0;
 	}
 
-    if (!chMtxTryLock(&_write_mutex)) {
-        return -1;
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
     }
 
     if (_blocking_writes && !unbuffered_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -498,7 +497,39 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (unbuffered_writes) {
         write_pending_bytes();
     }
-    chMtxUnlock(&_write_mutex);
+    _write_mutex.give();
+    return ret;
+}
+
+/*
+  lock the uart for exclusive use by write_locked() with the right key
+ */
+bool UARTDriver::lock_port(uint32_t key)
+{
+    if (lock_key && key != lock_key && key != 0) {
+        // someone else is using it
+        return false;
+    }
+    lock_key = key;
+    return true;
+}
+
+/* 
+   write to a locked port. If port is locked and key is not correct then 0 is returned
+   and write is discarded. All writes are non-blocking
+*/
+size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key)
+{
+    if (lock_key != 0 && key != lock_key) {
+        return 0;
+    }
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
+    }
+    size_t ret = _writebuf.write(buffer, size);
+
+    _write_mutex.give();
+
     return ret;
 }
 
@@ -519,12 +550,12 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 }
 
 /*
-  write out pending bytes with DMA
+  check for DMA completed for TX
  */
-void UARTDriver::write_pending_bytes_DMA(uint32_t n)
+void UARTDriver::check_dma_tx_completion(void)
 {
     chSysLock();
-    if (!tx_bounce_buf_ready && txdma) {
+    if (!tx_bounce_buf_ready) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
             if (txdma->stream->NDTR == 0) {
                 tx_bounce_buf_ready = true;
@@ -533,12 +564,19 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             }
         }
     }
+    chSysUnlock();
+}
+
+/*
+  write out pending bytes with DMA
+ */
+void UARTDriver::write_pending_bytes_DMA(uint32_t n)
+{
+    check_dma_tx_completion();
 
     if (!tx_bounce_buf_ready) {
-        chSysUnlock();
         return;
     }
-    chSysUnlock();
 
     /* TX DMA channel preparation.*/
     _writebuf.advance(tx_len);
@@ -549,6 +587,18 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     if (!dma_handle->lock_nonblock()) {
         tx_len = 0;
         return;
+    }
+    if (dma_handle->has_contention()) {
+        /*
+          someone else is using this same DMA channel. To reduce
+          latency we will drop the TX size with DMA on this UART to
+          keep TX times below 250us. This can still suffer from long
+          times due to CTS blockage
+         */
+        uint32_t max_tx_bytes = 1 + (_baudrate * 250UL / 1000000UL);
+        if (tx_len > max_tx_bytes) {
+            tx_len = max_tx_bytes;
+        }
     }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
@@ -604,6 +654,10 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 void UARTDriver::write_pending_bytes(void)
 {
     uint32_t n;
+
+    if (sdef.dma_tx) {
+        check_dma_tx_completion();
+    }
 
     // write any pending bytes
     n = _writebuf.available();
@@ -719,9 +773,9 @@ void UARTDriver::_timer_tick(void)
         // provided by the write() call, but if the write is larger
         // than the DMA buffer size then there can be extra bytes to
         // send here, and they must be sent with the write lock held
-        chMtxLock(&_write_mutex);
+        _write_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         write_pending_bytes();
-        chMtxUnlock(&_write_mutex);
+        _write_mutex.give();
     } else {
         write_pending_bytes();
     }

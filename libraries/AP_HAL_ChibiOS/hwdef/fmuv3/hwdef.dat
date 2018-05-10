@@ -103,8 +103,8 @@ FLASH_SIZE_KB 2048
 # serial device name, and must be for a serial device for which pins
 # are defined in this file. For example, SD7 is for UART7 (SD7 ==
 # "serial device 7" in ChibiOS).
-STDOUT_SERIAL SD7
-STDOUT_BAUDRATE 57600
+#STDOUT_SERIAL SD7
+#STDOUT_BAUDRATE 57600
 
 # now the USB setup, if you have USB. All of these settings are
 # option, and the ones below are the defaults. It ends up creating a
@@ -144,7 +144,7 @@ I2C_ORDER I2C2 I2C1
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8
+UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
 
 # if the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU
@@ -362,9 +362,7 @@ PE6 SPI4_MOSI SPI4
 # timing affecting sensor stability. We pull it high by default
 PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-
-# another uart for debug console. Currently only available via printf()
-# UART7 debug console
+# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters)
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
@@ -375,6 +373,14 @@ PE15 VDD_5V_PERIPH_OC INPUT
 
 # define a LED, mapping it to GPIO(0)
 PE12 FMU_LED_AMBER OUTPUT GPIO(0)
+
+# power flag pins. These tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp. 
+PB5 VDD_BRICK_VALID INPUT PULLUP
+PB7 VDD_SERVO_VALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
+PE15 VDD_5V_PERIPH_OC INPUT PULLUP
 
 # now the SPI device table. This table creates all accessible SPI
 # devices, giving the name of the device (which is used by device
@@ -394,10 +400,10 @@ PE12 FMU_LED_AMBER OUTPUT GPIO(0)
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
-SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  1*MHZ  8*MHZ
-SPIDEV icm20608-am    SPI1 DEVID4  MPU_CS       MODE3  1*MHZ  4*MHZ
-SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  1*MHZ  4*MHZ
-SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  4*MHZ
+SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV icm20608-am    SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+SPIDEV mpu9250_ext    SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
 SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
 SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ 
 SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ 
@@ -478,3 +484,12 @@ define HAL_I2C_MAX_CLOCK 100000
 # define CH_DBG_SYSTEM_STATE_CHECK TRUE
 # define CH_DBG_ENABLE_STACK_CHECK TRUE
 
+# we can't share IO UART (USART6)
+DMA_NOSHARE USART6_TX USART6_RX
+DMA_PRIORITY USART6* TIM* SPI*
+
+# list of files to put in ROMFS. For fmuv3 we need an IO firmware so
+# we can automatically update the IOMCU firmware on boot. The format
+# is "ROMFS ROMFS-filename source-filename". Paths are relative to the
+# ardupilot root
+ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin

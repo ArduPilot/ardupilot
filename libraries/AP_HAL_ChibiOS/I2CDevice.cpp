@@ -45,12 +45,16 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 #define HAL_I2C_MAX_CLOCK 100000
 #endif
 
+// values calculated with STM32CubeMX tool, PCLK=54MHz
+#define HAL_I2C_F7_100_TIMINGR 0x20404768
+#define HAL_I2C_F7_400_TIMINGR 0x6000030D
+
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
     dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void),
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void));    
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));    
 }
 
 // Clear Bus to avoid bus lockup
@@ -95,13 +99,24 @@ I2CDeviceManager::I2CDeviceManager(void)
           setup default I2C config. As each device is opened we will
           drop the speed to be the minimum speed requested
          */
+        businfo[i].busclock = HAL_I2C_MAX_CLOCK;
+#if defined(STM32F7)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_F7_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#else
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
-        businfo[i].i2ccfg.clock_speed = HAL_I2C_MAX_CLOCK;
+        businfo[i].i2ccfg.clock_speed = businfo[i].busclock;
         if (businfo[i].i2ccfg.clock_speed <= 100000) {
             businfo[i].i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         } else {
             businfo[i].i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
         }
+#endif
     }
 }
 
@@ -116,12 +131,20 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
-    if (bus_clock < bus.i2ccfg.clock_speed) {
+    if (bus_clock < bus.busclock) {
+#if defined(STM32F7)
+        if (bus_clock <= 100000) {
+            bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
+            bus.busclock = 100000;
+        }
+#else
         bus.i2ccfg.clock_speed = bus_clock;
-        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus_clock/1000));
+        bus.busclock = bus_clock;
         if (bus_clock <= 100000) {
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
+#endif
+        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
 }
 
@@ -135,7 +158,7 @@ I2CDevice::~I2CDevice()
 /*
   allocate DMA channel
  */
-void I2CBus::dma_allocate(void)
+void I2CBus::dma_allocate(Shared_DMA *ctx)
 {
     if (!i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
@@ -148,7 +171,7 @@ void I2CBus::dma_allocate(void)
 /*
   deallocate DMA channel
  */
-void I2CBus::dma_deallocate(void)
+void I2CBus::dma_deallocate(Shared_DMA *)
 {
     if (i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
@@ -168,11 +191,19 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     
     bus.dma_handle->lock();
 
+#if defined(STM32F7)
+    if (_use_smbus) {
+        bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
+    } else {
+        bus.i2ccfg.cr1 &= ~I2C_CR1_SMBHEN;
+    }
+#else
     if (_use_smbus) {
         bus.i2ccfg.op_mode = OPMODE_SMBUS_HOST;
     } else {
         bus.i2ccfg.op_mode = OPMODE_I2C;
     }
+#endif
     
     if (_split_transfers) {
         /*
@@ -217,7 +248,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
-        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.i2ccfg.clock_speed)*MAX(send_len, recv_len))/1000);
+        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
         bus.i2c_active = true;
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");

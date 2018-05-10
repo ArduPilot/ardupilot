@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
+#include "shared_dma.h"
 #include "ch.h"
 #include "hal.h"
 
@@ -38,7 +39,12 @@ public:
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;
     }
-    void set_output_mode(enum output_mode mode) override;
+    bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) override {
+        min_pwm = _esc_pwm_min;
+        max_pwm = _esc_pwm_max;
+        return true;
+    }
+    void set_output_mode(uint16_t mask, enum output_mode mode) override;
 
     float scale_esc_to_unity(uint16_t pwm) override {
         return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
@@ -57,6 +63,12 @@ public:
      */
     void force_safety_off(void) override;
 
+    /*
+      set PWM to send to a set of channels when the safety switch is
+      in the safe state
+     */
+    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
+    
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -68,6 +80,57 @@ public:
       timer push (for oneshot min rate)
      */
     void timer_tick(void) override;
+
+    /*
+      setup for serial output to a set of ESCs, using the given
+      baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
+      databits. This is used for ESC configuration and firmware
+      flashing
+     */
+    bool setup_serial_output(uint16_t chan_mask, ByteBuffer *buffer, uint32_t baudrate);
+
+    /*
+      setup for serial output to an ESC using the given
+      baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
+      databits. This is used for passthrough ESC configuration and
+      firmware flashing
+
+      While serial output is active normal output to this channel is
+      suspended. Output to some other channels (such as those in the
+      same channel timer group) may also be stopped, depending on the
+      implementation
+     */
+    bool serial_setup_output(uint8_t chan, uint32_t baudrate) override;
+
+    /*
+      write a set of bytes to an ESC, using settings from
+      serial_setup_output. This is a blocking call
+     */
+    bool serial_write_bytes(const uint8_t *bytes, uint16_t len) override;
+
+    /*
+      read a byte from a port, using serial parameters from serial_setup_output()
+      return the number of bytes read
+     */
+    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) override;
+    
+    /*
+      stop serial output. This restores the previous output mode for
+      the channel and any other channels that were stopped by
+      serial_setup_output()
+     */
+    void serial_end(void) override;
+
+    /*
+      enable telemetry request for a mask of channels. This is used
+      with DShot to get telemetry feedback
+     */
+    void set_telem_request_mask(uint16_t mask) { telem_request_mask = (mask >> chan_offset); }
+
+    /*
+      get safety switch state, used by Util.cpp
+    */
+    AP_HAL::Util::safety_state _safety_switch_state(void);
     
 private:
     struct pwm_group {
@@ -76,8 +139,73 @@ private:
         uint8_t chan[4]; // chan number, zero based, 255 for disabled
         PWMConfig pwm_cfg;
         PWMDriver* pwm_drv;
+        bool have_up_dma; // can we do DMAR outputs for DShot?
+        uint8_t dma_up_stream_id;
+        uint8_t dma_up_channel;
+        uint8_t alt_functions[4];
+        ioline_t pal_lines[4];
+
+        // below this line is not initialised by hwdef.h
+        enum output_mode current_mode;
+        uint16_t frequency_hz;
+        uint16_t ch_mask;
+        const stm32_dma_stream_t *dma;
+        Shared_DMA *dma_handle;
+        uint32_t *dma_buffer;
+        bool have_lock;
+        bool pwm_started;
+        uint32_t bit_width_mul;
+        uint32_t rc_frequency;
+        bool in_serial_dma;
+        uint64_t last_dshot_send_us;
+
+        // serial output
+        struct {
+            // expected time per bit
+            uint32_t bit_time_us;
+            
+            // channel to output to within group (0 to 3)
+            uint8_t chan;
+
+            // thread waiting for byte to be written
+            thread_t *waiter;        
+        } serial;
     };
-    enum output_mode _output_mode = MODE_PWM_NORMAL;
+
+    /*
+      structure for IRQ handler for soft-serial input
+     */
+    static struct irq_state {
+        // ioline for port being read
+        ioline_t line;
+
+        // time the current byte started
+        systime_t byte_start_tick;
+
+        // number of bits we have read in this byte
+        uint8_t nbits;
+
+        // bitmask of bits so far (includes start and stop bits)
+        uint16_t bitmask;
+
+        // value of completed byte (includes start and stop bits)        
+        uint16_t byteval;
+
+        // expected time per bit in system ticks
+        systime_t bit_time_tick;
+
+        // the bit value of the last bit received
+        uint8_t last_bit;
+        
+        // thread waiting for byte to be read
+        thread_t *waiter;
+    } irq;
+
+    
+    // the group being used for serial output
+    struct pwm_group *serial_group;
+    thread_t *serial_thread;
+    tprio_t serial_priority;
 
     static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
@@ -95,6 +223,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[16];
+    uint16_t safe_pwm[16]; // pwm to use when safety is on
     uint8_t num_channels;
     bool corked;
     // mask of channels that are running in high speed
@@ -107,16 +236,62 @@ private:
     mutex_t trigger_mutex;
 
     // which output groups need triggering
-    uint8_t trigger_groups;
+    uint8_t trigger_groupmask;
 
     // widest pulse for oneshot triggering
     uint16_t trigger_widest_pulse;
-    
+
+    // are we using oneshot125 for the iomcu?
+    bool iomcu_oneshot125;
+
     // push out values to local PWM
     void push_local(void);
 
-    // trigger oneshot pulses
-    void trigger_oneshot(void);
+    // trigger group pulses
+    void trigger_groups(void);
+
+    // setup output frequency for a group
+    void set_freq_group(pwm_group &group);
+
+    // safety switch state
+    AP_HAL::Util::safety_state safety_state;
+    uint32_t safety_update_ms;
+    uint8_t led_counter;
+    int8_t safety_button_counter;
+
+    // mask of channels to allow when safety on
+    uint16_t safety_mask;
+
+    // update safety switch and LED
+    void safety_update(void);
+    
+    /*
+      DShot handling
+     */
+    const uint8_t dshot_post = 6;
+    const uint16_t dshot_bit_length = 16 + dshot_post;
+    const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
+    uint32_t dshot_pulse_time_us;
+    uint16_t telem_request_mask;
+    
+    void dma_allocate(Shared_DMA *ctx);
+    void dma_deallocate(Shared_DMA *ctx);    
+    uint16_t create_dshot_packet(const uint16_t value, bool telem_request);
+    void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
+    void dshot_send(pwm_group &group, bool blocking);
+    static void dma_irq_callback(void *p, uint32_t flags);
+    bool mode_requires_dma(enum output_mode mode) const;
+    bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high);
+    void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
+    void set_group_mode(pwm_group &group);
+
+    // serial output support
+    static const eventmask_t serial_event_mask = EVENT_MASK(1);
+    bool serial_write_byte(uint8_t b);
+    bool serial_read_byte(uint8_t &b);
+    void fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
+    static void serial_bit_irq(void);
+
 };
 
 #endif // HAL_USE_PWM

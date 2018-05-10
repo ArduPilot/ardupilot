@@ -19,11 +19,6 @@ void Tracker::Log_Write_Attitude()
     DataFlash.Log_Write_POS(ahrs);
 }
 
-void Tracker::Log_Write_Baro(void)
-{
-    DataFlash.Log_Write_Baro();
-}
-
 struct PACKED log_Vehicle_Baro {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -95,10 +90,10 @@ void Tracker::log_init(void)
 #else // LOGGING_ENABLED
 
 void Tracker::Log_Write_Attitude(void) {}
-void Tracker::Log_Write_Baro(void) {}
 
 void Tracker::log_init(void) {}
 void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const Vector3f& vel) {}
 void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude) {}
+void Tracker::Log_Write_Vehicle_Startup_Messages() {}
 
 #endif // LOGGING_ENABLED

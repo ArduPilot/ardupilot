@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SV1_POS
     // @DisplayName: Servo 1 Position
-    // @Description: Angular location of swash servo #1
+    // @Description: Angular location of swash servo #1 - only used for H3 swash type
     // @Range: -180 180
     // @Units: deg
     // @User: Standard
@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SV2_POS
     // @DisplayName: Servo 2 Position
-    // @Description: Angular location of swash servo #2
+    // @Description: Angular location of swash servo #2 - only used for H3 swash type
     // @Range: -180 180
     // @Units: deg
     // @User: Standard
@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SV3_POS
     // @DisplayName: Servo 3 Position
-    // @Description: Angular location of swash servo #3
+    // @Description: Angular location of swash servo #3 - only used for H3 swash type
     // @Range: -180 180
     // @Units: deg
     // @User: Standard
@@ -60,10 +60,10 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: SWASH_TYPE
     // @DisplayName: Swash Type
-    // @Description: Swash Type Setting - either 3-servo CCPM or H1 Mechanical Mixing
-    // @Values: 0:3-Servo CCPM, 1:H1 Mechanical Mixing
+    // @Description: Swash Type Setting
+    // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
     // @User: Standard
-    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_CCPM),
+    AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_H3),
 
     // @Param: GYR_GAIN
     // @DisplayName: External Gyro Gain
@@ -76,8 +76,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
-    // @Description: Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -90 90
+    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Range: -30 30
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
@@ -117,6 +117,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
     // Indices 16-18 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
+
+    // @Param: COL_CTRL_DIR
+    // @DisplayName: Collective Control Direction
+    // @Description: Collective Control Direction - 0 for Normal. 1 for Reversed
+    // @Values: 0: Normal, 1: Reversed
+    // @User: Standard
+    AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _collective_direction, AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL),
+
     // parameters up to and including 29 are reserved for tradheli
 
     AP_GROUPEND
@@ -200,9 +208,9 @@ void AP_MotorsHeli_Single::output_test(uint8_t motor_seq, int16_t pwm)
             // external gyro & tail servo
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
                 if (_acro_tail && _ext_gyro_gain_acro > 0) {
-                    write_aux(_ext_gyro_gain_acro/1000.0f);
+                    write_aux(_ext_gyro_gain_acro*0.001f);
                 } else {
-                    write_aux(_ext_gyro_gain_std/1000.0f);
+                    write_aux(_ext_gyro_gain_std*0.001f);
                 }
             }
             rc_write(AP_MOTORS_MOT_4, pwm);
@@ -223,17 +231,21 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 
     // always send desired speed to tail rotor control, will do nothing if not DDVP not enabled
-    _tail_rotor.set_desired_speed(_direct_drive_tailspeed/1000.0f);
+    _tail_rotor.set_desired_speed(_direct_drive_tailspeed*0.001f);
 }
 
 // calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_armed_scalars()
 {
+    float thrcrv[5];
+    for (uint8_t i = 0; i < 5; i++) {
+        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    }
     _main_rotor.set_ramp_time(_rsc_ramp_time);
     _main_rotor.set_runup_time(_rsc_runup_time);
-    _main_rotor.set_critical_speed(_rsc_critical/1000.0f);
-    _main_rotor.set_idle_output(_rsc_idle_output/1000.0f);
-    _main_rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f, _rsc_power_negc/1000.0f, (uint16_t)_rsc_slewrate.get());
+    _main_rotor.set_critical_speed(_rsc_critical*0.001f);
+    _main_rotor.set_idle_output(_rsc_idle_output*0.001f);
+    _main_rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
 }
 
 
@@ -262,8 +274,8 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SPEED_SETPOINT);
         _tail_rotor.set_ramp_time(_rsc_ramp_time);
         _tail_rotor.set_runup_time(_rsc_runup_time);
-        _tail_rotor.set_critical_speed(_rsc_critical/1000.0f);
-        _tail_rotor.set_idle_output(_rsc_idle_output/1000.0f);
+        _tail_rotor.set_critical_speed(_rsc_critical*0.001f);
+        _tail_rotor.set_idle_output(_rsc_idle_output*0.001f);
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
@@ -273,17 +285,16 @@ void AP_MotorsHeli_Single::calculate_scalars()
     }
 }
 
-// calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
+// CCPM Mixers - calculate mixing scale factors by swashplate type
 void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
 {
-    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_CCPM) {                     //CCPM Swashplate, perform control mixing
-
-        // roll factors
+    if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H3) {                  //Three-Servo adjustable CCPM mixer factors
+        // aileron factors
         _rollFactor[CH_1] = cosf(radians(_servo1_pos + 90 - _phase_angle));
         _rollFactor[CH_2] = cosf(radians(_servo2_pos + 90 - _phase_angle));
         _rollFactor[CH_3] = cosf(radians(_servo3_pos + 90 - _phase_angle));
 
-        // pitch factors
+        // elevator factors
         _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
         _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
         _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
@@ -292,15 +303,28 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
         _collectiveFactor[CH_1] = 1;
         _collectiveFactor[CH_2] = 1;
         _collectiveFactor[CH_3] = 1;
+    } else if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H3_140) {       //Three-Servo H3-140 CCPM mixer factors
+        // aileron factors
+        _rollFactor[CH_1] = 1;
+        _rollFactor[CH_2] = -1;
+        _rollFactor[CH_3] = 0;
 
-    }else{              //H1 Swashplate, keep servo outputs separated
+        // elevator factors
+        _pitchFactor[CH_1] = 1;
+        _pitchFactor[CH_2] = 1;
+        _pitchFactor[CH_3] = -1;
 
-        // roll factors
+        // collective factors
+        _collectiveFactor[CH_1] = 1;
+        _collectiveFactor[CH_2] = 1;
+        _collectiveFactor[CH_3] = 1;
+    } else {                                                              //H1 straight outputs, no mixing
+        // aileron factors
         _rollFactor[CH_1] = 1;
         _rollFactor[CH_2] = 0;
         _rollFactor[CH_3] = 0;
 
-        // pitch factors
+        // elevator factors
         _pitchFactor[CH_1] = 0;
         _pitchFactor[CH_2] = 1;
         _pitchFactor[CH_3] = 0;
@@ -386,8 +410,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
-        collective_out = (_land_collective_min/1000.0f);
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
+        collective_out = (_land_collective_min*0.001f);
         limit.throttle_lower = true;
     }
 
@@ -409,24 +433,23 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
-    if (collective_out > _collective_mid_pct) {
-        // +ve motor load for +ve collective
-        _main_rotor.set_motor_load((collective_out - _collective_mid_pct) / (1.0f - _collective_mid_pct));
-    } else {
-        // -ve motor load for -ve collective
-        _main_rotor.set_motor_load((collective_out - _collective_mid_pct) / _collective_mid_pct);
-    }
+    _main_rotor.set_collective(fabsf(collective_out));
 
-    // swashplate servos
-    float collective_scalar = ((float)(_collective_max-_collective_min))/1000.0f;
-    float coll_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)/1000.0f;
-    float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * coll_out_scaled;
-    float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * coll_out_scaled;
+    // scale collective pitch for swashplate servos
+    float collective_scalar = ((float)(_collective_max-_collective_min))*0.001f;
+    float collective_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)*0.001f;
+
+    // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
+    if (_collective_direction == AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_REVERSED){
+        collective_out_scaled = 1 - collective_out_scaled;
+    }
+    float servo1_out = ((_rollFactor[CH_1] * roll_out) + (_pitchFactor[CH_1] * pitch_out))*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
+    float servo2_out = ((_rollFactor[CH_2] * roll_out) + (_pitchFactor[CH_2] * pitch_out))*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
     if (_swash_type == AP_MOTORS_HELI_SINGLE_SWASH_H1) {
         servo1_out += 0.5f;
         servo2_out += 0.5f;
     }
-    float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * coll_out_scaled;
+    float servo3_out = ((_rollFactor[CH_3] * roll_out) + (_pitchFactor[CH_3] * pitch_out))*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     servo1_out = 2*servo1_out - 1;
@@ -434,9 +457,9 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     servo3_out = 2*servo3_out - 1;
 
     // actually move the servos
-    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(servo1_out, _swash_servo_1));
-    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(servo2_out, _swash_servo_2));
-    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(servo3_out, _swash_servo_3));
+    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1_swash_servo(servo1_out, _swash_servo_1));
+    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1_swash_servo(servo2_out, _swash_servo_2));
+    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1_swash_servo(servo3_out, _swash_servo_3));
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -471,9 +494,9 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
         if (_acro_tail && _ext_gyro_gain_acro > 0) {
-            write_aux(_ext_gyro_gain_acro/1000.0f);
+            write_aux(_ext_gyro_gain_acro*0.001f);
         } else {
-            write_aux(_ext_gyro_gain_std/1000.0f);
+            write_aux(_ext_gyro_gain_std*0.001f);
         }
     }
 }
@@ -538,8 +561,8 @@ void AP_MotorsHeli_Single::servo_test()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
 {
-    // returns false if Phase Angle is outside of range 
-    if ((_phase_angle > 90) || (_phase_angle < -90)){
+    // returns false if Phase Angle is outside of range
+    if ((_phase_angle > 30) || (_phase_angle < -30)){
         if (display_msg) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_PHANG out of range");
         }

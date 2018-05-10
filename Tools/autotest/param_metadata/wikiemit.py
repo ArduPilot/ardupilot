@@ -62,6 +62,8 @@ class WikiEmit(Emit):
                         t += "|| *Value* || *Meaning* ||\n"
                         for value in values:
                             v = value.split(':')
+                            if len(v) != 2:
+                                raise ValueError("Bad value (%s)" % v)
                             t += "|| " + v[0] + " || " + self.camelcase_escape(v[1]) + " ||\n"
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]

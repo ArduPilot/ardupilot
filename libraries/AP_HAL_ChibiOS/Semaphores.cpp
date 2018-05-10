@@ -15,10 +15,9 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-
 #include "Semaphores.h"
+
+#if CH_CFG_USE_MUTEXES == TRUE
 
 extern const AP_HAL::HAL& hal;
 
@@ -54,4 +53,5 @@ bool Semaphore::take_nonblocking()
     return chMtxTryLock(&_lock);
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // CH_CFG_USE_MUTEXES
+

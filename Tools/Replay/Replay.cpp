@@ -63,7 +63,7 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
     // @Group: ARSPD_
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed,                               "ARSPD_",   AP_Airspeed),
+    GOBJECT(airspeed,                               "ARSP_",   AP_Airspeed),
 
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -689,9 +689,6 @@ void Replay::read_sensors(const char *type)
     
     if (run_ahrs) {
         _vehicle.ahrs.update();
-        if (_vehicle.ahrs.get_home().lat != 0) {
-            _vehicle.inertial_nav.update(_vehicle.ins.get_delta_time());
-        }
         if ((downsample == 0 || ++output_counter % downsample == 0) && !logmatch) {
             write_ekf_logs();
         }
@@ -954,6 +951,6 @@ GCS_Dummy _gcs;
 
 // dummy methods to avoid linking with these libraries
 void AP_Camera::send_feedback(mavlink_channel_t) {}
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) { return false; }
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
 
 AP_HAL_MAIN_CALLBACKS(&replay);

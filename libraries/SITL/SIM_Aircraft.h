@@ -113,6 +113,14 @@ public:
 
     virtual float gross_mass() const { return mass; }
 
+    const Location &get_location() const { return location; }
+
+    const Vector3f &get_position() const { return position; }
+
+    void get_attitude(Quaternion &attitude) const {
+        attitude.from_rotation_matrix(dcm);
+    }
+
 protected:
     SITL *sitl;
     Location home;

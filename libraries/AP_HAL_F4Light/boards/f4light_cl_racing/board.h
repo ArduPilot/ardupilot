@@ -32,8 +32,8 @@
 
 #define BOARD_BUZZER_PIN        105  // PB4
 #define BUZZER_PWM_HZ           3800 // freq for passive buzzer
-#define HAL_BUZZER_ON           0
-#define HAL_BUZZER_OFF          1
+#define HAL_BUZZER_ON           1
+#define HAL_BUZZER_OFF          0
 
 #define BOARD_NR_USARTS         5
 #define BOARD_USART1_TX_PIN     23 
@@ -61,8 +61,6 @@
 
 
 
-
-
 #define BOARD_USB_SENSE 11      // PC5
 
 
@@ -75,35 +73,41 @@
 //#define BOARD_SOFTSERIAL_RX 15
 
 
-# define BOARD_BLUE_LED_PIN        36  // BLUE
-# define BOARD_GREEN_LED_PIN        6   // NC - PC0 pin 8
+# define BOARD_BLUE_LED_PIN      36  // BLUE
+# define BOARD_GREEN_LED_PIN     105   // NC - PC0 pin 8
 
 # define HAL_GPIO_A_LED_PIN      BOARD_BLUE_LED_PIN
 # define HAL_GPIO_B_LED_PIN      BOARD_GREEN_LED_PIN
 
-# define HAL_GPIO_LED_ON           LOW
-# define HAL_GPIO_LED_OFF          HIGH
+# define HAL_GPIO_LED_ON         LOW
+# define HAL_GPIO_LED_OFF        HIGH
 
-
-#define BOARD_NR_GPIO_PINS      109
+#define BOARD_NR_GPIO_PINS       109
 
 //TODO add #define BOARD_HAS_UART3 ?
 
-#define BOARD_I2C_BUS_INT 2    // hardware internal I2C
-//#define BOARD_I2C_BUS_EXT 1  // external I2C
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
+
+//#define BOARD_I2C_BUS_INT 1    // hardware internal I2C
+#define BOARD_I2C_BUS_EXT 2  // external I2C
 #define BOARD_I2C_BUS_SLOW 2   // slow down bus with this number
 
 #define BOARD_I2C1_DISABLE // lots of drivers tries to scan all buses, spoiling device setup
 #define BOARD_I2C2_DISABLE 
 
 
-#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
-#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP280_I2C_ADDR        (0x76)
 
-#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP085_I2C_ADDR        (0x77)
 
 
@@ -111,22 +115,18 @@
 #define BOARD_COMPASS_HMC5843_I2C_ADDR 0x1E
 #define BOARD_COMPASS_HMC5843_ROTATION ROTATION_NONE
 
-#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_INT
+#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_EXT
 #define HAL_COMPASS_HMC5843_I2C_ADDR    BOARD_COMPASS_HMC5843_I2C_ADDR
 #define HAL_COMPASS_HMC5843_ROTATION    BOARD_COMPASS_HMC5843_ROTATION
 
 
 #define BOARD_INS_DEFAULT HAL_INS_MPU60XX_SPI
 #define BOARD_INS_ROTATION  ROTATION_NONE
-#define BOARD_INS_MPU60x0_NAME            "mpu6000"
-
-#define BOARD_MPU6000_CS_PIN	51  // PA4
-#define BOARD_MPU6000_DRDY_PIN	10  // PC4
-
-
+#define BOARD_INS_MPU60x0_NAME          "mpu6000"
+#define BOARD_MPU6000_CS_PIN	        51  // PA4
+#define BOARD_MPU6000_DRDY_PIN	        10  // PC4
 
 #define BOARD_STORAGE_SIZE            8192 // 4096 // EEPROM size
-
 
 #define BOARD_SDCARD_NAME "sdcard"
 #define BOARD_SDCARD_CS_PIN    2 // PB12
@@ -152,6 +152,12 @@
 # define BOARD_BATTERY_CURR_PIN     7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN 254
 
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS 108
 
 #define BOARD_SBUS_UART 1 // can use some UART as hardware inverted input
@@ -172,13 +178,10 @@
 #define SERVO_PIN_5 105 // PB4   - buzzer
 //#define SERVO_PIN_6 22 // PA8
 
-#if 1
+#define MOTOR_LAYOUT_DEFAULT 3 // Cleanflight
+
  #define HAL_CONSOLE USB_Driver // console on USB
  #define HAL_CONSOLE_PORT 0
-#else
- #define HAL_CONSOLE uart1Driver // console on radio
- #define HAL_CONSOLE_PORT 1
-#endif
 
 /*
     // @Param: USB_STORAGE

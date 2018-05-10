@@ -89,12 +89,6 @@ public:
     float       get_altitude() const;
 
     /**
-     * getHgtAboveGnd - get latest altitude estimate above ground level in centimetres and validity flag
-     * @return
-     */
-    bool       get_hagl(float &hagl) const;
-
-    /**
      * get_velocity_z - returns the current climbrate.
      *
      * @see get_velocity().z

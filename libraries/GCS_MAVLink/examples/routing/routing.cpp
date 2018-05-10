@@ -26,20 +26,23 @@ class GCS_MAVLINK_routing : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override { };
-
 protected:
 
     uint32_t telem_delay() const override { return 0; }
     Compass *get_compass() const override { return nullptr; };
     AP_Mission *get_mission() override { return nullptr; }
     AP_Rally *get_rally() const override { return nullptr; }
-    AP_ServoRelayEvents *get_servorelayevents() const override { return nullptr; }
     AP_Camera *get_camera() const override { return nullptr; };
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
     const AP_FWVersion &get_fwver() const override { return fwver; }
     void set_ekf_origin(const Location& loc) override { };
+
+    // dummy information:
+    MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
+    MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
+    uint32_t custom_mode() const override { return 3; } // magic number
+    MAV_STATE system_status() const override { return MAV_STATE_CALIBRATING; }
 
 private:
 

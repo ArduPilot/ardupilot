@@ -455,58 +455,22 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 AP_InertialSensor *AP_InertialSensor::_s_instance = nullptr;
 
 AP_InertialSensor::AP_InertialSensor() :
-    _gyro_count(0),
-    _accel_count(0),
-    _backend_count(0),
-    _accel(),
-    _gyro(),
     _board_orientation(ROTATION_NONE),
-    _primary_gyro(0),
-    _primary_accel(0),
-    _log_raw_bit(-1),
-    _hil_mode(false),
-    _calibrating(false),
-    _backends_detected(false),
-    _accel_cal_requires_reboot(false),
-    _startup_error_counts_set(false),
-    _startup_ms(0)
+    _log_raw_bit(-1)
 {
     if (_s_instance) {
         AP_HAL::panic("Too many inertial sensors");
     }
     _s_instance = this;
     AP_Param::setup_object_defaults(this, var_info);
-    for (uint8_t i=0; i<INS_MAX_BACKENDS; i++) {
-        _backends[i] = nullptr;
-    }
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        _accel_error_count[i] = 0;
-        _gyro_error_count[i] = 0;
         _gyro_cal_ok[i] = true;
-        _accel_clip_count[i] = 0;
-
         _accel_max_abs_offsets[i] = 3.5f;
-
-        _accel_raw_sample_rates[i] = 0;
-        _gyro_raw_sample_rates[i] = 0;
-
-        _delta_velocity_acc[i].zero();
-        _delta_velocity_acc_dt[i] = 0;
-
-        _delta_angle_acc[i].zero();
-        _delta_angle_acc_dt[i] = 0;
-        _last_delta_angle[i].zero();
-        _last_raw_gyro[i].zero();
-
-        _accel_startup_error_count[i] = 0;
-        _gyro_startup_error_count[i] = 0;
     }
     for (uint8_t i=0; i<INS_VIBRATION_CHECK_INSTANCES; i++) {
         _accel_vibe_floor_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ);
         _accel_vibe_filter[i].set_cutoff_frequency(AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ);
     }
-    memset(_delta_velocity_valid,0,sizeof(_delta_velocity_valid));
-    memset(_delta_angle_valid,0,sizeof(_delta_angle_valid));
 
     AP_AccelCal::register_client(this);
 }
@@ -534,6 +498,7 @@ uint8_t AP_InertialSensor::register_gyro(uint16_t raw_sample_rate_hz,
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     _gyro_over_sampling[_gyro_count] = 1;
+    _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
 
     bool saved = _gyro_id[_gyro_count].load();
 
@@ -567,6 +532,7 @@ uint8_t AP_InertialSensor::register_accel(uint16_t raw_sample_rate_hz,
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
     _accel_over_sampling[_accel_count] = 1;
+    _accel_raw_sampling_multiplier[_accel_count] = INT16_MAX/(16*GRAVITY_MSS);
 
     bool saved = _accel_id[_accel_count].load();
 
@@ -890,6 +856,9 @@ AP_InertialSensor::detect_backends(void)
                                              HAL_INS_DEFAULT_A_ROTATION));
 #elif HAL_INS_DEFAULT == HAL_INS_ICM20789_SPI
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20789")));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF7V2
+    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6000"), ROTATION_NONE));
+    ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("mpu6500"), ROTATION_NONE));
 #elif HAL_INS_DEFAULT == HAL_INS_NONE
     // no INS device
 #else
@@ -1814,7 +1783,11 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
         return false;
     }
     _accel_calibrator[_acc_body_aligned-1].get_sample_corrected(sample_num, ret);
-    ret.rotate(_board_orientation);
+    if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
+        ret = *_custom_rotation * ret;
+    } else {
+        ret.rotate(_board_orientation);
+    }
     return true;
 }
 
@@ -1839,14 +1812,18 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     }
     avg /= count;
     ret = avg;
-    ret.rotate(_board_orientation);
+    if (_board_orientation == ROTATION_CUSTOM && _custom_rotation) {
+        ret = *_custom_rotation * ret;
+    } else {
+        ret.rotate(_board_orientation);
+    }
     return true;
 }
 
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
-MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
+MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
@@ -1974,7 +1951,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
         }
 
         // force trim to zero
-        ahrs.set_trim(Vector3f(0, 0, 0));
+        AP::ahrs().set_trim(Vector3f(0, 0, 0));
     } else {
         hal.console->printf("\nFAILED\n");
         // restore old values
@@ -1996,8 +1973,8 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal(AP_AHRS &ahrs)
     }
 
     // and reset state estimators
-    ahrs.reset();
-        
+    AP::ahrs().reset();
+
     // stop flashing leds
     AP_Notify::flags.initialising = false;
 

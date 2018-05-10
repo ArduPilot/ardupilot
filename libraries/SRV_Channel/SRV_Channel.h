@@ -19,6 +19,7 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_SBusOut/AP_SBusOut.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -421,6 +422,9 @@ public:
 
     static void push();
 
+    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -445,6 +449,13 @@ private:
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // support for BLHeli protocol
+    AP_BLHeli blheli;
+    static AP_BLHeli *blheli_ptr;
+#endif
+    static uint16_t disabled_mask;
+    
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {

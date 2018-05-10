@@ -1,6 +1,44 @@
 APMrover2 Release Notes:
 ========================
-Rover V3.2.2-rc1 08-Mar-2018
+Rover V3.3.1-rc1 09-May-2018
+Changes from 3.3.1-rc1:
+1) Vectored Thrust to improve attitude control for boats with rotating motors
+2) minor changes and bug fixes:
+    a) remove jump forward when transitioning from forward to reverse
+    b) safety switch allows disarming motors (was disabled in 3.3.0)
+--------------------------------
+Rover V3.3.0 07-May-2018
+Changes from 3.3.0-rc1:
+1) default parameter changes
+    a) TURN_MAX_G reduced from 1.0 to 0.6
+    b) ATC_STR_ANG_P increased from 1.0 to 2.5 (converts angle error to desired turn rate during pivot turns)
+    c) ATC_STR_ACC_MAX reduced from 360 to 180 deg/s/s (slows acceleration in pivot turns)
+--------------------------------
+Rover V3.3.0-rc1 19-Apr-2018
+Changes from 3.2.3:
+1) Simple object avoidance support
+2) Circular and polygon fence support
+3) Pivot turn improvements
+    a) Heading control used to aim at new target 
+    b) ATC_STR_ACC_MAX limits maximum rotational acceleration
+    c) ATC_STR_RAT_MAX limits maximum rotation rate
+4) Allow ACRO mode without GPS for skid-steering vehicles (reverts to manual throttle)
+5) MOT_THR_MIN used as deadzone
+6) Parameter default changes:
+    a) PIVOT_TURN_ANGLE default raised from 30 to 60 degrees
+    b) ATC_STR_RAT_P and I reduced to 0.2
+    c) ATC_STR_RAT_FILT and ATC_SPEED_FILT reduced from 50hz to 10hz to better match vehicle response time
+7) Boats report themselves as boats allowing ground stations to display boat icon on map
+8) ChibiOS support
+--------------------------------
+Rover V3.2.3 09-Apr-2018 / V3.2.3-rc1/rc2 02-Apr-2018
+Changes from 3.2.2:
+1) Waypoint origin uses previous waypoint or vehicle stopping point
+2) Boats send correct mav-type to ground station
+3) TURN_MAX_G parameter description updates (allows lower values)
+4) fix two-paddle input decoding
+--------------------------------
+Rover V3.2.2 19-Mar-2018 / V3.2.2-rc1 08-Mar-2018
 Changes from 3.2.1:
 1) Fix loss of steering control when stopping in Acro and Steering modes
 --------------------------------

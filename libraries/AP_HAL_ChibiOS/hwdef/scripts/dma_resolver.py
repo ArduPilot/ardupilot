@@ -4,7 +4,7 @@ import sys, fnmatch
 import importlib
 
 # peripheral types that can be shared, wildcard patterns
-SHARED_MAP = ["I2C*", "USART*_TX", "UART*_TX", "SPI*"]
+SHARED_MAP = ["I2C*", "USART*_TX", "UART*_TX", "SPI*", "TIM*_UP"]
 
 ignore_list = []
 dma_map = None
@@ -28,7 +28,8 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list):
                 if debug:
                     print("Trying to Resolve Conflict: ", check_str)
                 #check if we can resolve by swapping with other periphs
-                for stream in dma_map[other_periph]:
+                for streamchan in dma_map[other_periph]:
+                    stream = (streamchan[0], streamchan[1])
                     if stream != curr_dict[other_periph] and \
                        check_possibility(other_periph, stream, curr_dict, dma_map, check_list):
                         curr_dict[other_periph] = stream
@@ -52,19 +53,19 @@ def can_share(periph, noshare_list):
 def chibios_dma_define_name(key):
     '''return define name needed for board.h for ChibiOS'''
     if key.startswith('ADC'):
-        return 'STM32_ADC_%s_DMA_STREAM' % key
+        return 'STM32_ADC_%s_DMA_' % key
     elif key.startswith('SPI'):
-        return 'STM32_SPI_%s_DMA_STREAM' % key
+        return 'STM32_SPI_%s_DMA_' % key
     elif key.startswith('I2C'):
-        return 'STM32_I2C_%s_DMA_STREAM' % key
+        return 'STM32_I2C_%s_DMA_' % key
     elif key.startswith('USART'):
-        return 'STM32_UART_%s_DMA_STREAM' % key
+        return 'STM32_UART_%s_DMA_' % key
     elif key.startswith('UART'):
-        return 'STM32_UART_%s_DMA_STREAM' % key
-    elif key.startswith('SDIO'):
-        return 'STM32_SDC_%s_DMA_STREAM' % key
+        return 'STM32_UART_%s_DMA_' % key
+    elif key.startswith('SDIO') or key.startswith('SDMMC'):
+        return 'STM32_SDC_%s_DMA_' % key
     elif key.startswith('TIM'):
-        return 'STM32_RCIN_DMA_STREAM'
+        return 'STM32_TIM_%s_DMA_' % key
     else:
         print("Error: Unknown key type %s" % key)
         sys.exit(1)
@@ -121,7 +122,8 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             print("Unknown peripheral function %s in DMA map for %s" %
                   (periph, mcu_type))
             sys.exit(1)
-        for stream in dma_map[periph]:
+        for streamchan in dma_map[periph]:
+            stream = (streamchan[0], streamchan[1])
             if check_possibility(periph, stream, curr_dict, dma_map,
                                  check_list):
                 curr_dict[periph] = stream
@@ -138,7 +140,8 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     unassigned_new = unassigned[:]
     for periph in unassigned:
         share_possibility = []
-        for stream in dma_map[periph]:
+        for streamchan in dma_map[periph]:
+            stream = (streamchan[0], streamchan[1])
             share_ok = True
             for periph2 in stream_assign[stream]:
                 if not can_share(periph, noshare_list) or not can_share(periph2, noshare_list):
@@ -158,7 +161,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             unassigned_new.remove(periph)
     unassigned = unassigned_new
 
-    f.write("// auto-generated DMA mapping from dma_resolver.py\n")
+    f.write("\n\n// auto-generated DMA mapping from dma_resolver.py\n")
 
     if unassigned:
         f.write(
@@ -171,8 +174,13 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         if len(stream_assign[stream]) > 1:
             shared = ' // shared %s' % ','.join(stream_assign[stream])
         f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
-                (chibios_dma_define_name(key), curr_dict[key][0],
+                (chibios_dma_define_name(key)+'STREAM', curr_dict[key][0],
                  curr_dict[key][1], shared))
+        for streamchan in dma_map[key]:
+            if stream == (streamchan[0], streamchan[1]):
+                f.write("#define %-30s %u\n" %
+                        (chibios_dma_define_name(key)+'CHAN', streamchan[2]))
+                break
 
 # now generate UARTDriver.cpp DMA config lines
     f.write("\n\n// generated UART DMA configuration lines\n")

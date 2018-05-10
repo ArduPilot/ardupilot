@@ -312,8 +312,7 @@ Examples:
 
 It's possible to pass the option `--debug` to the `configure` command. That
 will set compiler flags to store debugging information in the binaries so that
-you can use them with `gdb`, for example. The build directory will be set to
-`build/<board>-debug/`. That option might come handy when using SITL.
+you can use them with `gdb`, for example. That option might come handy when using SITL.
 
 ### Build-system wrappers ###
 

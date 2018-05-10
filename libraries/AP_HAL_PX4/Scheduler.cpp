@@ -184,22 +184,13 @@ void PX4Scheduler::delay(uint16_t ms)
            !_px4_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+            call_delay_cb();
         }
     }
     perf_end(_perf_delay);
     if (_px4_thread_should_exit) {
         exit(1);
     }
-}
-
-void PX4Scheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void PX4Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -455,6 +446,25 @@ void PX4Scheduler::system_initialized()
                       "more than once");
     }
     _initialized = true;
+}
+
+
+/*
+  disable interrupts and return a context that can be used to
+  restore the interrupt state. This can be used to protect
+  critical regions
+*/
+void *PX4Scheduler::disable_interrupts_save(void)
+{
+    return (void *)(uintptr_t)irqsave();
+}
+
+/*
+  restore interrupt state from disable_interrupts_save()
+*/
+void PX4Scheduler::restore_interrupts(void *state)
+{
+    irqrestore((irqstate_t)(uintptr_t)state);
 }
 
 #endif

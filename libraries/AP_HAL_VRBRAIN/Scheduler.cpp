@@ -184,22 +184,13 @@ void VRBRAINScheduler::delay(uint16_t ms)
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
         if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+            call_delay_cb();
         }
     }
     perf_end(_perf_delay);
     if (_vrbrain_thread_should_exit) {
         exit(1);
     }
-}
-
-void VRBRAINScheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void VRBRAINScheduler::register_timer_process(AP_HAL::MemberProc proc)

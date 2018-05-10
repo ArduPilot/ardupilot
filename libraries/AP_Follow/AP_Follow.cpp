@@ -114,8 +114,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
    constructor is not called until detect() returns true, so we
    already know that we should setup the proximity sensor
 */
-AP_Follow::AP_Follow(const AP_AHRS &ahrs) :
-        _ahrs(ahrs),
+AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -158,7 +157,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 {
     // get our location
     Location current_loc;
-    if (!_ahrs.get_position(current_loc)) {
+    if (!AP::ahrs().get_position(current_loc)) {
          return false;
      }
 

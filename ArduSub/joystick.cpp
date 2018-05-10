@@ -121,7 +121,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     y_last = y;
     z_last = z;
 
-    hal.rcin->set_overrides(channels, 11);
+    RC_Channels::set_overrides(channels, 11);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
@@ -168,9 +168,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
+#if MOUNT == ENABLED
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+#endif
         break;
     case JSButton::button_function_t::k_mount_tilt_up:
         cam_tilt = 1900;
@@ -690,7 +692,7 @@ void Sub::set_neutral_controls()
         channels[i] = 0xffff;
     }
 
-    hal.rcin->set_overrides(channels, 10);
+    RC_Channels::set_overrides(channels, 10);
 
     // Clear pitch/roll trim settings
     pitchTrim = 0;

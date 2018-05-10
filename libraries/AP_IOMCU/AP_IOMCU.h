@@ -46,6 +46,12 @@ public:
     // force safety off
     void force_safety_off(void);
 
+    // set PWM of channels when safety is on
+    void set_safety_pwm(uint16_t chmask, uint16_t period_us);
+
+    // set mask of channels that ignore safety state
+    void set_safety_mask(uint16_t chmask);
+    
     /*
       enable sbus output
     */
@@ -74,6 +80,9 @@ public:
 
     // set to oneshot mode
     void set_oneshot_mode(void);
+
+    // check if IO is healthy
+    bool healthy(void);
 
 private:
     AP_HAL::UARTDriver &uart;
@@ -106,6 +115,10 @@ private:
     uint32_t last_rc_read_ms;
     uint32_t last_servo_read_ms;
     uint32_t last_debug_ms;
+    uint32_t last_safety_option_check_ms;
+
+    // last value of safety options
+    uint16_t last_safety_options = 0xFFFF;
 
     void send_servo_out(void);
     void read_rc_input(void);
@@ -114,6 +127,7 @@ private:
     void print_debug(void);
     void discard_input(void);
     void event_failed(uint8_t event);
+    void update_safety_options(void);
     
     // PAGE_STATUS values
     struct PACKED {
@@ -168,6 +182,10 @@ private:
     struct {
         uint8_t num_channels;
         uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint8_t safety_pwm_set;
+        uint8_t safety_pwm_sent;
+        uint16_t safety_pwm[IOMCU_MAX_CHANNELS];
+        uint16_t safety_mask;
     } pwm_out;
 
     // read back pwm values
@@ -189,6 +207,60 @@ private:
     uint32_t last_servo_out_us;
 
     bool corked;
+
+    bool crc_is_ok;
+
+    // firmware upload
+    const char *fw_name = "io_firmware.bin";
+    const uint8_t *fw;
+
+    bool upload_fw(const char *filename);
+    bool recv_byte_with_timeout(uint8_t *c, uint32_t timeout_ms);
+    bool recv_bytes(uint8_t *p, uint32_t count);
+    void drain(void);
+    bool send(uint8_t c);
+    bool send(const uint8_t *p, uint32_t count);
+    bool get_sync(uint32_t timeout = 40);
+    bool sync();
+    bool get_info(uint8_t param, uint32_t &val);
+    bool erase();
+    bool program(uint32_t fw_size);
+    bool verify_rev2(uint32_t fw_size);
+    bool verify_rev3(uint32_t fw_size_local);
+    bool reboot();
+
+    bool check_crc(void);
+    
+    enum {
+        PROTO_NOP               = 0x00,
+        PROTO_OK                = 0x10,
+        PROTO_FAILED            = 0x11,
+        PROTO_INSYNC            = 0x12,
+        PROTO_INVALID           = 0x13,
+        PROTO_BAD_SILICON_REV   = 0x14,
+        PROTO_EOC               = 0x20,
+        PROTO_GET_SYNC          = 0x21,
+        PROTO_GET_DEVICE        = 0x22,
+        PROTO_CHIP_ERASE        = 0x23,
+        PROTO_CHIP_VERIFY       = 0x24,
+        PROTO_PROG_MULTI        = 0x27,
+        PROTO_READ_MULTI        = 0x28,
+        PROTO_GET_CRC           = 0x29,
+        PROTO_GET_OTP           = 0x2a,
+        PROTO_GET_SN            = 0x2b,
+        PROTO_GET_CHIP          = 0x2c,
+        PROTO_SET_DELAY         = 0x2d,
+        PROTO_GET_CHIP_DES      = 0x2e,
+        PROTO_REBOOT            = 0x30,
+
+        INFO_BL_REV       = 1,        /**< bootloader protocol revision */
+        BL_REV            = 5,        /**< supported bootloader protocol  */
+        INFO_BOARD_ID     = 2,        /**< board type */
+        INFO_BOARD_REV    = 3,        /**< board revision */
+        INFO_FLASH_SIZE   = 4,        /**< max firmware size in bytes */
+
+        PROG_MULTI_MAX    = 248,      /**< protocol max is 255, must be multiple of 4 */
+    };
 };
 
 #endif // HAL_WITH_IO_MCU

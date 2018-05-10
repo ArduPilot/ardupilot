@@ -33,9 +33,12 @@ public:
     // interface to the clients for registration
     static void register_client(AP_AccelCal_Client* client);
 
+    void handleMessage(const mavlink_message_t * msg);
+
 private:
     GCS_MAVLINK *_gcs;
     bool _use_gcs_snoop;
+    bool _waiting_for_mavlink_ack = false;
     uint32_t _last_position_request_ms;
     uint8_t _step;
     accel_cal_status_t _status;

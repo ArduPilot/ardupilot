@@ -61,7 +61,17 @@ FRESULT SdFatFs::format(const char *filepath, Sd2Card *card){
     _card->ioctl(CTRL_FORMAT,0); // clear chip
 
 #endif
-    FRESULT res = f_mkfs(filepath, 1 /* unpartitioned */, card->blockSize() /* cluster in sectors */);
+/*
+    const TCHAR* path,      Logical drive number 
+    BYTE opt,               Format option 
+    DWORD au,               Size of allocation unit (cluster) [byte] 
+    void* work,             Pointer to working buffer (null: use heap memory) 
+    UINT len                Size of working buffer [byte] 
+*/
+    
+    char buf[FF_MAX_SS];
+
+    FRESULT res = f_mkfs(filepath, 1 /* unpartitioned */, card->blockSize() /* cluster in sectors */, buf, FF_MAX_SS);
 
     if(res == FR_OK){
         res = f_mount(&_SDFatFs, filepath, 1);

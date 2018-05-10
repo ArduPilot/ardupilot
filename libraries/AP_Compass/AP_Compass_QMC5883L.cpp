@@ -207,14 +207,18 @@ void AP_Compass_QMC5883L::timer()
     /* correct raw_field for known errors */
     correct_field(field, _instance);
 
+    if (!field_ok(field)) {
+        return;
+    }
+
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _accum += field;
         _accum_count++;
         if(_accum_count == 20){
-        	_accum.x /= 2;
-        	_accum.y /= 2;
-        	_accum.z /= 2;
-        	_accum_count = 10;
+            _accum.x /= 2;
+            _accum.y /= 2;
+            _accum.z /= 2;
+            _accum_count = 10;
         }
         _sem->give();
     }

@@ -25,7 +25,7 @@ void Rover::init_ardupilot()
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
                         fwver.fw_string,
-                        hal.util->available_memory());
+                        (unsigned)hal.util->available_memory());
 
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
@@ -80,7 +80,10 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, fwver.fw_string, MAV_TYPE_GROUND_ROVER);
+    frsky_telemetry.init(serial_manager, fwver.fw_string, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
+#endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.init(serial_manager);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -103,13 +106,12 @@ void Rover::init_ardupilot()
     init_visual_odom();
 
     // and baro for EKF
-    init_barometer(true);
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
+    barometer.calibrate();
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
-
-    rc_override_active = hal.rcin->set_overrides(rc_override, 8);
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
@@ -187,10 +189,12 @@ void Rover::startup_ground(void)
     mission.init();
 
     // initialise DataFlash library
+#if LOGGING_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
+#endif
 
     // we don't want writes to the serial port to cause us to pause
     // so set serial ports non-blocking once we are ready to drive
@@ -236,6 +240,10 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
+#if DEVO_TELEM_ENABLED == ENABLED
+    devo_telemetry.update_control_mode(control_mode->mode_number());
+#endif
+
 #if CAMERA == ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == AUTO);
 #endif

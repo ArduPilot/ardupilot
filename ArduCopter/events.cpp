@@ -16,8 +16,10 @@ void Copter::failsafe_radio_on_event()
     } else {
         if (control_mode == AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (control_mode == LAND && g.failsafe_battery_enabled == FS_BATT_LAND && failsafe.battery) {
-            // continue landing
+        } else if (control_mode == LAND &&
+                   battery.has_failsafed() &&
+                   battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY) {
+            // continue landing or other high priority failsafes
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
@@ -46,37 +48,39 @@ void Copter::failsafe_radio_off_event()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_RADIO, ERROR_CODE_FAILSAFE_RESOLVED);
 }
 
-void Copter::failsafe_battery_event(void)
+void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    // return immediately if low battery event has already been triggered
-    if (failsafe.battery) {
-        return;
-    }
-
-    // failsafe check
-    if (g.failsafe_battery_enabled != FS_BATT_DISABLED && motors->armed()) {
-        if (should_disarm_on_failsafe()) {
-            init_disarm_motors();
-        } else {
-            if (g.failsafe_battery_enabled == FS_BATT_SMARTRTL_OR_RTL) {
-                set_mode_SmartRTL_or_RTL(MODE_REASON_BATTERY_FAILSAFE);
-            } else if (g.failsafe_battery_enabled == FS_BATT_SMARTRTL_OR_LAND) {
-                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            } else if (g.failsafe_battery_enabled == FS_BATT_RTL) {
-                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            } else { // g.failsafe_battery_enabled == FS_BATT_LAND
-                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
-            }
-        }
-    }
-
-    // set the low battery flag
-    set_failsafe_battery(true);
-
-    // warn the ground station and log to dataflash
-    gcs().send_text(MAV_SEVERITY_WARNING,"Low battery");
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
+    // failsafe check
+    if (should_disarm_on_failsafe()) {
+        init_disarm_motors();
+    } else {
+        switch ((Failsafe_Action)action) {
+            case Failsafe_Action_None:
+                return;
+            case Failsafe_Action_Land:
+                set_mode_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_RTL:
+                set_mode_RTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_SmartRTL:
+                set_mode_SmartRTL_or_RTL(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_SmartRTL_Land:
+                set_mode_SmartRTL_or_land_with_pause(MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            case Failsafe_Action_Terminate:
+#if ADVANCED_FAILSAFE == ENABLED
+                char battery_type_str[17];
+                snprintf(battery_type_str, 17, "%s battery", type_str);
+                g2.afs.gcs_terminate(true, battery_type_str);
+#else
+                init_disarm_motors();
+#endif
+        }
+    }
 }
 
 // failsafe_gcs_check - check for ground station failsafe
@@ -115,7 +119,7 @@ void Copter::failsafe_gcs_check()
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_GCS, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // clear overrides so that RC control can be regained with radio.
-    hal.rcin->clear_overrides();
+    RC_Channels::clear_overrides();
     failsafe.rc_override_active = false;
 
     if (should_disarm_on_failsafe()) {

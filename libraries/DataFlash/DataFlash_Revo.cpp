@@ -458,21 +458,12 @@ void DataFlash_Revo::ReadManufacturerID()
     if (!cs_assert()) return;
 
     // Read manufacturer and ID command...
-#if 0
-    spi_write(JEDEC_DEVICE_ID); //
-
-    df_manufacturer = spi_read();
-    df_device = spi_read(); //memorytype
-    df_device = (df_device << 8) | spi_read(); //capacity
-    spi_read(); // ignore 4th byte
-#else
     cmd[0] = JEDEC_DEVICE_ID;
 
     _spi->transfer(cmd, 1, buffer[1], 4);
 
     df_manufacturer =  buffer[1][0];
     df_device       = (buffer[1][1] << 8) | buffer[1][2]; //capacity
-#endif
 
     cs_release();
 }
@@ -956,127 +947,6 @@ uint16_t DataFlash_Revo::find_last_page_of_log(uint16_t log_number)
 }
 
 
-
-
-
-/*
-  dump header information from all log pages
- */
-void DataFlash_Revo::DumpPageInfo(AP_HAL::BetterStream *port)
-{
-    for (uint16_t count=1; count<=df_NumPages; count++) {
-        StartRead(count);
-        port->printf("DF page, log file #, log page: %u,\t", (unsigned)count);
-        port->printf("%u,\t", (unsigned)GetFileNumber());
-        port->printf("%u\n", (unsigned)GetFilePage());
-    }
-}
-
-/*
-  show information about the device
- */
-void DataFlash_Revo::ShowDeviceInfo(AP_HAL::BetterStream *port)
-{
-    if (!CardInserted()) {
-        port->printf("No dataflash inserted\n");
-        return;
-    }
-    ReadManufacturerID();
-    port->printf("Manufacturer: 0x%02x   Device: 0x%04x\n",
-                    (unsigned)df_manufacturer,
-                    (unsigned)df_device);
-    port->printf("NumPages: %u  PageSize: %u\n",
-                   (unsigned)df_NumPages+1,
-                   (unsigned)df_PageSize);
-}
-
-/*
-  list available log numbers
- */
-void DataFlash_Revo::ListAvailableLogs(AP_HAL::BetterStream *port)
-{
-    uint16_t num_logs = get_num_logs();
-    int16_t last_log_num = find_last_log();
-    uint16_t log_start = 0;
-    uint16_t log_end = 0;
-
-    if (num_logs == 0) {
-        port->printf("\nNo logs\n\n");
-        return;
-    }
-    port->printf("\n%u logs\n", (unsigned)num_logs);
-
-    for (uint16_t i=num_logs; i>=1; i--) {
-        uint16_t last_log_start = log_start, last_log_end = log_end;
-        uint16_t temp = last_log_num - i + 1;
-        get_log_boundaries(temp, log_start, log_end);
-        port->printf("Log %u,    start %u,   end %u\n", 
-                       (unsigned)temp, 
-                       (unsigned)log_start, 
-                       (unsigned)log_end);
-        if (last_log_start == log_start && last_log_end == log_end) {
-            // we are printing bogus logs
-            break;
-        }
-    }
-    port->println();
-}
-
-/*
-  Read the log and print it on port
-*/
-void DataFlash_Revo::LogReadProcess(uint16_t log_num,
-                                     uint16_t start_page, uint16_t end_page, 
-                                     print_mode_fn print_mode,
-                                     AP_HAL::BetterStream *port)
-{
-    uint8_t log_step = 0;
-    uint16_t page = start_page;
-//    bool first_entry = true;
-
-    if (df_BufferIdx != 0) {
-        FinishWrite();
-        hal.scheduler->delay(100);
-    }
-
-    StartRead(start_page);
-
-    while (true) {
-	uint8_t data;
-        ReadBlock(&data, 1);
-
-		// This is a state machine to read the packets
-	switch(log_step) {
-	case 0:
-		if (data == HEAD_BYTE1) {
-			log_step++;
-                }
-		break;
-
-	case 1:
-		if (data == HEAD_BYTE2) {
-		    log_step++;
-                } else {
-		    log_step = 0;
-		}
-		break;
-
-	case 2:
-		log_step = 0;
-//                first_entry = false;
-                _print_log_entry(data, print_mode, port);
-                break;
-	}
-        uint16_t new_page = GetPage();
-        if (new_page != page) {
-            if (new_page == end_page+1 || new_page == start_page) {
-                return;
-            }
-            page = new_page;
-        }
-    }
-}
-
 void DataFlash_Revo::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc)
 {
     uint16_t start, end;
@@ -1088,5 +958,4 @@ void DataFlash_Revo::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &ti
     }
     time_utc = 0;
 }
-
 #endif

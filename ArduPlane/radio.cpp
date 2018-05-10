@@ -38,9 +38,12 @@ void Plane::set_control_channels(void)
         SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, aparm.throttle_min<0?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 
-    // setup correct scaling for ESCs like the UAVCAN PX4ESC which
-    // take a proportion of speed
-    g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    if (!quadplane.enable) {
+        // setup correct scaling for ESCs like the UAVCAN PX4ESC which
+        // take a proportion of speed. For quadplanes we use AP_Motors
+        // scaling
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    }
 }
 
 /*
@@ -171,7 +174,7 @@ void Plane::rudder_arm_disarm_check()
 
 void Plane::read_radio()
 {
-    if (!hal.rcin->new_input()) {
+    if (!RC_Channels::read_input()) {
         control_failsafe();
         return;
     }
@@ -183,25 +186,13 @@ void Plane::read_radio()
 
     failsafe.last_valid_rc_ms = millis();
 
-    elevon.ch1_temp = channel_roll->read();
-    elevon.ch2_temp = channel_pitch->read();
-    uint16_t pwm_roll, pwm_pitch;
-
-    pwm_roll = elevon.ch1_temp;
-    pwm_pitch = elevon.ch2_temp;
-
-    RC_Channels::set_pwm_all();
-    
     if (control_mode == TRAINING) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
-        channel_roll->set_pwm_no_deadzone(pwm_roll);
-        channel_pitch->set_pwm_no_deadzone(pwm_pitch);
-        channel_throttle->set_pwm_no_deadzone(channel_throttle->read());
-        channel_rudder->set_pwm_no_deadzone(channel_rudder->read());
-    } else {
-        channel_roll->set_pwm(pwm_roll);
-        channel_pitch->set_pwm(pwm_pitch);
+        channel_roll->recompute_pwm_no_deadzone();
+        channel_pitch->recompute_pwm_no_deadzone();
+        channel_throttle->recompute_pwm_no_deadzone();
+        channel_rudder->recompute_pwm_no_deadzone();
     }
 
     control_failsafe();

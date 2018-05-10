@@ -47,17 +47,22 @@ public:
     bool    usb_connected(void) override;
 
     void set_usb_connected() { _usb_connected = true; }
+
+    /* attach interrupt via ioline_t */
+    bool _attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode);
+    
 private:
-    bool _usb_connected = false;
+    bool _usb_connected;
+    bool _ext_started;
 };
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    DigitalSource(uint8_t v);
+    DigitalSource(ioline_t line);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value);
     void    toggle();
 private:
-    uint8_t _v;
+    ioline_t line;
 };

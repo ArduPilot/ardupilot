@@ -2,8 +2,6 @@
 
 #include <stdint.h>
 
-#include <AP_Common/AP_Common.h>
-
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
@@ -39,6 +37,13 @@ public:
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
 
+    // lock a port for exclusive use. Use a key of 0 to unlock
+    virtual bool lock_port(uint32_t key) { return false; }
+
+    // write to a locked port. If port is locked and key is not correct then 0 is returned
+    // and write is discarded
+    virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
+    
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
     };
@@ -52,13 +57,6 @@ public:
      * file descriptor
      */
     virtual bool set_unbuffered_writes(bool on){ return false; };
-
-    /* Implementations of BetterStream virtual methods. These are
-     * provided by AP_HAL to ensure consistency between ports to
-     * different boards
-     */
-    void printf(const char *s, ...) FMT_PRINTF(2, 3);
-    void vprintf(const char *s, va_list ap);
 
     /*
       wait for at least n bytes of incoming data, with timeout in

@@ -151,7 +151,9 @@ private:
 #endif
 
     // Battery Sensors
-    AP_BattMonitor battery{MASK_LOG_CURRENT};
+    AP_BattMonitor battery{MASK_LOG_CURRENT,
+                           FUNCTOR_BIND_MEMBER(&Tracker::handle_battery_failsafe, void, const char*, const int8_t),
+                           nullptr};
 
     struct Location current_loc;
 
@@ -191,22 +193,17 @@ private:
     uint8_t one_second_counter = 0;
     bool target_set = false;
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay = false;
-
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
     void one_second_loop();
     void ten_hz_logging_loop();
-    void send_heartbeat(mavlink_channel_t chan);
     void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
-    void mavlink_check_target(const mavlink_message_t* msg);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);
@@ -220,8 +217,6 @@ private:
     void update_scan(void);
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
     void read_radio();
-    void init_barometer(bool full_calibration);
-    void update_barometer(void);
     void update_ahrs();
     void update_compass(void);
     void compass_accumulate(void);
@@ -257,15 +252,14 @@ private:
     void init_capabilities(void);
     void compass_cal_update();
     void Log_Write_Attitude();
-    void Log_Write_Baro(void);
     void Log_Write_Vehicle_Pos(int32_t lat,int32_t lng,int32_t alt, const Vector3f& vel);
     void Log_Write_Vehicle_Baro(float pressure, float altitude);
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
     bool should_log(uint32_t mask);
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 
 public:
-    void mavlink_snoop(const mavlink_message_t* msg);
     void mavlink_delay_cb();
 };
 

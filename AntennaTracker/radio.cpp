@@ -4,7 +4,5 @@
 
 void Tracker::read_radio()
 {
-    if (hal.rcin->new_input()) {
-        RC_Channels::set_pwm_all();
-    }
+    RC_Channels::read_input();
 }

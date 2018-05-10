@@ -191,6 +191,19 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     }
 }
 
+#define streq(a, b) (!strcmp(a, b))
+int SITL_State::sim_fd(const char *name, const char *arg)
+{
+    if (streq(name, "vicon")) {
+        if (vicon != nullptr) {
+            AP_HAL::panic("Only one vicon system at a time");
+        }
+        vicon = new SITL::Vicon();
+        return vicon->fd();
+    }
+    AP_HAL::panic("unknown simulated device: %s", name);
+}
+
 #ifndef HIL_MODE
 /*
   check for a SITL RC input packet
@@ -292,6 +305,13 @@ void SITL_State::_fdm_input_local(void)
     if (adsb != nullptr) {
         adsb->update();
     }
+    if (vicon != nullptr) {
+        Quaternion attitude;
+        sitl_model->get_attitude(attitude);
+        vicon->update(sitl_model->get_location(),
+                      sitl_model->get_position(),
+                      attitude);
+    }
 
     if (_sitl && _use_fg_view) {
         _output_to_flightgear();
@@ -339,23 +359,43 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
-    // pass wind into simulators, using a wind gradient below 60m
     float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;
     float wind_direction = 0;
     float wind_dir_z = 0;
-    if (_sitl) {
+
+    // give 5 seconds to calibrate airspeed sensor at 0 wind speed
+    if (wind_start_delay_micros == 0) {
+        wind_start_delay_micros = now;
+    } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {
         // The EKF does not like step inputs so this LPF keeps it happy.
         wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
         wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
-    }
+        
+        // pass wind into simulators using different wind types via param SIM_WIND_T*.
+        switch (_sitl->wind_type) {
+        case SITL::SITL::WIND_TYPE_SQRT:
+            if (altitude < _sitl->wind_type_alt) {
+                wind_speed *= sqrtf(MAX(altitude / _sitl->wind_type_alt, 0));
+            }
+            break;
 
+        case SITL::SITL::WIND_TYPE_COEF:
+            wind_speed += (altitude - _sitl->wind_type_alt) * _sitl->wind_type_coef;
+            break;
+
+        case SITL::SITL::WIND_TYPE_NO_LIMIT:
+        default:
+            break;
+        }
+
+        // never allow negative wind velocity
+        wind_speed = MAX(wind_speed, 0);
+    }
+    
     if (altitude < 0) {
         altitude = 0;
-    }
-    if (altitude < 60) {
-        wind_speed *= sqrtf(MAX(altitude / 60, 0));
     }
 
     input.wind.speed = wind_speed;
@@ -444,6 +484,9 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
     // assume 3DR power brick
     voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
     current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
+    // fake battery2 as just a 25% gain on the first one
+    voltage2_pin_value = ((voltage * 0.25f / 10.1f) / 5.0f) * 1024;
+    current2_pin_value = ((_current * 0.25f / 17.0f) / 5.0f) * 1024;
 }
 
 void SITL_State::init(int argc, char * const argv[])
@@ -469,8 +512,9 @@ void SITL_State::set_height_agl(void)
     }
 
 #if AP_TERRAIN_AVAILABLE
-    if (_terrain &&
-            _sitl->terrain_enable) {
+    if (_terrain != nullptr &&
+        _sitl != nullptr &&
+        _sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;
@@ -485,8 +529,10 @@ void SITL_State::set_height_agl(void)
     }
 #endif
 
-    // fall back to flat earth model
-    _sitl->height_agl = _sitl->state.altitude - home_alt;
+    if (_sitl != nullptr) {
+        // fall back to flat earth model
+        _sitl->height_agl = _sitl->state.altitude - home_alt;
+    }
 }
 
 #endif

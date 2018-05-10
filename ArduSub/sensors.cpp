@@ -1,19 +1,9 @@
 #include "Sub.h"
 
-void Sub::init_barometer(bool save)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    barometer.calibrate(save);
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 // return barometric altitude in centimeters
 void Sub::read_barometer(void)
 {
     barometer.update();
-    if (should_log(MASK_LOG_IMU)) {
-        Log_Write_Baro();
-    }
 
     if (ap.depth_sensor_present) {
         sensor_health.depth = barometer.healthy(depth_sensor_idx);
@@ -161,25 +151,6 @@ void Sub::update_optical_flow(void)
     }
 }
 #endif  // OPTFLOW == ENABLED
-
-// read_battery - check battery voltage and current and invoke failsafe if necessary
-// called at 10hz
-void Sub::read_battery(void)
-{
-    battery.read();
-
-    // update motors with voltage and current
-    if (battery.get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
-        motors.set_voltage(battery.voltage());
-    }
-
-    if (battery.has_current()) {
-        motors.set_current(battery.current_amps());
-        compass.set_current(battery.current_amps());
-    }
-
-    failsafe_battery_check();
-}
 
 void Sub::compass_cal_update()
 {
