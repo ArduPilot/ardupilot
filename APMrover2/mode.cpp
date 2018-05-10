@@ -7,6 +7,7 @@ Mode::Mode() :
     g2(rover.g2),
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
+    channel_lateral(rover.channel_lateral),
     mission(rover.mission),
     attitude_control(rover.g2.attitude_control)
 { }
@@ -122,6 +123,19 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
         steering_out *= -1;
     }
     speed_out = speed_out_limited;
+}
+
+// decode pilot lateral movement input and return in lateral_out argument
+void Mode::get_pilot_desired_lateral(float &lateral_out)
+{
+    // no RC input means no lateral input
+    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+        lateral_out = 0;
+        return;
+    }
+
+    // get pilot lateral input
+    lateral_out = rover.channel_lateral->get_control_in();
 }
 
 // set desired location
