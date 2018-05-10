@@ -197,7 +197,7 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool m
     }
 
     // Calculate the desired steering rate given desired_accel and speed
-    float desired_rate = desired_accel / speed;
+    const float desired_rate = desired_accel / speed;
 
     return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
 }
@@ -209,7 +209,7 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, bool motor
     const float yaw_error = wrap_PI(heading_rad - _ahrs.yaw);
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
-    float desired_rate = _steer_angle_p.get_p(yaw_error);
+    const float desired_rate = _steer_angle_p.get_p(yaw_error);
 
     return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
 }
