@@ -240,21 +240,22 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
 
     // rate limit desired turn rate
     if (is_positive(_steer_rate_max)) {
-        _desired_turn_rate = constrain_float(_desired_turn_rate, -_steer_rate_max, _steer_rate_max);
+        const float steer_rate_max_rad = radians(_steer_rate_max);
+        _desired_turn_rate = constrain_float(_desired_turn_rate, -steer_rate_max_rad, steer_rate_max_rad);
     }
 
     // Calculate the steering rate error (rad/sec)
     // We do this in earth frame to allow for rover leaning over in hard corners
-    const float rate_error = (desired_rate - _ahrs.get_yaw_rate_earth());
+    const float rate_error = (_desired_turn_rate - _ahrs.get_yaw_rate_earth());
 
     // record desired rate for logging purposes only
-    _steer_rate_pid.set_desired_rate(desired_rate);
+    _steer_rate_pid.set_desired_rate(_desired_turn_rate);
 
     // pass error to PID controller
     _steer_rate_pid.set_input_filter_all(rate_error);
 
     // get feed-forward
-    const float ff = _steer_rate_pid.get_ff(desired_rate);
+    const float ff = _steer_rate_pid.get_ff(_desired_turn_rate);
 
     // get p
     const float p = _steer_rate_pid.get_p();
