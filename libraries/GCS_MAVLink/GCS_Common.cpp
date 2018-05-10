@@ -20,6 +20,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
@@ -192,6 +193,38 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->board_voltage() * 1000,
                                   hal.analogin->servorail_voltage() * 1000,
                                   hal.analogin->power_status_flags());
+}
+
+void GCS_MAVLINK::send_sys_status()
+{
+    if (!gcs().vehicle_initialised()) {
+        return;
+    }
+
+    const AP_BattMonitor &battery = AP::battery();
+
+    int16_t battery_current = -1;
+    int8_t battery_remaining = -1;
+
+    if (battery.has_current() && battery.healthy()) {
+        battery_remaining = battery.capacity_remaining_pct();
+        battery_current = battery.current_amps() * 100;
+    }
+
+    gcs().update_sensor_status_flags();
+
+    mavlink_msg_sys_status_send(
+        chan,
+        gcs().control_sensors_present,
+        gcs().control_sensors_enabled,
+        gcs().control_sensors_health,
+        static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
+        battery.voltage() * 1000,  // mV
+        battery_current,        // in 10mA units
+        battery_remaining,      // in %
+        0,  // comm drops %,
+        0,  // comm drops in pkts,
+        0, 0, 0, 0);
 }
 
 void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,

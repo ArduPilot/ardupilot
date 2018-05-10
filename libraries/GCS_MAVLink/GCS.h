@@ -180,6 +180,7 @@ public:
     void send_scaled_pressure();
     void send_sensor_offsets();
     virtual void send_simstate() const;
+    void send_sys_status();
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -647,7 +648,24 @@ public:
 
     // get the VFR_HUD throttle
     int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0).vfr_hud_throttle():0; }
-    
+
+    // SYS_STATUS flags.  One set per vehicle seems reasonable.
+    static uint32_t control_sensors_present;
+    static uint32_t control_sensors_enabled;
+    static uint32_t control_sensors_health;
+
+    virtual bool compass_enabled() const { return true; };
+    virtual bool vehicle_initialised() const = 0;
+    // min_gps_state returns the minimum GPS state required for it to
+    // be considered "healthy".  On Plane we require a 3D fix before
+    // GPS is healthy, on Copter we really just need to be getting
+    // updates from it.
+    virtual AP_GPS::GPS_Status min_gps_state() const;
+    // update status of sensors and control state.  The base class
+    // method MUST be called as the first thing, and its values
+    // generally preserved.
+    virtual void update_sensor_status_flags(void);
+
 private:
 
     static GCS *_singleton;

@@ -2,6 +2,132 @@
 
 extern const AP_HAL::HAL& hal;
 
+uint32_t GCS::control_sensors_present = 0;
+uint32_t GCS::control_sensors_enabled = 0;
+uint32_t GCS::control_sensors_health = 0;
+
+AP_GPS::GPS_Status GCS::min_gps_state() const {
+    return AP_GPS::NO_FIX;
+}
+
+void GCS::update_sensor_status_flags()
+{
+    control_sensors_present =
+        MAV_SYS_STATUS_SENSOR_3D_GYRO |
+        MAV_SYS_STATUS_SENSOR_3D_ACCEL |
+        MAV_SYS_STATUS_AHRS |
+        MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
+        MAV_SYS_STATUS_SENSOR_BATTERY |
+        MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
+
+    control_sensors_enabled = 0;
+    control_sensors_health = 0;
+
+    // update MAV_SYS_STATUS_SENSOR_3D_MAG:
+    const Compass *compass = AP::ahrs().get_compass();
+    if (compass != nullptr) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+        if (compass_enabled()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+            if (compass->healthy(0) && AP::ahrs().use_compass()) {
+                control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
+            }
+        }
+    }
+
+    // update MAV_SYS_STATUS_SENSOR_GPS:
+    const AP_GPS &gps = AP::gps();
+    if (gps.status() > AP_GPS::NO_GPS) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_GPS; // always enabled
+        if (gps.status() > min_gps_state() && gps.is_healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
+        }
+    }
+
+    // Update MAV_SYS_STATUS_LOGGING:
+    const DataFlash_Class *DataFlash = DataFlash_Class::instance();
+    if (DataFlash->logging_present()) {  // primary logging only (usually File)
+        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
+        if (DataFlash->logging_enabled()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
+        }
+        if (!DataFlash->logging_failed()) {
+            control_sensors_health |= MAV_SYS_STATUS_LOGGING;
+        }
+    }
+
+    // update MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE:
+    // marked as present in MAVLINK_SENSOR_PRESENT_DEFAULT
+    // note that Sub overrides these health settings!
+    const AP_Baro &barometer = AP::baro();
+    control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    if (barometer.all_healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    }
+
+    // Update MAV_SYS_STATUS_SENSOR_BATTERY:
+    const AP_BattMonitor &battery = AP::battery();
+    // marked as present in MAVLINK_SENSOR_PRESENT_DEFAULT
+    if (battery.num_instances() > 0) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
+    if (battery.healthy() && !battery.has_failsafed()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
+
+    // update MAV_SYS_STATUS_SENSOR_3D_GYRO and MAV_SYS_STATUS_SENSOR_3D_ACCEL:
+    const AP_InertialSensor &ins = AP::ins();
+    // marked as present in MAVLINK_SENSOR_PRESENT_DEFAULT
+
+    // sensor is not enabled until vehicle is initialised and
+    // calibration is done.  This is to avoid spurious warnings at
+    // vehicle boot-time.
+    if (vehicle_initialised() && !ins.calibrating()) {
+        control_sensors_enabled |= (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+        if (ins.get_gyro_health_all() && ins.gyro_calibrated_ok_all()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_GYRO;
+        }
+        if (ins.get_accel_health_all()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
+        }
+    }
+
+    // update MAV_SYS_STATUS_AHRS:
+    AP_AHRS &ahrs = AP::ahrs();
+    // marked as present in MAVLINK_SENSOR_*_DEFAULT
+    // AHRS sensor is not enabled until it is initialised.  This is to
+    // avoid spurious warnings at boot-time:
+    if (ahrs.initialised()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_AHRS;
+        if (ahrs.healthy()) {
+            // AHRS subsystem is healthy
+            control_sensors_health |= MAV_SYS_STATUS_AHRS;
+        }
+    }
+
+    // update MAV_SYS_STATUS_SENSOR_VISION_POSITION:
+    const AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom != nullptr) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        if (visual_odom->enabled()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+            if (visual_odom->healthy()) {
+                control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+            }
+        }
+    }
+
+    // update MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS:
+    // set motors outputs as enabled if safety switch is not disarmed
+    // (i.e. either NONE or ARMED)
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
+        // FIXME: update this based on measured RPM on ESCs:
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
+    }
+}
+
 /*
   send a text message to all GCS
  */
