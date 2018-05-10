@@ -1,8 +1,16 @@
+//******************************************************
+// (c) olliw, www.olliw.eu
+// GPL3
+//******************************************************
 #pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 
-#define SERIAL_RECEIVE_BUFFER_SIZE      96 //the largest RCcmd response can be 77
+//******************************************************
+// STorM32_lib
+//******************************************************
+
+#define STORM32_LIB_RECEIVE_BUFFER_SIZE      96 //the largest RCcmd response can be 77
 
 class STorM32_lib
 {
@@ -238,14 +246,14 @@ protected:
 
     typedef struct { //structure to process incoming serial data
         // auxiliary fields to handle reception
-        uint16_t state;
+        enum SERIALSTATEENUM state;
         uint16_t payload_cnt;
         // RCcmd message fields, without crc
         uint8_t stx;
         uint8_t len;
         uint8_t cmd;
         union {
-            uint8_t buf[SERIAL_RECEIVE_BUFFER_SIZE+8]; //have some overhead
+            uint8_t buf[STORM32_LIB_RECEIVE_BUFFER_SIZE+8]; //have some overhead
             tCmdGetDataFieldsAckPayload getdatafields;
             tCmdGetVersionStrAckPayload getversionstr;
         };

@@ -1,26 +1,20 @@
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_GPS/AP_GPS.h>
+#include <GCS_MAVLink/GCS.h>
+#include <RC_Channel/RC_Channel.h>
 #include "AP_Mount_STorM32_native.h"
 
 extern const AP_HAL::HAL& hal;
 
 AP_Mount_STorM32_native::AP_Mount_STorM32_native(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance),
-    _initialised(false),
-    _armed(false),
-    _send_armeddisarmed(false)
+    AP_Mount_Backend(frontend, state, instance)
 {
-    _uart = nullptr;
     _mount_type = AP_Mount::Mount_Type_None; //the mount type will be determined in init()
 
-    _task_time_last = 0;
-    _task_counter = TASK_SLOT0;
-
     _bitmask = SEND_STORM32LINK_V2 | SEND_CMD_SETINPUTS | SEND_CMD_DOCAMERA;
-
-    _status.pitch_deg = _status.roll_deg = _status.yaw_deg = 0.0f;
-    _status_updated = false;
-
-    _target_to_send = false;
-    _target_mode_last = MAV_MOUNT_MODE_RETRACT;
 }
 
 //------------------------------------------------------
@@ -79,7 +73,7 @@ void AP_Mount_STorM32_native::update_fast()
     if ((current_time_ms - _task_time_last) >= 10) {
         _task_time_last = current_time_ms;
 
-        const uint16_t LIVEDATA_FLAGS = LIVEDATA_STATUS_V2|LIVEDATA_ATTITUDE_RELATIVE;
+        const uint16_t LIVEDATA_FLAGS = LIVEDATA_STATUS_V2 | LIVEDATA_ATTITUDE_RELATIVE;
 
         switch (_task_counter) {
             case TASK_SLOT0:
@@ -123,7 +117,9 @@ void AP_Mount_STorM32_native::update_fast()
                             -_serial_in.getdatafields.livedata_attitude.yaw_deg );
                         // we also can check if the gimbal is in normal mode
                         bool _armed_new = is_normal_state(_serial_in.getdatafields.livedata_status.state);
-                        if (_armed_new != _armed) { _send_armeddisarmed = true; }
+                        if (_armed_new != _armed) {
+                            _send_armeddisarmed = true;
+                        }
                         _armed = _armed_new;
                     }
                 }
@@ -132,7 +128,9 @@ void AP_Mount_STorM32_native::update_fast()
         }
 
         _task_counter++;
-        if (_task_counter >= TASK_SLOTNUMBER) { _task_counter = 0; }
+        if (_task_counter >= TASK_SLOTNUMBER) {
+            _task_counter = 0;
+        }
     }
 }
 
@@ -150,8 +148,9 @@ void AP_Mount_STorM32_native::set_mode(enum MAV_MOUNT_MODE mode)
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_STorM32_native::status_msg(mavlink_channel_t chan)
 {
-    //it does not matter if not _initalised, so no check here
-    // will then send out zeros
+    if (!_initialised) {
+        return;
+    }
 
     float pitch_deg, roll_deg, yaw_deg;
 
@@ -183,9 +182,9 @@ void AP_Mount_STorM32_native::set_target_angles_bymountmode(void)
         case MAV_MOUNT_MODE_RETRACT:
             {
                 const Vector3f &target = _state._retract_angles.get();
-                _angle_ef_target_rad.x = ToRad(target.x);
-                _angle_ef_target_rad.y = ToRad(target.y);
-                _angle_ef_target_rad.z = ToRad(target.z);
+                _angle_ef_target_rad.x = radians(target.x);
+                _angle_ef_target_rad.y = radians(target.y);
+                _angle_ef_target_rad.z = radians(target.z);
                 send_ef_target = true;
             }
             break;
@@ -194,9 +193,9 @@ void AP_Mount_STorM32_native::set_target_angles_bymountmode(void)
         case MAV_MOUNT_MODE_NEUTRAL:
             {
                 const Vector3f &target = _state._neutral_angles.get();
-                _angle_ef_target_rad.x = ToRad(target.x);
-                _angle_ef_target_rad.y = ToRad(target.y);
-                _angle_ef_target_rad.z = ToRad(target.z);
+                _angle_ef_target_rad.x = radians(target.x);
+                _angle_ef_target_rad.y = radians(target.y);
+                _angle_ef_target_rad.z = radians(target.z);
                 send_ef_target = true;
             }
             break;
@@ -239,9 +238,7 @@ void AP_Mount_STorM32_native::set_target_angles_bymountmode(void)
     // send target angles
     if (send_ef_target) {
         set_target_angles_rad(_angle_ef_target_rad.y, _angle_ef_target_rad.x, _angle_ef_target_rad.z, mount_mode);
-    }
-
-    if (send_pwm_target) {
+    } else if (send_pwm_target) {
         set_target_angles_pwm(pitch_pwm, roll_pwm, yaw_pwm, mount_mode);
     }
 }
@@ -264,24 +261,13 @@ void AP_Mount_STorM32_native::get_valid_pwm_from_channel(uint8_t rc_in, uint16_t
     }
 }
 
-void AP_Mount_STorM32_native::set_target_angles_deg(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode)
-{
-    _target.deg.pitch = pitch_deg;
-    _target.deg.roll = roll_deg;
-    _target.deg.yaw = yaw_deg;
-    _target.type = angles_deg;
-    _target.mode = mount_mode;
-    _target_to_send = true;
-}
-
 void AP_Mount_STorM32_native::set_target_angles_rad(float pitch_rad, float roll_rad, float yaw_rad, enum MAV_MOUNT_MODE mount_mode)
 {
-    _target.deg.pitch = ToDeg(pitch_rad);
-    _target.deg.roll = ToDeg(roll_rad);
-    _target.deg.yaw = ToDeg(yaw_rad);
-    _target.type = angles_deg;
+    _target.deg.pitch = degrees(pitch_rad);
+    _target.deg.roll = degrees(roll_rad);
+    _target.deg.yaw = degrees(yaw_rad);
+    _target.type = ANGLES_DEG;
     _target.mode = mount_mode;
-    _target_to_send = true;
 }
 
 void AP_Mount_STorM32_native::set_target_angles_pwm(uint16_t pitch_pwm, uint16_t roll_pwm, uint16_t yaw_pwm, enum MAV_MOUNT_MODE mount_mode)
@@ -289,9 +275,8 @@ void AP_Mount_STorM32_native::set_target_angles_pwm(uint16_t pitch_pwm, uint16_t
     _target.pwm.pitch = pitch_pwm;
     _target.pwm.roll = roll_pwm;
     _target.pwm.yaw = yaw_pwm;
-    _target.type = angles_pwm;
+    _target.type = ANGLES_PWM;
     _target.mode = mount_mode;
-    _target_to_send = true;
 }
 
 void AP_Mount_STorM32_native::send_target_angles(void)
@@ -309,21 +294,45 @@ void AP_Mount_STorM32_native::send_target_angles(void)
     // update to current mode, to avoid repeated actions on some mount mode changes
     _target_mode_last = _target.mode;
 
-    if (_target.type == angles_pwm) {
+    if (_target.type == ANGLES_PWM) {
         uint16_t pitch_pwm = _target.pwm.pitch;
         uint16_t roll_pwm = _target.pwm.roll;
         uint16_t yaw_pwm = _target.pwm.yaw;
 
         const uint16_t DZ = 10;
 
-        if (pitch_pwm < 10) { pitch_pwm = 1500; }
-        if (pitch_pwm < 1500-DZ) { pitch_pwm += DZ; } else if (pitch_pwm > 1500+DZ) { pitch_pwm -= DZ; } else { pitch_pwm = 1500; }
+        if (pitch_pwm < 10) {
+            pitch_pwm = 1500;
+        }
+        if (pitch_pwm < 1500-DZ) {
+            pitch_pwm += DZ;
+        } else if (pitch_pwm > 1500+DZ) {
+            pitch_pwm -= DZ;
+        } else {
+            pitch_pwm = 1500;
+        }
 
-        if (roll_pwm < 10) { roll_pwm = 1500; }
-        if (roll_pwm < 1500-DZ) { roll_pwm += DZ; } else if (roll_pwm > 1500+DZ) { roll_pwm -= DZ; } else { roll_pwm = 1500; }
+        if (roll_pwm < 10) {
+            roll_pwm = 1500;
+        }
+        if (roll_pwm < 1500-DZ) {
+            roll_pwm += DZ;
+        } else if (roll_pwm > 1500+DZ) {
+            roll_pwm -= DZ;
+        } else {
+            roll_pwm = 1500;
+        }
 
-        if (yaw_pwm < 10) { yaw_pwm = 1500; }
-        if (yaw_pwm < 1500-DZ) { yaw_pwm += DZ; } else if (yaw_pwm > 1500+DZ) { yaw_pwm -= DZ; } else { yaw_pwm = 1500; }
+        if (yaw_pwm < 10) {
+            yaw_pwm = 1500;
+        }
+        if (yaw_pwm < 1500-DZ) {
+            yaw_pwm += DZ;
+        } else if (yaw_pwm > 1500+DZ) {
+            yaw_pwm -= DZ;
+        } else {
+            yaw_pwm = 1500;
+        }
 
         send_cmd_setpitchrollyaw(pitch_pwm, roll_pwm, yaw_pwm);
     } else {
@@ -345,8 +354,6 @@ void AP_Mount_STorM32_native::set_status_angles_deg(float pitch_deg, float roll_
     _status.pitch_deg = pitch_deg;
     _status.roll_deg = roll_deg;
     _status.yaw_deg = yaw_deg;
-
-    _status_updated = true;
 }
 
 void AP_Mount_STorM32_native::get_status_angles_deg(float* pitch_deg, float* roll_deg, float* yaw_deg)
@@ -375,8 +382,8 @@ void AP_Mount_STorM32_native::find_gimbal_native(void)
 #if FIND_GIMBAL_MAX_SEARCH_TIME_MS
     if (current_time_ms > FIND_GIMBAL_MAX_SEARCH_TIME_MS) {
         _initialised = false; //should be already false, but it can't hurt to ensure that
-       _serial_is_initialised = false; //switch off BP_STorM32
-       _mount_type = AP_Mount::Mount_Type_None; //switch off finally, also makes find_gimbal() to stop searching
+        _serial_is_initialised = false; //switch off STorM32_lib
+        _mount_type = AP_Mount::Mount_Type_None; //switch off finally, also makes find_gimbal() to stop searching
         return;
     }
 #endif
@@ -394,20 +401,29 @@ void AP_Mount_STorM32_native::find_gimbal_native(void)
                 // receive GETVERSIONSTR response
                 do_receive();
                 if (message_received() && (_serial_in.cmd == 0x02)) {
-                    for (uint16_t n=0;n<16;n++) versionstr[n] = _serial_in.getversionstr.versionstr[n];
+                    for (uint16_t n=0;n<16;n++) {
+                        versionstr[n] = _serial_in.getversionstr.versionstr[n];
+                    }
                     versionstr[16] = '\0';
-                    for (uint16_t n=0;n<16;n++) boardstr[n] = _serial_in.getversionstr.boardstr[n];
+                    for (uint16_t n=0;n<16;n++) {
+                        boardstr[n] = _serial_in.getversionstr.boardstr[n];
+                    }
                     boardstr[16] = '\0';
                     _task_counter = TASK_SLOT0;
                     _initialised = true;
+                    return; //done, get out of here
                 }
+                break;
+            default:
+                // skip
                 break;
         }
         _task_counter++;
-        if (_task_counter >= 3) { _task_counter = 0; }
+        if (_task_counter >= 3) {
+            _task_counter = 0;
+        }
     }
 }
-
 
 void AP_Mount_STorM32_native::send_text_to_gcs(void)
 {
@@ -433,20 +449,13 @@ size_t AP_Mount_STorM32_native::_serial_txspace(void)
     return 0;
 }
 
-
 size_t AP_Mount_STorM32_native::_serial_write(const uint8_t *buffer, size_t size, uint8_t priority)
 {
     if (_mount_type == AP_Mount::Mount_Type_STorM32_native) {
-
-        if (_uart != nullptr) {
-            return _uart->write(buffer, size);
-        }
-
-        return 0;
+        return _uart->write(buffer, size);
     }
     return 0;
 }
-
 
 uint32_t AP_Mount_STorM32_native::_serial_available(void)
 {
@@ -456,7 +465,6 @@ uint32_t AP_Mount_STorM32_native::_serial_available(void)
     return 0;
 }
 
-
 int16_t AP_Mount_STorM32_native::_serial_read(void)
 {
     if (_mount_type == AP_Mount::Mount_Type_STorM32_native) {
@@ -465,12 +473,10 @@ int16_t AP_Mount_STorM32_native::_serial_read(void)
     return 0;
 }
 
-
 uint16_t AP_Mount_STorM32_native::_rcin_read(uint8_t ch)
 {
     return hal.rcin->read(ch);
 }
-
 
 //------------------------------------------------------
 // helper
@@ -484,9 +490,15 @@ bool AP_Mount_STorM32_native::is_failsafe(void)
     uint8_t tilt_rc_in = _state._tilt_rc_in;
     uint8_t pan_rc_in = _state._pan_rc_in;
 
-    if (roll_rc_in && (rc_ch(roll_rc_in)) && (rc_ch(roll_rc_in)->get_radio_in() < 700)) { return true; }
-    if (tilt_rc_in && (rc_ch(tilt_rc_in)) && (rc_ch(tilt_rc_in)->get_radio_in() < 700)) { return true; }
-    if (pan_rc_in && (rc_ch(pan_rc_in)) && (rc_ch(pan_rc_in)->get_radio_in() < 700)) { return true; }
+    if (roll_rc_in && (rc_ch(roll_rc_in)) && (rc_ch(roll_rc_in)->get_radio_in() < 700)) {
+        return true;
+    }
+    if (tilt_rc_in && (rc_ch(tilt_rc_in)) && (rc_ch(tilt_rc_in)->get_radio_in() < 700)) {
+        return true;
+    }
+    if (pan_rc_in && (rc_ch(pan_rc_in)) && (rc_ch(pan_rc_in)->get_radio_in() < 700)) {
+        return true;
+    }
 
     return false;
 }

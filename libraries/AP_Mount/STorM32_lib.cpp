@@ -1,3 +1,8 @@
+//******************************************************
+// (c) olliw, www.olliw.eu
+// GPL3
+//******************************************************
+
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Mount/STorM32_lib.h>
@@ -7,9 +12,7 @@
 //******************************************************
 
 /// Constructor
-STorM32_lib::STorM32_lib() :
-    _serial_is_initialised(false),
-    _storm32link_seq(0)
+STorM32_lib::STorM32_lib()
 {
     _serial_in.state = SERIALSTATE_IDLE;
 }
@@ -17,7 +20,9 @@ STorM32_lib::STorM32_lib() :
 // determines from the STorM32 state if the gimbal is in a normal operation mode
 bool STorM32_lib::is_normal_state(uint16_t state)
 {
-    if ((state == STORM32STATE_NORMAL) || (state == STORM32STATE_STARTUP_FASTLEVEL)) { return true; }
+    if ((state == STORM32STATE_NORMAL) || (state == STORM32STATE_STARTUP_FASTLEVEL)) {
+        return true;
+    }
     return false;
 }
 
@@ -52,11 +57,21 @@ void STorM32_lib::send_storm32link_v2(const AP_AHRS_TYPE &ahrs)
 
     AP_Notify *notify = AP_Notify::instance();
 
-    if (ahrs.healthy()) { status |= STORM32LINK_FCSTATUS_AP_AHRSHEALTHY; }
-    if (ahrs.initialised()) { status |= STORM32LINK_FCSTATUS_AP_AHRSINITIALIZED; }
-    if (nav_status.flags.horiz_vel) { status |= STORM32LINK_FCSTATUS_AP_NAVHORIZVEL; }
-    if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) { status |= STORM32LINK_FCSTATUS_AP_GPS3DFIX; }
-    if (notify && (notify->flags.armed)) { status |= STORM32LINK_FCSTATUS_AP_ARMED; }
+    if (ahrs.healthy()) {
+        status |= STORM32LINK_FCSTATUS_AP_AHRSHEALTHY;
+    }
+    if (ahrs.initialised()) {
+        status |= STORM32LINK_FCSTATUS_AP_AHRSINITIALIZED;
+    }
+    if (nav_status.flags.horiz_vel) {
+        status |= STORM32LINK_FCSTATUS_AP_NAVHORIZVEL;
+    }
+    if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+        status |= STORM32LINK_FCSTATUS_AP_GPS3DFIX;
+    }
+    if (notify && (notify->flags.armed)) {
+        status |= STORM32LINK_FCSTATUS_AP_ARMED;
+    }
 
     int16_t yawrate = 0;
 
@@ -64,9 +79,10 @@ void STorM32_lib::send_storm32link_v2(const AP_AHRS_TYPE &ahrs)
     quat.from_rotation_matrix(ahrs.get_rotation_body_to_ned());
 
     Vector3f vel;
-    //ahrs.get_velocity_NED(vel) returns a bool, what does it exactly mean ???
-    // whatever it means it's probably a good idea to consider it
-    if (!ahrs.get_velocity_NED(vel)) { vel.x = vel.y = vel.z = 0.0f; }
+    //ahrs.get_velocity_NED(vel) returns a bool, os it's a good idea to consider it
+    if (!ahrs.get_velocity_NED(vel)) {
+        vel.x = vel.y = vel.z = 0.0f;
+    }
 
     tSTorM32LinkV2 t;
     t.stx = 0xF9;
@@ -100,7 +116,7 @@ void STorM32_lib::send_cmd_setangles(float pitch_deg, float roll_deg, float yaw_
     }
 
     tCmdSetAngles t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x0E;
     t.cmd = 0x11;
     t.pitch = pitch_deg;
@@ -125,7 +141,7 @@ void STorM32_lib::send_cmd_setpitchrollyaw(uint16_t pitch, uint16_t roll, uint16
     }
 
     tCmdSetPitchRollYaw t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x06;
     t.cmd = 0x12;
     t.pitch = pitch;
@@ -155,7 +171,7 @@ void STorM32_lib::send_cmd_docamera(uint16_t camera_cmd)
     }
 
     tCmdDoCamera t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x06;
     t.cmd = 0x0F;
     t.dummy1 = 0;
@@ -183,7 +199,7 @@ void STorM32_lib::send_cmd_setinputs(void)
     uint8_t status = 0;
 
     tCmdSetInputs t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x17;
     t.cmd = 0x16;
     t.channel0 = _rcin_read(0);
@@ -254,7 +270,7 @@ void STorM32_lib::send_cmd_settargetlocation(void)
     struct Location location = {};
 
     tCmdSetHomeTargetLocation t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x0E;
     t.cmd = 0x18;
     t.latitude = location.lat;
@@ -278,7 +294,7 @@ void STorM32_lib::send_cmd_getdatafields(uint16_t flags)
     }
 
     tCmdGetDataFields t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x02;
     t.cmd = 0x06;
     t.flags = flags;
@@ -299,7 +315,7 @@ void STorM32_lib::send_cmd_getversionstr(void)
     }
 
     tCmdGetVersionStr t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x00;
     t.cmd = 0x02;
     t.crc = crc_calculate(&(t.len), sizeof(tCmdGetVersionStr)-3);
@@ -333,10 +349,10 @@ void STorM32_lib::do_receive_singlechar(void)
 
     if (_serial_available() <= 0) { return; } //this should never happen, but play it safe
 
+    c = _serial_read();
+
     switch (_serial_in.state) {
         case SERIALSTATE_IDLE:
-            c = _serial_read();
-
             if (c == 0xFB) { //the outcoming RCcmd start sign was received
                 _serial_in.stx = c;
                 _serial_in.state = SERIALSTATE_RECEIVE_PAYLOAD_LEN;
@@ -344,24 +360,18 @@ void STorM32_lib::do_receive_singlechar(void)
             break;
 
         case SERIALSTATE_RECEIVE_PAYLOAD_LEN:
-            c = _serial_read();
-
             _serial_in.len = c;
             _serial_in.state = SERIALSTATE_RECEIVE_CMD;
             break;
 
         case SERIALSTATE_RECEIVE_CMD:
-            c = _serial_read();
-
             _serial_in.cmd = c;
             _serial_in.payload_cnt = 0;
             _serial_in.state = SERIALSTATE_RECEIVE_PAYLOAD;
             break;
 
         case SERIALSTATE_RECEIVE_PAYLOAD:
-            c = _serial_read();
-
-            if (_serial_in.payload_cnt >= SERIAL_RECEIVE_BUFFER_SIZE) {
+            if (_serial_in.payload_cnt >= STORM32_LIB_RECEIVE_BUFFER_SIZE) {
                 _serial_in.state = SERIALSTATE_IDLE; //error, get out of here
                 return;
             }
@@ -378,7 +388,6 @@ void STorM32_lib::do_receive_singlechar(void)
 
         case SERIALSTATE_MESSAGE_RECEIVED:
         case SERIALSTATE_MESSAGE_RECEIVEDANDDIGESTED:
-            c = _serial_read();
             break;
     }
 }

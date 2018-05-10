@@ -3,13 +3,6 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_GPS/AP_GPS.h>
-#include <GCS_MAVLink/GCS.h>
-#include <RC_Channel/RC_Channel.h>
 #include "AP_Mount.h"
 #include "AP_Mount_Backend.h"
 #include "STorM32_lib.h"
@@ -23,8 +16,12 @@ public:
     // Constructor
     AP_Mount_STorM32_native(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
+    /* Do not allow copies */
+    AP_Mount_STorM32_native(const AP_Mount_STorM32_native &other) = delete;
+    AP_Mount_STorM32_native &operator=(const AP_Mount_STorM32_native&) = delete;
+
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    virtual void init(const AP_SerialManager& serial_manager);    //COMMENT ??????
 
     // update mount position - should be called periodically
     virtual void update();
@@ -38,9 +35,6 @@ public:
 
     // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     virtual void status_msg(mavlink_channel_t chan);
-
-    // every mount should have this !!!
-    virtual bool is_armed(){ return _armed; }
 
 private:
     // helper to handle corrupted rcin data
@@ -72,7 +66,7 @@ private:
 
     // we want to keep that info, the fields are 16 in size, so add one to convert it to string
     //  _initialised = true indicates that these fields were set
-    char versionstr[16+1];
+    char versionstr[16+1];  //COMMENT ??????
     char namestr[16+1];
     char boardstr[16+1];
 
@@ -98,15 +92,14 @@ private:
         float roll_deg;
         float yaw_deg;
     } _status;
-    bool _status_updated;
 
     void set_status_angles_deg(float pitch_deg, float roll_deg, float yaw_deg);
     void get_status_angles_deg(float* pitch_deg, float* roll_deg, float* yaw_deg);
 
     // target out
     enum ANGLESTYPEENUM {
-        angles_deg = 0, //the STorM32 convention is angles in deg, not rad!
-        angles_pwm
+        ANGLES_DEG = 0, //the STorM32 convention is angles in deg, not rad!
+        ANGLES_PWM
     };
 
     struct {
@@ -125,13 +118,11 @@ private:
             } pwm;
         };
     } _target;
-    bool _target_to_send;
     enum MAV_MOUNT_MODE _target_mode_last;
 
     void set_target_angles_bymountmode(void);
     void get_pwm_target_angles_from_radio(uint16_t* pitch_pwm, uint16_t* roll_pwm, uint16_t* yaw_pwm);
     void get_valid_pwm_from_channel(uint8_t rc_in, uint16_t* pwm);
-    void set_target_angles_deg(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode);
     void set_target_angles_rad(float pitch_rad, float roll_rad, float yaw_rad, enum MAV_MOUNT_MODE mount_mode);
     void set_target_angles_pwm(uint16_t pitch_pwm, uint16_t roll_pwm, uint16_t yaw_pwm, enum MAV_MOUNT_MODE mount_mode);
     void send_target_angles(void);
