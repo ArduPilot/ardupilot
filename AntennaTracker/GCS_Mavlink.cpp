@@ -144,11 +144,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_nav_controller_output(chan);
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        send_servo_output_raw(false);
-        break;
-
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         tracker.send_simstate(chan);
