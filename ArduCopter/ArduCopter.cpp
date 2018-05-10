@@ -447,10 +447,10 @@ void Copter::one_hz_loop()
 #endif
 
     // update error mask of sensors and subsystems. The mask uses the
-    // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
-    // indicates that the sensor or subsystem is present but not
-    // functioning correctly
-    update_sensor_status_flags();
+    // MAV_SYS_STATUS_* values from mavlink.
+    // note that this is here for the benefit of frsky; if stream
+    // rates are set to zero then these flags may not be updated
+    gcs().update_sensor_status_flags();
 }
 
 // called at 50hz

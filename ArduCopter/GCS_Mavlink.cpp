@@ -129,33 +129,6 @@ NOINLINE void Copter::send_fence_status(mavlink_channel_t chan)
 }
 #endif
 
-
-NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
-{
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
-    if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
-    }
-
-    update_sensor_status_flags();
-    
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        (uint16_t)(scheduler.load_average() * 1000),
-        battery.voltage() * 1000, // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0, // comm drops %,
-        0, // comm drops in pkts,
-        0, 0, 0, 0);
-}
-
 void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
 {
     const Vector3f &targets = attitude_control->get_att_target_euler_cd();
@@ -286,14 +259,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     switch(id) {
 
     case MSG_EXTENDED_STATUS1:
-        // send extended status only once vehicle has been initialised
-        // to avoid unnecessary errors being reported to user
-        if (copter.ap.initialised) {
-            CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            copter.send_extended_status1(chan);
-            CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            send_power_status();
-        }
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        send_sys_status();
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
