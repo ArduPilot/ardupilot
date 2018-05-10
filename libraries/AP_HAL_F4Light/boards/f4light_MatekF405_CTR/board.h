@@ -109,6 +109,7 @@
 //#define BOARD_I2C_BUS_INT     1    // hardware internal I2C
 #define BOARD_I2C_BUS_EXT       0     // external I2C
 #define BOARD_I2C_BUS_SLOW      0    // slow down bus with this number
+//#define BOARD_SOFT_I2C1
 
 #define BOARD_BARO_DEFAULT              HAL_BARO_BMP280_I2C
 #define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_EXT
