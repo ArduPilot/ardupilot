@@ -327,6 +327,10 @@ class AutoTest(ABC):
         self.progress("Failed to send RC commands to channel %s" % str(chan))
         raise SetRCTimeout()
 
+    def armed(self):
+        '''Return true if vehicle is armed and safetyoff'''
+        return self.mav.motors_armed();
+
     def arm_vehicle(self):
         """Arm vehicle with mavlink arm message."""
         self.mavproxy.send('arm throttle\n')
