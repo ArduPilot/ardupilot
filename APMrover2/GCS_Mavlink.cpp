@@ -1242,15 +1242,6 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const
 #endif
 }
 
-AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
-{
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    return &rover.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
 Compass *GCS_MAVLINK_Rover::get_compass() const
 {
     return &rover.compass;
