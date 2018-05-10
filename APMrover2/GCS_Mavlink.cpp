@@ -292,11 +292,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_servo_out(chan);
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        send_servo_output_raw(false);
-        break;
-
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         rover.send_vfr_hud(chan);
