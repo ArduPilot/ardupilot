@@ -112,6 +112,9 @@ protected:
     // decode pilot input steering and return steering_out and speed_out (in m/s)
     void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
 
+    // decode pilot lateral movement input and return in lateral_out argument
+    void get_pilot_desired_lateral(float &lateral_out);
+
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
@@ -159,6 +162,7 @@ protected:
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
+    class RC_Channel *&channel_lateral;
     class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 
@@ -352,6 +356,10 @@ public:
     // manual mode does not require position or velocity estimate
     bool requires_position() const override { return false; }
     bool requires_velocity() const override { return false; }
+
+protected:
+
+    void _exit() override;
 };
 
 

@@ -177,6 +177,12 @@ void AP_MotorsUGV::set_throttle(float throttle)
     _throttle = constrain_float(throttle, -_throttle_max, _throttle_max);
 }
 
+// set lateral input as a value from -100 to +100
+void AP_MotorsUGV::set_lateral(float lateral)
+{
+    _lateral = constrain_float(lateral, -100.0f, 100.0f);
+}
+
 // get slew limited throttle
 // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
 // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -202,8 +208,8 @@ bool AP_MotorsUGV::have_skid_steering() const
     return false;
 }
 
-// returns true if omni rover
-bool AP_MotorsUGV::is_omni_rover() const
+// returns true if vehicle is capable of lateral movement
+bool AP_MotorsUGV::has_lateral_control() const
 {
     if (SRV_Channels::function_assigned(SRV_Channel::k_motor1) &&
         SRV_Channels::function_assigned(SRV_Channel::k_motor2) &&
@@ -234,7 +240,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     output_regular(armed, ground_speed, _steering, _throttle);
 
     // output for omni style frames
-    output_omni(armed, _steering, _throttle);
+    output_omni(armed, _steering, _throttle, _lateral);
 
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle);
@@ -464,36 +470,42 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
 }
 
 // output for omni style frames
-void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle)
+void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
 {
-    if (!is_omni_rover()) {
+    if (!has_lateral_control()) {
         return;
     }
     if (armed) {
-        // scale throttle and steering to a 1000 to 2000 range for motor throttle calculations
-        const float scaled_throttle = (throttle - (100)) * (2000 - 1000) / (-100 - (100)) + 1000;
-        const float scaled_steering = (steering - (-4500)) * (2000 - 1000) / (4500 - (-4500)) + 1000;
+        // scale throttle, steering and lateral to -1 ~ 1
+        const float scaled_throttle = throttle / 100.0f;
+        const float scaled_steering = steering / 4500.0f;
+        const float scaled_lateral = lateral / 100.0f;
 
         // calculate desired vehicle speed and direction
-        // 1500 is a place-holder value for lateral movement input
-        const float magnitude = safe_sqrt((scaled_throttle*scaled_throttle)+(1500*1500));
-        const float theta = atan2f(scaled_throttle,1500);
+        const float magnitude = safe_sqrt((scaled_throttle*scaled_throttle)+(scaled_lateral*scaled_lateral));
+        const float theta = atan2f(scaled_throttle,scaled_lateral);
 
-        // calculate X and Y vectors using the following the equations: vx = cos(?) * magnitude and vy = sin(?) * magnitude
+        // calculate X and Y vectors using the following the equations: vx = cos(theta) * magnitude and vy = sin(theta) * magnitude
         const float Vx = -(cosf(theta)*magnitude);
         const float Vy = -(sinf(theta)*magnitude);
 
-        // calculate output throttle for each motor and scale it back to a -100 to 100 range
-        // calculations are done using the following equations: MOTOR1 = –vx, MOTOR2 = 0.5 * v – v(3/2) * vy, MOTOR 3 = 0.5 * vx + v(3/2) * vy
+        // calculate output throttle for each motor. Output is multiplied by 0.5 to bring the range generally within -1 ~ 1
+        // First wheel (motor 1) moves only parallel to x-axis so only X component is taken. Normal range is -2 ~ 2 with the steering
+        // motor_2 and motor_3 utilizes both X and Y components.
         // safe_sqrt((3)/2) used because the motors are 120 degrees apart in the frame, this setup is mandatory
-        const int16_t motor_1 = (((-Vx) + scaled_steering) - (2500)) * (100 - (-100)) / (3500 - (2500)) + (-100);
-        const int16_t motor_2 = ((((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (1121)) * (100 - (-100)) / (2973 - (1121)) + (-100);
-        const int16_t motor_3 = ((((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering) - (-1468)) * (100 - (-100)) / (383 - (-1468)) + (-100);
+        float motor_1 = 0.5 * ((-Vx) + scaled_steering);
+        float motor_2 = 0.5 * (((0.5*Vx)-((safe_sqrt(3)/2)*Vy)) + scaled_steering);
+        float motor_3 = 0.5 * (((0.5*Vx)+((safe_sqrt(3)/2)*Vy)) + scaled_steering);
 
-        // send pwm value to each motor
-        output_throttle(SRV_Channel::k_motor1, motor_1);
-        output_throttle(SRV_Channel::k_motor2, motor_2);
-        output_throttle(SRV_Channel::k_motor3, motor_3);
+        // apply constraints
+        motor_1 = constrain_float(motor_1, -1.0f, 1.0f);
+        motor_2 = constrain_float(motor_2, -1.0f, 1.0f);
+        motor_3 = constrain_float(motor_3, -1.0f, 1.0f);
+
+        // scale back and send pwm value to each motor
+        output_throttle(SRV_Channel::k_motor1, 100.0f * motor_1);
+        output_throttle(SRV_Channel::k_motor2, 100.0f * motor_2);
+        output_throttle(SRV_Channel::k_motor3, 100.0f * motor_3);
     } else {
         // handle disarmed case
         if (_disarm_disable_pwm) {
