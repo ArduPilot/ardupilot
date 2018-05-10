@@ -36,3 +36,8 @@ void GCS_Tracker::request_datastream_airpressure(const uint8_t sysid, const uint
         }
     }
 }
+
+bool GCS_Tracker::vehicle_initialised() const
+{
+    return tracker.control_mode != INITIALISING;
+}
