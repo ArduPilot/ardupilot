@@ -47,6 +47,7 @@
 #define EXTERNAL_LED_ARMED        29    // Armed LED - AN11
 #define EXTERNAL_LED_MOTOR1       30    // Motor1 LED - AN8
 #define EXTERNAL_LED_MOTOR2       31    // Motor2 LED - AN12
+#define HAL_BUZZER_PIN            32
 
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
