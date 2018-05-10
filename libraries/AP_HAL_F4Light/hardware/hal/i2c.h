@@ -71,6 +71,7 @@
 #define I2C_ERR_TIMEOUT 95
 #define I2C_ERR_REGISTER 94
 #define I2C_ERR_OVERRUN  93
+#define I2C_ERR_STOP_TIMEOUT 92
 #define I2C_DMA_BUSY    103
 #define I2C_PENDING     255
 #define I2C_DMA_ERROR   100
