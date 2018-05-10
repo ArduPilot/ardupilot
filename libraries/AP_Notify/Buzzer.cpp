@@ -33,8 +33,8 @@ extern const AP_HAL::HAL& hal;
 
 bool Buzzer::init()
 {
-#if defined(BUZZER_PIN)
-    _pin = BUZZER_PIN;
+#if defined(HAL_BUZZER_PIN)
+    _pin = HAL_BUZZER_PIN;
 #else
     _pin = pNotify->get_buzz_pin();
 #endif
