@@ -154,13 +154,15 @@ static UARTConfig uart_cfg = {
 
 void setup(void)
 {
-    hal.gpio->init();
     hal.rcin->init();
     hal.rcout->init();
 
     for (uint8_t i = 0; i< 14; i++) {
         hal.rcout->enable_ch(i);
     }
+
+    iomcu.init();
+    
     iomcu.calculate_fw_crc();
     uartStart(&UARTD2, &uart_cfg);
     uartStartReceive(&UARTD2, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
@@ -170,6 +172,14 @@ void loop(void)
 {
     iomcu.update();
 }
+
+void AP_IOMCU_FW::init()
+{
+    if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
+        has_heater = true;
+    }
+}
+    
 
 void AP_IOMCU_FW::update()
 {
@@ -195,11 +205,18 @@ void AP_IOMCU_FW::pwm_out_update()
 
 void AP_IOMCU_FW::heater_update()
 {
-	if (reg_setup.heater_duty_cycle == 0 || (AP_HAL::millis() - last_heater_ms > 3000UL)) {
-		hal.gpio->write(0, 0);
+    uint32_t now = AP_HAL::millis();
+    if (!has_heater) {
+        // use blue LED as heartbeat
+        if (now - last_blue_led_ms > 500) {
+            palToggleLine(HAL_GPIO_PIN_HEATER);
+            last_blue_led_ms = now;
+        }
+    } else if (reg_setup.heater_duty_cycle == 0 || (now - last_heater_ms > 3000UL)) {
+        palWriteLine(HAL_GPIO_PIN_HEATER, 0);
 	} else {
-		uint8_t cycle = ((AP_HAL::millis() / 10UL) % 100U);
-		hal.gpio->write(0, !(cycle >= reg_setup.heater_duty_cycle));
+		uint8_t cycle = ((now / 10UL) % 100U);
+        palWriteLine(HAL_GPIO_PIN_HEATER, !(cycle >= reg_setup.heater_duty_cycle));
 	}
 }
 

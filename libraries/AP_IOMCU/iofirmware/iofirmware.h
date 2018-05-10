@@ -25,6 +25,7 @@ public:
         }
     } rx_io_packet = {0}, tx_io_packet = {0};
 
+    void init();
     void update();
     void calculate_fw_crc(void);
 
@@ -137,5 +138,7 @@ private:
     bool do_reboot;
     bool update_default_rate;
     bool update_rcout_freq;
- };
+    bool has_heater;
+    uint32_t last_blue_led_ms;
+};
 
