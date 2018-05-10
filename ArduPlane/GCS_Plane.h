@@ -22,6 +22,13 @@ public:
 
     void send_airspeed_calibration(const Vector3f &vg);
 
+protected:
+
+    bool compass_enabled() const override;
+    bool vehicle_initialised(void) const override;
+    void update_sensor_status_flags(void) override;
+    AP_GPS::GPS_Status min_gps_state() const override;
+
 private:
 
     GCS_MAVLINK_Plane _chan[MAVLINK_COMM_NUM_BUFFERS];

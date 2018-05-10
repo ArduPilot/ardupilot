@@ -104,67 +104,86 @@ void Plane::rpm_update(void)
     }
 }
 
-// update error mask of sensors and subsystems. The mask
-// uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
-// then it indicates that the sensor or subsystem is present but
-// not functioning correctly.
-void Plane::update_sensor_status_flags(void)
+bool GCS_Plane::compass_enabled() const
 {
+    return plane.g.compass_enabled;
+}
+
+bool GCS_Plane::vehicle_initialised() const {
+    return !AP_Notify::flags.initialising;
+}
+
+AP_GPS::GPS_Status GCS_Plane::min_gps_state() const {
+    return AP_GPS::GPS_OK_FIX_3D;
+}
+
+// update error mask of sensors and subsystems. The mask
+// uses the MAV_SYS_STATUS_* values from mavlink.
+void GCS_Plane::update_sensor_status_flags(void)
+{
+    GCS::update_sensor_status_flags();
+
      // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
+    control_sensors_present |=
+        MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL |
+        MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION |
+        MAV_SYS_STATUS_SENSOR_YAW_POSITION |
+        MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL |
+        MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL |
+        MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
 
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
-    }
-
+    // update airspeed sensor
+    const AP_Airspeed &airspeed = plane.airspeed;
     if (airspeed.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        if (airspeed.use()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
+        if (airspeed.all_healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
     }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
+
+    // update optical flow
 #if OPTFLOW == ENABLED
+    const OpticalFlow &optflow = plane.optflow;
     if (optflow.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        if (optflow.healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        }
     }
 #endif
-    if (geofence_present()) {
+
+    // update geofence status:
+    if (plane.geofence_present()) {
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
+        if (plane.geofence_enabled()) {
+            control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+            if (!plane.geofence_breached()) {
+                control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
+            }
+        }
     }
 
-    if (aparm.throttle_min < 0) {
+    // update reverse-motor status:
+    if (plane.aparm.throttle_min < 0) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
-    }
-    if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
-        control_sensors_present |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence, motor, and battery output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING & ~MAV_SYS_STATUS_SENSOR_BATTERY);
-
-    if (airspeed.enabled() && airspeed.use()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
+            control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
+            control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
+        }
     }
 
-    if (geofence_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
-    }
-
-    if (plane.DataFlash.logging_enabled()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
-    }
-
-    if (battery.num_instances() > 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
+    const FlightMode control_mode = plane.control_mode;
+    uint32_t control_mode_sensors = 0;
     switch (control_mode) {
     case MANUAL:
         break;
 
     case ACRO:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         break;
 
     case STABILIZE:
@@ -174,20 +193,20 @@ void Plane::update_sensor_status_flags(void)
     case QHOVER:
     case QLAND:
     case QLOITER:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         break;
 
     case FLY_BY_WIRE_B:
     case CRUISE:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         break;
 
     case TRAINING:
-        if (!training_manual_roll || !training_manual_pitch) {
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation        
+        if (!plane.training_manual_roll || !plane.training_manual_pitch) {
+            control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+            control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation        
         }
         break;
 
@@ -198,78 +217,28 @@ void Plane::update_sensor_status_flags(void)
     case GUIDED:
     case CIRCLE:
     case QRTL:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL; // altitude control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL; // altitude control
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
         break;
 
     case INITIALISING:
         break;
     }
 
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
+    control_sensors_enabled |= control_mode_sensors;
+    // we could update these based on e.g. the ahrs attitude and LIM_*_CD
+    control_sensors_health |= control_mode_sensors;
 
-    // default: all present sensors healthy except baro, 3D_MAG, GPS, DIFFERNTIAL_PRESSURE.   GEOFENCE always defaults to healthy.
-    control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
-                                                         MAV_SYS_STATUS_SENSOR_3D_MAG |
-                                                         MAV_SYS_STATUS_SENSOR_GPS |
-                                                         MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE);
-    control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
-
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-    if (ahrs.have_inertial_nav() && !ins.accel_calibrated_ok_all()) {
-        // trying to use EKF without properly calibrated accelerometers
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-
-    if (barometer.all_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-#if OPTFLOW == ENABLED
-    if (optflow.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-    if (airspeed.all_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
-    }
-#if GEOFENCE_ENABLED
-    if (geofence_breached()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_GEOFENCE;
-    }
-#endif
-
-    if (plane.DataFlash.logging_failed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
-    }
-
-    if (millis() - failsafe.last_valid_rc_ms < 200) {
+    control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+    if (millis() - plane.failsafe.last_valid_rc_ms < 200) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-    } else {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
 
 #if AP_TERRAIN_AVAILABLE
+    const AP_Terrain &terrain = plane.terrain;
     switch (terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
@@ -285,9 +254,10 @@ void Plane::update_sensor_status_flags(void)
     }
 #endif
 
+    const RangeFinder &rangefinder = plane.rangefinder;
     if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (g.rangefinder_landing) {
+        if (plane.g.rangefinder_landing) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
         if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
@@ -295,23 +265,8 @@ void Plane::update_sensor_status_flags(void)
         }
     }
 
-    if (aparm.throttle_min < 0 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
-        control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
-    }
-
-    if (AP_Notify::flags.initialising) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
-
-    if (!plane.battery.healthy() || plane.battery.has_failsafed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
-    frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
+    plane.frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }
