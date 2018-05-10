@@ -393,12 +393,13 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                if os.path.exists(bare_path):
-                    files_to_copy.append(bare_path)
                 for extension in [".px4", ".apj", ".abin"]:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
+                # only copy the elf if we don't have other files to copy
+                if os.path.exists(bare_path) and len(files_to_copy) == 0:
+                    files_to_copy.append(bare_path)
 
                 for path in files_to_copy:
                     try:
