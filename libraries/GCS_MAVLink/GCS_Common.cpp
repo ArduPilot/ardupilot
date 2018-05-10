@@ -1652,10 +1652,10 @@ bool GCS_MAVLINK::telemetry_delayed() const
 /*
   send SERVO_OUTPUT_RAW
  */
-void GCS_MAVLINK::send_servo_output_raw(bool hil)
+void GCS_MAVLINK::send_servo_output_raw()
 {
     uint16_t values[16] {};
-    if (hil) {
+    if (in_hil_mode()) {
         for (uint8_t i=0; i<16; i++) {
             values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
@@ -2866,6 +2866,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets();
+        break;
+
+    case MSG_SERVO_OUTPUT_RAW:
+        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
+        send_servo_output_raw();
         break;
 
     case MSG_AHRS:
