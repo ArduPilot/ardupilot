@@ -142,7 +142,6 @@ void AC_Circle::update()
         // update position controller target
         _pos_control.set_xy_target(target.x, target.y);
 
-        // heading is 180 deg from vehicles target position around circle
         const Vector3f &curr_pos = _inav.get_position();
         float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);
         float angle_temp = wrap_PI(bearing_rad);
