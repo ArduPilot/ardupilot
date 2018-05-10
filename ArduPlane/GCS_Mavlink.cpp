@@ -418,15 +418,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-#if HIL_SUPPORT
-        send_servo_output_raw(plane.g.hil_mode);
-#else
-        send_servo_output_raw(false);
-#endif
-        break;
-
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         plane.send_vfr_hud(chan);
