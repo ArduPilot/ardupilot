@@ -296,10 +296,6 @@ private:
     AP_DEVO_Telem devo_telemetry{ahrs};
 #endif
 
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
     // For example in a change altitude command, it is the altitude to change to.
@@ -509,7 +505,6 @@ private:
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
-    void update_sensor_status_flags(void);
 
     // Steering.cpp
     bool use_pivot_steering(float yaw_error_cd);

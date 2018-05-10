@@ -17,6 +17,13 @@ public:
     // return GCS link at offset ofs
     const GCS_MAVLINK_Rover &chan(const uint8_t ofs) const override { return _chan[ofs]; };
 
+    void update_sensor_status_flags() override;
+
+protected:
+
+    bool compass_enabled() const override;
+    bool vehicle_initialised() const override;
+
 private:
 
     GCS_MAVLINK_Rover _chan[MAVLINK_COMM_NUM_BUFFERS];
