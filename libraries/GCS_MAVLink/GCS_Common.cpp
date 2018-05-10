@@ -2106,7 +2106,7 @@ void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_vision_position_delta(mavlink_message_t *msg)
 {
-    AP_VisualOdom *visual_odom = get_visual_odom();
+    AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom == nullptr) {
         return;
     }
