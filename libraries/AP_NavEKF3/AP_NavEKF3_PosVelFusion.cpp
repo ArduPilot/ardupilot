@@ -214,6 +214,7 @@ bool NavEKF3_core::resetHeightDatum(void)
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         ekfGpsRefHgt += (double)oldHgt;
+        EKF_origin.alt += (int32_t)(100.0f * oldHgt);
     }
     // adjust the terrain state
     terrainState += oldHgt;
