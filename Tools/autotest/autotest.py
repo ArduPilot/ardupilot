@@ -230,23 +230,28 @@ def run_step(step):
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
     }
+
+    vehicle_binary = None
     if step == 'build.ArduPlane':
-        return util.build_SITL('bin/arduplane', **build_opts)
+        vehicle_binary = 'bin/arduplane'
 
     if step == 'build.APMrover2':
-        return util.build_SITL('bin/ardurover', **build_opts)
+        vehicle_binary = 'bin/ardurover'
 
     if step == 'build.ArduCopter':
-        return util.build_SITL('bin/arducopter', **build_opts)
+        vehicle_binary = 'bin/arducopter'
 
     if step == 'build.AntennaTracker':
-        return util.build_SITL('bin/antennatracker', **build_opts)
+        vehicle_binary = 'bin/antennatracker'
 
     if step == 'build.Helicopter':
-        return util.build_SITL('bin/arducopter-heli', **build_opts)
-    
+        vehicle_binary = 'bin/arducopter-heli'
+
     if step == 'build.ArduSub':
-        return util.build_SITL('bin/ardusub', **build_opts)
+        vehicle_binary = 'bin/ardusub'
+
+    if vehicle_binary is not None:
+        return util.build_SITL(vehicle_binary, **build_opts)
 
     binary = binary_path(step, debug=opts.debug)
 
@@ -487,15 +492,40 @@ if __name__ == "__main__":
     parser.add_option("--map", action='store_true', default=False, help='show map')
     parser.add_option("--experimental", default=False, action='store_true', help='enable experimental tests')
     parser.add_option("--timeout", default=3000, type='int', help='maximum runtime in seconds')
-    parser.add_option("--speedup", default=None, type='int', help='speedup to run the simulations at')
-    parser.add_option("--valgrind", default=False, action='store_true', help='run ArduPilot binaries under valgrind')
-    parser.add_option("--gdb", default=False, action='store_true', help='run ArduPilot binaries under gdb')
-    parser.add_option("--debug", default=False, action='store_true', help='make built binaries debug binaries')
-    parser.add_option("-j", default=None, type='int', help='build CPUs')
     parser.add_option("--frame", type='string', default=None, help='specify frame type')
-    parser.add_option("--gdbserver", default=False, action='store_true', help='run ArduPilot binaries under gdbserver')
-    parser.add_option("--no-clean", default=False, action='store_true', help='do not clean before building', dest="no_clean")
-    parser.add_option("--no-configure", default=False, action='store_true', help='do not configure before building', dest="no_configure")
+
+    group_build = optparse.OptionGroup(parser, "Build options")
+    group_build.add_option("--no-configure", default=False, action='store_true', help='do not configure before building', dest="no_configure")
+    group_build.add_option("-j", default=None, type='int', help='build CPUs')
+    group_build.add_option("--no-clean",
+                           default=False,
+                           action='store_true',
+                           help='do not clean before building',
+                           dest="no_clean")
+    group_build.add_option("--debug",
+                           default=False,
+                           action='store_true',
+                           help='make built binaries debug binaries')
+    parser.add_option_group(group_build)
+
+    group_sim = optparse.OptionGroup(parser, "Simulation options")
+    group_sim.add_option("--speedup",
+                         default=None,
+                         type='int',
+                         help='speedup to run the simulations at')
+    group_sim.add_option("--valgrind",
+                         default=False,
+                         action='store_true',
+                         help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("--gdb",
+                         default=False,
+                         action='store_true',
+                         help='run ArduPilot binaries under gdb')
+    group_sim.add_option("--gdbserver",
+                         default=False,
+                         action='store_true',
+                         help='run ArduPilot binaries under gdbserver')
+    parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()
 
