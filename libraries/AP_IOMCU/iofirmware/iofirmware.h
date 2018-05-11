@@ -95,5 +95,6 @@ private:
     uint32_t last_loop_ms;
     bool oneshot_enabled;
     thread_t *thread_ctx;
+    bool last_safety_off;
 };
 
