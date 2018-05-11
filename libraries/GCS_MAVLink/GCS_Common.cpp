@@ -2843,6 +2843,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_local_position();
         break;
 
+    case MSG_POSITION_TARGET_GLOBAL_INT:
+        CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
+        send_position_target_global_int();
+        break;
+
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_radio_in();
