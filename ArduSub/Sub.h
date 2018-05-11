@@ -481,7 +481,6 @@ private:
     void gcs_send_heartbeat(void);
     void gcs_send_deferred(void);
     void send_heartbeat(mavlink_channel_t chan);
-    void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
     void send_rpm(mavlink_channel_t chan);

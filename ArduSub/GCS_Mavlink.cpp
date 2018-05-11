@@ -2,9 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-// default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_BATTERY)
-
 void Sub::gcs_send_heartbeat()
 {
     gcs().send_message(MSG_HEARTBEAT);
@@ -89,106 +86,66 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
+void GCS_Sub::update_sensor_status_flags()
 {
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
+    GCS::update_sensor_status_flags();
 
-    // default sensors present
-    control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
+    control_sensors_present |=
+        MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL |
+        MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION |
+        MAV_SYS_STATUS_SENSOR_YAW_POSITION |
+        MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL |
+        MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
-    // first what sensors/controllers we have
-    if (g.compass_enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG; // compass present
-    }
-    if (ap.depth_sensor_present) {
+    // update MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE
+
+    // the base class assumes that we care about the on-board
+    // barometer.  We don't, so we need to mask off whatever it said
+    if (sub.ap.depth_sensor_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    } else {
+        control_sensors_present &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        control_sensors_enabled &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
+    if (sub.sensor_health.depth) { // check the internal barometer only
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    } else {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
+
+
+    // update optical flow:
 #if OPTFLOW == ENABLED
     if (optflow.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+    if (optflow.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 
-    // all present sensors enabled by default except altitude and position control and motors which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
-                              ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
-                              ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_SENSOR_BATTERY);
-
-    switch (control_mode) {
+    uint32_t control_mode_sensors = 0;
+    switch (sub.control_mode) {
     case ALT_HOLD:
     case AUTO:
     case GUIDED:
     case CIRCLE:
     case SURFACE:
     case POSHOLD:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_mode_sensors |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
     default:
         break;
     }
 
-    // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
-    }
-
-    if (battery.num_instances() > 0) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
-    // default to all healthy except baro, compass, gps and receiver which we set individually
-    control_sensors_health = control_sensors_present & ~(MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
-                             MAV_SYS_STATUS_SENSOR_3D_MAG |
-                             MAV_SYS_STATUS_SENSOR_GPS |
-                             MAV_SYS_STATUS_SENSOR_RC_RECEIVER);
-
-    if (sensor_health.depth) { // check the internal barometer only
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
-    }
-    if (gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
-#if OPTFLOW == ENABLED
-    if (optflow.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
-    if (!ins.get_gyro_health_all() || !ins.gyro_calibrated_ok_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_GYRO;
-    }
-    if (!ins.get_accel_health_all()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
-    }
-
-    if (ahrs.initialised() && !ahrs.healthy()) {
-        // AHRS subsystem is unhealthy
-        control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
-    }
-
-    if (!battery.healthy() || battery.has_failsafed()) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
-    }
-
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
-    if (battery.has_current() && battery.healthy()) {
-        // percent remaining is not necessarily accurate at the moment
-        //battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
-    }
+    control_sensors_enabled |= control_mode_sensors;
+    control_sensors_health |= control_mode_sensors;
 
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+    const AP_Terrain &terrain = copter.terrain;
     switch (terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
@@ -206,7 +163,8 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 #endif
 
 #if RANGEFINDER_ENABLED == ENABLED
-    if (rangefinder_state.enabled) {
+    const RangeFinder &rangefinder = sub.rangefinder;
+    if (sub.rangefinder_state.enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
@@ -214,26 +172,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
         }
     }
 #endif
-
-    if (!ap.initialised || ins.calibrating()) {
-        // while initialising the gyros and accels are not enabled
-        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
-    }
-
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        (uint16_t)(scheduler.load_average() * 1000),
-        battery.voltage() * 1000, // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0, // comm drops %,
-        0, // comm drops in pkts,
-        0, 0, 0, 0);
-
 }
 
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
@@ -405,14 +343,10 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 
     case MSG_EXTENDED_STATUS1:
-        // send extended status only once vehicle has been initialised
-        // to avoid unnecessary errors being reported to user
-        if (sub.ap.initialised) {
-            CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            sub.send_extended_status1(chan);
-            CHECK_PAYLOAD_SIZE(POWER_STATUS);
-            send_power_status();
-        }
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        send_sys_status();
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:

@@ -20,6 +20,11 @@ public:
         return _chan[ofs];
     };
 
+protected:
+
+    void update_sensor_status_flags() override;
+    bool vehicle_initialised() const override;
+
 private:
 
     GCS_MAVLINK_Sub _chan[MAVLINK_COMM_NUM_BUFFERS];
