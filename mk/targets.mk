@@ -19,14 +19,6 @@ f4light: HAL_BOARD = HAL_BOARD_F4LIGHT
 f4light: TOOLCHAIN = ARM
 f4light: all
 
-qflight: HAL_BOARD = HAL_BOARD_LINUX
-qflight: TOOLCHAIN = QFLIGHT
-qflight: all
-
-qurt: HAL_BOARD = HAL_BOARD_QURT
-qurt: TOOLCHAIN = QURT
-qurt: all
-
 # cope with HIL targets
 %-hil: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
 %-hilsensors: EXTRAFLAGS += "-DHIL_MODE=HIL_MODE_SENSORS "
