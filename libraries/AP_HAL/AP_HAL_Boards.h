@@ -11,7 +11,6 @@
 #define HAL_BOARD_PX4      5
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
-#define HAL_BOARD_QURT     9
 #define HAL_BOARD_CHIBIOS  10
 #define HAL_BOARD_F4LIGHT  11
 #define HAL_BOARD_EMPTY    99
@@ -30,7 +29,6 @@
 #define HAL_BOARD_SUBTYPE_LINUX_MINLURE    1008
 #define HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 1009
 #define HAL_BOARD_SUBTYPE_LINUX_BH         1010
-#define HAL_BOARD_SUBTYPE_LINUX_QFLIGHT    1011
 #define HAL_BOARD_SUBTYPE_LINUX_PXFMINI    1012
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIO2     1013
 #define HAL_BOARD_SUBTYPE_LINUX_DISCO      1014
@@ -89,8 +87,6 @@
 #define HAL_INS_LSM9DS0     11
 #define HAL_INS_MPU9250_I2C 13
 #define HAL_INS_BH          14
-#define HAL_INS_QFLIGHT     15
-#define HAL_INS_QURT        16
 #define HAL_INS_BBBMINI     17
 #define HAL_INS_AERO        18
 #define HAL_INS_MPU6500     19
@@ -109,8 +105,6 @@
 #define HAL_BARO_HIL         6
 #define HAL_BARO_VRBRAIN     7
 #define HAL_BARO_MS5637_I2C  8
-#define HAL_BARO_QFLIGHT     9
-#define HAL_BARO_QURT       10
 #define HAL_BARO_BMP280_I2C 11
 #define HAL_BARO_BMP280_SPI 12
 #define HAL_BARO_LPS25H     13
@@ -132,8 +126,6 @@
 #define HAL_COMPASS_HMC5843_MPU6000     7
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
 #define HAL_COMPASS_BH                 10
-#define HAL_COMPASS_QFLIGHT            11
-#define HAL_COMPASS_QURT               12
 #define HAL_COMPASS_BBBMINI            13
 #define HAL_COMPASS_NAVIO2             14
 #define HAL_COMPASS_NAVIO              15
@@ -177,8 +169,6 @@
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
     #include <AP_HAL/board/empty.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
-    #include <AP_HAL/board/qurt.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
