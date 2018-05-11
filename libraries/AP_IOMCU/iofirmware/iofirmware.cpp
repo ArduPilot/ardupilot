@@ -141,15 +141,18 @@ void AP_IOMCU_FW::init()
 
 void AP_IOMCU_FW::update()
 {
-    chEvtWaitAnyTimeout(~0, MS2ST(1));
+    eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
 
     if (do_reboot && (AP_HAL::millis() > reboot_time)) {
         hal.scheduler->reboot(true);
         while(true){}
     }
 
-    // always do pwm update
-    pwm_out_update();
+    if ((mask & EVENT_MASK(IOEVENT_PWM)) ||
+        (last_safety_off != reg_status.flag_safety_off)) {
+        last_safety_off = reg_status.flag_safety_off;
+        pwm_out_update();
+    }
 
     // run remaining functions at 1kHz
     uint32_t now = AP_HAL::millis();
