@@ -98,6 +98,30 @@ MAV_STATE GCS_MAVLINK_Copter::system_status() const
 }
 
 
+void GCS_MAVLINK_Copter::send_position_target_global_int()
+{
+    Location_Class target;
+    if (!copter.flightmode->get_wp(target)) {
+        return;
+    }
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(), // time_boot_ms
+        MAV_FRAME_GLOBAL_INT, // targets are always global altitude
+        0xFFF8, // ignore everything except the x/y/z components
+        target.lat, // latitude as 1e7
+        target.lng, // longitude as 1e7
+        target.alt * 0.01f, // altitude is sent as a float
+        0.0f, // vx
+        0.0f, // vy
+        0.0f, // vz
+        0.0f, // afx
+        0.0f, // afy
+        0.0f, // afz
+        0.0f, // yaw
+        0.0f); // yaw_rate
+}
+
 #if AC_FENCE == ENABLED
 NOINLINE void Copter::send_fence_status(mavlink_channel_t chan)
 {
@@ -360,7 +384,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 
     case MSG_LIMITS_STATUS:
     case MSG_WIND:
-    case MSG_POSITION_TARGET_GLOBAL_INT:
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
     case MSG_LANDING:
@@ -493,7 +516,8 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
-    MSG_FENCE_STATUS
+    MSG_FENCE_STATUS,
+    MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const uint8_t STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
