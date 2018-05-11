@@ -22,7 +22,6 @@
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
 #include "UARTDevice.h"
-#include "UARTQFlight.h"
 #include "UDPDevice.h"
 
 #include <GCS_MAVLink/GCS.h>
@@ -129,10 +128,6 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
         return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-    } else if (strncmp(arg, "qflight:", 8) == 0) {
-        return AP_HAL::OwnPtr<SerialDevice>(new QFLIGHTDevice(device_path));
-#endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
