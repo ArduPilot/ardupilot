@@ -8,69 +8,17 @@
 #include "hal.h"
 extern const AP_HAL::HAL &hal;
 
-#define PKT_MAX_REGS 32
-AP_IOMCU_FW iomcu;
-/*
-  values for pkt.code
- */
-enum iocode {
-    // read types
-    CODE_READ = 0,
-    CODE_WRITE = 1,
+static AP_IOMCU_FW iomcu;
 
-    // reply codes
-    CODE_SUCCESS = 0,
-    CODE_CORRUPT = 1,
-    CODE_ERROR = 2
-};
-
-// IO pages
-enum iopage {
-    PAGE_CONFIG = 0,
-    PAGE_STATUS = 1,
-    PAGE_ACTUATORS = 2,
-    PAGE_SERVOS = 3,
-    PAGE_RAW_RCIN = 4,
-    PAGE_RCIN = 5,
-    PAGE_RAW_ADC = 6,
-    PAGE_PWM_INFO = 7,
-    PAGE_SETUP = 50,
-    PAGE_DIRECT_PWM = 54,
-};
-
-// setup page registers
-#define PAGE_REG_SETUP_FEATURES	0
-#define P_SETUP_FEATURES_SBUS1_OUT	1
-#define P_SETUP_FEATURES_SBUS2_OUT	2
-#define P_SETUP_FEATURES_PWM_RSSI   4
-#define P_SETUP_FEATURES_ADC_RSSI   8
-#define P_SETUP_FEATURES_ONESHOT   16
-
-#define PAGE_REG_SETUP_ARMING 1
-#define P_SETUP_ARMING_IO_ARM_OK (1<<0)
-#define P_SETUP_ARMING_FMU_ARMED (1<<1)
-#define P_SETUP_ARMING_RC_HANDLING_DISABLED (1<<6)
-
-#define PAGE_REG_SETUP_PWM_RATE_MASK 2
-#define PAGE_REG_SETUP_DEFAULTRATE   3
-#define PAGE_REG_SETUP_ALTRATE       4
-#define PAGE_REG_SETUP_REBOOT_BL    10
-#define PAGE_REG_SETUP_SBUS_RATE    19
-#define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
-
-#define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
-#define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
-#define FORCE_SAFETY_MAGIC              22027
-#define PX4IO_REBOOT_BL_MAGIC			14662
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static uint32_t num_code_read = 0, num_bad_crc = 0, num_write_pkt = 0, num_unknown_pkt = 0; 
-static uint32_t num_idle_rx = 0, num_dma_complete_rx = 0, num_total_rx = 0, num_rx_error = 0;
+static uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt; 
+static uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
 
-void dma_rx_end_cb(UARTDriver *uart)
+static void dma_rx_end_cb(UARTDriver *uart)
 {
     osalSysLockFromISR();
     uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
@@ -101,7 +49,8 @@ void dma_rx_end_cb(UARTDriver *uart)
     osalSysUnlockFromISR();
 }
 
-void idle_rx_handler(UARTDriver *uart) {
+static void idle_rx_handler(UARTDriver *uart)
+{
     volatile uint16_t sr = uart->usart->SR;
 
     if (sr & (USART_SR_LBD | USART_SR_ORE |	/* overrun error - packet was too big for DMA or DMA was too slow */
@@ -339,6 +288,7 @@ bool AP_IOMCU_FW::handle_code_write()
                     break;
                 case PAGE_REG_SETUP_FORCE_SAFETY_OFF:
                     if (rx_io_packet.regs[0] == FORCE_SAFETY_MAGIC) {
+                        hal.rcout->force_safety_off();
                         reg_status.flag_safety_off = true;
                     } else {
                         return false;
@@ -346,6 +296,7 @@ bool AP_IOMCU_FW::handle_code_write()
                     break;
                 case PAGE_REG_SETUP_FORCE_SAFETY_ON:
                     if (rx_io_packet.regs[0] == FORCE_SAFETY_MAGIC) {
+                        hal.rcout->force_safety_on();
                         reg_status.flag_safety_off = false;
                     } else {
                         return false;
@@ -400,7 +351,7 @@ bool AP_IOMCU_FW::handle_code_write()
                     }
 
                     // check the magic value
-                    if (rx_io_packet.regs[0] != PX4IO_REBOOT_BL_MAGIC) {
+                    if (rx_io_packet.regs[0] != REBOOT_BL_MAGIC) {
                         return false;
                     }
                     schedule_reboot(100);
@@ -463,5 +414,6 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
 	reg_setup.crc[0] = sum & 0xFFFF;
 	reg_setup.crc[1] = sum >> 16;
 }
+
 
 AP_HAL_MAIN();
