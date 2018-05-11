@@ -29,5 +29,4 @@ help:
 	@echo "  px4-v4 - the XRacer"
 	@echo "  vrbrain - the VRBrain boards"
 	@echo "  sitl - the SITL Software In The Loop simulation"
-	@echo "  qflight - qualcomm flight board"
 	@echo "  f4light - the OpenPilot Revolution, Revolution Mini, AirbotF4 and similar boards"
