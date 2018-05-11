@@ -17,6 +17,23 @@
 
 extern const AP_HAL::HAL &hal;
 
+// pending IO events to send, used as an event mask
+enum ioevents {
+    IOEVENT_INIT=1,
+    IOEVENT_SEND_PWM_OUT,
+    IOEVENT_SET_DISARMED_PWM,
+    IOEVENT_SET_FAILSAFE_PWM,
+    IOEVENT_FORCE_SAFETY_OFF,
+    IOEVENT_FORCE_SAFETY_ON,
+    IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_RATES,
+    IOEVENT_GET_RCIN,
+    IOEVENT_ENABLE_SBUS,
+    IOEVENT_SET_HEATER_TARGET,
+    IOEVENT_SET_DEFAULT_RATE,
+    IOEVENT_SET_SAFETY_MASK,
+};
+
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {}
