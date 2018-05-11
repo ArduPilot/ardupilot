@@ -384,7 +384,7 @@ bool AP_Arming::gps_checks(bool report)
         Location gps_loc = gps.location();
         Location ahrs_loc;
         if (ahrs.get_position(ahrs_loc)) {
-            float distance = location_3d_diff_NED(gps_loc, ahrs_loc).length();
+            const float distance = location_diff(gps_loc, ahrs_loc).length();
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 if (report) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: GPS and AHRS differ by %4.1fm", (double)distance);
