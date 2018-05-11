@@ -31,7 +31,7 @@
 #if defined(__APPLE__) && defined(__MACH__)
 #include <sys/param.h>
 #include <sys/mount.h>
-#elif !DATAFLASH_FILE_MINIMAL
+#else
 #include <sys/statfs.h>
 #endif
 #endif
@@ -128,7 +128,6 @@ void DataFlash_File::Init()
         _log_directory = custom_dir;
     }
 
-#if !DATAFLASH_FILE_MINIMAL
     ret = stat(_log_directory, &st);
     if (ret == -1) {
         ret = mkdir(_log_directory, 0777);
@@ -137,7 +136,6 @@ void DataFlash_File::Init()
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
         return;
     }
-#endif
 
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
@@ -165,20 +163,12 @@ void DataFlash_File::Init()
 
 bool DataFlash_File::file_exists(const char *filename) const
 {
-#if DATAFLASH_FILE_MINIMAL
-    int fd = open(filename, O_RDONLY|O_CLOEXEC);
-    if (fd == -1) {
-        return false;
-    }
-    close(fd);
-#else
     struct stat st;
     if (stat(filename, &st) == -1) {
         // hopefully errno==ENOENT.  If some error occurs it is
         // probably better to assume this file exists.
         return false;
     }
-#endif
     return true;
 }
 
@@ -237,7 +227,7 @@ bool DataFlash_File::CardInserted(void) const
 // returns -1 on error
 int64_t DataFlash_File::disk_space_avail()
 {
-#if !DATAFLASH_FILE_MINIMAL && HAL_OS_POSIX_IO
+#if HAL_OS_POSIX_IO
     struct statfs _stats;
     if (statfs(_log_directory, &_stats) < 0) {
         return -1;
@@ -256,7 +246,7 @@ int64_t DataFlash_File::disk_space_avail()
 // returns -1 on error
 int64_t DataFlash_File::disk_space()
 {
-#if !DATAFLASH_FILE_MINIMAL && HAL_OS_POSIX_IO
+#if HAL_OS_POSIX_IO
     struct statfs _stats;
     if (statfs(_log_directory, &_stats) < 0) {
         return -1;
@@ -290,9 +280,6 @@ float DataFlash_File::avail_space_percent()
 // returns 0 if no log was found
 uint16_t DataFlash_File::find_oldest_log()
 {
-#if DATAFLASH_FILE_MINIMAL
-    return 0;
-#else
     if (_cached_oldest_log != 0) {
         return _cached_oldest_log;
     }
@@ -352,10 +339,8 @@ uint16_t DataFlash_File::find_oldest_log()
     _cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
-#endif
 }
 
-#if !DATAFLASH_FILE_MINIMAL
 void DataFlash_File::Prep_MinSpace()
 {
     const uint16_t first_log_to_remove = find_oldest_log();
@@ -412,7 +397,6 @@ void DataFlash_File::Prep_MinSpace()
         }
     } while (log_to_remove != first_log_to_remove);
 }
-#endif
 
 void DataFlash_File::Prep() {
     if (!NeedPrep()) {
@@ -422,9 +406,7 @@ void DataFlash_File::Prep() {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
     }
-#if !DATAFLASH_FILE_MINIMAL
     Prep_MinSpace();
-#endif
 }
 
 bool DataFlash_File::NeedPrep()
@@ -508,7 +490,7 @@ void DataFlash_File::EraseAll()
     uint16_t log_num;
     const bool was_logging = (_write_fd != -1);
     stop_logging();
-#if !DATAFLASH_FILE_MINIMAL
+
     for (log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
@@ -522,7 +504,7 @@ void DataFlash_File::EraseAll()
         unlink(fname);
         free(fname);
     }
-#endif
+
     _cached_oldest_log = 0;
 
     if (was_logging) {
@@ -645,9 +627,6 @@ uint16_t DataFlash_File::find_last_log()
 
 uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
 {
-#if DATAFLASH_FILE_MINIMAL
-    return 1;
-#else
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
@@ -660,14 +639,10 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
     }
     free(fname);
     return st.st_size;
-#endif
 }
 
 uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
 {
-#if DATAFLASH_FILE_MINIMAL
-    return 0;
-#else
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
@@ -679,7 +654,6 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
     }
     free(fname);
     return st.st_mtime;
-#endif
 }
 
 /*
@@ -946,7 +920,7 @@ uint16_t DataFlash_File::start_new_log(void)
     fname = _lastlog_file_name();
 
     // we avoid fopen()/fprintf() here as it is not available on as many
-    // systems as open/write (specifically the QURT RTOS)
+    // systems as open/write
 #if HAL_OS_POSIX_IO
     int fd = open(fname, O_WRONLY|O_CREAT|O_CLOEXEC, 0644);
 #else
@@ -1076,7 +1050,7 @@ void DataFlash_File::_io_timer(void)
           chunk, ensuring the directory entry is updated after each
           write.
          */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
         last_io_operation = "fsync";
         ::fsync(_write_fd);
         last_io_operation = "";
