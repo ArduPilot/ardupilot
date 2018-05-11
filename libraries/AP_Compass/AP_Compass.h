@@ -370,7 +370,6 @@ private:
         DRIVER_IST8310  =7,
         DRIVER_ICM20948 =8,
         DRIVER_MMC3416  =9,
-        DRIVER_QFLIGHT  =10,
         DRIVER_UAVCAN   =11,
         DRIVER_QMC5883  =12,
         DRIVER_SITL     =13,
