@@ -139,6 +139,7 @@ void AP_IOMCU_FW::update()
     pwm_out_update();
     heater_update();
     rcin_update();
+    safety_update();
 }
 
 void AP_IOMCU_FW::pwm_out_update()
@@ -415,5 +416,40 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
 	reg_setup.crc[1] = sum >> 16;
 }
 
+
+/*
+  update safety state
+ */
+void AP_IOMCU_FW::safety_update(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - safety_update_ms < 100) {
+        // update safety at 10Hz
+        return;
+    }
+    safety_update_ms = now;
+
+    bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_INPUT);
+    if (safety_pressed) {
+        if (reg_status.flag_safety_off && (reg_setup.arming & P_SETUP_ARMING_SAFETY_DISABLE_ON)) {
+            safety_pressed = false;
+        } else if ((!reg_status.flag_safety_off) && (reg_setup.arming & P_SETUP_ARMING_SAFETY_DISABLE_OFF)) {
+            safety_pressed = false;
+        }
+    }
+    if (safety_pressed) {
+        safety_button_counter++;
+    } else {
+        safety_button_counter = 0;
+    }
+    if (safety_button_counter == 10) {
+        // safety has been pressed for 1 second, change state
+        reg_status.flag_safety_off = !reg_status.flag_safety_off;
+    }
+
+    led_counter = (led_counter+1) % 16;
+    const uint16_t led_pattern = reg_status.flag_safety_off?0xFFFF:0x5500;
+    palWriteLine(HAL_GPIO_PIN_SAFETY_LED, (led_pattern & (1U << led_counter))?0:1);
+}
 
 AP_HAL_MAIN();
