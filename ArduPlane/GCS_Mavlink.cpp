@@ -192,8 +192,12 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-void Plane::send_position_target_global_int(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_position_target_global_int()
 {
+    if (plane.control_mode == MANUAL) {
+        return;
+    }
+    Location &next_WP_loc = plane.next_WP_loc;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -402,13 +406,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
             plane.send_nav_controller_output(chan);
-        }
-        break;
-
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
-            plane.send_position_target_global_int(chan);
         }
         break;
 
