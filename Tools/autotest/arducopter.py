@@ -144,10 +144,13 @@ class AutoTestCopter(AutoTest):
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
 
-    def takeoff(self, alt_min=30, takeoff_throttle=1700):
+    def takeoff(self, alt_min=30, takeoff_throttle=1700, arm=False):
         """Takeoff get to 30m altitude."""
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
+        if arm:
+            self.set_rc(3, 1000)
+            self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         if m.alt < alt_min:
@@ -310,6 +313,7 @@ class AutoTestCopter(AutoTest):
         self.wait_altitude(-10, 10, time_left)
         self.save_wp()
 
+    # enter RTL mode and wait for the vehicle to disarm
     def fly_RTL(self, side=60, timeout=250):
         """Return, land."""
         self.progress("# Enter RTL")
@@ -319,8 +323,13 @@ class AutoTestCopter(AutoTest):
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
-            self.progress("Alt: %u  HomeDist: %.0f" % (m.alt, home_distance))
+            home = ""
             if m.alt <= 1 and home_distance < 10:
+                home = "HOME"
+            self.progress("Alt: %u  HomeDist: %.0f %s" %
+                          (m.alt, home_distance, home))
+            # our post-condition is that we are disarmed:
+            if not self.armed():
                 return
         raise AutoTestTimeoutException()
 
@@ -1088,6 +1097,12 @@ class AutoTestCopter(AutoTest):
             # RTL after GPS Glitch Loiter test
             self.run_test("RTL after GPS Glitch Loiter test", self.fly_RTL)
 
+            # Arm
+            self.mavproxy.send('mode stabilize\n')  # stabilize mode
+            self.wait_mode('STABILIZE')
+            self.set_rc(3, 1000)
+            self.run_test("Arm motors", self.arm_vehicle)
+
             # Fly GPS Glitch test in auto mode
             self.run_test("GPS Glitch Auto Test",
                           self.fly_gps_glitch_auto_test)
@@ -1110,7 +1125,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test fly SIMPLE mode",
-                          lambda: self.takeoff(10))
+                          lambda: self.takeoff(10, arm=True))
 
             # Simple mode
             self.run_test("Fly in SIMPLE mode", self.fly_simple)
@@ -1120,7 +1135,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test circle in SUPER SIMPLE mode",
-                          lambda: self.takeoff(10))
+                          lambda: self.takeoff(10, arm=True))
 
             # Fly a circle in super simple mode
             self.run_test("Fly a circle in SUPER SIMPLE mode",
@@ -1131,13 +1146,19 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test CIRCLE mode",
-                          lambda: self.takeoff(10))
+                          lambda: self.takeoff(10, arm=True))
 
             # Circle mode
             self.run_test("Fly CIRCLE mode", self.fly_circle)
 
             # RTL
             self.run_test("RTL after CIRCLE mode", self.fly_RTL)
+
+            # Arm
+            self.set_rc(3, 1000)
+            self.mavproxy.send('mode stabilize\n')  # stabilize mode
+            self.wait_mode('STABILIZE')
+            self.run_test("Arm motors", self.arm_vehicle)
 
             # Fly auto test
             self.run_test("Fly copter mission", self.fly_auto_test)

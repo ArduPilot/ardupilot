@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
 
-#if !defined(BUZZER_PIN)
+#if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_PIN
     // @DisplayName: Buzzer pin
     // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET!
@@ -239,7 +239,7 @@ void AP_Notify::add_backends(void)
 # else
     ADD_BACKEND(new AP_BoardLED());
 # endif
-#ifdef BUZZER_PIN
+#ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
 #endif
     ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
