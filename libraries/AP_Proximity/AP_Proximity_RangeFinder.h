@@ -3,7 +3,7 @@
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
-#define PROXIMITY_RANGEFIDER_TIMEOUT_MS 200 // requests timeout after 0.5 seconds
+#define PROXIMITY_RANGEFIDER_TIMEOUT_MS 200 // requests timeout after 0.2 seconds
 
 class AP_Proximity_RangeFinder : public AP_Proximity_Backend
 {
@@ -31,5 +31,5 @@ private:
 
     // upward distance support
     uint32_t _last_upward_update_ms;    // system time of last update distance
-    float _distance_upward;             // upward distance in meters
+    float _distance_upward;             // upward distance in meters, negative if the last reading was out of range
 };
