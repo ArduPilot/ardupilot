@@ -228,6 +228,7 @@ private:
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
+    uint16_t io_fast_channel_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
