@@ -356,10 +356,13 @@ void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
     }
 
     if (_output_mode == MODE_PWM_ONESHOT125) {
-        // we treat oneshot125 very simply on HAL_PX4, with 1us
-        // resolution. Correctly handling it would use a 125 nsec
-        // step size, to give the full 1000 steps
-        period_us /= 8;
+        if (((ch < _servo_count) && ((1U<<ch) & _rate_mask_main)) ||
+            ((ch >= _servo_count) && ((1U<<(ch-_servo_count)) & _rate_mask_alt))) {
+            // we treat oneshot125 very simply on HAL_PX4, with 1us
+            // resolution. Correctly handling it would use a 125 nsec
+            // step size, to give the full 1000 steps
+            period_us /= 8;
+        }
     }
 
     // keep unscaled value
