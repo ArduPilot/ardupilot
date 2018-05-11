@@ -543,8 +543,6 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs)
     Vector2f posNE;
     float posD;
     Vector3f velNED;
-    Vector3f dAngBias;
-    Vector3f dVelBias;
     Vector3f gyroBias;
     float posDownDeriv;
     Location originLLH;
@@ -885,8 +883,6 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
     Vector2f posNE;
     float posD;
     Vector3f velNED;
-    Vector3f dAngBias;
-    Vector3f dVelBias;
     Vector3f gyroBias;
     float posDownDeriv;
     Location originLLH;
