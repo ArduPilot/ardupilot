@@ -201,6 +201,16 @@ bool AC_WPNav::set_wp_destination(const Location_Class& destination)
     return set_wp_destination(dest_neu, terr_alt);
 }
 
+bool AC_WPNav::get_wp_destination(Location_Class& destination) {
+    Vector3f dest = get_wp_destination();
+    if (!AP::ahrs().get_origin(destination)) {
+        return false;
+    }
+    destination.offset(dest.x*0.01f, dest.y*0.01f);
+    destination.alt += dest.z;
+    return true;
+}
+
 /// set_wp_destination waypoint using position vector (distance from home in cm)
 ///     terrain_alt should be true if destination.z is a desired altitude above terrain
 bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
