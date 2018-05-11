@@ -27,6 +27,7 @@ private:
     bool handle_code_read();
     void schedule_reboot(uint32_t time_ms);
     void safety_update();
+    void rcout_mode_update();
 
     struct PACKED {
         /* default to RSSI ADC functionality */
@@ -91,5 +92,8 @@ private:
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
     uint8_t led_counter;
+    uint32_t last_loop_ms;
+    bool oneshot_enabled;
+    thread_t *thread_ctx;
 };
 
