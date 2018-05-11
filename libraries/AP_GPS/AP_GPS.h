@@ -50,8 +50,6 @@ class AP_GPS
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
-    friend class AP_GPS_MTK;
-    friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
     friend class AP_GPS_PX4;
@@ -483,8 +481,6 @@ private:
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
 #if !HAL_MINIMIZE_FEATURES
-        struct MTK_detect_state mtk_detect_state;
-        struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
 #endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
@@ -500,7 +496,7 @@ private:
 
     static const uint32_t  _baudrates[];
     static const char _initialisation_blob[];
-    static const char _initialisation_raw_blob[];
+    static const char _mtk_initialisation_blob[];
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);

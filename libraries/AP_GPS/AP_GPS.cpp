@@ -25,8 +25,6 @@
 #include "AP_GPS_NOVA.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
-#include "AP_GPS_MTK.h"
-#include "AP_GPS_MTK19.h"
 #include "AP_GPS_NMEA.h"
 #include "AP_GPS_QURT.h"
 #include "AP_GPS_SBF.h"
@@ -59,7 +57,11 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY MTK_SET_BINARY SIRF_SET_BINARY;
+const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY SIRF_SET_BINARY;
+const char AP_GPS::_mtk_initialisation_blob[] = "$PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n" /* RMC, GGA & VTG once every fix */ \
+                                                "$PMTK330,0*2E\r\n"                                 /* datum = WGS84 */ \
+                                                "$PMTK313,1*2E\r\n"                                 /* SBAS on */ \
+                                                "$PMTK301,2*2E\r\n";                                /* use SBAS data for DGPS */
 
 AP_GPS *AP_GPS::_singleton;
 
@@ -509,7 +511,11 @@ void AP_GPS::detect_instance(uint8_t instance)
         dstate->last_baud_change_ms = now;
 
         if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
-            send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+            if (_type[instance] == GPS_TYPE_MTK || _type[instance] == GPS_TYPE_MTK19) {
+                send_blob_start(instance, _mtk_initialisation_blob, sizeof(_mtk_initialisation_blob));
+            } else {
+                send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+            }
         }
     }
 
@@ -533,17 +539,6 @@ void AP_GPS::detect_instance(uint8_t instance)
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
         }
-#if !HAL_MINIMIZE_FEATURES
-        // we drop the MTK drivers when building a small build as they are so rarely used
-        // and are surprisingly large
-        else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
-                 AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
-            new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
-        } else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
-                   AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
-            new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
-        }
-#endif
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
@@ -561,7 +556,8 @@ void AP_GPS::detect_instance(uint8_t instance)
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        } else if (_type[instance] == GPS_TYPE_NMEA &&
+        } else if ((_type[instance] == GPS_TYPE_NMEA ||_type[instance] == GPS_TYPE_MTK ||
+                    _type[instance] == GPS_TYPE_MTK19) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
