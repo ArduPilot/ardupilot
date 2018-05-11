@@ -19,9 +19,7 @@
 #include "AP_InertialSensor_LSM9DS1.h"
 #include "AP_InertialSensor_Invensense.h"
 #include "AP_InertialSensor_PX4.h"
-#include "AP_InertialSensor_QURT.h"
 #include "AP_InertialSensor_SITL.h"
-#include "AP_InertialSensor_qflight.h"
 #include "AP_InertialSensor_RST.h"
 #include "AP_InertialSensor_Revo.h"
 
@@ -840,10 +838,6 @@ AP_InertialSensor::detect_backends(void)
     ADD_BACKEND(AP_InertialSensor_L3G4200D::probe(*this, hal.i2c_mgr->get_device(HAL_INS_L3G4200D_I2C_BUS, HAL_INS_L3G4200D_I2C_ADDR)));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_I2C
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.i2c_mgr->get_device(HAL_INS_MPU9250_I2C_BUS, HAL_INS_MPU9250_I2C_ADDR)));
-#elif HAL_INS_DEFAULT == HAL_INS_QFLIGHT
-    ADD_BACKEND(AP_InertialSensor_QFLIGHT::detect(*this));
-#elif HAL_INS_DEFAULT == HAL_INS_QURT
-    ADD_BACKEND(AP_InertialSensor_QURT::detect(*this));
 #elif HAL_INS_DEFAULT == HAL_INS_BBBMINI
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME)));
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME_EXT)));
