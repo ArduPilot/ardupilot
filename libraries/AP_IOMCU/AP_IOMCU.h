@@ -10,8 +10,7 @@
 #if HAL_WITH_IO_MCU
 
 #include "ch.h"
-
-#define IOMCU_MAX_CHANNELS 16
+#include "iofirmware/ioprotocol.h"
 
 class AP_IOMCU {
 public:
@@ -135,53 +134,10 @@ private:
     void update_safety_options(void);
     
     // PAGE_STATUS values
-    struct PACKED {
-        uint16_t freemem;
-        uint16_t cpuload;
-        
-        // status flags
-        uint16_t flag_outputs_armed:1;
-        uint16_t flag_override:1;
-        uint16_t flag_rc_ok:1;
-        uint16_t flag_rc_ppm:1;
-        uint16_t flag_rc_dsm:1;
-        uint16_t flag_rc_sbus:1;
-        uint16_t flag_fmu_ok:1;
-        uint16_t flag_raw_pwm:1;
-        uint16_t flag_mixer_ok:1;
-        uint16_t flag_arm_sync:1;
-        uint16_t flag_init_ok:1;
-        uint16_t flag_failsafe:1;
-        uint16_t flag_safety_off:1;
-        uint16_t flag_fmu_initialised:1;
-        uint16_t flag_rc_st24:1;
-        uint16_t flag_rc_sumd_srxl:1;
-        
-        uint16_t alarms;
-        uint16_t vbatt;
-        uint16_t ibatt;
-        uint16_t vservo;
-        uint16_t vrssi;
-        uint16_t prssi;
-    } reg_status;
+    struct page_reg_status reg_status;
 
     // PAGE_RAW_RCIN values
-    struct PACKED {
-        uint16_t count;
-        uint16_t flags_frame_drop:1;
-        uint16_t flags_failsafe:1;
-        uint16_t flags_dsm11:1;
-        uint16_t flags_mapping_ok:1;
-        uint16_t flags_rc_ok:1;
-        uint16_t flags_unused:11;
-        uint16_t nrssi;
-        uint16_t data;
-        uint16_t frame_count;
-        uint16_t lost_frame_count;
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
-        uint16_t last_frame_count;
-        uint32_t last_input_us;
-    } rc_input;
+    struct page_rc_input rc_input;
     
     // output pwm values
     struct {
