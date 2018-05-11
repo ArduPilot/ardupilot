@@ -266,8 +266,8 @@ void Scheduler::_delay(uint16_t ms)
     uint32_t now;
 
     while((now=_micros()) - start < dt) {
-        if (_min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
-            call_delay_cb();
+        if (hal.scheduler->_min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
+            hal.scheduler->call_delay_cb();
             yield(1000 - (_micros() - now)); // to not stop MAVlink callback
         } else {
             yield(dt); // for full time
@@ -352,7 +352,7 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_time_ms)
         init_done=true;
     }
 
-    AP_HAL::register_delay_callback(proc, min_time_ms);
+    AP_HAL::Scheduler::register_delay_callback(proc, min_time_ms);
 
 
 /* 
