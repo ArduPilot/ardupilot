@@ -147,7 +147,7 @@ void AC_Circle::update()
         float angle_temp = wrap_PI(bearing_rad);
 
         // heading is 180 deg from vehicles target position around circle
-        _yaw = wrap_PI(angle_temp - M_PI) * AC_CIRCLE_DEGX100;
+        _yaw = wrap_PI(angle_temp - M_PI) * DEGX100;
     } else {
         // set target position to center
         Vector3f target;
