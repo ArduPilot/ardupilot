@@ -11,18 +11,6 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "DataFlash_Backend.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-/*
-  the QURT port has a limited range of system calls available. It
-  cannot provide all the facilities that DataFlash_File wants. It can
-  provide enough to be useful though, which is what
-  DATAFLASH_FILE_MINIMAL is for
- */
-#define DATAFLASH_FILE_MINIMAL 1
-#else
-#define DATAFLASH_FILE_MINIMAL 0
-#endif
-
 class DataFlash_File : public DataFlash_Backend
 {
 public:
