@@ -8,12 +8,19 @@
 #include "hal.h"
 extern const AP_HAL::HAL &hal;
 
+//#pragma GCC optimize("Og")
+
 static AP_IOMCU_FW iomcu;
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+// pending events on the main thread
+enum ioevents {
+    IOEVENT_PWM=1,
+};
 
 static uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt; 
 static uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
@@ -124,6 +131,8 @@ void loop(void)
 
 void AP_IOMCU_FW::init()
 {
+    thread_ctx = chThdGetSelfX();
+
     if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
         has_heater = true;
     }
@@ -132,25 +141,39 @@ void AP_IOMCU_FW::init()
 
 void AP_IOMCU_FW::update()
 {
+    chEvtWaitAnyTimeout(~0, MS2ST(1));
+
     if (do_reboot && (AP_HAL::millis() > reboot_time)) {
         hal.scheduler->reboot(true);
         while(true){}
     }
+
+    // always do pwm update
     pwm_out_update();
-    heater_update();
-    rcin_update();
-    safety_update();
+
+    // run remaining functions at 1kHz
+    uint32_t now = AP_HAL::millis();
+    if (now != last_loop_ms) {
+        last_loop_ms = now;
+        heater_update();
+        rcin_update();
+        safety_update();
+        rcout_mode_update();
+        hal.rcout->timer_tick();
+    }
 }
 
 void AP_IOMCU_FW::pwm_out_update()
 {
     //TODO: PWM mixing
     memcpy(reg_servo.pwm, reg_direct_pwm.pwm, sizeof(reg_direct_pwm));
+    hal.rcout->cork();
     for(uint8_t i = 0; i < SERVO_COUNT; i++) {
         if (reg_servo.pwm[i] != 0) {
-            hal.rcout->write(i, reg_servo.pwm[i]);
+            hal.rcout->write(i, reg_status.flag_safety_off?reg_servo.pwm[i]:0);
         }
     }
+    hal.rcout->push();
 }
 
 void AP_IOMCU_FW::heater_update()
@@ -379,7 +402,7 @@ bool AP_IOMCU_FW::handle_code_write()
                 fmu_data_received_time = AP_HAL::millis();
                 reg_status.flag_fmu_ok = true;
                 reg_status.flag_raw_pwm = true;
-                //TODO: Oneshot support
+                chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
                 break;
             }
         
@@ -450,6 +473,18 @@ void AP_IOMCU_FW::safety_update(void)
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = reg_status.flag_safety_off?0xFFFF:0x5500;
     palWriteLine(HAL_GPIO_PIN_SAFETY_LED, (led_pattern & (1U << led_counter))?0:1);
+}
+
+/*
+  update hal.rcout mode if needed
+ */
+void AP_IOMCU_FW::rcout_mode_update(void)
+{
+    bool use_oneshot = (reg_setup.features & P_SETUP_FEATURES_ONESHOT) != 0;
+    if (use_oneshot && !oneshot_enabled) {
+        oneshot_enabled = true;
+        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+    }
 }
 
 AP_HAL_MAIN();
