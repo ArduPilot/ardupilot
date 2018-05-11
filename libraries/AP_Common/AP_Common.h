@@ -168,10 +168,6 @@ enum HomeState {
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <AP_HAL_QURT/replace.h>
-#endif
-
 /*
   useful debugging macro for SITL
  */
