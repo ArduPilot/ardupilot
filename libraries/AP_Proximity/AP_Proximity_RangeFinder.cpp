@@ -38,8 +38,10 @@ void AP_Proximity_RangeFinder::update(void)
         return;
     }
 
+    uint32_t now = AP_HAL::millis();
+
     // look through all rangefinders
-    for (uint8_t i=0; i<rngfnd->num_sensors(); i++) {
+    for (uint8_t i=0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         AP_RangeFinder_Backend *sensor = rngfnd->get_backend(i);
         if (sensor == nullptr) {
             continue;
@@ -53,19 +55,26 @@ void AP_Proximity_RangeFinder::update(void)
                 _distance_min = sensor->min_distance_cm() / 100.0f;
                 _distance_max = sensor->max_distance_cm() / 100.0f;
                 _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
-                _last_update_ms = AP_HAL::millis();
+                _last_update_ms = now;
                 update_boundary_for_sector(sector);
             }
             // check upward facing range finder
             if (sensor->orientation() == ROTATION_PITCH_90) {
-                _distance_upward = sensor->distance_cm() / 100.0f;
-                _last_upward_update_ms = AP_HAL::millis();
+                int16_t distance_upward = sensor->distance_cm();
+                int16_t up_distance_min = sensor->min_distance_cm();
+                int16_t up_distance_max = sensor->max_distance_cm();
+                if ((distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
+                    _distance_upward = distance_upward * 1e2;
+                } else {
+                    _distance_upward = -1.0; // mark an valid reading
+                }
+                _last_upward_update_ms = now;
             }
         }
     }
 
     // check for timeout and set health status
-    if ((_last_update_ms == 0) || (AP_HAL::millis() - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
+    if ((_last_update_ms == 0) || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
         set_status(AP_Proximity::Proximity_NoData);
     } else {
         set_status(AP_Proximity::Proximity_Good);
@@ -75,7 +84,9 @@ void AP_Proximity_RangeFinder::update(void)
 // get distance upwards in meters. returns true on success
 bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
 {
-    if ((_last_upward_update_ms != 0) && (AP_HAL::millis() - _last_upward_update_ms <= PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
+    if ((_last_upward_update_ms != 0) &&
+        (AP_HAL::millis() - _last_upward_update_ms <= PROXIMITY_RANGEFIDER_TIMEOUT_MS) &&
+        is_positive(_distance_upward)) {
         distance = _distance_upward;
         return true;
     }
