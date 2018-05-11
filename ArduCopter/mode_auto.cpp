@@ -616,6 +616,18 @@ int32_t Copter::ModeAuto::wp_bearing() const
     return wp_nav->get_wp_bearing_to_destination();
 }
 
+bool Copter::ModeAuto::get_wp(Location_Class& destination)
+{
+    switch (_mode) {
+    case Auto_NavGuided:
+        return copter.mode_guided.get_wp(destination);
+    case Auto_WP:
+        return wp_nav->get_wp_destination(destination);
+    default:
+        return false;
+    }
+}
+
 // update mission
 void Copter::ModeAuto::run_autopilot()
 {
