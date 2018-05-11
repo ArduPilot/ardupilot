@@ -188,6 +188,7 @@ public:
     void send_named_float(const char *name, float value) const;
     void send_home() const;
     void send_ekf_origin() const;
+    virtual void send_position_target_global_int() { };
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
