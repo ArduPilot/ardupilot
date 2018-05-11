@@ -509,8 +509,8 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
     const AP_Baro &baro = AP::baro();
     int32_t altPres = INT_MAX;
     if (baro.healthy()) {
-        // Altitude difference between 101325 (Pascals) and current pressure. Result in millimeters
-        altPres = baro.get_altitude_difference(101325, baro.get_pressure()) * 1E3; // convert m to mm;
+        // Altitude difference between sea level pressure and current pressure. Result in millimeters
+        altPres = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure()) * 1E3; // convert m to mm;
     }
 
 
