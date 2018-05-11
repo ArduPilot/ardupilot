@@ -21,7 +21,6 @@
 #include "OpticalFlow_Onboard.h"
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
-#include "RCInput_DSM.h"
 #include "RCInput_Navio2.h"
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
@@ -153,8 +152,6 @@ static RCInput_ZYNQ rcinDriver;
 static RCInput_UDP  rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 static RCInput_UART rcinDriver("/dev/ttyS5");
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-static RCInput_DSM rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCInput_Multi rcinDriver{2, new RCInput_SBUS, new RCInput_115200("/dev/uart-sumd")};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
@@ -201,8 +198,6 @@ static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(
       /* UEFI with lpss set to PCI */
       "pci0000:00/0000:00:18.6" },
     PCA9685_PRIMARY_ADDRESS), false, 0, MINNOW_GPIO_S5_1);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-static RCOutput_QFLIGHT rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BLDC_I2C_BUS, HAL_RCOUT_DISCO_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
@@ -291,10 +286,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"uartD",         true,  0, 'D'},
         {"uartE",         true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-        {"dsm",           true,  0, 'S'},
-        {"ESC",           true,  0, 'e'},
-#endif
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"module-directory",    true,  0, 'M'},
@@ -328,14 +319,6 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'F':
             uartFDriver.set_device_path(gopt.optarg);
             break;
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-        case 'e':
-            rcoutDriver.set_device_path(gopt.optarg);
-            break;
-        case 'S':
-            rcinDriver.set_device_path(gopt.optarg);
-            break;
-#endif // CONFIG_HAL_BOARD_SUBTYPE
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
             break;
