@@ -16,12 +16,12 @@ public:
     // Constructor
     AP_Mount_STorM32_native(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
-    /* Do not allow copies */
+    // do not allow copies
     AP_Mount_STorM32_native(const AP_Mount_STorM32_native &other) = delete;
     AP_Mount_STorM32_native &operator=(const AP_Mount_STorM32_native&) = delete;
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);    //COMMENT ??????
+    virtual void init(const AP_SerialManager& serial_manager);
 
     // update mount position - should be called periodically
     virtual void update();
@@ -41,11 +41,11 @@ private:
     bool is_failsafe(void);
 
     // interface to STorM32_lib
-    virtual size_t _serial_txspace(void);
-    virtual size_t _serial_write(const uint8_t *buffer, size_t size, uint8_t priority);
-    virtual uint32_t _serial_available(void);
-    virtual int16_t _serial_read(void);
-    uint16_t _rcin_read(uint8_t ch);
+    size_t _serial_txspace(void) override;
+    size_t _serial_write(const uint8_t *buffer, size_t size, uint8_t priority) override;
+    uint32_t _serial_available(void) override;
+    int16_t _serial_read(void) override;
+    uint16_t _rcin_read(uint8_t ch) override;
 
     // internal variables
     AP_HAL::UARTDriver *_uart;
@@ -63,12 +63,6 @@ private:
     };
     uint64_t _task_time_last;
     uint16_t _task_counter;
-
-    // we want to keep that info, the fields are 16 in size, so add one to convert it to string
-    //  _initialised = true indicates that these fields were set
-    char versionstr[16+1];  //COMMENT ??????
-    char namestr[16+1];
-    char boardstr[16+1];
 
     // discovery functions
     void find_gimbal_native(void);

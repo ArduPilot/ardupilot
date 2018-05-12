@@ -14,7 +14,11 @@
 /// Constructor
 STorM32_lib::STorM32_lib()
 {
-    _serial_in.state = SERIALSTATE_IDLE;
+    //these need to be initialized to the following values
+// but doesn't need to be done explicitly, since they are zero
+//    _serial_is_initialised = false;
+//    _storm32link_seq = 0;
+//    _serial_in.state = SERIALSTATE_IDLE;
 }
 
 // determines from the STorM32 state if the gimbal is in a normal operation mode
@@ -85,7 +89,7 @@ void STorM32_lib::send_storm32link_v2(const AP_AHRS_TYPE &ahrs)
     }
 
     tSTorM32LinkV2 t;
-    t.stx = 0xF9;
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x21;
     t.cmd = 0xDA;
     t.seq = _storm32link_seq; _storm32link_seq++;
@@ -243,7 +247,7 @@ void STorM32_lib::send_cmd_sethomelocation(const AP_AHRS_TYPE &ahrs)
     }
 
     tCmdSetHomeTargetLocation t;
-    t.stx = 0xF9; //0xFA; //0xF9 to suppress response
+    t.stx = 0xF9; //0xF9 to suppress response
     t.len = 0x0E;
     t.cmd = 0x17;
     t.latitude = location.lat;
@@ -334,7 +338,11 @@ void STorM32_lib::receive_reset(void)
 
 void STorM32_lib::receive_reset_wflush(void)
 {
-    while (_serial_available() > 0) {
+    //it is claimed a while can't do it, so do a for
+    for (uint32_t i = 0; i < _serial_available(); i++) {
+        _serial_read();
+    }
+    if (_serial_available() > 0) {
         _serial_read();
     }
     _serial_in.state = SERIALSTATE_IDLE;
@@ -345,11 +353,11 @@ void STorM32_lib::receive_reset_wflush(void)
 // call a flush_rx() and receive_reset() to take care of both of that
 void STorM32_lib::do_receive_singlechar(void)
 {
-    uint8_t c;
+    if (_serial_available() <= 0) { //this broadens the use of the function, play it safe
+        return;
+    }
 
-    if (_serial_available() <= 0) { return; } //this should never happen, but play it safe
-
-    c = _serial_read();
+    uint8_t c = _serial_read();
 
     switch (_serial_in.state) {
         case SERIALSTATE_IDLE:
@@ -379,7 +387,7 @@ void STorM32_lib::do_receive_singlechar(void)
             _serial_in.buf[_serial_in.payload_cnt++] = c;
 
             if (_serial_in.payload_cnt >= _serial_in.len + 2) { //do expect always a crc
-              uint16_t crc = 0; //XX ignore crc for the moment
+              uint16_t crc = 0; //ignore crc for the moment
               if (crc == 0) {
                   _serial_in.state = SERIALSTATE_MESSAGE_RECEIVED;
               }
@@ -395,7 +403,8 @@ void STorM32_lib::do_receive_singlechar(void)
 //reads in as many chars as there are there
 void STorM32_lib::do_receive(void)
 {
-    while (_serial_available() > 0) {
+    //it is claimed a while can't do it, so do a for
+    for (uint32_t i = 0; i < _serial_available(); i++) {
         do_receive_singlechar();
     }
 

@@ -27,11 +27,12 @@ public:
     };
     
     bool _serial_is_initialised;
-    virtual size_t _serial_txspace(void){ return 0; }
-    virtual size_t _serial_write(const uint8_t *buffer, size_t size, uint8_t priority){ return 0; }
+
+    virtual size_t _serial_txspace(void) = 0;
+    virtual size_t _serial_write(const uint8_t *buffer, size_t size, uint8_t priority) = 0;
     size_t _serial_write(const uint8_t *buffer, size_t size){ return _serial_write(buffer, size, PRIORITY_DEFAULT); }
-    virtual uint32_t _serial_available(void){ return 0; }
-    virtual int16_t _serial_read(void){ return 0; }
+    virtual uint32_t _serial_available(void) = 0;
+    virtual int16_t _serial_read(void) = 0;
 
     // interface to read the raw receiver values
     virtual uint16_t _rcin_read(uint8_t ch){ return 0; };

@@ -12,7 +12,14 @@ extern const AP_HAL::HAL& hal;
 AP_Mount_STorM32_native::AP_Mount_STorM32_native(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance)
 {
-    _mount_type = AP_Mount::Mount_Type_None; //the mount type will be determined in init()
+    //these need to be initialized to the following values
+// but doesn't need to be done explicitly, since they are zero
+//    _initialised = false;
+//    _armed = false;
+//    _task_time_last = 0;
+//    _task_counter = TASK_SLOT0;
+//    _send_armeddisarmed = false;
+//    _mount_type = AP_Mount::Mount_Type_None; //the mount type will be determined in init()
 
     _bitmask = SEND_STORM32LINK_V2 | SEND_CMD_SETINPUTS | SEND_CMD_DOCAMERA;
 }
@@ -401,14 +408,6 @@ void AP_Mount_STorM32_native::find_gimbal_native(void)
                 // receive GETVERSIONSTR response
                 do_receive();
                 if (message_received() && (_serial_in.cmd == 0x02)) {
-                    for (uint16_t n=0;n<16;n++) {
-                        versionstr[n] = _serial_in.getversionstr.versionstr[n];
-                    }
-                    versionstr[16] = '\0';
-                    for (uint16_t n=0;n<16;n++) {
-                        boardstr[n] = _serial_in.getversionstr.boardstr[n];
-                    }
-                    boardstr[16] = '\0';
                     _task_counter = TASK_SLOT0;
                     _initialised = true;
                     return; //done, get out of here
