@@ -1,5 +1,9 @@
 APMrover2 Release Notes:
 ========================
+Rover 3.3.1-rc2 12-May-2018
+Changes from 3.3.1-rc1:
+1) Bug fix use of ATC_STR_RAT_MAX to limit maximum turn rate
+--------------------------------
 Rover V3.3.1-rc1 09-May-2018
 Changes from 3.3.1-rc1:
 1) Vectored Thrust to improve attitude control for boats with rotating motors
