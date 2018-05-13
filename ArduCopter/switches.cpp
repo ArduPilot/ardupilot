@@ -635,17 +635,20 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
 
         case AUXSW_INVERTED:
 #if FRAME_CONFIG == HELI_FRAME
-            switch (ch_flag) {
-            case AUX_SWITCH_HIGH:
-                motors->set_inverted_flight(true);
-                attitude_control->set_inverted_flight(true);
-                heli_flags.inverted_flight = true;
-                break;
-            case AUX_SWITCH_LOW:
-                motors->set_inverted_flight(false);
-                attitude_control->set_inverted_flight(false);
-                heli_flags.inverted_flight = false;
-                break;
+            // inverted flight option is disabled for heli single and dual frames
+            if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_QUAD) {
+                switch (ch_flag) {
+                case AUX_SWITCH_HIGH:
+                    motors->set_inverted_flight(true);
+                    attitude_control->set_inverted_flight(true);
+                    heli_flags.inverted_flight = true;
+                    break;
+                case AUX_SWITCH_LOW:
+                    motors->set_inverted_flight(false);
+                    attitude_control->set_inverted_flight(false);
+                    heli_flags.inverted_flight = false;
+                    break;
+                }
             }
 #endif
             break;
