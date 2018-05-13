@@ -189,8 +189,6 @@ public:
     inline   uint32_t micros() {    return _micros(); }
     
     inline void register_timer_process(AP_HAL::MemberProc proc) { _register_timer_process(proc, 1000); }
-    inline void suspend_timer_procs(){} // nothing to do in multitask 
-    inline void resume_timer_procs() {}
 
     void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms) override;
     static void  _register_io_process(Handler h, Revo_IO_Flags flags);
