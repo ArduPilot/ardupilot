@@ -24,6 +24,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
                                    AP_Proximity::Proximity_State &_state) :
+    _distance_upward(-1),
     AP_Proximity_Backend(_frontend, _state)
 {
 }
@@ -41,7 +42,7 @@ void AP_Proximity_RangeFinder::update(void)
     uint32_t now = AP_HAL::millis();
 
     // look through all rangefinders
-    for (uint8_t i=0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i < rngfnd->num_sensors(); i++) {
         AP_RangeFinder_Backend *sensor = rngfnd->get_backend(i);
         if (sensor == nullptr) {
             continue;
@@ -84,8 +85,7 @@ void AP_Proximity_RangeFinder::update(void)
 // get distance upwards in meters. returns true on success
 bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
 {
-    if ((_last_upward_update_ms != 0) &&
-        (AP_HAL::millis() - _last_upward_update_ms <= PROXIMITY_RANGEFIDER_TIMEOUT_MS) &&
+    if ((AP_HAL::millis() - _last_upward_update_ms <= PROXIMITY_RANGEFIDER_TIMEOUT_MS) &&
         is_positive(_distance_upward)) {
         distance = _distance_upward;
         return true;
