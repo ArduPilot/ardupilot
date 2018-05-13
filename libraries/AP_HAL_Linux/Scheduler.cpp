@@ -208,18 +208,6 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::suspend_timer_procs()
-{
-    if (!_timer_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        printf("Failed to take timer semaphore\n");
-    }
-}
-
-void Scheduler::resume_timer_procs()
-{
-    _timer_semaphore.give();
-}
-
 void Scheduler::_timer_task()
 {
     int i;
@@ -229,19 +217,12 @@ void Scheduler::_timer_task()
     }
     _in_timer_proc = true;
 
-    if (!_timer_semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        printf("Failed to take timer semaphore in %s\n", __PRETTY_FUNCTION__);
-        return;
-    }
-
     // now call the timer based drivers
     for (i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i]) {
             _timer_proc[i]();
         }
     }
-
-    _timer_semaphore.give();
 
     // and the failsafe, if one is setup
     if (_failsafe != nullptr) {
