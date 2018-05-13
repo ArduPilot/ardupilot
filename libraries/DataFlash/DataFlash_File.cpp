@@ -1098,9 +1098,8 @@ bool DataFlash_File::logging_enabled() const
 
 bool DataFlash_File::io_thread_alive() const
 {
-    uint32_t tnow = AP_HAL::millis();
     // if the io thread hasn't had a heartbeat in a full second then it is dead
-    return _io_timer_heartbeat + 1000 > tnow;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 1000;
 }
 
 bool DataFlash_File::logging_failed() const
