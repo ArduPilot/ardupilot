@@ -949,9 +949,9 @@ uint16_t DataFlash_File::start_new_log(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 void DataFlash_File::flush(void)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
-    hal.scheduler->suspend_timer_procs();
     while (_write_fd != -1 && _initialised && !_open_error && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
@@ -960,7 +960,6 @@ void DataFlash_File::flush(void)
         }
         _io_timer();
     }
-    hal.scheduler->resume_timer_procs();
     if (write_fd_semaphore->take(1)) {
         if (_write_fd != -1) {
             ::fsync(_write_fd);
@@ -970,6 +969,11 @@ void DataFlash_File::flush(void)
         _internal_errors++;
     }
 }
+#else
+{
+    // flush is for replay and examples only
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
 void DataFlash_File::_io_timer(void)
