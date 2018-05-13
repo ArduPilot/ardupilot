@@ -58,12 +58,7 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     DataFlash_Backend(front, writer),
     _write_fd(-1),
     _read_fd(-1),
-    _read_fd_log_num(0),
-    _read_offset(0),
-    _write_offset(0),
-    _open_error(false),
     _log_directory(log_directory),
-    _cached_oldest_log(0),
     _writebuf(0),
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
     // V1 gets IO errors with larger than 512 byte writes
@@ -87,7 +82,6 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
 #else
     _writebuf_chunk(4096),
 #endif
-    _last_write_time(0),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
     _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
     _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
