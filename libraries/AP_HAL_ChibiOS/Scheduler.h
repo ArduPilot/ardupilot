@@ -73,8 +73,6 @@ public:
     void     register_timer_process(AP_HAL::MemberProc) override;
     void     register_io_process(AP_HAL::MemberProc) override;
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
-    void     suspend_timer_procs() override;
-    void     resume_timer_procs() override;
     void     reboot(bool hold_in_bootloader) override;
 
     bool     in_main_thread() const override;
@@ -102,7 +100,6 @@ private:
     bool _called_boost;
     bool _priority_boosted;
     
-    volatile bool _timer_suspended;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
@@ -111,8 +108,6 @@ private:
     AP_HAL::MemberProc _io_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
-
-    volatile bool _timer_event_missed;
 
     thread_t* _timer_thread_ctx;
     thread_t* _rcin_thread_ctx;
@@ -131,7 +126,7 @@ private:
 #if HAL_WITH_UAVCAN
     static void _uavcan_thread(void *arg);
 #endif
-    void _run_timers(bool called_from_timer_thread);
+    void _run_timers();
     void _run_io(void);
 };
 #endif

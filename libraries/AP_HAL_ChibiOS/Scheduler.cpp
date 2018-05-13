@@ -222,19 +222,6 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::suspend_timer_procs()
-{
-    _timer_suspended = true;
-}
-
-void Scheduler::resume_timer_procs()
-{
-    _timer_suspended = false;
-    if (_timer_event_missed == true) {
-        _run_timers(false);
-        _timer_event_missed = false;
-    }
-}
 extern void Reset_Handler();
 void Scheduler::reboot(bool hold_in_bootloader)
 {
@@ -252,22 +239,18 @@ void Scheduler::reboot(bool hold_in_bootloader)
     NVIC_SystemReset();
 }
 
-void Scheduler::_run_timers(bool called_from_timer_thread)
+void Scheduler::_run_timers()
 {
     if (_in_timer_proc) {
         return;
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i]) {
-                _timer_proc[i]();
-            }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i]) {
+            _timer_proc[i]();
         }
-    } else if (called_from_timer_thread) {
-        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup
@@ -295,7 +278,7 @@ void Scheduler::_timer_thread(void *arg)
         sched->delay_microseconds(1000);
 
         // run registered timers
-        sched->_run_timers(true);
+        sched->_run_timers();
 
         // process any pending RC output requests
         hal.rcout->timer_tick();
@@ -356,12 +339,10 @@ void Scheduler::_run_io(void)
     }
     _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i]) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i]) {
+            _io_proc[i]();
         }
     }
 
