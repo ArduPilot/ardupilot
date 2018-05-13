@@ -26,7 +26,6 @@ def build(bld):
             'AC_PID',
             'AC_Fence',
             'AC_Avoidance',
-            'AP_Proximity',
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
