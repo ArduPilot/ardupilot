@@ -72,6 +72,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_VisualOdom',
     'AP_BLHeli',
     'AP_ROMFS',
+    'AP_Proximity',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -106,7 +107,6 @@ def ap_common_vehicle_libraries(bld):
 
     if bld.env.DEST_BINFMT == 'pe':
         libraries += [
-            'AP_Proximity',
             'AC_Fence',
         ]
 
