@@ -86,7 +86,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
     while (!HALSITL::Scheduler::_should_reboot) {
         callbacks->loop();
-        HALSITL::Scheduler::_run_io_procs(false);
+        HALSITL::Scheduler::_run_io_procs();
     }
     execv(argv[0], argv);
     AP_HAL::panic("PANIC: REBOOT FAILED");
