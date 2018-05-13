@@ -221,6 +221,13 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         if (!copter.motors->parameter_check(display_failure)) {
             return false;
         }
+        // Inverted flight feature disabled for Heli Single and Dual frames
+        if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD && (copter.g.ch7_option == 43 || copter.g.ch8_option == 43 || copter.g.ch9_option == 43 || copter.g.ch10_option == 43 || copter.g.ch11_option == 43 || copter.g.ch12_option == 43)) {
+            if (display_failure) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Inverted flight option not supported");
+            }
+            return false;
+        }
         #endif // HELI_FRAME
 
         // check for missing terrain data
