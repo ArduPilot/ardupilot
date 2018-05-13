@@ -401,7 +401,7 @@ void AP_Airspeed::read(void)
 #if 1
     // debugging until we get MAVLink support for 2nd airspeed sensor
     if (enabled(1)) {
-        mavlink_msg_named_value_float_send(MAVLINK_COMM_0, AP_HAL::millis(), "AS2", get_airspeed(1));
+        gcs().send_named_float("AS2", get_airspeed(1));
     }
 #endif
 
