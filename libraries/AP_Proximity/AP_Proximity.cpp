@@ -175,8 +175,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
 };
 
 AP_Proximity::AP_Proximity(AP_SerialManager &_serial_manager) :
-    primary_instance(0),
-    num_instances(0),
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
