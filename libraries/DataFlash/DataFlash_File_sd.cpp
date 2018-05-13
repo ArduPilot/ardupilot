@@ -46,18 +46,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     DataFlash_Backend(front, writer),
     _write_fd(File()),
     _read_fd(File()),
-    _read_fd_log_num(0),
-    _read_offset(0),
-    _write_offset(0),
-    _open_error(false),
     _log_directory(log_directory),
-    _cached_oldest_log(0),
-    _last_oldest_log(0),
     _writebuf(0),
-    _writebuf_chunk(4096),
-    _last_write_time(0),
-    has_data(false),
-    _busy(false)
+    _writebuf_chunk(4096)
 {}
 
 
@@ -94,7 +85,7 @@ void DataFlash_File::Init()
         if (!SD.mkdir(_log_directory)) {
             
             printf("Failed to create log directory %s: %s\n", _log_directory, SD.strError(SD.lastError));
-            gcs().send_text(MAV_SEVERITY_WARNING,"Failed to create log directory %s: %s\n", _log_directory, SD.strError(SD.lastError));
+            gcs().send_text(MAV_SEVERITY_WARNING,"Failed to create log directory %s: %s", _log_directory, SD.strError(SD.lastError));
             _log_directory="0:";
         }
     }
@@ -313,7 +304,7 @@ void DataFlash_File::Prep_MinSpace()
 #elif defined(BOARD_SDCARD_CS_PIN)
                 if(hal_param_helper->_sd_format){
                     printf("error getting free space, formatting!\n");
-                    gcs().send_text(MAV_SEVERITY_WARNING,"error getting free space, formatting!\n");
+                    gcs().send_text(MAV_SEVERITY_WARNING,"error getting free space, formatting!");
                     SD.format(_log_directory);
                     return;
                 }
@@ -899,7 +890,7 @@ void DataFlash_File::_io_timer(void)
     if (nwritten <= 0) {
         FRESULT err=SD.lastError;
         printf("\nLog write %ld bytes fails: %s\n",nbytes, SD.strError(err));
-        gcs().send_text(MAV_SEVERITY_WARNING,"Log write %ld bytes fails: %s\n",nbytes, SD.strError(err));
+        gcs().send_text(MAV_SEVERITY_WARNING,"Log write %ld bytes fails: %s",nbytes, SD.strError(err));
 //        stop_logging();
         _write_fd.close();
 #if defined(BOARD_DATAFLASH_FATFS)
