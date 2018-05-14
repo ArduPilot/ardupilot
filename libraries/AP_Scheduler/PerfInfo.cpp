@@ -18,7 +18,14 @@ void AP::PerfInfo::reset()
     max_time = 0;
     min_time = 0;
     long_running = 0;
-    log_dropped = DataFlash_Class::instance()->num_dropped();
+
+    DataFlash_Class *dataflash_perf = DataFlash_Class::instance();
+    if (dataflash_perf == nullptr) {
+        log_dropped = 0xFFFFFFFF;
+    } else {
+        log_dropped = dataflash_perf->num_dropped();
+    }
+
     sigma_time = 0;
     sigmasquared_time = 0;
 }
