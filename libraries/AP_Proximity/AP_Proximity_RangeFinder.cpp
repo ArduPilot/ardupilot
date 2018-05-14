@@ -24,8 +24,8 @@ extern const AP_HAL::HAL& hal;
 
 AP_Proximity_RangeFinder::AP_Proximity_RangeFinder(AP_Proximity &_frontend,
                                    AP_Proximity::Proximity_State &_state) :
-    _distance_upward(-1),
-    AP_Proximity_Backend(_frontend, _state)
+    AP_Proximity_Backend(_frontend, _state),
+    _distance_upward(-1)
 {
 }
 

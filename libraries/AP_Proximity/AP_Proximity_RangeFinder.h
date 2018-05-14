@@ -17,7 +17,7 @@ public:
 
     // get maximum and minimum distances (in meters) of sensor
     float distance_max() const { return _distance_max; }
-    float distance_min() const { return _distance_min; };
+    float distance_min() const { return _distance_min; }
 
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const;
