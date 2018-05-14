@@ -69,62 +69,52 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
                                            const Vector3f &position,
                                            const Quaternion &attitude)
 {
-    const uint32_t now = AP_HAL::millis();
+    const uint64_t now_us = AP_HAL::micros64();
 
-    if (now - vicon.last_observation_ms < vicon.observation_interval_ms) {
+    if (time_offset_us == 0) {
+        time_offset_us = (unsigned(random()) % 7000) * 1000000ULL;
+        printf("time_offset_us %ull\n", time_offset_us);
+    }
+    
+    if (time_send_us && now_us >= time_send_us) {
+        uint8_t msgbuf[300];
+        uint16_t msgbuf_len = mavlink_msg_to_send_buffer(msgbuf, &obs_msg);
+
+        if (::write(fd_my_end, (void*)&msgbuf, msgbuf_len) != msgbuf_len) {
+            ::fprintf(stderr, "Vicon: write failure\n");
+        }
+        time_send_us = 0;
+    }
+    if (time_send_us != 0) {
+        // waiting for the last msg to go out
         return;
     }
 
-    obs_elements new_obs = {
-        now,
-        position,
-        attitude
-    };
-    vicon.last_observation_ms = now;
-
-    obs_elements observation;
-    if (_sitl->vicon_observation_history_length == 0) {
-        // no delay
-        observation = new_obs;
-    } else {
-        vicon.observation_history->push(new_obs);
-
-        if (vicon.observation_history->space() != 0) {
-            ::fprintf(stderr, "Insufficient delay\n");
-            return;
-        }
-        if (!vicon.observation_history->pop(observation)) {
-            abort();
-        }
+    if (now_us - last_observation_usec < 10000) {
+        // create observations at 10ms
+        return;
     }
 
     float roll;
     float pitch;
     float yaw;
-    observation.attitude.to_euler(roll, pitch, yaw);
+    attitude.to_euler(roll, pitch, yaw);
 
-    mavlink_message_t msg;
-    const uint16_t n = mavlink_msg_vicon_position_estimate_pack_chan(
+    mavlink_msg_vicon_position_estimate_pack_chan(
         system_id,
         component_id,
         mavlink_ch,
-        &msg,
-        observation.time_ms*1000,
-        observation.position.x,
-        observation.position.y,
-        observation.position.z,
+        &obs_msg,
+        now_us + time_offset_us,
+        position.x,
+        position.y,
+        position.z,
         roll,
         pitch,
         yaw);
 
-    uint8_t msgbuf[512];
-    uint16_t msgbuf_len = mavlink_msg_to_send_buffer(msgbuf, &msg);
-
-    // ::fprintf(stderr, "Vicon: %u: writing pos=(%03.03f %03.03f %03.03f) att=(%01.03f %01.03f %01.03f)\n", observation.time_ms, observation.position.x, observation.position.y, observation.position.z, roll, pitch, yaw);
-    if (::write(fd_my_end, (void*)&msgbuf, msgbuf_len) != n) {
-        ::fprintf(stderr, "Vicon: write failure\n");
-        // abort();
-    }
+    uint32_t delay_ms = 25 + unsigned(random()) % 300;
+    time_send_us = now_us + delay_ms * 1000UL;
 }
 
 bool Vicon::init_sitl_pointer()
@@ -133,18 +123,6 @@ bool Vicon::init_sitl_pointer()
         _sitl = (SITL *)AP_Param::find_object("SIM_");
         if (_sitl == nullptr) {
             return false;
-        }
-    }
-    if (_sitl->vicon_observation_history_length > 0 &&
-        vicon.observation_history == nullptr) {
-        const uint8_t maxlen = 100;
-        if (_sitl->vicon_observation_history_length > maxlen) {
-            ::fprintf(stderr, "Clamping history length to %u", maxlen);
-            _sitl->vicon_observation_history_length = maxlen;
-        }
-        vicon.observation_history = new ObjectArray<obs_elements>(_sitl->vicon_observation_history_length);
-        if (vicon.observation_history == nullptr) {
-            AP_HAL::panic("Failed to allocate history");
         }
     }
     return true;
