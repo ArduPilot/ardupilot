@@ -24,12 +24,15 @@ using namespace F4Light;
 #include "ring_buffer.h"
 
 #include <inttypes.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/print_vprintf.h>
 #include <AP_HAL_F4Light/AP_HAL_F4Light.h>
 #include <AP_HAL_F4Light/SPIDevice.h>
 
 #define SLAVE_BUILD
+
+// remove some things defined in AP_HAL 
+#undef round
+#define round(x) roundf(x)
 
 #include "osd_core/Defs.h"
 
