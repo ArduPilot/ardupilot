@@ -485,6 +485,12 @@ private:
 
     void lock_channel(mavlink_channel_t chan, bool lock);
 
+    /*
+      correct an offboard timestamp in microseconds to a local time
+      since boot in milliseconds
+     */
+    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec);
+    
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
@@ -503,6 +509,14 @@ private:
         uint32_t last_alternate_ms;
         bool active;
     } alternative;
+
+    // state associated with offboard transport lag correction
+    struct {
+        bool initialised;
+        int64_t link_offset_usec;
+        uint32_t min_sample_counter;
+        int64_t min_sample_us;
+    } lag_correction;
     
 };
 
