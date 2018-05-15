@@ -287,7 +287,7 @@ void AP_Camera::update()
         return;
     }
 
-    if (_max_roll > 0 && labs(ahrs.roll_sensor*1e-2f) > _max_roll) {
+    if (_max_roll > 0 && fabsf(ahrs.roll_sensor*1e-2f) > _max_roll) {
         return;
     }
 
