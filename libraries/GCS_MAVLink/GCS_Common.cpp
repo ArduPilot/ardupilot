@@ -600,11 +600,12 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
 
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
     va_list arg_list;
     va_start(arg_list, fmt);
     hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
     va_end(arg_list);
+    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
     gcs().send_statustext(severity, (1<<chan), text);
 }
 
@@ -1538,6 +1539,13 @@ void GCS_MAVLINK::send_vibration() const
         ins.get_accel_clip_count(0),
         ins.get_accel_clip_count(1),
         ins.get_accel_clip_count(2));
+}
+
+void GCS_MAVLINK::send_named_float(const char *name, float value) const
+{
+    char float_name[MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN+1] {};
+    strncpy(float_name, name, MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN);
+    mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
 }
 
 void GCS_MAVLINK::send_home(const Location &home) const
