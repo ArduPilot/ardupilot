@@ -183,6 +183,7 @@ public:
     void send_autopilot_version() const;
     void send_local_position() const;
     void send_vibration() const;
+    void send_named_float(const char *name, float value) const;
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
     void send_servo_output_raw(bool hil);
@@ -553,6 +554,7 @@ public:
     virtual uint8_t num_gcs() const = 0;
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
+    void send_named_float(const char *name, float value) const;
     void send_home(const Location &home) const;
     void send_ekf_origin(const Location &ekf_origin) const;
 
