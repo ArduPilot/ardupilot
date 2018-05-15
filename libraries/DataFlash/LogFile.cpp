@@ -1307,7 +1307,7 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 }
 
 // Write a Camera packet
-void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc)
+void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
 {
     int32_t altitude, altitude_rel, altitude_gps;
     if (current_loc.flags.relative_alt) {
@@ -1326,7 +1326,7 @@ void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &
 
     struct log_Camera pkt = {
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
-        time_us     : AP_HAL::micros64(),
+        time_us     : timestamp_us?timestamp_us:AP_HAL::micros64(),
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
@@ -1342,15 +1342,15 @@ void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &
 }
 
 // Write a Camera packet
-void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const Location &current_loc)
+void DataFlash_Class::Log_Write_Camera(const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
 {
-    Log_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, current_loc);
+    Log_Write_CameraInfo(LOG_CAMERA_MSG, ahrs, current_loc, timestamp_us);
 }
 
 // Write a Trigger packet
 void DataFlash_Class::Log_Write_Trigger(const AP_AHRS &ahrs, const Location &current_loc)
 {
-    Log_Write_CameraInfo(LOG_TRIGGER_MSG, ahrs, current_loc);
+    Log_Write_CameraInfo(LOG_TRIGGER_MSG, ahrs, current_loc, 0);
 }
 
 // Write an attitude packet
