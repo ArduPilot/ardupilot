@@ -695,7 +695,7 @@ class AutoTest(ABC):
         try:
             function()
         except Exception as e:
-            self.progress('FAILED: "%s": %s' % (desc, type(e).__name__))
+            self.progress('FAILED: "%s": %s' % (desc, repr(e)))
             self.fail_list.append((desc, e))
             return
         self.progress('PASSED: "%s"' % desc)
