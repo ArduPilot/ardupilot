@@ -587,9 +587,9 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 // verify_surface - returns true if surface procedure has been completed
@@ -702,9 +702,9 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 #if NAV_GUIDED == ENABLED
