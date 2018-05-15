@@ -86,7 +86,8 @@ else
     SITL_PKGS+=" python-wxgtk2.8"
 fi
 
-if apt-cache search realpath; then
+RP=$(apt-cache search -n '^realpath$')
+if -n "$RP"; then
     SITL_PKGS+=" realpath"
 fi
 
