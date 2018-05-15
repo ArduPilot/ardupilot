@@ -11,7 +11,7 @@ PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # python-wxgtk packages are added to SITL_PKGS below
-SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath xterm"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm"
 ASSUME_YES=false
 QUIET=false
 
@@ -84,6 +84,10 @@ if apt-cache search python-wxgtk3.0 | grep wx; then
 else
     # we only support back to trusty:
     SITL_PKGS+=" python-wxgtk2.8"
+fi
+
+if apt-cache search realpath; then
+    SITL_PKGS+=" realpath"
 fi
 
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
