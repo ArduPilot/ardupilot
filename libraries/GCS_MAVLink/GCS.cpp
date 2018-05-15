@@ -29,6 +29,11 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
         }                                            \
     } while (0)
 
+void GCS::send_named_float(const char *name, float value) const
+{
+    FOR_EACH_ACTIVE_CHANNEL(send_named_float(name, value));
+}
+
 void GCS::send_home(const Location &home) const
 {
     FOR_EACH_ACTIVE_CHANNEL(send_home(home));
