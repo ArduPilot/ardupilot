@@ -104,5 +104,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  # 18.04 LTS , bleeding edge.
+  config.vm.define "bionic64", autostart: false do |bionic64|
+    config.vm.box = "ubuntu/bionic64"
+    config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (bionic64)"
+      vb.gui = true
+    end
+  end
+
 end
 
