@@ -318,6 +318,7 @@ class AutoTestCopter(AutoTest):
         """Return, land."""
         self.progress("# Enter RTL")
         self.mavproxy.send('switch 3\n')
+        self.set_rc(3, 1500)
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
