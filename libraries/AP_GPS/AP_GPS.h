@@ -148,6 +148,7 @@ public:
         bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
+        uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds

@@ -99,6 +99,7 @@ bool AP_GPS_NMEA::_decode(char c)
         ++_term_number;
         _term_offset = 0;
         _is_checksum_term = c == '*';
+        _sentence_length++;
         return valid_sentence;
 
     case '$': // sentence begin
@@ -107,6 +108,7 @@ bool AP_GPS_NMEA::_decode(char c)
         _sentence_type = _GPS_SENTENCE_OTHER;
         _is_checksum_term = false;
         _gps_data_good = false;
+        _sentence_length = 0;
         return valid_sentence;
     }
 
@@ -116,6 +118,8 @@ bool AP_GPS_NMEA::_decode(char c)
     if (!_is_checksum_term)
         _parity ^= c;
 
+    _sentence_length++;
+    
     return valid_sentence;
 }
 
@@ -252,6 +256,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course    = wrap_360(_new_course*0.01f);
                     make_gps_time(_new_date, _new_time * 10);
+                    set_uart_timestamp(_sentence_length);
                     state.last_gps_time_ms = now;
                     fill_3d_velocity();
                     break;

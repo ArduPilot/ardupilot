@@ -178,6 +178,8 @@ AP_GPS_ERB::_parse_gps(void)
         }
         state.num_sats = _buffer.stat.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_3D) {
+            // use the uart receive time to make packet timestamps more accurate
+            set_uart_timestamp(_payload_length + sizeof(erb_header) + 2);
             state.last_gps_time_ms = AP_HAL::millis();
             state.time_week_ms    = _buffer.stat.time;
             state.time_week       = _buffer.stat.week;

@@ -216,3 +216,14 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
     }
 }
 
+
+/*
+  set a timestamp based on arrival time on uart at current byte,
+  assuming the message started nbytes ago
+*/
+void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
+{
+    if (port) {
+        state.uart_timestamp_ms = port->receive_time_constraint_us(nbytes) / 1000U;
+    }
+}
