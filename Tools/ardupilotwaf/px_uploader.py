@@ -72,6 +72,7 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-3D*',
                   '/dev/serial/by-id/usb-APM*',
                   '/dev/serial/by-id/usb-Radio*',
+                  '/dev/serial/by-id/usb-*_3DR_*',
                   '/dev/tty.usbmodem*']
 
 # Detect python version
