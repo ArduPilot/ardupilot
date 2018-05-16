@@ -158,11 +158,15 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
-    gcs().send_home(temp);
+
+    // check EKF origin has been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        gcs().send_ekf_origin(ekf_origin);
+        ahrs.set_home(temp);
     }
+
+    gcs().send_home();
+    gcs().send_ekf_origin();
 }
 
 void Tracker::arm_servos()
