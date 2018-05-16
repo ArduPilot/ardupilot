@@ -186,8 +186,8 @@ public:
     void send_local_position() const;
     void send_vibration() const;
     void send_named_float(const char *name, float value) const;
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_home() const;
+    void send_ekf_origin() const;
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
@@ -557,8 +557,8 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_home() const;
+    void send_ekf_origin() const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,

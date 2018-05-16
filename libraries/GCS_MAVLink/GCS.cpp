@@ -34,14 +34,14 @@ void GCS::send_named_float(const char *name, float value) const
     FOR_EACH_ACTIVE_CHANNEL(send_named_float(name, value));
 }
 
-void GCS::send_home(const Location &home) const
+void GCS::send_home() const
 {
-    FOR_EACH_ACTIVE_CHANNEL(send_home(home));
+    FOR_EACH_ACTIVE_CHANNEL(send_home());
 }
 
-void GCS::send_ekf_origin(const Location &ekf_origin) const
+void GCS::send_ekf_origin() const
 {
-    FOR_EACH_ACTIVE_CHANNEL(send_ekf_origin(ekf_origin));
+    FOR_EACH_ACTIVE_CHANNEL(send_ekf_origin());
 }
 
 /*
