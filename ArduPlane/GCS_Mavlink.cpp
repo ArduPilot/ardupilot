@@ -1838,8 +1838,3 @@ const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
 {
     return plane.fwver;
 }
-
-void GCS_MAVLINK_Plane::set_ekf_origin(const Location& loc)
-{
-    plane.set_ekf_origin(loc);
-}
