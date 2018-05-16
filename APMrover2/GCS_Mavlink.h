@@ -21,7 +21,6 @@ protected:
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     uint8_t sysid_my_gcs() const override;
 

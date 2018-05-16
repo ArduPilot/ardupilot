@@ -88,32 +88,6 @@ bool Rover::set_home(const Location& loc, bool lock)
     return true;
 }
 
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Rover::set_ekf_origin(const Location& loc)
-{
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
-    }
-
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
-
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
-}
-
 // checks if we should update ahrs/RTL home position from GPS
 void Rover::set_system_time_from_GPS()
 {
