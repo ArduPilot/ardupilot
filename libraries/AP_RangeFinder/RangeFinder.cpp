@@ -33,6 +33,7 @@
 #include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_NMEA.h"
+#include "AP_RangeFinder_Wasp.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -42,7 +43,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-200
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, state[0].type, 0),
 
@@ -165,11 +166,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, state[0].orientation, ROTATION_PITCH_270),
 
+    AP_SUBGROUPVARPTR(drivers[0], "_",  57, RangeFinder, backend_var_info[0]),
+
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-200
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, state[1].type, 0),
 
@@ -283,6 +286,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, state[1].orientation, ROTATION_PITCH_270),
+
+    AP_SUBGROUPVARPTR(drivers[1], "2_", 58, RangeFinder, backend_var_info[1]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -290,7 +295,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-200
     // @User: Advanced
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, state[2].type, 0),
 
@@ -404,6 +409,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, state[2].orientation, ROTATION_PITCH_270),
+
+    AP_SUBGROUPVARPTR(drivers[2], "3_", 59, RangeFinder, backend_var_info[2]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -411,7 +418,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_TYPE
     // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-200
     // @User: Advanced
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, state[3].type, 0),
 
@@ -525,8 +532,10 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, state[3].orientation, ROTATION_PITCH_270),
+
+    AP_SUBGROUPVARPTR(drivers[3], "4_", 60, RangeFinder, backend_var_info[3]),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -720,6 +729,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_NMEA:
         if (AP_RangeFinder_NMEA::detect(serial_manager, serial_instance)) {
             drivers[instance] = new AP_RangeFinder_NMEA(state[instance], serial_manager, serial_instance++);
+            break;
+        }
+    case RangeFinder_TYPE_WASP:
+        if (AP_RangeFinder_Wasp::detect(serial_manager, serial_instance)) {
+            drivers[instance] = new AP_RangeFinder_Wasp(state[instance], serial_manager, serial_instance++);
         }
         break;
     default:
