@@ -17,6 +17,7 @@
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
+#include <DataFlash/DataFlash.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -456,6 +457,28 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
+
+// log ahrs home and EKF origin to dataflash
+void AP_AHRS::Log_Write_Home_And_Origin()
+{
+    DataFlash_Class *df = DataFlash_Class::instance();
+    if (df == nullptr) {
+        return;
+    }
+#if AP_AHRS_NAVEKF_AVAILABLE
+    // log ekf origin if set
+    Location ekf_orig;
+    if (get_origin(ekf_orig)) {
+        df->Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+    }
+#endif
+
+    // log ahrs home if set
+    if (home_is_set()) {
+        df->Log_Write_Origin(LogOriginType::ahrs_home, _home);
+    }
+}
+
 
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
