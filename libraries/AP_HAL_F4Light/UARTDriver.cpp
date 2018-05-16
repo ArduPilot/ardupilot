@@ -49,6 +49,8 @@ void UARTDriver::begin(uint32_t baud, uint32_t bmode) {
     if(_initialized &&  hal_param_helper->_uart_sbus && _usart_device==UARTS[hal_param_helper->_uart_sbus]) return; //already used as SBUS
 #endif
 
+    _baudrate = baud;
+
     uint32_t mode=0;
 
     if(_usart_device->tx_pin < BOARD_NR_GPIO_PINS){
@@ -74,6 +76,8 @@ void UARTDriver::begin(uint32_t baud, uint32_t bmode) {
                 UART_Word_8b, bmode & 0xffff /*USART_StopBits_1*/ , (bmode>>16) & 0xffff /* USART_Parity_No*/, mode, UART_HardwareFlowControl_None);
     usart_enable(_usart_device);
 
+    usart_set_callback(_usart_device, Scheduler::get_handler(FUNCTOR_BIND_MEMBER(&UARTDriver::update_timestamp, void)) );
+    
     _initialized = true;
 }
 
@@ -138,5 +142,24 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     }
     return sent;
 }
+
+void UARTDriver::update_timestamp(){  // called from ISR
+    _time_idx ^= 1; 
+    _receive_timestamp[_time_idx] = AP_HAL::micros(); 
+}
+
+// this is mostly a 
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const {
+
+    // timestamp is 32 bits so read is atomic, in worst case we get 2nd timestamp
+    uint32_t time_from_last_byte = AP_HAL::micros() -  _receive_timestamp[_time_idx];
+    uint32_t transport_time_us = 0;
+    if (_baudrate > 0) {
+        // assume 10 bits per byte
+        transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+    }
+    return AP_HAL::micros64() - (time_from_last_byte + transport_time_us);
+}
+
 
 #endif // CONFIG_HAL_BOARD
