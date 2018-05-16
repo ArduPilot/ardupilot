@@ -72,7 +72,7 @@ bool Rover::set_home(const Location& loc, bool lock)
     mission.write_home_to_storage();
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
     gcs().send_home(loc);
@@ -108,7 +108,7 @@ void Rover::set_ekf_origin(const Location& loc)
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
     gcs().send_ekf_origin(loc);
@@ -148,7 +148,7 @@ void Rover::update_home()
         if (ahrs.get_position(loc)) {
             if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
                 ahrs.set_home(loc);
-                Log_Write_Home_And_Origin();
+                ahrs.Log_Write_Home_And_Origin();
                 gcs().send_home(gps.location());
             }
         }
