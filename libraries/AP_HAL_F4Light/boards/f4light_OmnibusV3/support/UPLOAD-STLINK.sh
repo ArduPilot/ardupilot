@@ -5,5 +5,5 @@
 
 #bare metal binary
 
-/usr/local/stlink/st-flash  --reset write ../../../../../ArduCopter/f4light_AirbotV2.bin 0x08010000 && \
+/usr/local/stlink/st-flash  --reset write ../../../../../ArduCopter/f4light_OmnibusV3.bin 0x08010000 && \
 /usr/local/stlink/st-util -m
