@@ -193,7 +193,7 @@ private:
         uint32_t scanmode1;
     };
     struct PACKED ubx_nav_posllh {
-        uint32_t time;                                  // GPS msToW
+        uint32_t itow;                                  // GPS msToW
         int32_t longitude;
         int32_t latitude;
         int32_t altitude_ellipsoid;
@@ -202,7 +202,7 @@ private:
         uint32_t vertical_accuracy;
     };
     struct PACKED ubx_nav_status {
-        uint32_t time;                                  // GPS msToW
+        uint32_t itow;                                  // GPS msToW
         uint8_t fix_type;
         uint8_t fix_status;
         uint8_t differential_status;
@@ -211,7 +211,7 @@ private:
         uint32_t uptime;                                // milliseconds
     };
     struct PACKED ubx_nav_dop {
-        uint32_t time;                                  // GPS msToW
+        uint32_t itow;                                  // GPS msToW
         uint16_t gDOP;
         uint16_t pDOP;
         uint16_t tDOP;
@@ -221,7 +221,7 @@ private:
         uint16_t eDOP;
     };
     struct PACKED ubx_nav_solution {
-        uint32_t time;
+        uint32_t itow;
         int32_t time_nsec;
         uint16_t week;
         uint8_t fix_type;
@@ -263,7 +263,7 @@ private:
         uint8_t reserved2[4]; 
     };
     struct PACKED ubx_nav_velned {
-        uint32_t time;                                  // GPS msToW
+        uint32_t itow;                                  // GPS msToW
         int32_t ned_north;
         int32_t ned_east;
         int32_t ned_down;
@@ -549,6 +549,9 @@ private:
     
     bool havePvtMsg;
 
+    // itow from previous message
+    uint32_t _last_itow;
+
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
@@ -561,6 +564,7 @@ private:
     void        _request_version(void);
     void        _save_cfg(void);
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
+    void        _check_new_itow(uint32_t itow);
 
     void unexpected_message(void);
     void log_mon_hw(void);

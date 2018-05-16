@@ -284,6 +284,7 @@ AP_GPS_SBF::process_message(void)
             state.time_week_ms = (uint32_t)(temp.TOW);
         }
 
+        set_uart_timestamp(sbf_msg.length);
         state.last_gps_time_ms = AP_HAL::millis();
 
         // Update velocity state (don't use −2·10^10)

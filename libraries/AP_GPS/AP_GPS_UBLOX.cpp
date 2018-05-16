@@ -833,7 +833,8 @@ AP_GPS_UBLOX::_parse_gps(void)
             _unconfigured_messages |= CONFIG_RATE_POSLLH;
             break;
         }
-        _last_pos_time        = _buffer.posllh.time;
+        _check_new_itow(_buffer.posllh.itow);
+        _last_pos_time        = _buffer.posllh.itow;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
         state.location.alt    = _buffer.posllh.altitude_msl / 10;
@@ -883,6 +884,7 @@ AP_GPS_UBLOX::_parse_gps(void)
     case MSG_DOP:
         Debug("MSG_DOP");
         noReceivedHdop = false;
+        _check_new_itow(_buffer.dop.itow);
         state.hdop        = _buffer.dop.hDOP;
         state.vdop        = _buffer.dop.vDOP;
 #if UBLOX_FAKE_3DLOCK
@@ -894,6 +896,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_SOL fix_status=%u fix_type=%u",
               _buffer.solution.fix_status,
               _buffer.solution.fix_type);
+        _check_new_itow(_buffer.solution.itow);
         if (havePvtMsg) {
             state.time_week = _buffer.solution.week;
             break;
@@ -920,7 +923,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.num_sats    = _buffer.solution.satellites;
         if (next_fix >= AP_GPS::GPS_OK_FIX_2D) {
             state.last_gps_time_ms = AP_HAL::millis();
-            state.time_week_ms    = _buffer.solution.time;
+            state.time_week_ms    = _buffer.solution.itow;
             state.time_week       = _buffer.solution.week;
         }
 #if UBLOX_FAKE_3DLOCK
@@ -936,6 +939,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_PVT");
         havePvtMsg = true;
         // position
+        _check_new_itow(_buffer.pvt.itow);
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
@@ -1023,7 +1027,8 @@ AP_GPS_UBLOX::_parse_gps(void)
             _unconfigured_messages |= CONFIG_RATE_VELNED;
             break;
         }
-        _last_vel_time         = _buffer.velned.time;
+        _check_new_itow(_buffer.velned.itow);
+        _last_vel_time         = _buffer.velned.itow;
         state.ground_speed     = _buffer.velned.speed_2d*0.01f;          // m/s
         state.ground_course    = wrap_360(_buffer.velned.heading_2d * 1.0e-5f);       // Heading 2D deg * 100000
         state.have_vertical_velocity = true;
@@ -1043,6 +1048,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         {
         Debug("MSG_NAV_SVINFO\n");
         static const uint8_t HardwareGenerationMask = 0x07;
+        _check_new_itow(_buffer.svinfo_header.itow);
         _hardware_generation = _buffer.svinfo_header.globalFlags & HardwareGenerationMask;
         switch (_hardware_generation) {
             case UBLOX_5:
@@ -1327,5 +1333,13 @@ void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
                                            state.instance+1,
                                            _version.hwVersion,
                                            _version.swVersion);
+    }
+}
+
+void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)
+{
+    if (itow != _last_itow) {
+        _last_itow = itow;
+        set_uart_timestamp(_payload_length + sizeof(ubx_header) + 2);
     }
 }

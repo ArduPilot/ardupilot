@@ -603,7 +603,7 @@ void AP_GPS::update_instance(uint8_t instance)
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    const uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = AP_HAL::millis();
 
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
@@ -632,6 +632,12 @@ void AP_GPS::update_instance(uint8_t instance)
             data_should_be_logged = true;
         }
     } else {
+        if (state[instance].uart_timestamp_ms != 0) {
+            // set the timestamp for this messages based on
+            // set_uart_timestamp() in backend, if available
+            tnow = state[instance].uart_timestamp_ms;
+            state[instance].uart_timestamp_ms = 0;
+        }
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
