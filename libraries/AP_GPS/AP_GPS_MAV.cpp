@@ -22,7 +22,6 @@
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    _new_data = false;
 }
 
 // Reading does nothing in this class; we simply return whether or not
