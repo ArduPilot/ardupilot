@@ -33,12 +33,7 @@ const uint8_t AP_GPS_SIRF::_initialisation_blob[] = {
 };
 
 AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _gather(false),
-    _payload_length(0),
-    _payload_counter(0),
-    _msg_id(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     gps.send_blob_start(state.instance, (const char *)_initialisation_blob, sizeof(_initialisation_blob));
 }
