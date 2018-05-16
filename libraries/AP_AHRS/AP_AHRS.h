@@ -459,6 +459,8 @@ public:
     // returns the inertial navigation origin in lat/lon/alt
     virtual bool get_origin(Location &ret) const { return false; }
 
+    void Log_Write_Home_And_Origin();
+
     // return true if the AHRS object supports inertial navigation,
     // with very accurate position and velocity
     virtual bool have_inertial_nav(void) const {
