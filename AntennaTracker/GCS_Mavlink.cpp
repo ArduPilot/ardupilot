@@ -768,11 +768,6 @@ const AP_FWVersion &GCS_MAVLINK_Tracker::get_fwver() const
     return tracker.fwver;
 }
 
-void GCS_MAVLINK_Tracker::set_ekf_origin(const Location& loc)
-{
-    tracker.set_ekf_origin(loc);
-}
-
 /* dummy methods to avoid having to link against AP_Camera */
 void AP_Camera::control_msg(mavlink_message_t const*) {}
 void AP_Camera::configure(float, float, float, float, float, float, float) {}
