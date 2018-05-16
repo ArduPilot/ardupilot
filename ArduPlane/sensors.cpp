@@ -73,7 +73,7 @@ void Plane::read_airspeed(void)
     if (airspeed.enabled()) {
         airspeed.read();
         if (should_log(MASK_LOG_IMU)) {
-            Log_Write_Airspeed();
+            DataFlash.Log_Write_Airspeed(airspeed);
         }
 
         // supply a new temperature to the barometer from the digital
