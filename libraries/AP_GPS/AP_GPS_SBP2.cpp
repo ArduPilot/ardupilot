@@ -288,6 +288,7 @@ AP_GPS_SBP2::_attempt_state_update()
         state.time_week_ms      = last_vel_ned.tow;
         state.hdop              = last_dops.hdop;
         state.vdop              = last_dops.vdop;
+        set_uart_timestamp(parser_state.msg_len);
         state.last_gps_time_ms = now;
 
         //
