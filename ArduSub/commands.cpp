@@ -98,8 +98,8 @@ bool Sub::set_home(const Location& loc, bool lock)
     ahrs.Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
-    gcs().send_home(loc);
-    gcs().send_ekf_origin(loc);
+    gcs().send_home();
+    gcs().send_ekf_origin();
 
     // return success
     return true;
