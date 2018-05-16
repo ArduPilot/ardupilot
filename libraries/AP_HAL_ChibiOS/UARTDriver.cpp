@@ -970,12 +970,12 @@ void UARTDriver::receive_timestamp_update(void)
   
   A return value of zero means the HAL does not support this API
 */
-uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
     if (_baudrate > 0 && !sdef.is_usb) {
         // assume 10 bits per byte. For USB we assume zero transport delay
-        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * (nbytes + available());
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;
