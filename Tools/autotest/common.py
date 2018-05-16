@@ -327,6 +327,10 @@ class AutoTest(ABC):
         self.progress("Failed to send RC commands to channel %s" % str(chan))
         raise SetRCTimeout()
 
+    def armed(self):
+        '''Return true if vehicle is armed and safetyoff'''
+        return self.mav.motors_armed();
+
     def arm_vehicle(self):
         """Arm vehicle with mavlink arm message."""
         self.mavproxy.send('arm throttle\n')
@@ -691,7 +695,7 @@ class AutoTest(ABC):
         try:
             function()
         except Exception as e:
-            self.progress('FAILED: "%s": %s' % (desc, type(e).__name__))
+            self.progress('FAILED: "%s": %s' % (desc, repr(e)))
             self.fail_list.append((desc, e))
             return
         self.progress('PASSED: "%s"' % desc)

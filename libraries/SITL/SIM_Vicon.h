@@ -52,18 +52,16 @@ private:
     int fd_their_end;
     int fd_my_end;
 
+    uint64_t last_observation_usec;
+    uint64_t time_send_us;
+    uint64_t time_offset_us;
+    mavlink_message_t obs_msg;
+
     struct obs_elements {
         uint32_t    time_ms;        // measurement timestamp (msec)
         Vector3f    position;
         Quaternion  attitude;
     };
-
-    struct {
-        const uint16_t observation_interval_ms = 20;
-        // delay results by some multiplier of the observation_interval:
-        ObjectArray<obs_elements> *observation_history;
-        uint32_t last_observation_ms;
-    } vicon;
 
     void update_vicon_position_estimate(const Location &loc,
                                         const Vector3f &position,
