@@ -1388,8 +1388,3 @@ const AP_FWVersion &GCS_MAVLINK_Rover::get_fwver() const
 {
     return rover.fwver;
 }
-
-void GCS_MAVLINK_Rover::set_ekf_origin(const Location& loc)
-{
-    rover.set_ekf_origin(loc);
-}
