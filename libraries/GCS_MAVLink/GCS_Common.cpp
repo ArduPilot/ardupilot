@@ -1566,32 +1566,44 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
     mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
 }
 
-void GCS_MAVLINK::send_home(const Location &home) const
+void GCS_MAVLINK::send_home() const
 {
-    if (HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
-        const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-        mavlink_msg_home_position_send(
-            chan,
-            home.lat,
-            home.lng,
-            home.alt * 10,
-            0.0f, 0.0f, 0.0f,
-            q,
-            0.0f, 0.0f, 0.0f,
-            AP_HAL::micros64());
+    if (!HAVE_PAYLOAD_SPACE(chan, HOME_POSITION)) {
+        return;
     }
+    if (!AP::ahrs().home_is_set()) {
+        return;
+    }
+
+    Location home = AP::ahrs().get_home();
+
+    const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    mavlink_msg_home_position_send(
+        chan,
+        home.lat,
+        home.lng,
+        home.alt * 10,
+        0.0f, 0.0f, 0.0f,
+        q,
+        0.0f, 0.0f, 0.0f,
+        AP_HAL::micros64());
 }
 
-void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
+void GCS_MAVLINK::send_ekf_origin() const
 {
-    if (HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
-        mavlink_msg_gps_global_origin_send(
-            chan,
-            ekf_origin.lat,
-            ekf_origin.lng,
-            ekf_origin.alt * 10,
-            AP_HAL::micros64());
+    if (!HAVE_PAYLOAD_SPACE(chan, GPS_GLOBAL_ORIGIN)) {
+        return;
     }
+    Location ekf_origin;
+    if (!AP::ahrs().get_origin(ekf_origin)) {
+        return;
+    }
+    mavlink_msg_gps_global_origin_send(
+        chan,
+        ekf_origin.lat,
+        ekf_origin.lng,
+        ekf_origin.alt * 10,
+        AP_HAL::micros64());
 }
 
 /*
@@ -1920,7 +1932,7 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
     ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
-    send_ekf_origin(loc);
+    send_ekf_origin();
 }
 
 void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
@@ -2482,12 +2494,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     if (!AP::ahrs().home_is_set()) {
         return MAV_RESULT_FAILED;
     }
-    send_home(AP::ahrs().get_home());
+    send_home();
+    send_ekf_origin();
 
-    Location ekf_origin;
-    if (AP::ahrs().get_origin(ekf_origin)) {
-        send_ekf_origin(ekf_origin);
-    }
     return MAV_RESULT_ACCEPTED;
 }
 
