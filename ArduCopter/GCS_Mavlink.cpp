@@ -1815,9 +1815,3 @@ const AP_FWVersion &GCS_MAVLINK_Copter::get_fwver() const
 {
     return copter.fwver;
 }
-
-
-void GCS_MAVLINK_Copter::set_ekf_origin(const Location& loc)
-{
-    copter.set_ekf_origin(loc);
-}
