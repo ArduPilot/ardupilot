@@ -24,7 +24,8 @@
 #include <AP_Common/AP_FWVersion.h>
 
 // check if a message will fit in the payload space available
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
@@ -473,7 +474,8 @@ private:
                                                      const float z,
                                                      const float roll,
                                                      const float pitch,
-                                                     const float yaw);
+                                                     const float yaw,
+                                                     const uint16_t payload_size);
     void log_vision_position_estimate_data(const uint64_t usec,
                                            const float x,
                                            const float y,
@@ -489,7 +491,7 @@ private:
       correct an offboard timestamp in microseconds to a local time
       since boot in milliseconds
      */
-    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec);
+    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
     
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
