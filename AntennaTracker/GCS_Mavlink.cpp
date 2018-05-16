@@ -461,11 +461,8 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
             break;
 
             case MAV_CMD_GET_HOME_POSITION:
-                send_home(tracker.ahrs.get_home());
-                Location ekf_origin;
-                if (tracker.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
+                send_home();
+                send_ekf_origin();
                 result = MAV_RESULT_ACCEPTED;
                 break;
 
