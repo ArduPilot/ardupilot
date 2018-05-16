@@ -1781,8 +1781,3 @@ const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
 {
     return plane.fwver;
 }
-
-int32_t GCS_MAVLINK_Plane::global_position_int_relative_alt() const
-{
-    return plane.relative_altitude * 1.0e3f;
-}
