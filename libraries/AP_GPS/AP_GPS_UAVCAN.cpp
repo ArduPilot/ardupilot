@@ -31,7 +31,6 @@ extern const AP_HAL::HAL& hal;
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    _new_data = false;
     _sem_gnss = hal.util->new_semaphore();
 }
 
