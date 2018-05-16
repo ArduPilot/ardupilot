@@ -2721,8 +2721,10 @@ int32_t GCS_MAVLINK::global_position_int_alt() const {
     return global_position_current_loc.alt * 10UL;
 }
 int32_t GCS_MAVLINK::global_position_int_relative_alt() const {
-    const Location &home = AP::ahrs().get_home();
-    return (global_position_current_loc.alt - home.alt) * 10;
+    float posD;
+    AP::ahrs().get_relative_position_D_home(posD);
+    posD *= -1000.0f; // change from down to up and metres to millimeters
+    return posD;
 }
 void GCS_MAVLINK::send_global_position_int()
 {
