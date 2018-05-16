@@ -58,7 +58,8 @@ public:
         RangeFinder_TYPE_TRI2C  = 14,
         RangeFinder_TYPE_PLI2CV3= 15,
         RangeFinder_TYPE_VL53L0X = 16,
-        RangeFinder_TYPE_NMEA = 17
+        RangeFinder_TYPE_NMEA = 17,
+        RangeFinder_TYPE_WASP = 18,
     };
 
     enum RangeFinder_Function {
@@ -100,6 +101,7 @@ public:
         AP_Int8  address;
         AP_Vector3f pos_offset; // position offset in body frame
         AP_Int8  orientation;
+        const struct AP_Param::GroupInfo *backend_var_info;
     };
 
     AP_Int16 _powersave_range;
