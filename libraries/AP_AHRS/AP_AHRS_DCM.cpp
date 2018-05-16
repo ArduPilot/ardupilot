@@ -23,6 +23,8 @@
 #include "AP_AHRS.h"
 #include <AP_HAL/AP_HAL.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 // this is the speed in m/s above which we first get a yaw lock with
@@ -1012,6 +1014,20 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 {
     _home = loc;
     _home.options = 0;
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send new home and ekf origin to GCS
+    gcs().send_home();
+    gcs().send_ekf_origin();
+
+    // send text of home position to ground stations
+    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
+                    static_cast<double>(loc.lat * 1.0e-7f),
+                    static_cast<double>(loc.lng * 1.0e-7f),
+                    static_cast<double>(loc.alt * 0.01f));
+
 }
 
 //  a relative ground position to home in meters, Down
