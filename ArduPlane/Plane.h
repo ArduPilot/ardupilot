@@ -835,7 +835,6 @@ private:
     void set_guided_WP(void);
     void init_home();
     void update_home();
-    void set_ekf_origin(const Location& loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim();
