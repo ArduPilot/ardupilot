@@ -939,12 +939,22 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         }
     }
 
+    const uint32_t tnow = AP_HAL::millis();
+
+    // send a timesync message every 10 seconds; this is for data
+    // collection purposes
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms) {
+        if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
+            send_timesync();
+            _timesync_request.last_sent_ms = tnow;
+        }
+    }
+
     if (!waypoint_receiving) {
         hal.util->perf_end(_perf_update);    
         return;
     }
 
-    uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
     // stop waypoint receiving if timeout
@@ -1791,6 +1801,22 @@ MAV_RESULT GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
     return MAV_RESULT_ACCEPTED;
 }
 
+uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
+{
+    uint64_t ret = _port->receive_time_constraint_us(PAYLOAD_SIZE(chan, TIMESYNC));
+    if (ret == 0) {
+        ret = AP_HAL::micros64();
+    }
+    return ret*1000LL;
+}
+
+uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
+{
+    // we add in our own system id try to ensure we only consider
+    // responses to our own timesync request messages
+    return AP_HAL::micros64()*1000LL + mavlink_system.sysid;
+}
+
 /*
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
@@ -1801,14 +1827,41 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
     mavlink_timesync_t tsync;
     mavlink_msg_timesync_decode(msg, &tsync);
 
-    // ignore messages in which tc1 field (timestamp 1) has already been filled in
     if (tsync.tc1 != 0) {
+        // this is a response to a timesync request
+        if (tsync.ts1 != _timesync_request.sent_ts1) {
+            // we didn't actually send the request.... or it's a
+            // response to an ancient request...
+            return;
+        }
+        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
+#if 0
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "timesync response sysid=%u (latency=%fms)",
+                        msg->sysid,
+                        round_trip_time_us*0.001f);
+#endif
+        DataFlash_Class *df = DataFlash_Class::instance();
+        if (df != nullptr) {
+            DataFlash_Class::instance()->Log_Write(
+                "TSYN",
+                "TimeUS,SysID,RTT",
+                "s-s",
+                "F-F",
+                "QBQ",
+                AP_HAL::micros64(),
+                msg->sysid,
+                round_trip_time_us
+                );
+        }
         return;
     }
 
-    // create new timesync struct with tc1 field as system time in nanoseconds
+    // create new timesync struct with tc1 field as system time in
+    // nanoseconds.  The client timestamp is as close as possible to
+    // the time we received the TIMESYNC message.
     mavlink_timesync_t rsync;
-    rsync.tc1 = AP_HAL::micros64() * 1000;
+    rsync.tc1 = timesync_receive_timestamp_ns();
     rsync.ts1 = tsync.ts1;
 
     // respond with a timesync message
@@ -1816,6 +1869,19 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         chan,
         rsync.tc1,
         rsync.ts1
+        );
+}
+
+/*
+ * broadcast a timesync message.  We may get multiple responses to this request.
+ */
+void GCS_MAVLINK::send_timesync()
+{
+    _timesync_request.sent_ts1 = timesync_timestamp_ns();
+    mavlink_msg_timesync_send(
+        chan,
+        0,
+        _timesync_request.sent_ts1
         );
 }
 
