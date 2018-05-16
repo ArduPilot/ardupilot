@@ -112,12 +112,14 @@ public:
     }
 #endif
 
-    // ask if IOMCU is enabled
-    static bool io_enabled(void) {
+    // ask if IOMCU is enabled. This is a uint8_t to allow
+    // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
+    // crc check of IO firmware on startup
+    static uint8_t io_enabled(void) {
 #if AP_FEATURE_BOARD_DETECT
-        return instance?instance->state.io_enable.get():false;
+        return instance?uint8_t(instance->state.io_enable.get()):0;
 #else
-        return false;
+        return 0;
 #endif
     }
 
