@@ -17,7 +17,6 @@ protected:
     AP_Rally *get_rally() const override;
     AP_Camera *get_camera() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
 
