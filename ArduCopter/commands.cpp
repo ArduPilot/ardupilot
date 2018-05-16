@@ -100,7 +100,7 @@ bool Copter::set_home(const Location& loc, bool lock)
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
     gcs().send_home(loc);
@@ -130,7 +130,7 @@ void Copter::set_ekf_origin(const Location& loc)
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
     gcs().send_ekf_origin(loc);

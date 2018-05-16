@@ -361,21 +361,6 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
     DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
-// log EKF origin and ahrs home to dataflash
-void Copter::Log_Write_Home_And_Origin()
-{
-    // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
-    }
-
-    // log ahrs home if set
-    if (ahrs.home_is_set()) {
-        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
-    }
-}
-
 // logs when baro or compass becomes unhealthy
 void Copter::Log_Sensor_Health()
 {
@@ -544,7 +529,7 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 #if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
 #endif
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
@@ -569,7 +554,6 @@ void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, float value) {}
 void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
-void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
 void Copter::Log_Write_Precland() {}
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
