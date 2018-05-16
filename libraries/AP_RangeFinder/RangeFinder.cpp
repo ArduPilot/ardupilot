@@ -539,6 +539,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_GROUPEND
 };
 
+const AP_Param::GroupInfo *RangeFinder::backend_var_info[RANGEFINDER_MAX_INSTANCES];
+
 RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
     num_instances(0),
     estimated_terrain_height(0),
@@ -738,6 +740,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     default:
         break;
+    }
+
+    // if the backend has some local parameters then make those available in the tree
+    if (drivers[instance] && state[instance].var_info) {
+        backend_var_info[instance] = state[instance].var_info;
+        AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
     }
 }
 

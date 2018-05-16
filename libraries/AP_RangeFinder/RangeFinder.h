@@ -101,9 +101,11 @@ public:
         AP_Int8  address;
         AP_Vector3f pos_offset; // position offset in body frame
         AP_Int8  orientation;
-        const struct AP_Param::GroupInfo *backend_var_info;
+        const struct AP_Param::GroupInfo *var_info;
     };
 
+    static const struct AP_Param::GroupInfo *backend_var_info[RANGEFINDER_MAX_INSTANCES];
+    
     AP_Int16 _powersave_range;
 
     // parameters for each instance
