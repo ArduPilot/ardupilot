@@ -1554,10 +1554,5 @@ const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
     return sub.fwver;
 }
 
-void GCS_MAVLINK_Sub::set_ekf_origin(const Location& loc)
-{
-    sub.set_ekf_origin(loc);
-}
-
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
