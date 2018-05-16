@@ -111,7 +111,7 @@ void Plane::init_home()
 
     ahrs.set_home(gps.location());
     ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gcs().send_home(gps.location());
 
     // Save Home to EEPROM
@@ -142,7 +142,7 @@ void Plane::update_home()
         Location loc;
         if(ahrs.get_position(loc)) {
             ahrs.set_home(loc);
-            Log_Write_Home_And_Origin();
+            ahrs.Log_Write_Home_And_Origin();
             gcs().send_home(loc);
         }
     }
@@ -169,7 +169,7 @@ void Plane::set_ekf_origin(const Location& loc)
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send ekf origin to GCS
     gcs().send_ekf_origin(loc);
