@@ -52,6 +52,9 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
     const char *path = _sitlState->_uart_path[_portNumber];
 
+    // default to 1MBit
+    _uart_baudrate = 1000000U;
+    
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
@@ -498,7 +501,32 @@ void UARTDriver::_timer_tick(void)
     }
     if (nread > 0) {
         _readbuffer.write((uint8_t *)buf, nread);
+        _receive_timestamp = AP_HAL::micros64();
     }
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+{
+    uint64_t last_receive_us = _receive_timestamp;
+    if (_uart_baudrate > 0) {
+        // assume 10 bits per byte. 
+        uint32_t transport_time_us = (1000000UL * 10UL / _uart_baudrate) * nbytes;
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
 }
 
 #endif // CONFIG_HAL_BOARD
