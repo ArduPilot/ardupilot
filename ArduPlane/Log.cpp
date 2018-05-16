@@ -272,11 +272,6 @@ void Plane::Log_Write_AETR()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Plane::Log_Write_IMU()
-{
-    DataFlash.Log_Write_IMU();
-}
-
 void Plane::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
@@ -285,18 +280,6 @@ void Plane::Log_Write_RC(void)
         DataFlash.Log_Write_RSSI(rssi);
     }
     Log_Write_AETR();
-}
-
-// Write a AIRSPEED packet
-void Plane::Log_Write_Airspeed(void)
-{
-    DataFlash.Log_Write_Airspeed(airspeed);
-}
-
-// Write a AOA and SSA packet
-void Plane::Log_Write_AOA_SSA(void)
-{
-    DataFlash.Log_Write_AOA_SSA(ahrs);
 }
 
 // log ahrs home and EKF origin to dataflash
@@ -375,7 +358,6 @@ void Plane::log_init(void)
 
 #else // LOGGING_ENABLED
 
-void Plane::Log_Write_AOA_SSA(void) {}
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
 void Plane::Log_Write_Performance() {}
@@ -390,9 +372,7 @@ void Plane::Log_Write_Optflow() {}
  #endif
 
 void Plane::Log_Arm_Disarm() {}
-void Plane::Log_Write_IMU() {}
 void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Airspeed(void) {}
 void Plane::Log_Write_Home_And_Origin() {}
 void Plane::Log_Write_Vehicle_Startup_Messages() {}
 

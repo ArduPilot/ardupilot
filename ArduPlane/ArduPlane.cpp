@@ -147,7 +147,7 @@ void Plane::ahrs_update()
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        Log_Write_IMU();
+        DataFlash.Log_Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -244,10 +244,10 @@ void Plane::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        Log_Write_IMU();
+        DataFlash.Log_Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))
-        Log_Write_AOA_SSA();
+        DataFlash.Log_Write_AOA_SSA(ahrs);
 }
 
 /*
