@@ -99,13 +99,6 @@ bool Copter::set_home(const Location& loc, bool lock)
         ahrs.set_home_status(HOME_SET_AND_LOCKED);
     }
 
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
-
     // return success
     return true;
 }
