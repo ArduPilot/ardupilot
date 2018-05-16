@@ -235,7 +235,6 @@ private:
     bool get_home_eeprom(struct Location &loc);
     void set_home_eeprom(struct Location temp);
     void set_home(struct Location temp);
-    void set_ekf_origin(const Location& loc);
     void arm_servos();
     void disarm_servos();
     void prepare_servos();
