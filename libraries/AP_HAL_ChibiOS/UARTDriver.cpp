@@ -348,6 +348,9 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         return;
     }
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
+
+    uart_drv->receive_timestamp_update();
+    
     //restart the DMA transfers
     dmaStreamSetMemory0(uart_drv->rxdma, uart_drv->rx_bounce_buf);
     dmaStreamSetTransactionSize(uart_drv->rxdma, RX_BOUNCE_BUFSIZE);
@@ -705,8 +708,6 @@ void UARTDriver::write_pending_bytes(void)
  */
 void UARTDriver::_timer_tick(void)
 {
-    int ret;
-
     if (!_initialised) return;
 
     if (sdef.dma_rx && rxdma) {
@@ -718,6 +719,9 @@ void UARTDriver::_timer_tick(void)
             uint8_t len = RX_BOUNCE_BUFSIZE - rxdma->stream->NDTR;
             if (len != 0) {
                 _readbuf.write(rx_bounce_buf, len);
+
+                receive_timestamp_update();
+                
                 if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
                     chEvtSignal(_wait.thread_ctx, EVT_DATA);                    
                 }
@@ -755,14 +759,13 @@ void UARTDriver::_timer_tick(void)
 
         const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
         for (int i = 0; i < n_vec; i++) {
+            int ret = 0;
             //Do a non-blocking read
             if (sdef.is_usb) {
-                ret = 0;
     #ifdef HAVE_USB_SERIAL
                 ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
     #endif
             } else {
-                ret = 0;
 #if HAL_USE_SERIAL == TRUE
                 ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
 #endif
@@ -772,6 +775,8 @@ void UARTDriver::_timer_tick(void)
             }
             _readbuf.commit((unsigned)ret);
 
+            receive_timestamp_update();
+            
             /* stop reading as we read less than we asked for */
             if ((unsigned)ret < vec[i].len) {
                 break;
@@ -944,5 +949,36 @@ void UARTDriver::set_stop_bits(int n)
 #endif // HAL_USE_SERIAL
 }
 
+
+// record timestamp of new incoming data 
+void UARTDriver::receive_timestamp_update(void)
+{
+    _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+    _receive_timestamp_idx ^= 1;
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+{
+    uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
+    if (_baudrate > 0 && !sdef.is_usb) {
+        // assume 10 bits per byte. For USB we assume zero transport delay
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
+}
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
