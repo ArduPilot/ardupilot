@@ -801,7 +801,6 @@ private:
     void Log_Write_Optflow();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
-    void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
