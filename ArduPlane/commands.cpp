@@ -112,7 +112,7 @@ void Plane::init_home()
     ahrs.set_home(gps.location());
     ahrs.set_home_status(HOME_SET_NOT_LOCKED);
     ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home(gps.location());
+    gcs().send_home();
 
     // Save Home to EEPROM
     mission.write_home_to_storage();
@@ -143,7 +143,7 @@ void Plane::update_home()
         if(ahrs.get_position(loc)) {
             ahrs.set_home(loc);
             ahrs.Log_Write_Home_And_Origin();
-            gcs().send_home(loc);
+            gcs().send_home();
         }
     }
     barometer.update_calibration();
