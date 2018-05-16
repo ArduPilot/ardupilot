@@ -106,6 +106,15 @@ void Tracker::one_second_loop()
         }
         one_second_counter = 0;
     }
+
+    if (!ahrs.home_is_set()) {
+        // set home to current location
+        Location temp_loc;
+        if (ahrs.get_location(temp_loc)) {
+            set_home(temp_loc);
+        }
+        return;
+    }
 }
 
 void Tracker::ten_hz_logging_loop()
