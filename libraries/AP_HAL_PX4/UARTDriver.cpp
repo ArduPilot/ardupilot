@@ -50,6 +50,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     uint16_t min_tx_buffer = 1024;
     uint16_t min_rx_buffer = 512;
     if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+        _is_usb = true;
         min_tx_buffer = 4096;
         min_rx_buffer = 1024;
     }
@@ -121,7 +122,7 @@ void PX4UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (_writebuf.get_size() && _readbuf.get_size() && _fd != -1) {
         if (!_initialised) {
-            if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
+            if (_is_usb) {
                 ((PX4GPIO *)hal.gpio)->set_usb_connected();
             }
             ::printf("initialised %s OK %u %u\n", _devpath,
@@ -475,7 +476,7 @@ void PX4UARTDriver::_timer_tick(void)
     if (!_initialised) return;
 
     // don't try IO on a disconnected USB port
-    if (strcmp(_devpath, "/dev/ttyACM0") == 0 && !hal.gpio->usb_connected()) {
+    if (_is_usb && !hal.gpio->usb_connected()) {
         return;
     }
 
@@ -514,6 +515,10 @@ void PX4UARTDriver::_timer_tick(void)
         }
         _readbuf.commit((unsigned)ret);
 
+        // update receive timestamp
+        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+        _receive_timestamp_idx ^= 1;
+
         /* stop reading as we read less than we asked for */
         if ((unsigned)ret < vec[i].len) {
             break;
@@ -522,6 +527,30 @@ void PX4UARTDriver::_timer_tick(void)
     perf_end(_perf_uart);
 
     _in_timer = false;
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t PX4UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+{
+    uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
+    if (_baudrate > 0 && !_is_usb) {
+        // assume 10 bits per byte. For USB we assume zero transport delay
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
 }
 
 #endif
