@@ -65,6 +65,7 @@ Build.AntennaTracker/*
 Build.ArduCopter/*
 Build.ArduPlane/*
 Build.ArduSub/*
+Build.ArduHAU/*
 CMakeCache.txt
 CMakeFiles
 LASTLOG.TXT
