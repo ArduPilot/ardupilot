@@ -423,7 +423,7 @@ private:
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
-    AC_Avoid avoid{ahrs, inertial_nav, fence, g2.proximity, &g2.beacon};
+    AC_Avoid avoid{ahrs, fence, g2.proximity, &g2.beacon};
 #endif
 
     // Rally library
@@ -435,9 +435,6 @@ private:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     AP_Terrain terrain{ahrs, mission, rally};
 #endif
-
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
 
     // Top-level logic
     // setup the var_info table

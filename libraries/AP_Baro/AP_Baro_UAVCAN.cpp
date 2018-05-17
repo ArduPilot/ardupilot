@@ -82,7 +82,7 @@ void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 {
     if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _pressure = pressure;
-        _temperature = temperature - 273.15f;
+        _temperature = temperature - C_TO_KELVIN;
         _last_timestamp = AP_HAL::micros64();
         _sem_baro->give();
     }

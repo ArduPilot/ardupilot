@@ -162,13 +162,6 @@ void Copter::update_optical_flow(void)
 }
 #endif  // OPTFLOW == ENABLED
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Copter::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
 void Copter::compass_cal_update()
 {
     static uint32_t compass_cal_stick_gesture_begin = 0;

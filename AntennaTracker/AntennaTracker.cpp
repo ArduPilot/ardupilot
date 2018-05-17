@@ -44,7 +44,9 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(compass_accumulate,     50,   1500),
     SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
+#if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(DataFlash_Class,   &tracker.DataFlash, periodic_tasks, 50,  300),
+#endif
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50),
     SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
     SCHED_TASK(check_usb_mux,          10,    300),

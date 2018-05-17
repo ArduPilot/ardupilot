@@ -372,9 +372,6 @@ private:
     // 0-(throttle_max - throttle_cruise) : throttle nudge in Auto mode using top 1/2 of throttle stick travel
     int16_t throttle_nudge;
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
@@ -753,9 +750,6 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay = false;
-
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
@@ -806,9 +800,7 @@ private:
     void Log_Write_Sonar();
     void Log_Write_Optflow();
     void Log_Arm_Disarm();
-    void Log_Write_IMU();
     void Log_Write_RC(void);
-    void Log_Write_Airspeed(void);
     void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
@@ -924,7 +916,6 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
-    void read_receiver_rssi(void);
     void rpm_update(void);
     void button_update(void);
     void stats_update();

@@ -61,7 +61,6 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
     chan = mav_chan;
 
     mavlink_comm_port[chan] = _port;
-    initialised = true;
     _queued_parameter = nullptr;
 
     snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
@@ -69,6 +68,8 @@ GCS_MAVLINK::init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan)
 
     snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
     _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
+
+    initialised = true;
 }
 
 
@@ -187,7 +188,8 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
-void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const
+void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
+                                      const uint8_t instance) const
 {
     // catch the battery backend not supporting the required number of cells
     static_assert(sizeof(AP_BattMonitor::cells) >= (sizeof(uint16_t) * MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN),
@@ -208,8 +210,10 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery, const uint8
 }
 
 // returns true if all battery instances were reported
-bool GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery) const
+bool GCS_MAVLINK::send_battery_status() const
 {
+    const AP_BattMonitor &battery = AP::battery();
+
     for(uint8_t i = 0; i < battery.num_instances(); i++) {
         CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
         send_battery_status(battery, i);
@@ -951,8 +955,14 @@ void GCS_MAVLINK::send_system_time()
 /*
   send RC_CHANNELS messages
  */
-void GCS_MAVLINK::send_radio_in(uint8_t receiver_rssi)
+void GCS_MAVLINK::send_radio_in()
 {
+    AP_RSSI *rssi = AP::rssi();
+    uint8_t receiver_rssi = 0;
+    if (rssi != nullptr) {
+        receiver_rssi = rssi->read_receiver_rssi_uint8();
+    }
+
     uint32_t now = AP_HAL::millis();
     mavlink_status_t *status = mavlink_get_channel_status(chan);
 
@@ -1315,8 +1325,10 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
 }
 
 // report battery2 state
-void GCS_MAVLINK::send_battery2(const AP_BattMonitor &battery)
+void GCS_MAVLINK::send_battery2()
 {
+    const AP_BattMonitor &battery = AP::battery();
+
     if (battery.num_instances() > 1) {
         int16_t current;
         if (battery.has_current(1)) {
@@ -1496,8 +1508,10 @@ void GCS_MAVLINK::send_local_position() const
 /*
   send VIBRATION message
  */
-void GCS_MAVLINK::send_vibration(const AP_InertialSensor &ins) const
+void GCS_MAVLINK::send_vibration() const
 {
+    const AP_InertialSensor &ins = AP::ins();
+
     Vector3f vibration = ins.get_vibration_levels();
 
     mavlink_msg_vibration_send(
@@ -1542,7 +1556,7 @@ void GCS_MAVLINK::send_ekf_origin(const Location &ekf_origin) const
 /*
   Send MAVLink heartbeat
  */
-void GCS_MAVLINK::send_heartbeat()
+void GCS_MAVLINK::send_heartbeat() const
 {
     mavlink_msg_heartbeat_send(
         chan,
@@ -1897,7 +1911,8 @@ void GCS_MAVLINK::handle_vision_position_estimate(mavlink_message_t *msg)
     mavlink_vision_position_estimate_t m;
     mavlink_msg_vision_position_estimate_decode(msg, &m);
 
-    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
+                                                PAYLOAD_SIZE(chan, VISION_POSITION_ESTIMATE));
 }
 
 void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
@@ -1905,7 +1920,8 @@ void GCS_MAVLINK::handle_global_vision_position_estimate(mavlink_message_t *msg)
     mavlink_global_vision_position_estimate_t m;
     mavlink_msg_global_vision_position_estimate_decode(msg, &m);
 
-    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
+                                                PAYLOAD_SIZE(chan, GLOBAL_VISION_POSITION_ESTIMATE));
 }
 
 void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
@@ -1913,7 +1929,8 @@ void GCS_MAVLINK::handle_vicon_position_estimate(mavlink_message_t *msg)
     mavlink_vicon_position_estimate_t m;
     mavlink_msg_vicon_position_estimate_decode(msg, &m);
 
-    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw);
+    handle_common_vision_position_estimate_data(m.usec, m.x, m.y, m.z, m.roll, m.pitch, m.yaw,
+                                                PAYLOAD_SIZE(chan, VICON_POSITION_ESTIMATE));
 }
 
 // there are several messages which all have identical fields in them.
@@ -1925,8 +1942,12 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
                                                               const float z,
                                                               const float roll,
                                                               const float pitch,
-                                                              const float yaw)
+                                                              const float yaw,
+                                                              const uint16_t payload_size)
 {
+    // correct offboard timestamp to be in local ms since boot
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(usec, payload_size);
+    
     // sensor assumed to be at 0,0,0 body-frame; need parameters for this?
     // or a new message 
     const Vector3f sensor_offset = {};
@@ -1939,7 +1960,6 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
     attitude.from_euler(roll, pitch, yaw); // from_vector312?
     const float posErr = 0; // parameter required?
     const float angErr = 0; // parameter required?
-    const uint32_t timestamp_ms = usec * 0.001;
     const uint32_t reset_timestamp_ms = 0; // no data available
 
     AP::ahrs().writeExtNavData(sensor_offset,
@@ -1961,8 +1981,9 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
-                                           "smmmrrr", "F000000", "Qffffff",
+    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+                                           "ssmmmrrr", "FF000000", "QQffffff",
+                                           (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
                                            (double)x,
                                            (double)y,
@@ -2619,6 +2640,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = true;
         break;
 
+    case MSG_HEARTBEAT:
+        CHECK_PAYLOAD_SIZE(HEARTBEAT);
+        last_heartbeat_time = AP_HAL::millis();
+        send_heartbeat();
+        break;
+
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus();
@@ -2637,6 +2664,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         /* fall through */
     case MSG_MAG_CAL_REPORT:
         ret = try_send_compass_message(id);
+        break;
+
+    case MSG_BATTERY_STATUS:
+        send_battery_status();
+        break;
+
+    case MSG_BATTERY2:
+        CHECK_PAYLOAD_SIZE(BATTERY2);
+        send_battery2();
         break;
 
     case MSG_EXTENDED_STATUS2:
@@ -2666,9 +2702,19 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_local_position();
         break;
 
+    case MSG_RADIO_IN:
+        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+        send_radio_in();
+        break;
+
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
+        break;
+
+    case MSG_VIBRATION:
+        CHECK_PAYLOAD_SIZE(VIBRATION);
+        send_vibration();
         break;
 
     default:
@@ -2686,6 +2732,137 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     }
 
     return ret;
+}
+
+void GCS_MAVLINK::data_stream_send(void)
+{
+    if (waypoint_receiving) {
+        // don't interfere with mission transfer
+        return;
+    }
+
+    if (!hal.scheduler->in_delay_callback()) {
+        // DataFlash_Class will not send log data if we are armed.
+        DataFlash_Class::instance()->handle_log_send();
+    }
+
+    gcs().set_out_of_time(false);
+
+    send_queued_parameters();
+
+    if (gcs().out_of_time()) return;
+
+    if (hal.scheduler->in_delay_callback()) {
+        if (in_hil_mode()) {
+            // in HIL we need to keep sending servo values to ensure
+            // the simulator doesn't pause, otherwise our sensor
+            // calibration could stall
+            if (stream_trigger(STREAM_RAW_CONTROLLER)) {
+                send_message(MSG_SERVO_OUT);
+            }
+            if (stream_trigger(STREAM_RC_CHANNELS)) {
+                send_message(MSG_SERVO_OUTPUT_RAW);
+            }
+        }
+        // send no other streams while in delay, just in case they
+        // take way too long to run
+        return;
+    }
+
+    for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
+        const streams id = (streams)all_stream_entries[i].stream_id;
+        if (!stream_trigger(id)) {
+            continue;
+        }
+        const uint8_t *msg_ids = all_stream_entries[i].ap_message_ids;
+        for (uint8_t j=0; j<all_stream_entries[i].num_ap_message_ids; j++) {
+            const uint8_t msg_id = msg_ids[j];
+            send_message((ap_message)msg_id);
+        }
+        if (gcs().out_of_time()) {
+            break;
+        }
+    }
+}
+
+/*
+  correct an offboard timestamp in microseconds into a local timestamp
+  since boot in milliseconds. This is a transport lag correction function, and works by assuming two key things:
+
+   1) the data did not come from the future in our time-domain
+   2) the data is not older than max_lag_ms in our time-domain
+
+  It works by estimating the transport lag by looking for the incoming
+  packet that had the least lag, and converging on the offset that is
+  associated with that lag
+
+  Return a value in milliseconds since boot (for use by the EKF)
+ */
+uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size)
+{
+    const uint32_t max_lag_us = 500*1000UL;
+    uint64_t local_us;
+    // if the HAL supports it then constrain the latest possible time
+    // the packet could have been sent by the uart receive time and
+    // the baudrate and packet size.
+    uint64_t uart_receive_time = _port->receive_time_constraint_us(payload_size);
+    if (uart_receive_time != 0) {
+        local_us = uart_receive_time;
+    } else {
+        local_us = AP_HAL::micros64();
+    }
+    int64_t diff_us = int64_t(local_us) - int64_t(offboard_usec);
+
+    if (!lag_correction.initialised ||
+        diff_us < lag_correction.link_offset_usec) {
+        // this message arrived from the remote system with a
+        // timestamp that would imply the message was from the
+        // future. We know that isn't possible, so we adjust down the
+        // correction value
+        lag_correction.link_offset_usec = diff_us;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        printf("link_offset_usec=%lld\n", diff_us);
+#endif
+        lag_correction.initialised = true;
+    }
+
+    int64_t estimate_us = offboard_usec + lag_correction.link_offset_usec;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (estimate_us > local_us) {
+        // this should be impossible, just check it under SITL
+        printf("msg from future %lld\n", estimate_us - local_us);
+    }
+#endif
+
+    if (estimate_us + max_lag_us < int64_t(local_us)) {
+        // this implies the message came from too far in the past. Clamp the lag estimate
+        // to assume the message had maximum lag
+        estimate_us = local_us - max_lag_us;
+        lag_correction.link_offset_usec = estimate_us - offboard_usec;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        printf("offboard timestammp too old %lld\n", local_us - estimate_us);
+#endif
+    }
+
+    if (lag_correction.min_sample_counter == 0) {
+        lag_correction.min_sample_us = diff_us;
+    }
+    lag_correction.min_sample_counter++;
+    if (diff_us < lag_correction.min_sample_us) {
+        lag_correction.min_sample_us = diff_us;
+    }
+    if (lag_correction.min_sample_counter == 200) {
+        // we have 200 samples of the transport lag. To
+        // account for long term clock drift we set the diff we will
+        // use in future to this value
+        lag_correction.link_offset_usec = lag_correction.min_sample_us;
+        lag_correction.min_sample_counter = 0;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        printf("new link_offset_usec=%lld\n", lag_correction.min_sample_us);
+#endif
+    }
+    
+    return estimate_us / 1000U;
 }
 
 GCS &gcs()

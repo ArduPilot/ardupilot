@@ -62,14 +62,14 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Description: Bitmask with one set for channel to be transmitted as a servo command over UAVCAN
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     // @User: Advanced
-    AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 255),
+    AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 0),
 
     // @Param: ESC_BM
     // @DisplayName: RC Out channels to be transmitted as ESC over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a ESC command over UAVCAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
     // @User: Advanced
-    AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 255),
+    AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 0),
 
     AP_GROUPEND
 };

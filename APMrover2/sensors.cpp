@@ -145,13 +145,6 @@ void Rover::update_wheel_encoder()
     wheel_encoder_last_ekf_update_ms = now;
 }
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Rover::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
 // Calibrate compass
 void Rover::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {

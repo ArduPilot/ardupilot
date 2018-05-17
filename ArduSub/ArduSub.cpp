@@ -61,7 +61,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &g2.gripper,       update,              10,  75),
+    SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,       update,              10,  75),
 #endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
@@ -341,6 +341,7 @@ void Sub::update_altitude()
 
 bool Sub::control_check_barometer()
 {
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
         gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
         return false;
@@ -348,6 +349,7 @@ bool Sub::control_check_barometer()
         gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
         return false;
     }
+#endif
     return true;
 }
 

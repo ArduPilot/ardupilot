@@ -113,6 +113,7 @@ public:
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
+    friend class ModeLoiter;
     friend class ModeSteering;
     friend class ModeManual;
     friend class ModeRTL;
@@ -263,9 +264,6 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // the time when the last HEARTBEAT message arrived from a GCS
     uint32_t last_heartbeat_ms;
 
@@ -337,9 +335,6 @@ private:
 
     static const AP_Scheduler::Task scheduler_tasks[];
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
-
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
 
@@ -372,6 +367,7 @@ private:
     ModeAcro mode_acro;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
+    ModeLoiter mode_loiter;
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
@@ -523,7 +519,6 @@ private:
     void init_visual_odom();
     void update_visual_odom();
     void update_wheel_encoder();
-    void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void read_rangefinders(void);

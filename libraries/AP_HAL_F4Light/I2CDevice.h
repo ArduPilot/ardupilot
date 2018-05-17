@@ -34,19 +34,28 @@
 using namespace F4Light;
 
 #ifdef I2C_DEBUG
+enum I2C_Log_State {
+    I2C_START,
+    I2C_ISR,
+    I2C_STOP,
+    I2C_ERR,
+    I2C_FINISH,
+};
+
 typedef struct I2C_STATE {
-    uint32_t start;
     uint32_t time;
     uint8_t addr;
     uint8_t bus;
     uint8_t send_len;
     uint8_t recv_len;
     uint8_t ret;
-    uint16_t op_sr1;
+    uint16_t cr1;
     uint16_t sr1;
     uint16_t sr2;
     uint16_t st_sr1;
     uint16_t st_sr2;
+    uint8_t state;
+    I2C_Log_State pos;
 } I2C_State;
 #endif
 

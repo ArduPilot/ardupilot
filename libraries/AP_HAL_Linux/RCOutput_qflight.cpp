@@ -19,6 +19,8 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
+#include <RC_Channel/RC_Channel.h>
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
 
 #include "RCOutput_qflight.h"
@@ -166,7 +168,13 @@ void RCOutput_QFLIGHT::check_rc_in(void)
                 }
             }
             if (have_data) {
-                hal.rcin->set_overrides((int16_t*)rcu.rcin.rcin, 8);
+                // FIXME: This is an incredibly dirty hack as this probhibits the usage of
+                // overrides if an RC reciever is connected, as the next RC input will
+                // stomp over the GCS set overrides. This results in incredibly confusing,
+                // undocumented behaviour, that cannot be reported to the user.
+                for (uint8_t i = 0; i < 8; i++) {
+                    RC_Channels::set_override(i, rcu.rcin.rcin[i]);
+                }
             }
         }
         nrcin_bytes = 0;

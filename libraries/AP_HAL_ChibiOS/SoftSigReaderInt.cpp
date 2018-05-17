@@ -45,7 +45,11 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
         icucfg.iccfgp[i]=nullptr;
     }
     icucfg.iccfgp[chan] = &channel_config;
+#ifdef HAL_RCIN_IS_INVERTED
     channel_config.alvl = EICU_INPUT_ACTIVE_HIGH;
+#else
+    channel_config.alvl = EICU_INPUT_ACTIVE_LOW;
+#endif
     channel_config.capture_cb = _irq_handler;
     eicuStart(_icu_drv, &icucfg);
     //sets input filtering to 4 timer clock

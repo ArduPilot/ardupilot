@@ -386,9 +386,6 @@ private:
     AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // Failsafe
     struct {
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
@@ -583,9 +580,6 @@ private:
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
 #endif
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
-
     // last valid RC input time
     uint32_t last_radio_update_ms;
 
@@ -732,7 +726,6 @@ private:
 
     // ekf_check.cpp
     void ekf_check();
-    bool ekf_check_position_problem();
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
@@ -894,7 +887,6 @@ private:
     void compass_accumulate(void);
     void init_optflow();
     void update_optical_flow(void);
-    void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void init_proximity();

@@ -23,11 +23,13 @@ template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
     typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
     typedef typename std::remove_cv<common_type>::type common_type_nonconst;
     if (std::is_same<double, common_type_nonconst>::value) {
         return fabs(v_1 - v_2) < std::numeric_limits<double>::epsilon();
     }
+#endif
     return fabsf(v_1 - v_2) < std::numeric_limits<float>::epsilon();
 }
 

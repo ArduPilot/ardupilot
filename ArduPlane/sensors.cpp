@@ -73,7 +73,7 @@ void Plane::read_airspeed(void)
     if (airspeed.enabled()) {
         airspeed.read();
         if (should_log(MASK_LOG_IMU)) {
-            Log_Write_Airspeed();
+            DataFlash.Log_Write_Airspeed(airspeed);
         }
 
         // supply a new temperature to the barometer from the digital
@@ -94,13 +94,6 @@ void Plane::read_airspeed(void)
     if (ahrs.airspeed_estimate(&aspeed)) {
         smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
     }
-}
-
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Plane::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
 /*

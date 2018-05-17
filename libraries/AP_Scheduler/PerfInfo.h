@@ -19,7 +19,6 @@ public:
     uint32_t get_max_time() const;
     uint32_t get_min_time() const;
     uint16_t get_num_long_running() const;
-    uint32_t get_num_dropped() const;
     uint32_t get_avg_time() const;
     uint32_t get_stddev_time() const;
     float    get_filtered_time() const;
@@ -36,7 +35,6 @@ private:
     uint64_t sigma_time;
     uint64_t sigmasquared_time;
     uint16_t long_running;
-    uint32_t log_dropped;
     uint32_t last_check_us;
     float filtered_loop_time;
     bool ignore_loop;

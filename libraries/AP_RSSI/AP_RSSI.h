@@ -37,6 +37,8 @@ public:
     // destructor
     ~AP_RSSI(void);
 
+    static AP_RSSI *get_instance();
+
     // Initialize the rssi object and prepare it for use
     void init();
 
@@ -55,6 +57,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static AP_RSSI *_s_instance;
+
     // RSSI parameters
     AP_Int8         rssi_type;                              // Type of RSSI being used
     AP_Int8         rssi_analog_pin;                        // Analog pin RSSI value found on
@@ -76,4 +81,8 @@ private:
 
     // Scale and constrain a float rssi value to 0.0 to 1.0 range 
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
+};
+
+namespace AP {
+    AP_RSSI *rssi();
 };

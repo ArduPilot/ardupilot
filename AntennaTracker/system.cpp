@@ -15,7 +15,7 @@ void Tracker::init_tracker()
 
     hal.console->printf("\n\nInit %s\n\nFree RAM: %u\n",
                         fwver.fw_string,
-                        hal.util->available_memory());
+                        (unsigned)hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
