@@ -196,21 +196,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         send_servo_output_raw(false);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(tracker.ins, tracker.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(tracker.ins, tracker.compass);
-        break;
-
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         tracker.send_simstate(chan);
@@ -766,11 +751,6 @@ bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Tracker::get_fwver() const
 {
     return tracker.fwver;
-}
-
-void GCS_MAVLINK_Tracker::set_ekf_origin(const Location& loc)
-{
-    tracker.set_ekf_origin(loc);
 }
 
 /* dummy methods to avoid having to link against AP_Camera */

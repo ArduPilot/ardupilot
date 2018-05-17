@@ -344,33 +344,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(copter.ins, copter.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(copter.ins, copter.compass);
-        break;
-
-    case MSG_RANGEFINDER:
-#if RANGEFINDER_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(copter.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(copter.rangefinder);
-#endif
-#if PROXIMITY_ENABLED == ENABLED
-        send_proximity(copter.g2.proximity);
-#endif
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
@@ -1814,10 +1787,4 @@ bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Copter::get_fwver() const
 {
     return copter.fwver;
-}
-
-
-void GCS_MAVLINK_Copter::set_ekf_origin(const Location& loc)
-{
-    copter.set_ekf_origin(loc);
 }

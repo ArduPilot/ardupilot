@@ -700,7 +700,6 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
-    void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
 
@@ -806,7 +805,6 @@ private:
     void Log_Write_Data(uint8_t id, float value);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
-    void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);

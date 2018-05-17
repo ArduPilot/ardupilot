@@ -45,28 +45,12 @@ extern const AP_HAL::HAL& hal;
 
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _msg_id(0),
-    _payload_length(0),
-    _payload_counter(0),
-    _class(0),
-    _cfg_saved(false),
-    _last_cfg_sent_time(0),
-    _num_cfg_save_tries(0),
-    _last_config_time(0),
-    _delay_time(0),
     _next_message(STEP_PVT),
     _ublox_port(255),
-    _have_version(false),
     _unconfigured_messages(CONFIG_ALL),
     _hardware_generation(UBLOX_UNKNOWN_HARDWARE_GENERATION),
-    _new_position(0),
-    _new_speed(0),
-    _disable_counter(0),
     next_fix(AP_GPS::NO_FIX),
-    _cfg_needs_save(false),
-    noReceivedHdop(true),
-    havePvtMsg(false)
+    noReceivedHdop(true)
 {
     // stop any config strings that are pending
     gps.send_blob_start(state.instance, nullptr, 0);

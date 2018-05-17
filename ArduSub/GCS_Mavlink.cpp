@@ -351,9 +351,9 @@ void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
 #endif
 
 // Work around to get temperature sensor data out
-void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
-    if (!celsius.healthy()) {
+    if (!sub.celsius.healthy()) {
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -361,61 +361,38 @@ void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
         AP_HAL::millis(),
         0,
         0,
-        celsius.temperature() * 100);
+        sub.celsius.temperature() * 100);
 }
 
-bool NOINLINE Sub::send_info(mavlink_channel_t chan)
+bool GCS_MAVLINK_Sub::send_info()
 {
     // Just do this all at once, hopefully the hard-wire telemetry requirement means this is ok
     // Name is char[10]
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "CamTilt",
-            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("CamTilt",
+                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "CamPan",
-            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("CamPan",
+                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "TetherTrn",
-            quarter_turn_count/4);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("TetherTrn",
+                     sub.quarter_turn_count/4);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "Lights1",
-            SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("Lights1",
+                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "Lights2",
-            SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("Lights2",
+                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "PilotGain",
-            gain);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("PilotGain", sub.gain);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "InputHold",
-            input_hold_engaged);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("InputHold", sub.input_hold_engaged);
 
     return true;
 }
@@ -503,7 +480,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     switch (id) {
 
     case MSG_NAMED_FLOAT:
-        sub.send_info(chan);
+        send_info();
         break;
 
     case MSG_EXTENDED_STATUS1:
@@ -540,31 +517,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         sub.send_vfr_hud(chan);
-        break;
-
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(sub.ins, sub.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        sub.send_temperature(chan);
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(sub.ins, sub.compass);
-        break;
-
-    case MSG_RANGEFINDER:
-#if RANGEFINDER_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(sub.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(sub.rangefinder);
-#endif
         break;
 
     case MSG_RPM:
@@ -1552,11 +1504,6 @@ bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
 {
     return sub.fwver;
-}
-
-void GCS_MAVLINK_Sub::set_ekf_origin(const Location& loc)
-{
-    sub.set_ekf_origin(loc);
 }
 
 // dummy method to avoid linking AFS

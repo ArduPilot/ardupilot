@@ -95,7 +95,7 @@ bool Sub::set_home(const Location& loc, bool lock)
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
     gcs().send_home(loc);
@@ -103,32 +103,6 @@ bool Sub::set_home(const Location& loc, bool lock)
 
     // return success
     return true;
-}
-
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Sub::set_ekf_origin(const Location& loc)
-{
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
-    }
-
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
-
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
 }
 
 // far_from_EKF_origin - checks if a location is too far from the EKF origin

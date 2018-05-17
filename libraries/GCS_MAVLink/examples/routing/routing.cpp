@@ -36,7 +36,6 @@ protected:
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
     const AP_FWVersion &get_fwver() const override { return fwver; }
-    void set_ekf_origin(const Location& loc) override { };
 
     // dummy information:
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }

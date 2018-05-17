@@ -17,7 +17,6 @@ protected:
     AP_Rally *get_rally() const override;
     AP_Camera *get_camera() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
 
@@ -28,12 +27,17 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
 
+    // override sending of scaled_pressure3 to send on-board temperature:
+    void send_scaled_pressure3() override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
+
+    bool send_info(void);
 
     MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;

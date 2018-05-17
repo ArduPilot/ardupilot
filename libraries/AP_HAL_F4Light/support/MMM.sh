@@ -54,6 +54,9 @@ make_plane(){
 ) && ( # AirBotV2 board
  make_copter "f4light_AirbotV2" && \
  make_plane  "f4light_AirbotV2"
+) && ( # OmnibusV3 board
+ make_copter "f4light_OmnibusV3" && \
+ make_plane  "f4light_OmnibusV3"
 ) && ( # RevoMini board with SD card
  make_copter "f4light_Revolution_SD" && \
  make_plane  "f4light_Revolution_SD"

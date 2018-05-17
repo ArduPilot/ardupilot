@@ -70,4 +70,19 @@ public:
      * can implement it if their HAL layer requires.
      */
     virtual void _timer_tick(void) { }
+
+    /*
+      return timestamp estimate in microseconds for when the start of
+      a nbytes packet arrived on the uart. This should be treated as a
+      time constraint, not an exact time. It is guaranteed that the
+      packet did not start being received after this time, but it
+      could have been in a system buffer before the returned time.
+
+      This takes account of the baudrate of the link. For transports
+      that have no baudrate (such as USB) the time estimate may be
+      less accurate.
+
+      A return value of zero means the HAL does not support this API
+     */
+    virtual uint64_t receive_time_constraint_us(uint16_t nbytes) const { return 0; }
 };

@@ -111,7 +111,7 @@ void Plane::init_home()
 
     ahrs.set_home(gps.location());
     ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gcs().send_home(gps.location());
 
     // Save Home to EEPROM
@@ -142,35 +142,9 @@ void Plane::update_home()
         Location loc;
         if(ahrs.get_position(loc)) {
             ahrs.set_home(loc);
-            Log_Write_Home_And_Origin();
+            ahrs.Log_Write_Home_And_Origin();
             gcs().send_home(loc);
         }
     }
     barometer.update_calibration();
-}
-
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Plane::set_ekf_origin(const Location& loc)
-{
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
-    }
-
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
-
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
 }

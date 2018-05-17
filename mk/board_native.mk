@@ -132,9 +132,6 @@ print-%:
 # fetch dependency info from a previous build if any of it exists
 -include $(ALLDEPS)
 
-ifeq ($(HAL_BOARD_SUBTYPE),HAL_BOARD_SUBTYPE_LINUX_QFLIGHT)
-include $(MK_DIR)/board_qflight.mk
-else
 # Link the final object
 $(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	@echo "Building $(SKETCHELF)"
@@ -142,7 +139,6 @@ $(SKETCHELF): $(SKETCHOBJS) $(LIBOBJS)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(SKETCHOBJS) $(LIBOBJS) $(LIBS)
 	$(v)cp $(SKETCHELF) .
 	@echo "Firmware is in $(BUILDELF)"
-endif
 
 SKETCH_INCLUDES	=	$(SKETCHLIBINCLUDES) -I$(UAVCAN_DIRECTORY)/libuavcan/include -I$(UAVCAN_DIRECTORY)/libuavcan/include/dsdlc_generated
 SLIB_INCLUDES	=	-I$(dir $<)/utility $(SKETCHLIBINCLUDES) -I$(UAVCAN_DIRECTORY)/libuavcan/include -I$(UAVCAN_DIRECTORY)/libuavcan/include/dsdlc_generated

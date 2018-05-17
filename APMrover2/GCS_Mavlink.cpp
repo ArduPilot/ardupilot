@@ -344,21 +344,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(rover.ins, rover.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(rover.ins, rover.compass);
-        break;
-
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         rover.send_simstate(chan);
@@ -367,8 +352,8 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         rover.send_rangefinder(chan);
-        send_distance_sensor(rover.rangefinder);
-        send_proximity(rover.g2.proximity);
+        send_distance_sensor();
+        send_proximity();
         break;
 
     case MSG_RPM:
@@ -1387,9 +1372,4 @@ bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Rover::get_fwver() const
 {
     return rover.fwver;
-}
-
-void GCS_MAVLINK_Rover::set_ekf_origin(const Location& loc)
-{
-    rover.set_ekf_origin(loc);
 }
