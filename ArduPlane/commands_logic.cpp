@@ -936,7 +936,7 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
     if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         init_home();
     } else {
-        ahrs.set_home(cmd.content.location, HOME_SET_NOT_LOCKED);
+        ahrs.set_home(cmd.content.location, HOME_SET_AND_LOCKED);
     }
 }
 
