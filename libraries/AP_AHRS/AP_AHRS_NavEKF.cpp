@@ -587,11 +587,6 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
     }
 }
 
-void AP_AHRS_NavEKF::set_home(const Location &loc)
-{
-    AP_AHRS_DCM::set_home(loc);
-}
-
 // set the EKF's origin location in 10e7 degrees.  This should only
 // be called when the EKF has no absolute position reference (i.e. GPS)
 // from which to decide the origin on its own

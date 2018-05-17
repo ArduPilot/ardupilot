@@ -1010,7 +1010,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
     return ret;
 }
 
-void AP_AHRS_DCM::set_home(const Location &loc)
+void AP_AHRS_DCM::set_home(const Location &loc, enum HomeState new_status)
 {
     _home = loc;
     _home.options = 0;
@@ -1023,11 +1023,14 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     gcs().send_ekf_origin();
 
     // send text of home position to ground stations
-    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
-                    static_cast<double>(loc.lat * 1.0e-7f),
-                    static_cast<double>(loc.lng * 1.0e-7f),
-                    static_cast<double>(loc.alt * 0.01f));
+    if (new_status != _home_status || new_status != HOME_SET_NOT_LOCKED) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
+                        static_cast<double>(loc.lat * 1.0e-7f),
+                        static_cast<double>(loc.lng * 1.0e-7f),
+                        static_cast<double>(loc.alt * 0.01f));
+    }
 
+    _home_status = new_status;
 }
 
 //  a relative ground position to home in meters, Down

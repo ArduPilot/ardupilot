@@ -439,9 +439,6 @@ public:
     enum HomeState home_status(void) const {
         return _home_status;
     }
-    void set_home_status(enum HomeState new_status) {
-        _home_status = new_status;
-    }
     bool home_is_set(void) const {
         return _home_status != HOME_UNSET;
     }
@@ -449,7 +446,8 @@ public:
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
-    virtual void set_home(const Location &loc) = 0;
+    virtual void set_home(const Location &loc,
+                          enum HomeState new_status) = 0;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
@@ -649,6 +647,8 @@ protected:
 
     // reference position for NED positions
     struct Location _home;
+    // Flag for if we have g_gps lock and have set the home location in AHRS
+    enum HomeState _home_status = HOME_UNSET;
 
     // helper trig variables
     float _cos_roll, _cos_pitch, _cos_yaw;
@@ -666,9 +666,6 @@ protected:
 
 private:
     static AP_AHRS *_singleton;
-
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState _home_status = HOME_UNSET;
 
 };
 
