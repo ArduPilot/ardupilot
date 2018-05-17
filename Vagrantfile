@@ -63,6 +63,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # LTS, EOL April 2021
+  # this VM is useful for running valgrind on!
   config.vm.define "xenial32", autostart: false do |xenial32|
     config.vm.box = "ubuntu/xenial32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
