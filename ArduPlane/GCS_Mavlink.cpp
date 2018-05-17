@@ -824,8 +824,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     }
                     new_home_loc.alt += plane.ahrs.get_home().alt;
                 }
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
+                plane.ahrs.set_home(new_home_loc, HOME_SET_NOT_LOCKED);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1104,8 +1103,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
+                plane.ahrs.set_home(new_home_loc, HOME_SET_NOT_LOCKED);
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1516,8 +1514,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
         new_home_loc.alt = packet.altitude / 10;
-        plane.ahrs.set_home(new_home_loc);
-        plane.ahrs.set_home_status(HOME_SET_NOT_LOCKED);
+        plane.ahrs.set_home(new_home_loc, HOME_SET_NOT_LOCKED);
         break;
     }
 
