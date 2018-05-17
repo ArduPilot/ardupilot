@@ -4,6 +4,7 @@ import os
 import random
 import re
 import sys
+import tempfile
 import time
 from math import acos, atan2, cos, pi, sqrt
 from subprocess import PIPE, Popen, call, check_call
@@ -195,7 +196,17 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd.extend(['valgrind', '-q', '--log-file=%s' % valgrind_log_filepath(binary=binary, model=model)])
+        # we specify a prefix for vgdb-pipe because on Vagrant virtual
+        # machines the pipes are created on the mountpoint for the
+        # shared directory with the host machine.  mmap's,
+        # unsurprisingly, fail on files created on that mountpoint.
+        vgdb_prefix = os.path.join(tempfile.gettempdir(), "vgdb-pipe")
+        log_file = valgrind_log_filepath(binary=binary, model=model)
+        cmd.extend([
+            'valgrind',
+            '--vgdb-prefix=%s' % vgdb_prefix,
+            '-q',
+            '--log-file=%s' % log_file])
     if gdbserver:
         cmd.extend(['gdbserver', 'localhost:3333'])
         if gdb:
