@@ -103,24 +103,6 @@ void Plane::set_guided_WP(void)
     loiter_angle_reset();
 }
 
-// run this at setup on the ground
-// -------------------------------
-void Plane::init_home()
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
-
-    ahrs.set_home(gps.location());
-    ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home();
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-
-    // Save prev loc
-    // -------------
-    next_WP_loc = prev_WP_loc = home;
-}
-
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
@@ -140,10 +122,23 @@ void Plane::update_home()
     if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
         if(ahrs.get_position(loc)) {
-            ahrs.set_home(loc);
-            ahrs.Log_Write_Home_And_Origin();
-            gcs().send_home();
+            plane.set_home(loc);
         }
     }
     barometer.update_calibration();
+}
+
+void Plane::set_home_persistently(const Location &loc)
+{
+    set_home(loc);
+
+    // Save Home to EEPROM
+    mission.write_home_to_storage();
+}
+
+void Plane::set_home(const Location &loc)
+{
+    ahrs.set_home(loc);
+    ahrs.Log_Write_Home_And_Origin();
+    gcs().send_home();
 }

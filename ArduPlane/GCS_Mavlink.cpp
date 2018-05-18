@@ -776,7 +776,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SET_HOME: {
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1, 1.0f)) {
-                plane.init_home();
+                plane.set_home_persistently(AP::gps().location());
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
@@ -809,9 +809,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     }
                     new_home_loc.alt += plane.ahrs.get_home().alt;
                 }
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().Log_Write_Home_And_Origin();
-                gcs().send_home();
+                plane.set_home(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1076,7 +1074,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1,1.0f)) {
-                plane.init_home();
+                plane.set_home_persistently(AP::gps().location());
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
@@ -1094,9 +1092,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().Log_Write_Home_And_Origin();
-                gcs().send_home();
+                plane.set_home(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1511,9 +1507,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
         new_home_loc.alt = packet.altitude / 10;
-        plane.ahrs.set_home(new_home_loc);
-        plane.ahrs.Log_Write_Home_And_Origin();
-        gcs().send_home();
+        plane.set_home(new_home_loc);
         gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
