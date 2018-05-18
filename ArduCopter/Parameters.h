@@ -231,7 +231,7 @@ public:
         //
         // 140: Sensor parameters
         //
-        k_param_imu = 140, // deprecated - can be deleted
+        k_param_airspeed = 140,  // AP_Airspeed parameters
         k_param_battery_monitoring = 141,   // deprecated - can be deleted
         k_param_volt_div_ratio, // deprecated - can be deleted
         k_param_curr_amp_per_volt,  // deprecated - can be deleted

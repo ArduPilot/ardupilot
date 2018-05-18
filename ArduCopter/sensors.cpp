@@ -1,5 +1,22 @@
 #include "Copter.h"
 
+void Copter::read_airspeed(void)
+{
+    if (airspeed.enabled()) {
+        airspeed.read();
+        if (should_log(MASK_LOG_IMU)) {
+            DataFlash.Log_Write_Airspeed(airspeed);
+        }
+    }
+
+     // supply a new temperature to the barometer from the digital
+    // airspeed sensor if we can
+    float temperature;
+    if (airspeed.get_temperature(temperature)) {
+        barometer.set_external_temperature(temperature);
+    }
+}
+
 // return barometric altitude in centimeters
 void Copter::read_barometer(void)
 {

@@ -140,10 +140,16 @@ void Copter::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
+    // initialise airspeed sensor
+    airspeed.init();
+
 #if OPTFLOW == ENABLED
     // make optflow available to AHRS
     ahrs.set_optflow(&optflow);
 #endif
+
+    // give AHRS the airspeed sensor
+    ahrs.set_airspeed(&airspeed); 
 
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -190,6 +196,12 @@ void Copter::init_ardupilot()
     //-----------------------------
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
+
+    if (airspeed.enabled()) {
+        // initialize airspeed sensor
+        // --------------------------
+        airspeed.calibrate(true);
+    }
 
     // initialise rangefinder
     init_rangefinder();

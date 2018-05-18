@@ -78,6 +78,7 @@
 #include <AP_TempCalibration/AP_TempCalibration.h>
 #include <AC_AutoTune/AC_AutoTune.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 
 // Configuration
 #include "defines.h"
@@ -401,6 +402,9 @@ private:
         uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
         uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
     } failsafe;
+
+    // Airspeed Sensors
+    AP_Airspeed airspeed;
 
     bool any_failsafe_triggered() const {
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
@@ -811,6 +815,7 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
+    void read_airspeed(void);
     bool rangefinder_alt_ok();
     void rpm_update();
     void init_compass_location();
