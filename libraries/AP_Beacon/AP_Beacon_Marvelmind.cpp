@@ -30,6 +30,15 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define MM_DEBUG_LEVEL 0
+
+#if MM_DEBUG_LEVEL
+  #include <GCS_MAVLink/GCS.h>
+  #define Debug(level, fmt, args ...)  do { if (level <= MM_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+#else
+  #define Debug(level, fmt, args ...)
+#endif
+
 AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
     AP_Beacon_Backend(frontend)
 {
@@ -128,6 +137,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
     const uint8_t n = input_buffer[5]; // number of beacons in packet
     StationaryBeaconPosition *stationary_beacon;
     if ((1 + n * 8) != input_buffer[4]) {
+        Debug(1, "beacon pos lo pkt size %d != %d", input_buffer[4], (1 + n * 8));
         return; // incorrect size
     }
     for (uint8_t i = 0; i < n; i++) {
@@ -157,6 +167,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
     const uint8_t n = input_buffer[5]; // number of beacons in packet
     StationaryBeaconPosition *stationary_beacon;
     if ((1 + n * 14) != input_buffer[4]) {
+        Debug(1, "beacon pos hi pkt size %d != %d", input_buffer[4], (1 + n * 14));
         return; // incorrect size
     }
     for (uint8_t i = 0; i < n; i++) {
@@ -363,7 +374,7 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
             //TODO: Calculate Accuracy of the received signal. Marvelmind *advertises* +/- 2cms
             set_vehicle_position(vehicle_position_NED__m, 0.02f);
             Debug(2,
-                  "Hedge is at N%f, E%f, D%f",
+                  "Hedge is at N%.2f, E%.2f, D%.2f",
                   vehicle_position_NED__m[0],
                   vehicle_position_NED__m[1],
                   vehicle_position_NED__m[2]);
@@ -375,6 +386,12 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
                                                      hedge.positions_beacons.beacons[i].x__mm * 0.001f,
                                                     -hedge.positions_beacons.beacons[i].z__mm * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
                 set_beacon_position(i, beacon_position_NED__m[i]);
+                Debug(2,
+                      "Beacon %d is at N%.2f, E%.2f, D%.2f",
+                      i,
+                      beacon_position_NED__m[i][0],
+                      beacon_position_NED__m[i][1],
+                      beacon_position_NED__m[i][2]);
             }
         }
         hedge.positions_beacons.updated = false;
