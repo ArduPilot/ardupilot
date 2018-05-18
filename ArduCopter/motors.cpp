@@ -180,7 +180,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
         // we have reset height, so arming height is zero
         arming_altitude_m = 0;        
-    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
 
