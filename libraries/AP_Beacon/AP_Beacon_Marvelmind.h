@@ -43,14 +43,14 @@ private:
     {
         uint8_t address;
         uint32_t timestamp;
-        int32_t x, y, z; // coordinates in millimeters
+        int32_t x__mm, y__mm, z__mm;
         bool high_resolution;
     };
 
     struct StationaryBeaconPosition
     {
         uint8_t address;
-        int32_t x, y, z;// coordinates in millimeters
+        int32_t x__mm, y__mm, z__mm;
         bool high_resolution;
         float distance__m;  // Distance between beacon and hedge
     };

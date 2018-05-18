@@ -142,9 +142,9 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
         stationary_beacon = get_or_alloc_beacon(address);
         if (stationary_beacon != nullptr) {
             stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x * 10; // centimeters -> millimeters
-            stationary_beacon->y = y * 10; // centimeters -> millimeters
-            stationary_beacon->z = z * 10; // centimeters -> millimeters
+            stationary_beacon->x__mm = x * 10; // centimeters -> millimeters
+            stationary_beacon->y__mm = y * 10; // centimeters -> millimeters
+            stationary_beacon->z__mm = z * 10; // centimeters -> millimeters
             stationary_beacon->high_resolution = false;
             hedge.positions_beacons.updated = true;
         }
@@ -177,9 +177,9 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
         stationary_beacon = get_or_alloc_beacon(address);
         if (stationary_beacon != nullptr) {
             stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x; // millimeters
-            stationary_beacon->y = y; // millimeters
-            stationary_beacon->z = z; // millimeters
+            stationary_beacon->x__mm = x; // millimeters
+            stationary_beacon->y__mm = y; // millimeters
+            stationary_beacon->z__mm = z; // millimeters
             stationary_beacon->high_resolution = true;
             hedge.positions_beacons.updated = true;
         }
