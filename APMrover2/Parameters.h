@@ -341,6 +341,9 @@ public:
 
     // avoidance library
     AC_Avoid avoid;
+
+    // pivot turn rate
+    AP_Int16 pivot_turn_rate;
 };
 
 extern const AP_Param::Info var_info[];
