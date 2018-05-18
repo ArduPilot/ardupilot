@@ -61,6 +61,14 @@ void QuadPlane::tailsitter_output(void)
             float tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+            // differential thrust on pitch axis for quad tailsitter
+            float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+            // normalize elevator to range [-100,100] by dividing by 45
+            float elev_norm = elevator * (1.0f / 45.0f);
+            float throttleTop = (throttle - elev_norm * tailsitter.vectored_forward_gain);
+            float throttleBot = (throttle + elev_norm * tailsitter.vectored_forward_gain);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleTop, throttleTop);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleBot, throttleBot);
         } else {
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 0);
