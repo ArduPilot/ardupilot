@@ -45,8 +45,6 @@ private:
         uint32_t timestamp;
         int32_t x, y, z; // coordinates in millimeters
         bool high_resolution;
-        bool ready;
-        bool processed;
     };
 
     struct StationaryBeaconPosition
@@ -72,8 +70,6 @@ private:
         uint8_t max_buffered_positions;   // maximum count of measurements of coordinates stored in buffer, default: 3
         PositionValue * position_buffer;  // buffer of measurements
         StationaryBeaconsPositions positions_beacons;
-        bool pause;     //  pause flag. If True, class would not read serial data
-        void (*receive_data_callback)(PositionValue position); //  receive_data_callback is callback function to receive data
 
         uint8_t _last_values_count;
         uint8_t _last_values_next;
