@@ -87,8 +87,8 @@ else
 fi
 
 RP=$(apt-cache search -n '^realpath$')
-if -n "$RP"; then
-    SITL_PKGS+=" realpath"
+if [ -n "$RP" ]; then
+    BASE_PKGS+=" realpath"
 fi
 
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS

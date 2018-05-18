@@ -19,13 +19,16 @@ protected:
     AP_Rally *get_rally() const override { return nullptr; };
     AP_Camera *get_camera() const override { return nullptr; };
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     uint8_t sysid_my_gcs() const override;
 
     bool set_mode(uint8_t mode) override;
 
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
+
+    int32_t global_position_int_relative_alt() const {
+        return 0; // what if we have been picked up and carried somewhere?
+    }
 
 private:
 

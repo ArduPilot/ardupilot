@@ -166,27 +166,28 @@ public:
     void send_battery_status(const AP_BattMonitor &battery,
                              const uint8_t instance) const;
     bool send_battery_status() const;
-    void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
-    bool send_distance_sensor(const RangeFinder &rangefinder) const;
-    void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
-    void send_rangefinder_downward(const RangeFinder &rangefinder) const;
-    bool send_proximity(const AP_Proximity &proximity) const;
+    bool send_distance_sensor() const;
+    void send_rangefinder_downward() const;
+    bool send_proximity() const;
     void send_ahrs2();
     void send_system_time();
     void send_radio_in();
-    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
+    void send_raw_imu();
+    virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
-    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
+    void send_sensor_offsets();
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(const OpticalFlow &optflow);
 #endif
+    virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
     void send_vibration() const;
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_named_float(const char *name, float value) const;
+    void send_home() const;
+    void send_ekf_origin() const;
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
@@ -253,7 +254,7 @@ protected:
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
-    virtual void set_ekf_origin(const Location& loc) = 0;
+    void set_ekf_origin(const Location& loc);
 
     virtual MAV_TYPE frame_type() const = 0;
     virtual MAV_MODE base_mode() const = 0;
@@ -348,6 +349,10 @@ protected:
     bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
+    // these two methods are called after current_loc is updated:
+    virtual int32_t global_position_int_alt() const;
+    virtual int32_t global_position_int_relative_alt() const;
 
 private:
 
@@ -460,6 +465,8 @@ private:
     // send an async parameter reply
     void send_parameter_reply(void);
 
+    void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
+
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
     void handle_common_mission_message(mavlink_message_t *msg);
@@ -519,7 +526,12 @@ private:
         uint32_t min_sample_counter;
         int64_t min_sample_us;
     } lag_correction;
-    
+
+    // we cache the current location and send it even if the AHRS has
+    // no idea where we are:
+    struct Location global_position_current_loc;
+
+    void send_global_position_int();
 };
 
 /// @class GCS
@@ -553,8 +565,9 @@ public:
     virtual uint8_t num_gcs() const = 0;
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_named_float(const char *name, float value) const;
+    void send_home() const;
+    void send_ekf_origin() const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,

@@ -199,9 +199,7 @@ private:
 
     void one_second_loop();
     void ten_hz_logging_loop();
-    void send_attitude(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
-    void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
@@ -235,7 +233,6 @@ private:
     bool get_home_eeprom(struct Location &loc);
     void set_home_eeprom(struct Location temp);
     void set_home(struct Location temp);
-    void set_ekf_origin(const Location& loc);
     void arm_servos();
     void disarm_servos();
     void prepare_servos();

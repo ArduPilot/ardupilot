@@ -109,16 +109,18 @@ MAV_STATE GCS_MAVLINK_Plane::system_status() const
 }
 
 
-void Plane::send_attitude(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_attitude() const
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     float r = ahrs.roll;
-    float p = ahrs.pitch - radians(g.pitch_trim_cd*0.01f);
+    float p = ahrs.pitch - radians(plane.g.pitch_trim_cd*0.01f);
     float y = ahrs.yaw;
     
-    if (quadplane.tailsitter_active()) {
-        r = quadplane.ahrs_view->roll;
-        p = quadplane.ahrs_view->pitch;
-        y = quadplane.ahrs_view->yaw;
+    if (plane.quadplane.tailsitter_active()) {
+        r = plane.quadplane.ahrs_view->roll;
+        p = plane.quadplane.ahrs_view->pitch;
+        y = plane.quadplane.ahrs_view->yaw;
     }
     
     const Vector3f &omega = ahrs.get_gyro();
@@ -174,33 +176,6 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         0, // comm drops %,
         0, // comm drops in pkts,
         0, 0, 0, 0);
-}
-
-void Plane::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time_ms;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.    
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time_ms = gps.last_fix_time_ms();
-    } else {
-        fix_time_ms = millis();
-    }
-    const Vector3f &vel = gps.velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time_ms,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        current_loc.alt * 10UL,         // millimeters above sea level
-        relative_altitude * 1.0e3f,    // millimeters above ground
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.z * 100,  // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
 }
 
 void Plane::send_nav_controller_output(mavlink_channel_t chan)
@@ -423,16 +398,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        plane.send_attitude(chan);
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        plane.send_location(chan);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
@@ -470,21 +435,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(plane.ins, plane.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(plane.ins, plane.compass);
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
@@ -497,13 +447,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_simstate(chan);
         CHECK_PAYLOAD_SIZE2(AHRS2);
         send_ahrs2();
-        break;
-
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(plane.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(plane.rangefinder);
         break;
 
     case MSG_TERRAIN:
@@ -883,8 +826,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 }
                 plane.ahrs.set_home(new_home_loc);
                 AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                plane.Log_Write_Home_And_Origin();
-                gcs().send_home(new_home_loc);
+                AP::ahrs().Log_Write_Home_And_Origin();
+                gcs().send_home();
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1169,8 +1112,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.ahrs.set_home(new_home_loc);
                 AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                plane.Log_Write_Home_And_Origin();
-                gcs().send_home(new_home_loc);
+                AP::ahrs().Log_Write_Home_And_Origin();
+                gcs().send_home();
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1587,8 +1530,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.alt = packet.altitude / 10;
         plane.ahrs.set_home(new_home_loc);
         plane.ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-        plane.Log_Write_Home_And_Origin();
-        gcs().send_home(new_home_loc);
+        plane.ahrs.Log_Write_Home_And_Origin();
+        gcs().send_home();
         gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
@@ -1837,9 +1780,4 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
 {
     return plane.fwver;
-}
-
-void GCS_MAVLINK_Plane::set_ekf_origin(const Location& loc)
-{
-    plane.set_ekf_origin(loc);
 }

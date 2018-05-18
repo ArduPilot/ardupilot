@@ -768,11 +768,9 @@ private:
     
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
-    void send_attitude(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
     void update_sensor_status_flags(void);
     void send_extended_status1(mavlink_channel_t chan);
-    void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_position_target_global_int(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
@@ -801,7 +799,6 @@ private:
     void Log_Write_Optflow();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
-    void Log_Write_Home_And_Origin();
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
@@ -836,7 +833,6 @@ private:
     void set_guided_WP(void);
     void init_home();
     void update_home();
-    void set_ekf_origin(const Location& loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim();

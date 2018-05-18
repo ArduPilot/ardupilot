@@ -45,7 +45,6 @@ LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_AdvancedFailsafe
 LIBRARIES += AR_AttitudeControl
 LIBRARIES += AC_PID
-LIBRARIES += AP_Proximity
 LIBRARIES += AC_Fence
 LIBRARIES += AP_SmartRTL
 LIBRARIES += AC_Avoidance

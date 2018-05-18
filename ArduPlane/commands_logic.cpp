@@ -938,13 +938,9 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
     } else {
         ahrs.set_home(cmd.content.location);
         ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-        Log_Write_Home_And_Origin();
-        gcs().send_home(cmd.content.location);
-        // send ekf origin if set
-        Location ekf_origin;
-        if (ahrs.get_origin(ekf_origin)) {
-            gcs().send_ekf_origin(ekf_origin);
-        }
+        ahrs.Log_Write_Home_And_Origin();
+        gcs().send_home();
+        gcs().send_ekf_origin();
     }
 }
 
