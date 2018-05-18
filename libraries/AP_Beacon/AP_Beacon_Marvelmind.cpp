@@ -220,17 +220,27 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
 void AP_Beacon_Marvelmind::process_beacons_distances_datagram()
 {
     if (32 != input_buffer[4]) {
+        Debug(1, "beacon dist pkt size %d != 32", input_buffer[4]);
         return; // incorrect size
     }
-    raw_beacon_distances.address = input_buffer[5]; // Address of hedgehog
-    for (uint8_t i = 0; i < 4; i++) {
+    bool set = false;
+    for (uint8_t i = 0; i < hedge.positions_beacons.num_beacons; i++) {
         const uint8_t ofs = 6 + i * 6;
-        raw_beacon_distances.beacon[i].address = input_buffer[ofs];
-        raw_beacon_distances.beacon[i].distance = input_buffer[ofs + 1]
-                | (((uint32_t) input_buffer[ofs + 2]) << 8)
-                | (((uint32_t) input_buffer[ofs + 3]) << 16)
-                | (((uint32_t) input_buffer[ofs + 4]) << 24);
-        set_beacon_distance(i, raw_beacon_distances.beacon[i].distance * 0.001f);  // millimeters -> meters
+        const uint8_t address = input_buffer[ofs];
+        const int8_t instance = find_beacon_instance(address);
+        if (instance != -1) {
+            const uint32_t distance = input_buffer[ofs + 1]
+                                      | (((uint32_t) input_buffer[ofs + 2]) << 8)
+                                      | (((uint32_t) input_buffer[ofs + 3]) << 16)
+                                      | (((uint32_t) input_buffer[ofs + 4]) << 24);
+            hedge.positions_beacons.beacons[instance].distance__m = distance * 0.001f; // millimeters -> meters
+            set_beacon_distance(instance, hedge.positions_beacons.beacons[instance].distance__m);
+            set = true;
+            Debug(2, "Beacon %d is %.2fm", instance, hedge.positions_beacons.beacons[instance].distance__m);
+        }
+    }
+    if (set) {
+        last_update_ms = AP_HAL::millis();
     }
 }
 
