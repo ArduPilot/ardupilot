@@ -114,6 +114,7 @@ private:
     void process_beacons_distances_datagram();
     void set_stationary_beacons_positions();
     void order_stationary_beacons();
+    int8_t find_beacon_instance(uint8_t address) const;
 
     // Variables for Ardupilot
     AP_HAL::UARTDriver *uart;
