@@ -54,6 +54,7 @@ private:
         uint8_t address;
         int32_t x, y, z;// coordinates in millimeters
         bool high_resolution;
+        float distance__m;  // Distance between beacon and hedge
     };
 
     struct StationaryBeaconsPositions
@@ -63,19 +64,6 @@ private:
         bool updated;
     };
 
-    struct DistanceToBeacon
-    {
-        uint8_t  address;   ///< Address of beacon (0 if item not filled)
-        uint32_t distance;  ///< Distance to the beacon in millimeters
-        uint8_t  reserved;  ///< reserved (0)
-    };
-
-    struct RawBeaconDistances
-    {
-        uint8_t          address;      ///< Address of hedgehog
-        DistanceToBeacon beacon[4];    ///< Distance to beacon
-        uint8_t          reserved[7];  ///< reserved
-    };
 
     struct MarvelmindHedge
     {
@@ -98,7 +86,6 @@ private:
     } parse_state; // current state of receive data
 
     MarvelmindHedge *hedge;
-    RawBeaconDistances raw_beacon_distances;
     PositionValue cur_position;
     uint8_t input_buffer[AP_BEACON_MARVELMIND_BUF_SIZE];
     uint16_t num_bytes_in_block_received;
