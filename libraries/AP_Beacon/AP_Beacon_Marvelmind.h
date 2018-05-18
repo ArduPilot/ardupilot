@@ -62,17 +62,10 @@ private:
         bool updated;
     };
 
-
     struct MarvelmindHedge
     {
-        MarvelmindHedge();
-        ~MarvelmindHedge();
-        uint8_t max_buffered_positions;   // maximum count of measurements of coordinates stored in buffer, default: 3
-        PositionValue * position_buffer;  // buffer of measurements
         StationaryBeaconsPositions positions_beacons;
-
-        uint8_t _last_values_count;
-        uint8_t _last_values_next;
+        PositionValue cur_position;
         bool _have_new_values;
     };
 
@@ -81,19 +74,17 @@ private:
         RECV_DGRAM
     } parse_state; // current state of receive data
 
-    MarvelmindHedge *hedge;
-    PositionValue cur_position;
+    MarvelmindHedge hedge;
     uint8_t input_buffer[AP_BEACON_MARVELMIND_BUF_SIZE];
     uint16_t num_bytes_in_block_received;
     uint16_t data_id;
 
     uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
     StationaryBeaconPosition* get_or_alloc_beacon(uint8_t address);
-    uint8_t mark_position_ready();
     void process_beacons_positions_datagram();
     void process_beacons_positions_highres_datagram();
-    void process_position_highres_datagram(PositionValue &p);
-    void process_position_datagram(PositionValue &p);
+    void process_position_highres_datagram();
+    void process_position_datagram();
     void process_beacons_distances_datagram();
     void set_stationary_beacons_positions();
     void order_stationary_beacons();
