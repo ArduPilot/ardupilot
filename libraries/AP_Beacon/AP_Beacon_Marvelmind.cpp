@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- Original C Code by Marvelmind (https://bitbucket.org/marvelmind_robotics/)
+ Original C Code by Marvelmind (https://github.com/MarvelmindRobotics/marvelmind.c)
  Adapted into Ardupilot by Karthik Desai, Amilcar Lucas
  April 2017
  */
