@@ -48,7 +48,7 @@ public:
     float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right);
 
     // return a steering servo output from -1 to +1 given a heading in radians
-    float get_steering_out_heading(float heading_rad, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right);
 
     // return a steering servo output from -1 to +1 given a
     // desired yaw rate in radians/sec. Positive yaw is to the right.
