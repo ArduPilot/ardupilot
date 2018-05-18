@@ -234,6 +234,16 @@ void AP_Beacon_Marvelmind::process_beacons_distances_datagram()
     }
 }
 
+int8_t AP_Beacon_Marvelmind::find_beacon_instance(uint8_t address) const
+{
+    for (uint8_t i = 0; i < hedge.positions_beacons.num_beacons; i++) {
+        if (hedge.positions_beacons.beacons[i].address == address) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void AP_Beacon_Marvelmind::update(void)
 {
     if (uart == nullptr || hedge == nullptr || hedge->position_buffer == nullptr) {
