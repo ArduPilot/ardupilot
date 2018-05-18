@@ -555,6 +555,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
 
+    // @Param: PIVOT_TURN_RATE
+    // @DisplayName: Pivot turn rate
+    // @Description: Desired pivot turn rate in deg/s.
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("PIVOT_TURN_RATE", 20, ParametersG2, pivot_turn_rate, 90),
+
     AP_GROUPEND
 };
 
