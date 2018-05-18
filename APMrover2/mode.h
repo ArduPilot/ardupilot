@@ -116,7 +116,7 @@ protected:
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
-    void calc_steering_to_heading(float desired_heading_cd, bool reversed = false);
+    void calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
