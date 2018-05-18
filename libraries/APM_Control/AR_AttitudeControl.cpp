@@ -159,6 +159,15 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_STR_RAT_MAX", 8, AR_AttitudeControl, _steer_rate_max, AR_ATTCONTROL_STEER_RATE_MAX),
 
+    // @Param: _DECEL_MAX
+    // @DisplayName: Speed control deceleration maximum in m/s/s
+    // @Description: Speed control and deceleration maximum in m/s/s.  0 to disable deceleration limiting
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @Units: m/s/s
+    // @User: Standard
+    AP_GROUPINFO("_DECEL_MAX", 9, AR_AttitudeControl, _throttle_decel_max, 0.00f),
+
     AP_GROUPEND
 };
 
@@ -446,6 +455,15 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     return true;
 }
 
+float AR_AttitudeControl::get_decel_max()
+{
+    if (is_positive(_throttle_decel_max)) {
+        return _throttle_decel_max;
+    } else {
+        return _throttle_accel_max;
+    }
+}
+
 // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
 float AR_AttitudeControl::get_desired_speed() const
 {
@@ -473,7 +491,12 @@ float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed) c
     }
 
     // acceleration limit desired speed
-    const float speed_change_max = _throttle_accel_max * dt;
+    float speed_change_max;
+    if (fabsf(desired_speed) < fabsf(_desired_speed) && is_positive(_throttle_decel_max)) {
+        speed_change_max = _throttle_decel_max * dt;
+    } else {
+        speed_change_max = _throttle_accel_max * dt;
+    }
     return constrain_float(desired_speed, speed_prev - speed_change_max, speed_prev + speed_change_max);
 }
 
