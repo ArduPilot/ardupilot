@@ -811,10 +811,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 }
                 plane.set_home(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat*1.0e-7f),
-                                        (double)(new_home_loc.lng*1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }
@@ -1094,10 +1090,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.set_home(new_home_loc);
                 result = MAV_RESULT_ACCEPTED;
-                gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat*1.0e-7f),
-                                        (double)(new_home_loc.lng*1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }
@@ -1508,10 +1500,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.lng = packet.longitude;
         new_home_loc.alt = packet.altitude / 10;
         plane.set_home(new_home_loc);
-        gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                (double)(new_home_loc.lat*1.0e-7f),
-                                (double)(new_home_loc.lng*1.0e-7f),
-                                (uint32_t)(new_home_loc.alt*0.01f));
         break;
     }
 
