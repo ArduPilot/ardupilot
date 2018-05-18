@@ -1,12 +1,5 @@
 #include "Sub.h"
 
-/*
- * the home_state has a number of possible values (see enum HomeState in defines.h's)
- *   HOME_UNSET             = home is not set, no GPS positions yet received
- *   HOME_SET_NOT_LOCKED    = home is set to EKF origin or armed location (can be moved)
- *   HOME_SET_AND_LOCKED    = home has been set by user, cannot be moved except by user initiated do-set-home command
- */
-
 // checks if we should update ahrs/RTL home position from the EKF
 void Sub::update_home_from_EKF()
 {
@@ -69,15 +62,16 @@ bool Sub::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    const bool home_was_set = ahrs.home_is_set();
+
     // set ahrs home (used for RTL)
     ahrs.set_home(loc);
 
     // init inav and compass declination
-    if (!ahrs.home_is_set()) {
+    if (!home_was_set) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
         Log_Write_Event(DATA_SET_HOME);
 
         // log new home position which mission library will pull from ahrs
@@ -91,7 +85,7 @@ bool Sub::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        ahrs.set_home_status(HOME_SET_AND_LOCKED);
+        ahrs.lock_home();
     }
 
     // log ahrs home and ekf origin dataflash
