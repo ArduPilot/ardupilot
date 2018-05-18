@@ -459,18 +459,22 @@ float AR_AttitudeControl::get_desired_speed() const
 // get acceleration limited desired speed
 float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed) const
 {
-    // return input value if no recent calls to speed controller
-    const uint32_t now = AP_HAL::millis();
-    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS) || !is_positive(_throttle_accel_max)) {
-        return desired_speed;
-    }
-
     // calculate dt
-    const float dt = (now - _speed_last_ms) / 1000.0f;
+    const uint32_t now = AP_HAL::millis();
+    float dt = (now - _speed_last_ms) / 1000.0f;
+
+    // use previous desired speed as basis for accel limiting
+    float speed_prev = _desired_speed;
+
+    // if no recent calls to speed controller limit based on current speed
+    if (is_negative(dt) || (dt > AR_ATTCONTROL_TIMEOUT_MS / 1000.0f)) {
+        dt = 0.0f;
+        get_forward_speed(speed_prev);
+    }
 
     // acceleration limit desired speed
     const float speed_change_max = _throttle_accel_max * dt;
-    return constrain_float(desired_speed, _desired_speed - speed_change_max, _desired_speed + speed_change_max);
+    return constrain_float(desired_speed, speed_prev - speed_change_max, speed_prev + speed_change_max);
 }
 
 // get minimum stopping distance (in meters) given a speed (in m/s)
