@@ -436,7 +436,11 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 5;
 
             } else {
-                init_home();
+                gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
+
+                set_home_persistently(gps.location());
+
+                next_WP_loc = prev_WP_loc = home;
 
                 // set system clock for log timestamps
                 uint64_t gps_timestamp = gps.time_epoch_usec();
