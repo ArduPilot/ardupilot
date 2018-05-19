@@ -10,6 +10,7 @@
 #define AC_CIRCLE_RADIUS_DEFAULT    1000.0f     // radius of the circle in cm that the vehicle will fly
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
+#define AC_CIRCLE_RADIUS_USED       1           // use the radius value.
 
 class AC_Circle
 {
@@ -92,6 +93,7 @@ private:
     // parameters
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
+    AP_Int8     _radius_used;   // circle radius used
 
     // internal variables
     Vector3f    _center;        // center of circle in cm from home

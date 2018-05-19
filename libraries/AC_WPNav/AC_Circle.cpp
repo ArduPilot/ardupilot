@@ -23,6 +23,13 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
 
+    // @Param: RADUSED
+    // @DisplayName: Circle Radius used
+    // @Description: Use the radius at the center of the circle.
+    // @Values: 0:Not used,1:Used
+    // @User: Standard
+    AP_GROUPINFO("RADUSED",    2, AC_Circle, _radius_used, AC_CIRCLE_RADIUS_USED),
+
     AP_GROUPEND
 };
 
@@ -86,8 +93,13 @@ void AC_Circle::init()
     const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
-    _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
-    _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
+    if (_radius_used) {
+        _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
+        _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
+    } else {
+        _center.x = stopping_point.x;
+        _center.y = stopping_point.y;
+    }
     _center.z = stopping_point.z;
 
     // calculate velocities
