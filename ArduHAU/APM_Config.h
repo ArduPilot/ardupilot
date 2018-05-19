@@ -25,6 +25,7 @@
 //#define SPRAYER               DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define GRIPPER_ENABLED       DISABLED            // disable gripper support
+//#define RPM_ENABLED           DISABLED            // disable rotations per minute sensor support
 //#define MAGNETOMETER          DISABLED            // disable magnetometer support
 //#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
@@ -41,6 +42,7 @@
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
 //#define MODE_SPORT_ENABLED DISABLED               // disable sport mode support
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
+//#define DEVO_TELEM_ENABLED DISABLED               // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 
 
 // features below are disabled by default on all boards
@@ -63,3 +65,5 @@
 //#define USERHOOK_MEDIUMLOOP userhook_MediumLoop();        // for code to be run at 10hz
 //#define USERHOOK_SLOWLOOP userhook_SlowLoop();            // for code to be run at 3.3hz
 //#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
+
+#define FRAME_CONFIG HAU_FRAME		//uncomment to switch to HAU mode

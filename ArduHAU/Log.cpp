@@ -115,8 +115,8 @@ void Copter::Log_Write_Control_Tuning()
     // get terrain altitude
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    if (terrain.height_above_terrain(terr_alt, true)) {
-        terr_alt = 0.0f;
+    if (!terrain.height_above_terrain(terr_alt, true)) {
+        terr_alt = DataFlash.quiet_nan();
     }
 #endif
 
@@ -183,7 +183,7 @@ void Copter::Log_Write_MotBatt()
         time_us         : AP_HAL::micros64(),
         lift_max        : (float)(motors->get_lift_max()),
         bat_volt        : (float)(motors->get_batt_voltage_filt()),
-        bat_res         : (float)(motors->get_batt_resistance()),
+        bat_res         : (float)(battery.get_resistance()),
         th_limit        : (float)(motors->get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
@@ -336,13 +336,6 @@ void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-void Copter::Log_Write_Baro(void)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro();
-    }
-}
-
 struct PACKED log_ParameterTuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -366,21 +359,6 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t
     };
 
     DataFlash.WriteBlock(&pkt_tune, sizeof(pkt_tune));
-}
-
-// log EKF origin and ahrs home to dataflash
-void Copter::Log_Write_Home_And_Origin()
-{
-    // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
-    }
-
-    // log ahrs home if set
-    if (ap.home_state != HOME_UNSET) {
-        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
-    }
 }
 
 // logs when baro or compass becomes unhealthy
@@ -496,43 +474,6 @@ void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_tar
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if MODE_THROW_ENABLED == ENABLED
-// throw flight mode logging
-struct PACKED log_Throw {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t stage;
-    float velocity;
-    float velocity_z;
-    float accel;
-    float ef_accel_z;
-    uint8_t throw_detect;
-    uint8_t attitude_ok;
-    uint8_t height_ok;
-    uint8_t pos_ok;
-};
-
-// Write a Throw mode details
-void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok)
-{
-    struct log_Throw pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_THROW_MSG),
-        time_us         : AP_HAL::micros64(),
-        stage           : (uint8_t)stage,
-        velocity        : velocity,
-        velocity_z      : velocity_z,
-        accel           : accel,
-        ef_accel_z      : ef_accel_z,
-        throw_detect    : throw_detect,
-        attitude_ok     : attitude_ok,
-        height_ok       : height_ok,
-        pos_ok          : pos_ok
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-}
-#endif
-
-
 // type and unit information can be found in
 // libraries/DataFlash/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -546,8 +487,10 @@ const struct LogStructure Copter::log_structure[] = {
 #endif
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi", "s-----", "F-----" },
+#if OPTFLOW == ENABLED
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
+#endif
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffeccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -566,16 +509,16 @@ const struct LogStructure Copter::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_ERROR_MSG, sizeof(log_Error),         
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
+#if FRAME_CONFIG == HELI_FRAME
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qff",         "TimeUS,DRRPM,ERRPM", "s--", "F--" },
+#endif
+#if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
       "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY", "s--ddmm","F--00BB" },
+#endif
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
-#if MODE_THROW_ENABLED == ENABLED
-    { LOG_THROW_MSG, sizeof(log_Throw),
-      "THRO",  "QBffffbbbb",  "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk", "s-nnoo----", "F-0000----" },
-#endif
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
@@ -586,7 +529,7 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
 #if AC_RALLY
     DataFlash.Log_Write_Rally(rally);
 #endif
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
@@ -610,14 +553,10 @@ void Copter::Log_Write_Data(uint8_t id, int16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Copter::Log_Write_Data(uint8_t id, float value) {}
 void Copter::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
-void Copter::Log_Write_Baro(void) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high) {}
-void Copter::Log_Write_Home_And_Origin() {}
 void Copter::Log_Sensor_Health() {}
 void Copter::Log_Write_Precland() {}
 void Copter::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Copter::Log_Write_Throw(ThrowModeStage stage, float velocity, float velocity_z, float accel, float ef_accel_z, bool throw_detect, bool attitude_ok, bool height_ok, bool pos_ok) {}
-void Copter::Log_Write_Proximity() {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}
 
 #if FRAME_CONFIG == HELI_FRAME

@@ -43,6 +43,7 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @DisplayName: FlowHold Filter Frequency
     // @Description: Filter frequency for flow data
     // @Range: 1 100
+    // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
 
@@ -102,9 +103,6 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     quality_filtered = 0;
     flow_pi_xy.reset_I();
     limited = false;
-    
-    // stop takeoff if running
-    copter.takeoff_stop();
 
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 
@@ -267,10 +265,7 @@ void Copter::ModeFlowHold::run()
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
     float angle_max = copter.attitude_control->get_althold_lean_angle_max();
-    get_pilot_desired_lean_angles(roll_in, pitch_in,
-                                         bf_angles.x, bf_angles.y,
-                                         angle_max,
-                                         attitude_control->get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y,angle_max, attitude_control->get_althold_lean_angle_max());
     
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {
@@ -522,8 +517,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
                                            (double)ins_height,
                                            (double)last_ins_height,
                                            dt_ms);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_0, AP_HAL::millis(), "HEST", height_estimate);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_1, AP_HAL::millis(), "HEST", height_estimate);
+    gcs().send_named_float("HEST", height_estimate);
     delta_velocity_ne.zero();
     last_ins_height = ins_height;
 }

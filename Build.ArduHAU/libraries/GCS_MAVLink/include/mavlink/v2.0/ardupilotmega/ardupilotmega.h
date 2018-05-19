@@ -847,6 +847,7 @@ typedef enum ROVER_MODE
    ROVER_MODE_ACRO=1, /*  | */
    ROVER_MODE_STEERING=3, /*  | */
    ROVER_MODE_HOLD=4, /*  | */
+   ROVER_MODE_LOITER=5, /*  | */
    ROVER_MODE_AUTO=10, /*  | */
    ROVER_MODE_RTL=11, /*  | */
    ROVER_MODE_SMART_RTL=12, /*  | */

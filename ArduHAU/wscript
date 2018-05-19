@@ -26,16 +26,15 @@ def build(bld):
             'AP_RCMapper',
             'AP_Avoidance',
             'AP_AdvancedFailsafe',
-            'AP_Proximity',
             'AP_SmartRTL',
             'AP_Stats',
             'AP_Gripper',
             'AP_Beacon',
             'AP_Arming',
-            'AP_VisualOdom',
             'AP_WheelEncoder',
             'AP_Winch',
             'AP_Follow',
+            'AP_Devo_Telem',
         ],
     )
 
@@ -48,7 +47,7 @@ def build(bld):
 
     bld.ap_program(
         program_name='arducopter-heli',
-        program_groups=['bin', 'copter'],
+        program_groups=['bin', 'heli'],
         use=vehicle + '_libs',
         defines=['FRAME_CONFIG=HELI_FRAME'],
         )

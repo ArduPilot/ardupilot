@@ -47,8 +47,6 @@ protected:
 
     void set_pre_arm_check(bool b);
 
-    enum HomeState home_status() const override;
-
 private:
 
     const AP_InertialNav_NavEKF &_inav;

@@ -10,7 +10,67 @@ class Mode {
 
     // constructor
     Mode(void);
-    
+
+public:
+
+    // Navigation Yaw control
+    class AutoYaw {
+
+    public:
+
+        // yaw(): main product of AutoYaw; the heading:
+        float yaw();
+
+        // mode(): current method of determining desired yaw:
+        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
+        void set_mode_to_default(bool rtl);
+        void set_mode(autopilot_yaw_mode new_mode);
+        autopilot_yaw_mode default_mode(bool rtl) const;
+
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds() const;
+        void set_rate(float new_rate_cds);
+
+        // set_roi(...): set a "look at" location:
+        void set_roi(const Location &roi_location);
+
+        void set_fixed_yaw(float angle_deg,
+                           float turn_rate_dps,
+                           int8_t direction,
+                           bool relative_angle);
+
+    private:
+
+        float look_ahead_yaw();
+        float roi_yaw();
+
+        // auto flight mode's yaw mode
+        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
+
+        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
+        Vector3f roi;
+
+        // bearing from current location to the ROI
+        float _roi_yaw;
+
+        // yaw used for YAW_FIXED yaw_mode
+        int32_t _fixed_yaw;
+
+        // Deg/s we should turn
+        int16_t _fixed_yaw_slewrate;
+
+        // heading when in yaw_look_ahead_yaw
+        float _look_ahead_yaw;
+
+        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _rate_cds;
+
+        // used to reduce update rate to 100hz:
+        uint8_t roi_yaw_counter;
+
+    };
+    static AutoYaw auto_yaw;
+
 protected:
 
     virtual bool init(bool ignore_checks) = 0;
@@ -36,7 +96,7 @@ protected:
     virtual bool in_guided_mode() const { return false; }
 
     // pilot input processing
-    static void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max, float angle_limit);
+    void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
 
     // takeoff support
     bool takeoff_triggered(float target_climb_rate) const;
@@ -44,10 +104,17 @@ protected:
     // helper functions
     void zero_throttle_and_relax_ac();
 
+    // functions to control landing
+    // in modes that support landing
+    int32_t get_alt_above_ground(void);
+    void land_run_horizontal_control();
+    void land_run_vertical_control(bool pause_descent = false);
+
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;
     AC_WPNav *&wp_nav;
+    AC_Loiter *&loiter_nav;
     AC_PosControl *&pos_control;
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
@@ -67,10 +134,6 @@ protected:
     // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
     float &ekfNavVelGainScaler;
 
-    // Navigation Yaw control
-    // auto flight mode's yaw mode
-    uint8_t &auto_yaw_mode;
-
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags_t &heli_flags;
 #endif
@@ -89,14 +152,9 @@ protected:
     GCS_Copter &gcs();
     void Log_Write_Event(uint8_t id);
     void set_throttle_takeoff(void);
-    void set_auto_yaw_mode(uint8_t yaw_mode);
-    void set_auto_yaw_rate(float turn_rate_cds);
-    void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, bool relative_angle);
     void takeoff_timer_start(float alt_cm);
     void takeoff_stop(void);
     void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
-    float get_auto_heading(void);
-    float get_auto_yaw_rate_cds(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 
@@ -366,13 +424,14 @@ private:
     bool roll_enabled();
     bool pitch_enabled();
     bool yaw_enabled();
-    void twitching_test(float measurement, float target, float &measurement_min, float &measurement_max);
-    void updating_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void updating_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
-    void updating_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float target, float measurement_max);
-    void updating_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float target, float measurement_max);
-    void updating_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float target, float measurement_min, float measurement_max);
+    void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
+    void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
     void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max);
+    void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+    void updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+    void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
+    void updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+    void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
 #if LOGGING_ENABLED == ENABLED
@@ -443,17 +502,19 @@ private:
 
 // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls
-    float    test_min;                              // the minimum angular rate achieved during TESTING_RATE step
-    float    test_max;                              // the maximum angular rate achieved during TESTING_RATE step
+    float    test_rate_min;                         // the minimum angular rate achieved during TESTING_RATE step
+    float    test_rate_max;                         // the maximum angular rate achieved during TESTING_RATE step
+    float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step
+    float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step
     uint32_t step_start_time;                       // start time of current tuning step (used for timeout checks)
     uint32_t step_stop_time;                        // start time of current tuning step (used for timeout checks)
     int8_t   counter;                               // counter for tuning gains
-    float    target_rate, start_rate;      // target and start rate
-    float    target_angle, start_angle;    // target and start angles
+    float    target_rate, start_rate;               // target and start rate
+    float    target_angle, start_angle;             // target and start angles
     float    desired_yaw;                           // yaw heading during tune
     float    rate_max, test_accel_max;              // maximum acceleration variables
 
-    LowPassFilterFloat  rotation_rate_filt;                         // filtered rotation rate in radians/second
+    LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
 
 // backup of currently being tuned parameter values
     float    orig_roll_rp = 0, orig_roll_ri, orig_roll_rd, orig_roll_sp, orig_roll_accel;
@@ -774,11 +835,7 @@ public:
     bool is_autopilot() const override { return true; }
     bool landing_gear_should_be_deployed() const override { return true; };
 
-    float get_land_descent_speed();
-    bool landing_with_GPS();
     void do_not_use_GPS();
-
-    int32_t get_alt_above_ground(void);
 
 protected:
 
@@ -1049,6 +1106,11 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
 
+    // Throw types
+    enum ThrowModeType {
+        ThrowType_Upward = 0,
+        ThrowType_Drop = 1
+    };
 
 protected:
 
@@ -1062,13 +1124,21 @@ private:
     bool throw_height_good();
     bool throw_attitude_good();
 
+    // Throw stages
+    enum ThrowModeStage {
+        Throw_Disarmed,
+        Throw_Detecting,
+        Throw_Uprighting,
+        Throw_HgtStabilise,
+        Throw_PosHold
+    };
+
     ThrowModeStage stage = Throw_Disarmed;
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_velz;     // vertical velocity when free fall was detected
-
 };
 
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)

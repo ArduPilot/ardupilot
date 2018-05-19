@@ -79,7 +79,7 @@ void Copter::ModeThrow::run()
         stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
@@ -168,10 +168,10 @@ void Copter::ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // run loiter controller
-        wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), 0.0f);
 
         // call height controller
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);
@@ -185,23 +185,30 @@ void Copter::ModeThrow::run()
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;
-        float velocity = inertial_nav.get_velocity().length();
-        float velocity_z = inertial_nav.get_velocity().z;
-        float accel = copter.ins.get_accel().length();
-        float ef_accel_z = ahrs.get_accel_ef().z;
-        bool throw_detect = (stage > Throw_Detecting) || throw_detected();
-        bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
-        bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
-        bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        copter.Log_Write_Throw(stage,
-                                velocity,
-                                velocity_z,
-                                accel,
-                                ef_accel_z,
-                                throw_detect,
-                                attitude_ok,
-                                height_ok,
-                                pos_ok);
+        const float velocity = inertial_nav.get_velocity().length();
+        const float velocity_z = inertial_nav.get_velocity().z;
+        const float accel = copter.ins.get_accel().length();
+        const float ef_accel_z = ahrs.get_accel_ef().z;
+        const bool throw_detect = (stage > Throw_Detecting) || throw_detected();
+        const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
+        const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
+        const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
+        DataFlash_Class::instance()->Log_Write(
+            "THRO",
+            "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
+            "s-nnoo----",
+            "F-0000----",
+            "QBffffbbbb",
+            AP_HAL::micros64(),
+            (uint8_t)stage,
+            (double)velocity,
+            (double)velocity_z,
+            (double)accel,
+            (double)ef_accel_z,
+            throw_detect,
+            attitude_ok,
+            height_ok,
+            pos_ok);
     }
 }
 

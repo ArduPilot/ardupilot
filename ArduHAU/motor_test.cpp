@@ -54,7 +54,7 @@ void Copter::motor_test_output()
             case MOTOR_TEST_COMPASS_CAL:
                 compass.set_voltage(battery.voltage());
                 compass.per_motor_calibration_update();
-                // fall through 
+                FALLTHROUGH;
                 
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
@@ -153,9 +153,8 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
                 motors->armed(true);
             }
 
-            // disable throttle, battery and gps failsafe
+            // disable throttle and gps failsafe
             g.failsafe_throttle = FS_THR_DISABLED;
-            g.failsafe_battery_enabled = FS_BATT_DISABLED;
             g.failsafe_gcs = FS_GCS_DISABLED;
             g.fs_ekf_action = 0;
 
@@ -204,7 +203,6 @@ void Copter::motor_test_stop()
 
     // re-enable failsafes
     g.failsafe_throttle.load();
-    g.failsafe_battery_enabled.load();
     g.failsafe_gcs.load();
     g.fs_ekf_action.load();
 

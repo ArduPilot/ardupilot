@@ -146,26 +146,11 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
         return false;
     }
 
-    Parameters &g = copter.g;
-
     // check battery voltage
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if (copter.failsafe.battery) {
+        if (copter.battery.has_failsafed()) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Battery failsafe");
-            }
-            return false;
-        }
-
-        // all following checks are skipped if USB is connected
-        if (copter.ap.usb_connected) {
-            return true;
-        }
-
-        // check if battery is exhausted
-        if (copter.battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Check Battery");
             }
             return false;
         }
@@ -212,7 +197,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 
         // acro balance parameter check
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
         if ((copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: ACRO_BAL_ROLL/PITCH");
@@ -700,11 +685,6 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
     return AP_Arming::arm_checks(arming_from_gcs);
-}
-
-enum HomeState AP_Arming_Copter::home_status() const
-{
-    return copter.ap.home_state;
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)
