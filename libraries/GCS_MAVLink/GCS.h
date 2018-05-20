@@ -24,7 +24,8 @@
 #include <AP_Common/AP_FWVersion.h>
 
 // check if a message will fit in the payload space available
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
+#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
@@ -85,6 +86,15 @@ enum ap_message {
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
+// convenience macros for defining which ap_message ids are in which streams:
+#define MAV_STREAM_ENTRY(stream_name)           \
+    {                                           \
+        GCS_MAVLINK::stream_name,               \
+        stream_name ## _msgs,                   \
+        ARRAY_SIZE(stream_name ## _msgs)        \
+    }
+#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -99,7 +109,7 @@ public:
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
-    virtual void        data_stream_send(void) = 0;
+    void        data_stream_send();
     void        queued_param_send();
     void        queued_waypoint_send();
     // packetReceived is called on any successful decode of a mavlink message
@@ -150,32 +160,35 @@ public:
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
     // common send functions
-    void send_heartbeat(void);
+    void send_heartbeat(void) const;
     void send_meminfo(void);
     void send_power_status(void);
-    void send_battery_status(const AP_BattMonitor &battery, const uint8_t instance) const;
-    bool send_battery_status(const AP_BattMonitor &battery) const;
-    void send_distance_sensor(const AP_RangeFinder_Backend *sensor) const;
-    bool send_distance_sensor(const RangeFinder &rangefinder) const;
-    void send_distance_sensor_downward(const RangeFinder &rangefinder) const;
-    void send_rangefinder_downward(const RangeFinder &rangefinder) const;
-    bool send_proximity(const AP_Proximity &proximity) const;
+    void send_battery_status(const AP_BattMonitor &battery,
+                             const uint8_t instance) const;
+    bool send_battery_status() const;
+    bool send_distance_sensor() const;
+    void send_rangefinder_downward() const;
+    bool send_proximity() const;
     void send_ahrs2();
     void send_system_time();
-    void send_radio_in(uint8_t receiver_rssi);
-    void send_raw_imu(const AP_InertialSensor &ins, const Compass &compass);
+    void send_radio_in();
+    void send_raw_imu();
+    virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
-    void send_sensor_offsets(const AP_InertialSensor &ins, const Compass &compass);
+    void send_sensor_offsets();
     void send_ahrs();
-    void send_battery2(const AP_BattMonitor &battery);
+    void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
     void send_opticalflow(const OpticalFlow &optflow);
 #endif
+    virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
-    void send_vibration(const AP_InertialSensor &ins) const;
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_vibration() const;
+    void send_named_float(const char *name, float value) const;
+    void send_home() const;
+    void send_ekf_origin() const;
+    virtual void send_position_target_global_int() { };
     void send_servo_output_raw(bool hil);
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
@@ -218,8 +231,18 @@ public:
 
     // alternative protocol function handler
     FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
-    
+
+    struct stream_entries {
+        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
+        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const uint8_t num_ap_message_ids;
+    };
+    // vehicle subclass cpp files should define this:
+    static const struct stream_entries all_stream_entries[];
+
 protected:
+
+    virtual bool in_hil_mode() const { return false; }
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
@@ -232,7 +255,7 @@ protected:
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
     virtual const AP_FWVersion &get_fwver() const = 0;
-    virtual void set_ekf_origin(const Location& loc) = 0;
+    void set_ekf_origin(const Location& loc);
 
     virtual MAV_TYPE frame_type() const = 0;
     virtual MAV_MODE base_mode() const = 0;
@@ -327,6 +350,10 @@ protected:
     bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
+    // these two methods are called after current_loc is updated:
+    virtual int32_t global_position_int_alt() const;
+    virtual int32_t global_position_int_relative_alt() const;
 
 private:
 
@@ -439,6 +466,8 @@ private:
     // send an async parameter reply
     void send_parameter_reply(void);
 
+    void send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
+
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) = 0;
     void handle_common_mission_message(mavlink_message_t *msg);
@@ -453,7 +482,8 @@ private:
                                                      const float z,
                                                      const float roll,
                                                      const float pitch,
-                                                     const float yaw);
+                                                     const float yaw,
+                                                     const uint16_t payload_size);
     void log_vision_position_estimate_data(const uint64_t usec,
                                            const float x,
                                            const float y,
@@ -465,6 +495,12 @@ private:
 
     void lock_channel(mavlink_channel_t chan, bool lock);
 
+    /*
+      correct an offboard timestamp in microseconds to a local time
+      since boot in milliseconds
+     */
+    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
+    
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
@@ -483,7 +519,20 @@ private:
         uint32_t last_alternate_ms;
         bool active;
     } alternative;
-    
+
+    // state associated with offboard transport lag correction
+    struct {
+        bool initialised;
+        int64_t link_offset_usec;
+        uint32_t min_sample_counter;
+        int64_t min_sample_us;
+    } lag_correction;
+
+    // we cache the current location and send it even if the AHRS has
+    // no idea where we are:
+    struct Location global_position_current_loc;
+
+    void send_global_position_int();
 };
 
 /// @class GCS
@@ -517,8 +566,9 @@ public:
     virtual uint8_t num_gcs() const = 0;
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
-    void send_home(const Location &home) const;
-    void send_ekf_origin(const Location &ekf_origin) const;
+    void send_named_float(const char *name, float value) const;
+    void send_home() const;
+    void send_ekf_origin() const;
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,

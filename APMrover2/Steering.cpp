@@ -39,6 +39,12 @@ void Rover::set_servos(void)
     if (motor_test) {
         motor_test_output();
     } else {
-        g2.motors.output(arming.is_armed() && hal.util->get_soft_armed(), G_Dt);
+        // get ground speed
+        float speed;
+        if (!g2.attitude_control.get_forward_speed(speed)) {
+            speed = 0.0f;
+        }
+
+        g2.motors.output(arming.is_armed(), speed, G_Dt);
     }
 }

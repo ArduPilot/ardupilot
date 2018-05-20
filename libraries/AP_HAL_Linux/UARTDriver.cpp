@@ -22,7 +22,6 @@
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
 #include "UARTDevice.h"
-#include "UARTQFlight.h"
 #include "UDPDevice.h"
 
 #include <GCS_MAVLink/GCS.h>
@@ -87,6 +86,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     _device->set_speed(b);
 
+    _baudrate = b;
+
     _allocate_buffers(rxS, txS);
 }
 
@@ -127,10 +128,6 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
         return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-    } else if (strncmp(arg, "qflight:", 8) == 0) {
-        return AP_HAL::OwnPtr<SerialDevice>(new QFLIGHTDevice(device_path));
-#endif
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
@@ -471,6 +468,10 @@ void UARTDriver::_timer_tick(void)
         }
         _readbuf.commit((unsigned)ret);
 
+        // update receive timestamp
+        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+        _receive_timestamp_idx ^= 1;
+        
         /* stop reading as we read less than we asked for */
         if ((unsigned)ret < vec[i].len) {
             break;
@@ -478,4 +479,28 @@ void UARTDriver::_timer_tick(void)
     }
 
     _in_timer = false;
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+{
+    uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
+    if (_baudrate > 0) {
+        // assume 10 bits per byte.
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
 }

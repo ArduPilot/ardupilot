@@ -378,9 +378,6 @@ private:
     AP_BoardConfig_CAN BoardConfig_CAN;
 #endif
 
-    // receiver RSSI
-    uint8_t receiver_rssi;
-
     // Failsafe
     struct {
         uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
@@ -575,9 +572,6 @@ private:
     AP_Avoidance_Copter avoidance_adsb{ahrs, adsb};
 #endif
 
-    // use this to prevent recursion during sensor init
-    bool in_mavlink_delay;
-
     // last valid RC input time
     uint32_t last_radio_update_ms;
 
@@ -706,7 +700,6 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
-    void set_ekf_origin(const Location& loc);
     bool far_from_EKF_origin(const Location& loc);
     void set_system_time_from_GPS();
 
@@ -724,7 +717,6 @@ private:
 
     // ekf_check.cpp
     void ekf_check();
-    bool ekf_check_position_problem();
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
@@ -766,10 +758,8 @@ private:
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
     void gcs_send_deferred(void);
-    void send_attitude(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
-    void send_location(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_vfr_hud(mavlink_channel_t chan);
@@ -813,7 +803,6 @@ private:
     void Log_Write_Data(uint8_t id, float value);
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, int16_t control_in, int16_t tune_low, int16_t tune_high);
-    void Log_Write_Home_And_Origin();
     void Log_Sensor_Health();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
@@ -886,7 +875,6 @@ private:
     void compass_accumulate(void);
     void init_optflow();
     void update_optical_flow(void);
-    void read_receiver_rssi(void);
     void compass_cal_update(void);
     void accel_cal_update(void);
     void init_proximity();

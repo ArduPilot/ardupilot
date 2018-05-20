@@ -428,7 +428,7 @@ const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
-void AP_Landing_Deepstall::log(void) const {
+void AP_Landing_Deepstall::Log(void) const {
     const DataFlash_Class::PID_Info& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),

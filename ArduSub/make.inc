@@ -36,7 +36,6 @@ LIBRARIES += AC_Circle
 LIBRARIES += AP_Declination
 LIBRARIES += AC_Fence
 LIBRARIES += AC_Avoidance
-LIBRARIES += AP_Proximity
 LIBRARIES += AP_Scheduler
 LIBRARIES += AP_RCMapper
 LIBRARIES += AP_Notify

@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "---------- $0 start ----------"
 set -e
 set -x
 
@@ -10,7 +11,7 @@ PX4_PKGS="python-argparse openocd flex bison libncurses5-dev \
           zip genromfs python-empy cmake cmake-data"
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
 # python-wxgtk packages are added to SITL_PKGS below
-SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing realpath"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev python-dev python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing xterm"
 ASSUME_YES=false
 QUIET=false
 
@@ -85,6 +86,11 @@ else
     SITL_PKGS+=" python-wxgtk2.8"
 fi
 
+RP=$(apt-cache search -n '^realpath$')
+if [ -n "$RP" ]; then
+    BASE_PKGS+=" realpath"
+fi
+
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
 sudo pip2 -q install -U $PYTHON_PKGS
 
@@ -127,3 +133,4 @@ apt-cache search arm-none-eabi
  git submodule init
  git submodule update
 )
+echo "---------- $0 end ----------"

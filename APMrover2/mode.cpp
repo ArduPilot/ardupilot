@@ -44,7 +44,10 @@ bool Mode::enter()
     return _enter();
 }
 
-void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+// decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+// steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+// throttle_out is in the range -100 ~ +100
+void Mode::get_pilot_input(float &steering_out, float &throttle_out)
 {
     // no RC input means no throttle and centered steering
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
@@ -57,11 +60,12 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     switch ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get())
     {
         case PILOT_STEER_TYPE_DEFAULT:
+        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
-            // (this is the same as PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING below)
             throttle_out = rover.channel_throttle->get_control_in();
-            steering_out = rover.channel_steer->get_control_in();
+            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
+            steering_out = steering_dir * rover.channel_steer->get_control_in();
             break;
         }
 
@@ -74,24 +78,50 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
             const float right_paddle = rover.channel_throttle->norm_input();
 
             throttle_out = 0.5f * (left_paddle + right_paddle) * 100.0f;
-
-            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * (left_paddle - right_paddle) * 0.5f * 4500.0f;
+            steering_out = (left_paddle - right_paddle) * 0.5f * 4500.0f;
             break;
         }
-
-        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
-            throttle_out = rover.channel_throttle->get_control_in();
-            steering_out = rover.channel_steer->get_control_in();
-            break;
 
         case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
             throttle_out = rover.channel_throttle->get_control_in();
-            const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * rover.channel_steer->get_control_in();
+            steering_out = rover.channel_steer->get_control_in();
             break;
         }
     }
+}
+
+// decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+// steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+// throttle_out is in the range -100 ~ +100
+void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+{
+    // do basic conversion
+    get_pilot_input(steering_out, throttle_out);
+
+    // check for special case of input and output throttle being in opposite directions
+    float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
+    if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
+        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
+         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        steering_out *= -1;
+    }
+    throttle_out = throttle_out_limited;
+}
+
+// decode pilot steering and return steering_out and speed_out (in m/s)
+void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out)
+{
+    float desired_throttle;
+    get_pilot_input(steering_out, desired_throttle);
+    speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+    // check for special case of input and output throttle being in opposite directions
+    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out);
+    if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
+        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
+         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        steering_out *= -1;
+    }
+    speed_out = speed_out_limited;
 }
 
 // set desired location
@@ -326,14 +356,14 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     float desired_lat_accel = rover.nav_controller->lateral_acceleration();
     float desired_heading = rover.nav_controller->target_bearing_cd();
     if (reversed) {
-        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor + 18000);
-    } else {
-        _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
+        desired_heading = wrap_360_cd(desired_heading + 18000);
+        desired_lat_accel *= -1.0f;
     }
+    _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
     if (rover.use_pivot_steering(_yaw_error_cd)) {
         // for pivot turns use heading controller
-        calc_steering_to_heading(desired_heading, reversed);
+        calc_steering_to_heading(desired_heading);
     } else {
         // call lateral acceleration to steering controller
         calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
@@ -346,6 +376,7 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
 void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reversed)
 {
     // add obstacle avoidance response to lateral acceleration target
+    // ToDo: replace this type of object avoidance with path planning
     if (!reversed) {
         lat_accel += (rover.obstacle.turn_angle / 45.0f) * g.turn_max_g;
     }
@@ -355,11 +386,8 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 
     // send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
-                                                                           g2.motors.have_skid_steering(),
-                                                                           g2.motors.have_vectored_thrust(),
                                                                            g2.motors.limit.steer_left,
-                                                                           g2.motors.limit.steer_right,
-                                                                           reversed);
+                                                                           g2.motors.limit.steer_right);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
@@ -368,11 +396,8 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
 {
     // calculate yaw error (in radians) and pass to steering angle controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
-                                                                         g2.motors.have_skid_steering(),
-                                                                         g2.motors.have_vectored_thrust(),
                                                                          g2.motors.limit.steer_left,
-                                                                         g2.motors.limit.steer_right,
-                                                                         reversed);
+                                                                         g2.motors.limit.steer_right);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 

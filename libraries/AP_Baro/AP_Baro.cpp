@@ -40,12 +40,6 @@
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-#include "AP_Baro_qflight.h"
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include "AP_Baro_QURT.h"
-#endif
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
@@ -537,12 +531,6 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_DPS280_I2C
     ADD_BACKEND(AP_Baro_DPS280::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_DPS280_I2C_BUS, HAL_BARO_DPS280_I2C_ADDR))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
-    drivers[0] = new AP_Baro_QFLIGHT(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_QURT
-    drivers[0] = new AP_Baro_QURT(*this);
-    _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H
 	ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR))));
@@ -569,6 +557,10 @@ void AP_Baro::init(void)
 
     ADD_BACKEND(AP_Baro_BMP280::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR))));
+  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
+    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR_ALT))));
+  #endif
 
     ADD_BACKEND(AP_Baro_BMP085::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP085_I2C_ADDR))));
@@ -590,6 +582,10 @@ void AP_Baro::init(void)
 
         ADD_BACKEND(AP_Baro_BMP280::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR))));
+  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
+        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR_ALT))));
+  #endif
         ADD_BACKEND(AP_Baro_BMP085::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP085_I2C_ADDR))));
  #endif                                         

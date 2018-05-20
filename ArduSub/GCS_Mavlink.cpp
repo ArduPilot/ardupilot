@@ -89,20 +89,6 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-NOINLINE void Sub::send_attitude(mavlink_channel_t chan)
-{
-    const Vector3f &gyro = ins.get_gyro();
-    mavlink_msg_attitude_send(
-        chan,
-        millis(),
-        ahrs.roll,
-        ahrs.pitch,
-        ahrs.yaw,
-        gyro.x,
-        gyro.y,
-        gyro.z);
-}
-
 #if AC_FENCE == ENABLED
 NOINLINE void Sub::send_limits_status(mavlink_channel_t chan)
 {
@@ -258,24 +244,6 @@ NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 
 }
 
-void NOINLINE Sub::send_location(mavlink_channel_t chan)
-{
-    const uint32_t now = AP_HAL::millis();
-    Vector3f vel;
-    ahrs.get_velocity_NED(vel);
-    mavlink_msg_global_position_int_send(
-        chan,
-        now,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        ap.depth_sensor_present ? (ahrs.get_home().alt + current_loc.alt) * 10UL : 0, // millimeters above sea level
-        ap.depth_sensor_present ? current_loc.alt * 10 : 0, // millimeters above ground
-        vel.x * 100,                    // X speed cm/s (+ve North)
-        vel.y * 100,                    // Y speed cm/s (+ve East)
-        vel.z * 100,                    // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);               // compass heading in 1/100 degree
-}
-
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
 {
     const Vector3f &targets = attitude_control.get_att_target_euler_cd();
@@ -351,9 +319,9 @@ void NOINLINE Sub::send_rpm(mavlink_channel_t chan)
 #endif
 
 // Work around to get temperature sensor data out
-void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
+void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
-    if (!celsius.healthy()) {
+    if (!sub.celsius.healthy()) {
         return;
     }
     mavlink_msg_scaled_pressure3_send(
@@ -361,61 +329,38 @@ void NOINLINE Sub::send_temperature(mavlink_channel_t chan)
         AP_HAL::millis(),
         0,
         0,
-        celsius.temperature() * 100);
+        sub.celsius.temperature() * 100);
 }
 
-bool NOINLINE Sub::send_info(mavlink_channel_t chan)
+bool GCS_MAVLINK_Sub::send_info()
 {
     // Just do this all at once, hopefully the hard-wire telemetry requirement means this is ok
     // Name is char[10]
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "CamTilt",
-            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("CamTilt",
+                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_tilt) / 2.0f + 0.5f));
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "CamPan",
-            1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("CamPan",
+                     1 - (SRV_Channels::get_output_norm(SRV_Channel::k_mount_pan) / 2.0f + 0.5f));
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "TetherTrn",
-            quarter_turn_count/4);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("TetherTrn",
+                     sub.quarter_turn_count/4);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "Lights1",
-            SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("Lights1",
+                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin9) / 2.0f + 0.5f);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "Lights2",
-            SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("Lights2",
+                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "PilotGain",
-            gain);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("PilotGain", sub.gain);
 
-    CHECK_PAYLOAD_SIZE2(NAMED_VALUE_FLOAT);
-    mavlink_msg_named_value_float_send(
-            chan,
-            AP_HAL::millis(),
-            "InputHold",
-            input_hold_engaged);
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("InputHold", sub.input_hold_engaged);
 
     return true;
 }
@@ -503,14 +448,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     switch (id) {
 
     case MSG_NAMED_FLOAT:
-        sub.send_info(chan);
-        break;
-
-    case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
-        send_heartbeat();
-        sub.send_info(chan);
+        send_info();
         break;
 
     case MSG_EXTENDED_STATUS1:
@@ -524,24 +462,9 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         }
         break;
 
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        sub.send_attitude(chan);
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        sub.send_location(chan);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         sub.send_nav_controller_output(chan);
-        break;
-
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
-        send_radio_in(0);
         break;
 
     case MSG_SERVO_OUTPUT_RAW:
@@ -552,31 +475,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         sub.send_vfr_hud(chan);
-        break;
-
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(sub.ins, sub.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        sub.send_temperature(chan);
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(sub.ins, sub.compass);
-        break;
-
-    case MSG_RANGEFINDER:
-#if RANGEFINDER_ENABLED == ENABLED
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(sub.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(sub.rangefinder);
-#endif
         break;
 
     case MSG_RPM:
@@ -616,11 +514,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif // MOUNT == ENABLED
         break;
 
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(sub.battery);
-        break;
-
     case MSG_OPTICAL_FLOW:
 #if OPTFLOW == ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
@@ -645,14 +538,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_pid_tuning(chan);
         break;
 
-    case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(sub.ins);
-        break;
-
-    case MSG_BATTERY_STATUS:
-        send_battery_status(sub.battery);
-        break;
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -736,124 +621,73 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK_Sub::data_stream_send(void)
-{
-    if (waypoint_receiving) {
-        // don't interfere with mission transfer
-        return;
-    }
-
-    gcs().set_out_of_time(false);
-
-    send_queued_parameters();
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (sub.in_mavlink_delay) {
-        // don't send any other stream types while in the delay callback
-        return;
-    }
-
-    if (stream_trigger(STREAM_RAW_SENSORS)) {
-        send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
-        send_message(MSG_RAW_IMU3);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
-        send_message(MSG_EXTENDED_STATUS1);
-        send_message(MSG_EXTENDED_STATUS2);
-        send_message(MSG_CURRENT_WAYPOINT);
-        send_message(MSG_GPS_RAW);
-        send_message(MSG_GPS_RTK);
-        send_message(MSG_GPS2_RAW);
-        send_message(MSG_GPS2_RTK);
-        send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_LIMITS_STATUS);
-        send_message(MSG_NAMED_FLOAT);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_POSITION)) {
-        send_message(MSG_LOCATION);
-        send_message(MSG_LOCAL_POSITION);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_SERVO_OUTPUT_RAW);
-        send_message(MSG_RADIO_IN);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA1)) {
-        send_message(MSG_ATTITUDE);
-        send_message(MSG_SIMSTATE);
-        send_message(MSG_PID_TUNING);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA2)) {
-        send_message(MSG_VFR_HUD);
-    }
-
-    if (gcs().out_of_time()) {
-        return;
-    }
-
-    if (stream_trigger(STREAM_EXTRA3)) {
-        send_message(MSG_AHRS);
-        send_message(MSG_HWSTATUS);
-        send_message(MSG_SYSTEM_TIME);
-        send_message(MSG_RANGEFINDER);
+static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
+    MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_RAW_IMU3  // SENSOR_OFFSETS
+};
+static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_CURRENT_WAYPOINT,
+    MSG_GPS_RAW,
+    MSG_GPS_RTK,
+    MSG_GPS2_RAW,
+    MSG_GPS2_RTK,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_LIMITS_STATUS,
+    MSG_NAMED_FLOAT
+};
+static const uint8_t STREAM_POSITION_msgs[] = {
+    MSG_LOCATION,
+    MSG_LOCAL_POSITION
+};
+static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+};
+static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+    MSG_SERVO_OUTPUT_RAW,
+    MSG_RADIO_IN
+};
+static const uint8_t STREAM_EXTRA1_msgs[] = {
+    MSG_ATTITUDE,
+    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_PID_TUNING
+};
+static const uint8_t STREAM_EXTRA2_msgs[] = {
+    MSG_VFR_HUD
+};
+static const uint8_t STREAM_EXTRA3_msgs[] = {
+    MSG_AHRS,
+    MSG_HWSTATUS,
+    MSG_SYSTEM_TIME,
+    MSG_RANGEFINDER,
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-        send_message(MSG_TERRAIN);
+    MSG_TERRAIN,
 #endif
-        send_message(MSG_BATTERY2);
-        send_message(MSG_BATTERY_STATUS);
-        send_message(MSG_MOUNT_STATUS);
-        send_message(MSG_OPTICAL_FLOW);
-        send_message(MSG_GIMBAL_REPORT);
-        send_message(MSG_MAG_CAL_REPORT);
-        send_message(MSG_MAG_CAL_PROGRESS);
-        send_message(MSG_EKF_STATUS_REPORT);
-        send_message(MSG_VIBRATION);
+    MSG_BATTERY2,
+    MSG_BATTERY_STATUS,
+    MSG_MOUNT_STATUS,
+    MSG_OPTICAL_FLOW,
+    MSG_GIMBAL_REPORT,
+    MSG_MAG_CAL_REPORT,
+    MSG_MAG_CAL_PROGRESS,
+    MSG_EKF_STATUS_REPORT,
+    MSG_VIBRATION,
 #if RPM_ENABLED == ENABLED
-        send_message(MSG_RPM);
+    MSG_RPM
 #endif
-    }
+};
 
-    if (gcs().out_of_time()) {
-        return;
-    }
-}
-
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
+    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
+    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
+    MAV_STREAM_ENTRY(STREAM_POSITION),
+    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
+    MAV_STREAM_ENTRY(STREAM_EXTRA1),
+    MAV_STREAM_ENTRY(STREAM_EXTRA2),
+    MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
+};
 
 bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -913,7 +747,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
     }
 
     case MAVLINK_MSG_ID_PARAM_VALUE: {
+#if MOUNT == ENABLED
         sub.camera_mount.handle_param_value(msg);
+#endif
         break;
     }
 
@@ -1539,11 +1375,10 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 void Sub::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs().chan(0).initialised || in_mavlink_delay) {
+    if (!gcs().chan(0).initialised) {
         return;
     }
 
-    in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
@@ -1565,7 +1400,6 @@ void Sub::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-    in_mavlink_delay = false;
 }
 
 /*
@@ -1630,9 +1464,17 @@ const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
     return sub.fwver;
 }
 
-void GCS_MAVLINK_Sub::set_ekf_origin(const Location& loc)
-{
-    sub.set_ekf_origin(loc);
+int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {
+    if (!sub.ap.depth_sensor_present) {
+        return 0;
+    }
+    return GCS_MAVLINK::global_position_int_alt();
+}
+int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
+    if (!sub.ap.depth_sensor_present) {
+        return 0;
+    }
+    return GCS_MAVLINK::global_position_int_relative_alt();
 }
 
 // dummy method to avoid linking AFS

@@ -9,8 +9,6 @@ class GCS_MAVLINK_Rover : public GCS_MAVLINK
 {
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override;
@@ -23,13 +21,14 @@ protected:
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     uint8_t sysid_my_gcs() const override;
 
     bool set_mode(uint8_t mode) override;
 
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+
+    virtual bool in_hil_mode() const override;
 
 private:
 

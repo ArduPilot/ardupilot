@@ -193,7 +193,7 @@ int wait_ready (	/* 1:Ready, 0:Timeout */
 /*-----------------------------------------------------------------------*/
 
 static
-void deselect (void)
+void deselect_cs (void)
 {
     CS_HIGH();		/* Set CS# high */
     xchg_spi(0xFF);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
@@ -206,7 +206,7 @@ void deselect (void)
 /*-----------------------------------------------------------------------*/
 
 static
-int select (void)	/* 1:OK, 0:Timeout */
+int select_cs (void)	/* 1:OK, 0:Timeout */
 {
     if(!CS_LOW()) { /* take semaphore and Set CS# low */
         return 0;		
@@ -214,7 +214,7 @@ int select (void)	/* 1:OK, 0:Timeout */
     xchg_spi(0xFF);	/* Dummy clock (force DO enabled) */
     if (wait_ready(500)) return 1;	/* Wait for card ready */
 
-    deselect();
+    deselect_cs();
     return 0;	/* Timeout */
 }
 
@@ -321,9 +321,9 @@ uint8_t send_cmd (	        	/* Return value: R1 resp (bit7==1:Failed to send) */
 
 	/* Select the card and wait for ready except to stop multiple block read */
 	if (cmd != CMD12) {
-		deselect();
+		deselect_cs();
 //		spi_yield(); // sync quant so no interrupts when receiving answer
-		if (!select()) {
+		if (!select_cs()) {
 		    return 0xFF;
 		}
 	}
@@ -444,7 +444,7 @@ DSTATUS sd_initialize() {
 	    Stat = STA_NOINIT;
 	}
 
-	deselect();
+	deselect_cs();
 
 	return Stat;
 }
@@ -561,7 +561,7 @@ DRESULT sd_read (
 		    } else {
 		        break;
 		    }
-                    deselect();
+                    deselect_cs();
 		    spi_yield();
 		} while(--count);
 
@@ -589,7 +589,7 @@ DRESULT sd_read (
 		}
 	    }
 	}
-	deselect();
+	deselect_cs();
         if(count==0) return  RES_OK;	/* Return result */
         Stat = STA_NOINIT;        
 	return RES_ERROR;
@@ -658,14 +658,14 @@ DRESULT sd_write (
 	}
 
 	if(count) {
-            deselect();
+            deselect_cs();
             Stat = STA_NOINIT;        
 	    return RES_ERROR;
 	}
 
         uint8_t ret = sd_get_state(); // reset errors
 
-	deselect();
+	deselect_cs();
 	
 	if(ret) return RES_ERROR;
 
@@ -716,7 +716,7 @@ DRESULT sd_ioctl (
 
 	switch (cmd) {
 	case CTRL_SYNC :		/* Wait for end of internal write process of the drive */
-		if (select()) res = RES_OK;
+		if (select_cs()) res = RES_OK;
 		break;
 
 	case GET_SECTOR_COUNT :	/* Get drive capacity in unit of sector (uint32_t) */
@@ -810,7 +810,7 @@ DRESULT sd_ioctl (
 		res = RES_PARERR;
 	}
 
-	deselect();
+	deselect_cs();
     }
     return res;
 }

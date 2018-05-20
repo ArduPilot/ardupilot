@@ -10,8 +10,6 @@ class GCS_MAVLINK_Copter : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override;
@@ -26,7 +24,6 @@ protected:
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     uint8_t sysid_my_gcs() const override;
 
@@ -36,6 +33,8 @@ protected:
     void send_banner() override;
 
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+
+    void send_position_target_global_int() override;
 
 private:
 

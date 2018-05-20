@@ -312,9 +312,9 @@ float closest_approach_z(const Location &my_loc,
     if (delta_pos_d >= 0 && delta_vel_d >= 0) {
         ret = delta_pos_d;
     } else if (delta_pos_d <= 0 && delta_vel_d <= 0) {
-        ret = fabs(delta_pos_d);
+        ret = fabsf(delta_pos_d);
     } else {
-        ret = fabs(delta_pos_d - delta_vel_d * time_horizon);
+        ret = fabsf(delta_pos_d - delta_vel_d * time_horizon);
     }
 
     debug("   time_horizon: (%d)", time_horizon);

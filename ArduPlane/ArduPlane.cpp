@@ -65,7 +65,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
-    SCHED_TASK(read_receiver_rssi,     10,    100),
     SCHED_TASK(rpm_update,             10,    100),
     SCHED_TASK(airspeed_ratio_update,   1,    100),
     SCHED_TASK(update_mount,           50,    100),
@@ -79,7 +78,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(parachute_check,        10,    200),
     SCHED_TASK(terrain_update,         10,    200),
     SCHED_TASK(update_is_flying_5Hz,    5,    100),
+#if LOGGING_ENABLED == ENABLED
     SCHED_TASK(dataflash_periodic,     50,    400),
+#endif
     SCHED_TASK(ins_periodic,           50,     50),
     SCHED_TASK(avoidance_adsb_update,  10,    100),
     SCHED_TASK(button_update,           5,    100),
@@ -146,7 +147,7 @@ void Plane::ahrs_update()
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        Log_Write_IMU();
+        DataFlash.Log_Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -243,10 +244,10 @@ void Plane::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        Log_Write_IMU();
+        DataFlash.Log_Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))
-        Log_Write_AOA_SSA();
+        DataFlash.Log_Write_AOA_SSA(ahrs);
 }
 
 /*

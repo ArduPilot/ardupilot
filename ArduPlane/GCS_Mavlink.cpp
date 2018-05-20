@@ -109,16 +109,18 @@ MAV_STATE GCS_MAVLINK_Plane::system_status() const
 }
 
 
-void Plane::send_attitude(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_attitude() const
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+
     float r = ahrs.roll;
-    float p = ahrs.pitch - radians(g.pitch_trim_cd*0.01f);
+    float p = ahrs.pitch - radians(plane.g.pitch_trim_cd*0.01f);
     float y = ahrs.yaw;
     
-    if (quadplane.tailsitter_active()) {
-        r = quadplane.ahrs_view->roll;
-        p = quadplane.ahrs_view->pitch;
-        y = quadplane.ahrs_view->yaw;
+    if (plane.quadplane.tailsitter_active()) {
+        r = plane.quadplane.ahrs_view->roll;
+        p = plane.quadplane.ahrs_view->pitch;
+        y = plane.quadplane.ahrs_view->yaw;
     }
     
     const Vector3f &omega = ahrs.get_gyro();
@@ -176,33 +178,6 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
         0, 0, 0, 0);
 }
 
-void Plane::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time_ms;
-    // if we have a GPS fix, take the time as the last fix time. That
-    // allows us to correctly calculate velocities and extrapolate
-    // positions.
-    // If we don't have a GPS fix then we are dead reckoning, and will
-    // use the current boot time as the fix time.    
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time_ms = gps.last_fix_time_ms();
-    } else {
-        fix_time_ms = millis();
-    }
-    const Vector3f &vel = gps.velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time_ms,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        current_loc.alt * 10UL,         // millimeters above sea level
-        relative_altitude * 1.0e3f,    // millimeters above ground
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.z * 100,  // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
-}
-
 void Plane::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
@@ -217,8 +192,12 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-void Plane::send_position_target_global_int(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_position_target_global_int()
 {
+    if (plane.control_mode == MANUAL) {
+        return;
+    }
+    Location &next_WP_loc = plane.next_WP_loc;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -255,7 +234,7 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        receiver_rssi);
+        rssi.read_receiver_rssi_uint8());
 }
 
 void Plane::send_vfr_hud(mavlink_channel_t chan)
@@ -408,17 +387,13 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     // if we don't have at least 0.2ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 200) {
+    if (!hal.scheduler->in_delay_callback() &&
+        plane.scheduler.time_available_usec() < 200) {
         gcs().set_out_of_time(true);
         return false;
     }
 
     switch (id) {
-    case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
-        send_heartbeat();
-        return true;
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
@@ -427,27 +402,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        plane.send_attitude(chan);
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        plane.send_location(chan);
-        break;
-
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
             plane.send_nav_controller_output(chan);
-        }
-        break;
-
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
-            plane.send_position_target_global_int(chan);
         }
         break;
 
@@ -458,11 +416,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
             plane.send_servo_out(chan);
         }
 #endif
-        break;
-
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
-        send_radio_in(plane.receiver_rssi);
         break;
 
     case MSG_SERVO_OUTPUT_RAW:
@@ -479,21 +432,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_vfr_hud(chan);
         break;
 
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(plane.ins, plane.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(plane.ins, plane.compass);
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
@@ -508,23 +446,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         send_ahrs2();
         break;
 
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward(plane.rangefinder);
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
-        send_distance_sensor_downward(plane.rangefinder);
-        break;
-
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         plane.terrain.send_request(chan);
 #endif
-        break;
-
-    case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
-        send_battery2(plane.battery);
         break;
 
     case MSG_WIND:
@@ -563,13 +489,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
-        plane.send_pid_tuning(chan);
-        break;
-
-    case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
-        send_vibration(plane.ins);
+        if (plane.control_mode != MANUAL) {
+            CHECK_PAYLOAD_SIZE(PID_TUNING);
+            plane.send_pid_tuning(chan);
+        }
         break;
 
     case MSG_RPM:
@@ -581,9 +504,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
         break;
-    case MSG_BATTERY_STATUS:
-        send_battery_status(plane.battery);
-        break;
+
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
         plane.send_aoa_ssa(chan);
@@ -694,126 +615,88 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK_Plane::data_stream_send(void)
-{
-    gcs().set_out_of_time(false);
-
-    send_queued_parameters();
-
-    if (gcs().out_of_time()) return;
-
-    if (plane.in_mavlink_delay) {
-#if HIL_SUPPORT
-        if (plane.g.hil_mode == 1) {
-            // in HIL we need to keep sending servo values to ensure
-            // the simulator doesn't pause, otherwise our sensor
-            // calibration could stall
-            if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-                send_message(MSG_SERVO_OUT);
-            }
-            if (stream_trigger(STREAM_RC_CHANNELS)) {
-                send_message(MSG_SERVO_OUTPUT_RAW);
-            }
-        }
-#endif
-        // don't send any other stream types while in the delay callback
-        return;
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_RAW_SENSORS)) {
-        send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
-        send_message(MSG_RAW_IMU3);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
-        send_message(MSG_EXTENDED_STATUS1);
-        send_message(MSG_EXTENDED_STATUS2);
-        send_message(MSG_CURRENT_WAYPOINT);
-        send_message(MSG_GPS_RAW);
-        send_message(MSG_GPS_RTK);
-        send_message(MSG_GPS2_RAW);
-        send_message(MSG_GPS2_RTK);
-        send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_FENCE_STATUS);
-        send_message(MSG_POSITION_TARGET_GLOBAL_INT);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_POSITION)) {
-        // sent with GPS read
-        send_message(MSG_LOCATION);
-        send_message(MSG_LOCAL_POSITION);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUT);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_SERVO_OUTPUT_RAW);
-        send_message(MSG_RADIO_IN);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_EXTRA1)) {
-        send_message(MSG_ATTITUDE);
-        send_message(MSG_SIMSTATE);
-        send_message(MSG_RPM);
-        send_message(MSG_AOA_SSA);
-
-        if (plane.control_mode != MANUAL) {
-            send_message(MSG_PID_TUNING);
-        }
-        send_message(MSG_LANDING);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_EXTRA2)) {
-        send_message(MSG_VFR_HUD);
-    }
-
-    if (gcs().out_of_time()) return;
-
-    if (stream_trigger(STREAM_EXTRA3)) {
-        send_message(MSG_AHRS);
-        send_message(MSG_HWSTATUS);
-        send_message(MSG_WIND);
-        send_message(MSG_RANGEFINDER);
-        send_message(MSG_SYSTEM_TIME);
+static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
+    MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_RAW_IMU3  // SENSOR_OFFSETS
+};
+static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_CURRENT_WAYPOINT,
+    MSG_GPS_RAW,
+    MSG_GPS_RTK,
+    MSG_GPS2_RAW,
+    MSG_GPS2_RTK,
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_FENCE_STATUS,
+    MSG_POSITION_TARGET_GLOBAL_INT,
+};
+static const uint8_t STREAM_POSITION_msgs[] = {
+    MSG_LOCATION,
+    MSG_LOCAL_POSITION
+};
+static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+    MSG_SERVO_OUT,
+};
+static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+    MSG_SERVO_OUTPUT_RAW,
+    MSG_RADIO_IN
+};
+static const uint8_t STREAM_EXTRA1_msgs[] = {
+    MSG_ATTITUDE,
+    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_RPM,
+    MSG_AOA_SSA,
+    MSG_PID_TUNING,
+    MSG_LANDING
+};
+static const uint8_t STREAM_EXTRA2_msgs[] = {
+    MSG_VFR_HUD
+};
+static const uint8_t STREAM_EXTRA3_msgs[] = {
+    MSG_AHRS,
+    MSG_HWSTATUS,
+    MSG_WIND,
+    MSG_RANGEFINDER,
+    MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE
-        send_message(MSG_TERRAIN);
+    MSG_TERRAIN,
 #endif
-        send_message(MSG_MAG_CAL_REPORT);
-        send_message(MSG_MAG_CAL_PROGRESS);
-        send_message(MSG_BATTERY2);
-        send_message(MSG_BATTERY_STATUS);
-        send_message(MSG_MOUNT_STATUS);
-        send_message(MSG_OPTICAL_FLOW);
-        send_message(MSG_EKF_STATUS_REPORT);
-        send_message(MSG_GIMBAL_REPORT);
-        send_message(MSG_VIBRATION);
-    }
+    MSG_BATTERY2,
+    MSG_BATTERY_STATUS,
+    MSG_MOUNT_STATUS,
+    MSG_OPTICAL_FLOW,
+    MSG_GIMBAL_REPORT,
+    MSG_MAG_CAL_REPORT,
+    MSG_MAG_CAL_PROGRESS,
+    MSG_EKF_STATUS_REPORT,
+    MSG_VIBRATION,
+};
+static const uint8_t STREAM_ADSB_msgs[] = {
+    MSG_ADSB_VEHICLE
+};
 
-    if (gcs().out_of_time()) return;
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
+    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
+    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
+    MAV_STREAM_ENTRY(STREAM_POSITION),
+    MAV_STREAM_ENTRY(STREAM_RAW_CONTROLLER),
+    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
+    MAV_STREAM_ENTRY(STREAM_EXTRA1),
+    MAV_STREAM_ENTRY(STREAM_EXTRA2),
+    MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_ENTRY(STREAM_ADSB),
+    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
+};
 
-    if (stream_trigger(STREAM_ADSB)) {
-        send_message(MSG_ADSB_VEHICLE);
-    }
+bool GCS_MAVLINK_Plane::in_hil_mode() const
+{
+#if HIL_SUPPORT
+    return plane.g.hil_mode == 1;
+#endif
+    return false;
 }
-
 
 /*
   handle a request to switch to guided mode. This happens via a
@@ -940,8 +823,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 }
                 plane.ahrs.set_home(new_home_loc);
                 AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                plane.Log_Write_Home_And_Origin();
-                gcs().send_home(new_home_loc);
+                AP::ahrs().Log_Write_Home_And_Origin();
+                gcs().send_home();
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1226,8 +1109,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.ahrs.set_home(new_home_loc);
                 AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                plane.Log_Write_Home_And_Origin();
-                gcs().send_home(new_home_loc);
+                AP::ahrs().Log_Write_Home_And_Origin();
+                gcs().send_home();
                 result = MAV_RESULT_ACCEPTED;
                 gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                         (double)(new_home_loc.lat*1.0e-7f),
@@ -1644,8 +1527,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.alt = packet.altitude / 10;
         plane.ahrs.set_home(new_home_loc);
         plane.ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-        plane.Log_Write_Home_And_Origin();
-        gcs().send_home(new_home_loc);
+        plane.ahrs.Log_Write_Home_And_Origin();
+        gcs().send_home();
         gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
                                 (double)(new_home_loc.lat*1.0e-7f),
                                 (double)(new_home_loc.lng*1.0e-7f),
@@ -1752,9 +1635,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 void Plane::mavlink_delay_cb()
 {
     static uint32_t last_1hz, last_50hz, last_5s;
-    if (!gcs().chan(0).initialised || in_mavlink_delay) return;
+    if (!gcs().chan(0).initialised) return;
 
-    in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = millis();
@@ -1775,7 +1657,6 @@ void Plane::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-    in_mavlink_delay = false;
 }
 
 /*
@@ -1896,9 +1777,4 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
 {
     return plane.fwver;
-}
-
-void GCS_MAVLINK_Plane::set_ekf_origin(const Location& loc)
-{
-    plane.set_ekf_origin(loc);
 }

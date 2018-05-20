@@ -88,10 +88,10 @@ public:
     float get_speed_down() const { return _wp_speed_down_cms; }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_accel_z() const { return _wp_accel_z_cms; }
+    float get_accel_z() const { return _wp_accel_z_cmss; }
 
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
-    float get_wp_acceleration() const { return _wp_accel_cms.get(); }
+    float get_wp_acceleration() const { return _wp_accel_cmss.get(); }
 
     /// get_wp_destination waypoint using position vector (distance from ekf origin in cm)
     const Vector3f &get_wp_destination() const { return _destination; }
@@ -102,6 +102,11 @@ public:
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
+
+    // returns wp location using location class.
+    // returns false if unable to convert from target vector to global
+    // coordinates
+    bool get_wp_destination(Location_Class& destination);
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
@@ -269,8 +274,8 @@ protected:
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
-    AP_Float    _wp_accel_cms;          // horizontal acceleration in cm/s/s during missions
-    AP_Float    _wp_accel_z_cms;        // vertical acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions
 
     // waypoint controller internal variables
     uint32_t    _wp_last_update;        // time of last update_wpnav call

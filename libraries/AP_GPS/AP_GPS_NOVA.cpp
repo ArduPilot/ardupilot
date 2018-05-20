@@ -40,9 +40,7 @@ do {                                            \
 
 AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _new_position(0),
-    _new_speed(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 

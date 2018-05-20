@@ -74,21 +74,6 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Tracker::send_attitude(mavlink_channel_t chan)
-{
-    Vector3f omega = ahrs.get_gyro();
-    mavlink_msg_attitude_send(
-        chan,
-        AP_HAL::millis(),
-        ahrs.roll,
-        ahrs.pitch,
-        ahrs.yaw,
-        omega.x,
-        omega.y,
-        omega.z);
-}
-
-
 void Tracker::send_extended_status1(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
@@ -111,28 +96,6 @@ void Tracker::send_extended_status1(mavlink_channel_t chan)
         0,  // comm drops %,
         0,  // comm drops in pkts,
         0, 0, 0, 0);
-}
-
-void Tracker::send_location(mavlink_channel_t chan)
-{
-    uint32_t fix_time;
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-        fix_time = gps.last_fix_time_ms();
-    } else {
-        fix_time = AP_HAL::millis();
-    }
-    const Vector3f &vel = gps.velocity();
-    mavlink_msg_global_position_int_send(
-        chan,
-        fix_time,
-        current_loc.lat,                // in 1E7 degrees
-        current_loc.lng,                // in 1E7 degrees
-        current_loc.alt * 10,        // millimeters above sea level
-        0,
-        vel.x * 100,  // X speed cm/s (+ve North)
-        vel.y * 100,  // Y speed cm/s (+ve East)
-        vel.z * 100,  // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);
 }
 
 void Tracker::send_nav_controller_output(mavlink_channel_t chan)
@@ -175,50 +138,15 @@ void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&
 bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 {
     switch (id) {
-    case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
-        send_heartbeat();
-        return true;
-
-    case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
-        tracker.send_attitude(chan);
-        break;
-
-    case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-        tracker.send_location(chan);
-        break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         tracker.send_nav_controller_output(chan);
         break;
 
-    case MSG_RADIO_IN:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
-        send_radio_in(0);
-        break;
-
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
-        break;
-
-    case MSG_RAW_IMU1:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
-        send_raw_imu(tracker.ins, tracker.compass);
-        break;
-
-    case MSG_RAW_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
-        send_scaled_pressure();
-        break;
-
-    case MSG_RAW_IMU3:
-        CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
-        send_sensor_offsets(tracker.ins, tracker.compass);
         break;
 
     case MSG_SIMSTATE:
@@ -325,58 +253,51 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-void
-GCS_MAVLINK_Tracker::data_stream_send(void)
-{
-    send_queued_parameters();
+static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
+    MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_RAW_IMU3  // SENSOR_OFFSETS
+};
+static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_NAV_CONTROLLER_OUTPUT,
+    MSG_GPS_RAW,
+    MSG_GPS_RTK,
+    MSG_GPS2_RAW,
+    MSG_GPS2_RTK,
+};
+static const uint8_t STREAM_POSITION_msgs[] = {
+    MSG_LOCATION,
+    MSG_LOCAL_POSITION
+};
+static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+    MSG_SERVO_OUTPUT_RAW,
+};
+static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+    MSG_RADIO_IN
+};
+static const uint8_t STREAM_EXTRA1_msgs[] = {
+    MSG_ATTITUDE,
+};
+static const uint8_t STREAM_EXTRA3_msgs[] = {
+    MSG_AHRS,
+    MSG_HWSTATUS,
+    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_MAG_CAL_REPORT,
+    MSG_MAG_CAL_PROGRESS,
+};
 
-    if (tracker.in_mavlink_delay) {
-        // don't send any other stream types while in the delay callback
-        return;
-    }
-
-    if (stream_trigger(STREAM_RAW_SENSORS)) {
-        send_message(MSG_RAW_IMU1);
-        send_message(MSG_RAW_IMU2);
-        send_message(MSG_RAW_IMU3);
-    }
-
-    if (stream_trigger(STREAM_EXTENDED_STATUS)) {
-        send_message(MSG_EXTENDED_STATUS1);
-        send_message(MSG_EXTENDED_STATUS2);
-        send_message(MSG_NAV_CONTROLLER_OUTPUT);
-        send_message(MSG_GPS_RAW);
-        send_message(MSG_GPS_RTK);
-        send_message(MSG_GPS2_RAW);
-        send_message(MSG_GPS2_RTK);
-    }
-
-    if (stream_trigger(STREAM_POSITION)) {
-        send_message(MSG_LOCATION);
-        send_message(MSG_LOCAL_POSITION);
-    }
-
-    if (stream_trigger(STREAM_RAW_CONTROLLER)) {
-        send_message(MSG_SERVO_OUTPUT_RAW);
-    }
-
-    if (stream_trigger(STREAM_RC_CHANNELS)) {
-        send_message(MSG_RADIO_IN);
-        send_message(MSG_SERVO_OUTPUT_RAW);
-    }
-
-    if (stream_trigger(STREAM_EXTRA1)) {
-        send_message(MSG_ATTITUDE);
-    }
-
-    if (stream_trigger(STREAM_EXTRA3)) {
-        send_message(MSG_AHRS);
-        send_message(MSG_HWSTATUS);
-        send_message(MSG_SIMSTATE);
-        send_message(MSG_MAG_CAL_REPORT);
-        send_message(MSG_MAG_CAL_PROGRESS);
-    }
-}
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
+    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
+    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
+    MAV_STREAM_ENTRY(STREAM_POSITION),
+    MAV_STREAM_ENTRY(STREAM_RAW_CONTROLLER),
+    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
+    MAV_STREAM_ENTRY(STREAM_EXTRA1),
+    MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_TERMINATOR // must have this at end of stream_entries
+};
 
 /*
   We eavesdrop on MAVLINK_MSG_ID_GLOBAL_POSITION_INT and
@@ -511,15 +432,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
                     result = MAV_RESULT_UNSUPPORTED;
                 }
             break;
-
-            case MAV_CMD_GET_HOME_POSITION:
-                send_home(tracker.ahrs.get_home());
-                Location ekf_origin;
-                if (tracker.ahrs.get_origin(ekf_origin)) {
-                    send_ekf_origin(ekf_origin);
-                }
-                result = MAV_RESULT_ACCEPTED;
-                break;
 
             case MAV_CMD_DO_SET_SERVO:
                 if (tracker.servo_test_set_servo(packet.param1, packet.param2)) {
@@ -713,7 +625,6 @@ void Tracker::mavlink_delay_cb()
         return;
     }
 
-    tracker.in_mavlink_delay = true;
     DataFlash.EnableWrites(false);
 
     uint32_t tnow = AP_HAL::millis();
@@ -733,7 +644,6 @@ void Tracker::mavlink_delay_cb()
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
     DataFlash.EnableWrites(true);
-    tracker.in_mavlink_delay = false;
 }
 
 /*
@@ -785,11 +695,6 @@ bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
 const AP_FWVersion &GCS_MAVLINK_Tracker::get_fwver() const
 {
     return tracker.fwver;
-}
-
-void GCS_MAVLINK_Tracker::set_ekf_origin(const Location& loc)
-{
-    tracker.set_ekf_origin(loc);
 }
 
 /* dummy methods to avoid having to link against AP_Camera */

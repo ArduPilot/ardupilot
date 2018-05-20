@@ -51,13 +51,7 @@ extern const AP_HAL::HAL& hal;
 #define hexdigit(x) ((x)>9?'A'+((x)-10):'0'+(x))
 
 AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _parity(0),
-    _is_checksum_term(false),
-    _sentence_type(0),
-    _term_number(0),
-    _term_offset(0),
-    _gps_data_good(false)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     // this guarantees that _term is always nul terminated
     memset(_term, 0, sizeof(_term));

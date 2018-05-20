@@ -171,6 +171,13 @@
 # define BOARD_BATTERY_CURR_PIN         7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN  254 // no sonar by default
 
+
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS                108
 
 //#define BOARD_NRF_NAME "nrf24"
@@ -185,11 +192,11 @@
 #define SERVO_PIN_6 47 // PA0
 
 // input pins as servo outputs
-#define SERVO_PIN_7    5, // PB15  CH2_IN - PPM2 
-#define SERVO_PIN_8   12, // PC6  CH3_IN UART6
-#define SERVO_PIN_9   13, // PC7  CH4_IN UART6
-#define SERVO_PIN_10  14, // PC8  CH5_IN i2c
-#define SERVO_PIN_11  15, // PC9  CH6_IN i2c
+#define SERVO_PIN_7    5 // PB15  CH2_IN - PPM2 
+#define SERVO_PIN_8   12 // PC6  CH3_IN UART6
+#define SERVO_PIN_9   13 // PC7  CH4_IN UART6
+#define SERVO_PIN_10  14 // PC8  CH5_IN i2c
+#define SERVO_PIN_11  15 // PC9  CH6_IN i2c
 #define MOTOR_LAYOUT_DEFAULT 0
 
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE

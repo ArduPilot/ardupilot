@@ -14,7 +14,6 @@ const AP_FWVersion fwver
  */
 class GCS_MAVLINK_Dummy : public GCS_MAVLINK
 {
-    void data_stream_send(void) override {}
     uint32_t telem_delay() const override { return 0; }
     void handleMessage(mavlink_message_t * msg) override {}
     bool try_send_message(enum ap_message id) { return true; }
@@ -28,7 +27,6 @@ protected:
     AP_Rally *get_rally() const override { return nullptr; };
     AP_Camera *get_camera() const override { return nullptr; };
     const AP_FWVersion &get_fwver() const override { return fwver; }
-    void set_ekf_origin(const Location& loc) override { };
 
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };

@@ -109,10 +109,15 @@
 //#define BOARD_I2C_BUS_INT     1    // hardware internal I2C
 #define BOARD_I2C_BUS_EXT       0     // external I2C
 #define BOARD_I2C_BUS_SLOW      0    // slow down bus with this number
+//#define BOARD_SOFT_I2C1
 
 #define BOARD_BARO_DEFAULT              HAL_BARO_BMP280_I2C
 #define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP280_I2C_ADDR        (0x76)
+#define HAL_BARO_BMP280_I2C_ADDR_ALT    (0x77)
+
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
+#define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
 #define BOARD_COMPASS_DEFAULT           HAL_COMPASS_HMC5843
 #define BOARD_COMPASS_HMC5843_I2C_ADDR  0x1E
@@ -158,6 +163,17 @@
 # define BOARD_BATTERY_VOLT_PIN         PC5  // Battery voltage
 # define BOARD_BATTERY_CURR_PIN         PC4  // Battery current
 # define BOARD_SONAR_SOURCE_ANALOG_PIN  PB1  // rssi PB1
+
+# define HAL_BATT_VOLT_PIN      PC5 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      PC4
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
+# define HAL_BATT_VOLT_PIN      PC5 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      PC4
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
 
 #define BOARD_USB_DMINUS 108
 

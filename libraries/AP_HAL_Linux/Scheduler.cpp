@@ -18,13 +18,6 @@
 #include "UARTDriver.h"
 #include "Util.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-#include <rpcmem.h>
-#include <AP_HAL_Linux/qflight/qflight_util.h>
-#include <AP_HAL_Linux/qflight/qflight_dsp.h>
-#include <AP_HAL_Linux/qflight/qflight_buffer.h>
-#endif
-
 #if HAL_WITH_UAVCAN
 #include "CAN.h"
 #endif
@@ -164,9 +157,7 @@ void Scheduler::delay(uint16_t ms)
         // this yields the CPU to other apps
         microsleep(1000);
         if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+            call_delay_cb();
         }
     }
 }
@@ -177,13 +168,6 @@ void Scheduler::delay_microseconds(uint16_t us)
         return;
     }
     microsleep(us);
-}
-
-void Scheduler::register_delay_callback(AP_HAL::Proc proc,
-                                             uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -266,16 +250,6 @@ void Scheduler::_timer_task()
 
     _in_timer_proc = false;
 
-#if HAL_LINUX_UARTS_ON_TIMER_THREAD
-    /*
-       some boards require that UART calls happen on the same
-       thread as other calls of the same time. This impacts the
-       QFLIGHT calls where UART output is an RPC call to the DSPs
-       */
-    _run_uarts();
-    RCInput::from(hal.rcin)->_timer_tick();
-#endif
-
 #if HAL_WITH_UAVCAN
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     for (i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
@@ -319,16 +293,12 @@ void Scheduler::_run_uarts()
 
 void Scheduler::_rcin_task()
 {
-#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
     RCInput::from(hal.rcin)->_timer_tick();
-#endif
 }
 
 void Scheduler::_uart_task()
 {
-#if !HAL_LINUX_UARTS_ON_TIMER_THREAD
     _run_uarts();
-#endif
 }
 
 void Scheduler::_tonealarm_task()
@@ -385,14 +355,6 @@ void Scheduler::stop_clock(uint64_t time_usec)
 
 bool Scheduler::SchedulerThread::_run()
 {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-    if (_sched._timer_thread.is_current_thread()) {
-        /* make rpcmem initialization on timer thread */
-        printf("Initialising rpcmem\n");
-        rpcmem_init();
-    }
-#endif
-
     _sched._wait_all_threads();
 
     return PeriodicThread::_run();

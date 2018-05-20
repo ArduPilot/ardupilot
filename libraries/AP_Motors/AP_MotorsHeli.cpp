@@ -427,7 +427,8 @@ void AP_MotorsHeli::reset_flight_controls()
 }
 
 // convert input in -1 to +1 range to pwm output for swashplate servo.  Special handling of trim is required 
-// to keep travel between the swashplate servos consistent.
+// to keep travel between the swashplate servos consistent.  Swashplate servo travel range is fixed to 1000 pwm
+// and therefore the input is multiplied by 500 to get PWM output.
 int16_t AP_MotorsHeli::calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo)
 {
     int16_t ret;
@@ -438,12 +439,7 @@ int16_t AP_MotorsHeli::calc_pwm_output_1to1_swash_servo(float input, const SRV_C
         input = -input;
     }
 
-// With values of trim other than 1500 between swashplate servos
-    if (input >= 0.0f) {
-        ret = (int16_t (input * 500.0f) + servo->get_trim());
-    } else {
-        ret = (int16_t (input * 500.0f) + servo->get_trim());
-    }
+    ret = (int16_t (input * 500.0f) + servo->get_trim());
 
     return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
 }

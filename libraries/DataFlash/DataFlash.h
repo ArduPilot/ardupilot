@@ -198,6 +198,7 @@ public:
         AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
+        AP_Int8 mav_bufsize; // in kilobytes
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;

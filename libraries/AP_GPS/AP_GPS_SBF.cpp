@@ -18,6 +18,8 @@
 //  Code by Michael Oborne
 //
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <DataFlash/DataFlash.h>
@@ -41,8 +43,7 @@ do {                                            \
 
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
-#define RX_ERROR_MASK (SOFTWARE      | \
-                       CONGESTION    | \
+#define RX_ERROR_MASK (CONGESTION    | \
                        MISSEDEVENT   | \
                        CPUOVERLOAD   | \
                        INVALIDCONFIG | \

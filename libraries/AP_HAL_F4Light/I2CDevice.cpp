@@ -35,14 +35,6 @@ uint8_t I2CDevice::dev_count; // number of devices
 #ifdef I2C_DEBUG
  I2C_State I2CDevice::log[I2C_LOG_SIZE] IN_CCM;
  uint8_t   I2CDevice::log_ptr=0;
-
-static uint32_t op_time;
-static uint32_t op_sr1;
-
-inline uint32_t i2c_get_operation_time(uint16_t *psr1){
-    if(psr1) *psr1 = op_sr1;
-    return op_time;
-}
 #endif
 
 
@@ -55,7 +47,7 @@ void I2CDevice::lateInit() {
 I2CDevice::I2CDevice(uint8_t bus, uint8_t address)
         : _bus(bus)
         , _address(address)
-        , _retries(1)
+        , _retries(5)
         , _lockup_count(0)
         , _initialized(false)
         , _slow(false)
@@ -103,13 +95,15 @@ void I2CDevice::init(){
 
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C1)
             if(s_i2c==NULL) s_i2c = new Soft_I2C;
-            const stm32_pin_info &p_sda = PIN_MAP[_I2C1->sda_pin];
-            const stm32_pin_info &p_scl = PIN_MAP[_I2C1->scl_pin];
-            s_i2c->init_hw( 
-                p_scl.gpio_device, p_scl.gpio_bit,
-                p_sda.gpio_device, p_sda.gpio_bit,
-                _timers[_bus]
-            );
+            { // isolate p_sda & p_scl
+                const stm32_pin_info &p_sda = PIN_MAP[_I2C1->sda_pin];
+                const stm32_pin_info &p_scl = PIN_MAP[_I2C1->scl_pin];
+                s_i2c->init_hw( 
+                    p_scl.gpio_device, p_scl.gpio_bit,
+                    p_sda.gpio_device, p_sda.gpio_bit,
+                    _timers[_bus]
+                );
+            }
  #else
 	    dev = _I2C1;
  #endif
@@ -128,13 +122,15 @@ void I2CDevice::init(){
 
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C2)
             if(s_i2c==NULL) s_i2c = new Soft_I2C;
-            const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
-            const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
-            s_i2c->init_hw( 
-                p_scl.gpio_device, p_scl.gpio_bit,
-                p_sda.gpio_device, p_sda.gpio_bit,
-                _timers[_bus]
-            );
+            { // isolate p_sda & p_scl
+                const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
+                const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
+                s_i2c->init_hw( 
+                    p_scl.gpio_device, p_scl.gpio_bit,
+                    p_sda.gpio_device, p_sda.gpio_bit,
+                    _timers[_bus]
+                );
+            }
  #else
 	    dev = _I2C2;
  #endif
@@ -152,13 +148,15 @@ void I2CDevice::init(){
             if(hal_param_helper->_flexi_i2c){ // move external I2C to flexi port
  #if defined(BOARD_SOFT_I2C) || defined(BOARD_SOFT_I2C3)
                 if(s_i2c==NULL) s_i2c = new Soft_I2C;
-                const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
-                const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
-                s_i2c->init_hw( 
-                    p_scl.gpio_device, p_scl.gpio_bit,
-                    p_sda.gpio_device, p_sda.gpio_bit,
-                    _timers[_bus]
-                );
+                { // isolate p_sda & p_scl
+                    const stm32_pin_info &p_sda = PIN_MAP[_I2C2->sda_pin];
+                    const stm32_pin_info &p_scl = PIN_MAP[_I2C2->scl_pin];
+                    s_i2c->init_hw( 
+                        p_scl.gpio_device, p_scl.gpio_bit,
+                        p_sda.gpio_device, p_sda.gpio_bit,
+                        _timers[_bus]
+                    );
+                }
  #else
                 dev = _I2C2;
  #endif
@@ -294,7 +292,6 @@ again:
 #ifdef I2C_DEBUG
      I2C_State &sp = log[log_ptr]; // remember last operation
      
-     sp.start    = i2c_get_operation_time(&sp.op_sr1);
      sp.time     = Scheduler::_micros();
      sp.bus      =_bus;
      sp.addr     =_address;
@@ -303,6 +300,9 @@ again:
      sp.ret      = ret;
      sp.sr1      = _dev->I2Cx->SR1;
      sp.sr2      = _dev->I2Cx->SR2;
+     sp.cr1      = _dev->I2Cx->CR1;
+     sp.state    = _state;
+     sp.pos      = I2C_FINISH;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
      else                       log_ptr=0;
 #endif
@@ -344,6 +344,7 @@ again:
             _dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
             hal_yield(0);
             _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag            
+            _dev->I2Cx->CR1 |= I2C_CR1_PE; // enable
         }
 
         if((_retries-retries) > 0 || ret==I2C_BUS_ERR){ // not reset bus or log error on 1st try, except ArbitrationLost error
@@ -443,8 +444,6 @@ uint32_t I2CDevice::i2c_write(uint8_t addr, const uint8_t *tx_buff, uint8_t len)
     // Bus got!  enable Acknowledge for our operation
     _dev->I2Cx->CR1 |= I2C_CR1_ACK; 
     _dev->I2Cx->CR1 &= ~I2C_NACKPosition_Next; 
-    // Send START condition
-    _dev->I2Cx->CR1 |= I2C_CR1_START;
 
     // need to wait until  transfer complete 
     uint32_t t = hal_micros();
@@ -453,6 +452,8 @@ uint32_t I2CDevice::i2c_write(uint8_t addr, const uint8_t *tx_buff, uint8_t len)
     _task = Scheduler::get_current_task();// if function called from task - store it and pause
 
     EnterCriticalSection;
+    // Send START condition
+    _dev->I2Cx->CR1 |= I2C_CR1_START;
      _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN;    // Enable interrupts
 
      if(_task) Scheduler::task_pause(timeout);
@@ -486,18 +487,45 @@ uint32_t I2CDevice::i2c_read(uint8_t addr, const uint8_t *tx_buff, uint8_t txlen
     _state = I2C_want_SB;
     _error = I2C_ERR_TIMEOUT;
 
-    _dev->I2Cx->CR1 &= ~I2C_NACKPosition_Next; // I2C_NACKPosition_Current
-    _dev->I2Cx->CR1 |= I2C_CR1_ACK;      // Bus got!  enable Acknowledge for our operation
-    
-    _dev->I2Cx->CR1 |= I2C_CR1_START;    // Send START condition
+    _dev->I2Cx->CR1 &= ~I2C_NACKPosition_Next;  // I2C_NACKPosition_Current
+    _dev->I2Cx->CR1 |= I2C_CR1_ACK;             // enable Acknowledge for our operation
 
     uint32_t t = hal_micros();
     uint32_t timeout = i2c_bit_time * 9 * (txlen+rxlen) * 8 + 100; // time to transfer all data *8 plus 100uS
     _task = Scheduler::get_current_task(); // if function called from task - store it and pause
 
     EnterCriticalSection;
+#ifdef I2C_DEBUG
+    {
+     I2C_State &sp = log[log_ptr]; // remember last operation
+     
+     sp.time     = Scheduler::_micros();
+     sp.cr1      = _dev->I2Cx->CR1;
+     sp.sr1      = _dev->I2Cx->SR1;
+     sp.sr2      = _dev->I2Cx->SR2;
+     sp.state    = _state;
+     sp.pos      = I2C_START;
+     if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
+     else                       log_ptr=0;
+    }
+#endif
+
+    _dev->I2Cx->CR1 |= I2C_CR1_START;    // Send START condition
      if(_task) Scheduler::task_pause(timeout);
      _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN;    // Enable interrupts
+
+#ifdef I2C_DEBUG
+     I2C_State &sp = log[log_ptr]; // remember last operation
+     
+     sp.time     = Scheduler::_micros();
+     sp.cr1      = _dev->I2Cx->CR1;
+     sp.sr1      = _dev->I2Cx->SR1;
+     sp.sr2      = _dev->I2Cx->SR2;
+     sp.state    = _state;
+     sp.pos      = I2C_START;
+     if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
+     else                       log_ptr=0;
+#endif
     LeaveCriticalSection;
 
     if(_completion_cb) return I2C_PENDING;
@@ -551,6 +579,19 @@ void I2CDevice::isr_ev(){
     
             _dev->I2Cx->CR1 |= I2C_CR1_STOP;          /* Generate Stop */      
         }
+
+#ifdef I2C_DEBUG
+     I2C_State &sp = log[log_ptr]; // remember last operation
+     
+     sp.time     = Scheduler::_micros();
+     sp.sr1      = sr1itflags;
+     sp.sr2      = _dev->I2Cx->SR2;
+     sp.cr1      = _dev->I2Cx->CR1;
+     sp.state    = _state;
+     sp.pos      = I2C_ERR;
+     if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
+     else                       log_ptr=0;
+#endif
 
         if(_error) { // смысла ждать больше нет
             finish_transfer();
@@ -632,7 +673,7 @@ void I2CDevice::isr_ev(){
                     // Send START condition a second time
                     _dev->I2Cx->CR1 |= I2C_CR1_START;
                     _state = I2C_want_RX_SB;
-                    // _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN; // enable TXE interrupt - too early! only after ADDR
+                    _dev->I2Cx->CR2 &= ~I2C_CR2_ITBUFEN; // disable TXE interrupt - just for case, should be disabled
                 } else {   
                     _dev->I2Cx->CR1 |= I2C_CR1_STOP;     // Send STOP condition
                     _error = I2C_OK;                    // TX is done
@@ -640,10 +681,23 @@ void I2CDevice::isr_ev(){
                     finish_transfer();
                 }
                 
-            } else { // BTF on receive
+            } else { // BTF on receive??
                 // 
             }
         }
+
+#ifdef I2C_DEBUG
+     I2C_State &sp = log[log_ptr]; // remember last operation
+     
+     sp.time     = Scheduler::_micros();
+     sp.sr1      = sr1itflags;
+     sp.sr2      = sr2itflags;
+     sp.cr1      = _dev->I2Cx->CR1;
+     sp.state    = _state;
+     sp.pos      = I2C_ISR;
+     if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
+     else                       log_ptr=0;
+#endif
 
     }
 }
@@ -653,7 +707,7 @@ void I2CDevice::finish_transfer(){
 
     _dev->I2Cx->CR2 &= ~(I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);    // Disable interrupts
     i2c_clear_isr_handler(_dev);
-
+    _dev->I2Cx->CR1 &= ~(I2C_CR1_STOP | I2C_CR1_START); // clear CR1 - just for case
 
     Handler h;
     if( (h=_completion_cb) ){    // io completion
@@ -676,7 +730,11 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
     uint8_t i;
     for(i=0; i<10; i++){
 
-        ret=I2C_OK;
+        if( (_dev->I2Cx->CR1 & I2C_CR1_PE) ) {
+            ret=I2C_OK;
+        } else {
+            ret=91;
+        }
        // Wait to make sure that STOP control bit has been cleared - bus released
         t = hal_micros();
         while (_dev->I2Cx->CR1 & I2C_CR1_STOP ){
@@ -689,7 +747,7 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
             }
             if(sr1 & I2C_BIT_TIMEOUT & I2C_BIT_MASK) { // bus timeout
                 _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_TIMEOUT); // reset it
-                ret= I2C_ERR_TIMEOUT;                             // STOP generated by hardware
+                ret= I2C_ERR_STOP_TIMEOUT;                             // STOP generated by hardware
                 break;
             }
 
@@ -697,6 +755,7 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
                 ret=I2C_ERR_STOP;
                 break;
             }
+            hal_yield(0);
         }
 
         /* wait while the bus is busy */
@@ -713,11 +772,10 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
 
         if(ret==I2C_OK) return ret;
         
-        if(i>0){
-            _dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
-            hal_yield(0);
-            _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag                    
-        }
+        _dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
+        hal_yield(0);
+        _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag                    
+        _dev->I2Cx->CR1 |= I2C_CR1_PE; // enable
 
         if(i>1){
             last_error = ret;   // remember

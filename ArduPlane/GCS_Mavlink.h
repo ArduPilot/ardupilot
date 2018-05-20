@@ -10,8 +10,6 @@ class GCS_MAVLINK_Plane : public GCS_MAVLINK
 
 public:
 
-    void data_stream_send(void) override;
-
 protected:
 
     uint32_t telem_delay() const override;
@@ -26,7 +24,6 @@ protected:
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_Rally *get_rally() const override;
     const AP_FWVersion &get_fwver() const override;
-    void set_ekf_origin(const Location& loc) override;
 
     uint8_t sysid_my_gcs() const override;
 
@@ -34,6 +31,12 @@ protected:
 
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+
+    void send_position_target_global_int() override;
+
+    virtual bool in_hil_mode() const override;
+
+    void send_attitude() const override;
 
 private:
 
@@ -47,4 +50,6 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+
+    uint8_t radio_in_rssi() const;
 };

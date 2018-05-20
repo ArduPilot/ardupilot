@@ -126,19 +126,6 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
-{
-    if (!_init) {
-        return false;
-    }
-
-    bool res = false;
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
 bool RCInput::set_override(uint8_t channel, int16_t override)
 {
     if (!_init) {
