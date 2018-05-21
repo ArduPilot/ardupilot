@@ -56,8 +56,4 @@ protected:
     int16_t             _throttle_radio_output;   // total throttle pwm value, summed onto throttle channel minimum, typically ~1100-1900
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_out;
-    SRV_Channel         *_servo1;
-    SRV_Channel         *_servo2;
-    SRV_Channel         *_servo3;
-    SRV_Channel         *_servo4;
 };
