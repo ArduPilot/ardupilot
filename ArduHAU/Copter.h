@@ -222,6 +222,8 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
+	//RC_Channel *channel_forwardbackward;
+	//RC_Channel *channel_updown;
 
     // Dataflash
     DataFlash_Class DataFlash;
@@ -408,7 +410,7 @@ private:
     // Motor Output
 #if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
-#elseif FRAME_CONFIG == HAU_FRAME
+#elif FRAME_CONFIG == HAU_FRAME
  #define MOTOR_CLASS AP_MotorsHAU
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter

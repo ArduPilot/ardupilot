@@ -134,11 +134,11 @@ void AP_MotorsHAU::setup_motors(motor_frame_class frame_class, motor_frame_type 
         add_motor_raw_HAU(AP_MOTORS_MOT_2,     1.0f,              1.0f,              	1.0f,          	1.0f,                  	-1.0f,           2);
         add_motor_raw_HAU(AP_MOTORS_MOT_3,     1.0f,              1.0f,                -1.0f,          	1.0f,                  	 1.0f,           3);
         add_motor_raw_HAU(AP_MOTORS_MOT_4,     1.0f,              1.0f,                -1.0f,           1.0f,                  	-1.0f,           4);
-	//                 ```Servo #              Roll Factor     	  Pitch Factor    		Yaw Factor      Throttle Factor     Forward Factor    Testing Order   Reverse
-		add_servo_HAU	 (1,				   1.0f,			  1.0f,				   	1.0f, 			1.0f,					 1.0f,		 	 5,			false);
-		add_servo_HAU	 (2,				  -1.0f,			 -1.0f,				   	1.0f, 			1.0f,					-1.0f,		 	 6,			false);
-		add_servo_HAU	 (3,				  -1.0f,			  1.0f,				   -1.0f, 			1.0f,					 1.0f,		 	 7,			false);
-		add_servo_HAU	 (4,				   1.0f,			 -1.0f,				   -1.0f, 			1.0f,					-1.0f,		     8,			false);
+	//                 ```Servo #              Roll Factor     	  Pitch Factor    		Yaw Factor      Throttle Factor     Forward Factor    Testing Order   Direction
+		add_servo_HAU	 (1,				   1.0f,			  1.0f,				   	1.0f, 			1.0f,					 1.0f,		 	 5,			-1.0f);
+		add_servo_HAU	 (2,				  -1.0f,			 -1.0f,				   	1.0f, 			1.0f,					-1.0f,		 	 6,			-1.0f);
+		add_servo_HAU	 (3,				  -1.0f,			  1.0f,				   -1.0f, 			1.0f,					 1.0f,		 	 7,			1.0f);
+		add_servo_HAU	 (4,				   1.0f,			 -1.0f,				   -1.0f, 			1.0f,					-1.0f,		     8,			1.0f);
 		
 
 			//servo tilt calculation
@@ -146,13 +146,13 @@ void AP_MotorsHAU::setup_motors(motor_frame_class frame_class, motor_frame_type 
     //float s2_angle = 90.0 +  angle_compensation*atan((-mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1+mtHAU.tYaw + (mtHAU.tBackward) - mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142;
     //float s3_angle = 90.0 +  angle_compensation*atan((-mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1-mtHAU.tYaw + (mtHAU.tForward) - mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142;
     //float s4_angle = 90.0 +  angle_compensation*atan((mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1-mtHAU.tYaw + (mtHAU.tBackward) + mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142; 
-	
+	_flags.initialised_ok = true;
 }
 
 // add_servo - quick solution to use servo from motor output library
 void AP_MotorsHAU::add_servo(int8_t servo_num, bool reverse)
 {
-	_servo_reverse[servo_num] = reverse;
+	//_servo_reverse[servo_num] = reverse;
 	
 	//push servo number to after 4 motor as it will be use by HAU
 	servo_num += 3;
@@ -170,7 +170,7 @@ void AP_MotorsHAU::add_servo(int8_t servo_num, bool reverse)
     }
 }
 
-void AP_MotorsHAU::add_servo_HAU(int8_t servo_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, uint8_t testing_order, bool reverse)
+void AP_MotorsHAU::add_servo_HAU(int8_t servo_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, uint8_t testing_order, float direction)
 {
 	servo_num += 3;
     //Parent takes care of enabling output and setting up masks
@@ -182,17 +182,34 @@ void AP_MotorsHAU::add_servo_HAU(int8_t servo_num, float roll_fac, float pitch_f
     _roll_sfactor[servo_num] = roll_fac;
 	_pitch_sfactor[servo_num] = pitch_fac;
 	_yaw_sfactor[servo_num] = yaw_fac;
+	_servo_direction[servo_num] = direction;
 }
 
 
 void AP_MotorsHAU::add_motor_raw_HAU(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, uint8_t testing_order)
 {
-    //Parent takes care of enabling output and setting up masks
-    add_motor_raw(motor_num, roll_fac, pitch_fac, yaw_fac, testing_order);
+	// ensure valid motor number is provided
+    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
 
-    //These are additional parameters for an ROV
-    _throttle_factor[motor_num] = throttle_fac;
-    _forward_factor[motor_num] = forward_fac;
+        // increment number of motors if this motor is being newly motor_enabled
+        if( !motor_enabled[motor_num] ) {
+            motor_enabled[motor_num] = true;
+        }
+
+        // set roll, pitch, thottle factors and opposite motor (for stability patch)
+        //These are override parameters for an HAU
+		_throttle_mfactor[motor_num] = throttle_fac;
+		_forward_mfactor[motor_num] = forward_fac;
+		_roll_mfactor[motor_num] = roll_fac;
+		_pitch_mfactor[motor_num] = pitch_fac;
+		_yaw_mfactor[motor_num] = yaw_fac;
+
+        // set order that motor appears in test
+        _test_order[motor_num] = testing_order;
+
+        // call parent class method
+        add_motor_num(motor_num);
+    }
 }
 
 // output_min - sends minimum values out to the motors
@@ -217,7 +234,7 @@ void AP_MotorsHAU::output_min()
 
 int16_t AP_MotorsHAU::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16(min_pwm_motor + thrust_in * 400, _throttle_radio_min, _throttle_radio_max);
+    return constrain_int16(min_pwm_motor + thrust_in * 500, _throttle_radio_min, _throttle_radio_max);
 }
 
 int16_t AP_MotorsHAU::calc_angle_to_pwm(float angle_in) const
@@ -240,8 +257,8 @@ void AP_MotorsHAU::output_to_motors()
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = min_pwm_motor;
-				if(i>3) servo_out[i-4] = calc_angle_to_pwm(90);
+                if(i<=3) motor_out[i] = min_pwm_motor;
+				else servo_out[i-4] = calc_angle_to_pwm(90.0f);
             }
         }
         break;
@@ -249,8 +266,8 @@ void AP_MotorsHAU::output_to_motors()
         // sends output to motors when armed but not flying
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = min_pwm_motor;
-				if(i>3) servo_out[i-4] = calc_angle_to_pwm(90);
+                if(i<=3) motor_out[i] = min_pwm_motor;
+				else servo_out[i-4] = calc_angle_to_pwm(90.0f);
             }
         }
         break;
@@ -260,8 +277,8 @@ void AP_MotorsHAU::output_to_motors()
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
-				if(i>3) servo_out[i-4] = calc_angle_to_pwm(_servo_mix_out[i]);
+                if(i<=3) motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
+				else servo_out[i-4] = calc_angle_to_pwm(_servo_mix_out[i-4]);
             }
         }
         break;
@@ -270,8 +287,8 @@ void AP_MotorsHAU::output_to_motors()
     // send output to each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            rc_write(i, motor_out[i]);
-			if(i>3) rc_write(i, servo_out[i-4]);
+            if(i<=3) rc_write(i, motor_out[i]);
+			else rc_write(i, servo_out[i-4]);
         }
     }
 }
@@ -293,14 +310,14 @@ void AP_MotorsHAU::output_armed_stabilizing()
         float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
         float   throttle_thrust;            // throttle thrust input value, +/- 1.0
         float   forward_thrust;             // forward thrust input value, +/- 1.0
-        //float   lateral_thrust;             // lateral thrust input value, +/- 1.0
+        float   updown_thrust;             // lateral thrust input value, +/- 1.0
 
         roll_thrust = _roll_in;
         pitch_thrust = _pitch_in;
         yaw_thrust = _yaw_in;
-        throttle_thrust = get_throttle_bidirectional();
+        throttle_thrust = _throttle_in;//get_throttle_bidirectional();
         forward_thrust = _forward_in;
-        //lateral_thrust = _lateral_in;
+        updown_thrust = _updown_in;
 
         float vthrust_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
         float hthrust_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
@@ -328,92 +345,45 @@ void AP_MotorsHAU::output_armed_stabilizing()
 	
         // calculate vertical thrust for each motor (includes roll, pitch and throttle (up and down)
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motor_enabled[i]) {
-                vthrust_out[i] = roll_thrust * _roll_factor[i] +
-								pitch_thrust * _pitch_factor[i] +
-								throttle_thrust * _throttle_factor[i];
-
+            if (motor_enabled[i]  && i<=3 ) {
+                vthrust_out[i] = roll_thrust * _roll_mfactor[i] +
+								pitch_thrust * _pitch_mfactor[i] +
+								updown_thrust * _throttle_mfactor[i];
             }
         }
 
         // calculate linear command for each motor
         // linear factors should be 0.0 or 1.0 for now
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motor_enabled[i]) {
-                hthrust_out[i] = yaw_thrust * _yaw_factor[i] +
-                                forward_thrust * _forward_factor[i];
-            }
-        }
-		
-	//servo tilt calculation
-	//float s1_angle = 90.0 +  angle_compensation*atan((mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1+mtHAU.tYaw + (mtHAU.tForward) + mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142;
-    //float s2_angle = 90.0 +  angle_compensation*atan((-mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1+mtHAU.tYaw + (mtHAU.tBackward) - mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142;
-    //float s3_angle = 90.0 +  angle_compensation*atan((-mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1-mtHAU.tYaw + (mtHAU.tForward) - mtHAU.tRoll + mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142;
-    //float s4_angle = 90.0 +  angle_compensation*atan((mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown)/(1.1-mtHAU.tYaw + (mtHAU.tBackward) + mtHAU.tRoll - mtHAU.tPitch - mtHAU.tUp + mtHAU.tDown))*180/3.142; 
-	
-	//servo constrain angle to 0 deg and 180 deg 
-	//s1_angle = constrain_float(s1_angle,0,180);
-	//s2_angle = constrain_float(s2_angle,0,180);
-	//s3_angle = constrain_float(s3_angle,0,180);
-	//s4_angle = constrain_float(s4_angle,0,180);
-	
-		for (i=0; i<4; i++) {
-            if (motor_enabled[i+4]) {
-				_servo_vertical_mixing = roll_thrust * _roll_sfactor[i] +
-										 pitch_thrust * _pitch_sfactor[i];
-								
-				_servo_horizontal_mixing =  yaw_thrust * _yaw_sfactor[i] +
-											forward_thrust * _forward_sfactor[i];
-											
-				_servo_mixing = _servo_vertical_mixing / (1.1f + _servo_horizontal_mixing + _servo_vertical_mixing);
-								
-                _servo_mix_out[i] =  constrain_float(90.0f + angle_compensation * ToDeg(atanf(_servo_mixing)),0.0f,180.0f);
+            if (motor_enabled[i]  && i<=3 ) {
+                hthrust_out[i] = constrain_float(yaw_thrust * _yaw_mfactor[i],0.0f,1.0f) +
+                                 constrain_float(forward_thrust * _forward_mfactor[i],0.0f,1.0f);
             }
         }
 
         // Calculate final output for each motor
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motor_enabled[i]) {
+            if (motor_enabled[i] && i<=3 ) {
 				//_thrust_rpyt_mixing = safe_sqrt(sq(hthrust_out[i])  +  sq(vthrust_out[i]));
 				_thrust_rpyt_mixing = norm(hthrust_out[i],vthrust_out[i]);
-                _thrust_rpyt_out[i] = constrain_float(_thrust_rpyt_mixing,0.0f,1.0f);
+                _thrust_rpyt_out[i] = constrain_float(_thrust_rpyt_mixing,0.0f,1.0f);//constrain_float(throttle_thrust + _thrust_rpyt_mixing,0.0f,1.0f);
+            }
+        }
+		
+		//Calculate final output for each servo
+		for (i=4; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+				_servo_vertical_mixing = roll_thrust * _roll_sfactor[i] +
+										 pitch_thrust * _pitch_sfactor[i] +
+										 updown_thrust * _throttle_sfactor[i];
+								
+				_servo_horizontal_mixing =  yaw_thrust * _yaw_sfactor[i] +
+											forward_thrust * _forward_sfactor[i];
+											
+				_servo_mixing = atanf(_servo_vertical_mixing / (1.1f + _servo_horizontal_mixing + _servo_vertical_mixing));
+								
+                _servo_mix_out[i-4] =  constrain_float(90.0f + _servo_direction[i]*_angle_compensation * ToDeg(_servo_mixing),0.0f,180.0f);
             }
         }
 
-    const AP_BattMonitor &battery = AP::battery();
-
-	// Current limiting
-    if (_batt_current_max <= 0.0f || !battery.has_current()) {
-        return;
-    }
-
-    float _batt_current = battery.current_amps();
-
-    float _batt_current_delta = _batt_current - _batt_current_last;
-
-    float loop_interval = 1.0f/_loop_rate;
-
-    float _current_change_rate = _batt_current_delta / loop_interval;
-
-    float predicted_current = _batt_current + (_current_change_rate * loop_interval * 5);
-
-    float batt_current_ratio = _batt_current/_batt_current_max;
-
-    float predicted_current_ratio = predicted_current/_batt_current_max;
-    _batt_current_last = _batt_current;
-
-    if (predicted_current > _batt_current_max * 1.5f) {
-        batt_current_ratio = 2.5f;
-    } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
-        batt_current_ratio = predicted_current_ratio;
-    }
-    _output_limited += (loop_interval/(loop_interval+_batt_current_time_constant)) * (1 - batt_current_ratio);
-
-    _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
-
-    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] *= _output_limited;
-        }
-    }
 }

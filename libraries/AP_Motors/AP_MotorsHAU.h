@@ -34,6 +34,9 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
+	
+	//add new set function
+	//void                set_updown(float updown_in) { _updown_in = updown_in; };     // range -1 ~ +1
 
 protected:
     // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
@@ -42,19 +45,19 @@ protected:
     //Override MotorsMatrix method
     void add_motor_raw_HAU(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, uint8_t testing_order);
 	void add_servo(int8_t servo_num, bool reverse); //quick method to use motor output as servo
-	void add_servo_HAU(int8_t servo_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, uint8_t testing_order, bool reverse);
+	void add_servo_HAU(int8_t servo_num, float roll_fac, float pitch_fac, float yaw_fac, float throttle_fac, float forward_fac, uint8_t testing_order, float direction);
 
     void output_armed_stabilizing() override;
-    void output_armed_stabilizing_vectored();
-    void output_armed_stabilizing_vectored_HAU();
 
     // Parameters
     AP_Int8             _motor_reverse[AP_MOTORS_MAX_NUM_MOTORS];
     AP_Float            _forwardVerticalCouplingFactor;
 
-    float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
-    float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
-    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+    float               _throttle_mfactor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
+    float               _forward_mfactor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
+    float               _roll_mfactor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+	float               _pitch_mfactor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+	float               _yaw_mfactor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 	
 	float               _throttle_sfactor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_sfactor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
@@ -62,7 +65,7 @@ protected:
 	float               _pitch_sfactor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 	float               _yaw_sfactor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 	
-	bool				_servo_reverse[AP_MOTORS_MAX_NUM_MOTORS];
+	float				_servo_direction[AP_MOTORS_MAX_NUM_MOTORS];
 	float 				_servo_mix_out[AP_MOTORS_MAX_NUM_MOTORS]; // vector tilt servo
 
     // current limiting
@@ -73,8 +76,10 @@ protected:
 	float _servo_vertical_mixing = 0.0f;
 	float _servo_horizontal_mixing = 0.0f;
 	float _servo_mixing = 0.0f;
-	float angle_compensation = 5.0f;
+	const float _angle_compensation = 5.0f;
 	
-	int16_t min_pwm_motor = 1100;
+	const int16_t min_pwm_motor = 1100;
 	int16_t default_pwm_servo = 1500;
+	
+	//float _updown_in;
 };
