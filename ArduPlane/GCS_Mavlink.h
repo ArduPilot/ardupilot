@@ -39,6 +39,8 @@ protected:
     void send_attitude() const override;
     void send_simstate() const override;
 
+    bool persist_streamrates() const override { return true; }
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
