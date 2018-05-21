@@ -148,6 +148,9 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
         if (is_zero(turn_angle_cd)) {
             // if not turning can continue at full speed
             _desired_speed_final = _desired_speed;
+        } else if (rover.use_pivot_steering(turn_angle_cd)) {
+            // pivoting so we will stop
+            _desired_speed_final = 0.0f;
         } else {
             // calculate maximum speed that keeps overshoot within bounds
             const float radius_m = fabsf(g.waypoint_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
