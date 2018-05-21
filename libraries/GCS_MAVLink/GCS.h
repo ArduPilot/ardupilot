@@ -278,7 +278,8 @@ protected:
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
 
-    void handle_request_data_stream(mavlink_message_t *msg, bool save);
+    virtual bool persist_streamrates() const { return false; }
+    void handle_request_data_stream(mavlink_message_t *msg);
 
     virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
