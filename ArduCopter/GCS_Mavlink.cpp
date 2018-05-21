@@ -496,12 +496,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
@@ -513,25 +513,25 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_FENCE_STATUS,
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN // RC_CHANNELS_RAW, RC_CHANNELS
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
     MSG_PID_TUNING // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
 };
-static const uint8_t STREAM_EXTRA2_msgs[] = {
+static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_SYSTEM_TIME,
@@ -550,7 +550,7 @@ static const uint8_t STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
     MSG_RPM
 };
-static const uint8_t STREAM_ADSB_msgs[] = {
+static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE
 };
 
