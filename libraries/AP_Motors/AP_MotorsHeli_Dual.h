@@ -136,13 +136,6 @@ protected:
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     AP_Float        _yaw_scaler;                    // scaling factor applied to the yaw mixing
 
-    SRV_Channel    *_swash_servo_1;
-    SRV_Channel    *_swash_servo_2;
-    SRV_Channel    *_swash_servo_3;
-    SRV_Channel    *_swash_servo_4;
-    SRV_Channel    *_swash_servo_5;
-    SRV_Channel    *_swash_servo_6;
-
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range
     float           _rollFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];

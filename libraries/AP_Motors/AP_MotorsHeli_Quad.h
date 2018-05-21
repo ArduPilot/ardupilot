@@ -86,9 +86,6 @@ protected:
     //  objects we depend upon
     AP_MotorsHeli_RSC           _rotor;             // main rotor controller
 
-    // parameters
-    SRV_Channel    *_servo[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
-
     // rate factors
     float _rollFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
     float _pitchFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];
