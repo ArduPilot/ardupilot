@@ -117,12 +117,6 @@ void Storage::_storage_create(void)
                       STORAGE_FILE);
     }
 
-    for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
-        if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
-            perror("write");
-            AP_HAL::panic("Error filling " STORAGE_FILE);
-        }
-    }
     // ensure the directory is updated with the new size
     fsync(fd);
     close(fd);
@@ -135,6 +129,8 @@ void Storage::_storage_open(void)
     }
 
     _dirty_mask = 0;
+    memset(_buffer, 0, sizeof(_buffer));
+
     int fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
     if (fd == -1) {
         _storage_create();
@@ -143,7 +139,7 @@ void Storage::_storage_open(void)
             AP_HAL::panic("Failed to open " STORAGE_FILE);
         }
     }
-    memset(_buffer, 0, sizeof(_buffer));
+
     /*
       we allow a read of size 4096 to cope with the old storage size
       without forcing users to reset all parameters
