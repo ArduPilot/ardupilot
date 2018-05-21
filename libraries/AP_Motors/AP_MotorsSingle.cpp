@@ -30,32 +30,19 @@ extern const AP_HAL::HAL& hal;
 // init
 void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    // set update rate for the 3 motors (but not the servo on channel 7)
-    set_update_rate(_speed_hz);
+    // make sure 6 output channels are mapped
+    for (uint8_t i=0; i<6; i++) {
+        add_motor_num(CH_1+i);
+    }
 
     // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
     motor_enabled[AP_MOTORS_MOT_5] = true;
     motor_enabled[AP_MOTORS_MOT_6] = true;
 
-    _servo1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
-    _servo2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
-    _servo3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
-    _servo4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
-    if (!_servo1 || !_servo2 || !_servo3 || !_servo4) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsSingle: unable to setup output channels");
-        // don't set initialised_ok
-        return;
+    // setup actuator scaling
+    for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
     }
-    
-    // we set four servos to angle
-    _servo1->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo2->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo3->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-    _servo4->set_angle(AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
-
-    // allow mapping of motors 5 and 6
-    add_motor_num(CH_5);
-    add_motor_num(CH_6);
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_SINGLE);
@@ -87,19 +74,18 @@ void AP_MotorsSingle::output_to_motors()
     switch (_spool_mode) {
         case SHUT_DOWN:
             // sends minimum values out to the motors
-            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_roll_radio_passthrough - _yaw_radio_passthrough, _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_pitch_radio_passthrough - _yaw_radio_passthrough, _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(-_roll_radio_passthrough - _yaw_radio_passthrough, _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-_pitch_radio_passthrough - _yaw_radio_passthrough, _servo4));
+            rc_write_angle(AP_MOTORS_MOT_1, _roll_radio_passthrough * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+            rc_write_angle(AP_MOTORS_MOT_2, _pitch_radio_passthrough * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+            rc_write_angle(AP_MOTORS_MOT_3, -_roll_radio_passthrough * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+            rc_write_angle(AP_MOTORS_MOT_4, -_pitch_radio_passthrough * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_spin_up_ratio * _actuator_out[3], _servo4));
+            for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
+                rc_write_angle(AP_MOTORS_MOT_1+i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+            }
             rc_write(AP_MOTORS_MOT_5, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_6, calc_spin_up_to_pwm());
             break;
@@ -107,10 +93,9 @@ void AP_MotorsSingle::output_to_motors()
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
             // set motor output based on thrust requests
-            rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1(_actuator_out[0], _servo1));
-            rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1(_actuator_out[1], _servo2));
-            rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1(_actuator_out[2], _servo3));
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(_actuator_out[3], _servo4));
+            for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
+                rc_write_angle(AP_MOTORS_MOT_1+i, _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
+            }
             rc_write(AP_MOTORS_MOT_5, calc_thrust_to_pwm(_thrust_out));
             rc_write(AP_MOTORS_MOT_6, calc_thrust_to_pwm(_thrust_out));
             break;
