@@ -580,7 +580,7 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                             packet.vy/100.0f,
                             packet.vz/100.0f);
     add_obstacle(AP_HAL::millis(),
-                 MAV_COLLISION_SRC_ADSB,
+                 MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
                  loc,
                  vel);
