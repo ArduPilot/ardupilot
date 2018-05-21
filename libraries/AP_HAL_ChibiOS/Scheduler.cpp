@@ -49,10 +49,13 @@ THD_WORKING_AREA(_uavcan_thread_wa, 4096);
 #endif
 
 Scheduler::Scheduler()
-{}
+{
+}
 
 void Scheduler::init()
 {
+    chBSemObjectInit(&_timer_semaphore, false);
+    chBSemObjectInit(&_io_semaphore, false);
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
@@ -187,8 +190,10 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
+    chBSemWait(&_timer_semaphore);
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
+            chBSemSignal(&_timer_semaphore);
             return;
         }
     }
@@ -199,22 +204,26 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     } else {
         hal.console->printf("Out of timer processes\n");
     }
+    chBSemSignal(&_timer_semaphore);
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
+    chBSemWait(&_io_semaphore);
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
+            chBSemSignal(&_io_semaphore);
             return;
         }
     }
-
+    
     if (_num_io_procs < CHIBIOS_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
         hal.console->printf("Out of IO processes\n");
     }
+    chBSemSignal(&_io_semaphore);
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -246,8 +255,12 @@ void Scheduler::_run_timers()
     }
     _in_timer_proc = true;
 
+    int num_procs = 0;
+    chBSemWait(&_timer_semaphore);
+    num_procs = _num_timer_procs;
+    chBSemSignal(&_timer_semaphore);
     // now call the timer based drivers
-    for (int i = 0; i < _num_timer_procs; i++) {
+    for (int i = 0; i < num_procs; i++) {
         if (_timer_proc[i]) {
             _timer_proc[i]();
         }
@@ -339,8 +352,12 @@ void Scheduler::_run_io(void)
     }
     _in_io_proc = true;
 
+    int num_procs = 0;
+    chBSemWait(&_io_semaphore);
+    num_procs = _num_io_procs;
+    chBSemSignal(&_io_semaphore);
     // now call the IO based drivers
-    for (int i = 0; i < _num_io_procs; i++) {
+    for (int i = 0; i < num_procs; i++) {
         if (_io_proc[i]) {
             _io_proc[i]();
         }
