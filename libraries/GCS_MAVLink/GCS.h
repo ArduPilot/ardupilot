@@ -34,7 +34,7 @@
 /// please keep each MSG_ to a single MAVLink message. If need be
 /// create new MSG_ IDs for additional messages on the same
 /// stream
-enum ap_message {
+enum ap_message : uint8_t {
     MSG_HEARTBEAT,
     MSG_ATTITUDE,
     MSG_LOCATION,
@@ -92,7 +92,7 @@ enum ap_message {
         stream_name ## _msgs,                   \
         ARRAY_SIZE(stream_name ## _msgs)        \
     }
-#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+#define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
 
 ///
 /// @class	GCS_MAVLINK
@@ -128,17 +128,19 @@ public:
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
     // kept in the same order
-    enum streams {STREAM_RAW_SENSORS,
-                  STREAM_EXTENDED_STATUS,
-                  STREAM_RC_CHANNELS,
-                  STREAM_RAW_CONTROLLER,
-                  STREAM_POSITION,
-                  STREAM_EXTRA1,
-                  STREAM_EXTRA2,
-                  STREAM_EXTRA3,
-                  STREAM_PARAMS,
-                  STREAM_ADSB,
-                  NUM_STREAMS};
+    enum streams : uint8_t {
+        STREAM_RAW_SENSORS,
+        STREAM_EXTENDED_STATUS,
+        STREAM_RC_CHANNELS,
+        STREAM_RAW_CONTROLLER,
+        STREAM_POSITION,
+        STREAM_EXTRA1,
+        STREAM_EXTRA2,
+        STREAM_EXTRA3,
+        STREAM_PARAMS,
+        STREAM_ADSB,
+        NUM_STREAMS
+    };
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
@@ -232,8 +234,8 @@ public:
     FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
 
     struct stream_entries {
-        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
-        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const streams stream_id;
+        const ap_message *ap_message_ids;
         const uint8_t num_ap_message_ids;
     };
     // vehicle subclass cpp files should define this:
