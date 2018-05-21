@@ -2940,10 +2940,10 @@ void GCS_MAVLINK::data_stream_send(void)
         if (!stream_trigger(id)) {
             continue;
         }
-        const uint8_t *msg_ids = all_stream_entries[i].ap_message_ids;
+        const ap_message *msg_ids = all_stream_entries[i].ap_message_ids;
         for (uint8_t j=0; j<all_stream_entries[i].num_ap_message_ids; j++) {
-            const uint8_t msg_id = msg_ids[j];
-            send_message((ap_message)msg_id);
+            const ap_message msg_id = msg_ids[j];
+            send_message(msg_id);
         }
         if (gcs().out_of_time()) {
             break;
