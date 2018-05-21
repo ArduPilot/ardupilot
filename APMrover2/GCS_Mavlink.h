@@ -30,6 +30,8 @@ protected:
 
     virtual bool in_hil_mode() const override;
 
+    bool persist_streamrates() const override { return true; }
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
