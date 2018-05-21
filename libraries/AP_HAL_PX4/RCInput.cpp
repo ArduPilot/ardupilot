@@ -24,7 +24,7 @@ void PX4RCInput::init()
     clear_overrides();
     pthread_mutex_init(&rcin_mutex, nullptr);
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
     radio = AP_Radio::instance();
     if (radio) {
         radio->init();
@@ -161,7 +161,7 @@ void PX4RCInput::_timer_tick(void)
         pthread_mutex_unlock(&rcin_mutex);
     }
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
         last_radio_us = radio->last_recv_us();
         pthread_mutex_lock(&rcin_mutex);
@@ -190,7 +190,7 @@ bool PX4RCInput::rc_bind(int dsmMode)
         return false;
     }
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#ifdef HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
     }
