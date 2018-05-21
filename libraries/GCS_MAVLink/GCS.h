@@ -56,7 +56,6 @@ enum ap_message {
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
-    MSG_LIMITS_STATUS,
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
