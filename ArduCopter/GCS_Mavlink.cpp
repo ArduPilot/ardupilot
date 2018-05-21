@@ -377,7 +377,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.ahrs.send_ekf_status_report(chan);
         break;
 
-    case MSG_LIMITS_STATUS:
     case MSG_WIND:
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
