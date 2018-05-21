@@ -89,14 +89,6 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-#if AC_FENCE == ENABLED
-NOINLINE void Sub::send_limits_status(mavlink_channel_t chan)
-{
-    fence_send_mavlink_status(chan);
-}
-#endif
-
-
 NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 {
     uint32_t control_sensors_present;
@@ -462,10 +454,10 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_LIMITS_STATUS:
+    case MSG_FENCE_STATUS:
 #if AC_FENCE == ENABLED
-        CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
-        sub.send_limits_status(chan);
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        sub.fence_send_mavlink_status(chan);
 #endif
         break;
 
@@ -606,7 +598,7 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
-    MSG_LIMITS_STATUS,
+    MSG_FENCE_STATUS,
     MSG_NAMED_FLOAT
 };
 static const uint8_t STREAM_POSITION_msgs[] = {
