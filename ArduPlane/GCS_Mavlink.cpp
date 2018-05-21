@@ -769,12 +769,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-    {
-        handle_request_data_stream(msg, true);
-        break;
-    }
-
     case MAVLINK_MSG_ID_COMMAND_INT:
     {
         // decode
