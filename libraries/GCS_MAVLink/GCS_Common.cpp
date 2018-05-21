@@ -2349,6 +2349,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_common_rally_message(msg);
         break;
 
+    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
+        handle_request_data_stream(msg);
+        break;
+
     case MAVLINK_MSG_ID_DATA96:
         handle_data_packet(msg);
         break;        
