@@ -708,15 +708,11 @@ int8_t Plane::throttle_percentage(void)
     if (quadplane.in_vtol_mode()) {
         return quadplane.throttle_percentage();
     }
-    // to get the real throttle we need to use norm_output() which
-    // returns a number from -1 to 1.
-    float throttle = SRV_Channels::get_output_norm(SRV_Channel::k_throttle);
+    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (aparm.throttle_min >= 0) {
-        return constrain_int16(50*(throttle+1), 0, 100);
-    } else {
-        // reverse thrust
-        return constrain_int16(100*throttle, -100, 100);
+        return constrain_int16(throttle, 0, 100);
     }
+    return constrain_int16(throttle, -100, 100);
 }
 
 /*
