@@ -9,6 +9,8 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_string: "Dummy GCS"
 };
 
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+
 /*
  *  GCS backend used for many examples and tools
  */
