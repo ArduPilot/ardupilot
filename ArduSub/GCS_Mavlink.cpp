@@ -687,11 +687,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {  // MAV ID: 66
-        handle_request_data_stream(msg, false);
-        break;
-    }
-
     case MAVLINK_MSG_ID_GIMBAL_REPORT: {
 #if MOUNT == ENABLED
         handle_gimbal_report(sub.camera_mount, msg);
