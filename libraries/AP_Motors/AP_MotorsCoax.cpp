@@ -50,6 +50,10 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     _servo3->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo4->set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
 
+    // allow mapping of motors 5 and 6
+    add_motor_num(CH_5);
+    add_motor_num(CH_6);
+    
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
 }
