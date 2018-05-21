@@ -654,6 +654,17 @@ void SRV_Channels::set_range(SRV_Channel::Aux_servo_function_t function, uint16_
     }
 }
 
+// set MIN parameter for a function
+void SRV_Channels::set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].set_output_min(min_pwm);
+            channels[i].set_output_max(max_pwm);
+        }
+    }
+}
+
 // constrain to output min/max for function
 void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
 {
