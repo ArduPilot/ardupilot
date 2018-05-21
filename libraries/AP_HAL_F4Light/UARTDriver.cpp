@@ -148,7 +148,7 @@ void UARTDriver::update_timestamp(){  // called from ISR
     _receive_timestamp[_time_idx] = AP_HAL::micros(); 
 }
 
-// this is mostly a 
+
 uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) {
 
     // timestamp is 32 bits so read is atomic, in worst case we get 2nd timestamp
