@@ -32,15 +32,15 @@ typedef struct usart_state {
 
 /** USART device type */
 typedef struct usart_dev {
-    USART_TypeDef* USARTx;             /**< Register map */
+    USART_TypeDef* regs;             // registers
     uint32_t clk;
     IRQn_Type irq;
     uint8_t rx_pin;
     uint8_t tx_pin;
     uint8_t gpio_af;
     usart_state *state;
-    ring_buffer *rxrb;                 /**< RX ring buffer */
-    ring_buffer *txrb;                 /**< TX ring buffer */
+    ring_buffer *rxrb;                 // RX ring buffer 
+    ring_buffer *txrb;                 // TX ring buffer
 } usart_dev;
 
 
@@ -61,27 +61,50 @@ extern const usart_dev * const _USART6;
 #define USART_F_TXE  0x80
 #define USART_F_ORE  0x8
 
-#define USART_MASK_IDLEIE 0x10
-#define USART_MASK_RXNEIE 0x20
-#define USART_MASK_TCEIE  0x40
-#define USART_MASK_TXEIE  0x80
-#define USART_MASK_PEIE   0x100
+#define USART_BIT_IDLEIE 0x10
+#define USART_BIT_RXNEIE 0x20
+#define USART_BIT_TCEIE  0x40
+#define USART_BIT_TXEIE  0x80
+#define USART_BIT_PEIE   0x100
 
-#define USART_MASK2_LBDIE  0x40
+#define USART_BIT_LBDIE  0x40
 
-#define USART_MASK3_CTSIE  0x400
-#define USART_MASK3_EIE  0x1
+#define USART_BIT_CTSIE  0x400
+#define USART_BIT_EIE    0x1
 
-#define UART_Mode_Rx      (0x0004)
-#define UART_Mode_Tx      (0x0008)
+#define UART_Mode_Rx      (0x4)
+#define UART_Mode_Tx      (0x8)
 
-#define UART_HardwareFlowControl_None       (0x0000)
-#define UART_HardwareFlowControl_RTS        (0x0100)
-#define UART_HardwareFlowControl_CTS        (0x0200)
-#define UART_HardwareFlowControl_RTS_CTS    (0x0300)
+#define UART_FlowControl_None         (0<<8)
+#define UART_FlowControl_RTS          (1<<8)
+#define UART_FlowControl_CTS          (2<<8)
+#define UART_FlowControl_RTS_CTS      (3<<8)
 
-#define UART_Word_8b                  ((uint16_t)0x0000)
-#define UART_Word_9b                  ((uint16_t)0x1000)
+#define UART_Word_8b                  (0<<12)
+#define UART_Word_9b                  (1<<12)
+
+#define USART_Clock_Disable           (0<<11)
+#define USART_Clock_Enable            (1<<11)
+
+#define USART_CPOL_Low                (1<<10)
+#define USART_CPOL_High               (1<<10)
+
+#define USART_CPHA_1Edge              (0<<9)
+#define USART_CPHA_2Edge              (1<<9)
+
+#define USART_BIT_CTS                 (1<<9)
+#define USART_BIT_LBD                 (1<<8)
+#define USART_BIT_TXE                 (1<<7)
+#define USART_BIT_TC                  (1<<6)
+#define USART_BIT_RXNE                (1<<5)
+#define USART_BIT_IDLE                (1<<4)
+#define USART_BIT_ORE                 (1<<3)
+#define USART_BIT_NE                  (1<<2)
+#define USART_BIT_FE                  (1<<1)
+#define USART_BIT_PE                  (1<<0)
+
+#define USART_LastBit_Disable         (0x0000)
+#define USART_LastBit_Enable          (0x0100)
 
 /**
  * @brief Initialize a serial port.
@@ -156,13 +179,8 @@ static inline void usart_enable(const usart_dev *dev)
 {
     dev->state->is_used=true;
 
-    /* Check the parameters */
-    assert_param(IS_USART_ALL_PERIPH(dev->USARTx));
-
-    /* Enable USART */
-//    USART_Cmd(dev->USARTx, ENABLE);
-    
-    dev->USARTx->CR1 |= USART_CR1_UE; /* Enable the selected USART by setting the UE bit in the CR1 register */
+    /* Enable USART */    
+    dev->regs->CR1 |= USART_CR1_UE; /* Enable the selected USART by setting the UE bit in the CR1 register */
 
 }
 
@@ -179,7 +197,7 @@ static inline uint8_t usart_is_used(const usart_dev *dev)
  */
 static inline void usart_disable(const usart_dev *dev){
     /* Disable the selected USART by clearing the UE bit in the CR1 register */
-    dev->USARTx->CR1 &= (uint16_t)~((uint16_t)USART_CR1_UE);
+    dev->regs->CR1 &= (uint16_t)~(USART_CR1_UE);
     
     /* Clean up buffer */
     dev->state->is_used=false;
@@ -238,10 +256,6 @@ void usart_putudec(const usart_dev *dev, uint32_t val);
  * @param byte Byte to transmit.
  */
 static inline uint32_t usart_putc(const usart_dev* dev, uint8_t bt) {
-	//uint32_t ret=0;
-	//uint32_t cnt=0;
-	//if (!usart_tx(dev, &byte, 1))
-	//;
 	return usart_tx(dev, &bt, 1);
 }
 

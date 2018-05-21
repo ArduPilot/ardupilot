@@ -57,14 +57,14 @@ void UARTDriver::begin(uint32_t baud, uint32_t bmode) {
         const stm32_pin_info *txi = &PIN_MAP[_usart_device->tx_pin];
         gpio_set_af_mode(txi->gpio_device, txi->gpio_bit, _usart_device->gpio_af);
         gpio_set_mode(txi->gpio_device, txi->gpio_bit, GPIO_AF_OUTPUT_PP);
-        mode |= USART_Mode_Tx;
+        mode |= UART_Mode_Tx;
     } 
 	
     if(_usart_device->rx_pin < BOARD_NR_GPIO_PINS){
 	const stm32_pin_info *rxi = &PIN_MAP[_usart_device->rx_pin];
         gpio_set_af_mode(rxi->gpio_device, rxi->gpio_bit, _usart_device->gpio_af);
         gpio_set_mode(rxi->gpio_device, rxi->gpio_bit, GPIO_AF_OUTPUT_OD_PU); 
-        mode |= USART_Mode_Rx;
+        mode |= UART_Mode_Rx;
     }
 
     if(!mode) return;
@@ -73,7 +73,7 @@ void UARTDriver::begin(uint32_t baud, uint32_t bmode) {
         
     usart_init(_usart_device);
     usart_setup(_usart_device, (uint32_t)baud, 
-                UART_Word_8b, bmode & 0xffff /*USART_StopBits_1*/ , (bmode>>16) & 0xffff /* USART_Parity_No*/, mode, UART_HardwareFlowControl_None);
+                UART_Word_8b, bmode & 0xffff /*USART_StopBits_1*/ , (bmode>>16) & 0xffff /* USART_Parity_No*/, mode, UART_FlowControl_None);
     usart_enable(_usart_device);
 
     usart_set_callback(_usart_device, Scheduler::get_handler(FUNCTOR_BIND_MEMBER(&UARTDriver::update_timestamp, void)) );

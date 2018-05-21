@@ -70,16 +70,11 @@ uint32_t systick_micros(void);
 
 void SysTick_Handler(void);
 
+void HAL_WriteBackupRegister(uint32_t RTC_BKP_DR, uint32_t Data);
+uint32_t HAL_ReadBackupRegister(uint32_t RTC_BKP_DR);
 
-/*
-void HardFault_Handler(void);
-void MemManage_Handler(void);
-void BusFault_Handler(void);
-void UsageFault_Handler(void);
-*/
 void __attribute__((noreturn)) __error(uint32_t pc, uint32_t num, uint32_t lr, uint32_t flag);
 void __attribute__((noreturn)) error_throb(uint32_t num);
-
 
 #ifdef __cplusplus
   }

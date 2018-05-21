@@ -11,6 +11,7 @@ based on: LeafLabs
 #include "hal.h"
 #include "util.h"
 #include "nvic.h"
+#include "rcc.h"
 
 
 typedef struct exti_channel {
@@ -48,7 +49,7 @@ void exti_init(){
 }
 
 
-static inline EXTITrigger_TypeDef get_exti_mode(exti_trigger_mode mode) {
+static inline EXTITrigger_t get_exti_mode(exti_trigger_mode mode) {
     switch (mode) {
     case EXTI_RISING:
         return EXTI_Trigger_Rising;
@@ -58,46 +59,7 @@ static inline EXTITrigger_TypeDef get_exti_mode(exti_trigger_mode mode) {
         return EXTI_Trigger_Rising_Falling;
     }
     // Can't happen
-    assert_param(0);
-    return (EXTITrigger_TypeDef)0;
-}
-
-void exti_attach_interrupt(afio_exti_num num,
-                           afio_exti_port port,
-                           Handler handler,
-                           exti_trigger_mode mode)
-{
-	/* Check the parameters */
-	assert_param(handler);
-	assert_param(IS_EXTI_PIN_SOURCE(num));
-	assert_param(IS_EXTI_PORT_SOURCE(num));
-	assert_param(port >= 0 && num <= 4);
-	
-	EXTI_InitTypeDef   EXTI_InitStructure;
-  	
-	// Register the handler 
-	handlers[num] = handler;
-
-	// Enable SYSCFG clock 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-
-	afio_exti_select(port, num);
-
-        uint32_t line = exti_channels[num].irq_line;
-
-        // clear active request
-        exti_clear_pending_bit(line);
-
-	/* Configure EXTI Line */
-	EXTI_InitStructure.EXTI_Line = line;
-	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = get_exti_mode(mode);  
-	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	EXTI_Init(&EXTI_InitStructure);
-
-	/* Enable and set EXTI Line Interrupt priority */
-        enable_nvic_irq(exti_channels[num].irq_type, GPIO_INT_PRIORITY);  // we init NVIC for 4 bit preemption,  0 bit subpriority 
-
+    return (EXTITrigger_t)0;
 }
 
 void exti_attach_interrupt_pri(afio_exti_num num,
@@ -106,62 +68,54 @@ void exti_attach_interrupt_pri(afio_exti_num num,
                            exti_trigger_mode mode,
                            uint8_t priority)
 {
-	/* Check the parameters */
-	assert_param(handler);
-	assert_param(IS_EXTI_PIN_SOURCE(num));
-	assert_param(IS_EXTI_PORT_SOURCE(num));
-	assert_param(port >= 0 && num <= 4);
-	
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE); // we must wait some time before access to SYSCFG
-  	
-	/* Register the handler */
-	handlers[num] = handler;
 
-	// Enable SYSCFG clock 
+    RCC_enableAPB2_clk(RCC_APB2_bit_SYSCFG); // we must wait some time before access to SYSCFG
 
-	afio_exti_select(port, num); // select port as  EXTI interrupt source. SYSCFG not documented in STM docs
+    // register the handler 
+    handlers[num] = handler;
 
-        uint32_t line = exti_channels[num].irq_line;
+    afio_exti_select(port, num); // select port as EXTI interrupt source. SYSCFG not documented in STM docs
 
-        // clear active request
-        exti_clear_pending_bit(line);
+    uint32_t line = exti_channels[num].irq_line;
+
+    exti_clear_pending_bit(line); // clear active request if any
         
-	/* Configure EXTI Line */
-	EXTI_InitTypeDef   EXTI_InitStructure;
-	EXTI_InitStructure.EXTI_Line = line;
-	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = get_exti_mode(mode);  
-	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	EXTI_Init(&EXTI_InitStructure);
+    EXTI->EMR &= ~line; // clear EXTI line in event register
+    EXTI->IMR |= line;  // and set in IRQ register
+    
+    EXTITrigger_t trg = get_exti_mode(mode);    //  external interrupts trigger
+    if (trg == EXTI_Trigger_Rising_Falling) {     // Rising & Falling edge 
+        EXTI->RTSR |= line;
+        EXTI->FTSR |= line;
+    } else {
+        // clears Rising/Falling edge
+        EXTI->RTSR &= ~line; // Rising trigger selection register 
+        EXTI->FTSR &= ~line; // Falling trigger selection register
+        
+        uint32_t addr = (uint32_t)EXTI_BASE + trg; // trg defined as offset to needed register
+        *(__IO uint32_t *) addr |= line;
+    }
 
-	/* Enable and set EXTI Line Interrupt to the given priority */
-        enable_nvic_irq(exti_channels[num].irq_type, priority);  // we init NVIC for 4 bit preemption,  0 bit subpriority 
-
+    // Enable and set EXTI Line Interrupt to the given priority
+    enable_nvic_irq(exti_channels[num].irq_type, priority);  // we init NVIC for 4 bit preemption,  0 bit subpriority 
 }
 
 
 void exti_detach_interrupt(afio_exti_num num)
 {
-	/* Check the parameters */
-	assert_param(IS_EXTI_PORT_SOURCE(num));
-	
+    // disable external line
+    uint32_t line = exti_channels[num].irq_line;
 
-	EXTI_InitTypeDef   EXTI_InitStructure;  
-	EXTI_StructInit(&EXTI_InitStructure);
-	EXTI_InitStructure.EXTI_Line = exti_channels[num].irq_line;
-	EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-	EXTI_Init(&EXTI_InitStructure);
+    EXTI->IMR &= ~line; // clear both registers
+    EXTI->EMR &= ~line;
 
-/* do not disable interrupt in NVIC because it can be shared
-        NVIC_DisableIRQ(exti_channels[num].irq_type);
-*/
+/* do not disable interrupt in NVIC because it can be shared  */
 
-	/* Finally, unregister the user's handler */
-	handlers[num] = (Handler)0;	
+    handlers[num] = (Handler)0;	 // unregister the user's handler
 }
 
 
-void exti_enable_interrupt(afio_exti_num num, bool e){
+void exti_enable_irq(afio_exti_num num, bool e){
     if(e){
          EXTI->IMR |= exti_channels[num].irq_line;
     }else {
@@ -180,14 +134,14 @@ static void exti_serv(uint32_t extline, uint8_t num)
 #ifdef ISR_PERF
     t = stopwatch_getticks();
 #endif
-    if(EXTI_GetITStatus(extline) != RESET) {
+    if((EXTI->IMR & extline)!=0 && (EXTI->PR & extline) !=0 ){
+    
 	Handler handler = handlers[num];
 
 	if (handler) {
-	    revo_call_handler(handler, num); //   handler();
+	    revo_call_handler(handler, num);
 	}
 
-	/* Clear the EXTI line pending bit */
 	exti_clear_pending_bit(extline);
     }
 

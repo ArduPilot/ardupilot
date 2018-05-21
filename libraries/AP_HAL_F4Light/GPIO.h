@@ -149,7 +149,7 @@ public:
     }
     
     void           detach_interrupt(uint8_t pin);
-    static inline void enable_interrupt(uint8_t pin, bool e) { exti_enable_interrupt((afio_exti_num)(PIN_MAP[pin].gpio_bit), e); }
+    static inline void enable_interrupt(uint8_t pin, bool e) { exti_enable_irq((afio_exti_num)(PIN_MAP[pin].gpio_bit), e); }
 
     /* return true if USB cable is connected */
     inline bool    usb_connected(void) override {

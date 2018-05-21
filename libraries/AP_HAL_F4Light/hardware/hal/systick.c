@@ -72,6 +72,18 @@ void SysTick_Handler(void)
 }
 
 
+void HAL_WriteBackupRegister(uint32_t RTC_BKP_DR, uint32_t Data)
+{
+  volatile uint32_t* ptr = (uint32_t *)((uint32_t)RTC_BASE + 0x50); // shift to registers
+  ptr[RTC_BKP_DR] = Data;
+}
+
+uint32_t HAL_ReadBackupRegister(uint32_t RTC_BKP_DR)
+{
+  volatile uint32_t* ptr = (uint32_t *)((uint32_t)RTC_BASE + 0x50); // shift to registers
+  return ptr[RTC_BKP_DR];
+}
+
 
 // blinking on case of Faults
 

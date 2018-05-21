@@ -37,6 +37,7 @@ based on:
 
 #include "boards.h"
 #include <usb.h>
+#include <debug.h>
 
 static void setupNVIC(void);
 static void enableFPU(void);
@@ -123,8 +124,7 @@ static INLINE void setupCCM(){
 static INLINE void setupNVIC()
 {
     /* 4 bit preemption,  0 bit subpriority */
-    NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4);
-    
+    SCB->AIRCR = AIRCR_VECTKEY_MASK | NVIC_Prio_group_4;    
     exti_init();
 }
 
@@ -134,15 +134,15 @@ static INLINE void setupNVIC()
     (+) Enable the Power Controller (PWR) APB1 interface clock using the
        RCC_APB1PeriphClockCmd() function.
    (+) Enable access to RTC domain using the PWR_BackupAccessCmd() function.
-   (+) Select the RTC clock source using the RCC_RTCCLKConfig() function.
-   (+) Enable RTC Clock using the RCC_RTCCLKCmd() function.
+   (+) Select the RTC clock source using the RCC_configRTC() function.
+   (+) Enable RTC Clock using the RCC_enableRTCclk() function.
 */
 
 void board_set_rtc_register(uint32_t sig, uint16_t reg)
 {
         PWR->CR   |= PWR_CR_DBP;
     
-        RTC_WriteBackupRegister(reg, sig);
+        HAL_WriteBackupRegister(reg, sig);
 
         PWR->CR   &= ~PWR_CR_DBP;
 }
@@ -153,7 +153,7 @@ uint32_t board_get_rtc_register(uint16_t reg)
         // enable the backup registers.
         PWR->CR   |= PWR_CR_DBP;
 
-        uint32_t ret = RTC_ReadBackupRegister(reg);
+        uint32_t ret = HAL_ReadBackupRegister(reg);
 
         PWR->CR   &= ~PWR_CR_DBP;    
         return ret;
@@ -169,15 +169,17 @@ void inline init(void) {
 // turn on and enable RTC
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
     RCC->AHB1ENR |= RCC_AHB1ENR_BKPSRAMEN;
-    PWR_BackupAccessCmd(ENABLE);
+    PWR->CR   |= PWR_CR_DBP;
 
-    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
-    RCC_RTCCLKCmd(ENABLE);
+    RCC_configRTC(RCC_RTCCLKSource_LSI);
+    RCC_enableRTCclk(ENABLE);
 
     // enable the backup registers.
     RCC->BDCR |= RCC_BDCR_RTCEN;
 
-    RTC_WriteProtectionCmd(DISABLE);
+    // Disable the write protection for RTC registers 
+    RTC->WPR = 0xCA;  RTC->WPR = 0x53;
+    
     for(volatile int i=0; i<50; i++); // small delay
 // RTC is ready
     if(board_get_rtc_register(RTC_SIGNATURE_REG) == DFU_RTC_SIGNATURE) {
@@ -276,11 +278,11 @@ void NMI_Handler() {
 
 
     //Пытаемся запустить HSE
-    RCC_HSEConfig(RCC_HSE_ON);
+    RCC_enableHSE(RCC_HSE_ON);
     emerg_delay(1);     //Задержка на запуск кварца
 
 
-    if (RCC_WaitForHSEStartUp() == SUCCESS){
+    if (RCC_WaitForHSEStartUp()){
         //Если запустился - проводим установку заново
         SetSysClock(0); // without overclocking 
 

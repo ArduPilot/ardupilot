@@ -119,10 +119,10 @@ void Soft_I2C::init_hw( const gpio_dev *scl_dev, uint8_t scl_bit, const gpio_dev
     _sda_bit=sda_bit;
     
 
-    sda_port = sda_dev->GPIOx;
+    sda_port = sda_dev->regs;
     sda_pin  = 1<<sda_bit;
 
-    scl_port = scl_dev->GPIOx;
+    scl_port = scl_dev->regs;
     scl_pin  = 1<<scl_bit;
 
     SCL_H; // passive in high state

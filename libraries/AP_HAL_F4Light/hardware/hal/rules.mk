@@ -29,6 +29,7 @@ cSRCS_$(d)   += $(STM_DIR)/usb.c
 cSRCS_$(d)   += $(STM_DIR)/pwm_in.c
 cSRCS_$(d)   += $(STM_DIR)/dma.c
 cSRCS_$(d)   += $(STM_DIR)/nvic.c
+cSRCS_$(d)   += $(STM_DIR)/rcc.c
 
 cppSRCS_$(d) := 
 

@@ -42,6 +42,7 @@ based on:
 #include <string.h>
 #include "util.h"
 #include "nvic.h"
+#include "rcc.h"
 
 /*
  * Devices
@@ -51,7 +52,7 @@ static Handler dma1_handlers[8] IN_CCM;
 
 static const dma_dev dma1 = {
     .regs     = (dma_reg_map *)DMA1_BASE,
-    .clk_id   = RCC_AHB1Periph_DMA1,
+    .clk_id   = RCC_AHB1_bit_DMA1,
     .irq_lines = { DMA1_Stream0_IRQn, DMA1_Stream1_IRQn, DMA1_Stream2_IRQn, DMA1_Stream3_IRQn, DMA1_Stream4_IRQn, DMA1_Stream5_IRQn, DMA1_Stream6_IRQn, DMA1_Stream7_IRQn},
     .handlers  = dma1_handlers
 };
@@ -63,10 +64,9 @@ static Handler dma2_handlers[8] IN_CCM;
 
 static const dma_dev dma2 = {
     .regs     = (dma_reg_map *)DMA2_BASE,
-    .clk_id   = RCC_AHB1Periph_DMA2,
+    .clk_id   = RCC_AHB1_bit_DMA2,
     .irq_lines = { DMA2_Stream0_IRQn, DMA2_Stream1_IRQn, DMA2_Stream2_IRQn, DMA2_Stream3_IRQn, DMA2_Stream4_IRQn, DMA2_Stream5_IRQn, DMA2_Stream6_IRQn, DMA2_Stream7_IRQn},
     .handlers  = dma2_handlers
-
 };
 /** DMA2 device */
 //const dma_dev * const _DMA2 = &dma2;
@@ -88,7 +88,7 @@ void dma_init(dma_stream stream) {
     
     memset(dev->handlers, 0, 8 * sizeof(Handler));
     
-    RCC_AHB1PeriphClockCmd(dev->clk_id, ENABLE);
+    RCC_enableAHB1_clk(dev->clk_id);
 
     dev->regs->STREAM[stream].CR &= ~DMA_CR_EN;
 }

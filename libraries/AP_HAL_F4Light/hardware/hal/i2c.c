@@ -10,8 +10,6 @@ based on: datasheet
 #include "i2c.h"
 #include "dma.h"
 #include "systick.h"
-#include "stm32f4xx_i2c.h"
-#include "stm32f4xx_dma.h"
 #include <boards.h>
 
 
@@ -19,17 +17,17 @@ based on: datasheet
 static i2c_state i2c1_state IN_CCM;
 
 static const i2c_dev i2c_dev1 = {
-    .I2Cx         = I2C1,
+    .regs         = I2C1,
     .sda_pin      = I2C1_SDA,
     .scl_pin      = I2C1_SCL, // 101 PB8
-    .clk       	  = RCC_APB1Periph_I2C1,
+    .clk       	  = RCC_APB1_bit_I2C1,
     .gpio_af	  = GPIO_AF_I2C1,
     .ev_nvic_line = I2C1_EV_IRQn,
     .er_nvic_line = I2C1_ER_IRQn,
 //    .dma          = { DMA_CR_CH1, DMA1_STREAM0, DMA1_STREAM6 }, // I2C1
     .state        = &i2c1_state,
 };
-/** I2C1 device */
+// I2C1 device 
 const i2c_dev* const _I2C1 = &i2c_dev1;
 #endif
 
@@ -37,10 +35,10 @@ const i2c_dev* const _I2C1 = &i2c_dev1;
 static i2c_state i2c2_state IN_CCM;
 
 static const i2c_dev i2c_dev2 = {
-    .I2Cx         = I2C2,
+    .regs         = I2C2,
     .sda_pin      = I2C2_SDA,
     .scl_pin      = I2C2_SCL,
-    .clk       	  = RCC_APB1Periph_I2C2,
+    .clk       	  = RCC_APB1_bit_I2C2,
     .gpio_af	  = GPIO_AF_I2C2,
     .ev_nvic_line = I2C2_EV_IRQn,
     .er_nvic_line = I2C2_ER_IRQn,
@@ -56,10 +54,10 @@ const i2c_dev* const _I2C2 = &i2c_dev2;
 static i2c_state i2c3_state IN_CCM;
 
 static const i2c_dev i2c_dev3 = {
-    .I2Cx         = I2C3,
+    .regs         = I2C3,
     .sda_pin      = I2C3_SDA,
     .scl_pin      = I2C3_SCL,
-    .clk       	  = RCC_APB1Periph_I2C3,
+    .clk       	  = RCC_APB1_bit_I2C3,
     .gpio_af	  = GPIO_AF_I2C3,
     .ev_nvic_line = I2C3_EV_IRQn,
     .er_nvic_line = I2C3_ER_IRQn,
@@ -79,122 +77,102 @@ static void delay_10us(){
 
 uint32_t i2c_bit_time=4;
 
-/**
- * @brief  DeInitializes peripherals used by the I2C driver.
- * @param  None
- * @retval None
- */
 void i2c_lowLevel_deinit(const i2c_dev *dev){
-    GPIO_InitTypeDef GPIO_InitStructure;
-
-    /* I2C Peripheral Disable */
-    I2C_Cmd(dev->I2Cx, DISABLE);
-
-    /* I2C DeInit */
-    I2C_DeInit(dev->I2Cx);
-
-    /*!< GPIO configuration */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // low speed to prevent glitches
-
-    {
-        const stm32_pin_info *p = &PIN_MAP[dev->scl_pin];
-
-        /*!< Configure I2C pins: SCL */
-        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
-        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
-    }
-
-    {
-        const stm32_pin_info *p = &PIN_MAP[dev->sda_pin];
-
-        /*!< Configure I2C pins: SDA */
-        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
-        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
-    }
+    i2c_master_release_bus(dev);
+    i2c_peripheral_disable(dev);
+    RCC_doAPB1_reset(dev->clk);
 }
 
 /**
- * @brief  Initializes peripherals used by the I2C driver.
+ *   Initializes hw used by the I2C driver.
  */
 static inline void i2c_lowLevel_init(const i2c_dev *dev)  {
     memset(dev->state,0,sizeof(i2c_state));
-
-    GPIO_InitTypeDef GPIO_InitStructure;
-
-    /* Enable the i2c */
-    RCC_APB1PeriphClockCmd(dev->clk, ENABLE);
-
-    /* Reset the Peripheral */
-    RCC_APB1PeriphResetCmd(dev->clk, ENABLE);
-    RCC_APB1PeriphResetCmd(dev->clk, DISABLE);
-
-    memset(dev->state,0,sizeof(i2c_state));
-
-// common configuration
-    /* common GPIO configuration */
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+    
+    RCC_doAPB1_reset(dev->clk); // Enable the i2c and Reset it
 
     { /* Configure SCL */
         const stm32_pin_info *p = &PIN_MAP[dev->scl_pin];
 
         /* Enable the GPIOs for the SCL/SDA Pins */
-        RCC_AHB1PeriphClockCmd(p->gpio_device->clk, ENABLE);
+        RCC_enableAHB1_clk(p->gpio_device->clk);
 
-        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
-        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
-        /* Connect GPIO pins to peripheral, SCL must be first! */
+        gpio_set_mode(   p->gpio_device, p->gpio_bit, GPIO_AF_OUTPUT_OD_PU);
         gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af);
+        gpio_set_speed(  p->gpio_device, p->gpio_bit, GPIO_speed_25MHz);
+
+        gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af); // Connect GPIO pins to peripheral, SCL must be first!
     }
     
     { /* Configure SDA */
         const stm32_pin_info *p = &PIN_MAP[dev->sda_pin];
 
         /* Enable the GPIOs for the SCL/SDA Pins */
-        RCC_AHB1PeriphClockCmd(p->gpio_device->clk, ENABLE);
+        RCC_enableAHB1_clk(p->gpio_device->clk);
 
-        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
-        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
+        gpio_set_mode(   p->gpio_device, p->gpio_bit, GPIO_AF_OUTPUT_OD_PU);
+        gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af);
+        gpio_set_speed(  p->gpio_device, p->gpio_bit, GPIO_speed_25MHz);
+
         gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af);
     }
 }
 
+
 void i2c_init(const i2c_dev *dev, uint16_t address, uint32_t speed)
 {
-
     i2c_lowLevel_init(dev); // init GPIO hardware
 
     i2c_bit_time = 1000000l / speed;
 
-    I2C_InitTypeDef I2C_InitStructure;     /* I2C configuration */
-    I2C_StructInit(&I2C_InitStructure);
+    // Disable all I2C interrupts 
+    i2c_disable_irq(dev, I2C_CR2_ITERREN | I2C_CR2_ITEVTEN | I2C_CR2_ITBUFEN);
 
-    I2C_InitStructure.I2C_Mode                = I2C_Mode_I2C;
-    I2C_InitStructure.I2C_DutyCycle           = I2C_DutyCycle_2;
-    I2C_InitStructure.I2C_OwnAddress1         = address;
-    I2C_InitStructure.I2C_Ack                 = I2C_Ack_Enable;
-    I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-    I2C_InitStructure.I2C_ClockSpeed          = speed;
+    (void)dev->regs->DR; 
 
+    i2c_peripheral_enable(dev);
+  
+    RCC_Clocks_t clock;
+    RCC_GetClocksFreq(&clock);         // Get pclk1 frequency value
+    uint32_t  pclk1 = clock.PCLK1_Frequency;
+  
+    uint16_t freq = (uint16_t)(pclk1 / 1000000);
 
-    I2C_ITConfig(dev->I2Cx, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, DISABLE);
+    uint16_t  reg = dev->regs->CR2 & (uint16_t)~I2C_CR2_FREQ; // Clear FREQ[5:0]
+    dev->regs->CR2 = reg | freq; // set calculated frequency
 
-    (void)dev->I2Cx->DR; 
+    // Disable  I2C hw to setup TRISE
+    i2c_peripheral_disable(dev);    // clears F/S, DUTY and CCR[11:0] bits
+    
+    if (speed <= 100000) {    // standard mode speed calculate
+        uint16_t ccr = (uint16_t)(pclk1 / (speed * 2));
+    
+        if (ccr < 0x04) { //  CCR should not be under 0x4
+            ccr = 0x04;   
+        }
+        dev->regs->CCR = ccr;
+        dev->regs->TRISE = freq + 1; // set Maximum Rise time
+    }  else {     // fast mode
+                // (datasheet) To use the I2C at 400 KHz (in fast mode), the PCLK1 frequency (I2C input clock) must be a multiple of 10 MHz 
+        uint16_t ccr = (uint16_t)(pclk1 / (speed * 3));
+    
+        if ((ccr & I2C_CCR_CCR) == 0) { // CCR should not be under 0x1
+            ccr |= 0x01;
+        }
+        
+        dev->regs->CCR = (uint16_t)(ccr | I2C_CCR_FS); // set speed value and F/S bit
+        dev->regs->TRISE = (uint16_t)(freq * 300 / 1000 + 1); // set Maximum Rise time
+    }
+    i2c_peripheral_enable(dev);
 
-    /* I2C Peripheral Enable */
-    I2C_Cmd(dev->I2Cx, ENABLE);
-    /* Apply I2C configuration after enabling it */
-    I2C_Init(dev->I2Cx, &I2C_InitStructure);
+    reg = dev->regs->CR1 & ~(I2C_CR1_SMBUS | I2C_CR1_SMBTYPE); // clear SMBTYPE and SMBUS bits
+    dev->regs->CR1 = reg | I2C_CR1_ACK; // enable acknowledgement 
+  
+    dev->regs->OAR1 = I2C_OAR_7bitMode | address;  
 }
 
 /**
- * @brief  DeInitializes peripherals used by the I2C driver.
- * @param  None
- * @retval None
+ * DeInitializes peripherals used by the I2C driver.
  */
 void i2c_deinit(const i2c_dev *dev)
 {
@@ -203,8 +181,8 @@ void i2c_deinit(const i2c_dev *dev)
 
 static void ev_handler(const i2c_dev *dev, bool err){
     if(dev->state->handler) revo_call_handler(dev->state->handler, err);
-    else { // disable interrupts
-        dev->I2Cx->CR2 &= ~(I2C_CR2_ITBUFEN|I2C_CR2_ITEVTEN|I2C_CR2_ITERREN);    // Disable interrupts
+    else {
+        i2c_disable_irq(dev, I2C_CR2_ITBUFEN|I2C_CR2_ITEVTEN|I2C_CR2_ITERREN);    // Disable interrupts
     }
 }
 
@@ -327,11 +305,9 @@ again:
 // we was generating signals on I2C bus, but BUSY flag senses it even when hardware is off
 // datasheet: It indicates a communication in progress on the bus. This information is still updated when the interface is disabled (PE=0).
 
-    dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
+    dev->regs->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
     hal_yield(0);
-    dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag 
+    dev->regs->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag 
     return true;
 }
-
-
 

@@ -186,7 +186,6 @@ TGT_BIN :=
 
 COREINCLUDES = -I$(HAL_HW_PATH) -I$(STM32_PATH) -I$(WIRISH_PATH) -I$(BOARDS_PATH)/$(BOARD) -I$(STM32USB_PATH) \
  -I$(HARDWARE_PATH) \
- -I$(STM32_PATH)/Libraries/STM32F4xx_StdPeriph_Driver/inc \
  -I$(STM32_PATH)/Libraries/CMSIS/Include \
  -I$(STM32_PATH)/Libraries/CMSIS/Device/ST/STM32F4xx/Include \
  -I$(BUILDROOT)/libraries/GCS_MAVLink/ \

@@ -60,17 +60,17 @@ static uint16_t num_ppm_channels = 1;
 
 
 static void pwmIRQHandler(uint32_t v /* TIM_TypeDef *tim */){
-        TIM_TypeDef * tim = (TIM_TypeDef *)v;
-        uint8_t i;
-        uint16_t val = 0;
+    TIM_TypeDef * tim = (TIM_TypeDef *)v;
+    uint8_t i;
+    uint16_t val = 0;
 
-	for (i = 0; i < num_ppm_channels; i++)  {
+    for (i = 0; i < num_ppm_channels; i++)  {
 
-            const struct TIM_Channel *channel = &PWM_Channels[i]; 
-	    struct PPM_State         *input   = &PPM_Inputs[i];
+        const struct TIM_Channel *channel = &PWM_Channels[i]; 
+        struct PPM_State         *input   = &PPM_Inputs[i];
 
-            const stm32_pin_info     *p       = &PIN_MAP[channel->pin];
-            const timer_dev          *timer   = p->timer_device;
+        const stm32_pin_info     *p       = &PIN_MAP[channel->pin];
+        const timer_dev          *timer   = p->timer_device;
 
 /*
 struct PPM_State  {
@@ -81,7 +81,11 @@ struct PPM_State  {
     Pulse pulse_mem[PULSES_QUEUE_SIZE]; // memory
 };
 */
-	    if (timer->regs == tim && (TIM_GetITStatus(tim, 1<<(p->timer_channel & TIMER_CH_MASK)) == SET)) {
+        if (timer->regs == tim){
+	        
+            uint16_t bit = 1<<(p->timer_channel & TIMER_CH_MASK);
+	        
+            if( (timer->regs->SR & bit) !=0 && (timer->regs->DIER & bit)!=0 ) {
 
                 val = timer_get_capture(timer, p->timer_channel);
 
@@ -98,7 +102,7 @@ struct PPM_State  {
 
                 if(time>0x7fff) time=0x7fff; // limit to 15 bit
 
-                {
+                { // isolate pl
                     Pulse pl={
                         .length  = time, 
                         .state = input->state // we store last state, so state reflects input line
@@ -120,6 +124,7 @@ struct PPM_State  {
                 if(input->handler) revo_call_handler(input->handler, i); // call callback on each edge, SBUS decoding requires only  1.4% of CPU (2.5 for full io_completion)
 	    }
 	}
+    }
 }
 
 static inline void pwmInitializeInput(uint8_t ppmsum){
@@ -149,7 +154,7 @@ static inline void pwmInitializeInput(uint8_t ppmsum){
 	    last_tim = timer->id;
         }
             
-	// PWM input capture ************************************************************
+	// PWM input capture
         timer_ic_set_mode(timer, p->timer_channel, TIM_ICSelection_DirectTI | TIM_ICPSC_DIV1, 0);
         timer_cc_set_pol(timer,  p->timer_channel, TIMER_POLARITY_FALLING);
 
@@ -157,7 +162,7 @@ static inline void pwmInitializeInput(uint8_t ppmsum){
 
         timer_resume(timer);
 
-        // enable the CC interrupt request **********************************************
+        // enable the CC interrupt request
         timer_enable_irq(timer, p->timer_channel);
     }
 }
