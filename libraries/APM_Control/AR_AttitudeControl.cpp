@@ -405,6 +405,9 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
     // if we were stopped in the last 300ms, assume we are still stopped
     bool _stopped = (_stop_last_ms != 0) && (now - _stop_last_ms) < 300;
 
+    // get deceleration limited speed
+    float desired_speed_limited = get_desired_speed_accel_limited(0.0f);
+
     // get speed forward
     float speed;
     if (!get_forward_speed(speed)) {
@@ -412,7 +415,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         _stopped = true;
     } else {
         // if desired speed is zero and vehicle drops below _stop_speed consider it stopped
-        if (is_zero(_desired_speed) && fabsf(speed) <= fabsf(_stop_speed)) {
+        if (is_zero(desired_speed_limited) && fabsf(speed) <= fabsf(_stop_speed)) {
             _stopped = true;
         }
     }
@@ -429,7 +432,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         // clear stopped system time
         _stop_last_ms = 0;
         // run speed controller to bring vehicle to stop
-        return get_throttle_out_speed(0.0f, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle);
+        return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle);
     }
 }
 
