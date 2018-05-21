@@ -301,6 +301,9 @@ public:
     // adjust trim of a channel by a small increment
     void adjust_trim(SRV_Channel::Aux_servo_function_t function, float v);
 
+    // set MIN/MAX parameters for a function
+    static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+    
     // save trims
     void save_trim(void);
 
