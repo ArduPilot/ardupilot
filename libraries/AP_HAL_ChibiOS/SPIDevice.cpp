@@ -238,7 +238,7 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         return true;
     }
     if (!set && !cs_forced) {
-        return true;
+        return false;
     }
     if (!set && cs_forced) {
         if(!skip_cs) {
