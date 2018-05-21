@@ -647,6 +647,9 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         if (mode_requires_dma(mode) && !group.have_up_dma) {
             mode = MODE_PWM_NONE;
         }
+        if (mode > MODE_PWM_NORMAL) {
+            fast_channel_mask |= group.ch_mask;
+        }
         if (group.current_mode != mode) {
             group.current_mode = mode;
             set_group_mode(group);
