@@ -144,43 +144,53 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
     else
         return;
 
-    AP_Int16 *rate = nullptr;
+    // if stream_id is still NUM_STREAMS at the end of this switch
+    // block then either we set stream rates for all streams, or we
+    // were asked to set the streamrate for an unrecognised stream
+    streams stream_id = NUM_STREAMS;
     switch (packet.req_stream_id) {
     case MAV_DATA_STREAM_ALL:
-        // note that we don't set STREAM_PARAMS - that is internal only
-        for (uint8_t i=0; i<STREAM_PARAMS; i++) {
+        for (uint8_t i=0; i<NUM_STREAMS; i++) {
             if (persist_streamrates()) {
                 streamRates[i].set_and_save_ifchanged(freq);
             } else {
                 streamRates[i].set(freq);
             }
+            initialise_message_intervals_for_stream((streams)i);
         }
         break;
     case MAV_DATA_STREAM_RAW_SENSORS:
-        rate = &streamRates[STREAM_RAW_SENSORS];
+        stream_id = STREAM_RAW_SENSORS;
         break;
     case MAV_DATA_STREAM_EXTENDED_STATUS:
-        rate = &streamRates[STREAM_EXTENDED_STATUS];
+        stream_id = STREAM_EXTENDED_STATUS;
         break;
     case MAV_DATA_STREAM_RC_CHANNELS:
-        rate = &streamRates[STREAM_RC_CHANNELS];
+        stream_id = STREAM_RC_CHANNELS;
         break;
     case MAV_DATA_STREAM_RAW_CONTROLLER:
-        rate = &streamRates[STREAM_RAW_CONTROLLER];
+        stream_id = STREAM_RAW_CONTROLLER;
         break;
     case MAV_DATA_STREAM_POSITION:
-        rate = &streamRates[STREAM_POSITION];
+        stream_id = STREAM_POSITION;
         break;
     case MAV_DATA_STREAM_EXTRA1:
-        rate = &streamRates[STREAM_EXTRA1];
+        stream_id = STREAM_EXTRA1;
         break;
     case MAV_DATA_STREAM_EXTRA2:
-        rate = &streamRates[STREAM_EXTRA2];
+        stream_id = STREAM_EXTRA2;
         break;
     case MAV_DATA_STREAM_EXTRA3:
-        rate = &streamRates[STREAM_EXTRA3];
+        stream_id = STREAM_EXTRA3;
         break;
     }
+
+    if (stream_id == NUM_STREAMS) {
+        // asked to set rate on unknown stream (or all were set already)
+        return;
+    }
+
+    AP_Int16 *rate = &streamRates[stream_id];
 
     if (rate != nullptr) {
         if (persist_streamrates()) {
@@ -188,6 +198,7 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
         } else {
             rate->set(freq);
         }
+        initialise_message_intervals_for_stream(stream_id);
     }
 }
 
@@ -239,6 +250,12 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
 
     // queue it for processing by io timer
     param_requests.push(req);
+
+    // speaking of which, we'd best make sure it is running:
+    if (!param_timer_registered) {
+        param_timer_registered = true;
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
+    }
 }
 
 void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
@@ -281,50 +298,6 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
     }
 }
 
-// see if we should send a stream now. Called at 50Hz
-bool GCS_MAVLINK::stream_trigger(enum streams stream_num)
-{
-    if (stream_num >= NUM_STREAMS) {
-        return false;
-    }
-    float rate = (uint8_t)streamRates[stream_num].get();
-
-    rate *= adjust_rate_for_stream_trigger(stream_num);
-
-    if (rate <= 0) {
-        if (chan_is_streaming & (1U<<(chan-MAVLINK_COMM_0))) {
-            // if currently streaming then check if all streams are disabled
-            // to allow runtime detection of user disabling streaming
-            bool is_streaming = false;
-            for (uint8_t i=0; i<stream_num; i++) {
-                if (streamRates[stream_num] > 0) {
-                    is_streaming = true;
-                }
-            }
-            if (!is_streaming) {
-                // all streams have been turned off, clear the bit flag
-                chan_is_streaming &= ~(1U<<(chan-MAVLINK_COMM_0));
-            }
-        }
-        return false;
-    } else {
-        chan_is_streaming |= (1U<<(chan-MAVLINK_COMM_0));
-    }
-
-    if (stream_ticks[stream_num] == 0) {
-        // we're triggering now, setup the next trigger point
-        if (rate > 50) {
-            rate = 50;
-        }
-        stream_ticks[stream_num] = (50 / rate) - 1 + stream_slowdown;
-        return true;
-    }
-
-    // count down at 50Hz
-    stream_ticks[stream_num]--;
-    return false;
-}
-
 /*
   send a parameter value message to all active MAVLink connections
  */
@@ -360,17 +333,6 @@ void GCS_MAVLINK::send_queued_parameters(void)
     if (!param_timer_registered) {
         param_timer_registered = true;
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
-    }
-
-    if (_queued_parameter == nullptr &&
-        param_replies.empty()) {
-        return;
-    }
-    if (streamRates[STREAM_PARAMS].get() <= 0) {
-        streamRates[STREAM_PARAMS].set(10);
-    }
-    if (stream_trigger(STREAM_PARAMS)) {
-        send_message(MSG_NEXT_PARAM);
     }
 }
 

@@ -15,7 +15,6 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_Proximity/AP_Proximity.h>
-#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_Camera.h>
@@ -23,6 +22,9 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_RTC/JitterCorrection.h>
+#include <AP_Common/Bitmask.h>
+
+#define DEBUG_SEND_MESSAGE_TIMINGS 0
 
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -105,13 +107,13 @@ class GCS_MAVLINK
 public:
     friend class GCS;
     GCS_MAVLINK();
-    void        update(uint32_t max_time_us=1000);
+    void        update_receive(uint32_t max_time_us=1000);
+    void        update_send();
     void        init(AP_HAL::UARTDriver *port, mavlink_channel_t mav_chan);
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
     void        send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
-    void        data_stream_send();
     void        queued_param_send();
     void        queued_waypoint_send();
     // packetReceived is called on any successful decode of a mavlink message
@@ -144,9 +146,6 @@ public:
         STREAM_ADSB,
         NUM_STREAMS
     };
-
-    // see if we should send a stream now. Called at 50Hz
-    bool        stream_trigger(enum streams stream_num);
 
     bool is_high_bandwidth() { return chan == MAVLINK_COMM_0; }
     // return true if this channel has hardware flow control
@@ -229,9 +228,6 @@ public:
 
     // send queued parameters if needed
     void send_queued_parameters(void);
-
-    // push send_message() messages and queued statustext messages etc:
-    void retry_deferred();
 
     /*
       send a MAVLink message to all components with this vehicle's system id
@@ -337,6 +333,10 @@ protected:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
     void disable_overrides();
+
+    // reset a message interval via mavlink:
+    MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
+
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
@@ -414,8 +414,6 @@ protected:
 
 private:
 
-    float       adjust_rate_for_stream_trigger(enum streams stream_num);
-
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
@@ -459,10 +457,7 @@ private:
     uint32_t        waypoint_timelast_request; // milliseconds
     const uint16_t  waypoint_receive_timeout = 8000; // milliseconds
 
-    // number of 50Hz ticks until we next send this stream
-    uint8_t         stream_ticks[NUM_STREAMS];
-
-    // number of extra ticks to add to slow things down for the radio
+    // number of extra 20ms intervals to add to slow things down for the radio
     uint8_t         stream_slowdown;
 
     // perf counters
@@ -471,11 +466,81 @@ private:
     char _perf_packet_name[16];
     char _perf_update_name[16];
 
-    // deferred message handling.  We size the deferred_message
-    // ringbuffer so we can defer every message type
-    enum ap_message deferred_messages[MSG_LAST];
-    uint8_t next_deferred_message;
-    uint8_t num_deferred_messages;
+    // outbound ("deferred message") queue.
+
+    // "special" messages such as heartbeat, next_param etc are
+    // stored separately to stream-rated messages like AHRS2 etc:
+    struct deferred_message_t {
+        const ap_message id;
+        uint16_t interval_ms;
+        uint16_t last_sent_ms; // from AP_HAL::millis16()
+    } deferred_message[2] = {
+        { MSG_HEARTBEAT, },
+        { MSG_NEXT_PARAM, },
+    };
+    // returns index of id in deferred_message[] or -1 if not present
+    int8_t get_deferred_message_index(const ap_message id) const;
+    // returns index of a message in deferred_message[] which should
+    // be sent (or -1 if none to send at the moment)
+    int8_t deferred_message_to_send_index();
+    // cache of which deferred message should be sent next:
+    int8_t next_deferred_message_to_send_cache = -1;
+
+    struct deferred_message_bucket_t {
+        Bitmask ap_message_ids{MSG_LAST};
+        uint16_t interval_ms;
+        uint16_t last_sent_ms; // from AP_HAL::millis16()
+    };
+    deferred_message_bucket_t deferred_message_bucket[5];
+    static const uint8_t no_bucket_to_send = -1;
+    static const ap_message no_message_to_send = (ap_message)-1;
+    uint8_t sending_bucket_id = no_bucket_to_send;
+    Bitmask bucket_message_ids_to_send{MSG_LAST};
+
+    ap_message next_deferred_message_to_send();
+    void find_next_bucket_to_send();
+    void remove_message_from_bucket(int8_t bucket, ap_message id);
+
+    // bitmask of IDs the code has spontaneously decided it wants to
+    // send out.  Examples include HEARTBEAT (gcs_send_heartbeat)
+    Bitmask pushed_ap_message_ids{MSG_LAST};
+
+    // returns true if it is OK to send a message while we are in
+    // delay callback.  In particular, when we are doing sensor init
+    // we still send heartbeats.
+    bool should_send_message_in_delay_callback(const ap_message id) const;
+
+    // if true is returned, interval will contain the default interval for id
+    bool get_default_interval_for_ap_message(const ap_message id, uint16_t &interval) const;
+    //  if true is returned, interval will contain the default interval for id
+    bool get_default_interval_for_mavlink_message_id(const uint32_t mavlink_message_id, uint16_t &interval) const;
+    // returns an interval in milliseconds for any ap_message in stream id
+    uint16_t get_interval_for_stream(GCS_MAVLINK::streams id) const;
+    // set an inverval for a specific mavlink message.  Returns false
+    // on failure (typically because there is no mapping from that
+    // mavlink ID to an ap_message)
+    bool set_mavlink_message_id_interval(const uint32_t mavlink_id,
+                                         const uint16_t interval_ms);
+    // map a mavlink ID to an ap_message which, if passed to
+    // try_send_message, will cause a mavlink message with that id to
+    // be emitted.  Returns MSG_LAST if no such mapping exists.
+    ap_message mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const;
+    // set the interval at which an ap_message should be emitted (in ms)
+    bool set_ap_message_interval(enum ap_message id, uint16_t interval_ms);
+    // call set_ap_message_interval for each entry in a stream,
+    // the interval being based on the stream's rate
+    void initialise_message_intervals_for_stream(GCS_MAVLINK::streams id);
+    // call initialise_message_intervals_for_stream on every stream:
+    void initialise_message_intervals_from_streamrates();
+    // boolean that indicated that message intervals have been set
+    // from streamrates:
+    bool deferred_messages_initialised;
+    // return interval deferred message bucket should be sent after.
+    // When sending parameters and waypoints this may be longer than
+    // the interval specified in "deferred"
+    uint16_t get_reschedule_interval_ms(const deferred_message_bucket_t &deferred) const;
+
+    bool do_try_send_message(const ap_message id);
 
     // time when we missed sending a parameter for GCS
     static uint32_t reserve_param_space_start_ms;
@@ -550,7 +615,6 @@ private:
                                            const float roll,
                                            const float pitch,
                                            const float yaw);
-    void push_deferred_messages();
 
     void lock_channel(mavlink_channel_t chan, bool lock);
 
@@ -588,6 +652,21 @@ private:
     void send_global_position_int();
 
     void zero_rc_outputs();
+
+#if DEBUG_SEND_MESSAGE_TIMINGS
+    struct {
+        uint32_t longest_time_us;
+        ap_message longest_id;
+        uint32_t no_space_for_message;
+        uint16_t statustext_last_sent_ms;
+        uint32_t behind;
+        uint16_t fnbts_maxtime;
+        uint32_t max_retry_deferred_body_us;
+        uint8_t max_retry_deferred_body_type;
+    } try_send_message_stats;
+    uint8_t max_slowdown;
+#endif
+
 };
 
 /// @class GCS
@@ -630,10 +709,8 @@ public:
                               ap_var_type param_type,
                               float param_value);
 
-    // push send_message() messages and queued statustext messages etc:
-    void retry_deferred();
-    void data_stream_send();
-    void update();
+    void update_send();
+    void update_receive();
     virtual void setup_uarts(AP_SerialManager &serial_manager);
 
     bool out_of_time() const {
