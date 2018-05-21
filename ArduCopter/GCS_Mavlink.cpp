@@ -179,16 +179,18 @@ void NOINLINE Copter::send_simstate(mavlink_channel_t chan)
 #endif
 }
 
-void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
+void GCS_MAVLINK_Copter::send_vfr_hud()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+
     mavlink_msg_vfr_hud_send(
         chan,
-        gps.ground_speed(),
+        AP::gps().ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors->get_throttle() * 100),
-        current_loc.alt / 100.0f,
-        climb_rate / 100.0f);
+        (int16_t)(copter.motors->get_throttle() * 100),
+        copter.current_loc.alt / 100.0f,
+        copter.climb_rate / 100.0f);
 }
 
 /*
@@ -319,11 +321,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        copter.send_vfr_hud(chan);
         break;
 
     case MSG_RPM:

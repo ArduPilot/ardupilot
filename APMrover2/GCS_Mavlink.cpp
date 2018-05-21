@@ -140,15 +140,17 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         rssi.read_receiver_rssi_uint8());
 }
 
-void Rover::send_vfr_hud(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_vfr_hud()
 {
+    AP_AHRS &ahrs = AP::ahrs();
+
     mavlink_msg_vfr_hud_send(
         chan,
-        gps.ground_speed(),
+        AP::gps().ground_speed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
-        g2.motors.get_throttle(),
-        current_loc.alt / 100.0f,
+        rover.g2.motors.get_throttle(),
+        rover.current_loc.alt / 100.0f,
         0);
 }
 
@@ -295,11 +297,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw(false);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        rover.send_vfr_hud(chan);
         break;
 
     case MSG_SIMSTATE:

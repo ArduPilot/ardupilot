@@ -773,7 +773,6 @@ private:
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_vfr_hud(mavlink_channel_t chan);
     void send_simstate(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
     void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
