@@ -249,3 +249,7 @@ float rand_float(void);
 
 // generate a random Vector3f of size 1
 Vector3f rand_vec3f(void);
+
+// confirm a value is a valid octal value
+bool is_valid_octal(uint16_t octal);
+
