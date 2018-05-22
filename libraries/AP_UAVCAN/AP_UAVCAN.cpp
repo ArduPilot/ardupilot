@@ -74,6 +74,10 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     AP_GROUPEND
 };
 
+// this is the timeout in milliseconds for periodic message types. We
+// set this to 1 to minimise resend of stale msgs
+#define CAN_PERIODIC_TX_TIMEOUT_MS 1
+
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
     if (hal.can_mgr[mgr] != nullptr) {
@@ -501,15 +505,15 @@ bool AP_UAVCAN::try_init(void)
                     }
 
                     act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
-                    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
                     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
-                    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
                     rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
-                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
                     _led_conf.devices_count = 0;
@@ -622,8 +626,6 @@ void AP_UAVCAN::SRV_send_esc(void)
         k = 0;
 
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
-            uavcan::equipment::actuator::Command cmd;
-
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
