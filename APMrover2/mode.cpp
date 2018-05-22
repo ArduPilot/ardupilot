@@ -209,9 +209,9 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     // get acceleration limited target speed
     target_speed = attitude_control.get_desired_speed_accel_limited(target_speed);
 
-    // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
+    // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
     }
 
     // call throttle controller and convert output to -100 to +100 range
@@ -332,8 +332,8 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     float speed_scaled = desired_speed * MIN(lateral_accel_speed_scaling, pivot_speed_scaling);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_accel_max())) {
-        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_accel_max() + sq(_desired_speed_final));
+    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_decel_max())) {
+        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_decel_max() + sq(_desired_speed_final));
         speed_scaled = constrain_float(speed_scaled, -speed_max, speed_max);
     }
 
