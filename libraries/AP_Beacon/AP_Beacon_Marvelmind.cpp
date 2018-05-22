@@ -373,7 +373,8 @@ void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
                                                hedge.cur_position.x__mm * 0.001f,
                                               -hedge.cur_position.z__mm * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
             //TODO: Calculate Accuracy of the received signal. Marvelmind *advertises* +/- 2cms
-            set_vehicle_position(vehicle_position_NED__m, 0.02f);
+            // But we are conservative here and use 20cm instead (until MM provides us with a proper accuracy value)
+            set_vehicle_position(vehicle_position_NED__m, 0.2f);
             set = true;
             Debug(2,
                   "Hedge is at N%.2f, E%.2f, D%.2f",
