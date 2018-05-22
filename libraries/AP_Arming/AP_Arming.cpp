@@ -25,6 +25,7 @@
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
+#define AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE (-100.0f)
 
 extern const AP_HAL::HAL& hal;
 
@@ -72,6 +73,38 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Increment: 0.1 
     // @User: Standard
     AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
+
+    // @Param: TEMP_MIN
+    // @DisplayName: Arming temperature minimum on the first battery
+    // @Description: The minimum temperature of the first battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP_MIN",      6,     AP_Arming,  _min_temperature[0], AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE),
+
+    // @Param: TEMP_MAX
+    // @DisplayName: Arming temperature maximum on the first battery
+    // @Description: The maximum temperature of the first battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP_MAX",      7,     AP_Arming,  _max_temperature[0], AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE),
+
+    // @Param: TEMP2_MIN
+    // @DisplayName: Arming temperature minimum on the second battery
+    // @Description: The minimum temperature of the second battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP2_MIN",     8,     AP_Arming,  _min_temperature[1], AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE),
+
+    // @Param: TEMP2_MAX
+    // @DisplayName: Arming temperature maximum on the second battery
+    // @Description: The maximum temperature of the second battery required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TEMP2_MAX",     9,     AP_Arming,  _max_temperature[1], AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE),
 
     AP_GROUPEND
 };
@@ -410,6 +443,17 @@ bool AP_Arming::gps_checks(bool report)
     return true;
 }
 
+/**
+ * Battery check
+ *
+ * @param [in] report true: Output message to GCS.<BR>
+ *                    false: Not Output message.
+ * @retval true Battery is normal
+ * @retval false Battery is abnormal
+ * @note
+ * This check is performed when "ALL" or "BATTERY" is specified in the setting of the arming check.
+ * When failsafe battery is set in notification, do not check
+ */
 bool AP_Arming::battery_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -423,14 +467,56 @@ bool AP_Arming::battery_checks(bool report)
         }
 
         for (uint8_t i = 0; i < _battery.num_instances(); i++) {
+            // voltage check
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
                 if (report) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %u voltage %.1f below min %.1f",
                             i+1,
                             (double)_battery.voltage(i),
                             (double)_min_voltage[i]);
                 }
                 return false;
+            }
+
+            float temperature = AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE;
+            // temperature minimum check
+            if (static_cast<int16_t>(_min_temperature[i] * 10) > static_cast<int16_t>(AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE * 10)) {
+                if (!_battery.get_temperature(temperature, i)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: No temperature for battery %u",
+                                i + 1);
+                    }
+                    return false;
+                }
+                if (static_cast<int16_t>(temperature * 10) < static_cast<int16_t>(_min_temperature[i] * 10)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %u temp %.1f below min %.1f",
+                                i + 1,
+                                (double)temperature,
+                                (double)_min_temperature[i]);
+                    }
+                    return false;
+                }
+            }
+
+            // temperature maximum check
+            if (static_cast<int16_t>(_max_temperature[i] * 10) > static_cast<int16_t>(AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE * 10)) {
+                if (static_cast<int16_t>(AP_ARMING_BATTERY_DEFAULT_CELSIUS_TEMPERATURE * 10) == static_cast<int16_t>(temperature * 10) && !_battery.get_temperature(temperature, i)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: No temperature for battery %u",
+                                i + 1);
+                    }
+                    return false;
+                }
+                if (static_cast<int16_t>(temperature * 10) > static_cast<int16_t>(_max_temperature[i] * 10)) {
+                    if (report) {
+                        gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Battery %u temp %.1f below max %.1f",
+                                i + 1,
+                                (double)temperature,
+                                (double)_max_temperature[i]);
+                    }
+                    return false;
+                }
             }
         }
      }
