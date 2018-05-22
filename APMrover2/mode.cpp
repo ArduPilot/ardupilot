@@ -332,8 +332,8 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     float speed_scaled = desired_speed * MIN(lateral_accel_speed_scaling, pivot_speed_scaling);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_accel_max())) {
-        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_accel_max() + sq(_desired_speed_final));
+    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_decel_max())) {
+        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_decel_max() + sq(_desired_speed_final));
         speed_scaled = constrain_float(speed_scaled, -speed_max, speed_max);
     }
 
