@@ -1,4 +1,19 @@
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       Example of APM_Compass library (HMC5843 sensor).
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
@@ -10,10 +25,13 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_BoardConfig board_config;
+
+// create compass object
 static Compass compass;
 
 uint32_t timer;
 
+// to be called only once on boot for initializing objects
 static void setup()
 {
     hal.console->printf("Compass library test\n");
@@ -32,6 +50,7 @@ static void setup()
     timer = AP_HAL::micros();
 }
 
+// loop
 static void loop()
 {
     static const uint8_t compass_count = compass.get_count();
@@ -39,6 +58,7 @@ static void loop()
     static float max[COMPASS_MAX_INSTANCES][3];
     static float offset[COMPASS_MAX_INSTANCES][3];
 
+    // run read() at 10Hz
     if ((AP_HAL::micros() - timer) > 100000L) {
         timer = AP_HAL::micros();
         compass.read();
@@ -94,6 +114,8 @@ static void loop()
             hal.console->printf("\n");
         }
     } else {
+
+        // if stipulated time has not passed between two distinct readings, delay the program for a millisecond
         hal.scheduler->delay(1);
     }
 }
