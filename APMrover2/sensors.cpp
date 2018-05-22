@@ -330,7 +330,7 @@ void Rover::update_sensor_status_flags(void)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
-    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
     if (rover.DataFlash.logging_failed()) {
