@@ -32,6 +32,10 @@
 #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
 #define ADSB_VEHICLE_LIST_SIZE_MAX      100
 #define ADSB_CHAN_TIMEOUT_MS            15000
+#define ADSB_SQUAWK_OCTAL_DEFAULT       1200
+
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define ADSB_LIST_RADIUS_DEFAULT        10000 // in meters
@@ -109,6 +113,20 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RF_SELECT",   9, AP_ADSB, out_state.cfg.rfSelect, UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED),
 
+    // @Param: SQUAWK
+    // @DisplayName: Squawk code
+    // @Description: VFR squawk (Mode 3/A) code is a pre-programmed default code when the pilot is flying VFR and not in contact with ATC. In the USA, the VFR squawk code is octal 1200 (hex 0x280, decimal 640) and in most parts of Europe the VFR squawk code is octal 7000. If an invalid octal number is set then it will be reset to 1200.
+    // @Units: octal
+    // @User: Advanced
+    AP_GROUPINFO("SQUAWK",  10, AP_ADSB, out_state.cfg.squawk_octal_param, ADSB_SQUAWK_OCTAL_DEFAULT),
+
+    // @Param: RF_CAPABLE
+    // @DisplayName: RF capabilities
+    // @Description: Describes your hardware RF In/Out capabilities.
+    // @Values: 0:Unknown,1:Rx UAT only,3:Rx UAT and 1090ES,7:Rx&Tx UAT and 1090ES
+    // @Bitmask: 0:UAT_in,1:1090ES_in,2:UAT_out,3:1090ES_out
+    // @User: Advanced
+    AP_GROUPINFO("RF_CAPABLE",  11, AP_ADSB, out_state.cfg.rf_capable, 0),
 
 
     AP_GROUPEND
@@ -205,6 +223,15 @@ void AP_ADSB::update(void)
     }
 
 
+    if (out_state.cfg.squawk_octal_param != out_state.cfg.squawk_octal) {
+        // param changed, check that it's a valid octal
+        if (!is_valid_octal(out_state.cfg.squawk_octal_param)) {
+            // invalid, reset it to default
+            out_state.cfg.squawk_octal_param = ADSB_SQUAWK_OCTAL_DEFAULT;
+        }
+        out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
+    }
+
     // ensure it's positive 24bit but allow -1
     if (out_state.cfg.ICAO_id_param <= -1 || out_state.cfg.ICAO_id_param > 0x00FFFFFF) {
         // icao param of -1 means static information is not sent, transceiver is assumed pre-programmed.
@@ -227,7 +254,7 @@ void AP_ADSB::update(void)
     }
 
 
-    // send static configuration data to transceiver, every 10s
+    // send static configuration data to transceiver, every 5s
     if (out_state.chan_last_ms > 0 && now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         // TODO: reset out_state.chan
@@ -465,16 +492,16 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
     const AP_GPS &gps = AP::gps();
     const Vector3f &gps_velocity = gps.velocity();
 
-    int32_t latitude = _my_loc.lat;
-    int32_t longitude = _my_loc.lng;
-    int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
-    int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
-    int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
-    int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
-    uint8_t fixType = gps.status(); // this lines up perfectly with our enum
-    uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
-    uint8_t numSats = gps.num_sats();
-    uint16_t squawk = 1200; // Mode A code (typically 1200 [0x04B0] for VFR)
+    const int32_t latitude = _my_loc.lat;
+    const int32_t longitude = _my_loc.lng;
+    const int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
+    const int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
+    const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
+    const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
+    const uint8_t fixType = gps.status(); // this lines up perfectly with our enum
+    const uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
+    const uint8_t numSats = gps.num_sats();
+    const uint16_t squawk = out_state.cfg.squawk_octal;
 
     uint32_t accHoriz = UINT_MAX;
     float accHoriz_f;
@@ -535,12 +562,150 @@ void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan)
             squawk);
 }
 
+
+/*
+ * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
+ * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
+ * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
+ */
+uint32_t AP_ADSB::get_encoded_icao(void)
+{
+    // utilize the upper unused 8bits of the icao with special flags.
+    // This encoding is required for uAvionix devices that break the MAVLink spec.
+
+    // ensure the user assignable icao is 24 bits
+    uint32_t encoded_icao = (uint32_t)out_state.cfg.ICAO_id & 0x00FFFFFF;
+
+    encoded_icao &= ~0x20000000;    // useGnssAltitude should always be FALSE
+    encoded_icao |=  0x10000000;    // csidLogic       should always be TRUE
+
+    //SIL/SDA are special fields that should be set to 0 with only expert user adjustment
+    encoded_icao &= ~0x03000000;    // SDA should always be FALSE
+    encoded_icao &= ~0x0C000000;    // SIL should always be FALSE
+
+    return encoded_icao;
+}
+
+/*
+ * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
+ * This function will override the usually-null ending char of the callsign. It always encodes the last byte [8], even if
+ * the callsign string is less than 9 chars and there are other zero-padded nulls.
+ */
+uint8_t AP_ADSB::get_encoded_callsign_null_char()
+{
+//  Encoding of the 8bit null char
+//  (LSB) - knots
+//  bit.1 - knots
+//  bit.2 - knots
+//  bit.3 - (unused)
+//  bit.4 - flag - ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN
+//  bit.5 - flag - ADSB_BITBASK_RF_CAPABILITIES_UAT_IN
+//  bit.6 - flag - 0 = callsign is treated as callsign, 1 = callsign is treated as flightPlanID/Squawk
+//  (MSB) - (unused)
+
+    uint8_t encoded_null = 0;
+
+    if (out_state.cfg.maxAircraftSpeed_knots <= 0) {
+        // not set or unknown. no bits set
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 75) {
+        encoded_null |= 0x01;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 150) {
+        encoded_null |= 0x02;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 300) {
+        encoded_null |= 0x03;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 600) {
+        encoded_null |= 0x04;
+    } else if (out_state.cfg.maxAircraftSpeed_knots <= 1200) {
+        encoded_null |= 0x05;
+    } else {
+        encoded_null |= 0x06;
+    }
+
+
+    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
+        encoded_null |= 0x10;
+    }
+    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) {
+        encoded_null |= 0x20;
+    }
+
+
+    /*
+    If the user has an 8 digit flightPlanID assigned from a filed flight plan, this should be assigned to FlightPlanID, (assigned by remote app)
+    else if the user has an assigned squawk code from ATC this should be converted from 4 digit octal to 4 character alpha string and assigned to FlightPlanID,
+    else if a tail number is known it should be set to the tail number of the aircraft, (assigned by remote app)
+    else it should be left blank (all 0's)
+     */
+
+    // using the above logic, we must always assign the squawk. once we get configured
+    // externally then get_encoded_callsign_null_char() stops getting called
+    snprintf(out_state.cfg.callsign, 4, "%04d", unsigned(out_state.cfg.squawk_octal));
+    memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
+    encoded_null |= 0x40;
+
+    return encoded_null;
+}
+
+/*
+ * handle incoming packet UAVIONIX_ADSB_OUT_CFG.
+ * This allows a GCS to send cfg info through the autopilot to the ADSB hardware.
+ * This is done indirectly by reading and storing the packet and then another mechanism sends it out periodically
+ */
+void AP_ADSB::handle_out_cfg(const mavlink_message_t* msg)
+{
+    mavlink_uavionix_adsb_out_cfg_t packet {};
+    mavlink_msg_uavionix_adsb_out_cfg_decode(msg, &packet);
+
+    out_state.cfg.was_set_externally = true;
+
+    out_state.cfg.ICAO_id = packet.ICAO;
+    out_state.cfg.ICAO_id_param = out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF;
+
+    // May contain a non-null value at the end so accept it as-is with memcpy instead of strcpy
+    memcpy(out_state.cfg.callsign, packet.callsign, sizeof(out_state.cfg.callsign));
+
+    out_state.cfg.emitterType = packet.emitterType;
+    out_state.cfg.lengthWidth = packet.aircraftSize;
+    out_state.cfg.gpsLatOffset = packet.gpsOffsetLat;
+    out_state.cfg.gpsLonOffset = packet.gpsOffsetLon;
+    out_state.cfg.rfSelect = packet.rfSelect;
+    out_state.cfg.stall_speed_cm = packet.stallSpeed;
+
+    // guard against string with non-null end char
+    char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
+    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
+    gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", out_state.cfg.ICAO_id, out_state.cfg.callsign);
+    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = c;
+
+    // send now
+    out_state.last_config_ms = 0;
+}
+
+/*
+ * populate and send MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG
+ */
 void AP_ADSB::send_configure(const mavlink_channel_t chan)
 {
+    // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
+    // Here we temporarily set some flags in that null char to signify the callsign
+    // may be a flightplanID instead
+    int8_t callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN];
+    uint32_t icao;
+
+    memcpy(callsign, out_state.cfg.callsign, sizeof(out_state.cfg.callsign));
+
+    if (out_state.cfg.was_set_externally) {
+        // take values as-is
+        icao = out_state.cfg.ICAO_id;
+    } else {
+        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = (int8_t)get_encoded_callsign_null_char();
+        icao = get_encoded_icao();
+    }
+
     mavlink_msg_uavionix_adsb_out_cfg_send(
             chan,
-            (uint32_t)out_state.cfg.ICAO_id,
-            out_state.cfg.callsign,
+            icao,
+            (const char*)callsign,
             (uint8_t)out_state.cfg.emitterType,
             (uint8_t)out_state.cfg.lengthWidth,
             (uint8_t)out_state.cfg.gpsLatOffset,
@@ -658,8 +823,11 @@ void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message
         break;
 
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
+        handle_out_cfg(msg);
+        break;
+
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-        // unhandled, these are outbound packets only
+        // unhandled, this is an outbound packet only
     default:
         break;
     }
