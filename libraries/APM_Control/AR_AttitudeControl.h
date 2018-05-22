@@ -44,15 +44,15 @@ public:
     //
 
     // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
-    // positive lateral acceleration is to the right.
-    float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right);
+    // positive lateral acceleration is to the right.  dt should normally be the main loop rate.
+    float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // return a steering servo output from -1 to +1 given a heading in radians
-    float get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // return a steering servo output from -1 to +1 given a
     // desired yaw rate in radians/sec. Positive yaw is to the right.
-    float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right);
+    float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
     float get_desired_turn_rate() const;
@@ -76,10 +76,10 @@ public:
     //   desired_speed argument should already have been passed through get_desired_speed_accel_limited function
     //   motor_limit should be true if motors have hit their upper or lower limits
     //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
-    float get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle);
+    float get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt);
 
     // return a throttle output from -1 to +1 to perform a controlled stop.  stopped is set to true once stop has been completed
-    float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped);
+    float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt, bool &stopped);
 
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
@@ -99,7 +99,7 @@ public:
     float get_desired_speed() const;
 
     // get acceleration limited desired speed
-    float get_desired_speed_accel_limited(float desired_speed) const;
+    float get_desired_speed_accel_limited(float desired_speed, float dt) const;
 
     // get minimum stopping distance (in meters) given a speed (in m/s)
     float get_stopping_distance(float speed);
