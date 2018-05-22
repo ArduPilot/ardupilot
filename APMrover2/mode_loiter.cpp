@@ -29,9 +29,9 @@ void ModeLoiter::update()
     // if within waypoint radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g.waypoint_radius) {
         if (is_negative(_desired_speed)) {
-            _desired_speed = MIN(_desired_speed + attitude_control.get_accel_max() * rover.G_Dt, 0.0f);
+            _desired_speed = MIN(_desired_speed + attitude_control.get_decel_max() * rover.G_Dt, 0.0f);
         } else {
-            _desired_speed = MAX(_desired_speed - attitude_control.get_accel_max() * rover.G_Dt, 0.0f);
+            _desired_speed = MAX(_desired_speed - attitude_control.get_decel_max() * rover.G_Dt, 0.0f);
         }
         _yaw_error_cd = 0.0f;
     } else {
