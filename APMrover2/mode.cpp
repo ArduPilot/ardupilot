@@ -115,7 +115,7 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     get_pilot_input(steering_out, desired_throttle);
     speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
     // check for special case of input and output throttle being in opposite directions
-    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out);
+    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
     if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
         ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
          (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
@@ -210,7 +210,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     }
 
     // get acceleration limited target speed
-    target_speed = attitude_control.get_desired_speed_accel_limited(target_speed);
+    target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
 
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
@@ -223,9 +223,9 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     // call speed or stop controller
     if (is_zero(target_speed)) {
         bool stopped;
-        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, stopped);
+        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     } else {
-        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f);
+        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
     }
 
     // send to motor
@@ -237,7 +237,7 @@ bool Mode::stop_vehicle()
 {
     // call throttle controller and convert output to -100 to +100 range
     bool stopped = false;
-    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, stopped);
+    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
@@ -390,7 +390,8 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
     // send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
                                                                            g2.motors.limit.steer_left,
-                                                                           g2.motors.limit.steer_right);
+                                                                           g2.motors.limit.steer_right,
+                                                                           rover.G_Dt);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
@@ -401,7 +402,8 @@ void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bo
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
                                                                          rate_max,
                                                                          g2.motors.limit.steer_left,
-                                                                         g2.motors.limit.steer_right);
+                                                                         g2.motors.limit.steer_right,
+                                                                         rover.G_Dt);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
