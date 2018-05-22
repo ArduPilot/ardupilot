@@ -1093,10 +1093,12 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
             return false;
         }
     }
-    serial_group->dma_handle->unlock();
+
     // add a small delay for last word of output to have completely
     // finished
-    hal.scheduler->delay_microseconds(10);
+    hal.scheduler->delay_microseconds(25);
+    
+    serial_group->dma_handle->unlock();
     return true;
 }
 
