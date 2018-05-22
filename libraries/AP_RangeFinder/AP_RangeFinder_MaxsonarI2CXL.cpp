@@ -72,7 +72,6 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
     if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
-    
 
     if (!start_reading()) {
         _dev->get_semaphore()->give();
@@ -89,10 +88,10 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
     }
 
     _dev->get_semaphore()->give();
-    
+
     _dev->register_periodic_callback(50000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, void));
-    
+
     return true;
 }
 
@@ -138,7 +137,6 @@ void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
         }
     }
 }
-
 
 /*
    update the state of the sensor
