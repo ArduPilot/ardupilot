@@ -573,7 +573,7 @@ void AP_Radio_cc2500::irq_handler(void)
 
     case STATE_SEARCH:
         protocolState = STATE_DATA;
-        // fallthrough
+        FALLTHROUGH;
 
     case STATE_DATA: {
         bool ok = false;
