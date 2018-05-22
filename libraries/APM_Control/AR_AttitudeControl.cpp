@@ -182,7 +182,7 @@ AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
 
 // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
 // positive lateral acceleration is to the right.
-float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right)
+float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt)
 {
     // record desired accel for reporting purposes
     _steer_lat_accel_last_ms = AP_HAL::millis();
@@ -208,11 +208,11 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool m
     // Calculate the desired steering rate given desired_accel and speed
     const float desired_rate = desired_accel / speed;
 
-    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
+    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
 }
 
 // return a steering servo output from -1 to +1 given a heading in radians
-float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right)
+float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right, float dt)
 {
     // calculate heading error (in radians)
     const float yaw_error = wrap_PI(heading_rad - _ahrs.yaw);
@@ -224,29 +224,27 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
         desired_rate = constrain_float(desired_rate, -rate_max, rate_max);
     }
 
-    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right);
+    return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
 }
 
 // return a steering servo output from -1 to +1 given a
 // desired yaw rate in radians/sec. Positive yaw is to the right.
-float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right)
+float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt)
 {
-    // calculate dt
+    // sanity check dt
+    dt = constrain_float(dt, 0.0f, 1.0f);
+
+    // if not called recently, reset input filter and desired turn rate to actual turn rate (used for accel limiting)
     const uint32_t now = AP_HAL::millis();
-    float dt = (now - _steer_turn_last_ms) / 1000.0f;
-    if ((_steer_turn_last_ms == 0) || (dt > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
-        dt = 0.0f;
+    if ((_steer_turn_last_ms == 0) || ((now - _steer_turn_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         _steer_rate_pid.reset_filter();
-        // reset desired turn rate to actual turn rate for accel limiting
         _desired_turn_rate = _ahrs.get_yaw_rate_earth();
-    } else {
-        _steer_rate_pid.set_dt(dt);
     }
     _steer_turn_last_ms = now;
 
     // acceleration limit desired turn rate
-    const float change_max = radians(_steer_accel_max) * dt;
-    if (is_positive(dt) && is_positive(change_max)) {
+    if (is_positive(_steer_accel_max)) {
+        const float change_max = radians(_steer_accel_max) * dt;
         desired_rate = constrain_float(desired_rate, _desired_turn_rate - change_max, _desired_turn_rate + change_max);
     }
     _desired_turn_rate = desired_rate;
@@ -260,6 +258,9 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     // Calculate the steering rate error (rad/sec)
     // We do this in earth frame to allow for rover leaning over in hard corners
     const float rate_error = (_desired_turn_rate - _ahrs.get_yaw_rate_earth());
+
+    // set PID's dt
+    _steer_rate_pid.set_dt(dt);
 
     // record desired rate for logging purposes only
     _steer_rate_pid.set_desired_rate(_desired_turn_rate);
@@ -320,8 +321,11 @@ bool AR_AttitudeControl::get_lat_accel(float &lat_accel) const
 // return a throttle output from -1 to +1 given a desired speed in m/s (use negative speeds to travel backwards)
 //   motor_limit should be true if motors have hit their upper or lower limits
 //   cruise speed should be in m/s, cruise throttle should be a number from -1 to +1
-float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle)
+float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt)
 {
+    // sanity check dt
+    dt = constrain_float(dt, 0.0f, 1.0f);
+
     // get speed forward
     float speed;
     if (!get_forward_speed(speed)) {
@@ -330,19 +334,19 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         return 0.0f;
     }
 
-    // calculate dt
+    // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
     const uint32_t now = AP_HAL::millis();
-    float dt = (now - _speed_last_ms) / 1000.0f;
-    if ((_speed_last_ms == 0) || (dt > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
-        dt = 0.0f;
+    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         _throttle_speed_pid.reset_filter();
-    } else {
-        _throttle_speed_pid.set_dt(dt);
+        _desired_speed = speed;
     }
     _speed_last_ms = now;
 
-    // record desired speed for next iteration
-    _desired_speed = desired_speed;
+    // acceleration limit desired speed
+    _desired_speed = get_desired_speed_accel_limited(desired_speed, dt);
+
+    // set PID's dt
+    _throttle_speed_pid.set_dt(dt);
 
     // calculate speed error and pass to PID controller
     const float speed_error = desired_speed - speed;
@@ -397,7 +401,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
 }
 
 // return a throttle output from -1 to +1 to perform a controlled stop.  returns true once the vehicle has stopped
-float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, bool &stopped)
+float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt, bool &stopped)
 {
     // get current system time
     const uint32_t now = AP_HAL::millis();
@@ -406,7 +410,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
     bool _stopped = (_stop_last_ms != 0) && (now - _stop_last_ms) < 300;
 
     // get deceleration limited speed
-    float desired_speed_limited = get_desired_speed_accel_limited(0.0f);
+    float desired_speed_limited = get_desired_speed_accel_limited(0.0f, dt);
 
     // get speed forward
     float speed;
@@ -432,7 +436,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         // clear stopped system time
         _stop_last_ms = 0;
         // run speed controller to bring vehicle to stop
-        return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle);
+        return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle, dt);
     }
 }
 
@@ -478,18 +482,17 @@ float AR_AttitudeControl::get_desired_speed() const
 }
 
 // get acceleration limited desired speed
-float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed) const
+float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, float dt) const
 {
-    // calculate dt
-    const uint32_t now = AP_HAL::millis();
-    float dt = (now - _speed_last_ms) / 1000.0f;
+    // sanity check dt
+    dt = constrain_float(dt, 0.0f, 1.0f);
 
     // use previous desired speed as basis for accel limiting
     float speed_prev = _desired_speed;
 
     // if no recent calls to speed controller limit based on current speed
-    if (is_negative(dt) || (dt > AR_ATTCONTROL_TIMEOUT_MS / 1000.0f)) {
-        dt = 0.0f;
+    const uint32_t now = AP_HAL::millis();
+    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         get_forward_speed(speed_prev);
     }
 
