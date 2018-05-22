@@ -26,10 +26,10 @@ void ModeAcro::update()
     const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
 
     // run steering turn rate controller and throttle controller
-    const float steering_out = attitude_control.get_steering_out_rate(
-                                                                    target_turn_rate,
-                                                                    g2.motors.limit.steer_left,
-                                                                    g2.motors.limit.steer_right);
+    const float steering_out = attitude_control.get_steering_out_rate(target_turn_rate,
+                                                                      g2.motors.limit.steer_left,
+                                                                      g2.motors.limit.steer_right,
+                                                                      rover.G_Dt);
 
     g2.motors.set_steering(steering_out * 4500.0f);
 }
