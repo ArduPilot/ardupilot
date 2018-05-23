@@ -14,7 +14,7 @@ static bool in_failsafe;
 void Sub::mainloop_failsafe_enable()
 {
     failsafe_enabled = true;
-    failsafe_last_timestamp = micros();
+    failsafe_last_timestamp = AP_HAL::micros();
 }
 
 // Disable mainloop lockup failsafe
