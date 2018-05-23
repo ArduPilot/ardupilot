@@ -27,6 +27,7 @@ public:
     enum rcprotocol_t{
         PPM = 0,
         SBUS,
+        SBUS_NI,
         DSM,
         NONE    //last enum always is None
     };
