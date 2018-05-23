@@ -777,6 +777,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1, 1.0f)) {
                 plane.set_home_persistently(AP::gps().location());
+                result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
@@ -1071,6 +1072,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1,1.0f)) {
                 plane.set_home_persistently(AP::gps().location());
+                result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
