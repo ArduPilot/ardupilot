@@ -211,6 +211,9 @@ public:
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
+    /// return the crosstrack_error - horizontal error of the actual position vs the desired position
+    float crosstrack_error() const { return _track_error_xy;}
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -283,6 +286,7 @@ protected:
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     Vector3f    _pos_delta_unit;        // each axis's percentage of the total track from origin to destination
+    float       _track_error_xy;        // horizontal error of the actual position vs the desired position
     float       _track_length;          // distance in cm between origin and destination
     float       _track_length_xy;       // horizontal distance in cm between origin and destination
     float       _track_desired;         // our desired distance along the track in cm
