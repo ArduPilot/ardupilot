@@ -98,6 +98,7 @@ enum ap_message : uint8_t {
     MSG_ORIGIN,
     MSG_HOME,
     MSG_NAMED_FLOAT,
+    MSG_EXTENDED_SYS_STATE,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
 
@@ -216,6 +217,7 @@ public:
 #endif
     virtual void send_attitude() const;
     void send_autopilot_version() const;
+    void send_extended_sys_state() const;
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
@@ -304,6 +306,9 @@ protected:
     virtual MAV_MODE base_mode() const = 0;
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_STATE system_status() const = 0;
+
+    virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; }
+    virtual MAV_LANDED_STATE landed_state() const { return MAV_LANDED_STATE_UNDEFINED; }
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
