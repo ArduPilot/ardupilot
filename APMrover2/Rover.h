@@ -390,8 +390,7 @@ private:
     void update_logging2(void);
     void update_aux(void);
     void one_second_loop(void);
-    void update_GPS_50Hz(void);
-    void update_GPS_10Hz(void);
+    void update_GPS(void);
     void update_current_mode(void);
 
     // capabilities.cpp
