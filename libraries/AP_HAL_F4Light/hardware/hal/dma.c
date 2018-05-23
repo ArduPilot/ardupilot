@@ -69,7 +69,6 @@ static const dma_dev dma2 = {
     .handlers  = dma2_handlers
 };
 /** DMA2 device */
-//const dma_dev * const _DMA2 = &dma2;
 
 static const dma_dev * const DMAS[] = { &dma1, &dma2 };
 
