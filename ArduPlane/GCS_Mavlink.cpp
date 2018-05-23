@@ -1410,3 +1410,41 @@ int8_t GCS_MAVLINK_Plane::high_latency_air_temperature() const
     return air_temperature;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+MAV_VTOL_STATE GCS_MAVLINK_Plane::vtol_state() const
+{
+    if (!plane.quadplane.available()) {
+        return MAV_VTOL_STATE_UNDEFINED;
+    }
+
+    switch (plane.quadplane.get_transition_state()) {
+    case QuadPlane::TRANSITION_AIRSPEED_WAIT:
+        // we enter this state during assisted flight, not just
+        // during a forward transition.
+        return MAV_VTOL_STATE_TRANSITION_TO_FW;
+    case QuadPlane::TRANSITION_TIMER:
+        return MAV_VTOL_STATE_TRANSITION_TO_FW;
+    case QuadPlane::TRANSITION_ANGLE_WAIT_FW:
+        return MAV_VTOL_STATE_TRANSITION_TO_FW;
+    case QuadPlane::TRANSITION_ANGLE_WAIT_VTOL:
+        return MAV_VTOL_STATE_TRANSITION_TO_MC;
+    case QuadPlane::TRANSITION_DONE:
+        if (plane.quadplane.in_vtol_mode()) {
+            return MAV_VTOL_STATE_MC;
+        } else {
+            return MAV_VTOL_STATE_FW;
+        }
+    }
+    return MAV_VTOL_STATE_UNDEFINED;
+};
+
+MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
+{
+    if (plane.is_flying()) {
+        // note that Q-modes almost always consider themselves as flying
+        return MAV_LANDED_STATE_IN_AIR;
+    }
+
+    return MAV_LANDED_STATE_ON_GROUND;
+}
+
