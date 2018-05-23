@@ -6,12 +6,9 @@ MCU STM32F4xx STM32F407xx
 RAM_SIZE_KB 128
 CCM_RAM_SIZE_KB 64
 
-define PORT_INT_REQUIRED_STACK 0
-
 # board ID for firmware load
 APJ_BOARD_ID 20
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_F4BY
-
                                 
 # USB setup
 USB_VENDOR 0x27AC # Swift-Flyer 
@@ -99,19 +96,17 @@ PB15 SPI2_MOSI SPI2
 PB12 FRAM_CS CS SPEED_VERYLOW
 PE15 FLASH_CS CS
 
-SPIDEV mpu6000   SPI1 DEVID1 MPU_CS   MODE3 1*MHZ 8*MHZ
-SPIDEV ramtron   SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ 
-SPIDEV dataflash SPI2 DEVID1 FLASH_CS MODE3 1*MHZ 8*MHZ
+SPIDEV mpu6000 SPI1 DEVID1 MPU_CS   MODE3 1*MHZ   8*MHZ
+SPIDEV ramtron SPI2 DEVID2 FRAM_CS  MODE3 8*MHZ   8*MHZ 
+SPIDEV sdcard  SPI2 DEVID3 FLASH_CS MODE0 400*KHZ 25*MHZ
 
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
-# enable FAT filesystem support (needs a microSD defined via SDIO)
-# define HAL_OS_FATFS_IO 1
-# now some defines for logging and terrain data files NO WORK WITHOUT FAT
-# define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-# define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-
+# enable FAT filesystem support
+define HAL_OS_FATFS_IO 1
+# now some defines for logging and terrain data files
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # this defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
