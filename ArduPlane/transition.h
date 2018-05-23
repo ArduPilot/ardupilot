@@ -13,6 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <GCS_MAVLink/GCS.h>
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -46,6 +47,8 @@ public:
     virtual bool allow_update_throttle_mix() const { return true; }
 
     virtual bool update_yaw_target(float& yaw_target_cd) { return false; }
+
+    virtual MAV_VTOL_STATE get_mav_vtol_state() const = 0;
 
 protected:
 
@@ -85,6 +88,8 @@ public:
     bool set_FW_roll_limit(int32_t& roll_limit_cd) override;
 
     bool allow_update_throttle_mix() const override;
+
+    MAV_VTOL_STATE get_mav_vtol_state() const override;
 
 protected:
 

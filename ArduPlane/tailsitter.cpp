@@ -786,5 +786,24 @@ void Tailsitter_Transition::restart()
     transition_initial_pitch = constrain_float(quadplane.ahrs_view->pitch_sensor,-8500,8500);
 };
 
+MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
+{
+    switch (transition_state) {
+        case TRANSITION_ANGLE_WAIT_VTOL:
+            return MAV_VTOL_STATE_TRANSITION_TO_MC;
+
+        case TRANSITION_DONE:
+            return MAV_VTOL_STATE_FW;
+
+        case TRANSITION_ANGLE_WAIT_FW: {
+            if (quadplane.in_vtol_mode()) {
+                return MAV_VTOL_STATE_MC;
+            }
+            return MAV_VTOL_STATE_TRANSITION_TO_FW;
+        }
+    }
+
+    return MAV_VTOL_STATE_UNDEFINED;
+}
 
 #endif  // HAL_QUADPLANE_ENABLED
