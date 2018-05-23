@@ -1730,6 +1730,10 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 
 float GCS_MAVLINK::vfr_hud_airspeed() const
 {
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr && airspeed->healthy()) {
+        return airspeed->get_airspeed();
+    }
     // because most vehicles don't have airspeed sensors, we return a
     // different sort of speed estimate in the relevant field for
     // comparison's sake.
