@@ -86,6 +86,14 @@ public:
       return true if we are in a transition to fwd flight from hover
     */
     bool in_transition(void) const;
+    enum transition_state_t {
+        TRANSITION_AIRSPEED_WAIT,
+        TRANSITION_TIMER,
+        TRANSITION_ANGLE_WAIT_FW,
+        TRANSITION_ANGLE_WAIT_VTOL,
+        TRANSITION_DONE
+    };
+    transition_state_t get_transition_state() const { return transition_state; }
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
@@ -376,14 +384,7 @@ private:
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
 
-    // true if we have reached the airspeed threshold for transition
-    enum {
-        TRANSITION_AIRSPEED_WAIT,
-        TRANSITION_TIMER,
-        TRANSITION_ANGLE_WAIT_FW,
-        TRANSITION_ANGLE_WAIT_VTOL,
-        TRANSITION_DONE
-    } transition_state;
+    transition_state_t transition_state;
 
     // true when waiting for pilot throttle
     bool throttle_wait:1;
