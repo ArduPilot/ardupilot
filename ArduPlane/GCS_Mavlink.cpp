@@ -661,6 +661,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 };
+static const ap_message STREAM_PARAMS_msgs[] = {
+    MSG_NEXT_PARAM
+};
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE
 };
@@ -674,6 +677,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA2),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
