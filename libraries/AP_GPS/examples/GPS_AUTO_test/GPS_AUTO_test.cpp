@@ -1,6 +1,20 @@
-//
-// Test for AP_GPS_AUTO
-//
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+     Test for AP_GPS_AUTO
+*/
 
 #include <stdlib.h>
 
@@ -42,10 +56,10 @@ AP_BoardLED board_led;
 
 // This example uses GPS system. Create it.
 static AP_GPS gps;
-// Serial manager is needed for UART comunications
+// Serial manager is needed for UART communications
 static AP_SerialManager serial_manager;
 
-
+//to be called only once on boot for initializing objects
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
@@ -82,6 +96,7 @@ void print_latlon(AP_HAL::BetterStream *s, int32_t lat_or_lon)
     s->printf("%ld.%07ld",(long)dec_portion,(long)frac_portion);
 }
 
+// loop
 void loop()
 {
     static uint32_t last_msg_ms;
