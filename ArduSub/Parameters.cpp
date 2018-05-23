@@ -677,10 +677,10 @@ void Sub::load_parameters(void)
         hal.console->println("done.");
     }
 
-    uint32_t before = micros();
+    uint32_t before = AP_HAL::micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
-    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(AP_HAL::micros() - before));
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
