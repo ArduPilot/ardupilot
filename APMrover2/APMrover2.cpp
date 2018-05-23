@@ -159,6 +159,9 @@ void Rover::ahrs_update()
 
     ahrs.update();
 
+    // update position
+    have_position = ahrs.get_position(current_loc);
+
     // update home from EKF if necessary
     update_home_from_EKF();
 
@@ -303,7 +306,6 @@ void Rover::one_second_loop(void)
 
 void Rover::update_GPS_10Hz(void)
 {
-    have_position = ahrs.get_position(current_loc);
 
     if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
