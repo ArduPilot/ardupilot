@@ -247,7 +247,7 @@ bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure
     bool passed = true;
 
 #if DEBUG_LOG_STRUCTURES
-    Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
+    Debug("offset=%d ID=%d NAME=%s\n", offset, logstructure->msg_type, logstructure->name);
 #endif
 
     // fields must be null-terminated
