@@ -801,7 +801,7 @@ void NavEKF3_core::fuseEulerYaw()
         predicted_yaw = euler321.z;
 
         // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
-        Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+        Tbn_zeroYaw.from_euler(euler321.x, euler321.y, _ahrs->get_compass()->get_declination());
 
     } else {
         // calculate observation jacobian when we are observing a rotation in a 312 sequence
@@ -843,17 +843,20 @@ void NavEKF3_core::fuseEulerYaw()
     }
 
     // rotate measured mag components into earth frame
-    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+//    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
 
     // Use the difference between the horizontal projection and declination to give the measured yaw
     // If we can't use compass data, set the  measurement to the predicted
     // to prevent uncontrolled variance growth whilst on ground without magnetometer
     float measured_yaw;
+/*
     if (use_compass() && yawAlignComplete) {
         measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
     } else {
         measured_yaw = predicted_yaw;
     }
+*/
+    measured_yaw = predicted_yaw;
 
     // Calculate the innovation
     float innovation = wrap_PI(predicted_yaw - measured_yaw);
