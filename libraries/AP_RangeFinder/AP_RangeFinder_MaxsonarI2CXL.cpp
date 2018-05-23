@@ -79,7 +79,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
     }
 
     // give time for the sensor to process the request
-    hal.scheduler->delay(50);
+    hal.scheduler->delay(100);
 
     uint16_t reading_cm;
     if (!get_reading(reading_cm)) {
@@ -89,7 +89,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::_init(void)
 
     _dev->get_semaphore()->give();
 
-    _dev->register_periodic_callback(50000,
+    _dev->register_periodic_callback(100000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_MaxsonarI2CXL::_timer, void));
 
     return true;
@@ -124,7 +124,7 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 }
 
 /*
-  timer called at 20Hz
+  timer called at 10Hz
 */
 void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 {
