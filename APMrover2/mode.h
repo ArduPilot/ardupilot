@@ -1,7 +1,10 @@
 #pragma once
 
 #include <stdint.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+
 #include "defines.h"
 
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
