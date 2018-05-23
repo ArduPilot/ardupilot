@@ -144,15 +144,6 @@ struct PACKED Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
-/*
-  home states. Used to record if user has overridden home position.
-*/
-enum HomeState {
-    HOME_UNSET,                 // home is unset, no GPS positions yet received
-    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
-    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
-};
-
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
