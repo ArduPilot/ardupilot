@@ -7,18 +7,9 @@ import pyigrf12 as igrf
 import numpy as np
 import datetime
 from pathlib import Path
-import sys
-from math import sqrt, pi, atan2, asin
 
 if not Path("AP_Declination.h").is_file():
     raise OSError("Please run this tool from the AP_Declination directory")
-
-
-def field_to_angles(x, y, z):
-    intensity = sqrt(x**2+y**2+z**2)
-    declination = np.degrees(atan2(y, x))
-    inclination = np.degrees(asin(z / intensity))
-    return [intensity, inclination, declination]
 
 
 def write_table(f,name, table):
@@ -63,11 +54,10 @@ if __name__ == '__main__':
 
     for i,lat in enumerate(lats):
         for j,lon in enumerate(lons):
-            mag = igrf.runigrf(date=date, glat=lat, glon=lon, alt=0., isv=0, itype=1)
-            intensity, I, D = field_to_angles(mag.Bnorth, mag.Beast, mag.Bvert)
-            intensity_table[i][j] = intensity / 1e5
-            inclination_table[i][j] = I
-            declination_table[i][j] = D
+            mag = igrf.igrf(date=date, glat=lat, glon=lon, alt=0., isv=0, itype=1)
+            intensity_table[i][j] = mag.total/1e5
+            inclination_table[i][j] = mag.incl
+            declination_table[i][j] = mag.decl
 
     with open("tables.cpp", 'w') as f:
         f.write('''// this is an auto-generated file from the IGRF tables. Do not edit
