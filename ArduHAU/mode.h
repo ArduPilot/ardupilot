@@ -38,6 +38,7 @@ public:
                            float turn_rate_dps,
                            int8_t direction,
                            bool relative_angle);
+						   
 
     private:
 
@@ -1064,6 +1065,7 @@ public:
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+	int8_t get_control_mode();
 
 protected:
 

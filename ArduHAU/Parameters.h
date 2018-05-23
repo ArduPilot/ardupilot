@@ -315,6 +315,7 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+		k_param_control_mode_chan,
 
         //
         // 210: Waypoint data
@@ -433,6 +434,10 @@ public:
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
 
+	//Control mode -- HAU addon
+	//
+	AP_Int8         control_mode_chan;
+	
     // Misc
     //
     AP_Int32        log_bitmask;

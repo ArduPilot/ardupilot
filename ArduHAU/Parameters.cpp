@@ -323,6 +323,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8
     // @User: Advanced
     GSCALAR(flight_mode_chan, "FLTMODE_CH",         CH_MODE_DEFAULT),
+	
+	// @Param: CTRLMODE_CH
+    // @DisplayName: Controlmode channel
+    // @Description: RC Channel to use for flight mode control -- addon HAU -- defaulted to channel 7
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @User: Advanced
+    GSCALAR(control_mode_chan, "CTRLMODE_CH",         7),
 
     // @Param: SIMPLE
     // @DisplayName: Simple mode bitmask
