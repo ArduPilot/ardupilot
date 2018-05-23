@@ -944,6 +944,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
         { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
+        { MAVLINK_MSG_ID_EXTENDED_SYS_STATE,    MSG_EXTENDED_SYS_STATE},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3853,6 +3854,11 @@ void GCS_MAVLINK::send_sys_status()
         0, 0, 0, 0);
 }
 
+void GCS_MAVLINK::send_extended_sys_state() const
+{
+    mavlink_msg_extended_sys_state_send(chan, vtol_state(), landed_state());
+}
+
 void GCS_MAVLINK::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
@@ -4150,6 +4156,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
+        break;
+
+    case MSG_EXTENDED_SYS_STATE:
+        CHECK_PAYLOAD_SIZE(EXTENDED_SYS_STATE);
+        send_extended_sys_state();
         break;
 
     case MSG_VFR_HUD:
