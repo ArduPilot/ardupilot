@@ -93,6 +93,7 @@ protected:
     virtual void run_autopilot() {}
     virtual uint32_t wp_distance() const { return 0; }
     virtual int32_t wp_bearing() const { return 0; }
+    virtual float crosstrack_error() const { return 0.0f;}
     virtual bool get_wp(Location_Class &loc) { return false; };
     virtual bool in_guided_mode() const { return false; }
 
@@ -280,6 +281,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location_Class &loc) override;
     void run_autopilot() override;
 
@@ -780,6 +782,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
@@ -957,6 +960,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
     void descent_start();
     void descent_run();
@@ -1018,6 +1022,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
 private:
 

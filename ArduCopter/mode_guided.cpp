@@ -769,3 +769,12 @@ int32_t Copter::ModeGuided::wp_bearing() const
         return 0;
     }
 }
+
+float Copter::ModeGuided::crosstrack_error() const
+{
+    if (mode() == Guided_WP) {
+        return wp_nav->crosstrack_error();
+    } else {
+        return 0;
+    }
+}

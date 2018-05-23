@@ -168,7 +168,7 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
         MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
         pos_control->get_alt_error() * 1.0e-2f,
         0,
-        0);
+        flightmode->crosstrack_error() * 1.0e-2f);
 }
 
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
