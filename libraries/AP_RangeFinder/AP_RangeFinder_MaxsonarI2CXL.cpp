@@ -128,13 +128,11 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
 */
 void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 {
-    uint16_t d;
-    if (get_reading(d)) {
-        if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            distance = d;
-            new_distance = true;
-            _sem->give();
-        }
+    if (get_reading(state.distance_cm)) {
+        // update range_valid state based on distance measured
+        update_status();
+    } else {
+        set_status(RangeFinder::RangeFinder_NoData);
     }
 }
 
@@ -143,14 +141,5 @@ void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 */
 void AP_RangeFinder_MaxsonarI2CXL::update(void)
 {
-    if (_sem->take_nonblocking()) {
-        if (new_distance) {
-            state.distance_cm = distance;
-            new_distance = false;
-            update_status();
-        } else {
-            set_status(RangeFinder::RangeFinder_NoData);
-        }
-         _sem->give();
-    }
+    // nothing to do - its all done in the timer()
 }
