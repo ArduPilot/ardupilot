@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 
 // this is the timeout in milliseconds for periodic message types. We
 // set this to 1 to minimise resend of stale msgs
-#define CAN_PERIODIC_TX_TIMEOUT_MS 1
+#define CAN_PERIODIC_TX_TIMEOUT_MS 2
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
