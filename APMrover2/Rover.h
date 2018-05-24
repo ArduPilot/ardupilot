@@ -79,6 +79,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AP_Follow/AP_Follow.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -117,6 +118,7 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+    friend class ModeFollow;
 
     Rover(void);
 
@@ -364,6 +366,7 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+    ModeFollow mode_follow;
 
     // cruise throttle and speed learning
     struct {
