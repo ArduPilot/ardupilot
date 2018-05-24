@@ -273,6 +273,15 @@ void Rover::read_aux_switch()
             reset_control_switch();
         }
         break;
+
+    // Set mode to LOITER
+    case CH7_LOITER:
+        if (aux_ch7 == AUX_SWITCH_HIGH) {
+            set_mode(mode_loiter, MODE_REASON_TX_COMMAND);
+        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_loiter)) {
+            reset_control_switch();
+        }
+        break;
     }
 }
 
