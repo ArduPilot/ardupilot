@@ -1020,7 +1020,7 @@ def process_line(line):
     alllines.append(line)
 
     if a[0].startswith('P') and a[0][1] in ports and a[0] in config:
-        print("WARNING: Pin %s redefined" % a[0])
+        error("Pin %s redefined" % a[0])
     
     config[a[0]] = a[1:]
     if a[0] == 'MCU':

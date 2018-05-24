@@ -366,11 +366,6 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
-# this is the pin to check if we are overcurrent on the "hi power"
-# and "low power" peripheral rails
-PE10 VDD_5V_HIPOWER_OC INPUT
-PE15 VDD_5V_PERIPH_OC INPUT
-
 # define a LED, mapping it to GPIO(0)
 PE12 FMU_LED_AMBER OUTPUT GPIO(0)
 
