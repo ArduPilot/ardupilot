@@ -24,8 +24,8 @@
 
 extern const AP_HAL::HAL &hal;
 
-// scaling for 3DR analog airspeed sensor
-#define VOLTS_TO_PASCAL 819
+// scaling for 3DR analog airspeed sensor (MPXV7002DP)
+#define VOLTS_TO_PASCAL 1000
 
 AP_Airspeed_Analog::AP_Airspeed_Analog(AP_Airspeed &_frontend, uint8_t _instance) :
     AP_Airspeed_Backend(_frontend, _instance)
