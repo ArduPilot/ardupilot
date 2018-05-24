@@ -552,7 +552,7 @@ bool AP_UAVCAN::try_init(void)
 
 void AP_UAVCAN::SRV_sem_take()
 {
-    (void)SRV_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    SRV_sem->take_blocking();
 }
 
 void AP_UAVCAN::SRV_sem_give()
