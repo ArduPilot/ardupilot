@@ -561,11 +561,11 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
         FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_ERASE:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
         break;
