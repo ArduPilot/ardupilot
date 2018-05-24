@@ -4,7 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #include <uavcan/uavcan.hpp>
 
@@ -301,4 +301,17 @@ void loop(void)
 
 AP_HAL_MAIN();
 
+#else
+
+#include <stdio.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+static void loop() { }
+static void setup()
+{
+    printf("Board not currently supported\n");
+}
+
+AP_HAL_MAIN();
 #endif
