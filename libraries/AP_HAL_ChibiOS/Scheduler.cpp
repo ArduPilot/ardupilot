@@ -313,7 +313,7 @@ void Scheduler::_uavcan_thread(void *arg)
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(1000);
+        sched->delay_microseconds(100);
         for (int i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
             if(hal.can_mgr[i] != nullptr) {
                 CANManager::from(hal.can_mgr[i])->_timer_tick();
