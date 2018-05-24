@@ -347,6 +347,9 @@ public:
 
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
+
+    // follow mode library
+    AP_Follow follow;
 };
 
 extern const AP_Param::Info var_info[];

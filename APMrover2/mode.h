@@ -24,6 +24,7 @@ public:
         STEERING     = 3,
         HOLD         = 4,
         LOITER       = 5,
+        FOLLOW       = 6,
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
@@ -464,4 +465,20 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+};
+
+class ModeFollow : public ModeGuided
+{
+public:
+
+    uint32_t mode_number() const override { return FOLLOW; }
+    const char *name4() const override { return "FOLL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+
+    bool _enter() override;
+    uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
