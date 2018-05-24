@@ -119,7 +119,7 @@ public:
     void update_bi_state(uint8_t id);
 
     // synchronization for RC output
-    bool SRV_sem_take();
+    void SRV_sem_take();
     void SRV_sem_give();
     
     // synchronization for LED output
