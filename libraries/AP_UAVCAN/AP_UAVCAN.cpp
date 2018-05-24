@@ -71,6 +71,14 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 0),
 
+    // @Param: SRV_RT
+    // @DisplayName: Servo output rate
+    // @Description: Maximum transmit rate for servo outputs
+    // @Range: 1 200
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
+    
     AP_GROUPEND
 };
 
@@ -353,7 +361,8 @@ AP_UAVCAN::AP_UAVCAN() :
     AP_Param::setup_object_defaults(this, var_info);
 
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-        _SRV_conf[i].active = false;
+        _SRV_conf[i].esc_pending = false;
+        _SRV_conf[i].servo_pending = false;
     }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
@@ -578,7 +587,7 @@ void AP_UAVCAN::SRV_send_servos(void)
              * physically possible throws at [-1:1] limits.
              */
 
-            if (_SRV_conf[starting_servo].active && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
@@ -615,7 +624,7 @@ void AP_UAVCAN::SRV_send_esc(void)
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
-            if (_SRV_conf[i].active) {
+            if (_SRV_conf[i].esc_pending) {
                 active_esc_num++;
             }
         }
@@ -653,31 +662,42 @@ void AP_UAVCAN::do_cyclic(void)
 
     auto *node = get_node();
 
-    const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+    const int error = node->spin(uavcan::MonotonicDuration::fromUSec(100));
 
     if (error < 0) {
-        hal.scheduler->delay_microseconds(1000);
+        hal.scheduler->delay_microseconds(100);
         return;
     }
 
     if (SRV_sem_take()) {
 
         if (_SRV_armed) {
-
-            // if we have any Servos in bitmask
+            bool sent_servos = false;
+            
             if (_servo_bm > 0) {
-                SRV_send_servos();
+                // if we have any Servos in bitmask
+                uint32_t now = AP_HAL::micros();
+                const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+                if (now - _SRV_last_send_us >= servo_period_us) {
+                    _SRV_last_send_us = now;
+                    SRV_send_servos();
+                    sent_servos = true;
+                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                        _SRV_conf[i].servo_pending = false;
+                    }
+                }
             }
 
             // if we have any ESC's in bitmask
-            if (_esc_bm > 0) {
+            if (_esc_bm > 0 && !sent_servos) {
                 SRV_send_esc();
             }
-        }
 
-        for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-            // mark as transmitted
-            _SRV_conf[i].active = false;
+            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                _SRV_conf[i].esc_pending = false;
+            }
+
+            
         }
 
         SRV_sem_give();
@@ -786,7 +806,8 @@ void AP_UAVCAN::SRV_arm_actuators(bool arm)
 void AP_UAVCAN::SRV_write(uint16_t pulse_len, uint8_t ch)
 {
     _SRV_conf[ch].pulse = pulse_len;
-    _SRV_conf[ch].active = true;
+    _SRV_conf[ch].esc_pending = true;
+    _SRV_conf[ch].servo_pending = true;
 }
 
 void AP_UAVCAN::SRV_push_servos()

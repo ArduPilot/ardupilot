@@ -172,12 +172,14 @@ private:
         uint16_t pulse;
         uint16_t safety_pulse;
         uint16_t failsafe_pulse;
-        bool active;
+        bool esc_pending;
+        bool servo_pending;
     } _SRV_conf[UAVCAN_SRV_NUMBER];
 
     bool _initialized;
     uint8_t _SRV_armed;
     uint8_t _SRV_safety;
+    uint32_t _SRV_last_send_us;
 
     typedef struct {
         bool enabled;
@@ -254,6 +256,7 @@ private:
     AP_Int8 _uavcan_node;
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
+    AP_Int16 _servo_rate_hz;
 
     uint8_t _uavcan_i;
 
