@@ -550,13 +550,9 @@ bool AP_UAVCAN::try_init(void)
     return false;
 }
 
-bool AP_UAVCAN::SRV_sem_take()
+void AP_UAVCAN::SRV_sem_take()
 {
-    bool sem_ret = SRV_sem->take(10);
-    if (!sem_ret) {
-        debug_uavcan(1, "AP_UAVCAN SRV semaphore fail\n\r");
-    }
-    return sem_ret;
+    (void)SRV_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_UAVCAN::SRV_sem_give()
@@ -573,6 +569,8 @@ void AP_UAVCAN::SRV_send_servos(void)
         repeat_send = false;
         uavcan::equipment::actuator::ArrayCommand msg;
 
+        SRV_sem_take();
+        
         uint8_t i;
         // UAVCAN can hold maximum of 15 commands in one frame
         for (i = 0; starting_servo < UAVCAN_SRV_NUMBER && i < 15; starting_servo++) {
@@ -602,6 +600,8 @@ void AP_UAVCAN::SRV_send_servos(void)
             }
         }
 
+        SRV_sem_give();
+        
         if (i > 0) {
             act_out_array[_uavcan_i]->broadcast(msg);
 
@@ -634,6 +634,8 @@ void AP_UAVCAN::SRV_send_esc(void)
     if (active_esc_num > 0) {
         k = 0;
 
+        SRV_sem_take();
+        
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
@@ -648,6 +650,7 @@ void AP_UAVCAN::SRV_send_esc(void)
 
             k++;
         }
+        SRV_sem_give();
 
         esc_raw[_uavcan_i]->broadcast(esc_msg);
     }
@@ -662,45 +665,38 @@ void AP_UAVCAN::do_cyclic(void)
 
     auto *node = get_node();
 
-    const int error = node->spin(uavcan::MonotonicDuration::fromUSec(100));
+    const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
 
     if (error < 0) {
         hal.scheduler->delay_microseconds(100);
         return;
     }
 
-    if (SRV_sem_take()) {
-
-        if (_SRV_armed) {
-            bool sent_servos = false;
+    if (_SRV_armed) {
+        bool sent_servos = false;
             
-            if (_servo_bm > 0) {
-                // if we have any Servos in bitmask
-                uint32_t now = AP_HAL::micros();
-                const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
-                if (now - _SRV_last_send_us >= servo_period_us) {
-                    _SRV_last_send_us = now;
-                    SRV_send_servos();
-                    sent_servos = true;
-                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                        _SRV_conf[i].servo_pending = false;
-                    }
+        if (_servo_bm > 0) {
+            // if we have any Servos in bitmask
+            uint32_t now = AP_HAL::micros();
+            const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+            if (now - _SRV_last_send_us >= servo_period_us) {
+                _SRV_last_send_us = now;
+                SRV_send_servos();
+                sent_servos = true;
+                for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                    _SRV_conf[i].servo_pending = false;
                 }
             }
-
-            // if we have any ESC's in bitmask
-            if (_esc_bm > 0 && !sent_servos) {
-                SRV_send_esc();
-            }
-
-            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                _SRV_conf[i].esc_pending = false;
-            }
-
-            
         }
 
-        SRV_sem_give();
+        // if we have any ESC's in bitmask
+        if (_esc_bm > 0 && !sent_servos) {
+            SRV_send_esc();
+        }
+        
+        for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+            _SRV_conf[i].esc_pending = false;
+        }
     }
 
     if (led_out_sem_take()) {
@@ -812,9 +808,7 @@ void AP_UAVCAN::SRV_write(uint16_t pulse_len, uint8_t ch)
 
 void AP_UAVCAN::SRV_push_servos()
 {
-    if (!SRV_sem_take()) {
-        return;
-    }
+    SRV_sem_take();
 
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         // Check if this channels has any function assigned
@@ -823,13 +817,13 @@ void AP_UAVCAN::SRV_push_servos()
         }
     }
 
+    SRV_sem_give();
+    
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         SRV_arm_actuators(true);
     } else {
         SRV_arm_actuators(false);
     }
-
-    SRV_sem_give();
 }
 
 uint8_t AP_UAVCAN::find_gps_without_listener(void)
