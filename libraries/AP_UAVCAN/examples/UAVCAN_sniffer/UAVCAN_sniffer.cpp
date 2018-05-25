@@ -4,7 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && HAL_WITH_UAVCAN
 
 #include <uavcan/uavcan.hpp>
 
@@ -144,7 +144,6 @@ static void count_msg(const char *name)
     static void cb_ ## cbname(const uavcan::ReceivedDataStructure<mtype>& msg) { count_msg(msg.getDataTypeFullName()); }
 
 MSG_CB(uavcan::protocol::NodeStatus, NodeStatus)
-MSG_CB(uavcan::protocol::GlobalTimeSync, GlobalTimeSync)
 MSG_CB(uavcan::equipment::gnss::Fix, Fix)
 MSG_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength)
 MSG_CB(uavcan::equipment::air_data::StaticPressure, StaticPressure)
@@ -196,7 +195,6 @@ void UAVCAN_sniffer::init(void)
 #define START_CB(mtype, cbname) (new uavcan::Subscriber<mtype>(*node))->start(cb_ ## cbname)
     
     START_CB(uavcan::protocol::NodeStatus, NodeStatus);
-    START_CB(uavcan::protocol::GlobalTimeSync, GlobalTimeSync);
     START_CB(uavcan::equipment::gnss::Fix, Fix);
     START_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength);
     START_CB(uavcan::equipment::air_data::StaticPressure, StaticPressure);
