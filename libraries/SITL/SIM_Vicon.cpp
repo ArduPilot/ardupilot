@@ -73,7 +73,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 
     if (time_offset_us == 0) {
         time_offset_us = (unsigned(random()) % 7000) * 1000000ULL;
-        printf("time_offset_us %ull\n", time_offset_us);
+        printf("time_offset_us %" PRIu64 "\n", time_offset_us);
     }
     
     if (time_send_us && now_us >= time_send_us) {
