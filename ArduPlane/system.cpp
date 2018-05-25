@@ -271,8 +271,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         return;
     }
 
-    if(g.auto_trim > 0 && control_mode == MANUAL)
-        trim_control_surfaces();
+    if(g.auto_trim > 0 && control_mode == MANUAL) {
+        trim_radio();
+    }
 
     // perform any cleanup required for prev flight mode
     exit_mode(control_mode);
