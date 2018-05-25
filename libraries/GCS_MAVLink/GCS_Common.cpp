@@ -3075,16 +3075,16 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         // correction value
         lag_correction.link_offset_usec = diff_us;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("link_offset_usec=%lld\n", diff_us);
+        printf("link_offset_usec=%lld\n", (long long int)diff_us);
 #endif
         lag_correction.initialised = true;
     }
 
     int64_t estimate_us = offboard_usec + lag_correction.link_offset_usec;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (estimate_us > local_us) {
+    if (estimate_us > (int64_t)local_us) {
         // this should be impossible, just check it under SITL
-        printf("msg from future %lld\n", estimate_us - local_us);
+        printf("msg from future %lld\n", (long long int)(estimate_us - local_us));
     }
 #endif
 
@@ -3094,7 +3094,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         estimate_us = local_us - max_lag_us;
         lag_correction.link_offset_usec = estimate_us - offboard_usec;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("offboard timestammp too old %lld\n", local_us - estimate_us);
+        printf("offboard timestammp too old %lld\n", (long long int)(local_us - estimate_us));
 #endif
     }
 
@@ -3112,7 +3112,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         lag_correction.link_offset_usec = lag_correction.min_sample_us;
         lag_correction.min_sample_counter = 0;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("new link_offset_usec=%lld\n", lag_correction.min_sample_us);
+        printf("new link_offset_usec=%lld\n", (long long int)(lag_correction.min_sample_us));
 #endif
     }
     
