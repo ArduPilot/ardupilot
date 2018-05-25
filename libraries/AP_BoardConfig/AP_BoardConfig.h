@@ -122,12 +122,7 @@ public:
 
     // get number of PWM outputs enabled on FMU
     static uint8_t get_pwm_count(void) {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
-        return instance?instance->state.pwm_count.get():4;
-#else
-        // default to 16, which means all PWM channels available
-        return 16;
-#endif
+        return instance?instance->pwm_count.get():4;
     }
 
 #if AP_FEATURE_SAFETY_BUTTON
@@ -157,10 +152,10 @@ private:
     static AP_BoardConfig *instance;
     
     AP_Int16 vehicleSerialNumber;
-
+    AP_Int8 pwm_count;
+    
 #if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || AP_FEATURE_SAFETY_BUTTON
     struct {
-        AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
