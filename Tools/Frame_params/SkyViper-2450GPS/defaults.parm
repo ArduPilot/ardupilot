@@ -165,8 +165,8 @@ FLTMODE6               2
 
 # failsafes
 FS_THR_ENABLE          1
-FS_BATT_ENABLE         2
-FS_BATT_VOLTAGE      3.43
+BATT_CRT_VOLT        3.43
+BATT_FS_CRT_ACT        2
 FS_GCS_ENABLE          0
 
 # baro
@@ -174,7 +174,7 @@ TCAL_ENABLED           2
 TCAL_BARO_EXP        1.2
 
 # landing
-LAND_SPEED_HIGH      350
+LAND_SPEED_HIGH      150
 
 # logging
 LOG_BACKEND_TYPE       2
