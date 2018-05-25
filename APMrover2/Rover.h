@@ -503,8 +503,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
 
     // sensors.cpp
     void init_compass(void);

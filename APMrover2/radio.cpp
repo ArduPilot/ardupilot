@@ -137,22 +137,20 @@ void Rover::control_failsafe(uint16_t pwm)
     }
 }
 
-void Rover::trim_control_surfaces()
+bool Rover::trim_radio()
 {
-    read_radio();
+    if (failsafe.bits & FAILSAFE_EVENT_RC) {
+        // can't trim without valid input
+        return false;
+    }
+
     // Store control surface trim values
     // ---------------------------------
     if ((channel_steer->get_radio_in() > 1400) && (channel_steer->get_radio_in() < 1600)) {
-        channel_steer->set_radio_trim(channel_steer->get_radio_in());
-        // save to eeprom
-        channel_steer->save_eeprom();
+        channel_steer->set_and_save_radio_trim(channel_steer->get_radio_in());
+    } else {
+        return false;
     }
-}
 
-void Rover::trim_radio()
-{
-    for (uint8_t y = 0; y < 30; y++) {
-        read_radio();
-    }
-    trim_control_surfaces();
+    return true;
 }
