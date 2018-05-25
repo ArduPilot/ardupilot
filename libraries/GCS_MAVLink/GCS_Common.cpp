@@ -2239,7 +2239,6 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
         FALLTHROUGH;
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        FALLTHROUGH;
         handle_common_camera_message(msg);
         break;
 
@@ -2647,7 +2646,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     case MAV_CMD_DO_SET_RELAY:
         FALLTHROUGH;
     case MAV_CMD_DO_REPEAT_RELAY:
-        FALLTHROUGH;
         result = handle_servorelay_message(packet);
         break;
 
