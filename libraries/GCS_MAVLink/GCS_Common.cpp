@@ -951,20 +951,16 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         }
     }
 
-    if (!waypoint_receiving) {
-        hal.util->perf_end(_perf_update);    
-        return;
-    }
+    if (waypoint_receiving) {
+        const uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
-    uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
-
-    // stop waypoint receiving if timeout
-    if (waypoint_receiving && (tnow - waypoint_timelast_receive) > wp_recv_time+waypoint_receive_timeout) {
-        waypoint_receiving = false;
-    } else if (waypoint_receiving &&
-               (tnow - waypoint_timelast_request) > wp_recv_time) {
-        waypoint_timelast_request = tnow;
-        send_message(MSG_NEXT_WAYPOINT);
+        // stop waypoint receiving if timeout
+        if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
+            waypoint_receiving = false;
+        } else if (tnow - waypoint_timelast_request > wp_recv_time) {
+            waypoint_timelast_request = tnow;
+            send_message(MSG_NEXT_WAYPOINT);
+        }
     }
 
     hal.util->perf_end(_perf_update);    
