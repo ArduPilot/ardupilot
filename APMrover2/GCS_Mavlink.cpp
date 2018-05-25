@@ -962,7 +962,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
             // set guided mode targets
-            if (!pos_ignore && vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+            if (!pos_ignore) {
                 // consume position target
                 rover.mode_guided.set_desired_location(target_loc);
             } else if (pos_ignore && !vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
@@ -1064,7 +1064,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
 
             // set guided mode targets
-            if (!pos_ignore && vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+            if (!pos_ignore) {
                 // consume position target
                 rover.mode_guided.set_desired_location(target_loc);
             } else if (pos_ignore && !vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
