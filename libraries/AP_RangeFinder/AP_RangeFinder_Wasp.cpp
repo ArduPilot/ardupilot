@@ -21,39 +21,38 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
-
     // @Param: WSP_MAVG
     // @DisplayName: Moving Average Range
     // @Description: Sets the number of historic range results to use for calculating the current range result. When MAVG is greater than 1, the current range result will be the current measured value averaged with the N-1 previous results
-    // @Range 0-255
+    // @Range: 0 255
     // @User: Advanced
     AP_GROUPINFO("WSP_MAVG", 1, AP_RangeFinder_Wasp, mavg, 4),
 
     // @Param: WSP_MEDF
     // @DisplayName: Moving Median Filter
     // @Description: Sets the window size for the real-time median filter. When MEDF is greater than 0 the median filter is active
-    // @Range 0-255
+    // @Range: 0 255
     // @User: Advanced
     AP_GROUPINFO("WSP_MEDF", 2, AP_RangeFinder_Wasp, medf, 4),
 
     // @Param: WSP_FRQ
     // @DisplayName: Frequency
     // @Description: Sets the repetition frequency of the ranging operation in Hertz. Upon entering the desired frequency the system will calculate the nearest frequency that it can handle according to the resolution of internal timers.
-    // @Range 0-10000
+    // @Range: 0 10000
     // @User: Advanced
     AP_GROUPINFO("WSP_FRQ", 3, AP_RangeFinder_Wasp, frq, 100),
 
     // @Param: WSP_AVG
     // @DisplayName: Multi-pulse averages
     // @Description: Sets the number of pulses to be used in multi-pulse averaging mode. In this mode, a sequence of rapid fire ranges are taken and then averaged to improve the accuracy of the measurement
-    // @Range 0-255
+    // @Range: 0 255
     // @User: Advanced
     AP_GROUPINFO("WSP_AVG", 4, AP_RangeFinder_Wasp, avg, 4),
 
     // @Param: WSP_THR
     // @DisplayName: Sensitivity threshold
     // @Description: Sets the system sensitivity. Larger values of THR represent higher sensitivity. The system may limit the maximum value of THR to prevent excessive false alarm rates based on settings made at the factory. Set to -1 for automatic threshold adjustments
-    // @Range -1-255
+    // @Range: -1 255
     // @User: Advanced
     AP_GROUPINFO("WSP_THR", 5, AP_RangeFinder_Wasp, thr, -1),
 
