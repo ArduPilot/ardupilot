@@ -166,6 +166,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ORIENT", 53, RangeFinder, state[0].orientation, ROTATION_PITCH_270),
 
+    // @Group: _
+    // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
@@ -287,6 +289,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_ORIENT", 54, RangeFinder, state[1].orientation, ROTATION_PITCH_270),
 
+    // @Group: 2_
+    // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 58, RangeFinder, backend_var_info[1]),
 #endif
 
@@ -410,6 +414,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("3_ORIENT", 55, RangeFinder, state[2].orientation, ROTATION_PITCH_270),
 
+    // @Group: 3_
+    // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 59, RangeFinder, backend_var_info[2]),
 #endif
 
@@ -533,6 +539,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("4_ORIENT", 56, RangeFinder, state[3].orientation, ROTATION_PITCH_270),
 
+    // @Group: 4_
+    // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 60, RangeFinder, backend_var_info[3]),
 #endif
 
