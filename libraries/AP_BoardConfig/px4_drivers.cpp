@@ -62,7 +62,7 @@ void AP_BoardConfig::px4_setup_pwm()
         { 8, PWM_SERVO_MODE_12PWM, 0 },
 #endif
     };
-    uint8_t mode_parm = (uint8_t)state.pwm_count.get();
+    uint8_t mode_parm = (uint8_t)pwm_count.get();
     uint8_t i;
     for (i=0; i<ARRAY_SIZE(mode_table); i++) {
         if (mode_table[i].mode_parm == mode_parm) {
