@@ -904,8 +904,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe();
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
     bool rc_failsafe_active(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
