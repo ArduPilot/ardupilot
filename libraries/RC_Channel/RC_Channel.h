@@ -26,11 +26,6 @@ public:
         RC_CHANNEL_LIMIT_MAX
     };
 
-    // startup
-    void        load_eeprom(void);
-    void        save_eeprom(void);
-    void        save_trim(void);
-
     // setup the control preferences
     void        set_range(uint16_t high);
     void        set_angle(uint16_t angle);

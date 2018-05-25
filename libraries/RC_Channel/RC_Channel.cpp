@@ -161,26 +161,6 @@ int16_t RC_Channel::get_control_mid() const
     }
 }
 
-// ------------------------------------------
-
-void RC_Channel::load_eeprom(void)
-{
-    radio_min.load();
-    radio_trim.load();
-    radio_max.load();
-    reversed.load();
-    dead_zone.load();
-}
-
-void RC_Channel::save_eeprom(void)
-{
-    radio_min.save();
-    radio_trim.save();
-    radio_max.save();
-    reversed.save();
-    dead_zone.save();
-}
-
 /*
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
