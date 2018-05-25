@@ -282,9 +282,13 @@ void Plane::control_failsafe()
     }
 }
 
-void Plane::trim_control_surfaces()
+bool Plane::trim_radio()
 {
-    read_radio();
+    if (failsafe.rc_failsafe) {
+        // can't trim if we don't have valid input
+        return false;
+    }
+
     int16_t trim_roll_range = (channel_roll->get_radio_max() - channel_roll->get_radio_min())/5;
     int16_t trim_pitch_range = (channel_pitch->get_radio_max() - channel_pitch->get_radio_min())/5;
     if (channel_roll->get_radio_in() < channel_roll->get_radio_min()+trim_roll_range ||
@@ -295,7 +299,7 @@ void Plane::trim_control_surfaces()
         // there is less than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
         // problems with starting APM with the TX off
-        return;
+        return false;
     }
 
     // trim main surfaces
@@ -330,15 +334,8 @@ void Plane::trim_control_surfaces()
     channel_roll->set_and_save_trim();
     channel_pitch->set_and_save_trim();
     channel_rudder->set_and_save_trim();
-}
 
-void Plane::trim_radio()
-{
-    for (uint8_t y = 0; y < 30; y++) {
-        read_radio();
-    }
-
-    trim_control_surfaces();
+    return true;
 }
 
 /*
