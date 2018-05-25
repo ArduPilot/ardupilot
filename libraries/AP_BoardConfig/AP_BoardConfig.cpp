@@ -88,20 +88,22 @@
 #endif
 #endif
 
+#ifndef BOARD_PWM_COUNT_DEFAULT
+#define BOARD_PWM_COUNT_DEFAULT 8
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, state.pwm_count, BOARD_PWM_COUNT_DEFAULT),
-#endif
+    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if AP_FEATURE_RTSCTS
     // @Param: SER1_RTSCTS
