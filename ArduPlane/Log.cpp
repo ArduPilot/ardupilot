@@ -116,6 +116,9 @@ struct PACKED log_Nav_Tuning {
     float   xtrack_error;
     float   xtrack_error_i;
     float   airspeed_error;
+    int32_t target_lat;
+    int32_t target_lng;
+    int32_t target_alt;
 };
 
 // Write a navigation tuning packet
@@ -130,7 +133,10 @@ void Plane::Log_Write_Nav_Tuning()
         altitude_error_cm   : (int16_t)altitude_error_cm,
         xtrack_error        : nav_controller->crosstrack_error(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
-        airspeed_error      : airspeed_error
+        airspeed_error      : airspeed_error,
+        target_lat          : next_WP_loc.lat,
+        target_lng          : next_WP_loc.lng,
+        target_alt          : next_WP_loc.alt,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -292,7 +298,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "Qfcccfff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi,ArspdErr", "smddmmmn", "F0BBB0B0" },
+      "NTUN", "QfcccfffLLi",  "TimeUS,WpDist,TBrg,NavBrg,AltErr,XT,XTi,ArspdErr,TLat,TLng,TAlt", "smddmmmnDUm", "F0BBB0B0GGB" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr", "smv--", "FB0--" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
