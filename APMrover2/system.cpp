@@ -41,6 +41,11 @@ void Rover::init_ardupilot()
 
     mavlink_system.sysid = g.sysid_this_mav;
 
+    BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
+
     // initialise serial ports
     serial_manager.init();
 
@@ -50,11 +55,6 @@ void Rover::init_ardupilot()
     // Register mavlink_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
-
-    BoardConfig.init();
-#if HAL_WITH_UAVCAN
-    BoardConfig_CAN.init();
-#endif
 
     // initialise notify system
     notify.init();
