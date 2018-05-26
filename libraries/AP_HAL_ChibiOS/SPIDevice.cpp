@@ -146,13 +146,35 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 
     bus.bouncebuffer_setup(send_buf, len, recv_buf, len);
 
-    spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+    if (send == nullptr) {
+        spiReceive(spi_devices[device_desc.bus].driver, len, recv_buf);
+    } else if (recv == nullptr) {
+        spiSend(spi_devices[device_desc.bus].driver, len, send_buf);
+    } else {
+        spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+    }
 
     if (recv_buf != recv) {
         memcpy(recv, recv_buf, len);
     }
     
     set_chip_select(old_cs_forced);
+}
+
+bool SPIDevice::clock_pulse(uint32_t n)
+{
+    if (!cs_forced) {
+        //special mode to init sdcard without cs asserted
+        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        acquire_bus(true, true);
+        spiIgnore(spi_devices[device_desc.bus].driver, n);
+        acquire_bus(false, true);
+        bus.semaphore.give();
+    } else {
+        bus.semaphore.assert_owner();
+        spiIgnore(spi_devices[device_desc.bus].driver, n);
+    }
+    return true;
 }
 
 uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
@@ -183,9 +205,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         hal.console->printf("SPI: not owner of 0x%x\n", unsigned(get_bus_id()));
         return false;
     }
-    if (send_len == recv_len && send == recv) {
+    if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases, needed for DMA
-        do_transfer(send, recv, recv_len);
+        do_transfer(send, recv, recv_len?recv_len:send_len);
         return true;
     }
     uint8_t buf[send_len+recv_len];
@@ -317,52 +339,6 @@ SPIDeviceManager::get_device(const char *name)
 
     return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
 }
-
-#if HAL_USE_MMC_SPI == TRUE
-
-void SPIDevice::spi_select() {
-    bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-    acquire_bus(true, false);
-}
-
-void SPIDevice::spi_unselect() {
-    acquire_bus(false, false);
-    bus.semaphore.give();
-}
-
-void SPIDevice::spi_ignore(size_t n) {
-    if (!cs_forced) {
-        //special mode to init sdcard without cs asserted
-        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-        acquire_bus(true, true);
-        spiIgnore(spi_devices[device_desc.bus].driver, n);
-        acquire_bus(false, true);
-        bus.semaphore.give();
-    } else {
-        bus.semaphore.assert_owner();
-        spiIgnore(spi_devices[device_desc.bus].driver, n);
-    }
-}
-
-void SPIDevice::spi_send(size_t tx_len, const void *txbuf) {
-    bus.semaphore.assert_owner();
-    const uint8_t *tbuf = (uint8_t *) txbuf;
-    bus.bouncebuffer_setup_tx(tbuf, tx_len);
-    spiSend(spi_devices[device_desc.bus].driver, tx_len, tbuf);
-}
-
-void SPIDevice::spi_receive(size_t rx_len, void *rxbuf) {
-    bus.semaphore.assert_owner();
-    uint8_t *rbuf = (uint8_t *) rxbuf;
-    bus.bouncebuffer_setup_rx(rbuf, rx_len);
-    spiReceive(spi_devices[device_desc.bus].driver, rx_len, rbuf);
-    if (rxbuf != rbuf) {
-        memcpy(rxbuf, rbuf, rx_len);
-    }
-}
-
-#endif
-
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
 /*
