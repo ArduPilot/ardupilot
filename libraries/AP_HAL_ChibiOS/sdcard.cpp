@@ -94,6 +94,10 @@ void sdcard_init()
  */
 void sdcard_stop(void)
 {
+#ifdef USE_POSIX
+    // unmount
+    f_mount(nullptr, "/", 1);
+#endif
 #if HAL_USE_MMC_SPI
     if (sdcard_running) {
         mmcDisconnect(&MMCD1);

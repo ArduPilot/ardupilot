@@ -30,6 +30,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "shared_dma.h"
+#include "sdcard.h"
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -241,6 +242,9 @@ void Scheduler::reboot(bool hold_in_bootloader)
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
 
+    // stop sdcard driver, if active
+    sdcard_stop();
+    
     // lock all shared DMA channels. This has the effect of waiting
     // till the sensor buses are idle
     Shared_DMA::lock_all();
