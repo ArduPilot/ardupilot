@@ -244,12 +244,12 @@ void Scheduler::reboot(bool hold_in_bootloader)
     // lock all shared DMA channels. This has the effect of waiting
     // till the sensor buses are idle
     Shared_DMA::lock_all();
-    
-    // delay to ensure the async force_saftey operation completes
-    delay(500);
 
-    // disable interrupts during reboot
-    chSysDisable();
+    // disable interrupts
+    disable_interrupts_save();
+
+    // wait for 1ms to ensure all pending DMAs are complete
+    delay_microseconds(1000);
 
     // reboot
     NVIC_SystemReset();
