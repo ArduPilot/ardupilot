@@ -249,7 +249,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
     disable_interrupts_save();
 
     // wait for 1ms to ensure all pending DMAs are complete
-    delay_microseconds(1000);
+    uint32_t start_us = AP_HAL::micros();
+    while (AP_HAL::micros() - start_us < 1000) ; // busy loop
 
     // reboot
     NVIC_SystemReset();
