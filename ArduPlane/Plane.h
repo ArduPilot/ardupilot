@@ -375,7 +375,7 @@ private:
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
-    float groundspeed_undershoot = 0;
+    float groundspeed_undershoot;
 
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;

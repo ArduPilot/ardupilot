@@ -156,6 +156,11 @@ void Plane::calc_airspeed_errors()
 
 void Plane::calc_gndspeed_undershoot()
 {
+    static uint32_t last_undershoot_check_ms = 0;
+
+    uint32_t now = millis();
+    float dt = 0.001 * (now - last_undershoot_check_ms);
+    dt = constrain_float(dt, 0.7, 0.15); // should run at 10Hz
 
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
@@ -164,12 +169,11 @@ void Plane::calc_gndspeed_undershoot()
 
     // Use integrator based gndspd_undershoot controller
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
-        is_flying() && !yawVect.is_zero() &&
+        !throttle_suppressed && !yawVect.is_zero() &&
         (aparm.min_gndspeed_cm > 0)) {
 
         float nav_bearing = radians(0.01f*nav_controller->target_bearing_cd());
         Vector2f navVect = Vector2f(cosf(nav_bearing), sinf(nav_bearing));
-        navVect.normalize();
 
         Vector2f gndSpdVect = ahrs.groundspeed_vector();
         yawVect.normalize();
@@ -187,7 +191,6 @@ void Plane::calc_gndspeed_undershoot()
         // compensate for the lag in airspeed controller (coverting to cm/sec)
         gndspd_undershoot_error -= airspeed_error*100;
 
-        const float dt = 0.1f;  // this is running at 10Hz
         const float K_I = 0.2f; // fixed integration gain
 
         groundspeed_undershoot += gndspd_undershoot_error * K_I * dt;
