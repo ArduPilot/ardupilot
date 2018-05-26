@@ -22,9 +22,10 @@ void Copter::fence_check()
 
     // if there is a new breach take action
     if (new_breaches) {
+        uint8_t fence_act = fence.get_action();
 
         // if the user wants some kind of response and motors are armed
-        if(fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY ) {
+        if(fence_act != AC_FENCE_ACTION_REPORT_ONLY ) {
 
             // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
@@ -33,8 +34,18 @@ void Copter::fence_check()
             }else{
                 // if we are within 100m of the fence, RTL
                 if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
-                    if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
-                        set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                    if (fence_act == AC_FENCE_ACTION_BRAKE) {
+                        if (!set_mode(BRAKE, MODE_REASON_FENCE_BREACH)) {
+                            set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        }
+                    } else if (fence_act == AC_FENCE_ACTION_SMART_RTL) {
+                        if (!set_mode(SMART_RTL, MODE_REASON_FENCE_BREACH) && !set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
+                            set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        }
+                    } else {
+                        if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
+                            set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        }
                     }
                 }else{
                     // if more than 100m outside the fence just force a land
