@@ -114,6 +114,17 @@ void UARTDriver::thread_init(void)
 }
 
 
+/*
+  hook to allow printf() to work on hal.console when we don't have a
+  dedicated debug console
+ */
+static int hal_console_vprintf(const char *fmt, va_list arg)
+{
+    hal.console->vprintf(fmt, arg);
+    return 1; // wrong length, but doesn't matter for what this is used for
+}
+
+
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
@@ -261,6 +272,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     // setup flow control
     set_flow_control(_flow_control);
+
+    if (serial_num == 0 && _initialised) {
+#ifndef HAL_STDOUT_SERIAL
+        // setup hal.console to take printf() output
+        vprintf_console_hook = hal_console_vprintf;
+#endif
+    }
 }
 
 void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
