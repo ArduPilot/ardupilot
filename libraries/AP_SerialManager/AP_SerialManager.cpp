@@ -23,6 +23,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_SerialManager.h"
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 #ifdef HAL_SERIAL5_PROTOCOL
@@ -189,7 +193,18 @@ void AP_SerialManager::init()
     if (state[0].uart == nullptr) {
         init_console();
     }
-    
+
+#if HAL_WITH_UAVCAN
+    for (uint8_t can_mgr = 0; can_mgr < MAX_NUMBER_OF_CAN_DRIVERS; can_mgr++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(can_mgr);
+        const uint8_t state_index = (SERIALMANAGER_NUM_PORTS-1) + can_mgr;
+        if (ap_uavcan != nullptr && state_index < SERIALMANAGER_NUM_PORTS) {
+            state[state_index].uart = ap_uavcan->get_tunnel_uart();
+            state[state_index].protocol = ap_uavcan->get_tunnel_protocol();
+        }
+    }
+#endif
+
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
 

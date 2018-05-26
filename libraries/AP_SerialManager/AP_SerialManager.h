@@ -26,8 +26,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-// we have hal.uartA to hal.uartG
-#define SERIALMANAGER_NUM_PORTS 7
+#if HAL_WITH_UAVCAN
+    #define SERIALMANAGER_NUM_PORTS (7 + MAX_NUMBER_OF_CAN_INTERFACES)
+#else
+    #define SERIALMANAGER_NUM_PORTS 7
+#endif
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
