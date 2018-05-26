@@ -53,6 +53,11 @@ void Copter::init_ardupilot()
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
     
+    BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
+
     // initialise serial ports
     serial_manager.init();
 
@@ -64,11 +69,6 @@ void Copter::init_ardupilot()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
     
-    BoardConfig.init();
-#if HAL_WITH_UAVCAN
-    BoardConfig_CAN.init();
-#endif
-
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
