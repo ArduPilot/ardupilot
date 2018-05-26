@@ -76,6 +76,12 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
+    /* 
+     *  send N bytes of clock pulses without taking CS. This is used
+     *  when initialising microSD interfaces over SPI
+    */
+    bool clock_pulse(uint32_t len) override;
+    
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
 
@@ -97,15 +103,6 @@ public:
     static void test_clock_freq(void);
 #endif
     
-#if HAL_USE_MMC_SPI == TRUE
-    //functions to be used by hal_mmc_spi.c sdcard driver
-    void spi_select();
-    void spi_unselect();
-    void spi_ignore(size_t n);
-    void spi_send(size_t n, const void *txbuf);
-    void spi_receive(size_t n, void *rxbuf);
-#endif
-
 private:
     SPIBus &bus;
     SPIDesc &device_desc;
