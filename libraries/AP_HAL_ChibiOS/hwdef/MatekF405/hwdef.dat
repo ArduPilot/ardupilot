@@ -59,8 +59,12 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 PB10 MAX7456_CS CS
 
-# dataflash M25P16
-PB3 M25P16_CS CS
+# spi3 for sdcard and onboard flash
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+PC1 SDCARD_CS CS
+PC0 M25P16_CS CS
 
 PC2 MPU6000_CS CS
 
@@ -109,9 +113,9 @@ PA12 OTG_FS_DP OTG1
 # USB detection
 PB12 VBUS INPUT OPENDRAIN
 
-# debug 
-PA13 JTMS-SWDIO SWD
-PA14 JTCK-SWCLK SWD
+# debug (disabled out to allow for both LEDs)
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
 
 # PWM out pins. Note that channel order follows the ArduPilot motor
 # order conventions
@@ -145,7 +149,19 @@ define HAL_BARO_BMP280_I2C_ADDR 0x76
 
 # SPI devices
 SPIDEV mpu6000   SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ 
+SPIDEV sdcard    SPI3 DEVID1 SDCARD_CS  MODE0 400*KHZ 25*MHZ
+
+# filesystem setup on sdcard
+define HAL_OS_FATFS_IO 1
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
 
+# uncomment the lines below to enable strict API
+# checking in ChibiOS
+#define CH_DBG_ENABLE_ASSERTS TRUE
+#define CH_DBG_ENABLE_CHECKS TRUE
+#define CH_DBG_SYSTEM_STATE_CHECK TRUE
+#define CH_DBG_ENABLE_STACK_CHECK TRUE
