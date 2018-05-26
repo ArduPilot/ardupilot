@@ -16,3 +16,4 @@
 #pragma once
 
 void sdcard_init();
+void sdcard_stop();
