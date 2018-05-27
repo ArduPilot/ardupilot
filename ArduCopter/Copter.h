@@ -354,6 +354,12 @@ private:
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
 
+    // de-bounce counters for switches.cpp
+    struct debounce {
+        uint8_t count;
+        uint8_t ch_flag;
+    } aux_debounce[(CH_12 - CH_7)+1];
+
     typedef struct {
         bool running;
         float max_speed;
@@ -901,6 +907,7 @@ private:
     void init_aux_switches();
     void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
     void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
+    bool debounce_aux_switch(uint8_t chan, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 
