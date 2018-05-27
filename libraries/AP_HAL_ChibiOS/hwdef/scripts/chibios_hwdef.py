@@ -701,6 +701,7 @@ def write_PWM_config(f):
         f.write('#define STM32_EICU_USE_TIM%u TRUE\n' % n)
         f.write('#define RCININT_EICU_TIMER EICUD%u\n' % n)
         f.write('#define RCININT_EICU_CHANNEL EICU_CHANNEL_%u\n' % int(chan_str))
+        f.write('#define RCININT_PIN HAL_GPIO_PIN_TIM%s_CH%s\n' % (timer_str, chan_str))
         f.write('\n')
 
     if alarm is not None:
