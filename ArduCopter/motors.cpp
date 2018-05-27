@@ -230,6 +230,9 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // Start the arming delay
     ap.in_arming_delay = true;
 
+    // assumed armed without a arming, switch. Overridden in switches.cpp
+    ap.armed_with_switch = false;
+    
     // return success
     return true;
 }
