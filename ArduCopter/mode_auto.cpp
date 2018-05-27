@@ -222,6 +222,7 @@ void Copter::ModeAuto::land_start()
 
     // call location specific land start function
     land_start(stopping_point);
+    copter.is_landing = true;
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -755,6 +756,7 @@ void Copter::ModeAuto::takeoff_run()
     }
 #else
     set_land_complete(false);
+    takeoff_state.running = !copter.wp_nav->reached_wp_destination();
 #endif
 
     // set motors to full range

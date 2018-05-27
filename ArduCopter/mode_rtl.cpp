@@ -321,6 +321,7 @@ void Copter::ModeRTL::land_start()
 {
     _state = RTL_Land;
     _state_complete = false;
+    copter.is_landing = true;
 
     // Set wp navigation target to above home
     loiter_nav->init_target(wp_nav->get_wp_destination());

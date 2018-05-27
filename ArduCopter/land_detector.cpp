@@ -103,6 +103,9 @@ void Copter::set_land_complete(bool b)
         Log_Write_Event(DATA_NOT_LANDED);
     }
     ap.land_complete = b;
+    if (b) {
+        is_landing = false;
+    }
 
 #if STATS_ENABLED == ENABLED
     g2.stats.set_flying(!b);

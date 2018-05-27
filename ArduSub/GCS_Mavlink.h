@@ -46,4 +46,5 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+    MAV_LANDED_STATE landed_state() const override { return MAV_LANDED_STATE_UNDEFINED;};
 };

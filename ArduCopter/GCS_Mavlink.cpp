@@ -97,6 +97,19 @@ MAV_STATE GCS_MAVLINK_Copter::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
+MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
+{
+    if (copter.takeoff_state.running) {
+        return MAV_LANDED_STATE_TAKEOFF;
+    }
+    if (copter.is_landing) {
+        return MAV_LANDED_STATE_LANDING;
+    }
+    if (copter.ap.land_complete) {
+        return MAV_LANDED_STATE_ON_GROUND;
+    }
+    return MAV_LANDED_STATE_IN_AIR;
+}
 
 void GCS_MAVLINK_Copter::send_position_target_global_int()
 {
@@ -300,6 +313,8 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
             copter.send_extended_status1(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
+            CHECK_PAYLOAD_SIZE(EXTENDED_SYS_STATE);
+            send_extended_sys_state();
         }
         break;
 

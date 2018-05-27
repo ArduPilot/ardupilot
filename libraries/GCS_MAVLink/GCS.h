@@ -162,6 +162,7 @@ public:
 
     // common send functions
     void send_heartbeat(void) const;
+    void send_extended_sys_state();
     void send_meminfo(void);
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery,
@@ -263,6 +264,8 @@ protected:
     virtual MAV_MODE base_mode() const = 0;
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_STATE system_status() const = 0;
+    virtual MAV_LANDED_STATE landed_state() const { return MAV_LANDED_STATE_UNDEFINED; };
+    virtual MAV_VTOL_STATE vtol_state() const { return MAV_VTOL_STATE_UNDEFINED; };
 
     bool            waypoint_receiving; // currently receiving
     // the following two variables are only here because of Tracker
