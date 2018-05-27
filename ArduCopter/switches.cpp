@@ -125,7 +125,7 @@ uint8_t Copter::read_3pos_switch(uint8_t chan)
 #define read_aux_switch(chan, flag, option)                           \
     do {                                                            \
         switch_position = read_3pos_switch(chan); \
-        if (flag != switch_position) {                              \
+        if (debounce_aux_switch(chan, flag) && flag != switch_position) { \
             flag = switch_position;                                 \
             do_aux_switch_function(option, flag);                   \
         }                                                           \
@@ -207,6 +207,32 @@ void Copter::init_aux_switch_function(int8_t ch_option, uint8_t ch_flag)
             do_aux_switch_function(ch_option, ch_flag);
             break;
     }
+}
+
+/*
+  debounce an aux switch using a counter in copter.debounce
+  structure. This will return false until the same ch_flag is seen debounce_count times
+ */
+bool Copter::debounce_aux_switch(uint8_t chan, uint8_t ch_flag)
+{
+    // a value of 2 means we need 3 values in a row with the same
+    // value to activate
+    const uint8_t debounce_count = 2;
+
+    if (chan < CH_7 || chan > CH_12) {
+        // someone has forgotten to expand the debounce channel range
+        return false;
+    }
+    struct debounce &db = aux_debounce[chan-CH_7];
+    if (db.ch_flag != ch_flag) {
+        db.ch_flag = ch_flag;
+        db.count = 0;
+        return false;
+    }
+    if (db.count < debounce_count) {
+        db.count++;
+    }
+    return db.count >= debounce_count;
 }
 
 // do_aux_switch_function - implement the function invoked by the ch7 or ch8 switch
