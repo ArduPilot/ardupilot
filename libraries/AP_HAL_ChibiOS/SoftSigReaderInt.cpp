@@ -24,9 +24,6 @@ extern const AP_HAL::HAL& hal;
 
 #if HAL_USE_EICU == TRUE
 
-#define eicu_lld_invert_polarity(eicup, channel)                              \
-  (eicup)->tim->CCER ^= ((uint16_t)(STM32_TIM_CCER_CC1P << ((channel) * 4)))
-
 // singleton instance
 SoftSigReaderInt *SoftSigReaderInt::_instance;
 
@@ -57,11 +54,47 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     eicuEnable(_icu_drv);
 }
 
+inline void invert_polarity(EICUDriver *eicup, eicuchannel_t channel)
+{
+    eicup->tim->CCER ^= STM32_TIM_CCER_CC1P << (channel * 4);
+}
+
+//check for CCxOF, if it was set by timer hw, it means we missed 2 or more transitions
+inline bool overcapture_occured(EICUDriver *eicup, eicuchannel_t channel)
+{
+    bool result = (eicup->tim->SR & (STM32_TIM_SR_CC1OF << channel)) != 0;
+    eicup->tim->SR &= ~(STM32_TIM_SR_CC1OF << channel);
+    return result;
+}
+
+//check for right pin polarity, if it is wrong it means we missed 1, 3, 5 or more transitions
+inline bool wrong_polarity(EICUDriver *eicup, eicuchannel_t channel)
+{
+    bool pin_high = palReadLine(RCININT_PIN);
+    bool waiting_rising = (eicup->tim->CCER & (STM32_TIM_CCER_CC1P << (channel * 4))) == 0;
+    if (pin_high && waiting_rising) {
+        return true;
+    }
+    if (!pin_high && !waiting_rising) {
+        return true;
+    }
+    return false;
+}
+
 void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t channel)
 {
     uint16_t value = eicup->tim->CCR[channel];
+    invert_polarity(eicup, channel);
     _instance->sigbuf.push(value);
-    eicu_lld_invert_polarity(eicup, channel);
+    
+    //check for missed interrupt 
+    if (overcapture_occured(eicup, channel) || wrong_polarity(eicup, channel)) {
+        //we have missed some pulses
+        //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)        
+        _instance->sigbuf.push(value);
+        //second 0 width pulse to keep polarity right
+        _instance->sigbuf.push(value);
+    }
 }
 
 bool SoftSigReaderInt::read(uint32_t &widths0, uint32_t &widths1)
