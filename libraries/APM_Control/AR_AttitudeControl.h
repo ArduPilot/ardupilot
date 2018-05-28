@@ -95,6 +95,9 @@ public:
     // get throttle/speed controller maximum deceleration
     float get_decel_max() const;
 
+    // check if speed controller active
+    bool speed_control_active() const;
+
     // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
     float get_desired_speed() const;
 
