@@ -50,6 +50,7 @@ public:
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
     static void _run_io_procs(bool called_from_isr);
+    static bool _should_reboot;
     
 private:
     SITL_State *_sitlState;
