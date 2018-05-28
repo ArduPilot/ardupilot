@@ -336,7 +336,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
 
     // if not called recently, reset input filter and desired speed to actual speed (used for accel limiting)
     const uint32_t now = AP_HAL::millis();
-    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+    if (!speed_control_active()) {
         _throttle_speed_pid.reset_filter();
         _desired_speed = speed;
     }
@@ -471,11 +471,21 @@ float AR_AttitudeControl::get_decel_max() const
     }
 }
 
+// check if speed controller active
+bool AR_AttitudeControl::speed_control_active() const
+{
+    // active if there have been recent calls to speed controller
+    if ((_speed_last_ms == 0) || ((AP_HAL::millis() - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+        return false;
+    }
+    return true;
+}
+
 // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
 float AR_AttitudeControl::get_desired_speed() const
 {
     // return zero if no recent calls to speed controller
-    if ((_speed_last_ms == 0) || ((AP_HAL::millis() - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+    if (!speed_control_active()) {
         return 0.0f;
     }
     return _desired_speed;
@@ -491,8 +501,7 @@ float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, f
     float speed_prev = _desired_speed;
 
     // if no recent calls to speed controller limit based on current speed
-    const uint32_t now = AP_HAL::millis();
-    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+    if (!speed_control_active()) {
         get_forward_speed(speed_prev);
     }
 
