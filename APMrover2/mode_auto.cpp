@@ -24,9 +24,6 @@ bool ModeAuto::_enter()
     // other initialisation
     auto_triggered = false;
 
-    // initialise reversed to be false
-    set_reversed(false);
-
     // restart mission processing
     mission.start_or_resume();
     return true;
@@ -148,7 +145,6 @@ void ModeAuto::set_reversed(bool value)
 {
     if (_reversed != value) {
         _reversed = value;
-        rover.set_reverse(_reversed);
     }
 }
 
