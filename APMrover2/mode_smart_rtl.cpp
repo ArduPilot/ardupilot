@@ -20,9 +20,6 @@ bool ModeSmartRTL::_enter()
     // init location target
     set_desired_location(rover.current_loc);
 
-    // RTL never reverses
-    rover.set_reverse(false);
-
     // init state
     smart_rtl_state = SmartRTL_WaitForPathCleanup;
     _reached_destination = false;

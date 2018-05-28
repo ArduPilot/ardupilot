@@ -420,5 +420,4 @@ void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
     mode_auto.set_reversed(cmd.p1 == 1);
-    set_reverse(cmd.p1 == 1);
 }

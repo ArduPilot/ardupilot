@@ -15,9 +15,6 @@ bool ModeLoiter::_enter()
     _desired_yaw_cd = ahrs.yaw_sensor;
     _yaw_error_cd = 0.0f;
 
-    // set reversed based on speed
-    rover.set_reverse(is_negative(_desired_speed));
-
     return true;
 }
 
@@ -54,8 +51,4 @@ void ModeLoiter::update()
     // run steering and throttle controllers
     calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
     calc_throttle(_desired_speed, false, true);
-
-    // mark us as in_reverse when using a negative throttle
-    // To-Do: only in reverse if vehicle is actually travelling backwards?
-    rover.set_reverse(_desired_speed < 0);
 }
