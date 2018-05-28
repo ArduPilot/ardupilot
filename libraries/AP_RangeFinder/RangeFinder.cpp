@@ -739,8 +739,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_NMEA:
         if (AP_RangeFinder_NMEA::detect(serial_manager, serial_instance)) {
             drivers[instance] = new AP_RangeFinder_NMEA(state[instance], serial_manager, serial_instance++);
-            break;
         }
+        break;
     case RangeFinder_TYPE_WASP:
         if (AP_RangeFinder_Wasp::detect(serial_manager, serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Wasp(state[instance], serial_manager, serial_instance++);
