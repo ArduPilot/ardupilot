@@ -14,9 +14,6 @@ bool ModeRTL::_enter()
     // set destination
     set_desired_location(rover.home);
 
-    // RTL never reverses
-    rover.set_reverse(false);
-
     return true;
 }
 

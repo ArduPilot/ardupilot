@@ -150,11 +150,8 @@ void Rover::ahrs_update()
     gcs_update();
 #endif
 
-    // when in reverse we need to tell AHRS not to assume we are a
-    // 'fly forward' vehicle, otherwise it will see a large
-    // discrepancy between the mag and the GPS heading and will try to
-    // correct for it, leading to a large yaw error
-    ahrs.set_fly_forward(!in_reverse);
+    // AHRS may use movement to calculate heading
+    update_ahrs_flyforward();
 
     ahrs.update();
 

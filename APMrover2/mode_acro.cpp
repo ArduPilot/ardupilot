@@ -11,15 +11,11 @@ void ModeAcro::update()
         get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
         // no valid speed, just use the provided throttle
         g2.motors.set_throttle(desired_throttle);
-        // set reverse flag if negative throttle
-        rover.set_reverse(is_negative(desired_throttle));
     } else {
         float desired_speed;
         // convert pilot stick input into desired steering and speed
         get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
         calc_throttle(desired_speed, false, true);
-        // set reverse flag if negative desired speed
-        rover.set_reverse(is_negative(desired_speed));
     }
 
     // convert pilot steering input to desired turn rate in radians/sec

@@ -48,9 +48,6 @@ void ModeSteering::update()
         calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
     }
 
-    // mark us as in_reverse when using a negative throttle
-    rover.set_reverse(reversed);
-
     // run speed to throttle controller
     calc_throttle(desired_speed, false, true);
 }
