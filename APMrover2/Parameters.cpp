@@ -41,7 +41,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
-    // @Values: 0:MANUAL,1:ACRO,3:STEERING,4:HOLD,10:AUTO,11:RTL,15:GUIDED
+    // @Values: 0:MANUAL,1:ACRO,3:STEERING,4:HOLD,5:LOITER,10:AUTO,11:RTL,15:GUIDED
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
 
@@ -129,7 +129,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: CH7_OPTION
     // @DisplayName: Channel 7 option
     // @Description: What to do use channel 7 for
-    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided
+    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
     // @User: Standard
     GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
 
@@ -554,6 +554,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
+
+    // @Param: PIVOT_TURN_RATE
+    // @DisplayName: Pivot turn rate
+    // @Description: Desired pivot turn rate in deg/s.
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("PIVOT_TURN_RATE", 20, ParametersG2, pivot_turn_rate, 90),
 
     AP_GROUPEND
 };

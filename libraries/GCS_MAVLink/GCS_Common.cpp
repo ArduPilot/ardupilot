@@ -31,9 +31,13 @@
 #include <fcntl.h>
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -935,12 +939,22 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         }
     }
 
+    const uint32_t tnow = AP_HAL::millis();
+
+    // send a timesync message every 10 seconds; this is for data
+    // collection purposes
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms) {
+        if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
+            send_timesync();
+            _timesync_request.last_sent_ms = tnow;
+        }
+    }
+
     if (!waypoint_receiving) {
         hal.util->perf_end(_perf_update);    
         return;
     }
 
-    uint32_t tnow = AP_HAL::millis();
     uint32_t wp_recv_time = 1000U + (stream_slowdown*20);
 
     // stop waypoint receiving if timeout
@@ -1652,10 +1666,10 @@ bool GCS_MAVLINK::telemetry_delayed() const
 /*
   send SERVO_OUTPUT_RAW
  */
-void GCS_MAVLINK::send_servo_output_raw(bool hil)
+void GCS_MAVLINK::send_servo_output_raw()
 {
     uint16_t values[16] {};
-    if (hil) {
+    if (in_hil_mode()) {
         for (uint8_t i=0; i<16; i++) {
             values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
@@ -1787,6 +1801,22 @@ MAV_RESULT GCS_MAVLINK::handle_rc_bind(const mavlink_command_long_t &packet)
     return MAV_RESULT_ACCEPTED;
 }
 
+uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
+{
+    uint64_t ret = _port->receive_time_constraint_us(PAYLOAD_SIZE(chan, TIMESYNC));
+    if (ret == 0) {
+        ret = AP_HAL::micros64();
+    }
+    return ret*1000LL;
+}
+
+uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
+{
+    // we add in our own system id try to ensure we only consider
+    // responses to our own timesync request messages
+    return AP_HAL::micros64()*1000LL + mavlink_system.sysid;
+}
+
 /*
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
@@ -1797,14 +1827,41 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
     mavlink_timesync_t tsync;
     mavlink_msg_timesync_decode(msg, &tsync);
 
-    // ignore messages in which tc1 field (timestamp 1) has already been filled in
     if (tsync.tc1 != 0) {
+        // this is a response to a timesync request
+        if (tsync.ts1 != _timesync_request.sent_ts1) {
+            // we didn't actually send the request.... or it's a
+            // response to an ancient request...
+            return;
+        }
+        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
+#if 0
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "timesync response sysid=%u (latency=%fms)",
+                        msg->sysid,
+                        round_trip_time_us*0.001f);
+#endif
+        DataFlash_Class *df = DataFlash_Class::instance();
+        if (df != nullptr) {
+            DataFlash_Class::instance()->Log_Write(
+                "TSYN",
+                "TimeUS,SysID,RTT",
+                "s-s",
+                "F-F",
+                "QBQ",
+                AP_HAL::micros64(),
+                msg->sysid,
+                round_trip_time_us
+                );
+        }
         return;
     }
 
-    // create new timesync struct with tc1 field as system time in nanoseconds
+    // create new timesync struct with tc1 field as system time in
+    // nanoseconds.  The client timestamp is as close as possible to
+    // the time we received the TIMESYNC message.
     mavlink_timesync_t rsync;
-    rsync.tc1 = AP_HAL::micros64() * 1000;
+    rsync.tc1 = timesync_receive_timestamp_ns();
     rsync.ts1 = tsync.ts1;
 
     // respond with a timesync message
@@ -1812,6 +1869,19 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         chan,
         rsync.tc1,
         rsync.ts1
+        );
+}
+
+/*
+ * broadcast a timesync message.  We may get multiple responses to this request.
+ */
+void GCS_MAVLINK::send_timesync()
+{
+    _timesync_request.sent_ts1 = timesync_timestamp_ns();
+    mavlink_msg_timesync_send(
+        chan,
+        0,
+        _timesync_request.sent_ts1
         );
 }
 
@@ -1958,7 +2028,7 @@ void GCS_MAVLINK::handle_set_gps_global_origin(const mavlink_message_t *msg)
  */
 void GCS_MAVLINK::handle_data_packet(mavlink_message_t *msg)
 {
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     mavlink_data96_t m;
     mavlink_msg_data96_decode(msg, &m);
     switch (m.type) {
@@ -2133,9 +2203,9 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_PARAM_SET:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_common_param_message(msg);
         break;
@@ -2154,22 +2224,21 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_timesync(msg);
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_ERASE:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
         break;
 
 
     case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        /* fall through */
         handle_common_camera_message(msg);
         break;
 
@@ -2182,23 +2251,23 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_COUNT:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ITEM:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ACK:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
         break;
@@ -2208,11 +2277,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_GPS_INPUT:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_HIL_GPS:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         handle_common_gps_message(msg);
         break;
@@ -2232,7 +2301,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_RALLY_POINT:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
         handle_common_rally_message(msg);
         break;
@@ -2351,6 +2420,17 @@ void GCS_MAVLINK::send_banner()
     }
 }
 
+
+void GCS_MAVLINK::send_simstate() const
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->simstate_send(get_chan());
+#endif
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
 {
@@ -2526,9 +2606,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        /* fall through */
+        FALLTHROUGH;
     case MAV_CMD_DO_DIGICAM_CONTROL:
-        /* fall through */
+        FALLTHROUGH;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         result = handle_command_camera(packet);
         break;
@@ -2560,13 +2640,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        /* fall through */
+        FALLTHROUGH;
     case MAV_CMD_DO_REPEAT_SERVO:
-        /* fall through */
+        FALLTHROUGH;
     case MAV_CMD_DO_SET_RELAY:
-        /* fall through */
+        FALLTHROUGH;
     case MAV_CMD_DO_REPEAT_RELAY:
-        /* fall through */
         result = handle_servorelay_message(packet);
         break;
 
@@ -2787,15 +2866,15 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_CURRENT_WAYPOINT:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_MISSION_ITEM_REACHED:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_NEXT_WAYPOINT:
         ret = try_send_mission_message(id);
         break;
 
     case MSG_MAG_CAL_PROGRESS:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_MAG_CAL_REPORT:
         ret = try_send_compass_message(id);
         break;
@@ -2827,13 +2906,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_GPS_RAW:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_GPS_RTK:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_GPS2_RAW:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_GPS2_RTK:
-        /* fall through */
+        FALLTHROUGH;
     case MSG_SYSTEM_TIME:
         ret = try_send_gps_message(id);
         break;
@@ -2841,6 +2920,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
         send_local_position();
+        break;
+
+    case MSG_POSITION_TARGET_GLOBAL_INT:
+        CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
+        send_position_target_global_int();
         break;
 
     case MSG_RADIO_IN:
@@ -2861,6 +2945,18 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_RAW_IMU3:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets();
+        break;
+
+    case MSG_SERVO_OUTPUT_RAW:
+        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
+        send_servo_output_raw();
+        break;
+
+    case MSG_SIMSTATE:
+        CHECK_PAYLOAD_SIZE(SIMSTATE);
+        send_simstate();
+        CHECK_PAYLOAD_SIZE(AHRS2);
+        send_ahrs2();
         break;
 
     case MSG_AHRS:
@@ -2930,10 +3026,10 @@ void GCS_MAVLINK::data_stream_send(void)
         if (!stream_trigger(id)) {
             continue;
         }
-        const uint8_t *msg_ids = all_stream_entries[i].ap_message_ids;
+        const ap_message *msg_ids = all_stream_entries[i].ap_message_ids;
         for (uint8_t j=0; j<all_stream_entries[i].num_ap_message_ids; j++) {
-            const uint8_t msg_id = msg_ids[j];
-            send_message((ap_message)msg_id);
+            const ap_message msg_id = msg_ids[j];
+            send_message(msg_id);
         }
         if (gcs().out_of_time()) {
             break;
@@ -2977,16 +3073,16 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         // correction value
         lag_correction.link_offset_usec = diff_us;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("link_offset_usec=%lld\n", diff_us);
+        printf("link_offset_usec=%lld\n", (long long int)diff_us);
 #endif
         lag_correction.initialised = true;
     }
 
     int64_t estimate_us = offboard_usec + lag_correction.link_offset_usec;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (estimate_us > local_us) {
+    if (estimate_us > (int64_t)local_us) {
         // this should be impossible, just check it under SITL
-        printf("msg from future %lld\n", estimate_us - local_us);
+        printf("msg from future %lld\n", (long long int)(estimate_us - local_us));
     }
 #endif
 
@@ -2996,7 +3092,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         estimate_us = local_us - max_lag_us;
         lag_correction.link_offset_usec = estimate_us - offboard_usec;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("offboard timestammp too old %lld\n", local_us - estimate_us);
+        printf("offboard timestammp too old %lld\n", (long long int)(local_us - estimate_us));
 #endif
     }
 
@@ -3014,7 +3110,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
         lag_correction.link_offset_usec = lag_correction.min_sample_us;
         lag_correction.min_sample_counter = 0;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("new link_offset_usec=%lld\n", lag_correction.min_sample_us);
+        printf("new link_offset_usec=%lld\n", (long long int)(lag_correction.min_sample_us));
 #endif
     }
     

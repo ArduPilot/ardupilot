@@ -37,6 +37,11 @@ public:
 
     void bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                             uint8_t *&buf_rx, uint16_t rx_len);
+
+    void bouncebuffer_setup_tx(const uint8_t *&buf_tx, uint16_t tx_len);
+
+    void bouncebuffer_setup_rx(uint8_t *&buf_rx, uint16_t rx_len);
+
     void bouncebuffer_rx_copy(uint8_t *buf_rx, uint16_t rx_len);
     
 private:

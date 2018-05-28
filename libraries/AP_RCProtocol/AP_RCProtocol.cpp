@@ -19,11 +19,13 @@
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_SBUS.h"
+#include "AP_RCProtocol_SBUS_NI.h"
 
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this);
+    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS_NI(*this);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
 }
 

@@ -324,15 +324,13 @@ void Rover::update_sensor_status_flags(void)
 
     if (rangefinder.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (g.rangefinder_trigger_cm > 0) {
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         AP_RangeFinder_Backend *s = rangefinder.get_backend(0);
         if (s != nullptr && s->has_data()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
-    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
     if (rover.DataFlash.logging_failed()) {

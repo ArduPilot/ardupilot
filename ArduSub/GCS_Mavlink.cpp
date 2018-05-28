@@ -89,14 +89,6 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-#if AC_FENCE == ENABLED
-NOINLINE void Sub::send_limits_status(mavlink_channel_t chan)
-{
-    fence_send_mavlink_status(chan);
-}
-#endif
-
-
 NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
 {
     uint32_t control_sensors_present;
@@ -257,38 +249,6 @@ void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
         pos_control.get_alt_error() * 1.0e-2f,
         0,
         0);
-}
-
-// report simulator state
-void NOINLINE Sub::send_simstate(mavlink_channel_t chan)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
-void NOINLINE Sub::send_radio_out(mavlink_channel_t chan)
-{
-    mavlink_msg_servo_output_raw_send(
-        chan,
-        micros(),
-        0,     // port
-        hal.rcout->read(0),
-        hal.rcout->read(1),
-        hal.rcout->read(2),
-        hal.rcout->read(3),
-        hal.rcout->read(4),
-        hal.rcout->read(5),
-        hal.rcout->read(6),
-        hal.rcout->read(7),
-        hal.rcout->read(8),
-        hal.rcout->read(9),
-        hal.rcout->read(10),
-        hal.rcout->read(11),
-        hal.rcout->read(12),
-        hal.rcout->read(13),
-        hal.rcout->read(14),
-        hal.rcout->read(15));
 }
 
 void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
@@ -467,11 +427,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         sub.send_nav_controller_output(chan);
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        sub.send_radio_out(chan);
-        break;
-
     case MSG_VFR_HUD:
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         sub.send_vfr_hud(chan);
@@ -491,20 +446,11 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_LIMITS_STATUS:
+    case MSG_FENCE_STATUS:
 #if AC_FENCE == ENABLED
-        CHECK_PAYLOAD_SIZE(LIMITS_STATUS);
-        sub.send_limits_status(chan);
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        sub.fence_send_mavlink_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        sub.send_simstate(chan);
-#endif
-        CHECK_PAYLOAD_SIZE(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_MOUNT_STATUS:
@@ -621,12 +567,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_CURRENT_WAYPOINT,
@@ -635,28 +581,28 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
-    MSG_LIMITS_STATUS,
+    MSG_FENCE_STATUS,
     MSG_NAMED_FLOAT
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
     MSG_PID_TUNING
 };
-static const uint8_t STREAM_EXTRA2_msgs[] = {
+static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_SYSTEM_TIME,

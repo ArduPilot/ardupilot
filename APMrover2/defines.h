@@ -26,7 +26,8 @@ enum ch7_option {
     CH7_AUTO            = 8,
     CH7_RTL             = 9,
     CH7_SMART_RTL       = 10,
-    CH7_GUIDED          = 11
+    CH7_GUIDED          = 11,
+    CH7_LOITER          = 12
 };
 
 // HIL enumerations

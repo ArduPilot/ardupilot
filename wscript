@@ -101,6 +101,13 @@ submodules at specific revisions.
             opt.parser.remove_option(k)
             g.add_option(option)
 
+    g.add_option('--apstatedir',
+        action='store',
+        default='',
+        help='''Where to save data like parameters, log and terrain.
+This is the --localstatedir + ArduPilot's subdirectory [default:
+board-dependent, usually /var/lib/ardupilot]''')
+
     g.add_option('--rsync-dest',
         dest='rsync_dest',
         action='store',

@@ -32,9 +32,12 @@ protected:
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
 
+    void send_position_target_global_int() override;
+
     virtual bool in_hil_mode() const override;
 
     void send_attitude() const override;
+    void send_simstate() const override;
 
 private:
 

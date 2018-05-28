@@ -203,6 +203,14 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
     return true;
 }
 
+bool Copter::ModeGuided::get_wp(Location_Class& destination)
+{
+    if (guided_mode != Guided_WP) {
+        return false;
+    }
+    return wp_nav->get_wp_destination(destination);
+}
+
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence

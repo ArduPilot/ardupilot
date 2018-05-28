@@ -616,6 +616,18 @@ int32_t Copter::ModeAuto::wp_bearing() const
     return wp_nav->get_wp_bearing_to_destination();
 }
 
+bool Copter::ModeAuto::get_wp(Location_Class& destination)
+{
+    switch (_mode) {
+    case Auto_NavGuided:
+        return copter.mode_guided.get_wp(destination);
+    case Auto_WP:
+        return wp_nav->get_wp_destination(destination);
+    default:
+        return false;
+    }
+}
+
 // update mission
 void Copter::ModeAuto::run_autopilot()
 {
@@ -1774,9 +1786,6 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    // play a tone
-    AP_Notify::events.waypoint_complete = 1;
-
     // start timer if necessary
     if(loiter_time == 0) {
         loiter_time = millis();
@@ -1784,6 +1793,8 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+        // play a tone
+        AP_Notify::events.waypoint_complete = 1;
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{

@@ -103,6 +103,11 @@ public:
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
     bool set_wp_destination(const Location_Class& destination);
 
+    // returns wp location using location class.
+    // returns false if unable to convert from target vector to global
+    // coordinates
+    bool get_wp_destination(Location_Class& destination);
+
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
     bool set_wp_destination(const Vector3f& destination, bool terrain_alt = false);

@@ -114,6 +114,10 @@ SPIDevice::~SPIDevice()
     free(pname);
 }
 
+SPIDriver * SPIDevice::get_driver() {
+	return spi_devices[device_desc.bus].driver;
+}
+
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 {
     switch (speed) {
@@ -142,13 +146,35 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 
     bus.bouncebuffer_setup(send_buf, len, recv_buf, len);
 
-    spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+    if (send == nullptr) {
+        spiReceive(spi_devices[device_desc.bus].driver, len, recv_buf);
+    } else if (recv == nullptr) {
+        spiSend(spi_devices[device_desc.bus].driver, len, send_buf);
+    } else {
+        spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+    }
 
     if (recv_buf != recv) {
         memcpy(recv, recv_buf, len);
     }
     
     set_chip_select(old_cs_forced);
+}
+
+bool SPIDevice::clock_pulse(uint32_t n)
+{
+    if (!cs_forced) {
+        //special mode to init sdcard without cs asserted
+        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        acquire_bus(true, true);
+        spiIgnore(spi_devices[device_desc.bus].driver, n);
+        acquire_bus(false, true);
+        bus.semaphore.give();
+    } else {
+        bus.semaphore.assert_owner();
+        spiIgnore(spi_devices[device_desc.bus].driver, n);
+    }
+    return true;
 }
 
 uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
@@ -179,9 +205,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         hal.console->printf("SPI: not owner of 0x%x\n", unsigned(get_bus_id()));
         return false;
     }
-    if (send_len == recv_len && send == recv) {
+    if ((send_len == recv_len && send == recv) || !send || !recv) {
         // simplest cases, needed for DMA
-        do_transfer(send, recv, recv_len);
+        do_transfer(send, recv, recv_len?recv_len:send_len);
         return true;
     }
     uint8_t buf[send_len+recv_len];
@@ -225,9 +251,9 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
 }
 
 /*
-  allow for control of SPI chip select pin
- */
-bool SPIDevice::set_chip_select(bool set)
+ used to acquire bus and (optionally) assert cs
+*/
+bool SPIDevice::acquire_bus(bool set, bool skip_cs)
 {
     bus.semaphore.assert_owner();
     if (set && cs_forced) {
@@ -237,7 +263,9 @@ bool SPIDevice::set_chip_select(bool set)
         return false;
     }
     if (!set && cs_forced) {
-        spiUnselectI(spi_devices[device_desc.bus].driver);          /* Slave Select de-assertion.       */
+        if(!skip_cs) {
+            spiUnselectI(spi_devices[device_desc.bus].driver);          /* Slave Select de-assertion.       */
+        }
         spiReleaseBus(spi_devices[device_desc.bus].driver);              /* Ownership release.               */
         cs_forced = false;
         bus.dma_handle->unlock();
@@ -255,10 +283,19 @@ bool SPIDevice::set_chip_select(bool set)
         }
         spiStart(spi_devices[device_desc.bus].driver, &bus.spicfg);        /* Setup transfer parameters.       */
         bus.spi_started = true;
-        spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
+        if(!skip_cs) {
+            spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
+        }
         cs_forced = true;
     }
     return true;
+}
+
+/*
+  allow for control of SPI chip select pin
+ */
+bool SPIDevice::set_chip_select(bool set) {
+    return acquire_bus(set, false);
 }
 
 /*
@@ -302,7 +339,6 @@ SPIDeviceManager::get_device(const char *name)
 
     return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
 }
-
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
 /*

@@ -115,7 +115,7 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     get_pilot_input(steering_out, desired_throttle);
     speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
     // check for special case of input and output throttle being in opposite directions
-    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out);
+    float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
     if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
         ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
          (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
@@ -148,6 +148,9 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
         if (is_zero(turn_angle_cd)) {
             // if not turning can continue at full speed
             _desired_speed_final = _desired_speed;
+        } else if (rover.use_pivot_steering(turn_angle_cd)) {
+            // pivoting so we will stop
+            _desired_speed_final = 0.0f;
         } else {
             // calculate maximum speed that keeps overshoot within bounds
             const float radius_m = fabsf(g.waypoint_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
@@ -207,11 +210,11 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     }
 
     // get acceleration limited target speed
-    target_speed = attitude_control.get_desired_speed_accel_limited(target_speed);
+    target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
 
-    // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
+    // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
     }
 
     // call throttle controller and convert output to -100 to +100 range
@@ -220,9 +223,9 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     // call speed or stop controller
     if (is_zero(target_speed)) {
         bool stopped;
-        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, stopped);
+        throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     } else {
-        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f);
+        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
     }
 
     // send to motor
@@ -234,7 +237,7 @@ bool Mode::stop_vehicle()
 {
     // call throttle controller and convert output to -100 to +100 range
     bool stopped = false;
-    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, stopped);
+    float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
@@ -332,8 +335,8 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
     float speed_scaled = desired_speed * MIN(lateral_accel_speed_scaling, pivot_speed_scaling);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_accel_max())) {
-        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_accel_max() + sq(_desired_speed_final));
+    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_decel_max())) {
+        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_decel_max() + sq(_desired_speed_final));
         speed_scaled = constrain_float(speed_scaled, -speed_max, speed_max);
     }
 
@@ -363,7 +366,7 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
 
     if (rover.use_pivot_steering(_yaw_error_cd)) {
         // for pivot turns use heading controller
-        calc_steering_to_heading(desired_heading);
+        calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
     } else {
         // call lateral acceleration to steering controller
         calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
@@ -387,17 +390,20 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
     // send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_lat_accel(lat_accel,
                                                                            g2.motors.limit.steer_left,
-                                                                           g2.motors.limit.steer_right);
+                                                                           g2.motors.limit.steer_right,
+                                                                           rover.G_Dt);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 
 // calculate steering output to drive towards desired heading
-void Mode::calc_steering_to_heading(float desired_heading_cd, bool reversed)
+void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed)
 {
     // calculate yaw error (in radians) and pass to steering angle controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
+                                                                         rate_max,
                                                                          g2.motors.limit.steer_left,
-                                                                         g2.motors.limit.steer_right);
+                                                                         g2.motors.limit.steer_right,
+                                                                         rover.G_Dt);
     g2.motors.set_steering(steering_out * 4500.0f);
 }
 

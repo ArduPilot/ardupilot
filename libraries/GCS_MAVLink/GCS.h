@@ -34,7 +34,7 @@
 /// please keep each MSG_ to a single MAVLink message. If need be
 /// create new MSG_ IDs for additional messages on the same
 /// stream
-enum ap_message {
+enum ap_message : uint8_t {
     MSG_HEARTBEAT,
     MSG_ATTITUDE,
     MSG_LOCATION,
@@ -56,7 +56,6 @@ enum ap_message {
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
-    MSG_LIMITS_STATUS,
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
@@ -93,7 +92,7 @@ enum ap_message {
         stream_name ## _msgs,                   \
         ARRAY_SIZE(stream_name ## _msgs)        \
     }
-#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+#define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
 
 ///
 /// @class	GCS_MAVLINK
@@ -129,17 +128,19 @@ public:
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
     // kept in the same order
-    enum streams {STREAM_RAW_SENSORS,
-                  STREAM_EXTENDED_STATUS,
-                  STREAM_RC_CHANNELS,
-                  STREAM_RAW_CONTROLLER,
-                  STREAM_POSITION,
-                  STREAM_EXTRA1,
-                  STREAM_EXTRA2,
-                  STREAM_EXTRA3,
-                  STREAM_PARAMS,
-                  STREAM_ADSB,
-                  NUM_STREAMS};
+    enum streams : uint8_t {
+        STREAM_RAW_SENSORS,
+        STREAM_EXTENDED_STATUS,
+        STREAM_RC_CHANNELS,
+        STREAM_RAW_CONTROLLER,
+        STREAM_POSITION,
+        STREAM_EXTRA1,
+        STREAM_EXTRA2,
+        STREAM_EXTRA3,
+        STREAM_PARAMS,
+        STREAM_ADSB,
+        NUM_STREAMS
+    };
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
@@ -176,6 +177,7 @@ public:
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
     void send_sensor_offsets();
+    virtual void send_simstate() const;
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -188,7 +190,8 @@ public:
     void send_named_float(const char *name, float value) const;
     void send_home() const;
     void send_ekf_origin() const;
-    void send_servo_output_raw(bool hil);
+    virtual void send_position_target_global_int() { };
+    void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
 
@@ -232,8 +235,8 @@ public:
     FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
 
     struct stream_entries {
-        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
-        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const streams stream_id;
+        const ap_message *ap_message_ids;
         const uint8_t num_ap_message_ids;
     };
     // vehicle subclass cpp files should define this:
@@ -317,7 +320,18 @@ protected:
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
 
+    void send_timesync();
+    // returns the time a timesync message was most likely received:
+    uint64_t timesync_receive_timestamp_ns() const;
+    // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
+    uint64_t timesync_timestamp_ns() const;
     void handle_timesync(mavlink_message_t *msg);
+    struct {
+        int64_t sent_ts1;
+        uint32_t last_sent_ms;
+        const uint16_t interval_ms = 10000;
+    }  _timesync_request;
+
     void handle_statustext(mavlink_message_t *msg);
 
     bool telemetry_delayed() const;

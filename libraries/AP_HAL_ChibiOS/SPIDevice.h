@@ -76,6 +76,12 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
+    /* 
+     *  send N bytes of clock pulses without taking CS. This is used
+     *  when initialising microSD interfaces over SPI
+    */
+    bool clock_pulse(uint32_t len) override;
+    
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
 
@@ -87,6 +93,10 @@ public:
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
     bool set_chip_select(bool set) override;
+
+    bool acquire_bus(bool acquire, bool skip_cs);
+
+    SPIDriver * get_driver();
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // used to measure clock frequencies

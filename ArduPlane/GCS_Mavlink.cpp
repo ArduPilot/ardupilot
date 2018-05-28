@@ -192,8 +192,12 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
         nav_controller->crosstrack_error());
 }
 
-void Plane::send_position_target_global_int(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_position_target_global_int()
 {
+    if (plane.control_mode == MANUAL) {
+        return;
+    }
+    Location &next_WP_loc = plane.next_WP_loc;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -259,12 +263,12 @@ static mavlink_hil_state_t last_hil_state;
 #endif
 
 // report simulator state
-void Plane::send_simstate(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_simstate() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
+    GCS_MAVLINK::send_simstate();
 #elif HIL_SUPPORT
-    if (g.hil_mode == 1) {
+    if (plane.g.hil_mode == 1) {
         mavlink_msg_simstate_send(chan,
                                   last_hil_state.roll,
                                   last_hil_state.pitch,
@@ -405,28 +409,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         }
         break;
 
-    case MSG_POSITION_TARGET_GLOBAL_INT:
-        if (plane.control_mode != MANUAL) {
-            CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
-            plane.send_position_target_global_int(chan);
-        }
-        break;
-
     case MSG_SERVO_OUT:
 #if HIL_SUPPORT
         if (plane.g.hil_mode == 1) {
             CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
             plane.send_servo_out(chan);
         }
-#endif
-        break;
-
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-#if HIL_SUPPORT
-        send_servo_output_raw(plane.g.hil_mode);
-#else
-        send_servo_output_raw(false);
 #endif
         break;
 
@@ -440,13 +428,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         plane.send_fence_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        plane.send_simstate(chan);
-        CHECK_PAYLOAD_SIZE2(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_TERRAIN:
@@ -618,12 +599,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_CURRENT_WAYPOINT,
@@ -635,18 +616,18 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_FENCE_STATUS,
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
     MSG_SERVO_OUT,
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
     MSG_RPM,
@@ -654,10 +635,10 @@ static const uint8_t STREAM_EXTRA1_msgs[] = {
     MSG_PID_TUNING,
     MSG_LANDING
 };
-static const uint8_t STREAM_EXTRA2_msgs[] = {
+static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_WIND,
@@ -676,7 +657,7 @@ static const uint8_t STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 };
-static const uint8_t STREAM_ADSB_msgs[] = {
+static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE
 };
 

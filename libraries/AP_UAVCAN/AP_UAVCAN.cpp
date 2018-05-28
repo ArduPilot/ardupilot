@@ -71,8 +71,20 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 0),
 
+    // @Param: SRV_RT
+    // @DisplayName: Servo output rate
+    // @Description: Maximum transmit rate for servo outputs
+    // @Range: 1 200
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
+    
     AP_GROUPEND
 };
+
+// this is the timeout in milliseconds for periodic message types. We
+// set this to 1 to minimise resend of stale msgs
+#define CAN_PERIODIC_TX_TIMEOUT_MS 2
 
 static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
 {
@@ -348,8 +360,9 @@ AP_UAVCAN::AP_UAVCAN() :
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-        _rco_conf[i].active = false;
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+        _SRV_conf[i].esc_pending = false;
+        _SRV_conf[i].servo_pending = false;
     }
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
@@ -387,7 +400,7 @@ AP_UAVCAN::AP_UAVCAN() :
         _bi_BM_listeners[i] = nullptr;
     }
 
-    _rc_out_sem = hal.util->new_semaphore();
+    SRV_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
@@ -501,15 +514,15 @@ bool AP_UAVCAN::try_init(void)
                     }
 
                     act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
-                    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
                     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
-                    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
                     rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
-                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+                    rgb_led[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
                     rgb_led[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
                     _led_conf.devices_count = 0;
@@ -537,21 +550,17 @@ bool AP_UAVCAN::try_init(void)
     return false;
 }
 
-bool AP_UAVCAN::rc_out_sem_take()
+void AP_UAVCAN::SRV_sem_take()
 {
-    bool sem_ret = _rc_out_sem->take(10);
-    if (!sem_ret) {
-        debug_uavcan(1, "AP_UAVCAN RCOut semaphore fail\n\r");
-    }
-    return sem_ret;
+    SRV_sem->take_blocking();
 }
 
-void AP_UAVCAN::rc_out_sem_give()
+void AP_UAVCAN::SRV_sem_give()
 {
-    _rc_out_sem->give();
+    SRV_sem->give();
 }
 
-void AP_UAVCAN::rc_out_send_servos(void)
+void AP_UAVCAN::SRV_send_servos(void)
 {
     uint8_t starting_servo = 0;
     bool repeat_send;
@@ -560,9 +569,11 @@ void AP_UAVCAN::rc_out_send_servos(void)
         repeat_send = false;
         uavcan::equipment::actuator::ArrayCommand msg;
 
+        SRV_sem_take();
+        
         uint8_t i;
         // UAVCAN can hold maximum of 15 commands in one frame
-        for (i = 0; starting_servo < UAVCAN_RCO_NUMBER && i < 15; starting_servo++) {
+        for (i = 0; starting_servo < UAVCAN_SRV_NUMBER && i < 15; starting_servo++) {
             uavcan::equipment::actuator::Command cmd;
 
             /*
@@ -574,14 +585,14 @@ void AP_UAVCAN::rc_out_send_servos(void)
              * physically possible throws at [-1:1] limits.
              */
 
-            if (_rco_conf[starting_servo].active && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
                 cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
 
                 // TODO: failsafe, safety
-                cmd.command_value = constrain_float(((float) _rco_conf[starting_servo].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
+                cmd.command_value = constrain_float(((float) _SRV_conf[starting_servo].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
 
                 msg.commands.push_back(cmd);
 
@@ -589,6 +600,8 @@ void AP_UAVCAN::rc_out_send_servos(void)
             }
         }
 
+        SRV_sem_give();
+        
         if (i > 0) {
             act_out_array[_uavcan_i]->broadcast(msg);
 
@@ -599,7 +612,7 @@ void AP_UAVCAN::rc_out_send_servos(void)
     } while (repeat_send);
 }
 
-void AP_UAVCAN::rc_out_send_esc(void)
+void AP_UAVCAN::SRV_send_esc(void)
 {
     static const int cmd_max = uavcan::equipment::esc::RawCommand::FieldTypes::cmd::RawValueType::max();
     uavcan::equipment::esc::RawCommand esc_msg;
@@ -608,10 +621,10 @@ void AP_UAVCAN::rc_out_send_esc(void)
     uint8_t k = 0;
 
     // find out how many esc we have enabled and if they are active at all
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
-            if (_rco_conf[i].active) {
+            if (_SRV_conf[i].esc_pending) {
                 active_esc_num++;
             }
         }
@@ -621,12 +634,12 @@ void AP_UAVCAN::rc_out_send_esc(void)
     if (active_esc_num > 0) {
         k = 0;
 
+        SRV_sem_take();
+        
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
-            uavcan::equipment::actuator::Command cmd;
-
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse) + 1.0) / 2.0;
+                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
                 scaled = constrain_float(scaled, 0, cmd_max);
 
@@ -637,6 +650,7 @@ void AP_UAVCAN::rc_out_send_esc(void)
 
             k++;
         }
+        SRV_sem_give();
 
         esc_raw[_uavcan_i]->broadcast(esc_msg);
     }
@@ -649,42 +663,46 @@ void AP_UAVCAN::do_cyclic(void)
         return;
     }
 
-	auto *node = get_node();
+    auto *node = get_node();
 
-	const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+    const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
 
-	if (error < 0) {
-		hal.scheduler->delay_microseconds(1000);
-		return;
-	}
+    if (error < 0) {
+        hal.scheduler->delay_microseconds(100);
+        return;
+    }
 
-	if (rc_out_sem_take()) {
+    if (_SRV_armed) {
+        bool sent_servos = false;
+            
+        if (_servo_bm > 0) {
+            // if we have any Servos in bitmask
+            uint32_t now = AP_HAL::micros();
+            const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+            if (now - _SRV_last_send_us >= servo_period_us) {
+                _SRV_last_send_us = now;
+                SRV_send_servos();
+                sent_servos = true;
+                for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                    _SRV_conf[i].servo_pending = false;
+                }
+            }
+        }
 
-		if (_rco_armed) {
-
-			// if we have any Servos in bitmask
-			if (_servo_bm > 0) {
-				rc_out_send_servos();
-			}
-
-			// if we have any ESC's in bitmask
-			if (_esc_bm > 0) {
-				rc_out_send_esc();
-			}
-		}
-
-		for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-			// mark as transmitted
-			_rco_conf[i].active = false;
-		}
-
-		rc_out_sem_give();
-	}
+        // if we have any ESC's in bitmask
+        if (_esc_bm > 0 && !sent_servos) {
+            SRV_send_esc();
+        }
+        
+        for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+            _SRV_conf[i].esc_pending = false;
+        }
+    }
 
     if (led_out_sem_take()) {
 
-    	led_out_send();
-    	led_out_sem_give();
+        led_out_send();
+        led_out_sem_give();
     }
 
 }
@@ -748,43 +766,64 @@ uavcan::Node<0> *AP_UAVCAN::get_node()
     return _node;
 }
 
-void AP_UAVCAN::rco_set_safety_pwm(uint32_t chmask, uint16_t pulse_len)
+void AP_UAVCAN::SRV_set_safety_pwm(uint32_t chmask, uint16_t pulse_len)
 {
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if (chmask & (((uint32_t) 1) << i)) {
-            _rco_conf[i].safety_pulse = pulse_len;
+            _SRV_conf[i].safety_pulse = pulse_len;
         }
     }
 }
 
-void AP_UAVCAN::rco_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len)
+void AP_UAVCAN::SRV_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len)
 {
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if (chmask & (((uint32_t) 1) << i)) {
-            _rco_conf[i].failsafe_pulse = pulse_len;
+            _SRV_conf[i].failsafe_pulse = pulse_len;
         }
     }
 }
 
-void AP_UAVCAN::rco_force_safety_on(void)
+void AP_UAVCAN::SRV_force_safety_on(void)
 {
-    _rco_safety = true;
+    _SRV_safety = true;
 }
 
-void AP_UAVCAN::rco_force_safety_off(void)
+void AP_UAVCAN::SRV_force_safety_off(void)
 {
-    _rco_safety = false;
+    _SRV_safety = false;
 }
 
-void AP_UAVCAN::rco_arm_actuators(bool arm)
+void AP_UAVCAN::SRV_arm_actuators(bool arm)
 {
-    _rco_armed = arm;
+    _SRV_armed = arm;
 }
 
-void AP_UAVCAN::rco_write(uint16_t pulse_len, uint8_t ch)
+void AP_UAVCAN::SRV_write(uint16_t pulse_len, uint8_t ch)
 {
-    _rco_conf[ch].pulse = pulse_len;
-    _rco_conf[ch].active = true;
+    _SRV_conf[ch].pulse = pulse_len;
+    _SRV_conf[ch].esc_pending = true;
+    _SRV_conf[ch].servo_pending = true;
+}
+
+void AP_UAVCAN::SRV_push_servos()
+{
+    SRV_sem_take();
+
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        // Check if this channels has any function assigned
+        if (SRV_Channels::channel_function(i)) {
+            SRV_write(SRV_Channels::srv_channel(i)->get_output_pwm(), i);
+        }
+    }
+
+    SRV_sem_give();
+    
+    if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
+        SRV_arm_actuators(true);
+    } else {
+        SRV_arm_actuators(false);
+    }
 }
 
 uint8_t AP_UAVCAN::find_gps_without_listener(void)

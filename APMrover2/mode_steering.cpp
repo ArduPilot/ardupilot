@@ -26,7 +26,8 @@ void ModeSteering::update()
         // run steering turn rate controller and throttle controller
         const float steering_out = attitude_control.get_steering_out_rate(target_turn_rate,
                                                                           g2.motors.limit.steer_left,
-                                                                          g2.motors.limit.steer_right);
+                                                                          g2.motors.limit.steer_right,
+                                                                          rover.G_Dt);
         g2.motors.set_steering(steering_out * 4500.0f);
     } else {
         // In steering mode we control lateral acceleration directly.

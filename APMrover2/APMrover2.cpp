@@ -49,8 +49,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinders,      50,    200),
     SCHED_TASK(update_current_mode,    50,    200),
     SCHED_TASK(set_servos,             50,    200),
-    SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300),
-    SCHED_TASK(update_GPS_10Hz,        10,    300),
+    SCHED_TASK(update_GPS,             50,    300),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
@@ -158,6 +157,9 @@ void Rover::ahrs_update()
     ahrs.set_fly_forward(!in_reverse);
 
     ahrs.update();
+
+    // update position
+    have_position = ahrs.get_position(current_loc);
 
     // update home from EKF if necessary
     update_home_from_EKF();
@@ -301,10 +303,9 @@ void Rover::one_second_loop(void)
     update_sensor_status_flags();
 }
 
-void Rover::update_GPS_10Hz(void)
+void Rover::update_GPS(void)
 {
-    have_position = ahrs.get_position(current_loc);
-
+    gps.update();
     if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 

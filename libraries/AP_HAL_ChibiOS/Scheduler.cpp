@@ -30,6 +30,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "shared_dma.h"
+#include "sdcard.h"
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -241,15 +242,19 @@ void Scheduler::reboot(bool hold_in_bootloader)
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
 
+    // stop sdcard driver, if active
+    sdcard_stop();
+    
     // lock all shared DMA channels. This has the effect of waiting
     // till the sensor buses are idle
     Shared_DMA::lock_all();
-    
-    // delay to ensure the async force_saftey operation completes
-    delay(500);
 
-    // disable interrupts during reboot
-    chSysDisable();
+    // disable interrupts
+    disable_interrupts_save();
+
+    // wait for 1ms to ensure all pending DMAs are complete
+    uint32_t start_us = AP_HAL::micros();
+    while (AP_HAL::micros() - start_us < 1000) ; // busy loop
 
     // reboot
     NVIC_SystemReset();
@@ -313,7 +318,7 @@ void Scheduler::_uavcan_thread(void *arg)
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(1000);
+        sched->delay_microseconds(100);
         for (int i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
             if(hal.can_mgr[i] != nullptr) {
                 CANManager::from(hal.can_mgr[i])->_timer_tick();

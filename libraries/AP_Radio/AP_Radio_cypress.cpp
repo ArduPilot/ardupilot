@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -1138,7 +1138,7 @@ void AP_Radio_cypress::irq_handler(void)
 
     switch (state) {
     case STATE_AUTOBIND:
-        // fallthrough
+        FALLTHROUGH;
     case STATE_RECV:
     case STATE_BIND:
         irq_handler_recv(rx_status);
@@ -1191,7 +1191,7 @@ void AP_Radio_cypress::irq_timeout(void)
     case STATE_AUTOBIND:
     case STATE_SEND_TELEM_WAIT:
         state = STATE_RECV;
-        // fall through
+        FALLTHROUGH;
     default:
         write_register(CYRF_XACT_CFG, CYRF_MODE_SYNTH_RX | CYRF_FRC_END);
         write_register(CYRF_RX_ABORT, 0);

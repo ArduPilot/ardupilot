@@ -114,6 +114,17 @@ void UARTDriver::thread_init(void)
 }
 
 
+/*
+  hook to allow printf() to work on hal.console when we don't have a
+  dedicated debug console
+ */
+static int hal_console_vprintf(const char *fmt, va_list arg)
+{
+    hal.console->vprintf(fmt, arg);
+    return 1; // wrong length, but doesn't matter for what this is used for
+}
+
+
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
@@ -261,6 +272,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     // setup flow control
     set_flow_control(_flow_control);
+
+    if (serial_num == 0 && _initialised) {
+#ifndef HAL_STDOUT_SERIAL
+        // setup hal.console to take printf() output
+        vprintf_console_hook = hal_console_vprintf;
+#endif
+    }
 }
 
 void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
@@ -970,12 +988,12 @@ void UARTDriver::receive_timestamp_update(void)
   
   A return value of zero means the HAL does not support this API
 */
-uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
     if (_baudrate > 0 && !sdef.is_usb) {
         // assume 10 bits per byte. For USB we assume zero transport delay
-        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * (nbytes + available());
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;
