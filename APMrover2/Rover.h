@@ -327,8 +327,8 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt;
 
-    // set if we are driving backwards
-    bool in_reverse;
+    // flyforward timer
+    uint32_t flyforward_start_ms;
 
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
@@ -525,7 +525,7 @@ private:
     // system.cpp
     void init_ardupilot();
     void startup_ground(void);
-    void set_reverse(bool reverse);
+    void update_ahrs_flyforward();
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
