@@ -93,7 +93,7 @@ public:
     float get_accel_max() const { return MAX(_throttle_accel_max, 0.0f); }
 
     // get throttle/speed controller maximum deceleration
-    float get_decel_max();
+    float get_decel_max() const;
 
     // get latest desired speed recorded during call to get_throttle_out_speed.  For reporting purposes only
     float get_desired_speed() const;
@@ -102,7 +102,7 @@ public:
     float get_desired_speed_accel_limited(float desired_speed, float dt) const;
 
     // get minimum stopping distance (in meters) given a speed (in m/s)
-    float get_stopping_distance(float speed);
+    float get_stopping_distance(float speed) const;
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
