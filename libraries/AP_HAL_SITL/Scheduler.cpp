@@ -23,6 +23,7 @@ bool Scheduler::_in_timer_proc = false;
 AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
+bool Scheduler::_should_reboot = false;
 
 Scheduler::Scheduler(SITL_State *sitlState) :
     _sitlState(sitlState),
@@ -130,7 +131,7 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    hal.uartA->printf("REBOOT NOT IMPLEMENTED\r\n\n");
+    _should_reboot = true;
 }
 
 void Scheduler::_run_timer_procs(bool called_from_isr)
