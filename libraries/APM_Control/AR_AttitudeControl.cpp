@@ -462,7 +462,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     return true;
 }
 
-float AR_AttitudeControl::get_decel_max()
+float AR_AttitudeControl::get_decel_max() const
 {
     if (is_positive(_throttle_decel_max)) {
         return _throttle_decel_max;
@@ -507,7 +507,7 @@ float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, f
 }
 
 // get minimum stopping distance (in meters) given a speed (in m/s)
-float AR_AttitudeControl::get_stopping_distance(float speed)
+float AR_AttitudeControl::get_stopping_distance(float speed) const
 {
     // get maximum vehicle deceleration
     const float accel_max = get_accel_max();
