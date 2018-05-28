@@ -109,10 +109,7 @@ void Plane::init_home()
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
 
-    ahrs.set_home(gps.location());
-    ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-    ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home();
+    ahrs.set_home(gps.location(), HOME_SET_NOT_LOCKED);
 
     // Save Home to EEPROM
     mission.write_home_to_storage();
@@ -141,9 +138,7 @@ void Plane::update_home()
     if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
         Location loc;
         if(ahrs.get_position(loc)) {
-            ahrs.set_home(loc);
-            ahrs.Log_Write_Home_And_Origin();
-            gcs().send_home();
+            ahrs.set_home(loc, HOME_SET_NOT_LOCKED);
         }
     }
     barometer.update_calibration();

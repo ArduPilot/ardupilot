@@ -72,15 +72,20 @@ bool Copter::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    const bool home_was_set = ahrs.home_is_set();
+
     // set ahrs home (used for RTL)
-    ahrs.set_home(loc);
+    if (lock) {
+        ahrs.set_home(loc, HOME_SET_AND_LOCKED);
+    } else {
+        ahrs.set_home(loc, HOME_SET_NOT_LOCKED);
+    }
 
     // init inav and compass declination
-    if (!ahrs.home_is_set()) {
+    if (!home_was_set) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
-        // record home is set
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
+
         Log_Write_Event(DATA_SET_HOME);
 
 #if MODE_AUTO_ENABLED == ENABLED
@@ -93,18 +98,6 @@ bool Copter::set_home(const Location& loc, bool lock)
         }
 #endif
     }
-
-    // lock home position
-    if (lock) {
-        ahrs.set_home_status(HOME_SET_AND_LOCKED);
-    }
-
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
 
     // return success
     return true;

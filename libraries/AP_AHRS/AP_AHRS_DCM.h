@@ -93,7 +93,8 @@ public:
 
     bool            use_compass() override;
 
-    void set_home(const Location &loc) override;
+    void set_home(const Location &loc,
+                  enum HomeState new_status) override;
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
