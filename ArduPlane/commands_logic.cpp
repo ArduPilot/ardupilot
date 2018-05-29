@@ -901,10 +901,13 @@ void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        set_home_persistently(gps.location());
+        if (!set_home_persistently(gps.location())) {
+            // silently ignore error
+        }
     } else {
-        AP::ahrs().set_home(cmd.content.location);
-        gcs().send_ekf_origin();
+        if (AP::ahrs().set_home(cmd.content.location)) {
+            gcs().send_ekf_origin();
+        }
     }
 }
 

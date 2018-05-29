@@ -382,7 +382,9 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 5;
 
             } else {
-                set_home_persistently(gps.location());
+                if (!set_home_persistently(gps.location())) {
+                    // silently ignore failure...
+                }
 
                 next_WP_loc = prev_WP_loc = home;
 
