@@ -383,11 +383,12 @@ AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin)
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new PX4AnalogSource(pin, 0.0f);
-            return _channels[j];
+            return _channels[j]; // no existing match, create a new source
+        } else if (_channels[j]->get_pin() == pin){
+            return _channels[j]; // we have found an existing match
         }
     }
-    hal.console->printf("Out of analog channels\n");
-    return nullptr;
+    return nullptr; // Out of sources, no existing match
 }
 
 #endif // CONFIG_HAL_BOARD

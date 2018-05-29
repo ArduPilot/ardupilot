@@ -21,16 +21,17 @@ class PX4::PX4AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class PX4::PX4AnalogIn;
     PX4AnalogSource(int16_t pin, float initial_value);
-    float read_average();
-    float read_latest();
-    void set_pin(uint8_t p);
-    float voltage_average();
-    float voltage_latest();
-    float voltage_average_ratiometric();
+    float read_average() override;
+    float read_latest() override;
+    void set_pin(uint8_t p) override;
+    uint8_t get_pin() { return _pin; }
+    float voltage_average() override;
+    float voltage_latest() override;
+    float voltage_average_ratiometric() override;
 
     // implement stop pins
-    void set_stop_pin(uint8_t p);
-    void set_settle_time(uint16_t settle_time_ms) { _settle_time_ms = settle_time_ms; }
+    void set_stop_pin(uint8_t p) override;
+    void set_settle_time(uint16_t settle_time_ms) override { _settle_time_ms = settle_time_ms; }
 
 private:
     // what pin it is attached to
