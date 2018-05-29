@@ -94,6 +94,7 @@ def get_mcu_lib(mcu):
 
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
+    global pincount
     lib = get_mcu_lib(mcu_type)
     if hasattr(lib, 'pincount'):
         pincount = lib.pincount
