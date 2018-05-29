@@ -371,7 +371,6 @@ protected:
     virtual int32_t global_position_int_relative_alt() const;
 
     // these methods are called after vfr_hud_velned is updated
-    virtual bool vfr_hud_make_alt_relative() const { return false; }
     virtual float vfr_hud_climbrate() const;
     virtual float vfr_hud_airspeed() const;
     virtual int16_t vfr_hud_throttle() const { return 0; }
