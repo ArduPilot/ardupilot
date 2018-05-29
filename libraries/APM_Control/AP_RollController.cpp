@@ -192,7 +192,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 }
 
 /*
- Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
  Inputs are: 
  1) demanded bank angle in centi-degrees
