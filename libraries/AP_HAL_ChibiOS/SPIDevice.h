@@ -113,6 +113,7 @@ private:
     char *pname;
     bool cs_forced;
     static void *spi_thread(void *arg);
+    static uint16_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
     uint16_t derive_freq_flag(uint32_t _frequency);
 };
 
