@@ -777,6 +777,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1, 1.0f)) {
                 plane.set_home_persistently(AP::gps().location());
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
@@ -811,6 +812,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     new_home_loc.alt += plane.ahrs.get_home().alt;
                 }
                 plane.set_home(new_home_loc);
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
@@ -1072,6 +1074,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1,1.0f)) {
                 plane.set_home_persistently(AP::gps().location());
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
@@ -1091,6 +1094,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
                 plane.set_home(new_home_loc);
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
