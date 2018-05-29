@@ -330,7 +330,6 @@ bool AP_IOMCU::program(uint32_t fw_size)
  */
 bool AP_IOMCU::verify_rev2(uint32_t fw_size)
 {
-    ssize_t count;
     bool ret;
     size_t sent = 0;
 
@@ -368,7 +367,7 @@ bool AP_IOMCU::verify_rev2(uint32_t fw_size)
             }
         }
 
-        sent += count;
+        sent += n;
 
         ret = get_sync();
         if (!ret) {
