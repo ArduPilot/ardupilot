@@ -10,6 +10,21 @@ build = {
     "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F7xx/platform.mk"
     }
 
+pincount = {
+    'A': 16,
+    'B': 16,
+    'C': 16,
+    'D': 16,
+    'E': 16,
+    'F': 16,
+    'G': 16,
+    'H': 16,
+    'I': 16,
+    'J': 0,
+    'K': 0
+}
+
+
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
 	"ADC1"    	:	[(2,0,0),(2,4,0)],
