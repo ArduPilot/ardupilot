@@ -92,6 +92,18 @@ def get_mcu_lib(mcu):
     except ImportError:
         error("Unable to find module for MCU %s" % mcu)
 
+def setup_mcu_type_defaults():
+    '''setup defaults for given mcu type'''
+    lib = get_mcu_lib(mcu_type)
+    if hasattr(lib, 'pincount'):
+        pincount = lib.pincount
+        ports = pincount.keys()
+    # setup default as input pins
+    for port in ports:
+        portmap[port] = []
+        for pin in range(pincount[port]):
+            portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
+
 def get_alt_function(mcu, pin, function):
     '''return alternative function number for a pin'''
     lib = get_mcu_lib(mcu)
@@ -280,13 +292,6 @@ class generic_pin(object):
             str += " PWM%u" % self.extra_value('PWM', type=int)
         return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type,
                                   str)
-
-
-# setup default as input pins
-for port in ports:
-    portmap[port] = []
-    for pin in range(pincount[port]):
-        portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
 
 
 def get_config(name, column=0, required=True, default=None, type=None):
@@ -1040,6 +1045,7 @@ def process_line(line):
     if a[0] == 'MCU':
         global mcu_type
         mcu_type = a[2]
+        setup_mcu_type_defaults()
     if a[0].startswith('P') and a[0][1] in ports:
         # it is a port/pin definition
         try:
