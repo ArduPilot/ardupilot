@@ -1753,20 +1753,13 @@ void GCS_MAVLINK::send_vfr_hud()
     ahrs.get_position(global_position_current_loc);
     ahrs.get_velocity_NED(vfr_hud_velned);
 
-    float alt;
-    if (vfr_hud_make_alt_relative()) {
-        ahrs.get_relative_position_D_home(alt);
-        alt = -alt;
-    } else {
-        alt = global_position_current_loc.alt / 100.0f;
-    }
     mavlink_msg_vfr_hud_send(
         chan,
         vfr_hud_airspeed(),
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         vfr_hud_throttle(),
-        alt,
+        global_position_current_loc.alt * 0.01f, // cm -> m
         vfr_hud_climbrate());
 }
 
@@ -2867,7 +2860,7 @@ void GCS_MAVLINK::send_global_position_int()
         global_position_current_loc.lat, // in 1E7 degrees
         global_position_current_loc.lng, // in 1E7 degrees
         global_position_int_alt(),       // millimeters above ground/sea level
-        global_position_int_relative_alt(), // millimeters above ground/sea level
+        global_position_int_relative_alt(), // millimeters above home
         vel.x * 100,                     // X speed cm/s (+ve North)
         vel.y * 100,                     // Y speed cm/s (+ve East)
         vel.z * 100,                     // Z speed cm/s (+ve Down)
