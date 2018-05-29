@@ -327,6 +327,11 @@ void VRBRAINRCOutput::force_safety_off(void)
     _safety_state_request_last_ms = 1;
 }
 
+bool VRBRAINRCOutput::is_forcing_safety(void)
+{
+    return _safety_state_request_last_ms != 0;
+}
+
 void VRBRAINRCOutput::force_safety_pending_requests(void)
 {
     // check if there is a pending saftey_state change. If so (timer != 0) then set it.

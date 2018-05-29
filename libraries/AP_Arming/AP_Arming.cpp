@@ -439,6 +439,16 @@ bool AP_Arming::battery_checks(bool report)
 
 bool AP_Arming::hardware_safety_check(bool report) 
 {
+    // always check that a safety change is not occuring, this should never
+    // occur, but if we are unable to force the safety this could lead to moving
+    // the safety state in flight
+    if (hal.rcout->is_forcing_safety()) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Changing safety switch state");
+        }
+        return false;
+    }
+
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_SWITCH)) {
 

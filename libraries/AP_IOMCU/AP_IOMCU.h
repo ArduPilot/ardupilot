@@ -46,6 +46,9 @@ public:
     // force safety off
     void force_safety_off(void);
 
+    // is forcing safety
+    bool is_forcing_safety(void) { return _forcing_safety; };
+
     // set PWM of channels when safety is on
     void set_safety_pwm(uint16_t chmask, uint16_t period_us);
 
@@ -200,6 +203,9 @@ private:
         uint16_t default_freq = 50;
         uint16_t sbus_rate_hz;
     } rate;
+
+    // safety
+    bool _forcing_safety;
 
     // IMU heater duty cycle
     uint8_t heater_duty_cycle;

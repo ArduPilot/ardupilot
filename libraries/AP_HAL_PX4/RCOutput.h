@@ -25,6 +25,7 @@ public:
     bool     force_safety_on(void) override;
     void     force_safety_off(void) override;
     void     force_safety_no_wait(void) override;
+    bool     is_forcing_safety(void) override;
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
         _esc_pwm_min = min_pwm;
         _esc_pwm_max = max_pwm;

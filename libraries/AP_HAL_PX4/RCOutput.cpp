@@ -337,6 +337,12 @@ void PX4RCOutput::force_safety_no_wait(void)
     }
 }
 
+bool PX4RCOutput::is_forcing_safety(void)
+{
+    // request time not 0 means forcing safety
+    return _safety_state_request_last_ms != 0;
+}
+
 void PX4RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     if (ch >= PX4_NUM_OUTPUT_CHANNELS) {

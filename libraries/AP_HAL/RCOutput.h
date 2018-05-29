@@ -97,6 +97,12 @@ public:
      */
     virtual void     force_safety_off(void) {}
 
+
+    /*
+      is there an ongoing attempt to force the safety
+     */
+    virtual bool     is_forcing_safety(void) { return false; }
+
     /*
       If we support async sends (px4), this will force it to be serviced immediately
      */
