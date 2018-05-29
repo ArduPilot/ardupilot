@@ -1031,7 +1031,7 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
     return ret;
 }
 
-void AP_AHRS_DCM::set_home(const Location &loc)
+bool AP_AHRS_DCM::set_home(const Location &loc)
 {
     _home = loc;
     _home_is_set = true;
@@ -1042,6 +1042,8 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     // send new home and ekf origin to GCS
     gcs().send_home();
     gcs().send_ekf_origin();
+
+    return true;
 }
 
 //  a relative ground position to home in meters, Down
