@@ -36,10 +36,12 @@ extern const AP_HAL::HAL& hal;
 #define SPI2_CLOCK  STM32_PCLK1
 #define SPI3_CLOCK  STM32_PCLK1
 #define SPI4_CLOCK  STM32_PCLK2
+#define SPI5_CLOCK  STM32_PCLK2
+#define SPI6_CLOCK  STM32_PCLK2
 
 // expected bus clock speeds
-static const uint32_t bus_clocks[4] = {
-    SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK
+static const uint32_t bus_clocks[6] = {
+    SPI1_CLOCK, SPI2_CLOCK, SPI3_CLOCK, SPI4_CLOCK, SPI5_CLOCK, SPI6_CLOCK
 };
 
 static const struct SPIDriverInfo {    
@@ -177,10 +179,9 @@ bool SPIDevice::clock_pulse(uint32_t n)
     return true;
 }
 
-uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
+uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
     uint32_t spi_clock_freq = SPI1_CLOCK;
-    uint8_t busid = spi_devices[device_desc.bus].busid;
     if (busid > 0 && busid-1 < ARRAY_SIZE_SIMPLE(bus_clocks)) {
         spi_clock_freq = bus_clocks[busid-1] / 2;
     }
@@ -196,6 +197,12 @@ uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
     // we can just multiply by BR_0 to get the right bits for the desired
     // scaling
     return i * SPI_CR1_BR_0;
+}
+
+uint16_t SPIDevice::derive_freq_flag(uint32_t _frequency)
+{
+    uint8_t busid = spi_devices[device_desc.bus].busid;
+    return derive_freq_flag_bus(busid, _frequency);
 }
 
 bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -360,8 +367,9 @@ void SPIDevice::test_clock_freq(void)
     uint8_t *buf = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(spi_devices); i++) {
         SPIConfig spicfg {};
+        const uint32_t target_freq = 2000000UL;
         // use a clock divisor of 256 for maximum resolution
-        spicfg.cr1 = SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0; // clock / 256
+        spicfg.cr1 = derive_freq_flag_bus(spi_devices[i].busid, target_freq);
         spiAcquireBus(spi_devices[i].driver);
         spiStart(spi_devices[i].driver, &spicfg);
         uint32_t t0 = AP_HAL::micros();
@@ -369,7 +377,7 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t1 = AP_HAL::micros();
         spiStop(spi_devices[i].driver);
         spiReleaseBus(spi_devices[i].driver);
-        hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(256ULL * 1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
+        hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
     }
     hal.util->free_type(buf, len, AP_HAL::Util::MEM_DMA_SAFE);
 }
