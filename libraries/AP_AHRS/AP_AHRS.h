@@ -462,7 +462,7 @@ public:
     // set the home location in 10e7 degrees. This should be called
     // when the vehicle is at this position. It is assumed that the
     // current barometer and GPS altitudes correspond to this altitude
-    virtual void set_home(const Location &loc) = 0;
+    virtual bool set_home(const Location &loc) WARN_IF_UNUSED = 0;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
