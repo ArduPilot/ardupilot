@@ -776,19 +776,21 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        RC_Channels::set_override(0, packet.chan1_raw);
-        RC_Channels::set_override(1, packet.chan2_raw);
-        RC_Channels::set_override(2, packet.chan3_raw);
-        RC_Channels::set_override(3, packet.chan4_raw);
-        RC_Channels::set_override(4, packet.chan5_raw);
-        RC_Channels::set_override(5, packet.chan6_raw);
-        RC_Channels::set_override(6, packet.chan7_raw);
-        RC_Channels::set_override(7, packet.chan8_raw);
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
-        rover.failsafe.rc_override_timer = AP_HAL::millis();
+        rover.failsafe.rc_override_timer = tnow;
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
@@ -805,13 +807,15 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         if (packet.target != rover.g.sysid_this_mav) {
             break; // only accept control aimed at us
         }
+
+        uint32_t tnow = AP_HAL::millis();
         
         const int16_t roll = (packet.y == INT16_MAX) ? 0 : rover.channel_steer->get_radio_min() + (rover.channel_steer->get_radio_max() - rover.channel_steer->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         const int16_t throttle = (packet.z == INT16_MAX) ? 0 : rover.channel_throttle->get_radio_min() + (rover.channel_throttle->get_radio_max() - rover.channel_throttle->get_radio_min()) * (packet.z + 1000) / 2000.0f;
-        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll);
-        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle);
+        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
+        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
 
-        rover.failsafe.rc_override_timer = AP_HAL::millis();
+        rover.failsafe.rc_override_timer = tnow;
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
