@@ -138,6 +138,11 @@ configuration in order to save typing.
         default=False,
         help='Force a static build')
 
+    g.add_option('--disable-werror',
+        action='store_true',
+        default=False,
+        help='Disable builds with -Werror')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
