@@ -467,7 +467,7 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
-    def wait_altitude(self, alt_min, alt_max, timeout=30):
+    def wait_altitude(self, alt_min, alt_max, timeout=30, relative=False):
         """Wait for a given altitude range."""
         climb_rate = 0
         previous_alt = 0
@@ -476,12 +476,19 @@ class AutoTest(ABC):
         self.progress("Waiting for altitude between %u and %u" %
                       (alt_min, alt_max))
         while self.get_sim_time() < tstart + timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            climb_rate = m.alt - previous_alt
-            previous_alt = m.alt
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            if m is None:
+                continue
+            if relative:
+                alt = m.relative_alt/1000.0 # mm -> m
+            else:
+                alt = m.alt/1000.0 # mm -> m
+
+            climb_rate = alt - previous_alt
+            previous_alt = alt
             self.progress("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u"
-                          % (m.alt, alt_min, climb_rate))
-            if m.alt >= alt_min and m.alt <= alt_max:
+                          % (alt, alt_min, climb_rate))
+            if alt >= alt_min and alt <= alt_max:
                 self.progress("Altitude OK")
                 return True
         self.progress("Failed to attain altitude range")
