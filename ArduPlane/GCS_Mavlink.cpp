@@ -748,7 +748,9 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 
 bool GCS_MAVLINK_Plane::set_home_to_current_location(bool lock)
 {
-    plane.set_home_persistently(AP::gps().location());
+    if (!plane.set_home_persistently(AP::gps().location())) {
+        return false;
+    }
     if (lock) {
         AP::ahrs().lock_home();
     }
@@ -756,7 +758,9 @@ bool GCS_MAVLINK_Plane::set_home_to_current_location(bool lock)
 }
 bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool lock)
 {
-    AP::ahrs().set_home(loc);
+    if (!AP::ahrs().set_home(loc)) {
+        return false;
+    }
     if (lock) {
         AP::ahrs().lock_home();
     }
@@ -968,7 +972,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // param6 : longitude
         // param7 : altitude (absolute)
         if (is_equal(packet.param1,1.0f)) {
-            plane.set_home_persistently(AP::gps().location());
+            if (!plane.set_home_persistently(AP::gps().location())) {
+                return MAV_RESULT_FAILED;
+            }
             AP::ahrs().lock_home();
             return MAV_RESULT_ACCEPTED;
         } else {
@@ -988,7 +994,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
             new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
             new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            set_home(new_home_loc, true);
+            if (!set_home(new_home_loc, true)) {
+                return MAV_RESULT_FAILED;
+            }
             return MAV_RESULT_ACCEPTED;
         }
         break;
@@ -1298,7 +1306,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
         new_home_loc.alt = packet.altitude / 10;
-        set_home(new_home_loc, false);
+        if (!set_home(new_home_loc, false)) {
+            // silently fails...
+            break;
+        }
         break;
     }
 
