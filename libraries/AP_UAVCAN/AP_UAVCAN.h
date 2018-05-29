@@ -6,6 +6,7 @@
 #define AP_UAVCAN_H_
 
 #include <uavcan/uavcan.hpp>
+#include <vector>
 
 #include <AP_HAL/CAN.h>
 #include <AP_HAL/Semaphores.h>
@@ -47,6 +48,8 @@
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 #define AP_UAVCAN_LED_DELAY_MILLISECONDS 50
 
+#define AP_UAVCAN_MAX_NODESTATUS_LIST_SIZE 10
+
 class AP_UAVCAN {
 public:
     AP_UAVCAN();
@@ -77,6 +80,22 @@ public:
 
     // Updates all listeners of specified node
     void update_gps_state(uint8_t node);
+
+    struct nodeStatus_info {
+        uavcan::protocol::NodeStatus nodeStatus;
+        uint8_t id;
+        uint32_t timestamp_ms;
+     };
+     std::vector<nodeStatus_info> _nodeStatus_info;
+
+     struct redundancy_info {
+         uint32_t task_last_ms;
+         uint8_t highest_active_nodeId;
+         uint8_t highest_active_nodeId_index;
+         AP_Int8 enabled;
+         bool allow_outputs;
+     };
+     redundancy_info _redundancy;
 
     struct Baro_Info {
         float pressure;
@@ -250,6 +269,8 @@ private:
         {
         }
     };
+
+    void redundancy_task();
 
     uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 

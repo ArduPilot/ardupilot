@@ -15,6 +15,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
+#include <uavcan/protocol/NodeStatus.hpp>
+
 // Zubax GPS and other GPS, baro, magnetic sensors
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
@@ -78,6 +80,13 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
+
+    // @Param: REDUN
+    // @DisplayName: Redundancy
+    // @Description: Enable redundancy by disabling SRV/ESC outputs if a higher NodeID is active on the bus
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("REDUN", 6, AP_UAVCAN, _redundancy.enabled, 0),
     
     AP_GROUPEND
 };
@@ -272,6 +281,43 @@ static void magnetic_cb_2_1(const uavcan::ReceivedDataStructure<uavcan::equipmen
 static void (*magnetic_cb_2_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
         = { magnetic_cb_2_0, magnetic_cb_2_1 };
 
+
+static void nodestatus_st_cb(const uavcan::ReceivedDataStructure<uavcan::protocol::NodeStatus>& msg, uint8_t mgr)
+{
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    const uint8_t remote_nodeID = msg.getSrcNodeID().get();
+
+    // add it to our list
+    for (uint8_t i=0; i <= ap_uavcan->_nodeStatus_info.size(); i++) {
+        if (ap_uavcan->_nodeStatus_info[i].id == remote_nodeID) {
+            // already in the list, update it
+            memcpy(&ap_uavcan->_nodeStatus_info[i].nodeStatus, &msg, sizeof(msg));
+            ap_uavcan->_nodeStatus_info[i].timestamp_ms = AP_HAL::millis();
+            return;
+        }
+    }
+
+    // add it
+    if (ap_uavcan->_nodeStatus_info.size() < ap_uavcan->_nodeStatus_info.max_size()) {
+        AP_UAVCAN::nodeStatus_info info {msg, remote_nodeID, AP_HAL::millis()};
+        ap_uavcan->_nodeStatus_info.push_back(info);
+    } else {
+        // TODO: the vector is full, notify/log this somehow
+    }
+}
+
+static void nodestatus_st_cb0(const uavcan::ReceivedDataStructure<uavcan::protocol::NodeStatus>& msg)
+{   nodestatus_st_cb(msg, 0); }
+static void nodestatus_st_cb1(const uavcan::ReceivedDataStructure<uavcan::protocol::NodeStatus>& msg)
+{   nodestatus_st_cb(msg, 1); }
+static void (*nodestatus_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::protocol::NodeStatus>& msg)
+        = { nodestatus_st_cb0, nodestatus_st_cb1 };
+
+
 static void air_data_sp_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg, uint8_t mgr)
 {
     if (hal.can_mgr[mgr] != nullptr) {
@@ -403,6 +449,8 @@ AP_UAVCAN::AP_UAVCAN() :
     SRV_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
 
+    _nodeStatus_info.reserve(AP_UAVCAN_MAX_NODESTATUS_LIST_SIZE);
+
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
 
@@ -494,6 +542,14 @@ bool AP_UAVCAN::try_init(void)
                     const int air_data_sp_start_res = air_data_sp->start(air_data_sp_cb_arr[_uavcan_i]);
                     if (air_data_sp_start_res < 0) {
                         debug_uavcan(1, "UAVCAN Baro subscriber start problem\n\r");
+                        return false;
+                    }
+
+                    uavcan::Subscriber<uavcan::protocol::NodeStatus> *nodestatus_st;
+                    nodestatus_st = new uavcan::Subscriber<uavcan::protocol::NodeStatus>(*node);
+                    const int nodestatus_start_res = nodestatus_st->start(nodestatus_st_cb_arr[_uavcan_i]);
+                    if (nodestatus_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN NodeStatus subscriber start problem\n\r");
                         return false;
                     }
 
@@ -672,7 +728,11 @@ void AP_UAVCAN::do_cyclic(void)
         return;
     }
 
-    if (_SRV_armed) {
+    redundancy_task();
+
+    const bool allow_outputs = !_redundancy.enabled  || _redundancy.allow_outputs;
+
+    if (allow_outputs && _SRV_armed) {
         bool sent_servos = false;
             
         if (_servo_bm > 0) {
@@ -699,8 +759,7 @@ void AP_UAVCAN::do_cyclic(void)
         }
     }
 
-    if (led_out_sem_take()) {
-
+    if (allow_outputs && led_out_sem_take()) {
         led_out_send();
         led_out_sem_give();
     }
@@ -738,6 +797,41 @@ void AP_UAVCAN::led_out_send()
         rgb_led[_uavcan_i]->broadcast(msg);
         _led_conf.last_update = AP_HAL::micros64();
     }
+}
+
+void AP_UAVCAN::redundancy_task()
+{
+    if (!_redundancy.enabled || _nodeStatus_info.size() == 0) {
+        _redundancy.allow_outputs = true;
+        return;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    if (now - _redundancy.task_last_ms < 200) {
+        return;
+    }
+
+    // find highest id that is active
+    uint8_t highest_id = _uavcan_node;
+    uint8_t highest_id_index = 0xFF;
+
+    for (uint8_t i=0; i <= _nodeStatus_info.size(); i++) {
+        if (_nodeStatus_info[i].id > highest_id &&
+                // these next two are experimental
+                _nodeStatus_info[i].nodeStatus.mode == uavcan::protocol::NodeStatus::MODE_OPERATIONAL &&
+                _nodeStatus_info[i].nodeStatus.health == uavcan::protocol::NodeStatus::HEALTH_OK &&
+                // ----
+                now - _nodeStatus_info[i].timestamp_ms < 1000)
+        {
+            highest_id = _nodeStatus_info[i].id;
+            highest_id_index = i;
+        }
+    }
+
+    _redundancy.highest_active_nodeId = highest_id;
+    _redundancy.highest_active_nodeId_index = highest_id_index;
+
+    _redundancy.allow_outputs = (_redundancy.highest_active_nodeId == _uavcan_node);
 }
 
 uavcan::ISystemClock & AP_UAVCAN::get_system_clock()
