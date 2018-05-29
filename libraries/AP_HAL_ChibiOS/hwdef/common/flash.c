@@ -97,12 +97,12 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16
 
 #elif defined(STM32F7)
 #if BOARD_FLASH_SIZE == 1024
-#define STM32_FLASH_NPAGES  5
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(128), KB(256) };
+#define STM32_FLASH_NPAGES  8
+static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256) };
 
 #elif BOARD_FLASH_SIZE == 2048
-#define STM32_FLASH_NPAGES  9
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(128), KB(256),
+#define STM32_FLASH_NPAGES  12
+static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256),
                                                            KB(256), KB(256), KB(256), KB(256) };
 #else
 #error "BOARD_FLASH_SIZE invalid"
