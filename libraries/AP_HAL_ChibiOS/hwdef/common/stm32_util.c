@@ -14,6 +14,7 @@
  */
 
 #include "stm32_util.h"
+#include <stdint.h>
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode)
 {
@@ -31,4 +32,29 @@ void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t fil
         tim->CCMR2 |= STM32_TIM_CCMR2_IC4F(filter_mode);
         break;
     }
+}
+
+
+/*
+  invalidate data cache following a DMA transfer into memory.
+ */
+void dma_invalidate(void *buf, uint32_t size)
+{
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+    if (((ptrdiff_t)buf) > (ptrdiff_t)0x20020000) {
+        dmaBufferInvalidate(buf, size);
+    }
+#endif
+}
+
+/*
+  flush data cache into RAM before a DMA transfer
+ */
+void dma_flush(const void *buf, uint32_t size)
+{
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+    if (((ptrdiff_t)buf) > (ptrdiff_t)0x20020000) {
+        dmaBufferFlush(buf, size);
+    }
+#endif
 }
