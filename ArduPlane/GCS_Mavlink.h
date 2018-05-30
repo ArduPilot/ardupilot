@@ -39,6 +39,8 @@ protected:
     void send_attitude() const override;
     void send_simstate() const override;
 
+    bool persist_streamrates() const override { return true; }
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
@@ -53,4 +55,9 @@ private:
     MAV_STATE system_status() const override;
 
     uint8_t radio_in_rssi() const;
+
+    float vfr_hud_airspeed() const override;
+    int16_t vfr_hud_throttle() const override;
+    float vfr_hud_climbrate() const override;
+
 };

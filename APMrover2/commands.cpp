@@ -46,14 +46,12 @@ bool Rover::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    const bool home_was_set = ahrs.home_is_set();
+
     // set ahrs home
     ahrs.set_home(loc);
 
-    // init compass declination
-    if (!ahrs.home_is_set()) {
-        // record home is set
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-
+    if (!home_was_set) {
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
             AP_Mission::Mission_Command temp_cmd;
@@ -65,7 +63,7 @@ bool Rover::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        ahrs.set_home_status(HOME_SET_AND_LOCKED);
+        ahrs.lock_home();
     }
 
     // Save Home to EEPROM
@@ -117,7 +115,7 @@ void Rover::set_system_time_from_GPS()
 */
 void Rover::update_home()
 {
-    if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    if (!ahrs.home_is_locked()) {
         Location loc;
         if (ahrs.get_position(loc)) {
             if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {

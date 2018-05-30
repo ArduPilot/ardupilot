@@ -436,14 +436,18 @@ public:
         return _home;
     }
 
-    enum HomeState home_status(void) const {
-        return _home_status;
+    // functions to handle locking of home.  Some vehicles use this to
+    // allow GCS to lock in a home location.
+    void lock_home() {
+        _home_locked = true;
     }
-    void set_home_status(enum HomeState new_status) {
-        _home_status = new_status;
+    bool home_is_locked() const {
+        return _home_locked;
     }
+
+    // returns true if home is set
     bool home_is_set(void) const {
-        return _home_status != HOME_UNSET;
+        return _home_is_set;
     }
 
     // set the home location in 10e7 degrees. This should be called
@@ -649,6 +653,8 @@ protected:
 
     // reference position for NED positions
     struct Location _home;
+    bool _home_is_set :1;
+    bool _home_locked :1;
 
     // helper trig variables
     float _cos_roll, _cos_pitch, _cos_yaw;
@@ -666,9 +672,6 @@ protected:
 
 private:
     static AP_AHRS *_singleton;
-
-    // Flag for if we have g_gps lock and have set the home location in AHRS
-    enum HomeState _home_status = HOME_UNSET;
 
 };
 

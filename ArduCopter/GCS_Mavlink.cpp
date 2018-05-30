@@ -171,16 +171,9 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
         0);
 }
 
-void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
+int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
-    mavlink_msg_vfr_hud_send(
-        chan,
-        gps.ground_speed(),
-        ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors->get_throttle() * 100),
-        current_loc.alt / 100.0f,
-        climb_rate / 100.0f);
+    return (int16_t)(copter.motors->get_throttle() * 100);
 }
 
 /*
@@ -306,11 +299,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         copter.send_nav_controller_output(chan);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        copter.send_vfr_hud(chan);
         break;
 
     case MSG_RPM:
@@ -639,12 +627,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 #if MOUNT == ENABLED
         copter.camera_mount.handle_param_value(msg);
 #endif
-        break;
-    }
-
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:    // MAV ID: 66
-    {
-        handle_request_data_stream(msg, false);
         break;
     }
 

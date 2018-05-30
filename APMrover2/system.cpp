@@ -203,16 +203,33 @@ void Rover::startup_ground(void)
     gcs().send_text(MAV_SEVERITY_INFO, "Ready to drive");
 }
 
-/*
-  set the in_reverse flag
-  reset the throttle integrator if this changes in_reverse
- */
-void Rover::set_reverse(bool reverse)
+// update the ahrs flyforward setting which can allow
+// the vehicle's movements to be used to estimate heading
+void Rover::update_ahrs_flyforward()
 {
-    if (in_reverse == reverse) {
-        return;
+    bool flyforward = false;
+
+    // boats never use movement to estimate heading
+    if (!is_boat()) {
+        // throttle threshold is 15% or 1/2 cruise throttle
+        bool throttle_over_thresh = g2.motors.get_throttle() > MIN(g.throttle_cruise * 0.50f, 15.0f);
+        // desired speed threshold of 1m/s
+        bool desired_speed_over_thresh = g2.attitude_control.speed_control_active() && (g2.attitude_control.get_desired_speed() > 0.5f);
+        if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh)) {
+            uint32_t now = AP_HAL::millis();
+            // if throttle over threshold start timer
+            if (flyforward_start_ms == 0) {
+                flyforward_start_ms = now;
+            }
+            // if throttle over threshold for 2 seconds set flyforward to true
+            flyforward = (now - flyforward_start_ms > 2000);
+        } else {
+            // reset timer
+            flyforward_start_ms = 0;
+        }
     }
-    in_reverse = reverse;
+
+    ahrs.set_fly_forward(flyforward);
 }
 
 bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)

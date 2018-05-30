@@ -251,16 +251,9 @@ void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
         0);
 }
 
-void NOINLINE Sub::send_vfr_hud(mavlink_channel_t chan)
+int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
-    mavlink_msg_vfr_hud_send(
-        chan,
-        gps.ground_speed(),
-        gps.ground_speed(),
-        (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors.get_throttle() * 100),
-        current_loc.alt / 100.0f,
-        climb_rate / 100.0f);
+    return (int16_t)(sub.motors.get_throttle() * 100);
 }
 
 /*
@@ -425,11 +418,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         sub.send_nav_controller_output(chan);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        sub.send_vfr_hud(chan);
         break;
 
     case MSG_RPM:
@@ -696,11 +684,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 #if MOUNT == ENABLED
         sub.camera_mount.handle_param_value(msg);
 #endif
-        break;
-    }
-
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {  // MAV ID: 66
-        handle_request_data_stream(msg, false);
         break;
     }
 

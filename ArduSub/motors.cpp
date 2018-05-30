@@ -50,7 +50,7 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
     }

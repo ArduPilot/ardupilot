@@ -333,6 +333,7 @@ private:
             uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
             uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
             uint8_t rc_override_enable      : 1; // 27      // aux switch rc_override is allowed
+            uint8_t armed_with_switch       : 1; // 28      // we armed using a arming switch
         };
         uint32_t value;
     } ap_t;
@@ -353,6 +354,12 @@ private:
         int8_t last_switch_position;        // switch position in previous iteration
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
+
+    // de-bounce counters for switches.cpp
+    struct debounce {
+        uint8_t count;
+        uint8_t ch_flag;
+    } aux_debounce[(CH_12 - CH_7)+1];
 
     typedef struct {
         bool running;
@@ -761,7 +768,6 @@ private:
     void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
-    void send_vfr_hud(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
@@ -901,6 +907,7 @@ private:
     void init_aux_switches();
     void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
     void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
+    bool debounce_aux_switch(uint8_t chan, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 

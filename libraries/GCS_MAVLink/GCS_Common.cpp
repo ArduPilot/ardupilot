@@ -895,7 +895,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
     uint16_t nbytes = comm_get_available(chan);
     for (uint16_t i=0; i<nbytes; i++)
     {
-        uint8_t c = comm_receive_ch(chan);
+        const uint8_t c = (uint8_t)_port->read();
         const uint32_t protocol_timeout = 4000;
         
         if (alternative.handler &&
@@ -1014,10 +1014,10 @@ void GCS_MAVLINK::send_radio_in()
             values[6],
             values[7],
             receiver_rssi);
-        if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
-            // can't fit RC_CHANNELS
-            return;
-        }
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
+        // can't fit RC_CHANNELS
+        return;
     }
     mavlink_msg_rc_channels_send(
         chan,
@@ -1727,6 +1727,49 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
     }
 }
 
+
+float GCS_MAVLINK::vfr_hud_airspeed() const
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr && airspeed->healthy()) {
+        return airspeed->get_airspeed();
+    }
+    // because most vehicles don't have airspeed sensors, we return a
+    // different sort of speed estimate in the relevant field for
+    // comparison's sake.
+    return AP::gps().ground_speed();
+}
+
+float GCS_MAVLINK::vfr_hud_climbrate() const
+{
+    return -vfr_hud_velned.z;
+}
+
+void GCS_MAVLINK::send_vfr_hud()
+{
+    AP_AHRS &ahrs = AP::ahrs();
+
+    // return values ignored; we send stale data
+    ahrs.get_position(global_position_current_loc);
+    ahrs.get_velocity_NED(vfr_hud_velned);
+
+    float alt;
+    if (vfr_hud_make_alt_relative()) {
+        ahrs.get_relative_position_D_home(alt);
+        alt = -alt;
+    } else {
+        alt = global_position_current_loc.alt / 100.0f;
+    }
+    mavlink_msg_vfr_hud_send(
+        chan,
+        vfr_hud_airspeed(),
+        ahrs.groundspeed(),
+        (ahrs.yaw_sensor / 100) % 360,
+        vfr_hud_throttle(),
+        alt,
+        vfr_hud_climbrate());
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2304,6 +2347,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         FALLTHROUGH;
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
         handle_common_rally_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
+        handle_request_data_stream(msg);
         break;
 
     case MAVLINK_MSG_ID_DATA96:
@@ -2962,6 +3009,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_AHRS:
         CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
+        break;
+
+    case MSG_VFR_HUD:
+        CHECK_PAYLOAD_SIZE(VFR_HUD);
+        send_vfr_hud();
         break;
 
     case MSG_VIBRATION:

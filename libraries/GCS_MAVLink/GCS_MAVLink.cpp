@@ -82,20 +82,6 @@ uint8_t mav_var_type(enum ap_var_type t)
 }
 
 
-/// Read a byte from the nominated MAVLink channel
-///
-/// @param chan		Channel to receive on
-/// @returns		Byte read
-///
-uint8_t comm_receive_ch(mavlink_channel_t chan)
-{
-    if (!valid_channel(chan)) {
-        return 0;
-    }
-
-    return (uint8_t)mavlink_comm_port[chan]->read();
-}
-
 /// Check for available transmit space on the nominated MAVLink channel
 ///
 /// @param chan		Channel to check
@@ -147,16 +133,4 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
         return;
     }
     mavlink_comm_port[chan]->write(buf, len);
-}
-
-extern const AP_HAL::HAL& hal;
-
-/*
-  return true if the MAVLink parser is idle, so there is no partly parsed
-  MAVLink message being processed
- */
-bool comm_is_idle(mavlink_channel_t chan)
-{
-	mavlink_status_t *status = mavlink_get_channel_status(chan);
-	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }

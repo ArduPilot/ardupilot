@@ -9,9 +9,6 @@ bool ModeGuided::_enter()
     // when entering guided mode we set the target as the current location.
     set_desired_location(rover.current_loc);
 
-    // guided mode never travels in reverse
-    rover.set_reverse(false);
-
     return true;
 }
 
