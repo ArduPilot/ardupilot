@@ -32,6 +32,11 @@ void dma_invalidate(void *buf, uint32_t size);
  */
 void dma_flush(const void *buf, uint32_t size);
 
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+// print stack usage
+void show_stack_usage(void);
+#endif
+    
 #ifdef __cplusplus
 }
 #endif

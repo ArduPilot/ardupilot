@@ -58,3 +58,22 @@ void dma_flush(const void *buf, uint32_t size)
     }
 #endif
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+void show_stack_usage(void)
+{
+  thread_t *tp;
+
+  tp = chRegFirstThread();
+  do {
+      uint32_t stklimit = (uint32_t)tp->wabase;
+      uint8_t *p = (uint8_t *)tp->wabase;
+      while (*p == CH_DBG_STACK_FILL_VALUE) {
+          p++;
+      }
+      uint32_t stack_left = ((uint32_t)p) - stklimit;
+      printf("%s %u\n", tp->name, stack_left);
+      tp = chRegNextThread(tp);
+  } while (tp != NULL);
+}
+#endif
