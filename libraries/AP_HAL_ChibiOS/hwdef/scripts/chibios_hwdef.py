@@ -94,11 +94,11 @@ def get_mcu_lib(mcu):
 
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
-    global pincount
+    global pincount, ports, portmap
     lib = get_mcu_lib(mcu_type)
     if hasattr(lib, 'pincount'):
         pincount = lib.pincount
-        ports = pincount.keys()
+    ports = pincount.keys()
     # setup default as input pins
     for port in ports:
         portmap[port] = []
@@ -295,7 +295,7 @@ class generic_pin(object):
                                   str)
 
 
-def get_config(name, column=0, required=True, default=None, type=None):
+def get_config(name, column=0, required=True, default=None, type=None, spaces=False):
     '''get a value from config dictionary'''
     if not name in config:
         if required and default is None:
@@ -304,7 +304,11 @@ def get_config(name, column=0, required=True, default=None, type=None):
     if len(config[name]) < column + 1:
         error("missing required value %s in hwdef.dat (column %u)" % (name,
                                                                       column))
-    ret = config[name][column]
+    if spaces:
+        ret = ' '.join(config[name][column:])
+    else:
+        ret = config[name][column]
+    
     if type is not None:
         try:
             ret = type(ret)
@@ -336,10 +340,16 @@ def write_mcu_config(f):
         f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
         f.write('// baudrate used for stdout (printf)\n')
         f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
-    if have_type_prefix('SDIO') or have_type_prefix('SDMMC'):
+    if have_type_prefix('SDIO'):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
+        build_flags.append('USE_FATFS=yes')
+    elif have_type_prefix('SDMMC'):
+        f.write('// SDMMC available, enable POSIX filesystem support\n')
+        f.write('#define USE_POSIX\n\n')
+        f.write('#define HAL_USE_SDC TRUE\n')
+        f.write('#define STM32_SDC_USE_SDMMC1 TRUE\n')
         build_flags.append('USE_FATFS=yes')
     elif has_sdcard_spi():
          f.write('// MMC via SPI available, enable POSIX filesystem support\n')
@@ -917,8 +927,8 @@ def write_hwdef_header(outfilename):
 
     dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                   dma_exclude=get_dma_exclude(periph_list),
-                                  dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*'),
-                                  dma_noshare=get_config('DMA_NOSHARE',default=''))
+                                  dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*', spaces=True),
+                                  dma_noshare=get_config('DMA_NOSHARE',default='', spaces=True))
 
     write_PWM_config(f)
     
