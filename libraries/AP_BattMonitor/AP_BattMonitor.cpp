@@ -2,6 +2,7 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
+#include "AP_BattMonitor_BLHeliESC.h"
 #if HAL_WITH_UAVCAN
 #include "AP_BattMonitor_UAVCAN.h"
 #endif
@@ -95,6 +96,12 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
 #if HAL_WITH_UAVCAN
                 drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
+                _num_instances++;
+#endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_BLHeliESC:
+#ifdef HAVE_AP_BLHELI_SUPPORT
+                drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
                 _num_instances++;
 #endif
                 break;
