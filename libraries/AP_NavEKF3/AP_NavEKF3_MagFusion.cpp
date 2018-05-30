@@ -125,16 +125,13 @@ void NavEKF3_core::controlMagYawReset()
             Vector3f eulerAngles;
             stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
 
-            // Use the Euler angles and magnetometer measurement to update the magnetic field states
-            // and get an updated quaternion
-            Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
-
             if (magYawResetRequest) {
                 // previous value used to calculate a reset delta
                 Quaternion prevQuat = stateStruct.quat;
 
-                // update the quaternion states using the new yaw angle
-                stateStruct.quat = newQuat;
+                // Use the Euler angles and magnetometer measurement to update the magnetic field states
+                // and update the quaternion states
+                stateStruct.quat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
 
                 // calculate the change in the quaternion state and apply it to the ouput history buffer
                 prevQuat = stateStruct.quat/prevQuat;
@@ -827,7 +824,7 @@ void NavEKF3_core::fuseEulerYaw()
         if (use_compass() && yawAlignComplete && magStateInitComplete) {
             // Use measured mag components rotated into earth frame to measure yaw
             Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
-            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            const Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
             measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
@@ -875,7 +872,7 @@ void NavEKF3_core::fuseEulerYaw()
         if (use_compass() && yawAlignComplete && magStateInitComplete) {
             // Use measured mag components rotated into earth frame to measure yaw
             Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
-            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            const Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
             measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
         } else if (extNavUsedForYaw) {
             // Get the yaw angle  from the external vision data
