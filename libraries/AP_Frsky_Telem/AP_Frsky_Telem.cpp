@@ -467,7 +467,10 @@ void AP_Frsky_Telem::queue_message(MAV_SEVERITY severity, const char *text)
     mavlink_statustext_t statustext{};
 
     statustext.severity = severity;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(statustext.text, text, sizeof(statustext.text));
+#pragma GCC diagnostic pop
 
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
