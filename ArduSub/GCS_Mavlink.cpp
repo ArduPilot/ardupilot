@@ -945,7 +945,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            sub.set_home_to_current_location(true);
+            if (!sub.set_home_to_current_location(true)) {
+                // ignore this failure
+            }
         } else {
             // sanity check location
             if (!check_latlng(packet.latitude, packet.longitude)) {
@@ -958,7 +960,9 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             if (sub.far_from_EKF_origin(new_home_loc)) {
                 break;
             }
-            sub.set_home(new_home_loc, true);
+            if (!sub.set_home(new_home_loc, true)) {
+                // silently ignored
+            }
         }
         break;
     }
