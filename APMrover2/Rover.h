@@ -406,8 +406,8 @@ private:
     void update_mission(void);
 
     // commands.cpp
-    bool set_home_to_current_location(bool lock);
-    bool set_home(const Location& loc, bool lock);
+    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     void update_home();
 
     // compat.cpp
