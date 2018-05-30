@@ -22,6 +22,16 @@ extern "C" {
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
 
+/*
+  invalidate data cache following a DMA transfer into memory.
+ */
+void dma_invalidate(void *buf, uint32_t size);
+
+/*
+  flush data cache into RAM before a DMA transfer
+ */
+void dma_flush(const void *buf, uint32_t size);
+
 #ifdef __cplusplus
 }
 #endif

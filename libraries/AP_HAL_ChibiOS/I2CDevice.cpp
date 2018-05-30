@@ -18,6 +18,7 @@
 #include <AP_Math/AP_Math.h>
 #include "Util.h"
 #include "Scheduler.h"
+#include "hwdef/common/stm32_util.h"
 
 #include "ch.h"
 #include "hal.h"
@@ -204,6 +205,10 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         bus.i2ccfg.op_mode = OPMODE_I2C;
     }
 #endif
+
+    if (send) {
+        dma_flush(send, send_len);
+    }
     
     if (_split_transfers) {
         /*
@@ -231,6 +236,10 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
     }
 
+    if (recv) {
+        dma_invalidate(recv, recv_len);
+    }
+    
     bus.dma_handle->unlock();
     return true;
 }

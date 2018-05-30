@@ -23,6 +23,7 @@
 #include "shared_dma.h"
 #include <AP_Math/AP_Math.h>
 #include "Scheduler.h"
+#include "hwdef/common/stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -365,6 +366,8 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (len == 0) {
         return;
     }
+
+    dma_invalidate(uart_drv->rx_bounce_buf, len);
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
     uart_drv->receive_timestamp_update();
@@ -635,6 +638,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     }
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
+    dma_flush(tx_bounce_buf, tx_len);
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
     dmaStreamSetTransactionSize(txdma, tx_len);
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
@@ -736,6 +740,7 @@ void UARTDriver::_timer_tick(void)
         if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
             uint8_t len = RX_BOUNCE_BUFSIZE - rxdma->stream->NDTR;
             if (len != 0) {
+                dma_invalidate(rx_bounce_buf, len);
                 _readbuf.write(rx_bounce_buf, len);
 
                 receive_timestamp_update();
