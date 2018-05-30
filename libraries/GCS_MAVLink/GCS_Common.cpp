@@ -1014,10 +1014,10 @@ void GCS_MAVLINK::send_radio_in()
             values[6],
             values[7],
             receiver_rssi);
-        if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
-            // can't fit RC_CHANNELS
-            return;
-        }
+    }
+    if (!HAVE_PAYLOAD_SPACE(chan, RC_CHANNELS)) {
+        // can't fit RC_CHANNELS
+        return;
     }
     mavlink_msg_rc_channels_send(
         chan,
