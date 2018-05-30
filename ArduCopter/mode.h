@@ -953,6 +953,7 @@ public:
     // RTL type
     enum RTLType {
         RTLType_Normal = 0,
+        RTLType_Always_Home = 1,
     };
 
 protected:

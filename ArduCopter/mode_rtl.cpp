@@ -13,10 +13,11 @@ bool Copter::ModeRTL::init(bool ignore_checks)
     if (copter.position_ok() || ignore_checks) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
+        build_path(!copter.failsafe.terrain);
         switch (g2.rtl_type) {
             default :
             case RTLType_Normal :
-                build_path(!copter.failsafe.terrain);
+            case RTLType_Always_Home :
                 climb_start();
                 break;
         }
@@ -412,7 +413,15 @@ void Copter::ModeRTL::compute_return_target(bool terrain_following_allowed)
 {
     // set return target to nearest rally point or home position (Note: alt is absolute)
 #if AC_RALLY == ENABLED
-    rtl_path.return_target = copter.rally.calc_best_rally_or_home_location(copter.current_loc, ahrs.get_home().alt);
+    switch (g2.rtl_type) {
+        default :
+        case RTLType_Normal :
+            rtl_path.return_target = copter.rally.calc_best_rally_or_home_location(copter.current_loc, ahrs.get_home().alt);
+            break;
+        case RTLType_Always_Home :
+            rtl_path.return_target = ahrs.get_home();
+            break;
+    }
 #else
     rtl_path.return_target = ahrs.get_home();
 #endif
