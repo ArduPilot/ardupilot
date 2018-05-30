@@ -349,9 +349,13 @@ void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && rover.have_position) {
-        rover.set_home_to_current_location(false);
+        if (!rover.set_home_to_current_location(false)) {
+            // ignored...
+        }
     } else {
-        rover.set_home(cmd.content.location, false);
+        if (!rover.set_home(cmd.content.location, false)) {
+            // ignored...
+        }
     }
 }
 
