@@ -1360,9 +1360,13 @@ void Copter::ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
-        copter.set_home_to_current_location(false);
+        if (!copter.set_home_to_current_location(false)) {
+            // ignore failure
+        }
     } else {
-        copter.set_home(cmd.content.location, false);
+        if (!copter.set_home(cmd.content.location, false)) {
+            // ignore failure
+        }
     }
 }
 
