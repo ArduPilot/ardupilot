@@ -81,7 +81,10 @@ bool DataFlashFileReader::update(char type[5])
             return false;
         }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(type, "FMT", 3);
+#pragma GCC diagnostic pop
         type[3] = 0;
 
         message_count++;

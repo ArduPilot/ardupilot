@@ -923,7 +923,10 @@ void Replay::load_param_file(const char *pfilename)
             continue;
         }
         struct user_parameter *u = new user_parameter;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(u->name, pname, sizeof(u->name));
+#pragma GCC diagnostic pop
         u->value = value;
         u->next = user_parameters;
         user_parameters = u;
