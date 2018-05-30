@@ -34,9 +34,12 @@ void DataFlash_Backend::Log_Fill_Format(const struct LogStructure *s, struct log
     pkt.msgid = LOG_FORMAT_MSG;
     pkt.type = s->msg_type;
     pkt.length = s->msg_len;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(pkt.name, s->name, sizeof(pkt.name));
     strncpy(pkt.format, s->format, sizeof(pkt.format));
     strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
+#pragma GCC diagnostic pop
 }
 
 /*
@@ -50,8 +53,11 @@ void DataFlash_Backend::Log_Fill_Format_Units(const struct LogStructure *s, stru
     pkt.msgid = LOG_FORMAT_UNITS_MSG;
     pkt.time_us = AP_HAL::micros64();
     pkt.format_type = s->msg_type;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(pkt.units, s->units, sizeof(pkt.units));
     strncpy(pkt.multipliers, s->multipliers, sizeof(pkt.multipliers));
+#pragma GCC diagnostic pop
 }
 
 /*
@@ -75,7 +81,10 @@ bool DataFlash_Backend::Log_Write_Unit(const struct UnitStructure *s)
         type    : s->ID,
         unit    : { }
     };
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(pkt.unit, s->unit, sizeof(pkt.unit));
+#pragma GCC diagnostic pop
 
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -116,7 +125,10 @@ bool DataFlash_Backend::Log_Write_Parameter(const char *name, float value)
         name  : {},
         value : value
     };
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(pkt.name, name, sizeof(pkt.name));
+#pragma GCC diagnostic pop
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
@@ -430,7 +442,10 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
         time_us : AP_HAL::micros64(),
         msg  : {}
     };
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(pkt.msg, message, sizeof(pkt.msg));
+#pragma GCC diagnostic pop
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
