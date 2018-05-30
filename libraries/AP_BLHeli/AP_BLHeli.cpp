@@ -23,7 +23,7 @@
 
 #include "AP_BLHeli.h"
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#ifdef HAVE_AP_BLHELI_SUPPORT
 
 #include <AP_Math/crc.h>
 #include <AP_Motors/AP_Motors_Class.h>
@@ -97,11 +97,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     AP_GROUPEND
 };
 
+AP_BLHeli *AP_BLHeli::instance;
+
 // constructor
 AP_BLHeli::AP_BLHeli(void)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
+    instance = this;
 }
 
 /*
@@ -1209,6 +1212,20 @@ void AP_BLHeli::update(void)
 
 }
 
+// get the most recent telemetry data packet for a motor
+bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td, uint32_t &timestamp_ms)
+{
+    if (esc_index >= max_motors) {
+        return false;
+    }
+    if (last_telem_ms[esc_index] == 0) {
+        return false;
+    }
+    timestamp_ms = last_telem_ms[esc_index];
+    td = last_telem[esc_index];
+    return true;
+}
+
 /*
   implement the 8 bit CRC used by the BLHeli ESC telemetry protocol
  */
@@ -1250,34 +1267,39 @@ void AP_BLHeli::read_telemetry_packet(void)
         debug("Bad CRC on %u\n", last_telem_esc);
         return;
     }
-    uint8_t temperature = buf[0];
-    uint16_t voltage = (buf[1]<<8) | buf[2];
-    uint16_t current = (buf[3]<<8) | buf[4];
-    uint16_t consumption = (buf[5]<<8) | buf[6];
-    uint16_t rpm = (buf[7]<<8) | buf[8];
+    struct telem_data td;
+    td.temperature = buf[0];
+    td.voltage = (buf[1]<<8) | buf[2];
+    td.current = (buf[3]<<8) | buf[4];
+    td.consumption = (buf[5]<<8) | buf[6];
+    td.rpm = (buf[7]<<8) | buf[8];
 
+    last_telem[last_telem_esc] = td;
+    last_telem[last_telem_esc].count++;
+    last_telem_ms[last_telem_esc] = AP_HAL::millis();
+    
     DataFlash_Class *df = DataFlash_Class::instance();
     if (df && df->logging_enabled()) {
         struct log_Esc pkt = {
             LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+last_telem_esc)),
             time_us     : AP_HAL::micros64(),
-            rpm         : int32_t(rpm*100U),
-            voltage     : uint16_t(voltage),
-            current     : uint16_t(current),
-            temperature : int16_t(temperature * 100U),
-            current_tot : consumption
+            rpm         : int32_t(td.rpm*100U),
+            voltage     : td.voltage,
+            current     : td.current,
+            temperature : int16_t(td.temperature * 100U),
+            current_tot : td.consumption
         };
         df->WriteBlock(&pkt, sizeof(pkt));
     }
-#if 0
-    hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u\n",
-                        last_telem_esc,
-                        temperature,
-                        voltage,
-                        current,
-                        consumption,
-                        rpm);
-#endif
+    if (debug_level >= 2) {
+        hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
+                            last_telem_esc,
+                            td.temperature,
+                            td.voltage,
+                            td.current,
+                            td.consumption,
+                            td.rpm, (unsigned)AP_HAL::millis());
+    }
 }
 
 /*
@@ -1290,22 +1312,22 @@ void AP_BLHeli::update_telemetry(void)
         return;
     }
     uint32_t now = AP_HAL::micros();
-    uint32_t nbytes = telem_uart->available();
     uint32_t telem_rate_us = 1000000U / uint32_t(telem_rate.get() * num_motors);
     if (telem_rate_us < 2000) {
         // make sure we have a gap between frames
         telem_rate_us = 2000;
     }
+    if (!telem_uart_started) {
+        // we need to use begin() here to ensure the correct thread owns the uart
+        telem_uart->begin(115200);
+        telem_uart_started = true;
+    }
+        
+    uint32_t nbytes = telem_uart->available();
     
     if (nbytes > telem_packet_size) {
         // if we have more than 10 bytes then we don't know which ESC
         // they are from. Throw them all away
-        if (nbytes > telem_packet_size*2) {
-            // something badly wrong with this uart, disable ESC
-            // telemetry so we don't chew lots of CPU reading garbage
-            telem_uart = nullptr;
-            return;
-        }
         while (nbytes--) {
             telem_uart->read();
         }
@@ -1313,8 +1335,12 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (nbytes > 0 &&
         nbytes < telem_packet_size &&
-        now - last_telem_request_us < telem_rate_us) {
+        (last_telem_byte_read_us == 0 ||
+         now - last_telem_byte_read_us < 1000)) {
         // wait a bit longer, we don't have enough bytes yet
+        if (last_telem_byte_read_us == 0) {
+            last_telem_byte_read_us = now;
+        }
         return;
     }
     if (nbytes > 0 && nbytes < telem_packet_size) {
@@ -1327,8 +1353,10 @@ void AP_BLHeli::update_telemetry(void)
     if (nbytes == telem_packet_size) {
         // we have a full packet ready to parse
         read_telemetry_packet();
+        last_telem_byte_read_us = 0;
     }
     if (now - last_telem_request_us >= telem_rate_us) {
+        // ask the next ESC for telemetry
         last_telem_esc = (last_telem_esc + 1) % num_motors;
         uint16_t mask = 1U << motor_map[last_telem_esc];
         hal.rcout->set_telem_request_mask(mask);
@@ -1336,4 +1364,51 @@ void AP_BLHeli::update_telemetry(void)
     }
 }
 
-#endif // HAL_SUPPORT_RCOUT_SERIAL
+
+/*
+  send ESC telemetry messages over MAVLink
+ */
+void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    if (num_motors == 0) {
+        return;
+    }
+    uint8_t temperature[4] {};
+    uint16_t voltage[4] {};
+    uint16_t current[4] {};
+    uint16_t totalcurrent[4] {};
+    uint16_t rpm[4] {};
+    uint16_t count[4] {};
+    uint32_t now = AP_HAL::millis();
+    for (uint8_t i=0; i<num_motors; i++) {
+        uint8_t idx = i % 4;
+        if (last_telem_ms[i] && (now - last_telem_ms[i] < 1000)) {
+            temperature[idx]  = last_telem[i].temperature;
+            voltage[idx]      = last_telem[i].voltage;
+            current[idx]      = last_telem[i].current;
+            totalcurrent[idx] = last_telem[i].consumption;
+            rpm[idx]          = last_telem[i].rpm;
+            count[idx]        = last_telem[i].count;
+        } else {
+            temperature[idx] = 0;
+            voltage[idx] = 0;
+            current[idx] = 0;
+            totalcurrent[idx] = 0;
+            rpm[idx] = 0;
+            count[idx] = 0;
+        }
+        if (i % 4 == 3 || i == num_motors - 1) {
+            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
+                break;
+            }
+            if (i < 4) {
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+            } else {
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+            }
+        }
+    }
+}
+
+#endif // HAVE_AP_BLHELI_SUPPORT
+
