@@ -1249,7 +1249,9 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(msg, &packet);
         if((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            copter.set_home_to_current_location(true);
+            if (!copter.set_home_to_current_location(true)) {
+                // silently ignored
+            }
         } else {
             // sanity check location
             if (!check_latlng(packet.latitude, packet.longitude)) {
@@ -1259,7 +1261,9 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
             new_home_loc.alt = packet.altitude / 10;
-            copter.set_home(new_home_loc, true);
+            if (!copter.set_home(new_home_loc, true)) {
+                // silently ignored
+            }
         }
         break;
     }

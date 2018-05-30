@@ -188,7 +188,9 @@ bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do
         arming_altitude_m = 0;        
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore failure
+        }
 
         // remember the height when we armed
         arming_altitude_m = inertial_nav.get_altitude() * 0.01;
