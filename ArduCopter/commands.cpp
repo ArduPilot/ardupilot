@@ -13,7 +13,9 @@ void Copter::update_home_from_EKF()
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore failure
+        }
     }
 }
 
@@ -75,7 +77,9 @@ bool Copter::set_home(const Location& loc, bool lock)
     const bool home_was_set = ahrs.home_is_set();
 
     // set ahrs home (used for RTL)
-    ahrs.set_home(loc);
+    if (!ahrs.set_home(loc)) {
+        return false;
+    }
 
     // init inav and compass declination
     if (!home_was_set) {
