@@ -22,6 +22,8 @@
 #include "ToneAlarm.h"
 
 // this checks an address is in main memory and 16 bit aligned
+// on the STM32F7 we assume all memory is DMA safe, and call dma_flush()
+// and dma_invalidate() when needed
 #define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xF0000001) == 0x20000000)
 
 class ChibiOS::Util : public AP_HAL::Util {
