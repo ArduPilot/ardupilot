@@ -151,8 +151,10 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
 
 I2CDevice::~I2CDevice()
 {
+#if 0
     printf("I2C device bus %u address 0x%02x closed\n", 
            (unsigned)bus.busnum, (unsigned)_address);
+#endif
     free(pname);
 }
 
