@@ -166,7 +166,9 @@ void Rover::ahrs_update()
 
     // set home from EKF if necessary and possible
     if (!ahrs.home_is_set()) {
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore this failure
+        }
     }
 
     // if using the EKF get a speed update now (from accelerometers)

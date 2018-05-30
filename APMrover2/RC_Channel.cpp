@@ -93,7 +93,9 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
                 rover.mode_auto.mission.clear();
-                rover.set_home_to_current_location(false);
+                if (!rover.set_home_to_current_location(false)) {
+                    // ignored
+                }
                 return;
             }
 
