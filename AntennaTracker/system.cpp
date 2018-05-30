@@ -156,7 +156,9 @@ void Tracker::set_home(struct Location temp)
     // check EKF origin has been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        ahrs.set_home(temp);
+        if (!ahrs.set_home(temp)) {
+            // ignore error silently
+        }
     }
 }
 
