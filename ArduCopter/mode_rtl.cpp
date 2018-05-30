@@ -13,10 +13,15 @@ bool Copter::ModeRTL::init(bool ignore_checks)
     if (copter.position_ok() || ignore_checks) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
-        build_path(!copter.failsafe.terrain);
-        climb_start();
+        switch (g2.rtl_type) {
+            default :
+            case RTLType_Normal :
+                build_path(!copter.failsafe.terrain);
+                climb_start();
+                break;
+        }
         return true;
-    }else{
+    } else {
         return false;
     }
 }

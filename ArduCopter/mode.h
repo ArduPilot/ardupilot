@@ -950,6 +950,11 @@ public:
 
     void restart_without_terrain();
 
+    // RTL type
+    enum RTLType {
+        RTLType_Normal = 0,
+    };
+
 protected:
 
     const char *name() const override { return "RTL"; }

@@ -595,6 +595,9 @@ public:
     // follow
     AP_Follow follow;
 #endif
+
+    // type of RTL
+    AP_Int8 rtl_type;
 };
 
 extern const AP_Param::Info        var_info[];
