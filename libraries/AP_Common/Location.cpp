@@ -142,6 +142,9 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             alt_abs = alt;
             break;
         case ALT_FRAME_ABOVE_HOME:
+            if (!_ahrs->home_is_set()) {
+                return false;
+            }
             alt_abs = alt + _ahrs->get_home().alt;
             break;
         case ALT_FRAME_ABOVE_ORIGIN:
@@ -168,6 +171,9 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
             ret_alt_cm = alt_abs;
             return true;
         case ALT_FRAME_ABOVE_HOME:
+            if (!_ahrs->home_is_set()) {
+                return false;
+            }
             ret_alt_cm = alt_abs - _ahrs->get_home().alt;
             return true;
         case ALT_FRAME_ABOVE_ORIGIN:
