@@ -868,4 +868,32 @@ void NavEKF3_core::getTimingStatistics(struct ekf_timing &_timing)
     memset(&timing, 0, sizeof(timing));
 }
 
+void NavEKF3_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    // limit update rate to maximum allowed by sensor buffers and fusion process
+    // don't try to write to buffer until the filter has been initialised
+    if ((timeStamp_ms - extNavMeasTime_ms) < 70) {
+        return;
+    } else {
+        extNavMeasTime_ms = timeStamp_ms;
+    }
+
+    if (resetTime_ms > extNavLastPosResetTime_ms) {
+        extNavDataNew.posReset = true;
+        extNavLastPosResetTime_ms = resetTime_ms;
+    } else {
+        extNavDataNew.posReset = false;
+    }
+
+    extNavDataNew.pos = pos;
+    extNavDataNew.quat = quat;
+    extNavDataNew.posErr = posErr;
+    extNavDataNew.angErr = angErr;
+    extNavDataNew.body_offset = &sensOffset;
+    extNavDataNew.time_ms = timeStamp_ms;
+
+    storedExtNav.push(extNavDataNew);
+
+}
+
 #endif // HAL_CPU_CLASS

@@ -1559,4 +1559,24 @@ void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
     }
 }
 
+/*
+ * Write position and quaternion data from an external navigation system
+ *
+ * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
+ * quat       : quaternion describing the the rotation from navigation frame to body frame
+ * posErr     : 1-sigma spherical position error (m)
+ * angErr     : 1-sigma spherical angle error (rad)
+ * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+ * resetTime_ms : system time of the last position reset request (mSec)
+ *
+*/
+void NavEKF3::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+{
+    if (core) {
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].writeExtNavData(sensOffset, pos, quat, posErr, angErr, timeStamp_ms, resetTime_ms);
+        }
+    }
+}
+
 #endif //HAL_CPU_CLASS

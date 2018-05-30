@@ -134,6 +134,9 @@ bool NavEKF3_core::setup_core(NavEKF3 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
+    if(!storedExtNav.init(obs_buffer_length)) {
+        return false;
+    }
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -166,7 +169,7 @@ void NavEKF3_core::InitialiseVariables()
     lastPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
-    lastSynthYawTime_ms = imuSampleTime_ms;
+    lastYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
@@ -299,6 +302,7 @@ void NavEKF3_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    memset(&velPosObs, 0, sizeof(velPosObs));
     posResetSource = DEFAULT;
     velResetSource = DEFAULT;
 
@@ -355,6 +359,16 @@ void NavEKF3_core::InitialiseVariables()
     usingWheelSensors = false;
     wheelOdmMeasTime_ms = 0;
 
+    // external nav data fusion
+    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    extNavDataToFuse = false;
+    extNavMeasTime_ms = 0;
+    extNavLastPosResetTime_ms = 0;
+    extNavUsedForYaw = false;
+    extNavUsedForPos = false;
+    extNavYawResetRequest = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -365,6 +379,7 @@ void NavEKF3_core::InitialiseVariables()
     storedRangeBeacon.reset();
     storedBodyOdm.reset();
     storedWheelOdm.reset();
+    storedExtNav.reset();
 
     InitialiseVariablesMag();
 }

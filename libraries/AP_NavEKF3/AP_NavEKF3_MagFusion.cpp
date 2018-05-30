@@ -85,33 +85,23 @@ void NavEKF3_core::controlMagYawReset()
             finalResetRequest; // the final reset when we have acheived enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
-    if (magYawResetRequest || magStateResetRequest) {
-
-        // get the euler angles from the current state estimate
-        Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-
-        // Use the Euler angles and magnetometer measurement to update the magnetic field states
-        // and get an updated quaternion
-        Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+    if (magYawResetRequest || magStateResetRequest || extNavYawResetRequest) {
 
         // if a yaw reset has been requested, apply the updated quaternion to the current state
-        if (magYawResetRequest) {
+        if (extNavYawResetRequest) {
+            // get the euler angles from the current state estimate
+            Vector3f eulerAnglesOld;
+            stateStruct.quat.to_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesOld.z);
+
             // previous value used to calculate a reset delta
             Quaternion prevQuat = stateStruct.quat;
 
-            // calculate the variance for the rotation estimate expressed as a rotation vector
-            // this will be used later to reset the quaternion state covariances
-            Vector3f angleErrVarVec = calcRotVecVariances();
+            // Get the Euler angles from the external vision data
+            Vector3f eulerAnglesNew;
+            extNavDataDelayed.quat.to_euler(eulerAnglesNew.x, eulerAnglesNew.y, eulerAnglesNew.z);
 
-            // update the quaternion states using the new yaw angle
-            stateStruct.quat = newQuat;
-
-            // update the yaw angle variance using the variance of the measurement
-            angleErrVarVec.z = sq(MAX(frontend->_yawNoise, 1.0e-2f));
-
-            // reset the quaternion covariances using the rotation vector variances
-            initialiseQuatCovariances(angleErrVarVec);
+            // the new quaternion uses the old roll/pitch and new yaw angle
+            stateStruct.quat.from_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesNew.z);
 
             // calculate the change in the quaternion state and apply it to the ouput history buffer
             prevQuat = stateStruct.quat/prevQuat;
@@ -119,27 +109,61 @@ void NavEKF3_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
             }
 
-            // send in-flight yaw alignment status to console
-            if (finalResetRequest) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
-            } else if (interimResetRequest) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
-            }
-
-            // update the yaw reset completed status
-            recordYawReset();
+            // record the reset as complete and also record the in-flight reset as complete to stop further resets when hight is gained
+            // in-flight reset is unnecessary because we do not need to consider ground based magnetic anomaly effects
+            yawAlignComplete = true;
+            finalInflightYawInit = true;
 
             // clear the yaw reset request flag
-            magYawResetRequest = false;
+            extNavYawResetRequest = false;
 
-            // clear the complete flags if an interim reset has been performed to allow subsequent
-            // and final reset to occur
-            if (interimResetRequest) {
-                finalInflightYawInit = false;
-                finalInflightMagInit = false;
+        } else if (magYawResetRequest || magStateResetRequest) {
+            // get the euler angles from the current state estimate
+            Vector3f eulerAngles;
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+
+            // Use the Euler angles and magnetometer measurement to update the magnetic field states
+            // and get an updated quaternion
+            Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+            if (magYawResetRequest) {
+                // previous value used to calculate a reset delta
+                Quaternion prevQuat = stateStruct.quat;
+
+                // update the quaternion states using the new yaw angle
+                stateStruct.quat = newQuat;
+
+                // calculate the change in the quaternion state and apply it to the ouput history buffer
+                prevQuat = stateStruct.quat/prevQuat;
+                StoreQuatRotate(prevQuat);
+
+                // send initial alignment status to console
+                if (!yawAlignComplete) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                }
+
+                // send in-flight yaw alignment status to console
+                if (finalResetRequest) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                } else if (interimResetRequest) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                }
+
+                // update the yaw reset completed status
+                recordYawReset();
+
+                // clear the yaw reset request flag
+                magYawResetRequest = false;
+
+                // clear the complete flags if an interim reset has been performed to allow subsequent
+                // and final reset to occur
+                if (interimResetRequest) {
+                    finalInflightYawInit = false;
+                    finalInflightMagInit = false;
+                }
             }
         }
     }
@@ -279,11 +303,11 @@ void NavEKF3_core::SelectMagFusion()
     // from becoming badly conditioned. For planes we only do this on-ground because they can align the yaw from GPS when
     // airborne. For other platform types we do this all the time.
     if (!use_compass()) {
-        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastSynthYawTime_ms > 140)) {
+        if ((onGround || !assume_zero_sideslip()) && (imuSampleTime_ms - lastYawTime_ms > 140)) {
             fuseEulerYaw();
             magTestRatio.zero();
             yawTestRatio = 0.0f;
-            lastSynthYawTime_ms = imuSampleTime_ms;
+            lastYawTime_ms = imuSampleTime_ms;
         }
     }
 
@@ -762,6 +786,7 @@ void NavEKF3_core::fuseEulerYaw()
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
     float predicted_yaw;
+    float measured_yaw;
     float H_YAW[4];
     Matrix3f Tbn_zeroYaw;
     if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
@@ -795,13 +820,23 @@ void NavEKF3_core::fuseEulerYaw()
         H_YAW[2] = t8*t14*(q1*t3+q1*t4+q1*t5-q1*t6+q0*q2*q3*2.0f)*2.0f;
         H_YAW[3] = t8*t14*(q0*t3+q0*t4-q0*t5+q0*t6+q1*q2*q3*2.0f)*2.0f;
 
-        // Get the 321 euler angles
+        // calculate predicted and measured yaw angle
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
         predicted_yaw = euler321.z;
-
-        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
-        Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+        if (use_compass() && yawAlignComplete && magStateInitComplete) {
+            // Use measured mag components rotated into earth frame to measure yaw
+            Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+        } else if (extNavUsedForYaw) {
+            // Get the yaw angle  from the external vision data
+            extNavDataDelayed.quat.to_euler(euler321.x, euler321.y, euler321.z);
+            measured_yaw =  euler321.z;
+        } else {
+            // no data so use predicted to prevent unconstrained variance growth
+            measured_yaw = predicted_yaw;
+        }
 
     } else {
         // calculate observation jacobian when we are observing a rotation in a 312 sequence
@@ -834,25 +869,22 @@ void NavEKF3_core::fuseEulerYaw()
         H_YAW[2] = t8*t14*(-q1*t3+q1*t4+q1*t5+q1*t6-q0*q2*q3*2.0f)*2.0f;
         H_YAW[3] = t8*t14*(q0*t3-q0*t4+q0*t5+q0*t6-q1*q2*q3*2.0f)*2.0f;
 
-        // Get the 321 euler angles
+        // calculate predicted and measured yaw angle
         Vector3f euler312 = stateStruct.quat.to_vector312();
         predicted_yaw = euler312.z;
-
-        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
-        Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
-    }
-
-    // rotate measured mag components into earth frame
-    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-
-    // Use the difference between the horizontal projection and declination to give the measured yaw
-    // If we can't use compass data, set the  measurement to the predicted
-    // to prevent uncontrolled variance growth whilst on ground without magnetometer
-    float measured_yaw;
-    if (use_compass() && yawAlignComplete) {
-        measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
-    } else {
-        measured_yaw = predicted_yaw;
+        if (use_compass() && yawAlignComplete && magStateInitComplete) {
+            // Use measured mag components rotated into earth frame to measure yaw
+            Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+        } else if (extNavUsedForYaw) {
+            // Get the yaw angle  from the external vision data
+            euler312 = extNavDataDelayed.quat.to_vector312();
+            measured_yaw =  euler312.z;
+        } else {
+            // no data so use predicted to prevent unconstrained variance growth
+            measured_yaw = predicted_yaw;
+        }
     }
 
     // Calculate the innovation
@@ -958,8 +990,9 @@ void NavEKF3_core::fuseEulerYaw()
         }
         stateStruct.quat.normalize();
 
-        // record fusion numerical health status
+        // record fusion event
         faultStatus.bad_yaw = false;
+        lastYawTime_ms = imuSampleTime_ms;
 
     } else {
         // record fusion numerical health status
