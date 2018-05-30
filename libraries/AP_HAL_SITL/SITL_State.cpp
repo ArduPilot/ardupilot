@@ -229,13 +229,26 @@ int SITL_State::sim_fd(const char *name, const char *arg)
  */
 void SITL_State::_check_rc_input(void)
 {
-    ssize_t size;
+    uint32_t count = 0;
+    while (_read_rc_sitl_input()) {
+        count++;
+    }
+
+    if (count > 100) {
+        ::fprintf(stderr, "Read %u rc inputs\n", count);
+    }
+}
+
+bool SITL_State::_read_rc_sitl_input()
+{
     struct pwm_packet {
         uint16_t pwm[16];
     } pwm_pkt;
 
-    size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
+    const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
     switch (size) {
+    case -1:
+        return false;
     case 8*2:
     case 16*2: {
         // a packet giving the receiver PWM inputs
@@ -259,9 +272,12 @@ void SITL_State::_check_rc_input(void)
                 pwm_input[i] = pwm;
             }
         }
-        break;
+        return true;
     }
+    default:
+        fprintf(stderr, "Malformed SITL RC input (%li)", size);
     }
+    return false;
 }
 
 /*
