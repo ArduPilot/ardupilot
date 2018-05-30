@@ -1254,7 +1254,10 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
     }
 
     statustext.msg.severity = severity;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
+#pragma GCC diagnostic pop
 
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
