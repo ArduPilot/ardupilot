@@ -20,6 +20,7 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include <stdio.h>
+#include "hwdef/common/stm32_util.h"
 
 #if HAL_USE_SPI == TRUE
 
@@ -150,10 +151,14 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
 
     if (send == nullptr) {
         spiReceive(spi_devices[device_desc.bus].driver, len, recv_buf);
+        dma_invalidate(recv_buf, len);
     } else if (recv == nullptr) {
+        dma_flush(send_buf, len);
         spiSend(spi_devices[device_desc.bus].driver, len, send_buf);
     } else {
+        dma_flush(send_buf, len);
         spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
+        dma_invalidate(recv_buf, len);
     }
 
     if (recv_buf != recv) {

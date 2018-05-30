@@ -19,6 +19,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "GPIO.h"
+#include "hwdef/common/stm32_util.h"
 
 #if HAL_USE_PWM == TRUE
 
@@ -931,6 +932,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       datasheet. Many thanks to the betaflight developers for coming
       up with this great method.
      */
+    dma_flush(group.dma_buffer, buffer_length);
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length/sizeof(uint32_t));
