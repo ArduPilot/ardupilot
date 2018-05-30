@@ -30,7 +30,13 @@
 #include <chheap.h>
 #include <stdarg.h>
 
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+// to allow for dma management functions we need buffers to be
+// aligned to the cache line size
+#define MIN_ALIGNMENT 32
+#else
 #define MIN_ALIGNMENT 8
+#endif
 
 #if defined(CCM_RAM_SIZE)
 #ifndef CCM_BASE_ADDRESS
