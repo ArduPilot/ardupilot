@@ -40,14 +40,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
     // @Description: Sets the repetition frequency of the ranging operation in Hertz. Upon entering the desired frequency the system will calculate the nearest frequency that it can handle according to the resolution of internal timers.
     // @Range: 0 10000
     // @User: Advanced
-    AP_GROUPINFO("WSP_FRQ", 3, AP_RangeFinder_Wasp, frq, 100),
+    AP_GROUPINFO("WSP_FRQ", 3, AP_RangeFinder_Wasp, frq, 20),
 
     // @Param: WSP_AVG
     // @DisplayName: Multi-pulse averages
     // @Description: Sets the number of pulses to be used in multi-pulse averaging mode. In this mode, a sequence of rapid fire ranges are taken and then averaged to improve the accuracy of the measurement
     // @Range: 0 255
     // @User: Advanced
-    AP_GROUPINFO("WSP_AVG", 4, AP_RangeFinder_Wasp, avg, 4),
+    AP_GROUPINFO("WSP_AVG", 4, AP_RangeFinder_Wasp, avg, 2),
 
     // @Param: WSP_THR
     // @DisplayName: Sensitivity threshold
@@ -56,9 +56,15 @@ const AP_Param::GroupInfo AP_RangeFinder_Wasp::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WSP_THR", 5, AP_RangeFinder_Wasp, thr, -1),
 
+    // @Param: WSP_BAUD
+    // @DisplayName: Baud rate
+    // @Description: Desired baud rate
+    // @Values: 0:Low Speed,1:High Speed
+    // @User: Advanced
+    AP_GROUPINFO("WSP_BAUD", 6, AP_RangeFinder_Wasp, baud, 0),
+
     AP_GROUPEND
 };
-
 
 AP_RangeFinder_Wasp::AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
                                          AP_SerialManager &serial_manager,
@@ -151,7 +157,7 @@ void AP_RangeFinder_Wasp::update(void) {
             break;
         case WASP_CFG_ENCODING:
             uart->end();
-            uart->begin(baud > 0 ? 912600 : 115200);
+            uart->begin(baud > 0 ? 921600 : 115200);
             hal.util->snprintf(command, COMMAND_BUFFER_LEN, ">LBE LITTLE\n");
             break;
         case WASP_CFG_PROTOCOL:
