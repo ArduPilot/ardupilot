@@ -13,7 +13,9 @@ void Sub::update_home_from_EKF()
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)
-        set_home_to_current_location(false);
+        if (!set_home_to_current_location(false)) {
+            // ignore this failure
+        }
     }
 }
 
@@ -25,7 +27,9 @@ void Sub::set_home_to_current_location_inflight()
     if (inertial_nav.get_location(temp_loc)) {
         const struct Location &ekf_origin = inertial_nav.get_origin();
         temp_loc.alt = ekf_origin.alt;
-        set_home(temp_loc, false);
+        if (!set_home(temp_loc, false)) {
+            // ignore this failure
+        }
     }
 }
 
@@ -65,7 +69,9 @@ bool Sub::set_home(const Location& loc, bool lock)
     const bool home_was_set = ahrs.home_is_set();
 
     // set ahrs home (used for RTL)
-    ahrs.set_home(loc);
+    if (!ahrs.set_home(loc)) {
+        return false;
+    }
 
     // init inav and compass declination
     if (!home_was_set) {
