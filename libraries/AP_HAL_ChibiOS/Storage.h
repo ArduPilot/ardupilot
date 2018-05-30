@@ -57,13 +57,15 @@ private:
     uint8_t _flash_page;
     bool _flash_failed;
     uint32_t _last_re_init_ms;
-    
+
+#ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
+#endif
     
     void _flash_load(void);
     void _flash_write(uint16_t line);
