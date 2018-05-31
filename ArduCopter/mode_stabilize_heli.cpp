@@ -32,6 +32,9 @@ void Copter::ModeStabilize_Heli::run()
     // that the servos move in a realistic fashion while disarmed for operational checks.
     // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
     
+//  This code is a remnant of when Rob didn't trust changes in the main code wouldn't cause an in
+//  flight disarm.  Making this code align with multi's would help across the board to remove #if statements.
+//  I think we are less likely now to suffer an inflight disarming
     if(!motors->armed()) {
         copter.heli_flags.init_targets_on_arming = true;
         attitude_control->set_yaw_target_to_current_heading();
@@ -47,7 +50,7 @@ void Copter::ModeStabilize_Heli::run()
     }
 
     // clear landing flag above zero throttle
-    if (motors->armed() && motors->get_interlock() && motors->rotor_runup_complete() && !ap.throttle_zero) {
+    if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED && !ap.throttle_zero) {
         set_land_complete(false);
     }
 
