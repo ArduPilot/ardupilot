@@ -88,7 +88,7 @@ private:
     }; 
     static const pin_info pin_config[];
     
-    static adcsample_t samples[];
+    static adcsample_t *samples;
     static uint32_t sample_sum[];
     static uint32_t sample_count;
 };
