@@ -868,6 +868,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
 
     case MSG_NAV_RELPOSNED: {
+        Debug("MSG_NAV_RELPOSNED RTK status Received");
 
         state.rtk_age_ms    = 0xFFFFFFFF;
 
@@ -885,15 +886,6 @@ AP_GPS_UBLOX::_parse_gps(void)
     	state.rtk_time_week_ms = _buffer.rtk.itow_ms;
     	state.rtk_week_number = state.time_week;
 
-    	std::bitset<32> flags = _buffer.rtk.flags_bitfield;
-    	uint8_t gnss_fix_ok = flags[0];
-    	uint8_t diff_soln = flags[1];
-    	uint8_t rel_pos_valid = flags[2];
-    	uint8_t carr_soln = flags[4] << 1 | flags[3];
-    	uint8_t is_moving = flags[5];
-    	uint8_t ref_pos_miss =  flags[6];
-    	uint8_t ref_obs_miss = flags[7];
-
         Debug("MSG_NAV_RELPOSNED RTK status=%u pos_n=%d, pos_e=%d, pos_d=%d, acc_n=%d, acc_e=%d, acc_d=%d",
               _buffer.rtk.flags_bitfield,
               _buffer.rtk.rel_pos_n_cm,
@@ -903,6 +895,15 @@ AP_GPS_UBLOX::_parse_gps(void)
               acc_e_mm,
               acc_d_mm
         );
+
+    	std::bitset<32> flags = _buffer.rtk.flags_bitfield;
+    	uint8_t gnss_fix_ok = flags[0];
+    	uint8_t diff_soln = flags[1];
+    	uint8_t rel_pos_valid = flags[2];
+    	uint8_t carr_soln = flags[4] << 1 | flags[3];
+    	uint8_t is_moving = flags[5];
+    	uint8_t ref_pos_miss =  flags[6];
+    	uint8_t ref_obs_miss = flags[7];
 
         Debug("MSG_NAV_RELPOSNED RTK Status: fix_ok=%u, diff_soln=%u, rel_pos_valid=%u,"
         		" carr_soln=%u, is_moving=%u, ref_pos_miss=%u, ref_obs_miss=%u",
