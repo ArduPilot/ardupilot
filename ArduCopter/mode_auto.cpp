@@ -733,22 +733,38 @@ void Copter::ModeAuto::takeoff_run()
         const Vector3f target = wp_nav->get_wp_destination();
         wp_start(target);
     }
+
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    }
+
+    // aircraft stays in landed state until rotor speed runup has finished
+    if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        set_land_complete(false);
+    } else {
+        wp_nav->shift_wp_origin_to_current_pos();
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    copter.auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // auto_wp_run - runs the auto waypoint controller
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::wp_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
-        //    (of course it would be better if people just used take-off)
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
-        return;
-    }
-
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -757,6 +773,23 @@ void Copter::ModeAuto::wp_run()
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
+    }
+
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        return;
+    }
+
+    // if landed, spool down motors and disarm
+    if (ap.land_complete) {
+        zero_throttle_and_hold_attitude();
+        pos_control->relax_alt_hold_controllers(0.0f);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+            copter.init_disarm_motors();
+        }
+        return;
     }
 
     // set motors to full range
@@ -826,11 +859,20 @@ void Copter::ModeAuto::spline_run()
 void Copter::ModeAuto::land_run()
 {
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
-        // set target to current position
-        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
+        pos_control->relax_alt_hold_controllers(0.0f);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        return;
+    }
+
+    // if landed, spool down motors (disarm is handled in verify_land)
+    if (ap.land_complete) {
+        zero_throttle_and_hold_attitude();
+        loiter_nav->init_target();
+        pos_control->relax_alt_hold_controllers(0.0f);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         return;
     }
 
@@ -1512,7 +1554,7 @@ bool Copter::ModeAuto::verify_land()
 
         case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = ap.land_complete;
+            retval = ap.land_complete && (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED);
             break;
 
         default:
