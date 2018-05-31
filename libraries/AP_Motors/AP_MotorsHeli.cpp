@@ -209,6 +209,9 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     // load boot-up servo test cycles into counter to be consumed
     _servo_test_cycle_counter = _servo_test;
 
+    // determine counter for servo hold 
+    _servo_hold_counter = _loop_rate * AP_MOTORS_HELI_SERVO_HOLD_TIME;
+
     // ensure inputs are not passed through to servos on start-up
     _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
 
@@ -296,7 +299,14 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if (_servo_test_cycle_counter > 0){
+    if (_servo_hold_counter > 0){
+        // hold servos at trim while downstream 3 axis gyro initializes
+        _roll_in = 0.0f;
+        _pitch_in = 0.0f;
+        _throttle_filter.reset(_collective_mid_pct);
+        _yaw_in = 0.0f;
+        _servo_hold_counter--;
+    } else if (_servo_test_cycle_counter > 0){
         // perform boot-up servo test cycle if enabled
         servo_test();
     } else {

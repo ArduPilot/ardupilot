@@ -44,6 +44,9 @@
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
 
+// time to hold servo out at trim for downstream 3 axis gyro to initialize
+#define AP_MOTORS_HELI_SERVO_HOLD_TIME          5
+
 class AP_HeliControls;
 
 /// @class      AP_MotorsHeli
@@ -210,4 +213,5 @@ protected:
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
     uint8_t         _servo_test_cycle_counter = 0;   // number of test cycles left to run after bootup
+    uint16_t        _servo_hold_counter;             // counter for servo hold while downstream 3 axis gyro initializes
 };
