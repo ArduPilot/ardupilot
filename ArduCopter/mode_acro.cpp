@@ -23,25 +23,23 @@ bool Copter::ModeAcro::init(bool ignore_checks)
 
 void Copter::ModeAcro::run()
 {
-    float target_roll, target_pitch, target_yaw;
-    float pilot_throttle_scaled;
-
-    // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
-    // clear landing flag
-    set_land_complete(false);
-
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
     // convert the input to the desired body frame rate
+    float target_roll, target_pitch, target_yaw;
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in(), g2.acro_thr_mid);
+    float pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in(), g2.acro_thr_mid);
+
+    if (!motors->armed()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        attitude_control->relax_attitude_controllers();
+    } else if (ap.throttle_zero || !motors->get_interlock()) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        attitude_control->relax_attitude_controllers();
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        set_land_complete(false);
+    }
 
     // run attitude controller
     attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
