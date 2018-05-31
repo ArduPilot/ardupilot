@@ -851,6 +851,57 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.horizontal_accuracy = 0;
 #endif
         break;
+
+    case MSG_NAV_RELPOSNED: {
+        Debug("MSG_NAV_RELPOSNED RTK status Received");
+
+        state.rtk_age_ms    = 0xFFFFFFFF;
+
+    	state.rtk_baseline_x_mm = _buffer.rtk.rel_pos_n_cm*10+_buffer.rtk.rel_pos_hp_n_mm;
+    	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm;
+    	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm;
+
+    	int32_t acc_n_mm = _buffer.rtk.acc_n_mm;
+    	int32_t acc_e_mm = _buffer.rtk.acc_e_mm;
+    	int32_t acc_d_mm = _buffer.rtk.acc_d_mm;
+
+    	// rms of error terms
+    	state.rtk_accuracy = safe_sqrt(acc_n_mm*acc_n_mm + acc_e_mm*acc_e_mm + acc_d_mm*acc_d_mm);
+    	state.rtk_baseline_coords_type = 1; // NED
+    	state.rtk_time_week_ms = _buffer.rtk.itow_ms;
+    	state.rtk_week_number = state.time_week;
+
+        Debug("MSG_NAV_RELPOSNED RTK status=%u pos_n=%d, pos_e=%d, pos_d=%d, acc_n=%d, acc_e=%d, acc_d=%d",
+              _buffer.rtk.flags_bitfield,
+              _buffer.rtk.rel_pos_n_cm,
+              _buffer.rtk.rel_pos_e_cm,
+              _buffer.rtk.rel_pos_d_cm,
+              acc_n_mm,
+              acc_e_mm,
+              acc_d_mm
+        );
+
+    	std::bitset<32> flags = _buffer.rtk.flags_bitfield;
+    	uint8_t gnss_fix_ok = flags[0];
+    	uint8_t diff_soln = flags[1];
+    	uint8_t rel_pos_valid = flags[2];
+    	uint8_t carr_soln = flags[4] << 1 | flags[3];
+    	uint8_t is_moving = flags[5];
+    	uint8_t ref_pos_miss =  flags[6];
+    	uint8_t ref_obs_miss = flags[7];
+
+        Debug("MSG_NAV_RELPOSNED RTK Status: fix_ok=%u, diff_soln=%u, rel_pos_valid=%u,"
+        		" carr_soln=%u, is_moving=%u, ref_pos_miss=%u, ref_obs_miss=%u",
+        		gnss_fix_ok,
+        		diff_soln,
+        		rel_pos_valid,
+        		carr_soln,
+        		is_moving,
+        		ref_pos_miss,
+        		ref_obs_miss
+        );
+       }
+       break;
     case MSG_STATUS:
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
