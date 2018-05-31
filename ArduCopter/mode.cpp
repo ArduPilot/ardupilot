@@ -379,17 +379,16 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
 
 void Copter::Mode::zero_throttle_and_relax_ac()
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
-#else
-    //motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    // multicopters do not stabilize roll/pitch/yaw when disarmed
-    attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
-#endif
 }
 
+void Copter::Mode::zero_throttle_and_hold_attitude()
+{
+    // run attitude controller
+    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
+}
 /*
   get a height above ground estimate for landing
  */

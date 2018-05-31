@@ -109,6 +109,7 @@ protected:
 
     // helper functions
     void zero_throttle_and_relax_ac();
+    void zero_throttle_and_hold_attitude();
 
     // functions to control landing
     // in modes that support landing
@@ -193,8 +194,6 @@ protected:
     void set_throttle_takeoff(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
-
-    // end pass-through functions
 };
 
 
