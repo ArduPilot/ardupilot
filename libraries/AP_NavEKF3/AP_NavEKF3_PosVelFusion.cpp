@@ -113,10 +113,10 @@ void NavEKF3_core::ResetPosition(void)
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - extNavDataDelayed.time_ms < 250) {
-            // use the range beacon data as a second preference
+            // use external nav system data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
-            // set the variances from the beacon alignment filter
+            // set the variances as received from external nav system data
             P[8][8] = P[7][7] = sq(extNavDataDelayed.posErr);
         }
     }
@@ -806,8 +806,8 @@ void NavEKF3_core::selectHeightForFusion()
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
     // select height source
-    if (extNavUsedForPos) {
-        // always use external vision as the hight source if using for position.
+    if (extNavUsedForPos && (frontend->_altSource == 4)) {
+        // always use external vision as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EV;
     } else if (((frontend->_useRngSwHgt > 0) || (frontend->_altSource == 1)) && (imuSampleTime_ms - rngValidMeaTime_ms < 500)) {
         if (frontend->_altSource == 1) {
