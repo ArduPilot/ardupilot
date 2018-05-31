@@ -43,7 +43,7 @@ void Copter::ModeAltHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Alt Hold State Machine Determination
-    if (!motors->armed() || !motors->get_interlock()) {
+    if (!motors->armed()) {
         althold_state = AltHold_MotorStopped;
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
         althold_state = AltHold_Takeoff;
@@ -59,7 +59,6 @@ void Copter::ModeAltHold::run()
     case AltHold_MotorStopped:
 
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
 #if FRAME_CONFIG == HELI_FRAME    
@@ -72,10 +71,13 @@ void Copter::ModeAltHold::run()
 #else
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Takeoff:
+
+//  This code is a remnant of when Rob didn't trust changes in the main code wouldn't cause an in
+//  flight disarm.  Making this code align with multi's would help across the board to remove #if statements.
+//  I think we are less likely now to suffer an inflight disarming
 #if FRAME_CONFIG == HELI_FRAME    
         if (heli_flags.init_targets_on_arming) {
             heli_flags.init_targets_on_arming=false;
@@ -99,24 +101,27 @@ void Copter::ModeAltHold::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-        // call position controller
+        // set position controller targets
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Landed:
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
+#if FRAME_CONFIG == HELI_FRAME
+        if ((target_climb_rate < 0.0f) && !motors->get_interlock()) {
+#else
         if (target_climb_rate < 0.0f) {
+#endif
             motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
 
-#if FRAME_CONFIG == HELI_FRAME    
+//  This code is a remnant of when Rob didn't trust changes in the main code wouldn't cause an in
+//  flight disarm.  Making this code align with multi's would help across the board to remove #if statements.
+//  I think we are less likely now to suffer an inflight disarming
+#if FRAME_CONFIG == HELI_FRAME
         if (heli_flags.init_targets_on_arming) {
             attitude_control->reset_rate_controller_I_terms();
             attitude_control->set_yaw_target_to_current_heading();
@@ -128,9 +133,7 @@ void Copter::ModeAltHold::run()
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
 #endif
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-        pos_control->update_z_controller();
         break;
 
     case AltHold_Flying:
@@ -141,18 +144,21 @@ void Copter::ModeAltHold::run()
         copter.avoid.adjust_roll_pitch(target_roll, target_pitch, copter.aparm.angle_max);
 #endif
 
-        // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
         // adjust climb rate using rangefinder
         target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call position controller
+        // set position controller target
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        pos_control->update_z_controller();
         break;
     }
+
+    // call attitude controller
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+
+    // call z-axis position controller
+    pos_control->update_z_controller();
+
 }
