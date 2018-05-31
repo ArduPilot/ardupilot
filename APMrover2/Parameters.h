@@ -351,6 +351,9 @@ public:
 
     // follow mode library
     AP_Follow follow;
+
+    // frame type for vehicle (used for vectored motor vehicles and custom motor configs)
+    AP_Int8 frame_type;
 };
 
 extern const AP_Param::Info var_info[];

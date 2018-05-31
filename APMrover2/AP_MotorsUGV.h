@@ -25,6 +25,14 @@ public:
         MOTOR_TEST_THROTTLE_RIGHT = 4,
     };
 
+    // supported custom motor configurations
+    enum frame_type {
+        FRAME_TYPE_UNDEFINED = 0,
+        FRAME_TYPE_OMNI3 = 1,
+        FRAME_TYPE_OMNIX = 2,
+        FRAME_TYPE_OMNIPLUS = 3,
+    };
+
     // initialise motors
     void init();
 
@@ -36,6 +44,18 @@ public:
 
     // setup servo output ranges
     void setup_servo_output();
+
+    // config for frames with vectored motors
+    void setup_motors();
+
+    // add motor using separate throttle, steering and lateral factors for frames with custom motor configuration
+    void add_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
+
+    // add a motor and set up output function
+    void add_motor_num(int8_t motor_num);
+
+    // disable motor and remove all throttle, steering and lateral factor for this motor
+    void clear_motors(int8_t motor_num);
 
     // get or set steering as a value from -4500 to +4500
     //   apply_scaling should be set to false for manual modes where
@@ -57,9 +77,6 @@ public:
 
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
-
-    //true if vehicle is capable of lateral movement
-    bool has_lateral_control() const;
 
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
@@ -101,11 +118,11 @@ protected:
     // output to regular steering and throttle channels
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
-    // output for omni style frames
-    void output_omni(bool armed, float steering, float throttle, float lateral);
-
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
+
+    // output for vectored and custom motors configuration
+    void output_custom_config(bool armed, float steering, float throttle, float lateral);
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
@@ -121,6 +138,8 @@ protected:
 
     // external references
     AP_ServoRelayEvents &_relayEvents;
+
+    static const int8_t AP_MOTORS_NUM_MOTORS_MAX = 4;
 
     // parameters
     AP_Int8 _pwm_type;  // PWM output type
@@ -138,5 +157,11 @@ protected:
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
-    float   _lateral;  // requested lateral input as a value from -4500 to +4500
+    float   _lateral;  // requested lateral input as a value from -100 to +100
+
+    // custom config variables
+    float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
+    float   _steering_factor[AP_MOTORS_NUM_MOTORS_MAX];
+    float   _lateral_factor[AP_MOTORS_NUM_MOTORS_MAX];
+    uint8_t   _motors_num;
 };
