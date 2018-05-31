@@ -7,6 +7,7 @@
 void Copter::failsafe_radio_on_event()
 {
     // if motors are not armed there is nothing to do
+//should this use spool mode instead of motors->armed()??
     if( !motors->armed() ) {
         return;
     }
@@ -55,6 +56,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
     Log_Write_Error(ERROR_SUBSYSTEM_FAILSAFE_BATT, ERROR_CODE_FAILSAFE_OCCURRED);
 
     // failsafe check
+//should this use spool mode instead of motors->armed()??
     if (should_disarm_on_failsafe()) {
         init_disarm_motors();
     } else {
@@ -111,6 +113,7 @@ void Copter::failsafe_gcs_check()
     }
 
     // do nothing if gcs failsafe already triggered or motors disarmed
+//should this use spool mode instead of motors->armed()??
     if (failsafe.gcs || !motors->armed()) {
         return;
     }

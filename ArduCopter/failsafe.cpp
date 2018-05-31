@@ -54,6 +54,7 @@ void Copter::failsafe_check()
         // disarm the motors->
         in_failsafe = true;
         // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
+// should this use spool mode instead of motors->armed??
         if (motors->armed()) {
             motors->output_min();
         }
@@ -64,6 +65,7 @@ void Copter::failsafe_check()
     if (failsafe_enabled && in_failsafe && tnow - failsafe_last_timestamp > 1000000) {
         // disarm motors every second
         failsafe_last_timestamp = tnow;
+// should this use spool mode instead of motors->armed??
         if(motors->armed()) {
             motors->armed(false);
             motors->output();

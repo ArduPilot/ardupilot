@@ -2,6 +2,7 @@
 
 void Copter::update_ground_effect_detector(void)
 {
+//should this use spool mode instead of motors->armed()??
     if(!g2.gndeffect_comp_enabled || !motors->armed()) {
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
@@ -32,6 +33,7 @@ void Copter::update_ground_effect_detector(void)
     // takeoff logic
 
     // if we are armed and haven't yet taken off
+//should this use spool mode instead of motors->armed()??
     if (motors->armed() && ap.land_complete && !gndeffect_state.takeoff_expected) {
         gndeffect_state.takeoff_expected = true;
     }

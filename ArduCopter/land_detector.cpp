@@ -41,6 +41,7 @@ void Copter::update_land_detector()
     // range finder :                       tend to be problematic at very short distances
     // input throttle :                     in slow land the input throttle may be only slightly less than hover
 
+// Should this be spool mode instead of motors->armed??
     if (!motors->armed()) {
         // if disarmed, always landed.
         set_land_complete(true);
@@ -116,6 +117,7 @@ void Copter::set_land_complete(bool b)
     bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
     const bool mode_disarms_on_land = flightmode->allows_arming(false) && !flightmode->has_manual_throttle();
 
+// Should this be spool mode instead of motors->armed??
     if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
         init_disarm_motors();
     }
@@ -141,6 +143,7 @@ void Copter::update_throttle_thr_mix()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
+// Should this be spool mode instead of motors->armed??
     if(!motors->armed() || ap.land_complete) {
         attitude_control->set_throttle_mix_min();
         return;

@@ -16,6 +16,8 @@ bool Copter::Mode::do_user_takeoff_start(float takeoff_alt_cm)
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
 bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
 {
+// replace with ??
+//  if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
     if (!copter.motors->armed()) {
         return false;
     }
@@ -32,6 +34,7 @@ bool Copter::Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         return false;
     }
 
+// this can be removed as the spool mode being THROTTLE_UNLIMITED ensures rotor_runup_complete
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
     if (!copter.motors->rotor_runup_complete()) {
@@ -140,6 +143,10 @@ void Copter::Mode::auto_takeoff_set_start_alt(void)
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
     
+// replace with 
+//  if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN || !ap.auto_armed || ap.land_complete) {
+// or should this be 
+//  if (motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED || !ap.auto_armed || ap.land_complete) {
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
         // we are not flying, add the wp_navalt_min
         auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;

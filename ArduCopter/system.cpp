@@ -322,6 +322,7 @@ bool Copter::ekf_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
+//should spool mode be used instead of motors->armed??
     if (!motors->armed()) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
     } else {
@@ -361,6 +362,7 @@ bool Copter::optflow_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal relative position
+//should spool mode be used instead of motors->armed??
     if (!motors->armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
     } else {
@@ -375,6 +377,7 @@ void Copter::update_auto_armed()
     // disarm checks
     if(ap.auto_armed){
         // if motors are disarmed, auto_armed should also be false
+//should spool mode be used instead of motors->armed??
         if(!motors->armed()) {
             set_auto_armed(false);
             return;
@@ -386,6 +389,7 @@ void Copter::update_auto_armed()
 #if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
+//should spool mode be used instead of motors->armed??  since rotor_runup_complete is required then THROTTLE UNLIMITED is required for spool mode
         if(ap.land_complete && !motors->rotor_runup_complete()) {
             set_auto_armed(false);
         }
@@ -395,6 +399,7 @@ void Copter::update_auto_armed()
         
 #if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
+//should spool mode be used instead of motors->armed??  since rotor_runup_complete is required then THROTTLE UNLIMITED is required for spool mode
         if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
             set_auto_armed(true);
         }

@@ -38,6 +38,7 @@ void Copter::update_throttle_hover()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if not armed or landed exit
+//should this use spool mode instead of motors->armed()
     if (!motors->armed() || ap.land_complete) {
         return;
     }

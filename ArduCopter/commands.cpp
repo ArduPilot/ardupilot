@@ -9,6 +9,7 @@ void Copter::update_home_from_EKF()
     }
 
     // special logic if home is set in-flight
+//should this use spool mode instead of motors->armed()???
     if (motors->armed()) {
         set_home_to_current_location_inflight();
     } else {

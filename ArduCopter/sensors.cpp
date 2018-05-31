@@ -167,6 +167,7 @@ void Copter::compass_cal_update()
             compass.cancel_calibration_all();
         }
     } else {
+//should this be spool mode instead of motors->armed??
         bool stick_gesture_detected = compass_cal_stick_gesture_begin != 0 && !motors->armed() && channel_yaw->get_control_in() > 4000 && channel_throttle->get_control_in() > 900;
         uint32_t tnow = millis();
 

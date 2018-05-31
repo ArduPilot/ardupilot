@@ -23,6 +23,10 @@ Copter::Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
+// Would it be possible to replace this #if statement with 
+// if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
+// it might be longer cause you would have to include all of the heli frames but it would remove 
+// the #if statements.
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags(copter.heli_flags),
 #endif
@@ -194,7 +198,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED){
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
         return false;
@@ -365,12 +369,12 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
         // can't takeoff unless we want to go up...
         return false;
     }
-#if FRAME_CONFIG == HELI_FRAME
-    if (!copter.motors->rotor_runup_complete()) {
-        // hold heli on the ground until rotor speed runup has finished
+//  This now applies to multi's and Heli's
+    if (copter.motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        // hold aircraft on the ground until rotor speed runup has finished
         return false;
     }
-#endif
+
     return true;
 }
 
