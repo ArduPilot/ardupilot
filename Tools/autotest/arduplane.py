@@ -6,6 +6,7 @@ import math
 import os
 
 import pexpect
+from pymavlink import quaternion
 from pymavlink import mavutil
 
 from pysim import util
@@ -302,6 +303,94 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('FBWA')
         self.set_rc(3, 1700)
         return self.wait_level_flight()
+
+    def set_attitude_target(self):
+        """Test setting of attitude target in guided mode."""
+        # mode guided:
+        self.mavproxy.send('mode GUIDED\n')
+        self.wait_mode('GUIDED')
+
+        target_roll_degrees = 70
+        state_roll_over = "roll-over"
+        state_stabilize_roll = "stabilize-roll"
+        state_hold = "hold"
+        state_roll_back = "roll-back"
+        state_done = "done"
+
+        tstart = self.get_sim_time()
+
+        try:
+            state = state_roll_over
+            while state != state_done:
+                if self.get_sim_time() - tstart > 20:
+                    raise NotAchievedException()
+
+                m = self.mav.recv_match(type='ATTITUDE',
+                                        blocking=True,
+                                        timeout=0.1)
+                if m is None:
+                    continue
+
+                r = math.degrees(m.roll)
+                if state == state_roll_over:
+                    target_roll_degrees = 70
+                    if abs(r - target_roll_degrees) < 10:
+                        state = state_stabilize_roll
+                        stabilize_start = self.get_sim_time()
+                elif state == state_stabilize_roll:
+                    # just give it a little time to sort it self out
+                    if self.get_sim_time() - stabilize_start > 2:
+                        state = state_hold
+                        hold_start = self.get_sim_time()
+                elif state == state_hold:
+                    target_roll_degrees = 70
+                    if self.get_sim_time() - hold_start > 10:
+                        state = state_roll_back
+                    if abs(r - target_roll_degrees) > 10:
+                        self.progress("Failed to hold attitude")
+                        raise NotAchievedException()
+                elif state == state_roll_back:
+                    target_roll_degrees = 0
+                    if abs(r - target_roll_degrees) < 10:
+                        state = state_done
+                else:
+                    raise ValueError()
+
+                self.progress("%s Roll: %f desired=%f" %
+                              (state, r, target_roll_degrees))
+
+                time_boot_millis = 0 # FIXME
+                target_system = 1 # FIXME
+                target_component = 1 # FIXME
+                type_mask = 0b10000001 ^ 0xFF # FIXME
+                # attitude in radians:
+                q = quaternion.Quaternion([math.radians(target_roll_degrees),
+                                           0 ,
+                                           0])
+                roll_rate_radians = 0.5
+                pitch_rate_radians = 0
+                yaw_rate_radians = 0
+                thrust = 1.0
+                self.mav.mav.set_attitude_target_send(time_boot_millis,
+                                                      target_system,
+                                                      target_component,
+                                                      type_mask,
+                                                      q,
+                                                      roll_rate_radians,
+                                                      pitch_rate_radians,
+                                                      yaw_rate_radians,
+                                                      thrust)
+        except Exception as e:
+            self.mavproxy.send('mode FBWA\n')
+            self.wait_mode('FBWA')
+            self.set_rc(3, 1700)
+            raise e
+
+        # back to FBWA
+        self.mavproxy.send('mode FBWA\n')
+        self.wait_mode('FBWA')
+        self.set_rc(3, 1700)
+        self.wait_level_flight()
 
     def test_stabilize(self, count=1):
         """Fly stabilize mode."""
@@ -624,6 +713,8 @@ class AutoTestPlane(AutoTest):
             self.wait_mode('MANUAL')
 
             self.run_test("Takeoff", self.takeoff)
+
+            self.run_test("Set Attitude Target", self.set_attitude_target)
 
             self.run_test("Fly left circuit", self.fly_left_circuit)
 
