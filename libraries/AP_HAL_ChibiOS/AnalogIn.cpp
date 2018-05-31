@@ -60,7 +60,7 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(AnalogIn::pin_config)
 
 // samples filled in by ADC DMA engine
-adcsample_t AnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];
+adcsample_t *AnalogIn::samples;
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_count;
 
@@ -204,6 +204,9 @@ void AnalogIn::init()
     if (ADC_GRP1_NUM_CHANNELS == 0) {
         return;
     }
+
+    samples = (adcsample_t *)hal.util->malloc_type(sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS, AP_HAL::Util::MEM_DMA_SAFE);
+
     adcStart(&ADCD1, NULL);
     memset(&adcgrpcfg, 0, sizeof(adcgrpcfg));
     adcgrpcfg.circular = true;
