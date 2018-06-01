@@ -42,7 +42,6 @@ public:
         _ekf(ahrs),
         _ahrs(ahrs),
         _state(GIMBAL_STATE_NOT_PRESENT),
-        _yaw_rate_ff_ef_filt(0.0f),
         _vehicle_yaw_rate_ef_filt(0.0f),
         _vehicle_to_gimbal_quat(),
         _vehicle_to_gimbal_quat_filt(),
@@ -68,15 +67,15 @@ public:
 
     void set_lockedToBody(bool val) { _lockedToBody = val; }
 
-    void write_logs(DataFlash_Class* dataflash);
+    void write_logs();
 
     float get_log_dt() { return _log_dt; }
 
     void disable_torque_report() { _gimbalParams.set_param(GMB_PARAM_GMB_SND_TORQUE, 0); }
     void fetch_params() { _gimbalParams.fetch_params(); }
 
-    void handle_param_value(DataFlash_Class *dataflash, mavlink_message_t *msg) {
-        _gimbalParams.handle_param_value(dataflash, msg);
+    void handle_param_value(mavlink_message_t *msg) {
+        _gimbalParams.handle_param_value(msg);
     }
 
 private:
@@ -119,7 +118,6 @@ private:
         Vector3f joint_angles;
     } _measurement;
 
-    float _yaw_rate_ff_ef_filt;
     float _vehicle_yaw_rate_ef_filt;
 
     static const uint8_t _compid = MAV_COMP_ID_GIMBAL;
@@ -136,8 +134,6 @@ private:
     float _max_torque;
 
     float _ang_vel_mag_filt;
-
-    mavlink_channel_t _chan;
 
     Vector3f    _ang_vel_dem_rads;       // rad/s
     Vector3f    _att_target_euler_rad;   // desired earth-frame roll, tilt and pan angles in radians

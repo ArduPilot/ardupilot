@@ -23,9 +23,6 @@ extern const AP_HAL::HAL &hal;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-#define LSM303D_DRDY_M_PIN RPI_GPIO_27
-#endif
 #endif
 
 #ifndef LSM303D_DRDY_M_PIN
@@ -227,7 +224,7 @@ bool AP_Compass_LSM303D::_read_sample()
     } rx;
 
     if (_register_read(ADDR_CTRL_REG7) != _reg7_expected) {
-        hal.console->println("LSM303D _read_data_transaction_accel: _reg7_expected unexpected");
+        hal.console->printf("LSM303D _read_data_transaction_accel: _reg7_expected unexpected\n");
         return false;
     }
 
@@ -278,13 +275,8 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
     _dev->set_device_type(DEVTYPE_LSM303D);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-    // FIXME: wrong way to force internal compass
-    set_external(_compass_instance, false);
-#endif
-
     // read at 100Hz
-    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, bool));
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
 
     return true;
 }
@@ -327,7 +319,7 @@ bool AP_Compass_LSM303D::_hardware_init()
         }
     }
     if (tries == 5) {
-        hal.console->println("Failed to boot LSM303D 5 times");
+        hal.console->printf("Failed to boot LSM303D 5 times\n");
         goto fail_tries;
     }
 
@@ -343,10 +335,10 @@ fail_whoami:
     return false;
 }
 
-bool AP_Compass_LSM303D::_update()
+void AP_Compass_LSM303D::_update()
 {
     if (!_read_sample()) {
-        return true;
+        return;
     }
 
     Vector3f raw_field = Vector3f(_mag_x, _mag_y, _mag_z) * _mag_range_scale;
@@ -355,12 +347,12 @@ bool AP_Compass_LSM303D::_update()
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, AP_HAL::micros(), _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
 
-    if (_sem->take(0)) {
+    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _mag_x_accum += raw_field.x;
         _mag_y_accum += raw_field.y;
         _mag_z_accum += raw_field.z;
@@ -373,7 +365,6 @@ bool AP_Compass_LSM303D::_update()
         }
         _sem->give();
     }
-    return true;
 }
 
 // Read Sensor data

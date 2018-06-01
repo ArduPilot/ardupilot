@@ -58,10 +58,19 @@ public:
 
     enum Invensense_Type {
         Invensense_MPU6000=0,
+        Invensense_MPU6500,
         Invensense_MPU9250,
         Invensense_ICM20608,
+        Invensense_ICM20602,
+        Invensense_ICM20789,
+        Invensense_ICM20689,
     };
-    
+
+    // acclerometers on Invensense sensors will return values up to
+    // 24G, but they are not guaranteed to be remotely linear past
+    // 16G
+    const uint16_t multiplier_accel = INT16_MAX/(26*GRAVITY_MSS);
+
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -83,7 +92,7 @@ private:
     bool _data_ready();
 
     /* Poll for new data (non-blocking) */
-    bool _poll_data();
+    void _poll_data();
 
     /* Read and write functions taking the differences between buses into
      * account */
@@ -92,7 +101,7 @@ private:
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
     bool _accumulate(uint8_t *samples, uint8_t n_samples);
-    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples);
 
     bool _check_raw_temp(int16_t t2);
 
@@ -102,10 +111,14 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    uint16_t _error_count;
-
+    float temp_sensitivity = 1.0/340; // degC/LSB
+    float temp_zero = 36.53; // degC
+    
     float _temp_filtered;
     float _accel_scale;
+
+    float _fifo_accel_scale;
+    float _fifo_gyro_scale;
     LowPassFilter2pFloat _temp_filter;
 
     enum Rotation _rotation;
@@ -120,6 +133,12 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
+    // what downsampling rate are we using from the FIFO?
+    uint8_t _fifo_downsample_rate;
+
+    // what rate are we generating samples into the backend?
+    uint16_t _backend_rate_hz;
+
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
 
@@ -127,8 +146,8 @@ private:
     uint8_t *_fifo_buffer;
 
     /*
-      accumulators for fast sampling
-      See description in _accumulate_fast_sampling()
+      accumulators for sensor_rate sampling
+      See description in _accumulate_sensor_rate_sampling()
     */
     struct {
         Vector3f accel;
@@ -168,6 +187,7 @@ class AP_Invensense_AuxiliaryBus : public AuxiliaryBus
 
 public:
     AP_HAL::Semaphore *get_semaphore() override;
+    AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb) override;
 
 protected:
     AP_Invensense_AuxiliaryBus(AP_InertialSensor_Invensense &backend, uint32_t devid);
@@ -182,3 +202,7 @@ private:
     static const uint8_t MAX_EXT_SENS_DATA = 24;
     uint8_t _ext_sens_data = 0;
 };
+
+#ifndef INS_INVENSENSE_20789_I2C_ADDR
+#define INS_INVENSENSE_20789_I2C_ADDR 0x68
+#endif

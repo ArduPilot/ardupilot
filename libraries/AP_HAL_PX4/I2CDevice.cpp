@@ -22,6 +22,7 @@
 namespace PX4 {
 
 uint8_t PX4::PX4_I2C::instance;
+pthread_mutex_t PX4::PX4_I2C::instance_lock;
 
 DeviceBus I2CDevice::businfo[I2CDevice::num_buses];
 
@@ -53,7 +54,13 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 #else
         return 1;
 #endif
-        
+    case 2:
+        // map to expansion bus 2
+#ifdef PX4_I2C_BUS_EXPANSION1
+        return PX4_I2C_BUS_EXPANSION1;
+#else
+        return 2;
+#endif
     }
     // default to bus 1
     return 1;
@@ -62,34 +69,47 @@ uint8_t PX4_I2C::map_bus_number(uint8_t bus) const
 /*
   implement wrapper for PX4 I2C driver
  */
-bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len)
+bool PX4_I2C::do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len, bool split_transfers)
 {
     set_address(address);
     if (!init_done) {
+        if (pthread_mutex_lock(&instance_lock) != 0) {
+            return false;
+        }
         init_done = true;
         // we do late init() so we can setup the device paths
+        
         snprintf(devname, sizeof(devname), "AP_I2C_%u", instance);
         snprintf(devpath, sizeof(devpath), "/dev/api2c%u", instance);
         init_ok = (init() == OK);
         if (init_ok) {
             instance++;
         }
+        pthread_mutex_unlock(&instance_lock);
     }
     if (!init_ok) {
         return false;
     }
-    /*
-      splitting the transfer() into two pieces avoids a stop condition
-      with SCL low which is not supported on some devices (such as
-      LidarLite blue label)
-     */
-    if (send && send_len) {
-        if (transfer(send, send_len, nullptr, 0) != OK) {
-            return false;
+
+    if (split_transfers) {
+        /*
+          splitting the transfer() into two pieces avoids a stop condition
+          with SCL low which is not supported on some devices (such as
+          LidarLite blue label)
+        */
+        if (send && send_len) {
+            if (transfer(send, send_len, nullptr, 0) != OK) {
+                return false;
+            }
         }
-    }
-    if (recv && recv_len) {
-        if (transfer(nullptr, 0, recv, recv_len) != OK) {
+        if (recv && recv_len) {
+            if (transfer(nullptr, 0, recv, recv_len) != OK) {
+                return false;
+            }
+        }
+    } else {
+        // combined transfer
+        if (transfer(send, send_len, recv, recv_len) != OK) {
             return false;
         }
     }
@@ -120,7 +140,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     perf_begin(perf);
-    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len);
+    bool ret = _px4dev.do_transfer(_address, send, send_len, recv, recv_len, _split_transfers);
     perf_end(perf);
     return ret;
 }
@@ -150,11 +170,20 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 */
 bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
-    return false;
+    if (_busnum >= num_buses) {
+        return false;
+    }
+
+    struct DeviceBus &binfo = businfo[_busnum];
+
+    return binfo.adjust_timer(h, period_usec);
 }
-    
+
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address)
+I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
+                             uint32_t bus_clock,
+                             bool use_smbus,
+                             uint32_t timeout_ms)
 {
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address));
     return dev;

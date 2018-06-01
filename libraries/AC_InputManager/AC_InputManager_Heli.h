@@ -17,12 +17,16 @@
 class AC_InputManager_Heli : public AC_InputManager {
 public:
     // Constructor
-    AC_InputManager_Heli(uint16_t loop_rate):
-        AC_InputManager(loop_rate)
+    AC_InputManager_Heli()
+        : AC_InputManager()
     {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AC_InputManager_Heli(const AC_InputManager_Heli &other) = delete;
+    AC_InputManager_Heli &operator=(const AC_InputManager_Heli&) = delete;
 
     // get_pilot_desired_collective - rescale's pilot collective pitch input in Stabilize and Acro modes
     float get_pilot_desired_collective(int16_t control_in);
@@ -36,7 +40,6 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
-
     struct InputManagerHeliFlags {
         uint8_t use_stab_col        :   1;  // 1 if we should use Stabilise mode collective range, 0 for Acro range
     } _im_flags_heli;

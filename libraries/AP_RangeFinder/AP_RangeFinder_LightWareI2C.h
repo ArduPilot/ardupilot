@@ -9,18 +9,25 @@ class AP_RangeFinder_LightWareI2C : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
+                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // update state
     void update(void);
 
+protected:
+
+    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_LASER;
+    }
+
 private:
     // constructor
-    AP_RangeFinder_LightWareI2C(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     void init();
-    bool timer();
-    
+    void timer();
+
     // get a reading
     bool get_reading(uint16_t &reading_cm);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;

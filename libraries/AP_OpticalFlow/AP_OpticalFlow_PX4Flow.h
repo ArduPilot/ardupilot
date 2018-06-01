@@ -44,5 +44,5 @@ private:
     // setup sensor
     bool setup_sensor(void);
 
-    bool timer(void);
+    void timer(void);
 };

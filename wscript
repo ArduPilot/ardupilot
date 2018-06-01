@@ -23,6 +23,9 @@ from waflib import Build, ConfigSet, Configure, Context, Utils
 # this makes recompilation at least when defines change. which might
 # be sufficient.
 
+# Default installation prefix for Linux boards
+default_prefix = '/usr/'
+
 def _set_build_context_variant(variant):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
@@ -68,18 +71,49 @@ def options(opt):
         dest='autoconfig',
         action='store_false',
         default=True,
-        help='''
-Disable autoconfiguration feature. By default, the build system triggers a
-reconfiguration whenever it thinks it's necessary - this option disables that.
+        help='''Disable autoconfiguration feature. By default, the build system
+triggers a reconfiguration whenever it thinks it's necessary - this
+option disables that.
 ''')
 
     g.add_option('--no-submodule-update',
         dest='submodule_update',
         action='store_false',
         default=True,
-        help='''
-Don't update git submodules. Useful for building with submodules at specific
-revisions.
+        help='''Don't update git submodules. Useful for building with
+submodules at specific revisions.
+''')
+
+    g.add_option('--enable-header-checks', action='store_true',
+        default=False,
+        help="Enable checking of headers")
+
+    g.add_option('--default-parameters',
+        default=None,
+        help='set default parameters to embed in the firmware')
+
+    g = opt.ap_groups['linux']
+
+    linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
+    for k in linux_options:
+        option = opt.parser.get_option(k)
+        if option:
+            opt.parser.remove_option(k)
+            g.add_option(option)
+
+    g.add_option('--apstatedir',
+        action='store',
+        default='',
+        help='''Where to save data like parameters, log and terrain.
+This is the --localstatedir + ArduPilot's subdirectory [default:
+board-dependent, usually /var/lib/ardupilot]''')
+
+    g.add_option('--rsync-dest',
+        dest='rsync_dest',
+        action='store',
+        default='',
+        help='''Destination for the rsync Waf command. It can be passed during
+configuration in order to save typing.
 ''')
 
     g.add_option('--enable-benchmarks',
@@ -87,9 +121,9 @@ revisions.
         default=False,
         help='Enable benchmarks.')
 
-    g.add_option('--disable-lttng', action='store_true',
+    g.add_option('--enable-lttng', action='store_true',
         default=False,
-        help="Don't use lttng even if supported by board and dependencies available")
+        help="Enable lttng integration")
 
     g.add_option('--disable-libiio', action='store_true',
         default=False,
@@ -127,8 +161,6 @@ def configure(cfg):
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
     cfg.env.VARIANT = cfg.env.BOARD
-    if cfg.env.DEBUG:
-        cfg.env.VARIANT += '-debug'
 
     _set_build_context_variant(cfg.env.VARIANT)
     cfg.setenv(cfg.env.VARIANT)
@@ -153,6 +185,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
+    cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -190,6 +223,17 @@ def configure(cfg):
         cfg.srcnode.abspath() + '/libraries/',
     ])
 
+    cfg.find_program('rsync', mandatory=False)
+    if cfg.options.rsync_dest:
+        cfg.msg('Setting rsync destination to', cfg.options.rsync_dest)
+        cfg.env.RSYNC_DEST = cfg.options.rsync_dest
+
+    if cfg.options.enable_header_checks:
+        cfg.msg('Enabling header checks', cfg.options.enable_header_checks)
+        cfg.env.ENABLE_HEADER_CHECKS = True
+    else:
+        cfg.env.ENABLE_HEADER_CHECKS = False
+
     # TODO: Investigate if code could be changed to not depend on the
     # source absolute path.
     cfg.env.prepend_value('DEFINES', [
@@ -219,6 +263,17 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+def board(ctx):
+    env = ConfigSet.ConfigSet()
+    try:
+        p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
+        env.load(p)
+    except:
+        print('No board currently configured')
+        return
+
+    print('Board configured to: {}'.format(env.VARIANT))
+
 def _build_cmd_tweaks(bld):
     if bld.cmd == 'check-all':
         bld.options.all_tests = True
@@ -242,6 +297,17 @@ def _build_dynamic_sources(bld):
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
         ],
     )
+
+    if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
+        bld(
+            features='uavcangen',
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/uavcan/**/*.uavcan'),
+            output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
+            name='uavcan',
+            export_includes=[
+                bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+            ]
+        )
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -330,6 +396,12 @@ def _build_post_funs(bld):
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
 
+def load_pre_build(bld):
+    '''allow for a pre_build() function in build modules'''
+    brd = bld.get_board()
+    if getattr(brd, 'pre_build', None):
+        brd.pre_build(bld)    
+
 def build(bld):
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
@@ -340,9 +412,14 @@ def build(bld):
     bld.load('ardupilotwaf')
 
     bld.env.AP_LIBRARIES_OBJECTS_KW.update(
-        use='mavlink',
+        use=['mavlink'],
         cxxflags=['-include', 'ap_config.h'],
     )
+
+    load_pre_build(bld)
+
+    if bld.get_board().with_uavcan:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
 
     _build_cmd_tweaks(bld)
 
@@ -371,7 +448,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'plane', 'rover'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
@@ -382,3 +459,47 @@ for program_group in ('all', 'bin', 'tools', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
+
+class LocalInstallContext(Build.InstallContext):
+    """runs install using BLD/install as destdir, where BLD is the build variant directory"""
+    cmd = 'localinstall'
+
+    def __init__(self, **kw):
+        super(LocalInstallContext, self).__init__(**kw)
+        self.local_destdir = os.path.join(self.variant_dir, 'install')
+
+    def execute(self):
+        old_destdir = self.options.destdir
+        self.options.destdir = self.local_destdir
+        r = super(LocalInstallContext, self).execute()
+        self.options.destdir = old_destdir
+        return r
+
+class RsyncContext(LocalInstallContext):
+    """runs localinstall and then rsyncs BLD/install with the target system"""
+    cmd = 'rsync'
+
+    def __init__(self, **kw):
+        super(RsyncContext, self).__init__(**kw)
+        self.add_pre_fun(RsyncContext.create_rsync_taskgen)
+
+    def create_rsync_taskgen(self):
+        if 'RSYNC' not in self.env:
+            self.fatal('rsync program seems not to be installed, can\'t continue')
+
+        self.add_group()
+
+        tg = self(
+            name='rsync',
+            rule='${RSYNC} -a ${RSYNC_SRC}/ ${RSYNC_DEST}',
+            always=True,
+        )
+
+        tg.env.RSYNC_SRC = self.local_destdir
+        if self.options.rsync_dest:
+            self.env.RSYNC_DEST = self.options.rsync_dest
+
+        if 'RSYNC_DEST' not in tg.env:
+            self.fatal('Destination for rsync not defined. Either pass --rsync-dest here or during configuration.')
+
+        tg.post()

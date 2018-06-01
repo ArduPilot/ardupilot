@@ -43,6 +43,7 @@ public:
         AP_Int16 pitch_limit_min_cd;        
         AP_Int8  autotune_level;
         AP_Int8  stall_prevention;
+        AP_Int16 loiter_radius;
 
         struct Rangefinder_State {
             bool in_range:1;
@@ -56,6 +57,16 @@ public:
             uint8_t in_range_count;
             float height_estimate;
             float last_distance;
+        };
+
+
+        // stages of flight
+        enum FlightStage {
+            FLIGHT_TAKEOFF       = 1,
+            FLIGHT_VTOL          = 2,
+            FLIGHT_NORMAL        = 3,
+            FLIGHT_LAND          = 4,
+            FLIGHT_ABORT_LAND    = 7
         };
     };
 

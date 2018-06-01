@@ -58,7 +58,7 @@ void NavEKF2_core::controlMagYawReset()
     if (flightResetAllowed && !assume_zero_sideslip()) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         // and can perform a final reset of the yaw and field states
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -EKF2_MAG_FINAL_RESET_ALT;
 
         // check for increasing height
         bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
@@ -87,23 +87,23 @@ void NavEKF2_core::controlMagYawReset()
             finalResetRequest; // the final reset when we have acheived enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
-    if (magYawResetRequest || magStateResetRequest) {
-
-        // get the euler angles from the current state estimate
-        Vector3f eulerAngles;
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-
-        // Use the Euler angles and magnetometer measurement to update the magnetic field states
-        // and get an updated quaternion
-        Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+    if (magYawResetRequest || magStateResetRequest || extNavYawResetRequest) {
 
         // if a yaw reset has been requested, apply the updated quaternion to the current state
-        if (magYawResetRequest) {
+        if (extNavYawResetRequest) {
+            // get the euler angles from the current state estimate
+            Vector3f eulerAnglesOld;
+            stateStruct.quat.to_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesOld.z);
+
             // previous value used to calculate a reset delta
             Quaternion prevQuat = stateStruct.quat;
 
-            // update the quaternion states using the new yaw angle
-            stateStruct.quat = newQuat;
+            // Get the Euler angles from the external vision data
+            Vector3f eulerAnglesNew;
+            extNavDataDelayed.quat.to_euler(eulerAnglesNew.x, eulerAnglesNew.y, eulerAnglesNew.z);
+
+            // the new quaternion uses the old roll/pitch and new yaw angle
+            stateStruct.quat.from_euler(eulerAnglesOld.x, eulerAnglesOld.y, eulerAnglesNew.z);
 
             // calculate the change in the quaternion state and apply it to the ouput history buffer
             prevQuat = stateStruct.quat/prevQuat;
@@ -111,27 +111,61 @@ void NavEKF2_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
             }
 
-            // send in-flight yaw alignment status to console
-            if (finalResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
-            } else if (interimResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
-            }
-
-            // update the yaw reset completed status
-            recordYawReset();
+            // record the reset as complete and also record the in-flight reset as complete to stop further resets when hight is gained
+            // in-flight reset is unnecessary because we do not need to consider groudn based magnetic anomaly effects
+            yawAlignComplete = true;
+            finalInflightYawInit = true;
 
             // clear the yaw reset request flag
-            magYawResetRequest = false;
+            extNavYawResetRequest = false;
 
-            // clear the complete flags if an interim reset has been performed to allow subsequent
-            // and final reset to occur
-            if (interimResetRequest) {
-                finalInflightYawInit = false;
-                finalInflightMagInit = false;
+        } else if (magYawResetRequest || magStateResetRequest) {
+            // get the euler angles from the current state estimate
+            Vector3f eulerAngles;
+            stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+
+            // Use the Euler angles and magnetometer measurement to update the magnetic field states
+            // and get an updated quaternion
+            Quaternion newQuat = calcQuatAndFieldStates(eulerAngles.x, eulerAngles.y);
+
+            if (magYawResetRequest) {
+                // previous value used to calculate a reset delta
+                Quaternion prevQuat = stateStruct.quat;
+
+                // update the quaternion states using the new yaw angle
+                stateStruct.quat = newQuat;
+
+                // calculate the change in the quaternion state and apply it to the ouput history buffer
+                prevQuat = stateStruct.quat/prevQuat;
+                StoreQuatRotate(prevQuat);
+
+                // send initial alignment status to console
+                if (!yawAlignComplete) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                }
+
+                // send in-flight yaw alignment status to console
+                if (finalResetRequest) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                } else if (interimResetRequest) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                }
+
+                // update the yaw reset completed status
+                recordYawReset();
+
+                // clear the yaw reset request flag
+                magYawResetRequest = false;
+
+                // clear the complete flags if an interim reset has been performed to allow subsequent
+                // and final reset to occur
+                if (interimResetRequest) {
+                    finalInflightYawInit = false;
+                    finalInflightMagInit = false;
+                }
             }
         }
     }
@@ -163,12 +197,12 @@ void NavEKF2_core::realignYawGPS()
 
             // calculate new filter quaternion states from Euler angles
             stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, gpsYaw);
-            // reset the velocity and posiiton states as they will be inaccurate due to bad yaw
+            // reset the velocity and position states as they will be inaccurate due to bad yaw
             ResetVelocity();
             ResetPosition();
 
             // send yaw alignment information to console
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
             // zero the attitude covariances becasue the corelations will now be invalid
             zeroAttCovOnly();
@@ -256,11 +290,10 @@ void NavEKF2_core::SelectMagFusion()
     // If we have no magnetometer and are on the ground, fuse in a synthetic heading measurement to prevent the
     // filter covariances from becoming badly conditioned
     if (!use_compass()) {
-        if (onGround && (imuSampleTime_ms - lastSynthYawTime_ms > 1000)) {
+        if (onGround && (imuSampleTime_ms - lastYawTime_ms > 1000)) {
             fuseEulerYaw();
             magTestRatio.zero();
             yawTestRatio = 0.0f;
-            lastSynthYawTime_ms = imuSampleTime_ms;
         }
     }
 
@@ -433,6 +466,7 @@ void NavEKF2_core::FuseMagnetometer()
 
         // if the magnetometer is unhealthy, do not proceed further
         if (!magHealth) {
+            hal.util->perf_end(_perf_test[2]);
             return;
         }
 
@@ -706,6 +740,9 @@ void NavEKF2_core::FuseMagnetometer()
         } else if (obsIndex == 2) {
             faultStatus.bad_zmag = true;
         }
+        CovarianceInit();
+        hal.util->perf_end(_perf_test[5]);
+        return;
     }
 
     hal.util->perf_end(_perf_test[5]);
@@ -717,10 +754,10 @@ void NavEKF2_core::FuseMagnetometer()
  * Fuse magnetic heading measurement using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
- * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computatonally cheaper.
+ * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
- * It is not as robust to magneometer failures.
- * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degreees latitude of the the magnetic poles)
+ * It is not as robust to magnetometer failures.
+ * It is not suitable for operation where the horizontal magnetic field strength is weak (within 30 degrees latitude of the the magnetic poles)
 */
 void NavEKF2_core::fuseEulerYaw()
 {
@@ -735,6 +772,7 @@ void NavEKF2_core::fuseEulerYaw()
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
     // determine if a 321 or 312 Euler sequence is best
     float predicted_yaw;
+    float measured_yaw;
     float H_YAW[3];
     Matrix3f Tbn_zeroYaw;
     if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
@@ -767,14 +805,23 @@ void NavEKF2_core::fuseEulerYaw()
         H_YAW[1] = t14*(t15*(q0*q1*2.0f-q2*q3*2.0f)+t9*t10*(q0*q2*2.0f+q1*q3*2.0f));
         H_YAW[2] = t14*(t15*(t2-t3+t4-t5)+t9*t10*(t7-t8));
 
-        // Get the 321 euler angles
+        // calculate predicted and measured yaw angle
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
         predicted_yaw = euler321.z;
-
-        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
-        Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
-
+        if (use_compass() && yawAlignComplete && magStateInitComplete) {
+            // Use measured mag components rotated into earth frame to measure yaw
+            Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+        } else if (extNavUsedForYaw) {
+            // Get the yaw angle  from the external vision data
+            extNavDataDelayed.quat.to_euler(euler321.x, euler321.y, euler321.z);
+            measured_yaw =  euler321.z;
+        } else {
+            // no data so use predicted to prevent unconstrained variance growth
+            measured_yaw = predicted_yaw;
+        }
     } else {
         // calculate observaton jacobian when we are observing a rotation in a 312 sequence
         float t2 = q0*q0;
@@ -805,25 +852,22 @@ void NavEKF2_core::fuseEulerYaw()
         H_YAW[1] = 0.0f;
         H_YAW[2] = t14*(t15*(t2+t3-t4-t5)+t8*t9*(t7+t10));
 
-        // Get the 321 euler angles
+        // calculate predicted and measured yaw angle
         Vector3f euler312 = stateStruct.quat.to_vector312();
         predicted_yaw = euler312.z;
-
-        // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
-        Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
-    }
-
-    // rotate measured mag components into earth frame
-    Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
-
-    // Use the difference between the horizontal projection and declination to give the measured yaw
-    // If we can't use compass data, set the  meaurement to the predicted
-    // to prevent uncontrolled variance growth whilst on ground without magnetometer
-    float measured_yaw;
-    if (use_compass() && yawAlignComplete && magStateInitComplete) {
-        measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
-    } else {
-        measured_yaw = predicted_yaw;
+        if (use_compass() && yawAlignComplete && magStateInitComplete) {
+            // Use measured mag components rotated into earth frame to measure yaw
+            Tbn_zeroYaw.from_euler312(euler312.x, euler312.y, 0.0f);
+            Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
+            measured_yaw = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + _ahrs->get_compass()->get_declination());
+        } else if (extNavUsedForYaw) {
+            // Get the yaw angle  from the external vision data
+            euler312 = extNavDataDelayed.quat.to_vector312();
+            measured_yaw =  euler312.z;
+        } else {
+            // no data so use predicted to prevent unconstrained variance growth
+            measured_yaw = predicted_yaw;
+        }
     }
 
     // Calculate the innovation
@@ -934,8 +978,10 @@ void NavEKF2_core::fuseEulerYaw()
         // is used to correct the estimated quaternion on the current time step
         stateStruct.quat.rotate(stateStruct.angErr);
 
-        // record fusion numerical health status
+        // record fusion event
         faultStatus.bad_yaw = false;
+        lastYawTime_ms = imuSampleTime_ms;
+
 
     } else {
         // record fusion numerical health status
@@ -1002,7 +1048,7 @@ void NavEKF2_core::FuseDeclination(float declErr)
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
 
     // Calculate the innovation
-    float innovation = atanf(t4) - magDecAng;
+    float innovation = atan2f(magE , magN) - magDecAng;
 
     // limit the innovation to protect against data errors
     if (innovation > 0.5f) {

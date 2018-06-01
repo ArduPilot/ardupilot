@@ -25,8 +25,7 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-RCInput::RCInput() :
-    new_rc_input(false)
+RCInput::RCInput()
 {
     ppm_state._channel_counter = -1;
 }
@@ -37,7 +36,11 @@ void RCInput::init()
 
 bool RCInput::new_input()
 {
-    return new_rc_input;
+    bool ret = rc_input_count != last_rc_input_count;
+    if (ret) {
+        last_rc_input_count.store(rc_input_count);
+    }
+    return ret;
 }
 
 uint8_t RCInput::num_channels()
@@ -47,7 +50,6 @@ uint8_t RCInput::num_channels()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    new_rc_input = false;
     if (_override[ch]) {
         return _override[ch];
     }
@@ -66,25 +68,13 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
-{
-    bool res = false;
-    if(len > LINUX_RC_INPUT_NUM_CHANNELS){
-        len = LINUX_RC_INPUT_NUM_CHANNELS;
-    }
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
 bool RCInput::set_override(uint8_t channel, int16_t override)
 {
     if (override < 0) return false; /* -1: no change. */
     if (channel < LINUX_RC_INPUT_NUM_CHANNELS) {
         _override[channel] = override;
         if (override != 0) {
-            new_rc_input = true;
+            rc_input_count++;
             return true;
         }
     }
@@ -112,7 +102,7 @@ void RCInput::_process_ppmsum_pulse(uint16_t width_usec)
                 _pwm_values[i] = ppm_state._pulse_capt[i];
             }
             _num_channels = ppm_state._channel_counter;
-            new_rc_input = true;
+            rc_input_count++;
         }
         ppm_state._channel_counter = 0;
         return;
@@ -143,7 +133,7 @@ void RCInput::_process_ppmsum_pulse(uint16_t width_usec)
             _pwm_values[i] = ppm_state._pulse_capt[i];
         }
         _num_channels = ppm_state._channel_counter;
-        new_rc_input = true;
+        rc_input_count++;
         ppm_state._channel_counter = -1;
     }
 }
@@ -221,7 +211,7 @@ void RCInput::_process_sbus_pulse(uint16_t width_s0, uint16_t width_s1)
             }
             _num_channels = num_values;
             if (!sbus_failsafe) {
-                new_rc_input = true;
+                rc_input_count++;
             }
         }
         goto reset;
@@ -291,7 +281,7 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
                     _pwm_values[i] = values[i];
                 }
                 _num_channels = num_values;
-                new_rc_input = true;
+                rc_input_count++;
             }
         }
         memset(&dsm_state, 0, sizeof(dsm_state));
@@ -349,7 +339,7 @@ void RCInput::_update_periods(uint16_t *periods, uint8_t len)
         _pwm_values[i] = periods[i];
     }
     _num_channels = len;
-    new_rc_input = true;
+    rc_input_count++;
 }
 
 
@@ -408,7 +398,7 @@ bool RCInput::add_dsm_input(const uint8_t *bytes, size_t nbytes)
                 if (num_values > _num_channels) {
                     _num_channels = num_values;
                 }
-                new_rc_input = true;
+                rc_input_count++;
 #if 0
                 printf("Decoded DSM %u channels %u %u %u %u %u %u %u %u\n",
                        (unsigned)num_values,
@@ -444,8 +434,9 @@ bool RCInput::add_sumd_input(const uint8_t *bytes, size_t nbytes)
                 }
             }
             _num_channels = channel_count;
-            new_rc_input = true;
+            rc_input_count++;
             ret = true;
+            _rssi = rssi;
         }
         nbytes--;
     }
@@ -474,8 +465,9 @@ bool RCInput::add_st24_input(const uint8_t *bytes, size_t nbytes)
                 }
             }
             _num_channels = channel_count;
-            new_rc_input = true;
+            rc_input_count++;
             ret = true;
+            _rssi = rssi;
         }
         nbytes--;
     }
@@ -503,7 +495,7 @@ bool RCInput::add_srxl_input(const uint8_t *bytes, size_t nbytes)
             }
             _num_channels = channel_count;
             if (failsafe_state == false) {
-                new_rc_input = true;
+                rc_input_count++;
             }
             ret = true;
         }
@@ -564,7 +556,7 @@ void RCInput::add_sbus_input(const uint8_t *bytes, size_t nbytes)
                     _num_channels = num_values;
                 }
                 if (!sbus_failsafe) {
-                    new_rc_input = true;
+                    rc_input_count++;
                 }
 #if 0
                 printf("Decoded SBUS %u channels %u %u %u %u %u %u %u %u %s\n",

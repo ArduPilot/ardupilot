@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -13,11 +15,23 @@ extern const AP_HAL::HAL& hal;
  */
 class VRBRAIN::VRBRAIN_I2C : public device::I2C {
 public:
-    VRBRAIN_I2C(uint8_t bus) : I2C(devname, devpath, bus, 0, 400000UL) { }
-    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len);
+    VRBRAIN_I2C(uint8_t bus);
+    bool do_transfer(uint8_t address, const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len, bool split_transfers);
 
+    void set_retries(uint8_t retries) {
+        _retries = retries;
+    }
+
+    uint8_t map_bus_number(uint8_t bus) const;
+
+    // setup instance_lock
+    static void init_lock(void) {
+        pthread_mutex_init(&instance_lock, nullptr);
+    }
+    
 private:
     static uint8_t instance;
+    static pthread_mutex_t instance_lock;
     bool init_done;
     bool init_ok;
     char devname[10];

@@ -16,13 +16,9 @@
 
 #include "uORB/uORB.h"
 #include "uORB/topics/parameter_update.h"
-#include <uORB/topics/uavcan_parameter_request.h>
-#include <uORB/topics/uavcan_parameter_value.h>
         
 /** parameter update topic */
 ORB_DEFINE(parameter_update, struct parameter_update_s);
-ORB_DEFINE(uavcan_parameter_request, struct uavcan_parameter_request_s);
-ORB_DEFINE(uavcan_parameter_value, struct uavcan_parameter_value_s);
 
 param_t param_find(const char *name)
 {

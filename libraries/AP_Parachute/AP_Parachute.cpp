@@ -2,6 +2,7 @@
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_HAL/AP_HAL.h>
 
@@ -25,18 +26,18 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 
     // @Param: SERVO_ON
     // @DisplayName: Parachute Servo ON PWM value
-    // @Description: Parachute Servo PWM value when parachute is released
+    // @Description: Parachute Servo PWM value in microseconds when parachute is released
     // @Range: 1000 2000
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SERVO_ON", 2, AP_Parachute, _servo_on_pwm, AP_PARACHUTE_SERVO_ON_PWM_DEFAULT),
 
     // @Param: SERVO_OFF
     // @DisplayName: Servo OFF PWM value
-    // @Description: Parachute Servo PWM value when parachute is not released
+    // @Description: Parachute Servo PWM value in microseconds when parachute is not released
     // @Range: 1000 2000
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SERVO_OFF", 3, AP_Parachute, _servo_off_pwm, AP_PARACHUTE_SERVO_OFF_PWM_DEFAULT),
@@ -45,7 +46,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @DisplayName: Parachute min altitude in meters above home
     // @Description: Parachute min altitude above home.  Parachute will not be released below this altitude.  0 to disable alt check.
     // @Range: 0 32000
-    // @Units: Meters
+    // @Units: m
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 4, AP_Parachute, _alt_min, AP_PARACHUTE_ALT_MIN_DEFAULT),
@@ -54,7 +55,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @DisplayName: Parachute release delay
     // @Description: Delay in millseconds between motor stop and chute release
     // @Range: 0 5000
-    // @Units: Milliseconds
+    // @Units: ms
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
@@ -107,7 +108,7 @@ void AP_Parachute::update()
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
-                RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_on_pwm);
+                SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
             }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
                 _relay.on(_release_type);
@@ -118,7 +119,7 @@ void AP_Parachute::update()
     }else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
-            RC_Channel_aux::set_radio(RC_Channel_aux::k_parachute_release, _servo_off_pwm);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
         }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
             _relay.off(_release_type);

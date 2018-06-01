@@ -19,7 +19,9 @@ public:
         return static_cast<Storage*>(storage);
     }
 
-    void init() {}
+
+    void init() override;
+
     uint8_t  read_byte(uint16_t loc);
     uint16_t read_word(uint16_t loc);
     uint32_t read_dword(uint16_t loc);
@@ -30,15 +32,16 @@ public:
     void write_dword(uint16_t loc, uint32_t value);
     void write_block(uint16_t dst, const void* src, size_t n);
 
-    virtual void _timer_tick(void);
+    virtual void _timer_tick(void) override;
+
 protected:
     void _mark_dirty(uint16_t loc, uint16_t length);
-    virtual void _storage_create(void);
-    virtual void _storage_open(void);
+    int _storage_create(const char *dpath);
+
     int _fd;
     volatile bool _initialised;
-    uint8_t _buffer[LINUX_STORAGE_SIZE];
     volatile uint32_t _dirty_mask;
+    uint8_t _buffer[LINUX_STORAGE_SIZE];
 };
 
 }

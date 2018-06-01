@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @DisplayName: Pitch Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
-	// @Units: seconds
+	// @Units: s
 	// @Increment: 0.1
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_PitchController, gains.tau,       0.5f),
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @DisplayName: Pitch up max rate
 	// @Description: This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
-	// @Units: degrees/second
+	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   0.0f),
@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @DisplayName: Pitch down max rate
 	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
-	// @Units: degrees/second
+	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),

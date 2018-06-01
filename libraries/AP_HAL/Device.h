@@ -38,7 +38,7 @@ public:
         SPEED_LOW,
     };
 
-    FUNCTOR_TYPEDEF(PeriodicCb, bool);
+    FUNCTOR_TYPEDEF(PeriodicCb, void);
     typedef void* PeriodicHandle;
 
     Device(enum BusType type)
@@ -55,7 +55,7 @@ public:
     uint8_t bus_num(void) const {
         return _bus_id.devid_s.bus;
     }
-    
+
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const {
         return _bus_id.devid;
@@ -65,19 +65,25 @@ public:
     uint8_t get_bus_address(void) const {
         return _bus_id.devid_s.address;
     }
-    
+
     // set device type within a device class (eg. AP_COMPASS_TYPE_LSM303D)
     void set_device_type(uint8_t devtype) {
         _bus_id.devid_s.devtype = devtype;
     }
-    
-    
+
+
     virtual ~Device() {
         if (_checked.regs != nullptr) {
             delete[] _checked.regs;
         }
     }
 
+    /*
+     * Change device address. Note that this is the 7 bit address, it
+     * does not include the bit for read/write. Only works on I2C
+     */
+    virtual void set_address(uint8_t address) {};
+    
     /*
      * Set the speed of future transfers. Depending on the bus the speed may
      * be shared for all devices on the same bus.
@@ -111,20 +117,6 @@ public:
     }
 
     /**
-     * read 16 bit unsigned integer, little endian
-     *
-     * Return: true on a successful transfer, false on failure.
-     */
-    bool read_uint16_le(uint8_t first_reg, uint16_t &value);
-
-    /**
-     * read 16 bit unsigned integer, big endian
-     *
-     * Return: true on a successful transfer, false on failure.
-     */
-    bool read_uint16_be(uint8_t first_reg, uint16_t &value);
-    
-    /**
      * Wrapper function over #transfer() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.
      *
@@ -155,7 +147,7 @@ public:
      * or register checking has not been setup
      */
     bool check_next_register(void);
-    
+
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -193,7 +185,7 @@ public:
      * #register_periodic_callback. Note that the time will be re-calculated
      * from the moment this call is made and expire after @period_usec.
      *
-     * Return: true if periodic callback was sucessfully adjusted, false otherwise.
+     * Return: true if periodic callback was successfully adjusted, false otherwise.
      */
     virtual bool adjust_periodic_callback(PeriodicHandle h, uint32_t period_usec) = 0;
 
@@ -205,13 +197,22 @@ public:
      */
     virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
+
+    /*
+        allows to set callback that will be called after DMA transfer complete.
+        if this callback is set then any read/write operation will return directly after transfer setup and
+        bus semaphore must not be released until register_completion_callback(0) called from callback itself
+    */
+    virtual void register_completion_callback(AP_HAL::MemberProc proc) {}
+    virtual void register_completion_callback(AP_HAL::Proc proc) {}
+    
     /*
      * support for direct control of SPI chip select. Needed for
      * devices with unusual SPI transfer patterns that include
      * specific delays
      */
     virtual bool set_chip_select(bool set) { return false; }
-    
+
     /**
      * Some devices connected on the I2C or SPI bus require a bit to be set on
      * the register address in order to perform a read operation. This sets a
@@ -257,7 +258,7 @@ public:
 
     /* set number of retries on transfers */
     virtual void set_retries(uint8_t retries) {};
-    
+
 protected:
     uint8_t _read_flag = 0;
 
@@ -278,7 +279,7 @@ protected:
         struct DeviceStructure devid_s;
         uint32_t devid;
     };
-    
+
     union DeviceId _bus_id;
 
     // set device address (eg. i2c bus address or spi CS)

@@ -34,11 +34,16 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("FILT", 6, AC_PID, _filt_hz, AC_PID_FILT_HZ_DEFAULT),
 
+    // @Param: FF
+    // @DisplayName: FF FeedForward Gain
+    // @Description: FF Gain which produces an output value that is proportional to the demanded input
+    AP_GROUPINFO("FF",   7, AC_PID, _ff, 0),
+    
     AP_GROUPEND
 };
 
 // Constructor
-AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt) :
+AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff) :
     _dt(dt),
     _integrator(0.0f),
     _input(0.0f),
@@ -52,6 +57,7 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     _kd = initial_d;
     _imax = fabsf(initial_imax);
     filt_hz(initial_filt_hz);
+    _ff = initial_ff;
 
     // reset input filter to first value received
     _flags._reset_filter = true;
@@ -153,6 +159,13 @@ float AC_PID::get_d()
     return _pid_info.D;
 }
 
+float AC_PID::get_ff(float requested_rate)
+{
+    _pid_info.FF = (float)requested_rate * _ff;
+    return _pid_info.FF;
+}
+
+
 float AC_PID::get_pi()
 {
     return get_p() + get_i();
@@ -189,7 +202,7 @@ void AC_PID::save_gains()
 }
 
 /// Overload the function call operator to permit easy initialisation
-void AC_PID::operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt)
+void AC_PID::operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt, float ffval)
 {
     _kp = p;
     _ki = i;
@@ -197,6 +210,7 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
     _imax = fabsf(imaxval);
     _filt_hz = input_filt_hz;
     _dt = dt;
+    _ff = ffval;
 }
 
 // calc_filt_alpha - recalculate the input filter alpha

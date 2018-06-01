@@ -62,9 +62,8 @@ static const uint16_t waveform_mode1[32] = {
     1675, 1540, 1492, 1374, 1292
 };
 
-AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder &_ranger,
-        uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state),
+AP_RangeFinder_Bebop::AP_RangeFinder_Bebop(RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_state, MAV_DISTANCE_SENSOR_ULTRASOUND),
     _thread(new Linux::Thread(FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Bebop::_loop, void)))
 {
     _init();
@@ -88,7 +87,7 @@ AP_RangeFinder_Bebop::~AP_RangeFinder_Bebop()
     _iio = nullptr;
 }
 
-bool AP_RangeFinder_Bebop::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_Bebop::detect()
 {
     return true;
 }
@@ -253,8 +252,8 @@ void AP_RangeFinder_Bebop::_loop(void)
         if (max_index >= 0) {
             _altitude = (float)(max_index * RNFD_BEBOP_SOUND_SPEED) /
                 (2 * (RNFD_BEBOP_DEFAULT_ADC_FREQ / _filter_average));
-            _mode = _update_mode(_altitude);
         }
+        _mode = _update_mode(_altitude);
     }
 }
 
@@ -309,6 +308,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
     if (_capture() < 0)
         hal.console->printf("purge could not capture data");
 
+    _tx_buf = _tx[_mode];
     switch (_mode) {
     case 1: /* low voltage */
         _configure_gpio(0);
@@ -327,6 +327,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
  */
 int AP_RangeFinder_Bebop::_configure_wave()
 {
+    _spi->set_speed(AP_HAL::Device::SPEED_HIGH);
     _configure_gpio(0);
     return 0;
 }
@@ -449,7 +450,7 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     default:
     case 1:
         if (altitude > RNFD_BEBOP_TRANSITION_LOW_TO_HIGH
-                || !is_zero(altitude)) {
+                || is_zero(altitude)) {
             if (_hysteresis_counter > RNFD_BEBOP_TRANSITION_COUNT) {
                 _mode = 0;
                 _hysteresis_counter = 0;

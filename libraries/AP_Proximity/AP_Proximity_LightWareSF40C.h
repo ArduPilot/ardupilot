@@ -33,7 +33,7 @@ private:
         RequestType_DistanceMeasurement
     };
 
-    // initialise sensor (returns true if sensor is succesfully initialised)
+    // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
     void init_sectors();
     void set_motor_speed(bool on_off);

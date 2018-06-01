@@ -36,6 +36,8 @@ public:
     static bool _detect(struct MTK_detect_state &state, uint8_t data);
     static void send_init_blob(uint8_t instance, AP_GPS &gps);
 
+    const char *name() const override { return "MTK"; }
+
 private:
     struct PACKED diyd_mtk_msg {
         int32_t latitude;

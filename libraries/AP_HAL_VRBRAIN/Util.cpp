@@ -73,6 +73,10 @@ bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
  */
 enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 {
+#if !HAL_HAVE_SAFETY_SWITCH
+    return AP_HAL::Util::SAFETY_NONE;
+#endif
+
     if (_safety_handle == -1) {
         _safety_handle = orb_subscribe(ORB_ID(safety));
     }
@@ -95,8 +99,8 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
 {
     timespec ts;
-    ts.tv_sec = time_utc_usec/1.0e6f;
-    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
+    ts.tv_sec = time_utc_usec/1000000ULL;
+    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);    
 }
 
@@ -114,6 +118,8 @@ bool VRBRAINUtil::get_system_id(char buf[40])
     const char *board_type = "VRBRAINv51";
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
     const char *board_type = "VRBRAINv52";
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
+    const char *board_type = "VRBRAINv52E";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
     const char *board_type = "VRUBRAINv51";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
@@ -202,8 +208,12 @@ void VRBRAINUtil::set_imu_temp(float current)
     // experimentally tweaked for Pixhawk2
     const float kI = 0.3f;
     const float kP = 200.0f;
+    float target = (float)(*_heater.target);
+
+    // limit to 65 degrees to prevent damage
+    target = constrain_float(target, 0, 65);
     
-    float err = ((float)*_heater.target) - current;
+    float err = target - current;
 
     _heater.integrator += kI * err;
     _heater.integrator = constrain_float(_heater.integrator, 0, 70);
@@ -224,6 +234,41 @@ void VRBRAINUtil::set_imu_temp(float current)
 void VRBRAINUtil::set_imu_target_temp(int8_t *target)
 {
     _heater.target = target;
+}
+
+
+extern "C" {
+    extern void *fat_dma_alloc(size_t);
+    extern void fat_dma_free(void *, size_t);
+}
+
+/*
+  allocate DMA-capable memory if possible. Otherwise return normal
+  memory.
+*/
+void *VRBRAINUtil::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+
+
+
+
+
+
+
+    return calloc(1, size);
+
+}
+void VRBRAINUtil::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+
+
+
+
+
+
+
+    return free(ptr);
+
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

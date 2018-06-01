@@ -19,20 +19,20 @@ public:
     AC_PrecLand_SITL_Gazebo(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
 
     // perform any required initialisation of backend
-    void init();
+    void init() override;
 
     // retrieve updates from sensor
-    void update();
+    void update() override;
 
     // provides a unit vector towards the target in body frame
     //  returns same as have_los_meas()
-    bool get_los_body(Vector3f& ret);
+    bool get_los_body(Vector3f& ret) override;
 
     // returns system time in milliseconds of last los measurement
-    uint32_t los_meas_time_ms();
+    uint32_t los_meas_time_ms() override;
 
     // return true if there is a valid los measurement available
-    bool have_los_meas();
+    bool have_los_meas() override;
 
 private:
     AP_IRLock_SITL irlock;

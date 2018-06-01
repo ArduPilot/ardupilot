@@ -26,8 +26,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_RangeFinder_Backend(_ranger, instance, _state)
+AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+    : AP_RangeFinder_Backend(_state)
     , _dev(std::move(dev)) {}
 
 /*
@@ -35,17 +35,17 @@ AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder &_ranger, u
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
     AP_RangeFinder_LightWareI2C *sensor
-        = new AP_RangeFinder_LightWareI2C(_ranger, instance, _state, std::move(dev));
+        = new AP_RangeFinder_LightWareI2C(_state, std::move(dev));
 
     if (!sensor) {
         delete sensor;
         return nullptr;
     }
 
-    if (sensor->_dev->get_semaphore()->take(0)) {
+    if (sensor->_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         uint16_t reading_cm;
         if (!sensor->get_reading(reading_cm)) {
             sensor->_dev->get_semaphore()->give();
@@ -64,7 +64,7 @@ void AP_RangeFinder_LightWareI2C::init()
 {
     // call timer() at 20Hz
     _dev->register_periodic_callback(50000,
-                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, bool));
+                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, void));
 }
 
 // read - return last value measured by sensor
@@ -72,7 +72,7 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 {
     be16_t val;
 
-    if (ranger._address[state.instance] == 0) {
+    if (state.address == 0) {
         return false;
     }
 
@@ -94,13 +94,12 @@ void AP_RangeFinder_LightWareI2C::update(void)
     // nothing to do - its all done in the timer()
 }
 
-bool AP_RangeFinder_LightWareI2C::timer(void)
+void AP_RangeFinder_LightWareI2C::timer(void)
 {
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
         update_status();
     } else {
         set_status(RangeFinder::RangeFinder_NoData);
-    }    
-    return true;
+    }
 }

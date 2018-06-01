@@ -29,6 +29,9 @@ namespace AP_HAL {
     class Semaphore;
     class OpticalFlow;
 
+    class CANManager;
+    class CAN;
+
     class Util;
 
     /* Utility Classes */

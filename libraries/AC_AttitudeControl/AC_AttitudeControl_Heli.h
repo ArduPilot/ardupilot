@@ -22,6 +22,7 @@
 #define AC_ATC_HELI_RATE_YAW_FF                     0.024f
 #define AC_ATC_HELI_RATE_YAW_FILT_HZ                20.0f
 
+#define AC_ATTITUDE_HELI_ANGLE_LIMIT_THROTTLE_MAX   0.95f    // Heli's use 95% of max collective before limiting frame angle
 #define AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE  0.02f
 #define AC_ATTITUDE_HELI_RATE_RP_FF_FILTER          10.0f
 #define AC_ATTITUDE_HELI_RATE_Y_VFF_FILTER          10.0f
@@ -30,7 +31,7 @@
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
-    AC_AttitudeControl_Heli( AP_AHRS &ahrs,
+    AC_AttitudeControl_Heli( AP_AHRS_View &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         float dt) :
@@ -60,13 +61,8 @@ public:
     AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
 
-    // same as above but allows accessing heli specific pid methods - used only by Copter's tuning.cpp
-    AC_HELI_PID& get_heli_rate_roll_pid() { return _pid_rate_roll; }
-    AC_HELI_PID& get_heli_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_HELI_PID& get_heli_rate_yaw_pid() { return _pid_rate_yaw; }
-
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds);
+    void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();
@@ -82,11 +78,11 @@ public:
     void update_althold_lean_angle_max(float throttle_in) override;
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
-	void use_leaky_i(bool leaky_i) {  _flags_heli.leaky_i = leaky_i; }
+	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
     
     // use_flybar_passthrough - controls whether we pass-through
     // control inputs to swash-plate and tail
-    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {  
+    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) override {  
         _flags_heli.flybar_passthrough = passthrough; 
         _flags_heli.tail_passthrough = tail_passthrough; 
     }
@@ -95,11 +91,22 @@ public:
     void do_piro_comp(bool piro_comp) { _flags_heli.do_piro_comp = piro_comp; }
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
-    void set_hover_roll_trim_scalar(float scalar) {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
+    void set_hover_roll_trim_scalar(float scalar) override {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
+    // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
+    void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) override;
+
+    // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+    void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
+    
+    // enable/disable inverted flight
+    void set_inverted_flight(bool inverted) override {
+        _inverted_flight = inverted;
+    }
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -121,8 +128,8 @@ private:
     //
 	// rate_bf_to_motor_roll_pitch - ask the rate controller to calculate the motor outputs to achieve the target body-frame rate (in radians/sec) for roll, pitch and yaw
     // outputs are sent directly to motor class
-    void rate_bf_to_motor_roll_pitch(float rate_roll_target_rads, float rate_pitch_target_rads);
-    float rate_target_to_motor_yaw(float rate_yaw_rads);
+    void rate_bf_to_motor_roll_pitch(const Vector3f &rate_rads, float rate_roll_target_rads, float rate_pitch_target_rads);
+    float rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_yaw_rads) override;
 
     //
     // throttle methods

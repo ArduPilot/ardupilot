@@ -235,6 +235,9 @@ public:
     // create eulers from a rotation matrix
     void        to_euler(float *roll, float *pitch, float *yaw) const;
 
+    // create matrix from rotation enum
+    void from_rotation(enum Rotation rotation);
+    
     /*
       calculate Euler angles (312 convention) for the matrix.
       See http://www.atacolorado.com/eulersequences.doc

@@ -8,14 +8,14 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-bool Semaphore::give() 
+bool Semaphore::give()
 {
     return pthread_mutex_unlock(&_lock) == 0;
 }
 
-bool Semaphore::take(uint32_t timeout_ms) 
+bool Semaphore::take(uint32_t timeout_ms)
 {
-    if (timeout_ms == 0) {
+    if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
         return pthread_mutex_lock(&_lock) == 0;
     }
     if (take_nonblocking()) {
@@ -27,13 +27,13 @@ bool Semaphore::take(uint32_t timeout_ms)
         if (take_nonblocking()) {
             return true;
         }
-    } while ((AP_HAL::micros64() - start) < timeout_ms*1000);
+    } while ((AP_HAL::micros64() - start) < timeout_ms * 1000);
     return false;
 }
 
-bool Semaphore::take_nonblocking() 
+bool Semaphore::take_nonblocking()
 {
     return pthread_mutex_trylock(&_lock) == 0;
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif  // CONFIG_HAL_BOARD

@@ -14,12 +14,9 @@ def build(bld):
             'AP_Arming',
             'AP_Camera',
             'AP_L1_Control',
-            'AP_Menu',
             'AP_Navigation',
             'AP_Parachute',
             'AP_RCMapper',
-            'AP_Relay',
-            'AP_ServoRelayEvents',
             'AP_SpdHgtControl',
             'AP_TECS',
             'AP_InertialNav',
@@ -29,10 +26,13 @@ def build(bld):
             'AC_PID',
             'AC_Fence',
             'AC_Avoidance',
-            'AP_Proximity',
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
+            'PID',
+            'AP_Soaring',
+            'AP_Gripper',
+            'AP_Devo_Telem',
         ],
     )
 
@@ -40,11 +40,4 @@ def build(bld):
         program_name='arduplane',
         program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
-    )
-
-    bld.ap_program(
-        program_name='arduplane-tri',
-        program_groups=['bin', 'plane'],
-        use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=TRI_FRAME'],
     )

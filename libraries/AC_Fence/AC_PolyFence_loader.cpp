@@ -56,35 +56,8 @@ bool AC_PolyFence_loader::save_point_to_eeprom(uint16_t i, const Vector2l& point
 // validate array of boundary points (expressed as either floats or long ints)
 //   contains_return_point should be true for plane which stores the return point as the first point in the array
 //   returns true if boundary is valid
-bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2l* points, bool contains_return_point) const
-{
-    // exit immediate if no points
-    if (points == nullptr) {
-        return false;
-    }
-
-    // start from 2nd point if boundary contains return point (as first point)
-    uint8_t start_num = contains_return_point ? 1 : 0;
-
-    // a boundary requires at least 4 point (a triangle and last point equals first)
-    if (num_points < start_num + 4) {
-        return false;
-    }
-
-    // point 1 and last point must be the same.  Note: 0th point is reserved as the return point
-    if (!Polygon_complete(&points[start_num], num_points-start_num)) {
-        return false;
-    }
-
-    // check return point is within the fence
-    if (contains_return_point && Polygon_outside(points[0], &points[1], num_points-start_num)) {
-        return false;
-    }
-
-    return true;
-}
-
-bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2f* points, bool contains_return_point) const
+template <typename T>
+bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2<T>* points, bool contains_return_point) const
 {
     // exit immediate if no points
     if (points == nullptr) {
@@ -115,7 +88,9 @@ bool AC_PolyFence_loader::boundary_valid(uint16_t num_points, const Vector2f* po
 // check if a location (expressed as either floats or long ints) is within the boundary
 //   contains_return_point should be true for plane which stores the return point as the first point in the array
 //   returns true if location is outside the boundary
-bool AC_PolyFence_loader::boundary_breached(const Vector2l& location, uint16_t num_points, const Vector2l* points, bool contains_return_point) const
+template <typename T>
+bool AC_PolyFence_loader::boundary_breached(const Vector2<T>& location, uint16_t num_points, const Vector2<T>* points,
+                                            bool contains_return_point) const
 {
     // exit immediate if no points
     if (points == nullptr) {
@@ -129,16 +104,10 @@ bool AC_PolyFence_loader::boundary_breached(const Vector2l& location, uint16_t n
     return Polygon_outside(location, &points[start_num], num_points-start_num);
 }
 
-bool AC_PolyFence_loader::boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points, bool contains_return_point) const
-{
-    // exit immediate if no points
-    if (points == nullptr) {
-        return false;
-    }
-
-    // start from 2nd point if boundary contains return point (as first point)
-    uint8_t start_num = contains_return_point ? 1 : 0;
-
-    // check location is within the fence
-    return Polygon_outside(location, &points[start_num], num_points-start_num);
-}
+// declare type specific methods
+template bool AC_PolyFence_loader::boundary_valid<int32_t>(uint16_t num_points, const Vector2l* points, bool contains_return_point) const;
+template bool AC_PolyFence_loader::boundary_valid<float>(uint16_t num_points, const Vector2f* points, bool contains_return_point) const;
+template bool AC_PolyFence_loader::boundary_breached<int32_t>(const Vector2l& location, uint16_t num_points,
+                                                              const Vector2l* points, bool contains_return_point) const;
+template bool AC_PolyFence_loader::boundary_breached<float>(const Vector2f& location, uint16_t num_points,
+                                                            const Vector2f* points, bool contains_return_point) const;

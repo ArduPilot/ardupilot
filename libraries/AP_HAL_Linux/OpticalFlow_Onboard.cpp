@@ -15,8 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "OpticalFlow_Onboard.h"
 
 #include <fcntl.h>
@@ -25,20 +24,23 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <vector>
 
 #include "CameraSensor_Mt9v117.h"
 #include "GPIO.h"
 #include "PWM_Sysfs.h"
+#include "AP_HAL/utility/RingBuffer.h"
 
 #define OPTICAL_FLOW_ONBOARD_RTPRIO 11
+static const unsigned int OPTICAL_FLOW_GYRO_BUFFER_LEN = 400;
 
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
+void OpticalFlow_Onboard::init()
 {
     uint32_t top, left;
     uint32_t crop_width, crop_height;
@@ -54,7 +56,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         return;
     }
 
-    _get_gyro = get_gyro;
     _videoin = new VideoIn;
     const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
     memtype = V4L2_MEMORY_MMAP;
@@ -91,8 +92,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
     }
     _format = V4L2_PIX_FMT_NV12;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
     std::vector<uint32_t> pixel_formats;
 
     _videoin->get_pixel_formats(&pixel_formats);
@@ -188,6 +188,8 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         AP_HAL::panic("OpticalFlow_Onboard: failed to create thread");
     }
 
+    _gyro_ring_buffer = new ObjectBuffer<GyroSample>(OPTICAL_FLOW_GYRO_BUFFER_LEN);
+
     _initialized = true;
 }
 
@@ -218,6 +220,42 @@ end:
     return ret;
 }
 
+void OpticalFlow_Onboard::push_gyro(float gyro_x, float gyro_y, float dt)
+{
+    GyroSample sample;
+    struct timespec ts;
+
+    if (!_gyro_ring_buffer) {
+        return;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    _integrated_gyro.x += (gyro_x - _gyro_bias.x) * dt;
+    _integrated_gyro.y += (gyro_y - _gyro_bias.y) * dt;
+    sample.gyro = _integrated_gyro;
+    sample.time_us = 1.0e6 * (ts.tv_sec + (ts.tv_nsec*1.0e-9));
+
+    _gyro_ring_buffer->push(sample);
+}
+
+void OpticalFlow_Onboard::_get_integrated_gyros(uint64_t timestamp, GyroSample &gyro)
+{
+    GyroSample integrated_gyro_at_time = {};
+    unsigned int retries = 0;
+
+    // pop all samples prior to frame time
+    while (_gyro_ring_buffer->pop(integrated_gyro_at_time) &&
+            integrated_gyro_at_time.time_us < timestamp &&
+            retries++ < OPTICAL_FLOW_GYRO_BUFFER_LEN);
+    gyro = integrated_gyro_at_time;
+}
+
+void OpticalFlow_Onboard::push_gyro_bias(float gyro_bias_x, float gyro_bias_y)
+{
+    _gyro_bias.x = gyro_bias_x;
+    _gyro_bias.y = gyro_bias_y;
+}
+
 void *OpticalFlow_Onboard::_read_thread(void *arg)
 {
     OpticalFlow_Onboard *optflow_onboard = (OpticalFlow_Onboard *) arg;
@@ -228,8 +266,7 @@ void *OpticalFlow_Onboard::_read_thread(void *arg)
 
 void OpticalFlow_Onboard::_run_optflow()
 {
-    float rate_x, rate_y, rate_z;
-    Vector3f gyro_rate;
+    GyroSample gyro_sample;
     Vector2f flow_rate;
     VideoIn::Frame video_frame;
     uint32_t convert_buffer_size = 0, output_buffer_size = 0;
@@ -246,7 +283,7 @@ void OpticalFlow_Onboard::_run_optflow()
             convert_buffer_size = _width * _height;
         }
 
-        convert_buffer = (uint8_t *)malloc(convert_buffer_size);
+        convert_buffer = (uint8_t *)calloc(1, convert_buffer_size);
         if (!convert_buffer) {
             AP_HAL::panic("OpticalFlow_Onboard: couldn't allocate conversion buffer\n");
         }
@@ -256,7 +293,7 @@ void OpticalFlow_Onboard::_run_optflow()
         output_buffer_size = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH *
             HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
 
-        output_buffer = (uint8_t *)malloc(output_buffer_size);
+        output_buffer = (uint8_t *)calloc(1, output_buffer_size);
         if (!output_buffer) {
             if (convert_buffer) {
                 free(convert_buffer);
@@ -336,11 +373,8 @@ void OpticalFlow_Onboard::_run_optflow()
             continue;
         }
 
-        /* read gyro data from EKF via the opticalflow driver */
-        _get_gyro(rate_x, rate_y, rate_z);
-        gyro_rate.x = rate_x;
-        gyro_rate.y = rate_y;
-        gyro_rate.z = rate_z;
+        /* read the integrated gyro data */
+        _get_integrated_gyros(video_frame.timestamp, gyro_sample);
 
 #ifdef OPTICALFLOW_ONBOARD_RECORD_VIDEO
         int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CLOEXEC | O_CREAT | O_WRONLY
@@ -378,20 +412,21 @@ void OpticalFlow_Onboard::_run_optflow()
                                   HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
-        _gyro_x_integral       += (gyro_rate.x + _last_gyro_rate.x) / 2.0f *
-                                  (video_frame.timestamp -
-                                  _last_video_frame.timestamp);
-        _gyro_y_integral       += (gyro_rate.y + _last_gyro_rate.y) / 2.0f *
-                                  (video_frame.timestamp -
-                                  _last_video_frame.timestamp);
+        _gyro_x_integral       += (gyro_sample.gyro.x - _last_gyro_rate.x) *
+                                  (video_frame.timestamp - _last_video_frame.timestamp) /
+                                  (gyro_sample.time_us - _last_integration_time);
+        _gyro_y_integral       += (gyro_sample.gyro.y - _last_gyro_rate.y) /
+                                  (gyro_sample.time_us - _last_integration_time) *
+                                  (video_frame.timestamp - _last_video_frame.timestamp);
         _surface_quality = qual;
         _data_available = true;
         pthread_mutex_unlock(&_mutex);
 
         /* give the last frame back to the video input driver */
         _videoin->put_frame(_last_video_frame);
+        _last_integration_time = gyro_sample.time_us;
         _last_video_frame = video_frame;
-        _last_gyro_rate = gyro_rate;
+        _last_gyro_rate = gyro_sample.gyro;
     }
 
     if (convert_buffer) {

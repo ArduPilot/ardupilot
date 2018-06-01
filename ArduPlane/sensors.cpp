@@ -1,17 +1,6 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 
-void Plane::init_barometer(bool full_calibration)
-{
-    gcs_send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs_send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
 void Plane::init_rangefinder(void)
 {
     rangefinder.init();
@@ -33,23 +22,22 @@ void Plane::read_rangefinder(void)
 #endif
     {
         // use the best available alt estimate via baro above home
-        if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_APPROACH ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_PREFLARE ||
-            flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
+        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
             // ensure the rangefinder is powered-on when land alt is higher than home altitude.
             // This is done using the target alt which we know is below us and we are sinking to it
             height = height_above_target();
         } else {
             // otherwise just use the best available baro estimate above home.
-            height = relative_altitude();
+            height = relative_altitude;
         }
         rangefinder.set_estimated_terrain_height(height);
     }
 
     rangefinder.update();
 
-    if (should_log(MASK_LOG_SONAR))
+    if ((rangefinder.num_sensors() > 0) && should_log(MASK_LOG_SONAR)) {
         Log_Write_Sonar();
+    }
 
     rangefinder_height_update();
 }
@@ -85,9 +73,8 @@ void Plane::read_airspeed(void)
     if (airspeed.enabled()) {
         airspeed.read();
         if (should_log(MASK_LOG_IMU)) {
-            Log_Write_Airspeed();
+            DataFlash.Log_Write_Airspeed(airspeed);
         }
-        calc_airspeed_errors();
 
         // supply a new temperature to the barometer from the digital
         // airspeed sensor if we can
@@ -97,45 +84,16 @@ void Plane::read_airspeed(void)
         }
     }
 
+    // we calculate airspeed errors (and thus target_airspeed_cm) even
+    // when airspeed is disabled as TECS may be using synthetic
+    // airspeed for a quadplane transition
+    calc_airspeed_errors();
+    
     // update smoothed airspeed estimate
     float aspeed;
     if (ahrs.airspeed_estimate(&aspeed)) {
         smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
     }
-}
-
-void Plane::zero_airspeed(bool in_startup)
-{
-    airspeed.calibrate(in_startup);
-    read_airspeed();
-    // update barometric calibration with new airspeed supplied temperature
-    barometer.update_calibration();
-    gcs_send_text(MAV_SEVERITY_INFO,"Airspeed calibration started");
-}
-
-// read_battery - reads battery voltage and current and invokes failsafe
-// should be called at 10hz
-void Plane::read_battery(void)
-{
-    battery.read();
-    compass.set_current(battery.current_amps());
-
-    if (!usb_connected && 
-        hal.util->get_soft_armed() &&
-        battery.exhausted(g.fs_batt_voltage, g.fs_batt_mah)) {
-        low_battery_event();
-    }
-    
-    if (should_log(MASK_LOG_CURRENT)) {
-        Log_Write_Current();
-    }
-}
-
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Plane::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
 }
 
 /*
@@ -144,7 +102,7 @@ void Plane::read_receiver_rssi(void)
 void Plane::rpm_update(void)
 {
     rpm_sensor.update();
-    if (rpm_sensor.healthy(0) || rpm_sensor.healthy(1)) {
+    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RC)) {
             DataFlash.Log_Write_RPM(rpm_sensor);
         }
@@ -202,8 +160,8 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 
-    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence and motor output which we will set individually
-    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING);
+    // all present sensors enabled by default except rate control, attitude stabilization, yaw, altitude, position control, geofence, motor, and battery output which we will set individually
+    control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL & ~MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION & ~MAV_SYS_STATUS_SENSOR_YAW_POSITION & ~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL & ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL & ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS & ~MAV_SYS_STATUS_GEOFENCE & ~MAV_SYS_STATUS_LOGGING & ~MAV_SYS_STATUS_SENSOR_BATTERY);
 
     if (airspeed.enabled() && airspeed.use()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
@@ -215,6 +173,10 @@ void Plane::update_sensor_status_flags(void)
 
     if (plane.DataFlash.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
+    }
+
+    if (battery.num_instances() > 0) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
     switch (control_mode) {
@@ -291,10 +253,10 @@ void Plane::update_sensor_status_flags(void)
     if (barometer.all_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
+    if (g.compass_enabled && compass.healthy() && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
@@ -308,7 +270,7 @@ void Plane::update_sensor_status_flags(void)
     if (!ins.get_accel_health_all()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     }
-    if (airspeed.healthy()) {
+    if (airspeed.all_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
 #if GEOFENCE_ENABLED
@@ -343,17 +305,17 @@ void Plane::update_sensor_status_flags(void)
     }
 #endif
 
-    if (rangefinder.num_sensors() > 0) {
+    if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         if (g.rangefinder_landing) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
-        if (rangefinder.has_data()) {
+        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
 
-    if (aparm.throttle_min < 0 && channel_throttle->get_servo_out() < 0) {
+    if (aparm.throttle_min < 0 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
         control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
@@ -363,6 +325,11 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
+
+    if (!plane.battery.healthy() || plane.battery.has_failsafed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
+    }
+
 #if FRSKY_TELEM_ENABLED == ENABLED
     // give mask of error flags to Frsky_Telemetry
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);

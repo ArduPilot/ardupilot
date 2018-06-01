@@ -74,11 +74,11 @@ void QuadPlane::motor_test_output()
 
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
-uint8_t QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
+MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                             uint16_t throttle_value, float timeout_sec, uint8_t motor_count)
 {
     if (motors->armed()) {
-        plane.gcs_send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
+        gcs().send_text(MAV_SEVERITY_INFO, "Must be disarmed for motor test");
         return MAV_RESULT_FAILED;
     }
     // if test has not started try to start it

@@ -25,7 +25,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
     // take no action in some flight modes
     if (plane.control_mode == MANUAL ||
         (plane.control_mode == AUTO && !plane.auto_state.takeoff_complete) ||
-        (plane.control_mode == AUTO && plane.landing.in_progress) || // TODO: consider allowing action during approach
+        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) || // TODO: consider allowing action during approach
         plane.control_mode == AUTOTUNE ||
         plane.control_mode == QLAND) {
         actual_action = MAV_COLLISION_ACTION_NONE;
@@ -90,7 +90,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
     }
 
     if (failsafe_state_change) {
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_ALERT, "Avoid: Performing action: %d", actual_action);
+        gcs().send_text(MAV_SEVERITY_ALERT, "Avoid: Performing action: %d", actual_action);
     }
 
     // return with action taken
@@ -102,7 +102,7 @@ void AP_Avoidance_Plane::handle_recovery(uint8_t recovery_action)
     // check we are coming out of failsafe
     if (plane.failsafe.adsb) {
         plane.failsafe.adsb = false;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Avoid: Resuming with action: %d", recovery_action);
+        gcs().send_text(MAV_SEVERITY_INFO, "Avoid: Resuming with action: %d", recovery_action);
 
         // restore flight mode if requested and user has not changed mode since
         if (plane.control_mode_reason == MODE_REASON_AVOIDANCE) {

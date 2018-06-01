@@ -14,6 +14,7 @@
  */
 
 #include "Device.h"
+
 #include <stdio.h>
 
 /*
@@ -90,7 +91,7 @@ bool AP_HAL::Device::check_next_register(void)
         return true;
     }
     _checked.counter = 0;
-    
+
     struct checkreg &reg = _checked.regs[_checked.next];
     uint8_t v;
     if (!read_registers(reg.regnum, &v, 1) || v != reg.value) {
@@ -105,31 +106,5 @@ bool AP_HAL::Device::check_next_register(void)
         return false;
     }
     _checked.next = (_checked.next+1) % _checked.n_set;
-    return true;
-}
-
-/**
- * read 16 bit unsigned integer, little endian
- *
- * Return: true on a successful transfer, false on failure.
- */
-bool AP_HAL::Device::read_uint16_le(uint8_t first_reg, uint16_t &value)
-{
-    // assume we are on a LE platform
-    return read_registers(first_reg, (uint8_t *)&value, 2);
-}
-
-/**
- * read 16 bit unsigned integer, big endian
- *
- * Return: true on a successful transfer, false on failure.
- */
-bool AP_HAL::Device::read_uint16_be(uint8_t first_reg, uint16_t &value)
-{
-    if (!read_uint16_le(first_reg, value)) {
-        return false;
-    }
-    uint8_t *b = (uint8_t *)&value;
-    value = (((uint16_t)b[0])<<8) | b[1];
     return true;
 }

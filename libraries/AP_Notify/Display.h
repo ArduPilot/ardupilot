@@ -2,39 +2,43 @@
 
 #include "NotifyDevice.h"
 
-#define ROW(Y) ((Y * 11) + 2)
-#define COLUMN(X) ((X * 7) + 1)
+#define ROW(Y)    ((Y * 10) + 6)
+#define COLUMN(X) ((X *  7) + 0)
+
+#define DISPLAY_MESSAGE_SIZE 19
+
+class Display_Backend;
 
 class Display: public NotifyDevice {
 public:
+    friend class Display_Backend;
+
     bool init(void);
     void update();
-
-protected:
-    virtual bool hw_init() = 0;
-    virtual bool hw_update() = 0;
-    virtual bool set_pixel(uint16_t x, uint16_t y) = 0;
-    virtual bool clear_pixel(uint16_t x, uint16_t y) = 0;
 
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);
     void draw_text(uint16_t x, uint16_t y, const char *c);
     void update_all();
-    void update_arm();
-    void update_prearm();
-    void update_gps();
-    void update_gps_sats();
-    void update_ekf();
+    void update_arm(uint8_t r);
+    void update_prearm(uint8_t r);
+    void update_gps(uint8_t r);
+    void update_gps_sats(uint8_t r);
+    void update_ekf(uint8_t r);
+    void update_battery(uint8_t r);
+    void update_mode(uint8_t r);
+    void update_text(uint8_t r);
+    void update_text_empty(uint8_t r);
+
+    Display_Backend *_driver;
 
     bool _healthy;
-    bool _need_update;
 
-    struct display_state {
-        uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
-        uint32_t gps_num_sats       : 6;    // number of sats
-        uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
-        uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
-        uint32_t ekf_bad            : 1;    // 1 if ekf is reporting problems
-    } _flags;
+    uint8_t _mstartpos; // ticker shift position
+    uint8_t _movedelay; // ticker delay before shifting after new message displayed
+    uint8_t _screenpage;
+
+    // stop showing text in display after this many millis:
+    const uint16_t _send_text_valid_millis = 20000;
 };
 

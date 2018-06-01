@@ -162,6 +162,9 @@ void AP_Proximity_LightWareSF40C::init_sectors()
     // set num sectors
     _num_sectors = sector;
 
+    // re-initialise boundary because sector locations have changed
+    init_boundary();
+
     // record success
     _sector_initialised = true;
 }
@@ -219,7 +222,8 @@ void AP_Proximity_LightWareSF40C::set_forward_direction()
     // set forward direction
     char request_str[15];
     int16_t yaw_corr = frontend.get_yaw_correction(state.instance);
-    sprintf(request_str, "#MBF,%d\r\n", (int)yaw_corr);
+    yaw_corr = constrain_int16(yaw_corr, -999, 999);
+    snprintf(request_str, sizeof(request_str), "#MBF,%d\r\n", yaw_corr);
     uart->write(request_str);
 
     // request update on motor direction
@@ -282,8 +286,10 @@ bool AP_Proximity_LightWareSF40C::send_request_for_distance()
     }
 
     // prepare request
-    char request_str[15];
-    sprintf(request_str, "?TS,%d,%d\r\n", (int)(_sector_width_deg[_last_sector]), (int)(_sector_middle_deg[_last_sector]));
+    char request_str[16];
+    snprintf(request_str, sizeof(request_str), "?TS,%u,%u\r\n",
+             MIN(_sector_width_deg[_last_sector], 999),
+             MIN(_sector_middle_deg[_last_sector], 999));
     uart->write(request_str);
 
 
@@ -408,7 +414,7 @@ bool AP_Proximity_LightWareSF40C::process_reply()
             if (convert_angle_to_sector(angle_deg, sector)) {
                 _angle[sector] = angle_deg;
                 _distance[sector] = distance_m;
-                _distance_valid[sector] = true;
+                _distance_valid[sector] = is_positive(distance_m);
                 _last_distance_received_ms = AP_HAL::millis();
                 success = true;
                 // update boundary used for avoidance

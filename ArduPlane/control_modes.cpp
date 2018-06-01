@@ -9,8 +9,8 @@ void Plane::read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (failsafe.ch3_failsafe || failsafe.ch3_counter > 0) {
-        // when we are in ch3_failsafe mode then RC input is not
+    if (failsafe.rc_failsafe || failsafe.throttle_counter > 0) {
+        // when we are in rc_failsafe mode then RC input is not
         // working, and we need to ignore the mode switch channel
         return;
     }
@@ -28,7 +28,7 @@ void Plane::read_control_switch()
     // as a spring loaded trainer switch).
     if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 &&
-         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the
@@ -45,7 +45,7 @@ void Plane::read_control_switch()
     }
 
     if (g.reset_mission_chan != 0 &&
-        hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
+        RC_Channels::get_radio_in(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         mission.start();
         prev_WP_loc = current_loc;
     }
@@ -55,12 +55,12 @@ void Plane::read_control_switch()
     if (g.inverted_flight_ch != 0) {
         // if the user has configured an inverted flight channel, then
         // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
-        inverted_flight = (control_mode != MANUAL && hal.rcin->read(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
+        inverted_flight = (control_mode != MANUAL && RC_Channels::get_radio_in(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
     }
 
 #if PARACHUTE == ENABLED
     if (g.parachute_channel > 0) {
-        if (hal.rcin->read(g.parachute_channel-1) >= 1700) {
+        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= 1700) {
             parachute_manual_release();
         }
     }
@@ -69,22 +69,22 @@ void Plane::read_control_switch()
 #if HAVE_PX4_MIXER
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it
-        bool override_requested = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
+        bool override_requested = (RC_Channels::get_radio_in(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
         if (override_requested && !px4io_override_enabled) {
             if (hal.util->get_soft_armed() || (last_mixer_crc != -1)) {
                 px4io_override_enabled = true;
                 // disable output channels to force PX4IO override
-                gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
+                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enabled");
             } else {
                 // we'll let the one second loop reconfigure the mixer. The
                 // PX4IO code sometimes rejects a mixer, probably due to it
                 // being busy in some way?
-                gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
+                gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override enable failed");
             }
         } else if (!override_requested && px4io_override_enabled) {
             px4io_override_enabled = false;
-            RC_Channel_aux::enable_aux_servos();
-            gcs_send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
+            SRV_Channels::enable_aux_servos();
+            gcs().send_text(MAV_SEVERITY_WARNING, "PX4IO override disabled");
         }
         if (px4io_override_enabled && 
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED &&
@@ -100,7 +100,7 @@ void Plane::read_control_switch()
 
 uint8_t Plane::readSwitch(void)
 {
-    uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
+    uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
     if (pulsewidth <= 1230) return 0;
     if (pulsewidth <= 1360) return 1;

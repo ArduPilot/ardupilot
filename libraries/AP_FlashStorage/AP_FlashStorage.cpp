@@ -232,15 +232,29 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
             write_offset = ofs;
             return true;
 
-        case BLOCK_STATE_VALID:
         case BLOCK_STATE_WRITING: {
-            uint16_t block_ofs = header.block_num*block_size;
+            /*
+              we were interrupted while writing a block. We can't
+              re-use the data in this block as it may have some bits
+              that are not set to 1, so by flash rules can't be set to
+              an arbitrary value. So we skip over this block, leaving
+              a gap. The gap size is limited to (7+1)*8=64 bytes. That
+              gap won't be recovered until we next do an erase of this
+              sector
+             */
             uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
+            ofs += block_nbytes + sizeof(header);
+            break;
+        }
+            
+        case BLOCK_STATE_VALID: {
+            uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
+            uint16_t block_ofs = header.block_num*block_size;
             if (block_ofs + block_nbytes > storage_size) {
+                // the data is invalid (out of range)
                 return false;
             }
-            if (state == BLOCK_STATE_VALID &&
-                !flash_read(sector, ofs+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
+            if (!flash_read(sector, ofs+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
                 return false;
             }
             //debug("read at %u for %u\n", block_ofs, block_nbytes);
@@ -277,9 +291,7 @@ bool AP_FlashStorage::erase_sector(uint8_t sector)
 bool AP_FlashStorage::erase_all(void)
 {
     write_error = false;
-    
-    // start with empty memory buffer
-    memset(mem_buffer, 0, storage_size);
+
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
@@ -351,16 +363,18 @@ bool AP_FlashStorage::switch_sectors(void)
         return false;
     }
 
-    // mark it in-use
-    header.state = SECTOR_STATE_IN_USE;
-    if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
+    // mark current sector as full. This needs to be done before we
+    // mark the new sector as in-use so that a power failure between
+    // the two steps doesn't leave us with an erase on the
+    // reboot. Thanks to night-ghost for spotting this.
+    header.state = SECTOR_STATE_FULL;
+    if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
-
-    // mark current sector as full
-    header.state = SECTOR_STATE_FULL;
-    if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
+    // mark new sector as in-use
+    header.state = SECTOR_STATE_IN_USE;
+    if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
@@ -373,4 +387,18 @@ bool AP_FlashStorage::switch_sectors(void)
     
     write_offset = sizeof(header);
     return true;    
+}
+
+/*
+  re-initialise, using current mem_buffer
+ */
+bool AP_FlashStorage::re_initialise(void)
+{
+    if (!flash_erase_ok()) {
+        return false;
+    }
+    if (!erase_all()) {
+        return false;        
+    }
+    return write_all();
 }

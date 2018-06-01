@@ -22,7 +22,6 @@
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    _new_data = false;
 }
 
 // Reading does nothing in this class; we simply return whether or not
@@ -80,8 +79,10 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 
             if (have_vel_h) {
                 Vector3f vel(packet.vn, packet.ve, 0);
-                if (have_vel_v)
+                if (have_vel_v) {
                     vel.z = packet.vd;
+                    state.have_vertical_velocity = true;
+                }
 
                 state.velocity = vel;
                 state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
@@ -90,17 +91,17 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
 
             if (have_sa) {
                 state.speed_accuracy = packet.speed_accuracy;
-                state.have_speed_accuracy = 1;
+                state.have_speed_accuracy = true;
             }
 
             if (have_ha) {
                 state.horizontal_accuracy = packet.horiz_accuracy;
-                state.have_horizontal_accuracy = 1;
+                state.have_horizontal_accuracy = true;
             }
 
             if (have_va) {
                 state.vertical_accuracy = packet.vert_accuracy;
-                state.have_vertical_accuracy = 1;
+                state.have_vertical_accuracy = true;
             }
 
             state.num_sats = packet.satellites_visible;
@@ -120,22 +121,25 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             Location loc = {};
             loc.lat = packet.lat;
             loc.lng = packet.lon;
-            loc.alt = packet.alt;
+            loc.alt = packet.alt * 0.1f;
             state.location = loc;
             state.location.options = 0;
-            state.hdop = MAX(packet.eph, 9999);
-            state.vdop = MAX(packet.epv, 9999);
+            state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
+            state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
             if (packet.vel < 65535) {
                 state.ground_speed = packet.vel / 100.0f;
             }
             Vector3f vel(packet.vn/100.0f, packet.ve/100.0f, packet.vd/100.0f);
             state.velocity = vel;
+            if (packet.vd != 0) {
+                state.have_vertical_velocity = true;
+            }
             if (packet.cog < 36000) {
                 state.ground_course = packet.cog / 100.0f;
             }
-            state.have_speed_accuracy = 0;
-            state.have_horizontal_accuracy = 0;
-            state.have_vertical_accuracy = 0;
+            state.have_speed_accuracy = false;
+            state.have_horizontal_accuracy = false;
+            state.have_vertical_accuracy = false;
             if (packet.satellites_visible < 255) {
                 state.num_sats = packet.satellites_visible;
             }

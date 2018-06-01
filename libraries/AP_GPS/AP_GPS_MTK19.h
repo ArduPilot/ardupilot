@@ -36,6 +36,8 @@ public:
 
     static bool _detect(struct MTK19_detect_state &state, uint8_t data);
 
+    const char *name() const override { return "MTK19"; }
+
 private:
     struct PACKED diyd_mtk_msg {
         int32_t latitude;

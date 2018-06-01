@@ -6,16 +6,16 @@ extern const AP_HAL::HAL& hal;
 void AP_Mount_Servo::init(const AP_SerialManager& serial_manager)
 {
     if (_instance == 0) {
-        _roll_idx = RC_Channel_aux::k_mount_roll;
-        _tilt_idx = RC_Channel_aux::k_mount_tilt;
-        _pan_idx  = RC_Channel_aux::k_mount_pan;
-        _open_idx = RC_Channel_aux::k_mount_open;
+        _roll_idx = SRV_Channel::k_mount_roll;
+        _tilt_idx = SRV_Channel::k_mount_tilt;
+        _pan_idx  = SRV_Channel::k_mount_pan;
+        _open_idx = SRV_Channel::k_mount_open;
     } else {
         // this must be the 2nd mount
-        _roll_idx = RC_Channel_aux::k_mount2_roll;
-        _tilt_idx = RC_Channel_aux::k_mount2_tilt;
-        _pan_idx  = RC_Channel_aux::k_mount2_pan;
-        _open_idx = RC_Channel_aux::k_mount2_open;
+        _roll_idx = SRV_Channel::k_mount2_roll;
+        _tilt_idx = SRV_Channel::k_mount2_tilt;
+        _pan_idx  = SRV_Channel::k_mount2_pan;
+        _open_idx = SRV_Channel::k_mount2_open;
     }
 
     // check which servos have been assigned
@@ -69,7 +69,7 @@ void AP_Mount_Servo::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
         {
-            if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, false);
                 stabilize();
             }
@@ -107,9 +107,9 @@ void AP_Mount_Servo::set_mode(enum MAV_MOUNT_MODE mode)
 //  should be called periodically (i.e. 1hz or less)
 void AP_Mount_Servo::check_servo_map()
 {
-    _flags.roll_control = RC_Channel_aux::function_assigned(_roll_idx);
-    _flags.tilt_control = RC_Channel_aux::function_assigned(_tilt_idx);
-    _flags.pan_control = RC_Channel_aux::function_assigned(_pan_idx);
+    _flags.roll_control = SRV_Channels::function_assigned(_roll_idx);
+    _flags.tilt_control = SRV_Channels::function_assigned(_tilt_idx);
+    _flags.pan_control = SRV_Channels::function_assigned(_pan_idx);
 }
 
 // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
@@ -197,5 +197,5 @@ void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t ang
 {
 	// saturate to the closest angle limit if outside of [min max] angle interval
 	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
-	RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
+	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }

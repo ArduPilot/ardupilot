@@ -16,9 +16,19 @@
 
 #include <cmath>
 #include <string.h>
+#include "matrixN.h"
+
+#ifndef MATH_CHECK_INDEXES
+# define MATH_CHECK_INDEXES 0
+#endif
+
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
+
+template <typename T, uint8_t N>
+class MatrixN;
+
 
 template <typename T, uint8_t N>
 class VectorN
@@ -29,6 +39,11 @@ public:
         memset(_v, 0, sizeof(T)*N);
     }
 
+    // vector ctor
+    inline VectorN<T,N>(const T *v) {
+        memcpy(_v, v, sizeof(T)*N);
+    }
+    
     inline T & operator[](uint8_t i) {
 #if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
@@ -132,6 +147,26 @@ public:
             _v[i] /= num;
         }
         return *this;
+    }
+
+    // dot product
+    T operator *(const VectorN<T,N> &v) const {
+        float ret = 0;
+        for (uint8_t i=0; i<N; i++) {
+            ret += _v[i] * v._v[i];
+        }
+        return ret;
+    }
+    
+    // multiplication of a matrix by a vector, in-place
+    // C = A * B
+    void mult(const MatrixN<T,N> &A, const VectorN<T,N> &B) {
+        for (uint8_t i = 0; i < N; i++) {
+            _v[i] = 0;
+            for (uint8_t k = 0; k < N; k++) {
+                _v[i] += A.v[i][k] * B[k];
+            }
+        }
     }
 
 private:

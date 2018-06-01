@@ -61,7 +61,11 @@ void RCOutput_ZYNQ::set_freq(uint32_t chmask, uint16_t freq_hz)            //LSB
 
 uint16_t RCOutput_ZYNQ::get_freq(uint8_t ch)
 {
-    return TICK_PER_S/sharedMem_cmd->periodhi[ch].period;;
+    if (ch >= PWM_CHAN_COUNT) {
+        return 0;
+    }
+
+    return TICK_PER_S/sharedMem_cmd->periodhi[ch].period;
 }
 
 void RCOutput_ZYNQ::enable_ch(uint8_t ch)
@@ -76,6 +80,10 @@ void RCOutput_ZYNQ::disable_ch(uint8_t ch)
 
 void RCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch >= PWM_CHAN_COUNT) {
+        return;
+    }
+
     if (corked) {
         pending[ch] = period_us;
         pending_mask |= (1U << ch);
@@ -86,7 +94,11 @@ void RCOutput_ZYNQ::write(uint8_t ch, uint16_t period_us)
 
 uint16_t RCOutput_ZYNQ::read(uint8_t ch)
 {
-    return (sharedMem_cmd->periodhi[ch].hi/TICK_PER_US);
+    if (ch >= PWM_CHAN_COUNT) {
+        return 0;
+    }
+
+    return sharedMem_cmd->periodhi[ch].hi/TICK_PER_US;
 }
 
 void RCOutput_ZYNQ::read(uint16_t* period_us, uint8_t len)
@@ -107,6 +119,9 @@ void RCOutput_ZYNQ::cork(void)
 
 void RCOutput_ZYNQ::push(void)
 {
+    if (!corked) {
+        return;
+    }
     corked = false;
     for (uint8_t i=0; i<MAX_ZYNQ_PWMS; i++) {
         if (pending_mask & (1U << i)) {

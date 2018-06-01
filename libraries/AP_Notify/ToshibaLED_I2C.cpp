@@ -27,55 +27,69 @@
 extern const AP_HAL::HAL& hal;
 
 #define TOSHIBA_LED_I2C_ADDR 0x55    // default I2C bus address
-#define TOSHIBA_LED_I2C_BUS  1
 
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
 #define TOSHIBA_LED_PWM1    0x02    // pwm1 register
 #define TOSHIBA_LED_PWM2    0x03    // pwm2 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
 
-bool ToshibaLED_I2C::hw_init()
+ToshibaLED_I2C::ToshibaLED_I2C(uint8_t bus)
+    : ToshibaLED()
+    , _bus(bus)
 {
-    _dev = std::move(hal.i2c_mgr->get_device(TOSHIBA_LED_I2C_BUS, TOSHIBA_LED_I2C_ADDR));
+}
 
-    // take i2c bus sempahore
+bool ToshibaLED_I2C::hw_init(void)
+{
+    // first look for led on external bus
+    _dev = std::move(hal.i2c_mgr->get_device(_bus, TOSHIBA_LED_I2C_ADDR));
     if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
     }
 
+    _dev->set_retries(10);
+
     // enable the led
     bool ret = _dev->write_register(TOSHIBA_LED_ENABLE, 0x03);
+    if (!ret) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
 
     // update the red, green and blue values to zero
     uint8_t val[4] = { TOSHIBA_LED_PWM0, _led_off, _led_off, _led_off };
-    ret &= _dev->transfer(val, sizeof(val), nullptr, 0);
+    ret = _dev->transfer(val, sizeof(val), nullptr, 0);
+
+    _dev->set_retries(1);
 
     // give back i2c semaphore
     _dev->get_semaphore()->give();
 
-    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&ToshibaLED_I2C::_timer, bool));
-    
+    if (ret) {
+        _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&ToshibaLED_I2C::_timer, void));
+    }
+
     return ret;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 bool ToshibaLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
+    rgb = {red, green, blue};
     _need_update = true;
     return true;
 }
 
-bool ToshibaLED_I2C::_timer(void)
+void ToshibaLED_I2C::_timer(void)
 {
     if (!_need_update) {
-        return true;
+        return;
     }
     _need_update = false;
-    
+
     /* 4-bit for each color */
     uint8_t val[4] = { TOSHIBA_LED_PWM0, (uint8_t)(rgb.b >> 4),
                        (uint8_t)(rgb.g / 16), (uint8_t)(rgb.r / 16) };
 
     _dev->transfer(val, sizeof(val), nullptr, 0);
-    return true;
 }

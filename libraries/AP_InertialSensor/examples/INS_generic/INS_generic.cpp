@@ -8,20 +8,23 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-AP_InertialSensor ins;
+static AP_InertialSensor ins;
 
 static void display_offsets_and_scaling();
 static void run_test();
 
 // board specific config
-AP_BoardConfig BoardConfig;
+static AP_BoardConfig BoardConfig;
+
+void setup(void);
+void loop(void);
 
 void setup(void)
 {
     // setup any board specific drivers
     BoardConfig.init();
 
-    hal.console->println("AP_InertialSensor startup...");
+    hal.console->printf("AP_InertialSensor startup...\n");
 
     ins.init(100);
 
@@ -33,15 +36,15 @@ void setup(void)
     hal.console->printf("Number of detected accels : %u\n", ins.get_accel_count());
     hal.console->printf("Number of detected gyros  : %u\n\n", ins.get_gyro_count());
 
-    hal.console->println("Complete. Reading:");
+    hal.console->printf("Complete. Reading:\n");
 }
 
 void loop(void)
 {
     int16_t user_input;
 
-    hal.console->println();
-    hal.console->println(
+    hal.console->printf("\n");
+    hal.console->printf("%s\n",
     "Menu:\n"
     "    d) display offsets and scaling\n"
     "    l) level (capture offsets from level)\n"
@@ -73,26 +76,23 @@ void loop(void)
 
 static void display_offsets_and_scaling()
 {
-    Vector3f accel_offsets = ins.get_accel_offsets();
-    Vector3f accel_scale = ins.get_accel_scale();
-    Vector3f gyro_offsets = ins.get_gyro_offsets();
+    const Vector3f &accel_offsets = ins.get_accel_offsets();
+    const Vector3f &accel_scale = ins.get_accel_scale();
+    const Vector3f &gyro_offsets = ins.get_gyro_offsets();
 
     // display results
-    hal.console->printf(
-            "\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
-                    accel_offsets.x,
-                    accel_offsets.y,
-                    accel_offsets.z);
-    hal.console->printf(
-            "Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
-                    accel_scale.x,
-                    accel_scale.y,
-                    accel_scale.z);
-    hal.console->printf(
-            "Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
-                    gyro_offsets.x,
-                    gyro_offsets.y,
-                    gyro_offsets.z);
+    hal.console->printf("\nAccel Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
+                        (double)accel_offsets.x,
+                        (double)accel_offsets.y,
+                        (double)accel_offsets.z);
+    hal.console->printf("Accel Scale X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
+                        (double)accel_scale.x,
+                        (double)accel_scale.y,
+                        (double)accel_scale.z);
+    hal.console->printf("Gyro Offsets X:%10.8f \t Y:%10.8f \t Z:%10.8f\n",
+                        (double)gyro_offsets.x,
+                        (double)gyro_offsets.y,
+                        (double)gyro_offsets.z);
 }
 
 static void run_test()
@@ -143,7 +143,8 @@ static void run_test()
             accel = ins.get_accel(ii);
 
             hal.console->printf("%u - Accel (%c) : X:%6.2f Y:%6.2f Z:%6.2f norm:%5.2f",
-                                ii, state, accel.x, accel.y, accel.z, accel.length());
+                                ii, state, (double)accel.x, (double)accel.y, (double)accel.z,
+                                (double)accel.length());
 
             gyro = ins.get_gyro(ii);
 
@@ -159,7 +160,9 @@ static void run_test()
             }
 
             hal.console->printf("   Gyro (%c) : X:%6.2f Y:%6.2f Z:%6.2f\n",
-                                state, gyro.x, gyro.y, gyro.z);
+                                state, (double)gyro.x, (double)gyro.y, (double)gyro.z);
+            auto temp = ins.get_temperature(ii);
+            hal.console->printf("   t:%6.2f\n", (double)temp);
         }
     }
 

@@ -76,5 +76,6 @@
     MASK_LOG_RCIN | \
     MASK_LOG_IMU | \
     MASK_LOG_RCOUT | \
-    MASK_LOG_COMPASS
+    MASK_LOG_COMPASS | \
+    MASK_LOG_CURRENT
 #endif

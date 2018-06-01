@@ -54,12 +54,11 @@ RALLY_TOTAL      0
 RC1_DZ           30
 RC1_MAX          1886
 RC1_MIN          1087
-RC1_REV          1
 RC1_TRIM         1500
-RC2_REV          1
 RC3_MAX          2000
 RC3_MIN          1000
-RC4_REV          1
+SERVO3_MIN       1000
+SERVO3_MAX       2000
 RLL2SRV_D        0.141009
 RLL2SRV_I        0.425000
 RLL2SRV_IMAX     4000

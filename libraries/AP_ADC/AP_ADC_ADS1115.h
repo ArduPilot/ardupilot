@@ -31,12 +31,11 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
-    uint32_t            _last_update_timestamp;
     uint16_t            _gain;
     int                 _channel_to_read;
     adc_report_s        *_samples;
 
-    bool _update();
+    void _update();
     bool _start_conversion(uint8_t channel);
 
     float _convert_register_data_to_mv(int16_t word) const;

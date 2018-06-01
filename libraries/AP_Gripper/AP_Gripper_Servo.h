@@ -16,7 +16,7 @@
 #pragma once
 
 #include <AP_Gripper/AP_Gripper_Backend.h>
-#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 class AP_Gripper_Servo : public AP_Gripper_Backend {
 public:
@@ -35,6 +35,9 @@ public:
 
     // released - returns true if gripper in released state
     bool released() const override;
+
+    // valid - returns true if the backend should be working
+    bool valid() const;
 
 protected:
 

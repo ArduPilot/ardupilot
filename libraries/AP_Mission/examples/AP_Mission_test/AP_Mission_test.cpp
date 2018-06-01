@@ -18,7 +18,7 @@ private:
     AP_Baro baro;
     AP_GPS  gps;
     Compass compass;
-    AP_AHRS_DCM ahrs{ins, baro, gps};
+    AP_AHRS_DCM ahrs{};
 
     // global constants that control how many verify calls must be made for a command before it completes
     uint8_t verify_nav_cmd_iterations_to_complete = 3;
@@ -96,7 +96,7 @@ bool MissionTest::verify_cmd(const AP_Mission::Mission_Command& cmd)
 // mission_complete - function that is called once the mission completes
 void MissionTest::mission_complete(void)
 {
-    hal.console->print("\nMission Complete!\n");
+    hal.console->printf("\nMission Complete!\n");
 }
 
 // run_mission_test - tests the stop and resume feature
@@ -149,7 +149,7 @@ void MissionTest::run_mission_test()
     print_mission();
 
     // start mission
-    hal.console->print("\nRunning missions\n");
+    hal.console->printf("\nRunning missions\n");
     mission.start();
 
     // update mission forever
@@ -174,7 +174,7 @@ void MissionTest::init_mission()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -185,7 +185,7 @@ void MissionTest::init_mission()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : first waypoint
@@ -196,7 +196,7 @@ void MissionTest::init_mission()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : second waypoint
@@ -206,7 +206,7 @@ void MissionTest::init_mission()
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do-jump to first waypoint 3 times
@@ -214,7 +214,7 @@ void MissionTest::init_mission()
     cmd.content.jump.target = 2;
     cmd.content.jump.num_times = 1;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : RTL
@@ -224,7 +224,7 @@ void MissionTest::init_mission()
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -245,7 +245,7 @@ void MissionTest::init_mission_no_nav_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : "do" command
@@ -256,7 +256,7 @@ void MissionTest::init_mission_no_nav_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : "do" command
@@ -267,13 +267,13 @@ void MissionTest::init_mission_no_nav_commands()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : "do" command
     cmd.id = MAV_CMD_DO_SET_SERVO;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do-jump to first command 3 times
@@ -281,7 +281,7 @@ void MissionTest::init_mission_no_nav_commands()
     cmd.content.jump.target = 1;
     cmd.content.jump.num_times = 1;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -302,7 +302,7 @@ void MissionTest::init_mission_endless_loop()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : do-jump command to itself
@@ -310,7 +310,7 @@ void MissionTest::init_mission_endless_loop()
     cmd.content.jump.target = 1;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : take-off to 10m
@@ -321,7 +321,7 @@ void MissionTest::init_mission_endless_loop()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
@@ -332,7 +332,7 @@ void MissionTest::init_mission_endless_loop()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -354,7 +354,7 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -365,7 +365,7 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do-roi command
@@ -376,7 +376,7 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : do-jump command to #2
@@ -384,7 +384,7 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.jump.target = 2;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : waypoint
@@ -395,7 +395,7 @@ void MissionTest::init_mission_jump_to_nonnav()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -418,7 +418,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : First "do" command
@@ -429,7 +429,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : Second "do" command
@@ -440,7 +440,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : take-off to 10m
@@ -451,7 +451,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : Third "do" command
@@ -462,7 +462,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : waypoint
@@ -473,7 +473,7 @@ void MissionTest::init_mission_starts_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -495,7 +495,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -506,7 +506,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : "do" command
@@ -517,7 +517,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
@@ -528,7 +528,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : "do" command after last nav command (but not at end of mission)
@@ -539,7 +539,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : "do" command at end of mission
@@ -550,7 +550,7 @@ void MissionTest::init_mission_ends_with_do_commands()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -571,7 +571,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -582,7 +582,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : "do" command
@@ -593,7 +593,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : waypoint
@@ -604,7 +604,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : "do" command after last nav command (but not at end of mission)
@@ -615,7 +615,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : "do" command at end of mission
@@ -626,7 +626,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : do-jump command to #2 two times
@@ -634,7 +634,7 @@ void MissionTest::init_mission_ends_with_jump_command()
     cmd.content.jump.target = 3;
     cmd.content.jump.num_times = 2;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 }
 
@@ -692,7 +692,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -703,7 +703,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : first waypoint
@@ -714,7 +714,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : second waypoint
@@ -724,7 +724,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : do command
@@ -735,7 +735,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : RTL
@@ -745,7 +745,7 @@ void MissionTest::run_resume_test()
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
@@ -798,7 +798,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -809,7 +809,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
@@ -820,7 +820,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
@@ -831,7 +831,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
@@ -841,7 +841,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : do command
@@ -852,7 +852,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
@@ -862,7 +862,7 @@ void MissionTest::run_set_current_cmd_test()
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
@@ -903,7 +903,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -914,7 +914,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
@@ -925,7 +925,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
@@ -936,7 +936,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
@@ -946,7 +946,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #5 : do command
@@ -957,7 +957,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
@@ -967,7 +967,7 @@ void MissionTest::run_set_current_cmd_while_stopped_test()
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
@@ -1040,7 +1040,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #1 : take-off to 10m
@@ -1051,7 +1051,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lat = 0;
     cmd.content.location.lng = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #2 : do command
@@ -1062,7 +1062,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #3 : first waypoint
@@ -1073,7 +1073,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lat = 12345678;
     cmd.content.location.lng = 23456789;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #4 : second waypoint
@@ -1083,7 +1083,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lng = -1234567890;
     cmd.content.location.alt = 22;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // Command #6 : RTL
@@ -1093,7 +1093,7 @@ void MissionTest::run_replace_cmd_test()
     cmd.content.location.lng = 0;
     cmd.content.location.alt = 0;
     if (!mission.add_cmd(cmd)) {
-        hal.console->print("failed to add command\n");
+        hal.console->printf("failed to add command\n");
     }
 
     // print current mission
@@ -1190,7 +1190,7 @@ void MissionTest::run_max_cmd_test()
 // setup
 void MissionTest::setup(void)
 {
-    hal.console->println("AP_Mission library test\n");
+    hal.console->printf("AP_Mission library test\n\n");
 
     // display basic info about command sizes
     hal.console->printf("Max Num Commands: %d\n",(int)mission.num_commands_max());

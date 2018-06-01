@@ -7,8 +7,15 @@ then
         rgbled rgb 16 0 0
 fi
 
-nshterm /dev/ttyACM0 &
-sleep 1
-nshterm /dev/ttyS0 &
-sleep 1
+if [ $NSH_ERROR_UART1 != none ]
+then
+	nshterm $NSH_ERROR_UART1 &
+	sleep 1
+fi
+if [ $NSH_ERROR_UART2 != none ]
+then
+	nshterm $NSH_ERROR_UART2 &
+	sleep 1
+fi
+
 exit

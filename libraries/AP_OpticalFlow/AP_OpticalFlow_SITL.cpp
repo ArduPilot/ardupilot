@@ -108,7 +108,8 @@ void AP_OpticalFlow_SITL::update(void)
 
     if (_sitl->flow_delay != optflow_delay) {
         // cope with updates to the delay control
-        if (_sitl->flow_delay > ARRAY_SIZE(optflow_data)) {
+        if (_sitl->flow_delay > 0 &&
+            (uint8_t)(_sitl->flow_delay) > ARRAY_SIZE(optflow_data)) {
             _sitl->flow_delay = ARRAY_SIZE(optflow_data);
         }
         optflow_delay = _sitl->flow_delay;

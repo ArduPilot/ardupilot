@@ -1,5 +1,7 @@
 #pragma once
 
+class AP_Param;
+
 #include "AP_HAL_Namespace.h"
 
 #include "AnalogIn.h"
@@ -11,6 +13,15 @@
 #include "UARTDriver.h"
 #include "system.h"
 #include "OpticalFlow.h"
+#if HAL_WITH_UAVCAN
+#include "CAN.h"
+#endif
+
+
+#if defined(HAL_NEEDS_PARAM_HELPER)
+#include <AP_Param/AP_Param.h>
+class AP_Param_Helper;
+#endif
 
 class AP_HAL::HAL {
 public:
@@ -30,7 +41,12 @@ public:
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
         AP_HAL::Util*       _util,
-        AP_HAL::OpticalFlow *_opticalflow)
+        AP_HAL::OpticalFlow *_opticalflow,
+#if HAL_WITH_UAVCAN
+        AP_HAL::CANManager* _can_mgr[MAX_NUMBER_OF_CAN_DRIVERS])
+#else
+        AP_HAL::CANManager** _can_mgr)
+#endif
         :
         uartA(_uartA),
         uartB(_uartB),
@@ -50,6 +66,16 @@ public:
         util(_util),
         opticalflow(_opticalflow)
     {
+#if HAL_WITH_UAVCAN
+        if (_can_mgr == nullptr) {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++)
+                can_mgr[i] = nullptr;
+        } else {
+            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++)
+                can_mgr[i] = _can_mgr[i];
+        }
+#endif
+
         AP_HAL::init();
     }
 
@@ -88,4 +114,9 @@ public:
     AP_HAL::Scheduler*  scheduler;
     AP_HAL::Util        *util;
     AP_HAL::OpticalFlow *opticalflow;
+#if HAL_WITH_UAVCAN
+    AP_HAL::CANManager* can_mgr[MAX_NUMBER_OF_CAN_DRIVERS];
+#else
+    AP_HAL::CANManager** can_mgr;
+#endif
 };

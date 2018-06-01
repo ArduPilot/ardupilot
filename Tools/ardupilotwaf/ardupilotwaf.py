@@ -49,6 +49,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
+    'SRV_Channel',
     'StorageManager',
     'AP_Tuning',
     'AP_RPM',
@@ -59,6 +60,19 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ICEngine',
     'AP_Frsky_Telem',
     'AP_FlashStorage',
+    'AP_Relay',
+    'AP_ServoRelayEvents',
+    'AP_Volz_Protocol',
+    'AP_SBusOut',
+    'AP_IOMCU',
+    'AP_RAMTRON',
+    'AP_RCProtocol',
+    'AP_Radio',
+    'AP_TempCalibration',
+    'AP_VisualOdom',
+    'AP_BLHeli',
+    'AP_ROMFS',
+    'AP_Proximity',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -70,7 +84,6 @@ def get_legacy_defines(sketch_name):
 
 IGNORED_AP_LIBRARIES = [
     'doc',
-    'GCS_Console',
 ]
 
 @conf
@@ -90,7 +103,14 @@ def ap_get_all_libraries(bld):
 
 @conf
 def ap_common_vehicle_libraries(bld):
-    return COMMON_VEHICLE_DEPENDENT_LIBRARIES
+    libraries = COMMON_VEHICLE_DEPENDENT_LIBRARIES
+
+    if bld.env.DEST_BINFMT == 'pe':
+        libraries += [
+            'AC_Fence',
+        ]
+
+    return libraries
 
 _grouped_programs = {}
 
@@ -223,9 +243,21 @@ def ap_version_append_str(ctx, k, v):
     ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
 
 @conf
+def ap_version_append_int(ctx, k, v):
+    ctx.env['AP_VERSION_ITEMS'] += [(k,v)]
+
+@conf
 def write_version_header(ctx, tgt):
     with open(tgt, 'w') as f:
-        print('#pragma once\n', file=f)
+        print(
+'''// auto-generated header, do not edit
+
+#pragma once
+
+#ifndef FORCE_VERSION_H_INCLUDE
+#error ap_version.h should never be included directly. You probably want to include AP_Common/AP_FWVersion.h
+#endif
+''', file=f)
 
         for k, v in ctx.env['AP_VERSION_ITEMS']:
             print('#define {} {}'.format(k, v), file=f)
@@ -351,6 +383,7 @@ def _select_programs_from_group(bld):
 def options(opt):
     opt.ap_groups = {
         'configure': opt.add_option_group('Ardupilot configure options'),
+        'linux': opt.add_option_group('Linux boards configure options'),
         'build': opt.add_option_group('Ardupilot build options'),
         'check': opt.add_option_group('Ardupilot check options'),
         'clean': opt.add_option_group('Ardupilot clean options'),
@@ -361,18 +394,16 @@ def options(opt):
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='''
-Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
---program-group examples` builds all examples. The special group "all" selects
-all programs.
+        help='''Select all programs that go in <PROGRAM_GROUP>/ for the build.
+Example: `waf --program-group examples` builds all examples. The
+special group "all" selects all programs.
 ''')
 
     g.add_option('--upload',
         action='store_true',
-        help='''
-Upload applicable targets to a connected device. Not all platforms may support
-this. Example: `waf copter --upload` means "build arducopter and upload it to
-my board".
+        help='''Upload applicable targets to a connected device. Not all
+platforms may support this. Example: `waf copter --upload` means "build
+arducopter and upload it to my board".
 ''')
 
     g = opt.ap_groups['check']
@@ -385,12 +416,12 @@ my board".
 
     g.add_option('--clean-all-sigs',
         action='store_true',
-        help='''
-Clean signatures for all tasks. By default, tasks that scan for implicit
-dependencies (like the compilation tasks) keep the dependency information
-across clean commands, so that that information is changed only when really
-necessary. Also, some tasks that don't really produce files persist their
-signature. This option avoids that behavior when cleaning the build.
+        help='''Clean signatures for all tasks. By default, tasks that scan for
+implicit dependencies (like the compilation tasks) keep the dependency
+information across clean commands, so that that information is changed
+only when really necessary. Also, some tasks that don't really produce
+files persist their signature. This option avoids that behavior when
+cleaning the build.
 ''')
 
 def build(bld):

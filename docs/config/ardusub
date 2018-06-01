@@ -1,0 +1,8 @@
+@INCLUDE = docs/config/default
+
+PROJECT_NAME = "APM:Sub"
+INPUT = ArduSub/
+OUTPUT_DIRECTORY = $(DOCS_OUTPUT_BASE)/ArduSub
+HTML_OUTPUT = .
+TAGFILES = $(DOCS_OUTPUT_BASE)/tags/libraries=../libraries
+

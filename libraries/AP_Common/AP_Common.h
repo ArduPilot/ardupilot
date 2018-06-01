@@ -39,6 +39,17 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
+#ifdef __has_cpp_attribute
+#  if __has_cpp_attribute(fallthrough)
+#    define FALLTHROUGH [[fallthrough]]
+#  elif __has_cpp_attribute(gnu::fallthrough)
+#    define FALLTHROUGH [[gnu::fallthrough]]
+#  endif
+#endif
+#ifndef FALLTHROUGH
+#  define FALLTHROUGH
+#endif
+
 #define ToRad(x) radians(x)	// *pi/180
 #define ToDeg(x) degrees(x)	// *180/pi
 
@@ -67,6 +78,9 @@ template <typename T>
 char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 #define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
+
+// simpler ARRAY_SIZE which can handle zero elements
+#define ARRAY_SIZE_SIMPLE(_arr) (sizeof(_arr)/sizeof(_arr[0]))
 
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
@@ -97,7 +111,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 ///
 /// Data structures and types used throughout the libraries and applications. 0 = default
 /// bit 0: Altitude is stored               0: Absolute,	1: Relative
-/// bit 1: Chnage Alt between WP            0: Gradually,	1: ASAP
+/// bit 1: Change Alt between WP            0: Gradually,	1: ASAP
 /// bit 2: Direction of loiter command      0: Clockwise	1: Counter-Clockwise
 /// bit 3: Req.to hit WP.alt to continue    0: No,          1: Yes
 /// bit 4: Relative to Home					0: No,          1: Yes
@@ -108,7 +122,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 //@{
 
 struct PACKED Location_Option_Flags {
-    uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
+    uint8_t relative_alt : 1;           // 1 if altitude is relative to home
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
@@ -125,18 +139,9 @@ struct PACKED Location {
     // allowing an accurate angle in centi-degrees. This keeps the
     // storage cost per mission item at 15 bytes, and allows mission
     // altitudes of up to +/- 83km
-    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100)
+    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100) see LOCATION_ALT_MAX_M
     int32_t lat;                                        ///< param 3 - Latitude * 10**7
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
-};
-
-/*
-  home states. Used to record if user has overridden home position.
-*/
-enum HomeState {
-    HOME_UNSET,                 // home is unset, no GPS positions yet received
-    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
-    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
 };
 
 //@}
@@ -154,14 +159,11 @@ enum HomeState {
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <AP_HAL_QURT/replace.h>
-#endif
-
 /*
   useful debugging macro for SITL
  */
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
 #define SITL_printf(fmt, args ...) do { ::printf("%s(%u): " fmt, __FILE__, __LINE__, ##args); } while(0)
 #else
 #define SITL_printf(fmt, args ...)

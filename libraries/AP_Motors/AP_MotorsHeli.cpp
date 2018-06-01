@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
-    // @Description: Lowest possible servo position for the swashplate
+    // @Description: Lowest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MAX
     // @DisplayName: Collective Pitch Maximum
-    // @Description: Highest possible servo position for the swashplate
+    // @Description: Highest possible servo position in PWM microseconds for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: RSC_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM passed to the external motor governor when external governor is enabled
+    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 10
@@ -83,9 +83,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
-    // @Description: Minimum collective position while landed or landing
+    // @Description: Minimum collective position in PWM microseconds while landed or landing
     // @Range: 0 500
-    // @Units: pwm
+    // @Units: PWM
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("LAND_COL_MIN", 9, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Ramp Time
     // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
@@ -102,7 +102,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Runup Time
     // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
     // @Range: 0 60
-    // @Units: Seconds
+    // @Units: s
     // @User: Standard
     AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
@@ -122,27 +122,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
-    // @Param: RSC_POWER_LOW
-    // @DisplayName: Throttle Servo Low Power Position
-    // @Description: Throttle output at zero collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. Zero collective pitch is defined by H_COL_MID.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
-    
-    // @Param: RSC_POWER_HIGH
-    // @DisplayName: Throttle Servo High Power Position
-    // @Description: Throttle output at maximum collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+    // index 14 was RSC_POWER_LOW. Do not use this index in the future.
+
+    // index 15 was RSC_POWER_HIGH. Do not use this index in the future.
 
     // @Param: CYC_MAX
     // @DisplayName: Cyclic Pitch Angle Max
     // @Description: Maximum pitch angle of the swash plate
     // @Range: 0 18000
-    // @Units: Centi-Degrees
+    // @Units: cdeg
     // @Increment: 100
     // @User: Advanced
     AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
@@ -155,13 +143,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
 
-    // @Param: RSC_POWER_NEGC
-    // @DisplayName: Throttle servo negative collective power position
-    // @Description: Throttle output at full negative collective pitch. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by H_RSC_PWM_MIN and H_RSC_PWM_MAX. If this is equal to H_RSC_POWER_HIGH then you will have a symmetric V-curve for the throttle response.
-    // @Range: 1 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_POWER_NEGC", 18, AP_MotorsHeli, _rsc_power_negc, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
+    // index 18 was RSC_POWER_NEGC. Do not use this index in the future.
 
     // @Param: RSC_SLEWRATE
     // @DisplayName: Throttle servo slew rate
@@ -170,7 +152,47 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
-    
+
+    // @Param: RSC_THRCRV_0
+    // @DisplayName: Throttle Servo Position for 0 percent collective
+    // @Description: Throttle Servo Position for 0 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_0", 20, AP_MotorsHeli, _rsc_thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
+
+    // @Param: RSC_THRCRV_25
+    // @DisplayName: Throttle Servo Position for 25 percent collective
+    // @Description: Throttle Servo Position for 25 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_25", 21, AP_MotorsHeli, _rsc_thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
+
+    // @Param: RSC_THRCRV_50
+    // @DisplayName: Throttle Servo Position for 50 percent collective
+    // @Description: Throttle Servo Position for 50 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_50", 22, AP_MotorsHeli, _rsc_thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
+
+    // @Param: RSC_THRCRV_75
+    // @DisplayName: Throttle Servo Position for 75 percent collective
+    // @Description: Throttle Servo Position for 75 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_75", 23, AP_MotorsHeli, _rsc_thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
+
+    // @Param: RSC_THRCRV_100
+    // @DisplayName: Throttle Servo Position for 100 percent collective
+    // @Description: Throttle Servo Position for 100 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Range: 0 1000
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -179,8 +201,11 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 //
 
 // init
-void AP_MotorsHeli::Init()
+void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
+    // remember frame type
+    _frame_type = frame_type;
+
     // set update rate
     set_update_rate(_speed_hz);
 
@@ -194,10 +219,22 @@ void AP_MotorsHeli::Init()
     _throttle_radio_passthrough = 0.5f;
 
     // initialise Servo/PWM ranges and endpoints
-    init_outputs();
+    if (!init_outputs()) {
+        // don't set initialised_ok
+        return;
+    }
 
     // calculate all scalars
     calculate_scalars();
+
+    // record successful initialisation if what we setup was the desired frame_class
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+}
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
 }
 
 // output_min - sets servos to neutral point with motors stopped
@@ -324,7 +361,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
     if (_rsc_critical >= _rsc_setpoint) {
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
         }
         return false;
     }
@@ -332,7 +369,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Mode is not set to a valid control mode
     if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
         }
         return false;
     }
@@ -340,7 +377,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
     if (_rsc_runup_time <= _rsc_ramp_time){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
         }
         return false;
     }
@@ -348,7 +385,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
     if ( _rsc_idle_output >=  _rsc_critical){
         if (display_msg) {
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
         }
         return false;
     }
@@ -358,13 +395,13 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
 }
 
 // reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
+void AP_MotorsHeli::reset_swash_servo(SRV_Channel *servo)
 {
-    servo.set_range_out(0, 1000);
+    servo->set_range(1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
-    servo.set_radio_min(1000);
-    servo.set_radio_max(2000);
+    servo->set_output_min(1000);
+    servo->set_output_max(2000);
 }
 
 // update the throttle input filter
@@ -388,3 +425,23 @@ void AP_MotorsHeli::reset_flight_controls()
     init_outputs();
     calculate_scalars();
 }
+
+// convert input in -1 to +1 range to pwm output for swashplate servo.  Special handling of trim is required 
+// to keep travel between the swashplate servos consistent.  Swashplate servo travel range is fixed to 1000 pwm
+// and therefore the input is multiplied by 500 to get PWM output.
+int16_t AP_MotorsHeli::calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo)
+{
+    int16_t ret;
+
+    input = constrain_float(input, -1.0f, 1.0f);
+
+    if (servo->get_reversed()) {
+        input = -input;
+    }
+
+    ret = (int16_t (input * 500.0f) + servo->get_trim());
+
+    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
+}
+
+

@@ -31,6 +31,13 @@ public:
     // update the state structure. All backends must implement this.
     virtual void update() = 0;
 
+    int8_t get_pin(void) const {
+        if (state.instance > 1) {
+            return -1;
+        }
+        return ap_rpm._pin[state.instance].get();
+    }
+    
 protected:
 
     AP_RPM &ap_rpm;

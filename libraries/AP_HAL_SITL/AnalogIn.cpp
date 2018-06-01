@@ -9,7 +9,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-ADCSource::ADCSource(SITL_State *sitlState, uint8_t pin) :
+ADCSource::ADCSource(SITL_State *sitlState, int16_t pin) :
     _sitlState(sitlState),
     _pin(pin)
 {}
@@ -36,12 +36,21 @@ float ADCSource::read_latest() {
 
     case 1:
         return _sitlState->airspeed_pin_value;
+    
+    case 2:
+        return _sitlState->airspeed_2_pin_value;
 
     case 12:
         return _sitlState->current_pin_value;
 
     case 13:
         return _sitlState->voltage_pin_value;
+
+    case 14:
+        return _sitlState->current2_pin_value;
+
+    case 15:
+        return _sitlState->voltage2_pin_value;
 
     case ANALOG_INPUT_NONE:
     default:

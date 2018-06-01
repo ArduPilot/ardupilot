@@ -52,7 +52,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED 7
     { "MFT200L4<G#6A#6B#4", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED 8
-    { "MFT100L4>B#B#B#B#", false },
+    { "MFT100L4>A#A#A#A#", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING 9
     { "MNT75L1O2G", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 10
@@ -60,9 +60,9 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 11
     { "MBT200L2A-G-A-G-A-G-", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS 12
-    { "MBT200>B#1", true },
+    { "MBT200>A#1", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
-    { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
+    { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
     { "MBNT255<C16P2", true },
     #define AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW 15
@@ -87,6 +87,12 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MFT100L10DBDB>", false},
     #define AP_NOTIFY_PX4_TONE_TUNING_ERROR 25
     { "MFT100L10>BBBBBBBB", false},
+    #define AP_NOTIFY_PX4_TONE_LEAK_DETECTED 26
+    { "MBT255L8>A+AA-", true},
+    #define AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN 27
+    { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
+    #define AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
+    { "MFT200L4<B#4A#6G#6", false },
 };
 
 bool ToneAlarm_PX4::init()
@@ -160,6 +166,14 @@ void ToneAlarm_PX4::update()
     }
 
     check_cont_tone();
+    
+    if (AP_Notify::flags.powering_off) {
+        if (!flags.powering_off) {
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
+        }
+        flags.powering_off = AP_Notify::flags.powering_off;
+        return;
+    }
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if(AP_Notify::flags.compass_cal_running) {
@@ -263,6 +277,12 @@ void ToneAlarm_PX4::update()
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
         if (flags.pre_arm_check) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED);
+            _have_played_ready_tone = true;
+        } else {
+            // only play sad tone if we've ever played happy tone:
+            if (_have_played_ready_tone) {
+                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
+            }
         }
     }
 
@@ -275,7 +295,9 @@ void ToneAlarm_PX4::update()
         }else{
             // disarming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
-            stop_cont_tone();
+            if (!flags.leak_detected) {
+            	stop_cont_tone();
+            }
         }
     }
 
@@ -312,6 +334,15 @@ void ToneAlarm_PX4::update()
         flags.waiting_for_throw = AP_Notify::flags.waiting_for_throw;
         if (flags.waiting_for_throw) {
             play_tone(AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW);
+        } else {
+            stop_cont_tone();
+        }
+    }
+
+    if (flags.leak_detected != AP_Notify::flags.leak_detected) {
+        flags.leak_detected = AP_Notify::flags.leak_detected;
+        if (flags.leak_detected) {
+            play_tone(AP_NOTIFY_PX4_TONE_LEAK_DETECTED);
         } else {
             stop_cont_tone();
         }

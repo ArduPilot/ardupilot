@@ -40,9 +40,7 @@ do {                                            \
 
 AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _new_position(0),
-    _new_speed(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
     nova_msg.nova_state = nova_msg_parser::PREAMBLE1;
 
@@ -194,11 +192,11 @@ AP_GPS_NOVA::process_message(void)
 
         state.time_week = nova_msg.header.nova_headeru.week;
         state.time_week_ms = (uint32_t) nova_msg.header.nova_headeru.tow;
-        state.last_gps_time_ms = state.time_week_ms;
+        state.last_gps_time_ms = AP_HAL::millis();
 
-        state.location.lat = (int32_t) (bestposu.lat*1e7);
-        state.location.lng = (int32_t) (bestposu.lng*1e7);
-        state.location.alt = (int32_t) (bestposu.hgt*1e2);
+        state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
+        state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
+        state.location.alt = (int32_t) (bestposu.hgt * 100);
 
         state.num_sats = bestposu.svsused;
 
@@ -206,6 +204,8 @@ AP_GPS_NOVA::process_message(void)
         state.vertical_accuracy = (float) bestposu.hgtsdev;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
+        state.rtk_age_ms = bestposu.diffage * 1000;
+        state.rtk_num_sats = bestposu.svsused;
 
         if (bestposu.solstat == 0) // have a solution
         {
@@ -224,9 +224,11 @@ AP_GPS_NOVA::process_message(void)
                 case 32: // l1 float
                 case 33: // iono float
                 case 34: // narrow float
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    break;
                 case 48: // l1 int
                 case 50: // narrow int
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK;
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                     break;
                 case 0: // NONE
                 case 1: // FIXEDPOS
@@ -268,7 +270,7 @@ AP_GPS_NOVA::process_message(void)
     }
 
     // ensure out position and velocity stay insync
-    if (_new_position && _new_speed && _last_vel_time == state.last_gps_time_ms) {
+    if (_new_position && _new_speed && _last_vel_time == state.time_week_ms) {
         _new_speed = _new_position = false;
         
         return true;

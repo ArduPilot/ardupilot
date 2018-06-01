@@ -91,7 +91,7 @@ popd
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
 
 echo "Updating pymavlink"
-pushd APM/mavlink/pymavlink
+pushd APM/modules/mavlink/pymavlink
 git show
 python setup.py build install --user
 popd

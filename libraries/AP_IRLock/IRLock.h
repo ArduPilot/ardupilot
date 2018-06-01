@@ -28,7 +28,7 @@ class IRLock
 public:
     // init - initialize sensor library
     // library won't be useable unless this is first called
-    virtual void init() = 0;
+    virtual void init(int8_t bus) = 0;
 
     // true if irlock sensor is online and healthy
     bool healthy() const { return _flags.healthy; }

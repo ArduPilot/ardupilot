@@ -14,6 +14,9 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 class DummyVehicle {
@@ -23,19 +26,18 @@ public:
     Compass compass;
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;
-    RangeFinder sonar {serial_manager};
-    AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF2, EKF3,
-                        AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
-    NavEKF2 EKF2{&ahrs, barometer, sonar};
-    NavEKF3 EKF3{&ahrs, barometer, sonar};
+    RangeFinder sonar{serial_manager, ROTATION_PITCH_270};
+    AP_AHRS_NavEKF ahrs{EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    NavEKF2 EKF2{&ahrs, sonar};
+    NavEKF3 EKF3{&ahrs, sonar};
 };
 
 static DummyVehicle vehicle;
-static OpticalFlow optflow(vehicle.ahrs);
+static OpticalFlow optflow{vehicle.ahrs};
 
 void setup()
 {
-    hal.console->println("OpticalFlow library test ver 1.6");
+    hal.console->printf("OpticalFlow library test ver 1.6\n");
 
     hal.scheduler->delay(1000);
 
@@ -43,7 +45,7 @@ void setup()
     optflow.init();
 
     if (!optflow.healthy()) {
-        hal.console->print("Failed to initialise PX4Flow ");
+        hal.console->printf("Failed to initialise PX4Flow ");
     }
 
     hal.scheduler->delay(1000);
@@ -51,7 +53,7 @@ void setup()
 
 void loop()
 {
-    hal.console->println("this only tests compilation succeeds");
+    hal.console->printf("this only tests compilation succeeds\n");
 
     hal.scheduler->delay(5000);
 }

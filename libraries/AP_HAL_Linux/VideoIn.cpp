@@ -19,8 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #include "VideoIn.h"
 
 #include <errno.h>
@@ -114,7 +113,7 @@ bool VideoIn::allocate_buffers(uint32_t nbufs)
         return ret;
     }
 
-    buffers = (struct buffer *)malloc(rb.count * sizeof buffers[0]);
+    buffers = (struct buffer *)calloc(rb.count, sizeof buffers[0]);
     if (buffers == nullptr) {
         hal.console->printf("Unable to allocate buffers\n");
         return false;

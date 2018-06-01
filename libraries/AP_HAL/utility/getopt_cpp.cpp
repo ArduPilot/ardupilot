@@ -42,11 +42,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#define GETOPT_ERROR(...) HAP_printf(__FILE__, __LINE__, __VA_ARGS__)
-#else
 #define GETOPT_ERROR(...) fprintf(stderr, __VA_ARGS__)
-#endif
 
 
 /*

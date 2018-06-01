@@ -15,8 +15,8 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
 
     // @Param: PUMP_RATE
     // @DisplayName: Pump speed
-    // @Description: Desired pump speed when travelling 1m/s expressed as a percentage
-    // @Units: percentage
+    // @Description: Desired pump speed when traveling 1m/s expressed as a percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_RATE",   1, AC_Sprayer, _pump_pct_1ms, AC_SPRAYER_DEFAULT_PUMP_RATE),
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @Param: PUMP_MIN
     // @DisplayName: Pump speed minimum
     // @Description: Minimum pump speed expressed as a percentage
-    // @Units: percentage
+    // @Units: %
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
@@ -48,10 +48,7 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     AP_GROUPEND
 };
 
-AC_Sprayer::AC_Sprayer(const AP_InertialNav* inav) :
-    _inav(inav),
-    _speed_over_min_time(0),
-    _speed_under_min_time(0)
+AC_Sprayer::AC_Sprayer()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -85,18 +82,14 @@ void AC_Sprayer::run(const bool true_false)
 
 void AC_Sprayer::stop_spraying()
 {
-    // send output to pump channel
-    RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_pump);
-
-    // send output to spinner channel
-    RC_Channel_aux::set_radio_to_min(RC_Channel_aux::k_sprayer_spinner);
+    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
 
     _flags.spraying = false;
 }
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
-void
-AC_Sprayer::update()
+void AC_Sprayer::update()
 {
     // exit immediately if we are disabled or shouldn't be running
     if (!_enabled || !running()) {
@@ -105,13 +98,18 @@ AC_Sprayer::update()
     }
 
     // exit immediately if the pump function has not been set-up for any servo
-    if (!RC_Channel_aux::function_assigned(RC_Channel_aux::k_sprayer_pump)) {
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_sprayer_pump)) {
         return;
     }
 
     // get horizontal velocity
-    const Vector3f &velocity = _inav->get_velocity();
-    float ground_speed = norm(velocity.x,velocity.y);
+    Vector3f velocity;
+    if (!AP::ahrs().get_velocity_NED(velocity)) {
+        // treat unknown velocity as zero which should lead to pump stopping
+        // velocity will already be zero but this avoids a coverity warning
+        velocity.zero();
+    }
+    float ground_speed = norm(velocity.x * 100.0f, velocity.y * 100.0f);
 
     // get the current time
     const uint32_t now = AP_HAL::millis();
@@ -134,7 +132,7 @@ AC_Sprayer::update()
         }
         // reset the speed under timer
         _speed_under_min_time = 0;
-    }else{
+    } else {
         // we are under the min speed.
         if (_flags.spraying) {
             // set the timer if this is the first time we've dropped below the min speed
@@ -152,7 +150,7 @@ AC_Sprayer::update()
         _speed_over_min_time = 0;
     }
 
-    // if testing pump output speed as if travelling at 1m/s
+    // if testing pump output speed as if traveling at 1m/s
     if (_flags.testing) {
         ground_speed = 100.0f;
         should_be_spraying = true;
@@ -163,10 +161,10 @@ AC_Sprayer::update()
         float pos = ground_speed * _pump_pct_1ms;
         pos = MAX(pos, 100 *_pump_min_pct); // ensure min pump speed
         pos = MIN(pos,10000); // clamp to range
-        RC_Channel_aux::move_servo(RC_Channel_aux::k_sprayer_pump, pos, 0, 10000);
-        RC_Channel_aux::set_radio(RC_Channel_aux::k_sprayer_spinner, _spinner_pwm);
+        SRV_Channels::move_servo(SRV_Channel::k_sprayer_pump, pos, 0, 10000);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_sprayer_spinner, _spinner_pwm);
         _flags.spraying = true;
-    }else{
+    } else {
         stop_spraying();
     }
 }

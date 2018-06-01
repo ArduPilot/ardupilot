@@ -16,8 +16,6 @@ ARSPD_FBW_MAX   30
 ARSPD_FBW_MIN   10
 KFF_RDDRMIX     0.5
 THR_MAX		100
-RC2_REV		1
-RC4_REV		1
 RC1_MAX         2000
 RC1_MIN         1000
 RC1_TRIM        1500
@@ -26,6 +24,8 @@ RC2_MIN         1000
 RC2_TRIM        1500
 RC3_MAX         2000
 RC3_MIN         1000
+SERVO3_MIN      1000
+SERVO3_MAX      2000
 RC3_TRIM        1000
 RC4_MAX         2000
 RC4_MIN         1000
@@ -62,8 +62,6 @@ PTCH2SRV_P       2.5
 PTCH2SRV_RLL     1
 NAVL1_PERIOD     15
 ACRO_LOCKING     1
-ELEVON_OUTPUT    0
-VTAIL_OUTPUT     0
 # we need small INS_ACC offsets so INS is recognised as being calibrated
 INS_ACCOFFS_X   0.001
 INS_ACCOFFS_Y   0.001

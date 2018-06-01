@@ -48,11 +48,6 @@
 
 #define MAGNETOMETER ENABLED
 
-// run at 400Hz on all systems
-# define MAIN_LOOP_RATE    400
-# define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
-
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -61,29 +56,7 @@
 // FRAME_CONFIG
 //
 #ifndef FRAME_CONFIG
- # define FRAME_CONFIG   QUAD_FRAME
-#endif
-
-#if FRAME_CONFIG == QUAD_FRAME
- # define FRAME_CONFIG_STRING "QUAD"
-#elif FRAME_CONFIG == TRI_FRAME
- # define FRAME_CONFIG_STRING "TRI"
-#elif FRAME_CONFIG == HEXA_FRAME
- # define FRAME_CONFIG_STRING "HEXA"
-#elif FRAME_CONFIG == Y6_FRAME
- # define FRAME_CONFIG_STRING "Y6"
-#elif FRAME_CONFIG == OCTA_FRAME
- # define FRAME_CONFIG_STRING "OCTA"
-#elif FRAME_CONFIG == OCTA_QUAD_FRAME
- # define FRAME_CONFIG_STRING "OCTA_QUAD"
-#elif FRAME_CONFIG == HELI_FRAME
- # define FRAME_CONFIG_STRING "HELI"
-#elif FRAME_CONFIG == SINGLE_FRAME
- # define FRAME_CONFIG_STRING "SINGLE"
-#elif FRAME_CONFIG == COAX_FRAME
- # define FRAME_CONFIG_STRING "COAX"
-#else
- # define FRAME_CONFIG_STRING "UNKNOWN"
+ # define FRAME_CONFIG   MULTICOPTER_FRAME
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -93,23 +66,7 @@
   # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
   # define THR_MIN_DEFAULT                      0
   # define AUTOTUNE_ENABLED                     DISABLED
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Y6 defaults
-#if FRAME_CONFIG == Y6_FRAME
-  # define RATE_ROLL_P                  0.1f
-  # define RATE_ROLL_D                  0.006f
-  # define RATE_PITCH_P                 0.1f
-  # define RATE_PITCH_D                 0.006f
-  # define RATE_YAW_P                   0.150f
-  # define RATE_YAW_I                   0.015f
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////
-// Tri defaults
-#if FRAME_CONFIG == TRI_FRAME
-  # define RATE_YAW_FILT_HZ             100.0f
+  # define ACCEL_Z_P                            0.30f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -174,14 +131,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Battery monitoring
 //
-#ifndef FS_BATT_VOLTAGE_DEFAULT
- # define FS_BATT_VOLTAGE_DEFAULT       10.5f       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
- # define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
 #ifndef BOARD_VOLTAGE_MIN
  # define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
 #endif
@@ -227,16 +176,6 @@
  # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
 #endif
 
-// arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
-#ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
-  #define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
-#endif
-
-// arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
-#ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-  #define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
@@ -256,22 +195,6 @@
  # define MAGNETOMETER                   ENABLED
 #endif
 
-// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#ifndef COMPASS_MAGFIELD_EXPECTED
- #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
-#endif
-
-// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
- #ifndef COMPASS_OFFSETS_MAX
-  # define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
- #endif
-#else   // SITL, etc
- #ifndef COMPASS_OFFSETS_MAX
-  # define COMPASS_OFFSETS_MAX          500
- #endif
-#endif
-
 #ifndef COMPASS_CAL_STICK_GESTURE_TIME
  #define COMPASS_CAL_STICK_GESTURE_TIME 2.0f // 2 seconds
 #endif
@@ -280,9 +203,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW
+//  OPTICAL_FLOW & VISUAL ODOMETRY
 #ifndef OPTFLOW
  # define OPTFLOW       ENABLED
+#endif
+#ifndef VISUAL_ODOMETRY_ENABLED
+# define VISUAL_ODOMETRY_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -292,9 +218,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  Crop Sprayer
-#ifndef SPRAYER
- # define SPRAYER  ENABLED
+//  Crop Sprayer - enabled only on larger firmwares
+#ifndef SPRAYER_ENABLED
+ # define SPRAYER_ENABLED  !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -304,9 +230,21 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//	gripper
+// gripper - enabled only on larger firmwares
 #ifndef GRIPPER_ENABLED
- # define GRIPPER_ENABLED ENABLED
+ # define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// winch support - enabled only on larger firmwares
+#ifndef WINCH_ENABLED
+# define WINCH_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// rotations per minute sensor support
+#ifndef RPM_ENABLED
+# define RPM_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -318,13 +256,103 @@
 //////////////////////////////////////////////////////////////////////////////
 // ADSB support
 #ifndef ADSB_ENABLED
-# define ADSB_ENABLED ENABLED
+# define ADSB_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
- # define NAV_GUIDED    ENABLED
+ # define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Acro - fly vehicle in acrobatic mode
+#ifndef MODE_ACRO_ENABLED
+# define MODE_ACRO_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Auto mode - allows vehicle to trace waypoints and perform automated actions
+#ifndef MODE_AUTO_ENABLED
+# define MODE_AUTO_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Brake mode - bring vehicle to stop
+#ifndef MODE_BRAKE_ENABLED
+# define MODE_BRAKE_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Circle - fly vehicle around a central point
+#ifndef MODE_CIRCLE_ENABLED
+# define MODE_CIRCLE_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Drift - fly vehicle in altitude-held, coordinated-turn mode
+#ifndef MODE_DRIFT_ENABLED
+# define MODE_DRIFT_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Follow - follow another vehicle or GCS
+#ifndef MODE_FOLLOW_ENABLED
+# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Guided mode - control vehicle's position or angles from GCS
+#ifndef MODE_GUIDED_ENABLED
+# define MODE_GUIDED_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// GuidedNoGPS mode - control vehicle's angles from GCS
+#ifndef MODE_GUIDED_NOGPS_ENABLED
+# define MODE_GUIDED_NOGPS_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Loiter mode - allows vehicle to hold global position
+#ifndef MODE_LOITER_ENABLED
+# define MODE_LOITER_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Position Hold - enable holding of global position
+#ifndef MODE_POSHOLD_ENABLED
+# define MODE_POSHOLD_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// RTL - Return To Launch
+#ifndef MODE_RTL_ENABLED
+# define MODE_RTL_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
+#ifndef MODE_SMARTRTL_ENABLED
+# define MODE_SMARTRTL_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Sport - fly vehicle in rate-controlled (earth-frame) mode
+#ifndef MODE_SPORT_ENABLED
+# define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Throw - fly vehicle after throwing it in the air
+#ifndef MODE_THROW_ENABLED
+# define MODE_THROW_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Beacon support - support for local positioning systems
+#ifndef BEACON_ENABLED
+# define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -377,9 +405,6 @@
 //
 #ifndef LAND_SPEED
  # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
-#endif
-#ifndef LAND_START_ALT
- # define LAND_START_ALT 1000         // altitude in cm where land controller switches to slow rate of descent
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
@@ -527,13 +552,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Loiter position control gains
-//
-#ifndef POS_XY_P
- # define POS_XY_P             	1.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
 #ifndef BRAKE_MODE_SPEED_Z
@@ -544,27 +562,8 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Velocity (horizontal) gains
-//
-#ifndef VEL_XY_P
- # define VEL_XY_P              1.0f
-#endif
-#ifndef VEL_XY_I
- # define VEL_XY_I              0.5f
-#endif
-#ifndef VEL_XY_IMAX
- # define VEL_XY_IMAX           1000
-#endif
-#ifndef VEL_XY_FILT_HZ
- # define VEL_XY_FILT_HZ        5.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
 //
-#ifndef POSHOLD_ENABLED
- # define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
-#endif
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
 #endif
@@ -573,37 +572,11 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Throttle control gains
+// Throttle control defaults
 //
 
 #ifndef THR_DZ_DEFAULT
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
-#endif
-
-#ifndef ALT_HOLD_P
- # define ALT_HOLD_P            1.0f
-#endif
-
-// Velocity (vertical) control gains
-#ifndef VEL_Z_P
- # define VEL_Z_P       5.0f
-#endif
-
-// Accel (vertical) control gains
-#ifndef ACCEL_Z_P
- # define ACCEL_Z_P     0.50f
-#endif
-#ifndef ACCEL_Z_I
- # define ACCEL_Z_I     1.00f
-#endif
-#ifndef ACCEL_Z_D
- # define ACCEL_Z_D     0.0f
-#endif
-#ifndef ACCEL_Z_IMAX
- # define ACCEL_Z_IMAX  800
-#endif
-#ifndef ACCEL_Z_FILT_HZ
- # define ACCEL_Z_FILT_HZ   20.0f
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
@@ -664,7 +637,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Fence, Rally and Terrain defaults
+// Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
 // Enable/disable Fence
@@ -678,19 +651,50 @@
 
 #ifndef AC_TERRAIN
  #define AC_TERRAIN ENABLED
- #if !AC_RALLY
-  #error Terrain relies on Rally which is disabled
- #endif
+#endif
+
+#if AC_TERRAIN && !AC_RALLY
+ #error Terrain relies on Rally which is disabled
+#endif
+
+#ifndef AC_AVOID_ENABLED
+ #define AC_AVOID_ENABLED   ENABLED
+#endif
+
+#if AC_AVOID_ENABLED && !PROXIMITY_ENABLED
+  #error AC_Avoidance relies on PROXIMITY_ENABLED which is disabled
+#endif
+#if AC_AVOID_ENABLED && !AC_FENCE
+  #error AC_Avoidance relies on AC_FENCE which is disabled
+#endif
+
+#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
+  #error Follow Mode relies on AC_AVOID which is disabled
+#endif
+
+#if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
+  #error ModeAuto requires ModeGuided which is disabled
+#endif
+
+#if MODE_AUTO_ENABLED && !MODE_CIRCLE_ENABLED
+  #error ModeAuto requires ModeCircle which is disabled
+#endif
+
+#if MODE_AUTO_ENABLED && !MODE_RTL_ENABLED
+  #error ModeAuto requires ModeRTL which is disabled
+#endif
+
+#if AC_TERRAIN && !MODE_AUTO_ENABLED
+  #error Terrain requires ModeAuto which is disabled
+#endif
+
+#if FRAME_CONFIG == HELI_FRAME && !MODE_ACRO_ENABLED
+  #error Helicopter frame requires acro mode support which is disabled
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-  #  define CLI_ENABLED           ENABLED
-#endif
 
 //use this to completely disable FRSKY TELEM
 #ifndef FRSKY_TELEM_ENABLED
@@ -699,4 +703,28 @@
 
 #ifndef ADVANCED_FAILSAFE
 # define ADVANCED_FAILSAFE DISABLED
+#endif
+
+#ifndef CH_MODE_DEFAULT
+ # define CH_MODE_DEFAULT   5
+#endif
+
+#ifndef TOY_MODE_ENABLED
+#define TOY_MODE_ENABLED DISABLED
+#endif
+
+#if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
+  #error Toy mode is not available on Helicopters
+#endif
+
+#ifndef STATS_ENABLED
+ # define STATS_ENABLED ENABLED
+#endif
+
+#ifndef DEVO_TELEM_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define DEVO_TELEM_ENABLED DISABLED
+#else
+ #define DEVO_TELEM_ENABLED ENABLED
+#endif
 #endif

@@ -72,8 +72,26 @@ class px4_copy(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
+class create_abin(Task.Task):
+    '''create an abin file - used for uploading to a skyviper'''
+    color = 'CYAN'
+
+    def run(self):
+        from subprocess import call
+        elf_name = self.inputs[0].abspath()
+        bin_name = elf_name + ".bin"
+        abin_name = self.outputs[0].abspath()
+        call(['arm-none-eabi-objcopy', '-Obinary', elf_name, bin_name])
+        call(['Tools/scripts/make_abin.sh', bin_name, abin_name])
+
+    def keyword(self):
+        return "Creating abin for %s to" % self.inputs[0].name
+
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 class px4_add_git_hashes(Task.Task):
-    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} --uavcan ${PX4_UAVCAN_ROOT} ${SRC} ${TGT}'
+    run_str = '${PYTHON} ${PX4_ADD_GIT_HASHES} --ardupilot ${PX4_APM_ROOT} --px4 ${PX4_ROOT} --nuttx ${PX4_NUTTX_ROOT} ${SRC} ${TGT}'
     color = 'CYAN'
 
     def keyword(self):
@@ -98,22 +116,18 @@ _upload_task = []
 @after_method('process_source')
 def px4_firmware(self):
     global _cp_px4io, _firmware_semaphorish_tasks, _upload_task
-    version = self.env.get_flat('PX4_VERSION')
+    board_name = self.env.get_flat('PX4_BOARD_NAME')
 
     px4 = self.bld.cmake('px4')
     px4.vars['APM_PROGRAM_LIB'] = self.link_task.outputs[0].abspath()
 
-    if self.env.PX4_USE_PX4IO and not _cp_px4io:
+    if self.env.PX4_PX4IO_NAME and not _cp_px4io:
         px4io_task = self.create_cmake_build_task('px4', 'fw_io')
-        if version == '3':
-            px4io_version = '2'
-        else:
-            px4io_version = version
         px4io = px4io_task.cmake.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s.bin' % px4io_version,
+            'src/modules/px4iofirmware/%s.bin' % self.env.PX4_PX4IO_NAME,
         )
         px4io_elf = px4.bldnode.make_node(
-            'src/modules/px4iofirmware/px4io-v%s' % px4io_version
+            'src/modules/px4iofirmware/%s' % self.env.PX4_PX4IO_NAME
         )
         px4io_task.set_outputs([px4io, px4io_elf])
 
@@ -128,7 +142,7 @@ def px4_firmware(self):
 
     fw_task = self.create_cmake_build_task(
         'px4',
-        'build_firmware_px4fmu-v%s' % version,
+        'build_firmware_%s' % board_name,
     )
     fw_task.set_run_after(self.link_task)
 
@@ -138,11 +152,11 @@ def px4_firmware(self):
         fw_task.set_run_after(t)
     _firmware_semaphorish_tasks = []
 
-    if self.env.PX4_USE_PX4IO and _cp_px4io.generator is self:
+    if self.env.PX4_PX4IO_NAME and _cp_px4io.generator is self:
         fw_task.set_run_after(_cp_px4io)
 
     firmware = px4.bldnode.make_node(
-        'src/firmware/nuttx/nuttx-px4fmu-v%s-apm.px4' % version,
+        'src/firmware/nuttx/nuttx-%s-apm.px4' % board_name,
     )
     fw_elf = px4.bldnode.make_node(
         'src/firmware/nuttx/firmware_nuttx',
@@ -162,6 +176,11 @@ def px4_firmware(self):
     cp_elf = self.create_task('px4_copy', fw_elf, fw_elf_dest)
     cp_elf.set_run_after(fw_task)
     _firmware_semaphorish_tasks.append(cp_elf)
+
+    if self.env.BUILD_ABIN:
+        fw_abin_dest = self.bld.bldnode.make_node(os.path.join(self.program_dir, self.program_name + '.abin'))
+        create_abin = self.create_task('create_abin', fw_elf, fw_abin_dest)
+        create_abin.set_run_after(fw_task)
 
     self.build_summary = dict(
         target=self.name,
@@ -192,13 +211,20 @@ def _px4_taskgen(bld, **kw):
 @feature('_px4_romfs')
 def _process_romfs(self):
     bld = self.bld
-    file_list = (
-        'firmware/oreoled.bin',
+    file_list = [
         'init.d/rc.APM',
         'init.d/rc.error',
-        'init.d/rcS',
+        (bld.env.PX4_RC_S_SCRIPT, 'init.d/rcS'),
+        'tones/startup',
         (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
-    )
+    ]
+
+    if bld.env.PX4_BOARD_RC:
+        board_rc = 'init.d/rc.%s' % bld.env.get_flat('PX4_BOARD_NAME')
+        file_list.append((board_rc, 'init.d/rc.board'))
+
+    if bld.env.PX4_PARAM_DEFAULTS:
+        file_list.append((bld.env.PX4_PARAM_DEFAULTS, 'defaults.parm'))
 
     romfs_src = bld.srcnode.find_dir(bld.env.PX4_ROMFS_SRC)
     romfs_bld = bld.bldnode.make_node(bld.env.PX4_ROMFS_BLD)
@@ -208,7 +234,7 @@ def _process_romfs(self):
             src = romfs_src.make_node(item)
             dst = romfs_bld.make_node(item)
         else:
-            src = bld.srcnode.make_node(item[0])
+            src = romfs_src.make_node(item[0])
             dst = romfs_bld.make_node(item[1])
 
         bname = os.path.basename(str(src))
@@ -237,36 +263,27 @@ def configure(cfg):
     def bldpath(path):
         return bldnode.make_node(path).abspath()
 
-    version = env.get_flat('PX4_VERSION')
-    
-    if env.PX4_VERSION == '1':
-        bootloader_name = 'px4fmu_bl.bin'
-    elif env.PX4_VERSION in ['2','3']:
-        bootloader_name = 'px4fmuv2_bl.bin'
-    else:
-        bootloader_name = 'px4fmuv%s_bl.bin' % version
+    board_name = env.get_flat('PX4_BOARD_NAME')
 
     # TODO: we should move stuff from mk/PX4 to Tools/ardupilotwaf/px4 after
     # stop using the make-based build system
     env.PX4_ROMFS_SRC = 'mk/PX4/ROMFS'
     env.PX4_ROMFS_BLD = 'px4-extra-files/ROMFS'
-    env.PX4_BOOTLOADER = 'mk/PX4/bootloader/%s' % bootloader_name
+    env.PX4_BOOTLOADER = '/../../../Tools/bootloaders/%s' % env.PX4_BOOTLOADER_NAME
 
     env.PX4_ADD_GIT_HASHES = srcpath('Tools/scripts/add_git_hashes.py')
     env.PX4_APM_ROOT = srcpath('')
     env.PX4_ROOT = srcpath('modules/PX4Firmware')
     env.PX4_NUTTX_ROOT = srcpath('modules/PX4NuttX')
-    env.PX4_UAVCAN_ROOT = srcpath('modules/uavcan')
 
-    if env.PX4_USE_PX4IO:
+    if env.PX4_PX4IO_NAME:
         env.PX4IO_ELF_DEST = 'px4-extra-files/px4io'
 
-    nuttx_config='nuttx_px4fmu-v%s_apm' % version
+    nuttx_config='nuttx_%s_apm' % board_name
         
     env.PX4_CMAKE_VARS = dict(
         CONFIG=nuttx_config,
         CMAKE_MODULE_PATH=srcpath('Tools/ardupilotwaf/px4/cmake'),
-        UAVCAN_LIBUAVCAN_PATH=env.PX4_UAVCAN_ROOT,
         NUTTX_SRC=env.PX4_NUTTX_ROOT,
         PX4_NUTTX_ROMFS=bldpath(env.PX4_ROMFS_BLD),
         ARDUPILOT_BUILD='YES',
@@ -293,11 +310,12 @@ def configure(cfg):
     )
 
 def build(bld):
-    version = bld.env.get_flat('PX4_VERSION')
+    board_name = bld.env.get_flat('PX4_BOARD_NAME')
     px4 = bld.cmake(
         name='px4',
         cmake_src=bld.srcnode.find_dir('modules/PX4Firmware'),
         cmake_vars=bld.env.PX4_CMAKE_VARS,
+        cmake_flags=['-Wno-deprecated'],
     )
 
     px4.build(
@@ -308,7 +326,7 @@ def build(bld):
     px4.build(
         'prebuild_targets',
         group='dynamic_sources',
-        cmake_output_patterns='px4fmu-v%s/NuttX/nuttx-export/**/*.h' % version,
+        cmake_output_patterns='%s/NuttX/nuttx-export/**/*.h' % board_name,
     )
 
     bld(
@@ -333,7 +351,7 @@ the same directory of their corresponding ELF files.
 You can use the option --upload to upload the firmware to the PX4 board if you
 have one connected.''')
 
-    if bld.env.PX4_USE_PX4IO:
+    if bld.env.PX4_PX4IO_NAME:
         build_summary.text('')
         build_summary.text('PX4IO')
         summary_data_list = bld.size_summary([bld.env.PX4IO_ELF_DEST])

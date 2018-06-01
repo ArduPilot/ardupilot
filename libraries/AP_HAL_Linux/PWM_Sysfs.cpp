@@ -46,10 +46,8 @@ PWM_Sysfs_Base::~PWM_Sysfs_Base()
 {
     ::close(_duty_cycle_fd);
 
-    free(_export_path);
     free(_polarity_path);
     free(_enable_path);
-    free(_duty_path);
     free(_period_path);
 }
 
@@ -96,6 +94,8 @@ bool PWM_Sysfs_Base::is_enabled()
 
 void PWM_Sysfs_Base::set_period(uint32_t nsec_period)
 {
+    set_duty_cycle(0);
+
     if (Util::from(hal.util)->write_file(_period_path, "%u", nsec_period) < 0) {
         hal.console->printf("LinuxPWM_Sysfs: %s Unable to set period\n",
                             _period_path);

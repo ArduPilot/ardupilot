@@ -13,17 +13,20 @@
 #include <AP_Notify/AP_Notify.h>
 #include <StorageManager/StorageManager.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Relay
-AP_Relay relay;
+static AP_Relay relay;
 
 // Parachute
-AP_Parachute parachute(relay);
+static AP_Parachute parachute{relay};
 
 void setup()
 {
-    hal.console->println("AP_Parachute library test");
+    hal.console->printf("AP_Parachute library test\n");
 }
 
 void loop()

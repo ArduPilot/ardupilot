@@ -17,17 +17,11 @@ MODULES		+= drivers/stm32/adc
 MODULES		+= drivers/stm32/tone_alarm
 MODULES		+= drivers/led
 MODULES		+= drivers/px4fmu
-MODULES		+= drivers/rgbled
-MODULES		+= drivers/mb12xx
-MODULES		+= drivers/ll40ls
-MODULES		+= drivers/trone
 #MODULES	+= drivers/gps
 #MODULES	+= drivers/hil
 #MODULES	+= drivers/hott_telemetry
 #MODULES	+= drivers/blinkm
 #MODULES	+= modules/sensors
-MODULES		+= drivers/mkblctrl
-MODULES		+= drivers/batt_smbus
 
 #
 # System commands

@@ -160,26 +160,46 @@ def check_librt(cfg, env):
 def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()
-    cfg.check_cfg(package=libname, mandatory=False, global_define=True,
-                  args=['--libs', '--cflags'], uselib_store=capsname)
 
+    cfg.env.stash()
+
+    if not cfg.check_cfg(package=libname, mandatory=False, global_define=True,
+                         args=['--libs', '--cflags'], uselib_store=capsname):
+        # Don't even try to link if check_cfg fails
+        cfg.env.revert()
+        return False
+
+    if not cfg.check(compiler='cxx',
+            fragment='''int main() { return 0; }''',
+            msg='Checking link with %s' % libname,
+            mandatory=False,
+            lib=libname,
+            use=capsname):
+        cfg.env.revert()
+        return False
+
+    cfg.env.commit()
+
+    # Add to global environment:
+    # we always want to use the library for all targets
     env.LIB += cfg.env['LIB_%s' % capsname]
     env.INCLUDES += cfg.env['INCLUDES_%s' % capsname]
     env.CFLAGS += cfg.env['CFLAGS_%s' % capsname]
     env.LIBPATH += cfg.env['LIBPATH_%s' % capsname]
 
+    return True
+
 @conf
 def check_lttng(cfg, env):
+    if not cfg.options.enable_lttng:
+        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
+        return False
     if cfg.env.STATIC_LINKING:
         # lttng-ust depends on libdl which means it can't be used in a static build
         cfg.msg("Checking for 'lttng-ust':", 'disabled for static build', color='YELLOW')
         return False
-    if cfg.options.disable_lttng:
-        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
-        return False
 
-    check_package(cfg, env, 'lttng-ust')
-    return True
+    return check_package(cfg, env, 'lttng-ust')
 
 @conf
 def check_libiio(cfg, env):
@@ -191,8 +211,7 @@ def check_libiio(cfg, env):
         cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
         return False
 
-    check_package(cfg, env, 'libiio')
-    return True
+    return check_package(cfg, env, 'libiio')
 
 @conf
 def check_libdl(cfg, env):
