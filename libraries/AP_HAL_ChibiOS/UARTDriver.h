@@ -131,8 +131,8 @@ private:
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t rx_bounce_buf[RX_BOUNCE_BUFSIZE];
-    uint8_t tx_bounce_buf[TX_BOUNCE_BUFSIZE];
+    uint8_t *rx_bounce_buf;
+    uint8_t *tx_bounce_buf;
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
     Semaphore _write_mutex;
