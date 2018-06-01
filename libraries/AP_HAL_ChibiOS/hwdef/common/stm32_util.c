@@ -15,6 +15,7 @@
 
 #include "stm32_util.h"
 #include <stdint.h>
+#include <stdio.h>
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode)
 {
@@ -72,7 +73,7 @@ void show_stack_usage(void)
           p++;
       }
       uint32_t stack_left = ((uint32_t)p) - stklimit;
-      printf("%s %u\n", tp->name, stack_left);
+      printf("%s %u\n", tp->name, (unsigned)stack_left);
       tp = chRegNextThread(tp);
   } while (tp != NULL);
 }
