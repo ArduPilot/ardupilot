@@ -208,10 +208,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     }
 #endif
 
-    if (send) {
-        dma_flush(send, send_len);
-    }
-    
     if (_split_transfers) {
         /*
           splitting the transfer() into two pieces avoids a stop condition
@@ -238,10 +234,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
     }
 
-    if (recv) {
-        dma_invalidate(recv, recv_len);
-    }
-    
     bus.dma_handle->unlock();
     return true;
 }
@@ -254,6 +246,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
     bus.bouncebuffer_setup(send_buf, send_len, recv_buf, recv_len);
 
+    if (send_len) {
+        dma_flush(send_buf, send_len);
+    }
+        
     i2cAcquireBus(I2CD[bus.busnum].i2c);
     
     for(uint8_t i=0 ; i <= _retries; i++) {
@@ -269,6 +265,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
             ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send_buf, send_len,
                                            recv_buf, recv_len, MS2ST(timeout_ms));
         }
+        if (recv_len) {
+            dma_invalidate(recv_buf, recv_len);
+        }
+           
         bus.i2c_active = false;
         if (ret != MSG_OK) {
             //restart the bus
