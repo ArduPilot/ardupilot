@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,58 +14,35 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+
+#ifndef __AP_NOTIFY_H__
+#define __AP_NOTIFY_H__
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_BoardLED.h"
+#include "ToshibaLED.h"
+#include "ToshibaLED_I2C.h"
+#include "ToshibaLED_PX4.h"
+#include "ToneAlarm_PX4.h"
+#include "ToneAlarm_Linux.h"
+#include "NavioLED_I2C.h"
+#include "ExternalLED.h"
+#include "Buzzer.h"
+#include "VRBoard_LED.h"
+#include "OreoLED_PX4.h"
 
-#include "NotifyDevice.h"
-
-// Device parameters values
-#define RGB_LED_OFF     0
-#define RGB_LED_LOW     1
-#define RGB_LED_MEDIUM  2
-#define RGB_LED_HIGH    3
-#define BUZZER_ON       1
-#define BUZZER_OFF      0
-
-#define NOTIFY_TEXT_BUFFER_SIZE 51
-
-//Type of on-board display
-#define DISPLAY_OFF     0
-#define DISPLAY_SSD1306 1
-#define DISPLAY_SH1106  2
+#ifndef OREOLED_ENABLED
+ # define OREOLED_ENABLED   0   // set to 1 to enable OreoLEDs
+#endif
 
 class AP_Notify
 {
-    friend class RGBLed;            // RGBLed needs access to notify parameters
-    friend class Display;           // Display needs access to notify parameters
 public:
-    AP_Notify();
-
-    /* Do not allow copies */
-    AP_Notify(const AP_Notify &other) = delete;
-    AP_Notify &operator=(const AP_Notify&) = delete;
-
-    // get singleton instance
-    static AP_Notify *instance(void) {
-        return _instance;
-    }
-    
-    // Oreo LED Themes
-    enum Oreo_LED_Theme {
-        OreoLED_Disabled        = 0,    // Disabled the OLED driver entirely
-        OreoLED_Aircraft        = 1,    // Standard aviation themed lighting
-        OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
-    };
-
     /// notify_flags_type - bitmask of notification flags
-    struct notify_flags_and_values_type {
+    struct notify_flags_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
         uint32_t gps_status         : 3;    // 0 = no gps, 1 = no lock, 2 = 2d lock, 3 = 3d lock, 4 = dgps lock, 5 = rtk lock
-        uint32_t gps_num_sats       : 6;    // number of sats
-        uint32_t flight_mode        : 8;    // flight mode
         uint32_t armed              : 1;    // 0 = disarmed, 1 = armed
         uint32_t pre_arm_check      : 1;    // 0 = failing checks, 1 = passed
         uint32_t pre_arm_gps_check  : 1;    // 0 = failing pre-arm GPS checks, 1 = passed
@@ -76,52 +55,37 @@ public:
         uint32_t autopilot_mode     : 1;    // 1 if vehicle is in an autopilot flight mode (only used by OreoLEDs)
         uint32_t firmware_update    : 1;    // 1 just before vehicle firmware is updated
         uint32_t compass_cal_running: 1;    // 1 if a compass calibration is running
-        uint32_t leak_detected      : 1;    // 1 if leak detected
-        float    battery_voltage       ;    // battery voltage
-        uint32_t gps_fusion         : 1;    // 0 = GPS fix rejected by EKF, not usable for flight. 1 = GPS in use by EKF, usable for flight
-        uint32_t gps_glitching      : 1;    // 1 if GPS glitching is affecting navigation accuracy
-        uint32_t have_pos_abs       : 1;    // 0 = no absolute position available, 1 = absolute position available
 
         // additional flags
         uint32_t external_leds      : 1;    // 1 if external LEDs are enabled (normally only used for copter)
         uint32_t vehicle_lost       : 1;    // 1 when lost copter tone is requested (normally only used for copter)
-        uint32_t waiting_for_throw  : 1;    // 1 when copter is in THROW mode and waiting to detect the user hand launch
-        uint32_t powering_off       : 1;    // 1 when the vehicle is powering off
-        uint32_t video_recording    : 1;    // 1 when the vehicle is recording video
     };
 
     /// notify_events_type - bitmask of active events.
     //      Notify library is responsible for setting back to zero after notification has been completed
     struct notify_events_type {
-        uint32_t arming_failed          : 1;    // 1 if copter failed to arm after user input
-        uint32_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
-        uint32_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
-        uint32_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
-        uint32_t autotune_complete      : 1;    // 1 when autotune has successfully completed
-        uint32_t autotune_failed        : 1;    // 1 when autotune has failed
-        uint32_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
-        uint32_t mission_complete       : 1;    // 1 when the mission has completed successfully
-        uint32_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
-        uint32_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
-        uint32_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
-        uint32_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
-        uint32_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
-        uint32_t tune_started           : 1;    // tuning a parameter has started
-        uint32_t tune_next              : 3;    // tuning switched to next parameter
-        uint32_t tune_save              : 1;    // tuning saved parameters
-        uint32_t tune_error             : 1;    // tuning controller error
+        uint16_t arming_failed          : 1;    // 1 if copter failed to arm after user input
+        uint16_t user_mode_change       : 1;    // 1 if user has initiated a flight mode change
+        uint16_t user_mode_change_failed: 1;    // 1 when user initiated flight mode change fails
+        uint16_t failsafe_mode_change   : 1;    // 1 when failsafe has triggered a flight mode change
+        uint16_t autotune_complete      : 1;    // 1 when autotune has successfully completed
+        uint16_t autotune_failed        : 1;    // 1 when autotune has failed
+        uint16_t autotune_next_axis     : 1;    // 1 when autotune has completed one axis and is moving onto the next
+        uint16_t mission_complete       : 1;    // 1 when the mission has completed successfully
+        uint16_t waypoint_complete      : 1;    // 1 as vehicle completes a waypoint
+        uint16_t initiated_compass_cal  : 1;    // 1 when user input to begin compass cal was accepted
+        uint16_t compass_cal_saved      : 1;    // 1 when compass calibration was just saved
+        uint16_t compass_cal_failed     : 1;    // 1 when compass calibration has just failed
+        uint16_t compass_cal_canceled   : 1;    // 1 when compass calibration was just canceled
     };
 
-    // The notify flags and values are static to allow direct class access
-    // without declaring the object.
-    static struct notify_flags_and_values_type flags;
+    // the notify flags are static to allow direct class access
+    // without declaring the object
+    static struct notify_flags_type flags;
     static struct notify_events_type events;
 
     // initialisation
     void init(bool enable_external_leds);
-
-    // add all backends
-    void add_backends(void);
 
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
@@ -129,38 +93,8 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(mavlink_message_t* msg);
 
-    // handle a PLAY_TUNE message
-    static void handle_play_tune(mavlink_message_t* msg);
-
-    bool buzzer_enabled() const { return _buzzer_enable; }
-
-    // set flight mode string
-    void set_flight_mode_str(const char *str);
-    const char* get_flight_mode_str() const { return _flight_mode_str; }
-
-    // send text to display
-    void send_text(const char *str);
-    const char* get_text() const { return _send_text; }
-
-    static const struct AP_Param::GroupInfo var_info[];
-    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
-
 private:
-
-    static AP_Notify *_instance;
-
-    // parameters
-    AP_Int8 _rgb_led_brightness;
-    AP_Int8 _rgb_led_override;
-    AP_Int8 _buzzer_enable;
-    AP_Int8 _display_type;
-    AP_Int8 _oreo_theme;
-    AP_Int8 _buzzer_pin;
-
-    char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
-    uint32_t _send_text_updated_millis; // last time text changed
-    char _flight_mode_str[5];
-
     static NotifyDevice* _devices[];
-    static uint8_t _num_devices;
 };
+
+#endif    // __AP_NOTIFY_H__

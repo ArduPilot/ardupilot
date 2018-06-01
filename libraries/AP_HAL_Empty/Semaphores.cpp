@@ -3,7 +3,7 @@
 
 using namespace Empty;
 
-bool Semaphore::give() {
+bool EmptySemaphore::give() {
     if (_taken) {
         _taken = false;
         return true;
@@ -12,11 +12,11 @@ bool Semaphore::give() {
     }
 }
 
-bool Semaphore::take(uint32_t timeout_ms) {
+bool EmptySemaphore::take(uint32_t timeout_ms) {
     return take_nonblocking();
 }
 
-bool Semaphore::take_nonblocking() {
+bool EmptySemaphore::take_nonblocking() {
     /* No syncronisation primitives to garuntee this is correct */
     if (!_taken) {
         _taken = true;

@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,17 +42,17 @@
 /// qualifier field (this is common with e.g. older SiRF units) it is
 /// not considered a source of fix-valid information.
 ///
-#pragma once
+
+
+#ifndef __AP_GPS_NMEA_H__
+#define __AP_GPS_NMEA_H__
 
 #include "AP_GPS.h"
-#include "GPS_Backend.h"
 
 /// NMEA parser
 ///
 class AP_GPS_NMEA : public AP_GPS_Backend
 {
-    friend class AP_GPS_NMEA_Test;
-
 public:
 	AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
@@ -62,14 +63,12 @@ public:
 
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
-    const char *name() const override { return "NMEA"; }
-
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
-        _GPS_SENTENCE_RMC = 32,
-        _GPS_SENTENCE_GGA = 64,
-        _GPS_SENTENCE_VTG = 96,
+        _GPS_SENTENCE_GPRMC = 32,
+        _GPS_SENTENCE_GPGGA = 64,
+        _GPS_SENTENCE_GPVTG = 96,
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -88,13 +87,13 @@ private:
     ///
     int16_t                     _from_hex(char a);
 
-    /// Parses the @p as a NMEA-style decimal number with
-    /// up to 3 decimal digits.
+    /// Parses the current term as a NMEA-style decimal number with
+    /// up to two decimal digits.
     ///
-    /// @returns		The value expressed by the string in @p,
+    /// @returns		The value expressed by the string in _term,
     ///					multiplied by 100.
     ///
-    static int32_t _parse_decimal_100(const char *p);
+    uint32_t    _parse_decimal_100();
 
     /// Parses the current term as a NMEA-style degrees + minutes
     /// value with up to four decimal digits.
@@ -139,11 +138,10 @@ private:
     int32_t _new_course;                                        ///< course parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
-    uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
 
-    uint32_t _last_RMC_ms = 0;
-    uint32_t _last_GGA_ms = 0;
-    uint32_t _last_VTG_ms = 0;
+    uint32_t _last_GPRMC_ms = 0;
+    uint32_t _last_GPGGA_ms = 0;
+    uint32_t _last_GPVTG_ms = 0;
 
     /// @name	Init strings
     ///			In ::init, an attempt is made to configure the GPS
@@ -155,5 +153,14 @@ private:
     static const char _ublox_init_string[];        ///< init string for ublox units
     //@}
 
+    /// @name	GPS message identifier strings
+    //@{
+    static const char _gprmc_string[];
+    static const char _gpgga_string[];
+    static const char _gpvtg_string[];
+    //@}
+
     static const char _initialisation_blob[];
 };
+
+#endif // __AP_GPS_NMEA_H__

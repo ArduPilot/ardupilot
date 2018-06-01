@@ -1,6 +1,5 @@
-from LogAnalyzer import Test, TestResult
+from LogAnalyzer import Test,TestResult
 import DataflashLog
-from VehicleType import VehicleType
 
 # from ArduCopter/defines.h
 AUTOTUNE_INITIALISED       = 30
@@ -55,7 +54,7 @@ class TestAutotune(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if logdata.vehicleType != VehicleType.Copter:
+        if logdata.vehicleType != "ArduCopter":
             self.result.status = TestResult.StatusType.NA
             return
 

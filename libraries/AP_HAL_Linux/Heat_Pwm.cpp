@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,60 +16,86 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-
-#include <cmath>
-#include <fcntl.h>
-#include <linux/limits.h>
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
-
+#include <linux/limits.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
 #include "Heat_Pwm.h"
-#include "GPIO.h"
 
 extern const AP_HAL::HAL& hal;
 
+#define HEAT_PWM_DUTY "duty_ns"
+#define HEAT_PWM_PERIOD "period_ns"
+#define HEAT_PWM_RUN "run"
+
 using namespace Linux;
 
-HeatPwm::HeatPwm(uint8_t pwm_num, float Kp, float Ki, uint32_t period_ns) :
+/*
+ * Constructor :
+ * argument : pwm_sysfs_path is the path to the pwm directory,
+ * i.e /sys/class/pwm/pwm_6 on the bebop
+ */
+HeatPwm::HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint32_t period_ns, float target) :
     _Kp(Kp),
     _Ki(Ki),
-    _period_ns(period_ns)
+    _period_ns(period_ns),
+    _target(target)
 {
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    _pwm = new PWM_Sysfs(0, pwm_num);
-    hal.gpio->pinMode(EDGE_GPIO_HEAT_ENABLE, HAL_GPIO_OUTPUT);
-    hal.gpio->write(EDGE_GPIO_HEAT_ENABLE, 1);
-#else
-    _pwm = new PWM_Sysfs_Bebop(pwm_num);
-#endif
-    _pwm->init();
-    _pwm->set_period(_period_ns);
-    _pwm->set_duty_cycle(0);
-    _pwm->enable(true);
+    char *duty_path;
+    char *period_path;
+    char *run_path;
+
+    if (asprintf(&duty_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_DUTY) == -1) {
+        hal.scheduler->panic("HeatPwm not enough memory\n");
+    }
+    _duty_fd = open(duty_path, O_RDWR);
+    if (_duty_fd == -1) {
+        perror("opening duty");
+        hal.scheduler->panic("Error Initializing Pwm heat\n");
+    }
+    free(duty_path);
+
+    if (asprintf(&period_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_PERIOD) == -1) {
+        hal.scheduler->panic("HeatPwm not enough memory\n");
+    }
+    _period_fd = open(period_path, O_RDWR);
+    if (_period_fd == -1) {
+        perror("opening period");
+        hal.scheduler->panic("Error Initializing Pwm heat\n");
+    }
+    free(period_path);
+
+    if (asprintf(&run_path, "%s/%s", pwm_sysfs_path, HEAT_PWM_RUN) == -1) {
+        hal.scheduler->panic("HeatPwm not enough memory\n");
+    }
+    _run_fd = open(run_path, O_RDWR);
+    if (_run_fd == -1) {
+        perror("opening run");
+        hal.scheduler->panic("Error Initializing Pwm heat\n");
+    }
+    free(run_path);
+
+    _set_period(_period_ns);
+    _set_duty(0);
+    _set_run();
 }
 
 void HeatPwm::set_imu_temp(float current)
 {
     float error, output;
 
-    if (_target == nullptr) {
-        // not configured
-        return;
-    }
-    
-    if (AP_HAL::millis() - _last_temp_update < 5) {
+    if (hal.scheduler->millis() - _last_temp_update < 5) {
         return;
     }
 
     /* minimal PI algo without dt */
-    error = ((float)*_target) - current;
+    error = _target - current;
     /* Don't accumulate errors if the integrated error is superior
      * to the max duty cycle(pwm_period)
      */
@@ -84,14 +111,29 @@ void HeatPwm::set_imu_temp(float current)
         output = 0;
     }
 
-    _pwm->set_duty_cycle(output);
-    _last_temp_update = AP_HAL::millis();
-    // printf("target %.1f current %.1f out %.2f\n", _target, current, output);
+    _set_duty(output);
+    _last_temp_update = hal.scheduler->millis();
 }
 
-void HeatPwm::set_imu_target_temp(int8_t *target)
+void HeatPwm::_set_duty(uint32_t duty)
 {
-    _target = target;
+    if (dprintf(_duty_fd, "0x%x", duty) < 0) {
+        perror("pwm set_duty");
+    }
+}
+
+void HeatPwm::_set_period(uint32_t period)
+{
+    if (dprintf(_period_fd, "0x%x", period) < 0) {
+        perror("pwm set_period");
+    }
+}
+
+void HeatPwm::_set_run()
+{
+    if (dprintf(_run_fd, "1") < 0) {
+        perror("pwm set_run");
+    }
 }
 
 #endif

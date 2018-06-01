@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +40,7 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
     mav_socket(false)
 {
     memset(&mavlink, 0, sizeof(mavlink));
-    fdm.quaternion.rotation_matrix(dcm);
+    dcm.from_euler(radians(fdm.rollDeg), radians(fdm.pitchDeg), radians(fdm.yawDeg));
 }
 
 
@@ -49,13 +50,13 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
 void Gimbal::update(void)
 {
     // calculate delta time in seconds
-    uint32_t now_us = AP_HAL::micros();
+    uint32_t now_us = hal.scheduler->micros();
 
     float delta_t = (now_us - last_update_us) * 1.0e-6f;
     last_update_us = now_us;
 
     Matrix3f vehicle_dcm;
-    fdm.quaternion.rotation_matrix(vehicle_dcm);
+    vehicle_dcm.from_euler(radians(fdm.rollDeg), radians(fdm.pitchDeg), radians(fdm.yawDeg));
 
     Vector3f vehicle_gyro = Vector3f(radians(fdm.rollRate),
                                      radians(fdm.pitchRate),
@@ -181,11 +182,6 @@ void Gimbal::update(void)
 */
 void Gimbal::send_report(void)
 {
-    if (AP_HAL::millis() < 10000) {
-        // simulated aircraft don't appear until 10s after startup. This avoids a windows
-        // threading issue with non-blocking sockets and the initial wait on uartA
-        return;
-    }
     if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
         ::printf("Gimbal connected to %s:%u\n", target_address, (unsigned)target_port);
         mavlink.connected = true;
@@ -234,7 +230,7 @@ void Gimbal::send_report(void)
     if (!seen_heartbeat) {
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = hal.scheduler->millis();
     mavlink_message_t msg;
     uint16_t len;
 
@@ -266,7 +262,7 @@ void Gimbal::send_report(void)
     /*
       send a GIMBAL_REPORT message
      */
-    uint32_t now_us = AP_HAL::micros();
+    uint32_t now_us = hal.scheduler->micros();
     if (now_us - last_report_us > reporting_period_ms*1000UL) {
         mavlink_gimbal_report_t gimbal_report;
         float delta_time = (now_us - last_report_us) * 1.0e-6f;
@@ -292,11 +288,7 @@ void Gimbal::send_report(void)
                                                &msg, &gimbal_report);
         chan0_status->current_tx_seq = saved_seq;
 
-        uint8_t msgbuf[len];
-        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
-        if (len > 0) {
-            mav_socket.send(msgbuf, len);
-        }
+        mav_socket.send(&msg.magic, len);
 
         delta_velocity.zero();
         delta_angle.zero();

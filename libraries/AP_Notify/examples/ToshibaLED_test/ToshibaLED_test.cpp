@@ -1,27 +1,28 @@
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Notify/ToshibaLED_I2C.h>
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: t -*-
 
-void setup();
-void loop();
-void full_spectrum();
-void blink();
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Notify/AP_Notify.h>          // Notify library
+#include <AP_Notify/ToshibaLED.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static ToshibaLED_I2C toshiba_led(1);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+static ToshibaLED_PX4 toshiba_led;
+#else
+static ToshibaLED_I2C toshiba_led;
+#endif
 
 void setup(void)
 {
     // display welcome message
-    hal.console->printf("Toshiba LED test ver 0.1\n");
+    hal.console->print("Toshiba LED test ver 0.1\n");
 
     // initialise LED
     toshiba_led.init();
 
     // check if healthy
     if (!toshiba_led.healthy()) {
-        hal.console->printf("Failed to initialise Toshiba LED\n");
+        hal.console->print("Failed to initialise Toshiba LED\n");
     }
 
     // turn on initialising notification
@@ -35,11 +36,11 @@ void setup(void)
 void loop(void)
 {
     // blink test
-    //hal.console->printf("Blink test\n");
+    //hal.console->print("Blink test\n");
     //blink();
     /*
     // full spectrum test
-    hal.console->printf("Spectrum test\n");
+    hal.console->print("Spectrum test\n");
     full_spectrum();
     */
 
@@ -54,10 +55,10 @@ void loop(void)
 void full_spectrum()
 {
     // go through the full range of colours but only up to the dim light level
-    for (uint8_t red = 0; red <= 0x05; red++) {
-        for (uint8_t green = 0; green <= 0x05; green++) {
-            for (uint8_t blue = 0; blue <= 0x05; blue++) {
-                toshiba_led.set_rgb(red, green, blue);
+    for (uint8_t red=0; red<=0x05; red++) {
+        for (uint8_t green=0; green<=0x05; green++) {
+            for (uint8_t blue=0; blue<=0x05; blue++) {
+                toshiba_led.set_rgb(red,green,blue);
                 hal.scheduler->delay(5);
             }
         }
@@ -70,16 +71,16 @@ void full_spectrum()
 void blink()
 {
     // set colour to red
-    toshiba_led.set_rgb(LED_DIM, 0, 0);
+    toshiba_led.set_rgb(LED_DIM,0,0);
 
     // full spectrum test
     for (uint8_t c=0; c<=2; c++ ) {
-        if (c == 0) {
-            toshiba_led.set_rgb(LED_DIM, 0, 0);   // red
+        if (c==0) {
+            toshiba_led.set_rgb(LED_DIM,0,0);   // red
         }else if (c==1) {
-            toshiba_led.set_rgb(0, LED_DIM, 0);   // green
+            toshiba_led.set_rgb(0,LED_DIM,0);   // green
         }else{
-            toshiba_led.set_rgb(0, 0, LED_DIM);   // blue
+            toshiba_led.set_rgb(0,0,LED_DIM);   // blue
         }
     }
 }

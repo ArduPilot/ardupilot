@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * polygon.h
  * Copyright (C) Andrew Tridgell 2011
@@ -15,12 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include "vector2.h"
-
-template <typename T>
-bool        Polygon_outside(const Vector2<T> &P, const Vector2<T> *V, unsigned n);
-template <typename T>
-bool        Polygon_complete(const Vector2<T> *V, unsigned n);
+bool        Polygon_outside(const Vector2l &P, const Vector2l *V, unsigned n);
+bool        Polygon_complete(const Vector2l *V, unsigned n);
 

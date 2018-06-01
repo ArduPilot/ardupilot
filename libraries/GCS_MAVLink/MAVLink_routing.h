@@ -1,6 +1,10 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /// @file	MAVLink_routing.h
 /// @brief	handle routing of MAVLink packets by ID
-#pragma once
+
+#ifndef __MAVLINK_ROUTING_H
+#define __MAVLINK_ROUTING_H
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -8,15 +12,17 @@
 
 // 20 routes should be enough for now. This may need to increase as
 // we make more extensive use of MAVLink forwarding
+#if HAL_CPU_CLASS > HAL_CPU_CLASS_16
 #define MAVLINK_MAX_ROUTES 20
+#else
+#define MAVLINK_MAX_ROUTES 5
+#endif
 
 /*
   object to handle MAVLink packet routing
  */
 class MAVLink_routing
 {
-    friend class GCS_MAVLINK;
-    
 public:
     MAVLink_routing(void);
 
@@ -51,10 +57,7 @@ private:
         mavlink_channel_t channel;
         uint8_t mavtype;
     } routes[MAVLINK_MAX_ROUTES];
-    
-    // a channel mask to block routing as required
-    uint8_t no_route_mask;
-    
+
     // learn new routes
     void learn_route(mavlink_channel_t in_channel, const mavlink_message_t* msg);
 
@@ -64,3 +67,6 @@ private:
     // special handling for heartbeat messages
     void handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t* msg);
 };
+
+#endif // __MAVLINK_ROUTING_H
+

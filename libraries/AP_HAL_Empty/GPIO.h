@@ -1,10 +1,12 @@
-#pragma once
+
+#ifndef __AP_HAL_EMPTY_GPIO_H__
+#define __AP_HAL_EMPTY_GPIO_H__
 
 #include "AP_HAL_Empty.h"
 
-class Empty::GPIO : public AP_HAL::GPIO {
+class Empty::EmptyGPIO : public AP_HAL::GPIO {
 public:
-    GPIO();
+    EmptyGPIO();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
     int8_t  analogPinToDigitalPin(uint8_t pin);
@@ -23,9 +25,9 @@ public:
     bool    usb_connected(void);
 };
 
-class Empty::DigitalSource : public AP_HAL::DigitalSource {
+class Empty::EmptyDigitalSource : public AP_HAL::DigitalSource {
 public:
-    DigitalSource(uint8_t v);
+    EmptyDigitalSource(uint8_t v);
     void    mode(uint8_t output);
     uint8_t read();
     void    write(uint8_t value); 
@@ -33,3 +35,5 @@ public:
 private:
     uint8_t _v;
 };
+
+#endif // __AP_HAL_EMPTY_GPIO_H__

@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * Example of DataFlash library.
  * originally based on code by Jordi MuÒoz and Jose Julio
@@ -5,12 +6,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
-#include <GCS_MAVLink/GCS_Dummy.h>
-#include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define LOG_TEST_MSG 1
+
 struct PACKED log_Test {
     LOG_PACKET_HEADER;
     uint16_t v1, v2, v3, v4;
@@ -20,12 +20,7 @@ struct PACKED log_Test {
 static const struct LogStructure log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_TEST_MSG, sizeof(log_Test),       
-      "TEST",
-      "HHHHii",
-      "V1,V2,V3,V4,L1,L2",
-      "------",
-      "------"
-    }
+    "TEST", "HHHHii",        "V1,V2,V3,V4,L1,L2" }
 };
 
 #define NUM_PACKETS 500
@@ -39,36 +34,40 @@ public:
 
 private:
 
-    AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{"DF Test 0.1", log_bitmask};
-
+    DataFlash_Class dataflash{"DF Test 0.1"};
+    void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 };
 
 static DataFlashTest dataflashtest;
 
 void DataFlashTest::setup(void)
 {
-    hal.console->printf("Dataflash Log Test 1.0\n");
-
-    log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
-    dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("DataFlash Test");
+
+    hal.console->println("Dataflash Log Test 1.0");
 
     // Test
     hal.scheduler->delay(20);
+    dataflash.ShowDeviceInfo(hal.console);
+
+    if (dataflash.NeedPrep()) {
+        hal.console->println("Preparing dataflash...");
+        dataflash.Prep();
+    }
 
     // We start to write some info (sequentialy) starting from page 1
     // This is similar to what we will do...
-    log_num = dataflash.find_last_log();
+    log_num = dataflash.StartNewLog();
     hal.console->printf("Using log number %u\n", log_num);
-    hal.console->printf("Writing to flash... wait...\n");
+    hal.console->println("After testing perform erase before using DataFlash for logging!");
+    hal.console->println("");
+    hal.console->println("Writing to flash... wait...");
 
     uint32_t total_micros = 0;
     uint16_t i;
 
     for (i = 0; i < NUM_PACKETS; i++) {
-        uint32_t start = AP_HAL::micros();
+        uint32_t start = hal.scheduler->micros();
         // note that we use g++ style initialisers to make larger
         // structures easier to follow        
         struct log_Test pkt = {
@@ -81,7 +80,7 @@ void DataFlashTest::setup(void)
             l2    : (int32_t)(i * 16268)
         };
         dataflash.WriteBlock(&pkt, sizeof(pkt));
-        total_micros += AP_HAL::micros() - start;
+        total_micros += hal.scheduler->micros() - start;
         hal.scheduler->delay(20);
     }
 
@@ -97,8 +96,21 @@ void DataFlashTest::setup(void)
 
 void DataFlashTest::loop(void)
 {
-    hal.console->printf("\nTest complete.\n");
+    uint16_t start, end;
+
+    hal.console->printf("Start read of log %u\n", log_num);
+
+    dataflash.get_log_boundaries(log_num, start, end); 
+    dataflash.LogReadProcess(log_num, start, end, 
+                             FUNCTOR_BIND_MEMBER(&DataFlashTest::print_mode, void, AP_HAL::BetterStream *, uint8_t),//print_mode,
+                             hal.console);
+    hal.console->printf("\nTest complete.  Test will repeat in 20 seconds\n");
     hal.scheduler->delay(20000);
+}
+
+void DataFlashTest::print_mode(AP_HAL::BetterStream *port, uint8_t mode)
+{
+    port->printf("Mode(%u)", (unsigned)mode);
 }
 
 /*
@@ -112,14 +124,10 @@ void setup()
     dataflashtest.setup();
 }
 
+
 void loop()
 {
     dataflashtest.loop();
 }
-
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
-    AP_GROUPEND
-};
-GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

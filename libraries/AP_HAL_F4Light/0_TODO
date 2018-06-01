@@ -1,5 +1,0 @@
-still not tested/works:
-
-UART_SoftDriver
-
-F7 port - https://github.com/ChrisMicro/STM32GENERIC/blob/master/STM32/system/STM32F7/CMSIS_Src/startup_stm32f769xx.s

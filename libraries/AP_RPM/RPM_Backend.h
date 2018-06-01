@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +13,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+
+#ifndef __AP_RPM_BACKEND_H__
+#define __AP_RPM_BACKEND_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -31,15 +34,9 @@ public:
     // update the state structure. All backends must implement this.
     virtual void update() = 0;
 
-    int8_t get_pin(void) const {
-        if (state.instance > 1) {
-            return -1;
-        }
-        return ap_rpm._pin[state.instance].get();
-    }
-    
 protected:
 
     AP_RPM &ap_rpm;
     AP_RPM::RPM_State &state;
 };
+#endif // __AP_RPM_BACKEND_H__

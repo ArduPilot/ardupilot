@@ -3,17 +3,17 @@
 # Build sketch objects
 #
 
-$(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp $(GENERATE_TARGETS) $(MAVLINK_HEADERS) $(UAVCAN_HEADERS)
+$(BUILDROOT)/%.o: $(BUILDROOT)/%.cpp
 	$(RULEHDR)
-	$(v)$(CCACHE) $(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
+	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
 
-$(BUILDROOT)/%.o: $(BUILDROOT)/make.flags $(SRCROOT)/%.cpp $(GENERATE_TARGETS) $(MAVLINK_HEADERS) $(UAVCAN_HEADERS)
+$(BUILDROOT)/%.o: $(BUILDROOT)/make.flags $(SRCROOT)/%.cpp 
 	$(RULEHDR)
-	$(v)$(CCACHE) $(CXX) $(CXXFLAGS) -c -o $@ $*.cpp $(SKETCH_INCLUDES)
+	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $*.cpp $(SKETCH_INCLUDES)
 
-$(BUILDROOT)/%.o: $(SRCROOT)/%.c $(UAVCAN_HEADERS)
+$(BUILDROOT)/%.o: $(SRCROOT)/%.c
 	$(RULEHDR)
-	$(v)$(CCACHE) $(CC) $(CFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
+	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SKETCH_INCLUDES)
 
 $(BUILDROOT)/%.o: $(SRCROOT)/%.S
 	$(RULEHDR)
@@ -23,13 +23,13 @@ $(BUILDROOT)/%.o: $(SRCROOT)/%.S
 # Build library objects from sources in the sketchbook
 #
 
-$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp $(GENERATE_TARGETS) $(MAVLINK_HEADERS) $(UAVCAN_HEADERS)
+$(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.cpp
 	$(RULEHDR)
-	$(v)$(CCACHE) $(CXX) $(CXXFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
+	$(v)$(CXX) $(CXXFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
 
 $(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.c
 	$(RULEHDR)
-	$(v)$(CCACHE) $(CC) $(CFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
+	$(v)$(CC) $(CFLAGS) -c -o $@ $< $(SLIB_INCLUDES)
 
 $(BUILDROOT)/libraries/%.o: $(SKETCHBOOK)/libraries/%.S
 	$(RULEHDR)

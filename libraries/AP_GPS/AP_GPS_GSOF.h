@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,10 +18,11 @@
 //  Trimble GPS driver for ArduPilot.
 //	Code by Michael Oborne
 //
-#pragma once
+
+#ifndef __AP_GPS_GSOF_H__
+#define __AP_GPS_GSOF_H__
 
 #include "AP_GPS.h"
-#include "GPS_Backend.h"
 
 class AP_GPS_GSOF : public AP_GPS_Backend
 {
@@ -28,20 +30,20 @@ public:
     AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     AP_GPS::GPS_Status highest_supported_status(void) {
-        return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+        return AP_GPS::GPS_OK_FIX_3D_RTK;
     }
 
     // Methods
     bool read();
 
-    const char *name() const override { return "GSOF"; }
+    void inject_data(uint8_t *data, uint8_t len);
 
 private:
 
     bool parse(uint8_t temp);
     bool process_message();
-    void requestBaud(uint8_t portindex);
-    void requestGSOF(uint8_t messagetype, uint8_t portindex);
+    void requestBaud();
+    void requestGSOF(uint8_t messagetype);
     double SwapDouble(uint8_t* src, uint32_t pos);
     float SwapFloat(uint8_t* src, uint32_t pos);
     uint32_t SwapUint32(uint8_t* src, uint32_t pos);
@@ -81,4 +83,10 @@ private:
     uint32_t gsofmsg_time = 0;
     uint8_t gsofmsgreq_index = 0;
     uint8_t gsofmsgreq[5] = {1,2,8,9,12};
+
+    uint32_t last_hdop = 9999;
+    uint32_t crc_error_counter = 0;
+    uint32_t last_injected_data_ms = 0;
 };
+
+#endif // __AP_GPS_GSOF_H__

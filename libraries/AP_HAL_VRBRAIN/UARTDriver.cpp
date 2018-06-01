@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -14,7 +16,7 @@
 #include <termios.h>
 #include <drivers/drv_hrt.h>
 #include <assert.h>
-#include "GPIO.h"
+#include <AP_HAL/utility/RingBuffer.h>
 
 using namespace VRBRAIN;
 
@@ -26,7 +28,6 @@ VRBRAINUARTDriver::VRBRAINUARTDriver(const char *devpath, const char *perf_name)
     _baudrate(57600),
     _initialised(false),
     _in_timer(false),
-    _unbuffered_writes(false),
     _perf_uart(perf_alloc(PC_ELAPSED, perf_name)),
     _os_start_auto_space(-1),
     _flow_control(FLOW_CONTROL_DISABLE)
@@ -50,7 +51,7 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     uint16_t min_tx_buffer = 1024;
     uint16_t min_rx_buffer = 512;
     if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
-        min_tx_buffer = 4096;
+        min_tx_buffer = 16384;
         min_rx_buffer = 1024;
     }
     // on VRBRAIN we have enough memory to have a larger transmit and
@@ -70,14 +71,19 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-    if (rxS != _readbuf.get_size()) {
+	if (rxS != 0 && rxS != _readbuf_size) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
         }
-
-        _readbuf.set_size(rxS);
-    }
+		_readbuf_size = rxS;
+		if (_readbuf != NULL) {
+			free(_readbuf);
+		}
+		_readbuf = (uint8_t *)malloc(_readbuf_size);
+		_readbuf_head = 0;
+		_readbuf_tail = 0;
+	}
 
     if (b != 0) {
         _baudrate = b;
@@ -86,13 +92,19 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-    if (txS != _writebuf.get_size()) {
+	if (txS != 0 && txS != _writebuf_size) {
         _initialised = false;
         while (_in_timer) {
             hal.scheduler->delay(1);
         }
-        _writebuf.set_size(txS);
-    }
+		_writebuf_size = txS;
+		if (_writebuf != NULL) {
+			free(_writebuf);
+		}
+		_writebuf = (uint8_t *)malloc(_writebuf_size+16);
+		_writebuf_head = 0;
+		_writebuf_tail = 0;
+	}
 
 	if (_fd == -1) {
         _fd = open(_devpath, O_RDWR);
@@ -119,19 +131,16 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 		tcsetattr(_fd, TCSANOW, &t);
 	}
 
-    if (_writebuf.get_size() && _readbuf.get_size() && _fd != -1) {
+    if (_writebuf_size != 0 && _readbuf_size != 0 && _fd != -1) {
         if (!_initialised) {
-            if (strcmp(_devpath, "/dev/ttyACM0") == 0) {
-                ((VRBRAINGPIO *)hal.gpio)->set_usb_connected();
-            }
-            ::printf("initialised %s OK %u %u\n", _devpath,
-                     (unsigned)_writebuf.get_size(), (unsigned)_readbuf.get_size());
+            ::printf("initialised %s OK %u %u\n", _devpath, 
+                     (unsigned)_writebuf_size, (unsigned)_readbuf_size);
         }
         _initialised = true;
     }
 }
 
-void VRBRAINUARTDriver::set_flow_control(enum flow_control fcontrol)
+void VRBRAINUARTDriver::set_flow_control(enum flow_control flow_control)
 {
 	if (_fd == -1) {
         return;
@@ -139,7 +148,7 @@ void VRBRAINUARTDriver::set_flow_control(enum flow_control fcontrol)
     struct termios t;
     tcgetattr(_fd, &t);
     // we already enabled CRTS_IFLOW above, just enable output flow control
-    if (fcontrol != FLOW_CONTROL_DISABLE) {
+    if (flow_control != FLOW_CONTROL_DISABLE) {
         t.c_cflag |= CRTSCTS;
     } else {
         t.c_cflag &= ~CRTSCTS;
@@ -150,45 +159,7 @@ void VRBRAINUARTDriver::set_flow_control(enum flow_control fcontrol)
         _total_written = 0;
         _first_write_time = 0;
     }
-    _flow_control = fcontrol;
-}
-
-void VRBRAINUARTDriver::configure_parity(uint8_t v) {
-    if (_fd == -1) {
-        return;
-    }
-    struct termios t;
-    tcgetattr(_fd, &t);
-    if (v != 0) {
-        // enable parity
-        t.c_cflag |= PARENB;
-        if (v == 1) {
-            t.c_cflag |= PARODD;
-        } else {
-            t.c_cflag &= ~PARODD;
-        }
-    }
-    else {
-        // disable parity
-        t.c_cflag &= ~PARENB;
-    }
-    tcsetattr(_fd, TCSANOW, &t);
-}
-
-void VRBRAINUARTDriver::set_stop_bits(int n) {
-    if (_fd == -1) {
-        return;
-    }
-    struct termios t;
-    tcgetattr(_fd, &t);
-    if (n > 1) t.c_cflag |= CSTOPB;
-    else t.c_cflag &= ~CSTOPB;
-    tcsetattr(_fd, TCSANOW, &t);
-}
-
-bool VRBRAINUARTDriver::set_unbuffered_writes(bool on) {
-    _unbuffered_writes = on;
-    return _unbuffered_writes;
+    _flow_control = flow_control;
 }
 
 void VRBRAINUARTDriver::begin(uint32_t b)
@@ -208,10 +179,10 @@ void VRBRAINUARTDriver::try_initialise(void)
     if (_initialised) {
         return;
     }
-    if ((AP_HAL::millis() - _last_initialise_attempt_ms) < 2000) {
+    if ((hal.scheduler->millis() - _last_initialise_attempt_ms) < 2000) {
         return;
     }
-    _last_initialise_attempt_ms = AP_HAL::millis();
+    _last_initialise_attempt_ms = hal.scheduler->millis();
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_ARMED || !hal.util->get_soft_armed()) {
         begin(0);
     }
@@ -226,17 +197,27 @@ void VRBRAINUARTDriver::end()
         close(_fd);
         _fd = -1;
     }
-
-    _readbuf.set_size(0);
-    _writebuf.set_size(0);
+    if (_readbuf) {
+        free(_readbuf);
+        _readbuf = NULL;
+    }
+    if (_writebuf) {
+        free(_writebuf);
+        _writebuf = NULL;
+    }
+    _readbuf_size = _writebuf_size = 0;
+    _writebuf_head = 0;
+    _writebuf_tail = 0;
+    _readbuf_head = 0;
+    _readbuf_tail = 0;
 }
 
 void VRBRAINUARTDriver::flush() {}
 
 bool VRBRAINUARTDriver::is_initialized()
-{
+{ 
     try_initialise();
-    return _initialised;
+    return _initialised; 
 }
 
 void VRBRAINUARTDriver::set_blocking_writes(bool blocking)
@@ -249,109 +230,95 @@ bool VRBRAINUARTDriver::tx_pending() { return false; }
 /*
   return number of bytes available to be read from the buffer
  */
-uint32_t VRBRAINUARTDriver::available()
-{
-    if (!_initialised) {
+int16_t VRBRAINUARTDriver::available()
+{ 
+	if (!_initialised) {
         try_initialise();
-        return 0;
-    }
-
-    return _readbuf.available();
+		return 0;
+	}
+    uint16_t _tail;
+    return BUF_AVAILABLE(_readbuf);
 }
 
 /*
   return number of bytes that can be added to the write buffer
  */
-uint32_t VRBRAINUARTDriver::txspace()
-{
-    if (!_initialised) {
+int16_t VRBRAINUARTDriver::txspace()
+{ 
+	if (!_initialised) {
         try_initialise();
-        return 0;
-    }
-
-    return _writebuf.space();
+		return 0;
+	}
+    uint16_t _head;
+    return BUF_SPACE(_writebuf);
 }
 
 /*
   read one byte from the read buffer
  */
 int16_t VRBRAINUARTDriver::read()
-{
-    if (!_semaphore.take_nonblocking()) {
-        return -1;
-    }
+{ 
+	uint8_t c;
     if (!_initialised) {
         try_initialise();
-        _semaphore.give();
         return -1;
     }
-
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        _semaphore.give();
+	if (_readbuf == NULL) {
+		return -1;
+	}
+    if (BUF_EMPTY(_readbuf)) {
         return -1;
     }
-
-    _semaphore.give();
-    return byte;
+    c = _readbuf[_readbuf_head];
+    BUF_ADVANCEHEAD(_readbuf, 1);
+	return c;
 }
 
-/*
-   write one byte
+/* 
+   write one byte to the buffer
  */
 size_t VRBRAINUARTDriver::write(uint8_t c)
-{
-    if (!_semaphore.take_nonblocking()) {
-        return -1;
-    }
+{ 
     if (!_initialised) {
         try_initialise();
-        _semaphore.give();
         return 0;
     }
-
-    if (_unbuffered_writes) {
-        // write one byte to the file descriptor
-        return _write_fd(&c, 1);
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return 0;
     }
+    uint16_t _head;
 
-    while (_writebuf.space() == 0) {
+    while (BUF_SPACE(_writebuf) == 0) {
         if (_nonblocking_writes) {
-            _semaphore.give();
             return 0;
         }
-        _semaphore.give();
         hal.scheduler->delay(1);
-        if (!_semaphore.take_nonblocking()) {
-            return -1;
-        }
     }
-    size_t ret = _writebuf.write(&c, 1);
-    _semaphore.give();
-    return ret;
+    _writebuf[_writebuf_tail] = c;
+    BUF_ADVANCETAIL(_writebuf, 1);
+    return 1;
 }
 
 /*
- * write size bytes
+  write size bytes to the write buffer
  */
 size_t VRBRAINUARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (!_semaphore.take_nonblocking()) {
-        return -1;
-    }
-    if (!_initialised) {
+	if (!_initialised) {
         try_initialise();
-        _semaphore.give();
 		return 0;
 	}
+    if (hal.scheduler->in_timerprocess()) {
+        // not allowed from timers
+        return 0;
+    }
 
-    size_t ret = 0;
-    
     if (!_nonblocking_writes) {
-        _semaphore.give();
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
+        size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
             ret++;
@@ -359,14 +326,36 @@ size_t VRBRAINUARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    if (_unbuffered_writes) {
-        // write buffer straight to the file descriptor
-        ret = _write_fd(buffer, size);
-    } else {
-        ret = _writebuf.write(buffer, size);
+    uint16_t _head, space;
+    space = BUF_SPACE(_writebuf);
+    if (space == 0) {
+        return 0;
     }
-    _semaphore.give();
-    return ret;
+    if (size > space) {
+        size = space;
+    }
+    if (_writebuf_tail < _head) {
+        // perform as single memcpy
+        assert(_writebuf_tail+size <= _writebuf_size);
+        memcpy(&_writebuf[_writebuf_tail], buffer, size);
+        BUF_ADVANCETAIL(_writebuf, size);
+        return size;
+    }
+
+    // perform as two memcpy calls
+    uint16_t n = _writebuf_size - _writebuf_tail;
+    if (n > size) n = size;
+    assert(_writebuf_tail+n <= _writebuf_size);
+    memcpy(&_writebuf[_writebuf_tail], buffer, n);
+    BUF_ADVANCETAIL(_writebuf, n);
+    buffer += n;
+    n = size - n;
+    if (n > 0) {
+        assert(_writebuf_tail+n <= _writebuf_size);
+        memcpy(&_writebuf[_writebuf_tail], buffer, n);
+        BUF_ADVANCETAIL(_writebuf, n);
+    }        
+    return size;
 }
 
 /*
@@ -386,7 +375,7 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     // and no data has been removed from the buffer since flow control turned on
     // and more than .5 seconds elapsed after writing a total of > 5 characters
     //
-
+    
     int nwrite = 0;
 
     if (ioctl(_fd, FIONWRITE, (unsigned long)&nwrite) == 0) {
@@ -398,9 +387,9 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
                 }
             } else {
                 if (_os_start_auto_space - nwrite + 1 >= _total_written &&
-                    (AP_HAL::micros64() - _first_write_time) > 500*1000UL) {
+                    (hal.scheduler->micros64() - _first_write_time) > 500*1000UL) {
                     // it doesn't look like hw flow control is working
-                    ::printf("disabling flow control on %s _total_written=%u\n",
+                    ::printf("disabling flow control on %s _total_written=%u\n", 
                              _devpath, (unsigned)_total_written);
                     set_flow_control(FLOW_CONTROL_DISABLE);
                 }
@@ -415,7 +404,8 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
     }
 
     if (ret > 0) {
-        _last_write_time = AP_HAL::micros64();
+        BUF_ADVANCEHEAD(_writebuf, ret);
+        _last_write_time = hal.scheduler->micros64();
         _total_written += ret;
         if (! _first_write_time && _total_written > 5) {
             _first_write_time = _last_write_time;
@@ -423,15 +413,36 @@ int VRBRAINUARTDriver::_write_fd(const uint8_t *buf, uint16_t n)
         return ret;
     }
 
-    if (AP_HAL::micros64() - _last_write_time > 2000 &&
+    if (hal.scheduler->micros64() - _last_write_time > 2000 &&
         _flow_control == FLOW_CONTROL_DISABLE) {
-        _last_write_time = AP_HAL::micros64();
-
-        // we haven't done a successful write for 2ms, which means the
+#if 0
+        // this trick is disabled for now, as it sometimes blocks on
+        // re-opening the ttyACM0 port, which would cause a crash
+        if (hal.scheduler->micros64() - _last_write_time > 2000000) {
+            // we haven't done a successful write for 2 seconds - try
+            // reopening the port        
+            _initialised = false;
+            ::close(_fd);
+            _fd = ::open(_devpath, O_RDWR);
+            if (_fd == -1) {
+                fprintf(stdout, "Failed to reopen UART device %s - %s\n",
+                        _devpath, strerror(errno));
+                // leave it uninitialised
+                return n;
+            }
+            
+            _last_write_time = hal.scheduler->micros64();
+            _initialised = true;
+        }
+#else
+        _last_write_time = hal.scheduler->micros64();
+#endif
+        // we haven't done a successful write for 2ms, which means the 
         // port is running at less than 500 bytes/sec. Start
         // discarding bytes, even if this is a blocking port. This
         // prevents the ttyACM0 port blocking startup if the endpoint
         // is not connected
+        BUF_ADVANCEHEAD(_writebuf, n);
         return n;
     }
     return ret;
@@ -456,6 +467,7 @@ int VRBRAINUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
         }
     }
     if (ret > 0) {
+        BUF_ADVANCETAIL(_readbuf, ret);
         _total_read += ret;
     }
     return ret;
@@ -465,12 +477,11 @@ int VRBRAINUARTDriver::_read_fd(uint8_t *buf, uint16_t n)
 /*
   push any pending bytes to/from the serial port. This is called at
   1kHz in the timer thread. Doing it this way reduces the system call
-  overhead in the main task enormously.
+  overhead in the main task enormously. 
  */
 void VRBRAINUARTDriver::_timer_tick(void)
 {
-    int ret;
-    uint32_t n;
+    uint16_t n;
 
     if (!_initialised) return;
 
@@ -482,46 +493,47 @@ void VRBRAINUARTDriver::_timer_tick(void)
     _in_timer = true;
 
     // write any pending bytes
-    n = _writebuf.available();
+    uint16_t _tail;
+    n = BUF_AVAILABLE(_writebuf);
     if (n > 0) {
-        ByteBuffer::IoVec vec[2];
+        uint16_t n1 = _writebuf_size - _writebuf_head;
         perf_begin(_perf_uart);
-        const auto n_vec = _writebuf.peekiovec(vec, n);
-        for (int i = 0; i < n_vec; i++) {
-            ret = _write_fd(vec[i].data, (uint16_t)vec[i].len);
-            if (ret < 0) {
-                break;
-            }
-            _writebuf.advance(ret);
-
-            /* We wrote less than we asked for, stop */
-            if ((unsigned)ret != vec[i].len) {
-                break;
+        if (n1 >= n) {
+            // do as a single write
+            _write_fd(&_writebuf[_writebuf_head], n);
+        } else {
+            // split into two writes
+            int ret = _write_fd(&_writebuf[_writebuf_head], n1);
+            if (ret == n1 && n > n1) {
+                _write_fd(&_writebuf[_writebuf_head], n - n1);                
             }
         }
         perf_end(_perf_uart);
     }
 
     // try to fill the read buffer
-    ByteBuffer::IoVec vec[2];
-
-    perf_begin(_perf_uart);
-    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
-    for (int i = 0; i < n_vec; i++) {
-        ret = _read_fd(vec[i].data, vec[i].len);
-        if (ret < 0) {
-            break;
+    uint16_t _head;
+    n = BUF_SPACE(_readbuf);
+    if (n > 0) {
+        uint16_t n1 = _readbuf_size - _readbuf_tail;
+        perf_begin(_perf_uart);
+        if (n1 >= n) {
+            // one read will do
+            assert(_readbuf_tail+n <= _readbuf_size);
+            _read_fd(&_readbuf[_readbuf_tail], n);
+        } else {
+            assert(_readbuf_tail+n1 <= _readbuf_size);
+            int ret = _read_fd(&_readbuf[_readbuf_tail], n1);
+            if (ret == n1 && n > n1) {
+                assert(_readbuf_tail+(n-n1) <= _readbuf_size);
+                _read_fd(&_readbuf[_readbuf_tail], n - n1);                
+            }
         }
-        _readbuf.commit((unsigned)ret);
-
-        /* stop reading as we read less than we asked for */
-        if ((unsigned)ret < vec[i].len) {
-            break;
-        }
+        perf_end(_perf_uart);
     }
-    perf_end(_perf_uart);
 
     _in_timer = false;
 }
 
-#endif
+#endif // CONFIG_HAL_BOARD
+

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef AP_MSGHANDLER_H
+#define AP_MSGHANDLER_H
 
 #include <DataFlash/DataFlash.h>
 #include "VehicleType.h"
@@ -85,7 +86,7 @@ protected:
 			   const char *label_roll,
 			   const char *label_pitch,
 			   const char *label_yaw);
-    [[noreturn]] void field_not_found(uint8_t *msg, const char *label);
+    void field_not_found(uint8_t *msg, const char *label);
 };
 
 template<typename R>
@@ -151,3 +152,5 @@ inline void MsgHandler::field_value_for_type_at_offset(uint8_t *msg,
         exit(1);
     }
 }
+
+#endif

@@ -2,7 +2,8 @@
  * prucomm.h - structure definitions for communication
  *
  */
-#pragma once
+#ifndef PRUCOMM_H
+#define PRUCOMM_H
 
 #include "pru_defs.h"
 
@@ -22,3 +23,5 @@ struct ring_buffer {
 
 /* the command is at the start of shared DPRAM */
 #define RBUFF        ((volatile struct ring_buffer *)DPRAM_SHARED)
+
+#endif

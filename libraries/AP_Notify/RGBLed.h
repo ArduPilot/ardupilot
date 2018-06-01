@@ -17,7 +17,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+
+#ifndef __RGBLED_H__
+#define __RGBLED_H__
 
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
@@ -39,19 +41,11 @@ public:
     // called at 50Hz
     virtual void update();
 
-    // handle LED control, only used when LED_OVERRIDE=1
-    virtual void handle_led_control(mavlink_message_t *msg) override;
-    
 protected:
     // methods implemented in hardware specific classes
     virtual bool hw_init(void) = 0;
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) = 0;
 
-    // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
-    virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
-
-    virtual void update_override();
-    
     // meta-data common to all hw devices
     uint8_t counter;
     uint8_t step;
@@ -62,13 +56,8 @@ protected:
     uint8_t _led_bright;
     uint8_t _led_medium;
     uint8_t _led_dim;
-
-    struct {
-        uint8_t r, g, b;
-        uint8_t rate_hz;
-        uint32_t start_ms;
-    } _led_override;
-    
 private:
     virtual void update_colours();
 };
+
+#endif //__RGBLED_H__

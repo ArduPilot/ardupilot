@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-"""
-simple test of wind generation code
-"""
-from __future__ import print_function
-import time
-import util
+# simple test of wind generation code
+
+import util, time, random
 from rotmat import Vector3
 
 wind = util.Wind('7,90,0.1')
 
 t0 = time.time()
-velocity = Vector3(0, 0, 0)
+velocity = Vector3(0,0,0)
 
 t = 0
 deltat = 0.01

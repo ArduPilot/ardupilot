@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,13 +13,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+
+#ifndef __AP_TERRAIN_H__
+#define __AP_TERRAIN_H__
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
 
-#if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
+#if HAL_OS_POSIX_IO && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
 #else
 #define AP_TERRAIN_AVAILABLE 0
@@ -74,13 +77,10 @@
   file:        first entries increase east, then north
  */
 
-class AP_Terrain {
+class AP_Terrain
+{
 public:
     AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally);
-
-    /* Do not allow copies */
-    AP_Terrain(const AP_Terrain &other) = delete;
-    AP_Terrain &operator=(const AP_Terrain&) = delete;
 
     enum TerrainStatus {
         TerrainStatusDisabled  = 0, // not enabled
@@ -89,12 +89,12 @@ public:
     };
 
     static const struct AP_Param::GroupInfo var_info[];
-
+    
     // update terrain state. Should be called at 1Hz or more
     void update(void);
 
     // return status enum for health reporting
-    enum TerrainStatus status(void) const { return system_status; }
+    enum TerrainStatus status(void);
 
     // send any pending terrain request message
     void send_request(mavlink_channel_t chan);
@@ -105,16 +105,9 @@ public:
     void handle_terrain_check(mavlink_channel_t chan, mavlink_message_t *msg);
     void handle_terrain_data(mavlink_message_t *msg);
 
-    /*
-      find the terrain height in meters above sea level for a location
-
-      return false if not available
-
-      if corrected is true then terrain alt is adjusted so that
-      the terrain altitude matches the home altitude at the home location
-      (i.e. we assume home is at the terrain altitude)
-     */
-    bool height_amsl(const Location &loc, float &height, bool corrected);
+    // return terrain height in meters above sea level for a location
+    // return false if not available
+    bool height_amsl(const Location &loc, float &height);
 
     /* 
        find difference between home terrain height and the terrain
@@ -171,11 +164,6 @@ public:
       log terrain status to DataFlash
      */
     void log_terrain_data(DataFlash_Class &dataflash);
-
-    /*
-      get some statistics for TERRAIN_REPORT
-     */
-    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
 private:
     // allocate the terrain subsystem data
@@ -307,6 +295,7 @@ private:
       get some statistics for TERRAIN_REPORT
      */
     uint8_t bitcount64(uint64_t b);
+    void get_statistics(uint16_t &pending, uint16_t &loaded);
 
     /*
       disk IO functions
@@ -415,9 +404,7 @@ private:
     // grid spacing during rally check
     uint16_t last_rally_spacing;
 
-    char *file_path = nullptr;
-
-    // status
-    enum TerrainStatus system_status = TerrainStatusDisabled;
+    char *file_path = NULL;    
 };
 #endif // AP_TERRAIN_AVAILABLE
+#endif // __AP_TERRAIN_H__

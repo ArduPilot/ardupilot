@@ -1,0 +1,7 @@
+Multirotor mixer for PX4FMU
+===========================
+
+This file defines a single mixer for a hexacopter in the X configuration.  All controls
+are mixed 100%.
+
+R: 6x 10000 10000 10000 0

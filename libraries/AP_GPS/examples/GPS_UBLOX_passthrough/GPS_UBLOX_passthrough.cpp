@@ -1,6 +1,9 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *       GPS UBlox passthrough sketch
  *       Code by DIYDrones.com
+ *
+ *       Works with APM2.x
  */
 
 #include <stdlib.h>
@@ -19,17 +22,17 @@
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Mission/AP_Mission.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_NavEKF/AP_NavEKF.h>
+#include <AP_Rally/AP_Rally.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-
-void setup();
-void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

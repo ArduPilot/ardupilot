@@ -1,14 +1,14 @@
 #pragma once
 
-#include "AP_HAL_Linux.h"
 #include <AP_HAL/AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
+#include "AP_HAL_Linux.h"
 #include "GPIO.h"
 
-namespace Linux {
-
-class DigitalSource_Sysfs : public AP_HAL::DigitalSource {
-    friend class GPIO_Sysfs;
+class Linux::DigitalSource_Sysfs : public AP_HAL::DigitalSource {
+    friend class Linux::GPIO_Sysfs;
 public:
     ~DigitalSource_Sysfs();
     uint8_t read();
@@ -25,8 +25,8 @@ private:
 /**
  * Generic implementation of AP_HAL::GPIO for Linux based boards.
  */
-class GPIO_Sysfs : public AP_HAL::GPIO {
-    friend class DigitalSource_Sysfs;
+class Linux::GPIO_Sysfs : public AP_HAL::GPIO {
+    friend class Linux::DigitalSource_Sysfs;
 public:
     /* Fill this table with the real pin numbers. */
     static const unsigned pin_table[];
@@ -64,10 +64,6 @@ public:
      */
     bool usb_connected() override;
 
-protected:
-    void _pinMode(unsigned int pin, uint8_t output);
-    int _open_pin_value(unsigned int pin, int flags);
-
     /*
      * Make pin available for use. This function should be called before
      * calling functions that use the pin number as parameter.
@@ -76,7 +72,22 @@ protected:
      *
      * Note: the pin is ignored if already exported.
      */
-    static bool _export_pin(uint8_t vpin);
+    static bool export_pin(uint8_t vpin);
+
+    /*
+     * Make pins available for use. This function should be called before
+     * calling functions that use pin number as parameter.
+     *
+     * If all pins are exported successfully, true is returned. If there is an
+     * error for one of them, false is returned.
+     *
+     * Note: pins already exported are ignored.
+     */
+    static bool export_pins(uint8_t vpins[], size_t num_vpins);
+
+protected:
+    void _pinMode(unsigned int pin, uint8_t output);
+    int _open_pin_value(unsigned int pin, int flags);
 };
 
-}
+#endif

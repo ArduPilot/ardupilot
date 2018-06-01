@@ -1,0 +1,4 @@
+#comment. note the stripped package name
+Log  log
+
+#comment

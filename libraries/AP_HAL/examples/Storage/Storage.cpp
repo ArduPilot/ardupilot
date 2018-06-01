@@ -4,32 +4,30 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-void setup();
-void loop();
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+AP_HAL::Storage *st;
 
 void setup(void) 
 {
     /*
       init Storage API
      */
-    AP_HAL::Storage *st = hal.storage;
-
     hal.console->printf("Starting AP_HAL::Storage test\r\n");
-    st->init();
+    st->init(NULL);
 
     /*
       Calculate XOR of the full conent of memory
       Do it by block of 8 bytes
     */
+    unsigned int i, j;
     unsigned char buff[8], XOR_res = 0;
 
-    for (uint32_t i = 0; i < HAL_STORAGE_SIZE; i += 8) {
+    for(i = 0; i < HAL_STORAGE_SIZE; i += 8)
+    {
         st->read_block((void *) buff, i, 8);
-        for(uint32_t j = 0; j < 8; j++) {
+        for(j = 0; j < 8; j++)
             XOR_res ^= buff[j];
-        }
     }
 
     /*

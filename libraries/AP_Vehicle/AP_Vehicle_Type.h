@@ -12,7 +12,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef AP_VEHICLE_TYPE_H
+#define AP_VEHICLE_TYPE_H
 
 /*
   define common vehicle build types. Note that the APM_BUILD_DIRECTORY
@@ -26,8 +27,6 @@
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
 #define APM_BUILD_UNKNOWN        5
-#define APM_BUILD_Replay         6
-#define APM_BUILD_ArduSub        7
 
 /*
   using this macro catches cases where we try to check vehicle type on
@@ -38,3 +37,5 @@
 #else
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
 #endif
+
+#endif // AP_VEHICLE_TYPE_H

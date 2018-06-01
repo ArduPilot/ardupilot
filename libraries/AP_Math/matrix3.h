@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,7 +36,9 @@
 // Matrix3ul	3x3 matrix of unsigned longs
 // Matrix3f		3x3 matrix of signed floats
 //
-#pragma once
+
+#ifndef MATRIX3_H
+#define MATRIX3_H
 
 #include "vector3.h"
 
@@ -49,21 +52,16 @@ public:
 
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
-    constexpr Matrix3<T>() {}
+    Matrix3<T>() {
+    }
 
     // setting ctor
-    constexpr Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
-        : a(a0)
-        , b(b0)
-        , c(c0) {}
+    Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0) : a(a0), b(b0), c(c0) {
+    }
 
     // setting ctor
-    constexpr Matrix3<T>(const T ax, const T ay, const T az,
-                         const T bx, const T by, const T bz,
-                         const T cx, const T cy, const T cz)
-        : a(ax,ay,az)
-        , b(bx,by,bz)
-        , c(cx,cy,cz) {}
+    Matrix3<T>(const T ax, const T ay, const T az, const T bx, const T by, const T bz, const T cx, const T cy, const T cz) : a(ax,ay,az), b(bx,by,bz), c(cx,cy,cz) {
+    }
 
     // function call operator
     void operator        () (const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
@@ -130,7 +128,7 @@ public:
     // allow a Matrix3 to be used as an array of vectors, 0 indexed
     Vector3<T> & operator[](uint8_t i) {
         Vector3<T> *_v = &a;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -138,7 +136,7 @@ public:
 
     const Vector3<T> & operator[](uint8_t i) const {
         const Vector3<T> *_v = &a;
-#if MATH_CHECK_INDEXES
+#if defined(MATH_CHECK_INDEXES) && (MATH_CHECK_INDEXES == 1)
         assert(i >= 0 && i < 3);
 #endif
         return _v[i];
@@ -187,31 +185,6 @@ public:
         *this = transposed();
     }
 
-    /**
-     * Calculate the determinant of this matrix.
-     *
-     * @return The value of the determinant.
-     */
-    T det() const;
-
-    /**
-     * Calculate the inverse of this matrix.
-     *
-     * @param inv[in] Where to store the result.
-     *
-     * @return If this matrix is invertible, then true is returned. Otherwise,
-     * \p inv is unmodified and false is returned.
-     */
-    bool inverse(Matrix3<T>& inv) const;
-
-    /**
-     * Invert this matrix if it is invertible.
-     *
-     * @return Return true if this matrix could be successfully inverted and
-     * false otherwise.
-     */
-    bool invert();
-
     // zero the matrix
     void        zero(void);
 
@@ -235,9 +208,6 @@ public:
     // create eulers from a rotation matrix
     void        to_euler(float *roll, float *pitch, float *yaw) const;
 
-    // create matrix from rotation enum
-    void from_rotation(enum Rotation rotation);
-    
     /*
       calculate Euler angles (312 convention) for the matrix.
       See http://www.atacolorado.com/eulersequences.doc
@@ -254,11 +224,14 @@ public:
     // to a rotation matrix.
     void        rotate(const Vector3<T> &g);
 
-    // create rotation matrix for rotation about the vector v by angle theta
-    // See: https://en.wikipedia.org/wiki/Rotation_matrix#General_rotations
-    // "Rotation matrix from axis and angle"
-    void        from_axis_angle(const Vector3<T> &v, float theta);
-    
+    // apply an additional rotation from a body frame gyro vector
+    // to a rotation matrix but only use X, Y elements from gyro vector
+    void        rotateXY(const Vector3<T> &g);
+
+    // apply an additional inverse rotation to a rotation matrix but 
+    // only use X, Y elements from rotation vector
+    void        rotateXYinv(const Vector3<T> &g);
+
     // normalize a rotation matrix
     void        normalize(void);
 };
@@ -268,4 +241,8 @@ typedef Matrix3<uint16_t>               Matrix3ui;
 typedef Matrix3<int32_t>                Matrix3l;
 typedef Matrix3<uint32_t>               Matrix3ul;
 typedef Matrix3<float>                  Matrix3f;
-typedef Matrix3<double>                 Matrix3d;
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+    typedef Matrix3<double>                 Matrix3d;
+#endif
+
+#endif // MATRIX3_H

@@ -1,4 +1,7 @@
-#pragma once
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#ifndef __AP_RANGEFINDER_ANALOG_H__
+#define __AP_RANGEFINDER_ANALOG_H__
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
@@ -7,19 +10,13 @@ class AP_RangeFinder_analog : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_analog(RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_analog(RangeFinder &ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state);
 
     // static detection function
-    static bool detect(RangeFinder::RangeFinder_State &_state);
+    static bool detect(RangeFinder &ranger, uint8_t instance);
 
     // update state
     void update(void);
-
-protected:
-
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
-    }
 
 private:
     // update raw voltage
@@ -27,3 +24,5 @@ private:
 
     AP_HAL::AnalogSource *source;
 };
+#endif // __AP_RANGEFINDER_ANALOG_H__
+

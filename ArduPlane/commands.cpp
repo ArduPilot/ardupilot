@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  *  logic for dealing with the current command in the mission and home location
  */
@@ -9,16 +10,16 @@
  */
 void Plane::set_next_WP(const struct Location &loc)
 {
-    if (auto_state.next_wp_crosstrack) {
-        // copy the current WP into the OldWP slot
-        prev_WP_loc = next_WP_loc;
-        auto_state.crosstrack = true;
-    } else {
+    if (auto_state.next_wp_no_crosstrack) {
         // we should not try to cross-track for this waypoint
         prev_WP_loc = current_loc;
         // use cross-track for the next waypoint
-        auto_state.next_wp_crosstrack = true;
-        auto_state.crosstrack = false;
+        auto_state.next_wp_no_crosstrack = false;
+        auto_state.no_crosstrack = true;
+    } else {
+        // copy the current WP into the OldWP slot
+        prev_WP_loc = next_WP_loc;
+        auto_state.no_crosstrack = false;
     }
 
     // Load the next_WP slot
@@ -51,7 +52,7 @@ void Plane::set_next_WP(const struct Location &loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous waypoint");
+        gcs_send_text(MAV_SEVERITY_WARNING, "Resetting prev_WP");
         prev_WP_loc = current_loc;
     }
 
@@ -70,7 +71,7 @@ void Plane::set_next_WP(const struct Location &loc)
 
 void Plane::set_guided_WP(void)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (g.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -88,19 +89,32 @@ void Plane::set_guided_WP(void)
     // -----------------------------------------------
     set_target_altitude_current();
 
+    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 
-    // disable crosstrack, head directly to the point
-    auto_state.crosstrack = false;
-
-    // reset loiter start time.
-    loiter.start_time_ms = 0;
-
-    // start in non-VTOL mode
-    auto_state.vtol_loiter = false;
-    
     loiter_angle_reset();
+}
+
+// run this at setup on the ground
+// -------------------------------
+void Plane::init_home()
+{
+    gcs_send_text(MAV_SEVERITY_WARNING, "init home");
+
+    ahrs.set_home(gps.location());
+    home_is_set = HOME_SET_NOT_LOCKED;
+    Log_Write_Home_And_Origin();
+    GCS_MAVLINK::send_home_all(gps.location());
+
+    gcs_send_text_fmt("gps alt: %lu", (unsigned long)home.alt);
+
+    // Save Home to EEPROM
+    mission.write_home_to_storage();
+
+    // Save prev loc
+    // -------------
+    next_WP_loc = prev_WP_loc = home;
 }
 
 /*
@@ -110,35 +124,10 @@ void Plane::set_guided_WP(void)
 */
 void Plane::update_home()
 {
-    if ((g2.home_reset_threshold == -1) ||
-        ((g2.home_reset_threshold > 0) &&
-         (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
-        // don't auto-update if we have changed barometer altitude
-        // significantly. This allows us to cope with slow baro drift
-        // but not re-do home and the baro if we have changed height
-        // significantly
-        return;
-    }
-    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
-        Location loc;
-        if(ahrs.get_position(loc)) {
-            plane.set_home(loc);
-        }
+    if (home_is_set == HOME_SET_NOT_LOCKED) {
+        ahrs.set_home(gps.location());
+        Log_Write_Home_And_Origin();
+        GCS_MAVLINK::send_home_all(gps.location());
     }
     barometer.update_calibration();
-}
-
-void Plane::set_home_persistently(const Location &loc)
-{
-    set_home(loc);
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-}
-
-void Plane::set_home(const Location &loc)
-{
-    ahrs.set_home(loc);
-    ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home();
 }

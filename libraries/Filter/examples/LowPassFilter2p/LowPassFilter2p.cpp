@@ -7,8 +7,6 @@
 #include <Filter/Filter.h>                     // Filter library
 #include <Filter/LowPassFilter2p.h>
 
-void loop();
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // craete an instance with 800Hz sample rate and 30Hz cutoff
@@ -23,19 +21,23 @@ static void setup()
 
 void loop()
 {
-    for(int16_t i = 0; i < 300; i++ ) {
+    int16_t i;
+    float new_value;
+    float filtered_value;
+
+    for( i=0; i<300; i++ ) {
 
         // new data value
-        const float new_value = sinf((float)i * 2 * M_PI * 5 / 50.0f);  // 5hz
+        new_value = sinf((float)i*2*PI*5/50.0f);  // 5hz
 
         // output to user
-        hal.console->printf("applying: %6.4f", (double)new_value);
+        hal.console->printf("applying: %6.4f", new_value);
 
         // apply new value and retrieved filtered result
-        const float filtered_value = low_pass_filter.apply(new_value);
+        filtered_value = low_pass_filter.apply(new_value);
 
         // display results
-        hal.console->printf("\toutput: %6.4f\n", (double)filtered_value);
+        hal.console->printf("\toutput: %6.4f\n", filtered_value);
 
         hal.scheduler->delay(10);
     }

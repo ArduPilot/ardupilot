@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __AP_HAL_SCHEDULER_H__
+#define __AP_HAL_SCHEDULER_H__
 
 #include <stdint.h>
 
@@ -11,8 +13,12 @@
 class AP_HAL::Scheduler {
 public:
     Scheduler() {}
-    virtual void     init() = 0;
+    virtual void     init(void* implspecific) = 0;
     virtual void     delay(uint16_t ms) = 0;
+    virtual uint32_t millis() = 0;
+    virtual uint32_t micros() = 0;
+    virtual uint64_t millis64() = 0;
+    virtual uint64_t micros64() = 0;
 
     /*
       delay for the given number of microseconds. This needs to be as
@@ -29,19 +35,8 @@ public:
      */
     virtual void     delay_microseconds_boost(uint16_t us) { delay_microseconds(us); }
 
-    /*
-      end the priority boost from delay_microseconds_boost()
-     */
-    virtual void     boost_end(void) {}
-
-    // register a function to be called by the scheduler if it needs
-    // to sleep for more than min_time_ms
     virtual void     register_delay_callback(AP_HAL::Proc,
-                                             uint16_t min_time_ms);
-    // returns true if the Scheduler has called the delay callback
-    // function.  If you are on the main thread that means your call
-    // stack has the scheduler on it somewhere.
-    virtual bool     in_delay_callback() const { return _in_delay_callback; }
+                                             uint16_t min_time_ms) = 0;
 
     // register a high priority timer task
     virtual void     register_timer_process(AP_HAL::MemberProc) = 0;
@@ -53,43 +48,27 @@ public:
     virtual void     suspend_timer_procs() = 0;
     virtual void     resume_timer_procs() = 0;
 
+    virtual bool     in_timerprocess() = 0;
+    
     virtual void     register_timer_failsafe(AP_HAL::Proc,
                                              uint32_t period_us) = 0;
 
+    virtual bool     system_initializing() = 0;
     virtual void     system_initialized() = 0;
 
+    virtual void     panic(const char *errormsg, ...) FORMAT(2, 3) NORETURN = 0;
     virtual void     reboot(bool hold_in_bootloader) = 0;
+
+    /**
+       optional function to set timer speed in Hz
+     */
+    virtual void     set_timer_speed(uint16_t speed_hz) {}
 
     /**
        optional function to stop clock at a given time, used by log replay
      */
     virtual void     stop_clock(uint64_t time_usec) {}
-
-    virtual bool     in_main_thread() const = 0;
-
-    virtual void create_uavcan_thread() {};
-
-    /*
-      disable interrupts and return a context that can be used to
-      restore the interrupt state. This can be used to protect
-      critical regions
-
-      Warning: may not be implemented on all HALs
-     */
-    virtual void *disable_interrupts_save(void) { return nullptr; }
-
-    /*
-      restore interrupt state from disable_interrupts_save()
-     */
-    virtual void restore_interrupts(void *) {}
-
-    // called by subclasses when they need to delay for some time
-    virtual void call_delay_cb();
-    uint16_t _min_delay_cb_ms;
-
-private:
-
-    AP_HAL::Proc _delay_cb;
-    bool _in_delay_callback : 1;
-
 };
+
+#endif // __AP_HAL_SCHEDULER_H__
+

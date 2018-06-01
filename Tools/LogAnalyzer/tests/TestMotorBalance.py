@@ -1,7 +1,6 @@
 from LogAnalyzer import Test,TestResult
 import DataflashLog
 
-from VehicleType import VehicleType
 
 class TestBalanceTwist(Test):
     '''test for badly unbalanced copter, including yaw twist'''
@@ -13,7 +12,7 @@ class TestBalanceTwist(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if logdata.vehicleType != VehicleType.Copter:
+        if logdata.vehicleType != "ArduCopter":
             self.result.status = TestResult.StatusType.NA
             return
 
@@ -24,9 +23,10 @@ class TestBalanceTwist(Test):
         ch = []
 
         for i in range(8):
-            for prefix in "Chan", "Ch", "C":
-                if prefix+repr((i+1)) in logdata.channels["RCOU"]:
-                    ch.append(map(lambda x: x[1], logdata.channels["RCOU"][prefix+repr((i+1))].listData))
+            if "Chan"+`(i+1)` in logdata.channels["RCOU"]:
+                ch.append(map(lambda x: x[1], logdata.channels["RCOU"]["Chan"+`(i+1)`].listData))
+            elif "Ch"+`(i+1)` in logdata.channels["RCOU"]:
+                ch.append(map(lambda x: x[1], logdata.channels["RCOU"]["Ch"+`(i+1)`].listData))
 
         ch = zip(*ch)
         num_channels = 0
@@ -35,30 +35,22 @@ class TestBalanceTwist(Test):
             if num_channels < len(ch[i]):
                 num_channels = len(ch[i])
 
-        if logdata.frame:
-            num_channels = logdata.num_motor_channels()
-
         if num_channels < 2:
             return
 
-        try:
-            min_throttle = logdata.parameters["RC3_MIN"] + logdata.parameters["THR_MIN"] / (logdata.parameters["RC3_MAX"]-logdata.parameters["RC3_MIN"])/1000.0
-        except KeyError as e:
-            min_throttle = logdata.parameters["MOT_PWM_MIN"] / (logdata.parameters["MOT_PWM_MAX"]-logdata.parameters["RC3_MIN"])/1000.0
-
+        min_throttle = logdata.parameters["RC3_MIN"] + logdata.parameters["THR_MIN"] / (logdata.parameters["RC3_MAX"]-logdata.parameters["RC3_MIN"])/1000.0
         ch = filter(lambda x:sum(x)/num_channels > min_throttle, ch)
 
         if len(ch) == 0:
             return
 
-        avg_sum = 0
+        avg_all = map(lambda x:sum(x)/num_channels,ch)
+        avg_all = sum(avg_all)/len(avg_all)
         avg_ch = []
         for i in range(num_channels):
             avg = map(lambda x: x[i],ch)
             avg = sum(avg)/len(avg)
             avg_ch.append(avg)
-            avg_sum += avg
-        avg_all = avg_sum / num_channels
 
         self.result.statusMessage = "Motor channel averages = %s\nAverage motor output = %.0f\nDifference between min and max motor averages = %.0f" % (str(avg_ch),avg_all,abs(min(avg_ch)-max(avg_ch)))
 

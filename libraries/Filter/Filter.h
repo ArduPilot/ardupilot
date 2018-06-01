@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __FILTER_H__
+#define __FILTER_H__
 
 /* Umbrella header for the Filter library */
 
@@ -9,3 +11,6 @@
 #include "LowPassFilter.h"
 #include "ModeFilter.h"
 #include "Butter.h"
+
+#endif //__FILTER_H__
+

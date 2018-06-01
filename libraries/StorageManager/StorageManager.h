@@ -1,5 +1,6 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See http://dev.ardupilot.com for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,7 +19,9 @@
   Management for hal.storage to allow for backwards compatible mapping
   of storage offsets to available storage
  */
-#pragma once
+
+#ifndef _STORAGEMANAGER_H_
+#define _STORAGEMANAGER_H_
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -27,9 +30,9 @@
   storage. Use larger areas for other boards
  */
 #if HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 14
+#define STORAGE_NUM_AREAS 12
 #elif HAL_STORAGE_SIZE >= 8192
-#define STORAGE_NUM_AREAS 10
+#define STORAGE_NUM_AREAS 8
 #elif HAL_STORAGE_SIZE >= 4096
 #define STORAGE_NUM_AREAS 4
 #else
@@ -46,9 +49,7 @@ public:
         StorageParam   = 0,
         StorageFence   = 1,
         StorageRally   = 2,
-        StorageMission = 3,
-        StorageKeys    = 4,
-        StorageBindInfo= 5
+        StorageMission = 3
     };
 
     // erase whole of storage
@@ -98,3 +99,5 @@ private:
     const StorageManager::StorageType type;
     uint16_t total_size;
 };
+
+#endif // _STORAGEMANAGER_H_

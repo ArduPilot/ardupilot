@@ -1,7 +1,9 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /// @file	PID.cpp
 /// @brief	Generic PID algorithm
 
-#include <cmath>
+#include <math.h>
 
 #include "PID.h"
 #include <AP_HAL/AP_HAL.h>
@@ -10,33 +12,16 @@
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo PID::var_info[] = {
-
-    // @Param: P
-    // @DisplayName: PID Proportional Gain
-    // @Description: P Gain which produces an output value that is proportional to the current error value
     AP_GROUPINFO("P",    0, PID, _kp, 0),
-
-    // @Param: I
-    // @DisplayName: PID Integral Gain
-    // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
     AP_GROUPINFO("I",    1, PID, _ki, 0),
-
-    // @Param: D
-    // @DisplayName: PID Derivative Gain
-    // @Description: D Gain which produces an output that is proportional to the rate of change of the error
     AP_GROUPINFO("D",    2, PID, _kd, 0),
-
-    // @Param: IMAX
-    // @DisplayName: PID Integral Maximum
-    // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 3, PID, _imax, 0),
-
     AP_GROUPEND
 };
 
 float PID::get_pid(float error, float scaler)
 {
-    uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = hal.scheduler->millis();
     uint32_t dt = tnow - _last_t;
     float output            = 0;
     float delta_time;
@@ -55,8 +40,7 @@ float PID::get_pid(float error, float scaler)
     delta_time = (float)dt / 1000.0f;
 
     // Compute proportional component
-    _pid_info.P = error * _kp;
-    output += _pid_info.P;
+    output += error * _kp;
 
     // Compute derivative component if time has elapsed
     if ((fabsf(_kd) > 0) && (dt > 0)) {
@@ -74,7 +58,7 @@ float PID::get_pid(float error, float scaler)
 
         // discrete low pass filter, cuts out the
         // high frequency noise that can drive the controller crazy
-        float RC = 1/(2*M_PI*_fCut);
+        float RC = 1/(2*PI*_fCut);
         derivative = _last_derivative +
                      ((delta_time / (RC + delta_time)) *
                       (derivative - _last_derivative));
@@ -84,14 +68,11 @@ float PID::get_pid(float error, float scaler)
         _last_derivative    = derivative;
 
         // add in derivative component
-        _pid_info.D = _kd * derivative;
-        output                          += _pid_info.D;
+        output                          += _kd * derivative;
     }
 
     // scale the P and D components
     output *= scaler;
-    _pid_info.D *= scaler;
-    _pid_info.P *= scaler;
 
     // Compute integral component if time has elapsed
     if ((fabsf(_ki) > 0) && (dt > 0)) {
@@ -101,12 +82,16 @@ float PID::get_pid(float error, float scaler)
         } else if (_integrator > _imax) {
             _integrator = _imax;
         }
-        _pid_info.I = _integrator;
         output                          += _integrator;
     }
 
-    _pid_info.desired = output;
     return output;
+}
+
+int16_t PID::get_pid_4500(float error, float scaler)
+{
+	float v = get_pid(error, scaler);
+	return constrain_float(v, -4500, 4500);
 }
 
 void
@@ -116,12 +101,6 @@ PID::reset_I()
 	// we use NAN (Not A Number) to indicate that the last 
 	// derivative value is not valid
     _last_derivative = NAN;
-    _pid_info.I = 0;
-}
-
-void PID::reset() {
-    memset(&_pid_info, 0, sizeof(_pid_info));
-    reset_I();
 }
 
 void

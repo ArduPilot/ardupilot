@@ -5,10 +5,6 @@
 #include <AP_HAL_Linux/AP_HAL_Linux.h>
 #include <AP_Menu/AP_Menu.h>
 
-void setup();
-void loop();
-int parse_gpio_pin_number(uint8_t argc, const Menu::arg *argv);
-
 #define MENU_FUNC(func) FUNCTOR_BIND(&commands, &MenuCommands::func, int8_t, uint8_t, const Menu::arg *)
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -29,7 +25,7 @@ int parse_gpio_pin_number(uint8_t argc, const Menu::arg *argv) {
 }
 
 static int8_t test_gpio_input(uint8_t argc, const Menu::arg *argv, bool use_channel) {
-    AP_HAL::DigitalSource *ch = nullptr;
+    AP_HAL::DigitalSource *ch = NULL;
     int pin = parse_gpio_pin_number(argc, argv);
 
     if (pin <= 0) return -1;
@@ -50,7 +46,7 @@ static int8_t test_gpio_input(uint8_t argc, const Menu::arg *argv, bool use_chan
 }
 
 static int8_t test_gpio_output(uint8_t argc, const Menu::arg *argv, bool use_channel) {
-    AP_HAL::DigitalSource *ch = nullptr;
+    AP_HAL::DigitalSource *ch = NULL;
     int pin = parse_gpio_pin_number(argc, argv);
 
     if (pin <= 0) return -1;

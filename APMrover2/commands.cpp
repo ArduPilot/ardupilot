@@ -1,129 +1,90 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include "Rover.h"
 
-// checks if we should update ahrs home position from the EKF's position
-void Rover::update_home_from_EKF()
-{
-    // exit immediately if home already set
-    if (ahrs.home_is_set()) {
-        return;
-    }
+/* Functions in this file:
+	void set_next_WP(const AP_Mission::Mission_Command& cmd)
+	void set_guided_WP(void)
+	void init_home()
+	void restart_nav()
+************************************************************ 
+*/
 
-    // move home to current ekf location (this will set home_state to HOME_SET)
-    set_home_to_current_location(false);
-}
-
-// set ahrs home to current location from EKF reported location or GPS
-bool Rover::set_home_to_current_location(bool lock)
-{
-    // use position from EKF if available otherwise use GPS
-    Location temp_loc;
-    if (ahrs.have_inertial_nav() && ahrs.get_position(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
-            return false;
-        }
-        // we have successfully set AHRS home, set it for SmartRTL
-        g2.smart_rtl.set_home(true);
-        return true;
-    }
-    return false;
-}
-
-// sets ahrs home to specified location
-//  returns true if home location set successfully
-bool Rover::set_home(const Location& loc, bool lock)
-{
-    // check location is valid
-    if (loc.lat == 0 && loc.lng == 0 && loc.alt == 0) {
-        return false;
-    }
-    if (!check_latlng(loc)) {
-        return false;
-    }
-
-    // check if EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
-        return false;
-    }
-
-    const bool home_was_set = ahrs.home_is_set();
-
-    // set ahrs home
-    ahrs.set_home(loc);
-
-    if (!home_was_set) {
-        // log new home position which mission library will pull from ahrs
-        if (should_log(MASK_LOG_CMD)) {
-            AP_Mission::Mission_Command temp_cmd;
-            if (mission.read_cmd_from_storage(0, temp_cmd)) {
-                DataFlash.Log_Write_Mission_Cmd(mission, temp_cmd);
-            }
-        }
-    }
-
-    // lock home position
-    if (lock) {
-        ahrs.lock_home();
-    }
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
-
-    // send text of home position to ground stations
-    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
-            static_cast<double>(loc.lat * 1.0e-7f),
-            static_cast<double>(loc.lng * 1.0e-7f),
-            static_cast<double>(loc.alt * 0.01f));
-
-    // return success
-    return true;
-}
-
-// checks if we should update ahrs/RTL home position from GPS
-void Rover::set_system_time_from_GPS()
-{
-    // exit immediately if system time already set
-    if (system_time_set) {
-        return;
-    }
-
-    // if we have a 3d lock and valid location
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // set system clock for log timestamps
-        const uint64_t gps_timestamp = gps.time_epoch_usec();
-
-        hal.util->set_system_clock(gps_timestamp);
-
-        // update signing timestamp
-        GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-        system_time_set = true;
-    }
-}
 
 /*
-  update home location from GPS
-  this is called as long as we have 3D lock and the arming switch is
-  not pushed
-*/
-void Rover::update_home()
+ *  set_next_WP - sets the target location the vehicle should fly to
+ */
+void Rover::set_next_WP(const struct Location& loc)
 {
-    if (!ahrs.home_is_locked()) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
-                ahrs.set_home(loc);
-                ahrs.Log_Write_Home_And_Origin();
-                gcs().send_home();
-            }
-        }
+	// copy the current WP into the OldWP slot
+	// ---------------------------------------
+	prev_WP = next_WP;
+
+	// Load the next_WP slot
+	// ---------------------
+	next_WP = loc;
+
+    // are we already past the waypoint? This happens when we jump
+    // waypoints, and it can cause us to skip a waypoint. If we are
+    // past the waypoint when we start on a leg, then use the current
+    // location as the previous waypoint, to prevent immediately
+    // considering the waypoint complete
+    if (location_passed_point(current_loc, prev_WP, next_WP)) {
+        gcs_send_text(MAV_SEVERITY_WARNING, "Resetting prev_WP");
+        prev_WP = current_loc;
     }
-    barometer.update_calibration();
+
+	// this is handy for the groundstation
+	wp_totalDistance 	= get_distance(current_loc, next_WP);
+	wp_distance 		= wp_totalDistance;
+}
+
+void Rover::set_guided_WP(void)
+{
+	// copy the current location into the OldWP slot
+	// ---------------------------------------
+	prev_WP = current_loc;
+
+	// Load the next_WP slot
+	// ---------------------
+	next_WP = guided_WP;
+
+	// this is handy for the groundstation
+	wp_totalDistance 	= get_distance(current_loc, next_WP);
+	wp_distance 		= wp_totalDistance;
+}
+
+// run this at setup on the ground
+// -------------------------------
+void Rover::init_home()
+{
+    if (!have_position) {
+        // we need position information
+        return;
+    }
+
+	gcs_send_text(MAV_SEVERITY_WARNING, "init home");
+
+    ahrs.set_home(gps.location());
+	home_is_set = true;
+	Log_Write_Home_And_Origin();
+    GCS_MAVLINK::send_home_all(gps.location());
+
+	// Save Home to EEPROM
+	mission.write_home_to_storage();
+
+	// Save prev loc
+	// -------------
+	next_WP = prev_WP = home;
+
+	// Load home for a default guided_WP
+	// -------------
+	guided_WP = home;
+}
+
+void Rover::restart_nav()
+{  
+    g.pidSpeedThrottle.reset_I();
+    prev_WP = current_loc;
+    mission.start_or_resume();
 }
