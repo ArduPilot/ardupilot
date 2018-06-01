@@ -238,6 +238,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     const uint32_t now = AP_HAL::millis();
     if ((_steer_turn_last_ms == 0) || ((now - _steer_turn_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         _steer_rate_pid.reset_filter();
+        _steer_rate_pid.reset_I();
         _desired_turn_rate = _ahrs.get_yaw_rate_earth();
     }
     _steer_turn_last_ms = now;
