@@ -1,4 +1,7 @@
-#pragma once
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#ifndef __AP_HAL_VRBRAIN_ANALOGIN_H__
+#define __AP_HAL_VRBRAIN_ANALOGIN_H__
 
 #include "AP_HAL_VRBRAIN.h"
 #include <pthread.h>
@@ -7,7 +10,7 @@
 #define VRBRAIN_ANALOG_MAX_CHANNELS 16
 
 
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E) || defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(CONFIG_ARCH_BOARD_VRHERO_V10)
 #define VRBRAIN_ANALOG_ORB_BATTERY_VOLTAGE_PIN     10
 #define VRBRAIN_ANALOG_ORB_BATTERY_CURRENT_PIN     11
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
@@ -53,15 +56,15 @@ private:
 class VRBRAIN::VRBRAINAnalogIn : public AP_HAL::AnalogIn {
 public:
     VRBRAINAnalogIn();
-    void init() override;
-    AP_HAL::AnalogSource* channel(int16_t pin) override;
+    void init(void* implspecific);
+    AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
-    float board_voltage(void) override { return _board_voltage; }
-    float servorail_voltage(void) override { return _servorail_voltage; }
-    uint16_t power_status_flags(void) override { return _power_flags; }
+    float board_voltage(void) { return _board_voltage; }
+    float servorail_voltage(void) { return _servorail_voltage; }
+    uint16_t power_status_flags(void) { return _power_flags; }
 
 private:
-    int _adc_fd = -1;
+    int _adc_fd;
     int _battery_handle;
     int _servorail_handle;
     int _system_power_handle;
@@ -80,3 +83,4 @@ private:
 
     void next_stop_pin(void);
 };
+#endif // __AP_HAL_VRBRAIN_ANALOGIN_H__

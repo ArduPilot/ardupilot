@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,13 +28,27 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
-    // 1 was ROL_MAX which has been replaced by CYC_MAX
+    // @Param: ROL_MAX
+    // @DisplayName: Swash Roll Angle Max
+    // @Description: Maximum roll angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("ROL_MAX", 1, AP_MotorsHeli, _roll_max, AP_MOTORS_HELI_SWASH_ROLL_MAX),
 
-    // 2 was PIT_MAX which has been replaced by CYC_MAX
+    // @Param: PIT_MAX
+    // @DisplayName: Swash Pitch Angle Max
+    // @Description: Maximum pitch angle of the swash plate
+    // @Range: 0 18000
+    // @Units: Centi-Degrees
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("PIT_MAX", 2, AP_MotorsHeli, _pitch_max, AP_MOTORS_HELI_SWASH_PITCH_MAX),
 
     // @Param: COL_MIN
     // @DisplayName: Collective Pitch Minimum
-    // @Description: Lowest possible servo position in PWM microseconds for the swashplate
+    // @Description: Lowest possible servo position for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -42,7 +57,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MAX
     // @DisplayName: Collective Pitch Maximum
-    // @Description: Highest possible servo position in PWM microseconds for the swashplate
+    // @Description: Highest possible servo position for the swashplate
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -51,7 +66,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: COL_MID
     // @DisplayName: Collective Pitch Mid-Point
-    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
+    // @Description: Swash servo position corresponding to zero collective pitch (or zero lift for Assymetrical blades)
     // @Range: 1000 2000
     // @Units: PWM
     // @Increment: 1
@@ -60,14 +75,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
-    // @Description: Manual servo override for swash set-up. Do not set this manually!
-    // @Values: 0:Disabled,1:Passthrough,2:Max collective,3:Mid collective,4:Min collective
+    // @Description: Pass radio inputs directly to servos for set-up. Do not set this manually!
+    // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
+    AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_manual, 0),
 
-    // @Param: RSC_SETPOINT
+    // @Param: GOV_SETPOINT
     // @DisplayName: External Motor Governor Setpoint
-    // @Description: PWM in microseconds passed to the external motor governor when external governor is enabled
+    // @Description: PWM passed to the external motor governor when external governor is enabled
     // @Range: 0 1000
     // @Units: PWM
     // @Increment: 10
@@ -83,9 +98,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 
     // @Param: LAND_COL_MIN
     // @DisplayName: Landing Collective Minimum
-    // @Description: Minimum collective position in PWM microseconds while landed or landing
+    // @Description: Minimum collective position while landed or landing
     // @Range: 0 500
-    // @Units: PWM
+    // @Units: pwm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("LAND_COL_MIN", 9, AP_MotorsHeli, _land_collective_min, AP_MOTORS_HELI_LAND_COLLECTIVE_MIN),
@@ -94,7 +109,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Ramp Time
     // @Description: Time in seconds for the output to the main rotor's ESC to reach full speed
     // @Range: 0 60
-    // @Units: s
+    // @Units: Seconds
     // @User: Standard
     AP_GROUPINFO("RSC_RAMP_TIME", 10, AP_MotorsHeli, _rsc_ramp_time, AP_MOTORS_HELI_RSC_RAMP_TIME),
 
@@ -102,7 +117,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @DisplayName: RSC Runup Time
     // @Description: Time in seconds for the main rotor to reach full speed.  Must be longer than RSC_RAMP_TIME
     // @Range: 0 60
-    // @Units: s
+    // @Units: Seconds
     // @User: Standard
     AP_GROUPINFO("RSC_RUNUP_TIME", 11, AP_MotorsHeli, _rsc_runup_time, AP_MOTORS_HELI_RSC_RUNUP_TIME),
 
@@ -122,76 +137,21 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RSC_IDLE", 13, AP_MotorsHeli, _rsc_idle_output, AP_MOTORS_HELI_RSC_IDLE_DEFAULT),
 
-    // index 14 was RSC_POWER_LOW. Do not use this index in the future.
-
-    // index 15 was RSC_POWER_HIGH. Do not use this index in the future.
-
-    // @Param: CYC_MAX
-    // @DisplayName: Cyclic Pitch Angle Max
-    // @Description: Maximum pitch angle of the swash plate
-    // @Range: 0 18000
-    // @Units: cdeg
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("CYC_MAX", 16, AP_MotorsHeli, _cyclic_max, AP_MOTORS_HELI_SWASH_CYCLIC_MAX),
-
-    // @Param: SV_TEST
-    // @DisplayName: Boot-up Servo Test Cycles
-    // @Description: Number of cycles to run servo test on boot-up
-    // @Range: 0 10
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SV_TEST",  17, AP_MotorsHeli, _servo_test, 0),
-
-    // index 18 was RSC_POWER_NEGC. Do not use this index in the future.
-
-    // @Param: RSC_SLEWRATE
-    // @DisplayName: Throttle servo slew rate
-    // @Description: This controls the maximum rate at which the throttle output can change, as a percentage per second. A value of 100 means the throttle can change over its full range in one second. A value of zero gives unlimited slew rate.
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_SLEWRATE", 19, AP_MotorsHeli, _rsc_slewrate, 0),
-
-    // @Param: RSC_THRCRV_0
-    // @DisplayName: Throttle Servo Position for 0 percent collective
-    // @Description: Throttle Servo Position for 0 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    // @Param: RSC_POWER_LOW
+    // @DisplayName: Throttle Servo Low Power Position
+    // @Description: Throttle output at zero collective pitch.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_0", 20, AP_MotorsHeli, _rsc_thrcrv[0], AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT),
-
-    // @Param: RSC_THRCRV_25
-    // @DisplayName: Throttle Servo Position for 25 percent collective
-    // @Description: Throttle Servo Position for 25 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
+    AP_GROUPINFO("RSC_POWER_LOW", 14, AP_MotorsHeli, _rsc_power_low, AP_MOTORS_HELI_RSC_POWER_LOW_DEFAULT),
+    
+    // @Param: RSC_POWER_HIGH
+    // @DisplayName: Throttle Servo High Power Position
+    // @Description: Throttle output at max collective pitch.
     // @Range: 0 1000
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_25", 21, AP_MotorsHeli, _rsc_thrcrv[1], AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT),
-
-    // @Param: RSC_THRCRV_50
-    // @DisplayName: Throttle Servo Position for 50 percent collective
-    // @Description: Throttle Servo Position for 50 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_50", 22, AP_MotorsHeli, _rsc_thrcrv[2], AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT),
-
-    // @Param: RSC_THRCRV_75
-    // @DisplayName: Throttle Servo Position for 75 percent collective
-    // @Description: Throttle Servo Position for 75 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_75", 23, AP_MotorsHeli, _rsc_thrcrv[3], AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT),
-
-    // @Param: RSC_THRCRV_100
-    // @DisplayName: Throttle Servo Position for 100 percent collective
-    // @Description: Throttle Servo Position for 100 percent collective. This is on a scale from 0 to 1000, where 1000 is full throttle and 0 is zero throttle. Actual PWM values are controlled by SERVOX_MIN and SERVOX_MAX. The 0 percent collective is defined by H_COL_MIN and 100 percent collective is defined by H_COL_MAX.
-    // @Range: 0 1000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
+    AP_GROUPINFO("RSC_POWER_HIGH", 15, AP_MotorsHeli, _rsc_power_high, AP_MOTORS_HELI_RSC_POWER_HIGH_DEFAULT),
 
     AP_GROUPEND
 };
@@ -201,47 +161,26 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
 //
 
 // init
-void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_MotorsHeli::Init()
 {
-    // remember frame type
-    _frame_type = frame_type;
-
     // set update rate
     set_update_rate(_speed_hz);
 
-    // load boot-up servo test cycles into counter to be consumed
-    _servo_test_cycle_counter = _servo_test;
-
     // ensure inputs are not passed through to servos on start-up
-    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
-
-    // initialise radio passthrough for collective to middle
-    _throttle_radio_passthrough = 0.5f;
+    _servo_manual = 0;
 
     // initialise Servo/PWM ranges and endpoints
-    if (!init_outputs()) {
-        // don't set initialised_ok
-        return;
-    }
+    init_outputs();
 
     // calculate all scalars
     calculate_scalars();
-
-    // record successful initialisation if what we setup was the desired frame_class
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
-}
-
-// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
-{
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
 }
 
 // output_min - sets servos to neutral point with motors stopped
 void AP_MotorsHeli::output_min()
 {
     // move swash to mid
-    move_actuators(0.0f,0.0f,0.5f,0.0f);
+    move_actuators(0,0,500,0);
 
     update_motor_control(ROTOR_CONTROL_STOP);
 
@@ -259,11 +198,12 @@ void AP_MotorsHeli::output()
     update_throttle_filter();
 
     if (_flags.armed) {
-        calculate_armed_scalars();
         if (!_flags.interlock) {
             output_armed_zero_throttle();
-        } else {
+        } else if (_flags.stabilizing) {
             output_armed_stabilizing();
+        } else {
+            output_armed_not_stabilizing();
         }
     } else {
         output_disarmed();
@@ -274,11 +214,24 @@ void AP_MotorsHeli::output()
 void AP_MotorsHeli::output_armed_stabilizing()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
+    if (_servo_manual == 1) {
         reset_flight_controls();
     }
 
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
+
+    update_motor_control(ROTOR_CONTROL_ACTIVE);
+}
+
+void AP_MotorsHeli::output_armed_not_stabilizing()
+{
+    // if manual override active after arming, deactivate it and reinitialize servos
+    if (_servo_manual == 1) {
+        reset_flight_controls();
+    }
+
+    // helicopters always run stabilizing flight controls
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_ACTIVE);
 }
@@ -287,11 +240,11 @@ void AP_MotorsHeli::output_armed_stabilizing()
 void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
+    if (_servo_manual == 1) {
         reset_flight_controls();
     }
 
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_IDLE);
 }
@@ -299,48 +252,12 @@ void AP_MotorsHeli::output_armed_zero_throttle()
 // output_disarmed - sends commands to the motors
 void AP_MotorsHeli::output_disarmed()
 {
-    if (_servo_test_cycle_counter > 0){
-        // perform boot-up servo test cycle if enabled
-        servo_test();
-    } else {
-        // manual override (i.e. when setting up swash)
-        switch (_servo_mode) {
-            case SERVO_CONTROL_MODE_MANUAL_PASSTHROUGH:
-                // pass pilot commands straight through to swash
-                _roll_in = _roll_radio_passthrough;
-                _pitch_in = _pitch_radio_passthrough;
-                _throttle_filter.reset(_throttle_radio_passthrough);
-                _yaw_in = _yaw_radio_passthrough;
-                break;
-            case SERVO_CONTROL_MODE_MANUAL_CENTER:
-                // fixate mid collective
-                _roll_in = 0.0f;
-                _pitch_in = 0.0f;
-                _throttle_filter.reset(_collective_mid_pct);
-                _yaw_in = 0.0f;
-                break;
-            case SERVO_CONTROL_MODE_MANUAL_MAX:
-                // fixate max collective
-                _roll_in = 0.0f;
-                _pitch_in = 0.0f;
-                _throttle_filter.reset(1.0f);
-                _yaw_in = 1.0f;
-                break;
-            case SERVO_CONTROL_MODE_MANUAL_MIN:
-                // fixate min collective
-                _roll_in = 0.0f;
-                _pitch_in = 0.0f;
-                _throttle_filter.reset(0.0f);
-                _yaw_in = -1.0f;
-                break;
-            case SERVO_CONTROL_MODE_MANUAL_OSCILLATE:
-                // use servo_test function from child classes
-                servo_test();
-                break;
-            default:
-                // no manual override
-                break;
-        }
+    // if manual override (i.e. when setting up swash), pass pilot commands straight through to swash
+    if (_servo_manual == 1) {
+        _roll_control_input = _roll_radio_passthrough;
+        _pitch_control_input = _pitch_radio_passthrough;
+        _throttle_control_input = _throttle_radio_passthrough;
+        _yaw_control_input = _yaw_radio_passthrough;
     }
 
     // ensure swash servo endpoints haven't been moved
@@ -350,7 +267,7 @@ void AP_MotorsHeli::output_disarmed()
     calculate_scalars();
 
     // helicopters always run stabilizing flight controls
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+    move_actuators(_roll_control_input, _pitch_control_input, _throttle_control_input, _yaw_control_input);
 
     update_motor_control(ROTOR_CONTROL_STOP);
 }
@@ -361,7 +278,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if _rsc_setpoint is not higher than _rsc_critical as this would not allow rotor_runup_complete to ever return true
     if (_rsc_critical >= _rsc_setpoint) {
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL too large");
         }
         return false;
     }
@@ -369,7 +286,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Mode is not set to a valid control mode
     if (_rsc_mode <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _rsc_mode > (int8_t)ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
         }
         return false;
     }
@@ -377,7 +294,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
     if (_rsc_runup_time <= _rsc_ramp_time){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
         }
         return false;
     }
@@ -385,7 +302,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if idle output is higher than critical rotor speed as this could block runup_complete from going false
     if ( _rsc_idle_output >=  _rsc_critical){
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE too large");
         }
         return false;
     }
@@ -395,13 +312,13 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
 }
 
 // reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(SRV_Channel *servo)
+void AP_MotorsHeli::reset_swash_servo(RC_Channel& servo)
 {
-    servo->set_range(1000);
+    servo.set_range(0, 1000);
 
     // swash servos always use full endpoints as restricting them would lead to scaling errors
-    servo->set_output_min(1000);
-    servo->set_output_max(2000);
+    servo.radio_min = 1000;
+    servo.radio_max = 2000;
 }
 
 // update the throttle input filter
@@ -409,39 +326,33 @@ void AP_MotorsHeli::update_throttle_filter()
 {
     _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
 
-    // constrain filtered throttle
-    if (_throttle_filter.get() < 0.0f) {
-        _throttle_filter.reset(0.0f);
-    }
-    if (_throttle_filter.get() > 1.0f) {
-        _throttle_filter.reset(1.0f);
-    }
+    // constrain throttle signal to 0-1000
+    _throttle_control_input = constrain_float(_throttle_filter.get(),0.0f,1000.0f);
+}
+
+// set_radio_passthrough used to pass radio inputs directly to outputs
+void AP_MotorsHeli::set_radio_passthrough(int16_t radio_roll_input, int16_t radio_pitch_input, int16_t radio_throttle_input, int16_t radio_yaw_input)
+{
+    _roll_radio_passthrough = radio_roll_input;
+    _pitch_radio_passthrough = radio_pitch_input;
+    _throttle_radio_passthrough = radio_throttle_input;
+    _yaw_radio_passthrough = radio_yaw_input;
+}
+
+// reset_radio_passthrough used to reset all radio inputs to center
+void AP_MotorsHeli::reset_radio_passthrough()
+{
+    _roll_radio_passthrough = 0;
+    _pitch_radio_passthrough = 0;
+    _throttle_radio_passthrough = 500;
+    _yaw_radio_passthrough = 0;
 }
 
 // reset_flight_controls - resets all controls and scalars to flight status
 void AP_MotorsHeli::reset_flight_controls()
 {
-    _servo_mode = SERVO_CONTROL_MODE_AUTOMATED;
+    reset_radio_passthrough();
+    _servo_manual = 0;
     init_outputs();
     calculate_scalars();
 }
-
-// convert input in -1 to +1 range to pwm output for swashplate servo.  Special handling of trim is required 
-// to keep travel between the swashplate servos consistent.  Swashplate servo travel range is fixed to 1000 pwm
-// and therefore the input is multiplied by 500 to get PWM output.
-int16_t AP_MotorsHeli::calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo)
-{
-    int16_t ret;
-
-    input = constrain_float(input, -1.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = -input;
-    }
-
-    ret = (int16_t (input * 500.0f) + servo->get_trim());
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
-}
-
-

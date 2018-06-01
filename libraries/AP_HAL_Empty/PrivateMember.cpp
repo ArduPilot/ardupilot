@@ -3,9 +3,9 @@
 
 using namespace Empty;
 
-PrivateMember::PrivateMember(uint16_t foo) :
+EmptyPrivateMember::EmptyPrivateMember(uint16_t foo) :
     _foo(foo)
 {}
 
-void PrivateMember::init() {}
+void EmptyPrivateMember::init() {}
 

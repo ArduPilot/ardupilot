@@ -12,21 +12,20 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <stdint.h>
+#include <stdio.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <unistd.h>
+#include <stdint.h>
 
 #include "RCInput.h"
 #include "RCInput_AioPRU.h"
@@ -35,11 +34,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-void RCInput_AioPRU::init()
+void RCInput_AioPRU::init(void*)
 {
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
+    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {
-        AP_HAL::panic("Unable to open /dev/mem");
+        hal.scheduler->panic("Unable to open /dev/mem");
     }
     ring_buffer = (volatile struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCIN_PRUSS_RAM_BASE);
     close(mem_fd);

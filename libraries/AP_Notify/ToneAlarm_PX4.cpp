@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
 #include "ToneAlarm_PX4.h"
 #include "AP_Notify.h"
 
@@ -52,7 +52,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED 7
     { "MFT200L4<G#6A#6B#4", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_ATTENTION_NEEDED 8
-    { "MFT100L4>A#A#A#A#", false },
+    { "MFT100L4>B#B#B#B#", false },
     #define AP_NOTIFY_PX4_TONE_QUIET_ARMING_WARNING 9
     { "MNT75L1O2G", false },
     #define AP_NOTIFY_PX4_TONE_LOUD_WP_COMPLETE 10
@@ -60,39 +60,11 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_LAND_WARNING_CTS 11
     { "MBT200L2A-G-A-G-A-G-", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_VEHICLE_LOST_CTS 12
-    { "MBT200>A#1", true },
+    { "MBT200>B#1", true },
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
-    { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
+    { "MBNT255>B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8B#8", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
     { "MBNT255<C16P2", true },
-    #define AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW 15
-    { "MBNT90L4O2A#O3DFN0N0N0", true},
-    #define AP_NOTIFY_PX4_TONE_LOUD_1 16
-    { "MFT100L8>B", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_2 17
-    { "MFT100L8>BB", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_3 18
-    { "MFT100L8>BBB", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_4 19
-    { "MFT100L8>BBBB", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_5 20
-    { "MFT100L8>BBBBB", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_6 21
-    { "MFT100L8>BBBBBB", false},
-    #define AP_NOTIFY_PX4_TONE_LOUD_7 22
-    { "MFT100L8>BBBBBBB", false},
-    #define AP_NOTIFY_PX4_TONE_TUNING_START 23
-    { "MFT100L20>C#D#", false},
-    #define AP_NOTIFY_PX4_TONE_TUNING_SAVE 24
-    { "MFT100L10DBDB>", false},
-    #define AP_NOTIFY_PX4_TONE_TUNING_ERROR 25
-    { "MFT100L10>BBBBBBBB", false},
-    #define AP_NOTIFY_PX4_TONE_LEAK_DETECTED 26
-    { "MBT255L8>A+AA-", true},
-    #define AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN 27
-    { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
-    #define AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
-    { "MFT200L4<B#4A#6G#6", false },
 };
 
 bool ToneAlarm_PX4::init()
@@ -116,7 +88,7 @@ bool ToneAlarm_PX4::init()
 // play_tune - play one of the pre-defined tunes
 void ToneAlarm_PX4::play_tone(const uint8_t tone_index)
 {
-    uint32_t tnow_ms = AP_HAL::millis();
+    uint32_t tnow_ms = hal.scheduler->millis();
     const Tone &tone_requested = _tones[tone_index];
 
     if(tone_requested.continuous) {
@@ -142,7 +114,7 @@ void ToneAlarm_PX4::stop_cont_tone() {
 }
 
 void ToneAlarm_PX4::check_cont_tone() {
-    uint32_t tnow_ms = AP_HAL::millis();
+    uint32_t tnow_ms = hal.scheduler->millis();
     // if we are supposed to be playing a continuous tone,
     // and it was interrupted, and the interrupting tone has timed out,
     // resume the continuous tone
@@ -160,20 +132,7 @@ void ToneAlarm_PX4::update()
         return;
     }
 
-    // exit if buzzer is not enabled
-    if (pNotify->buzzer_enabled() == false) {
-        return;
-    }
-
     check_cont_tone();
-    
-    if (AP_Notify::flags.powering_off) {
-        if (!flags.powering_off) {
-            play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
-        }
-        flags.powering_off = AP_Notify::flags.powering_off;
-        return;
-    }
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if(AP_Notify::flags.compass_cal_running) {
@@ -277,12 +236,6 @@ void ToneAlarm_PX4::update()
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
         if (flags.pre_arm_check) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED);
-            _have_played_ready_tone = true;
-        } else {
-            // only play sad tone if we've ever played happy tone:
-            if (_have_played_ready_tone) {
-                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
-            }
         }
     }
 
@@ -295,9 +248,7 @@ void ToneAlarm_PX4::update()
         }else{
             // disarming tune
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_NEU_FEEDBACK);
-            if (!flags.leak_detected) {
-            	stop_cont_tone();
-            }
+            stop_cont_tone();
         }
     }
 
@@ -329,57 +280,6 @@ void ToneAlarm_PX4::update()
         }
     }
 
-    // waiting to be thrown vehicle tone
-    if (flags.waiting_for_throw != AP_Notify::flags.waiting_for_throw) {
-        flags.waiting_for_throw = AP_Notify::flags.waiting_for_throw;
-        if (flags.waiting_for_throw) {
-            play_tone(AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW);
-        } else {
-            stop_cont_tone();
-        }
-    }
-
-    if (flags.leak_detected != AP_Notify::flags.leak_detected) {
-        flags.leak_detected = AP_Notify::flags.leak_detected;
-        if (flags.leak_detected) {
-            play_tone(AP_NOTIFY_PX4_TONE_LEAK_DETECTED);
-        } else {
-            stop_cont_tone();
-        }
-    }
-
-    if (AP_Notify::events.tune_started) {
-        play_tone(AP_NOTIFY_PX4_TONE_TUNING_START);
-        AP_Notify::events.tune_started = 0;        
-    }
-    if (AP_Notify::events.tune_next) {
-        // signify which parameter in the set is starting
-        play_tone(AP_NOTIFY_PX4_TONE_LOUD_1 + (AP_Notify::events.tune_next-1));
-        AP_Notify::events.tune_next = 0;        
-    }
-    if (AP_Notify::events.tune_save) {
-        play_tone(AP_NOTIFY_PX4_TONE_TUNING_SAVE);
-        AP_Notify::events.tune_save = 0;
-    }
-    if (AP_Notify::events.tune_error) {
-        play_tone(AP_NOTIFY_PX4_TONE_TUNING_ERROR);
-        AP_Notify::events.tune_error = 0;
-    }
 }
-
-
-/*
-  handle a PLAY_TUNE message
-*/
-void ToneAlarm_PX4::handle_play_tune(mavlink_message_t *msg)
-{
-    // decode mavlink message
-    mavlink_play_tune_t packet;
-    
-    mavlink_msg_play_tune_decode(msg, &packet);
-
-    play_string(packet.tune);
-}
-
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

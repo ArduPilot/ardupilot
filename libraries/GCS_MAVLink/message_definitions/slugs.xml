@@ -1,0 +1,339 @@
+<?xml version="1.0"?>
+<mavlink>
+    <include>common.xml</include>
+
+    <enums> 
+        <enum name="MAV_CMD">
+            <!-- 1-10000 reserved for common commands -->
+            <entry value="10001" name="MAV_CMD_DO_NOTHING">
+                <description>Does nothing.</description>
+                <param index="1">1 to arm, 0 to disarm</param>
+            </entry>
+            <!-- Unused Commands --> 
+            <!--
+            <entry value="10002" name="MAV_CMD_CALIBRATE_RC">
+                <description>Initiate radio control calibration.</description>
+            </entry>
+            <entry value="10003" name="MAV_CMD_CALIBRATE_MAGNETOMETER">
+                <description>Stops recording data.</description>
+            </entry>
+            <entry value="10004" name="MAV_CMD_START_RECORDING">
+                <description>Start recording data.</description>
+            </entry>
+            <entry value="10005" name="MAV_CMD_PAUSE_RECORDING">
+                <description>Pauses recording data.</description>
+            </entry>
+            <entry value="10006" name="MAV_CMD_STOP_RECORDING">
+                <description>Stops recording data.</description>
+            </entry>
+            -->
+            <!-- Old MAVlink Common Actions -->
+            <entry value="10011" name="MAV_CMD_RETURN_TO_BASE">
+                <description>Return vehicle to base.</description>
+                <param index="1">0: return to base, 1: track mobile base</param>
+            </entry>
+            <entry value="10012" name="MAV_CMD_STOP_RETURN_TO_BASE">
+                <description>Stops the vehicle from returning to base and resumes flight. </description>
+            </entry>
+            <entry value="10013" name="MAV_CMD_TURN_LIGHT">
+                <description>Turns the vehicle's visible or infrared lights on or off.</description>
+                <param index="1">0: visible lights, 1: infrared lights</param>
+                <param index="2">0: turn on, 1: turn off</param>
+            </entry>
+            <entry value="10014" name="MAV_CMD_GET_MID_LEVEL_COMMANDS">
+                <description>Requests vehicle to send current mid-level commands to ground station.</description>
+            </entry>
+            <entry value="10015" name="MAV_CMD_MIDLEVEL_STORAGE">
+                <description>Requests storage of mid-level commands.</description>
+                <param index="1">Mid-level command storage: 0: read from flash/EEPROM, 1: write to flash/EEPROM</param>
+            </entry>
+            <!-- From SLUGS_ACTION Enum -->
+        </enum>
+
+        <enum name="SLUGS_MODE">
+            <description>Slugs-specific navigation modes.</description>
+            <entry value="0" name="SLUGS_MODE_NONE">
+                <description>No change to SLUGS mode.</description>
+            </entry>
+            <entry value="1" name="SLUGS_MODE_LIFTOFF">
+                <description>Vehicle is in liftoff mode.</description>
+            </entry>
+            <entry value="2" name="SLUGS_MODE_PASSTHROUGH">
+                <description>Vehicle is in passthrough mode, being controlled by a pilot.</description>
+            </entry>
+            <entry value="3" name="SLUGS_MODE_WAYPOINT">
+                <description>Vehicle is in waypoint mode, navigating to waypoints.</description>
+            </entry>
+            <entry value="4" name="SLUGS_MODE_MID_LEVEL">
+                <description>Vehicle is executing mid-level commands.</description>
+            </entry>
+            <entry value="5" name="SLUGS_MODE_RETURNING">
+                <description>Vehicle is returning to the home location.</description>
+            </entry>
+            <entry value="6" name="SLUGS_MODE_LANDING">
+                <description>Vehicle is landing.</description>
+            </entry>
+            <entry value="7" name="SLUGS_MODE_LOST">
+                <description>Lost connection with vehicle.</description>
+            </entry>
+            <entry value="8" name="SLUGS_MODE_SELECTIVE_PASSTHROUGH">
+                <description>Vehicle is in selective passthrough mode, where selected surfaces are being manually controlled.</description>
+            </entry>
+            <entry value="9" name="SLUGS_MODE_ISR">
+                <description>Vehicle is in ISR mode, performing reconaissance at a point specified by ISR_LOCATION message.</description>
+            </entry>
+            <entry value="10" name="SLUGS_MODE_LINE_PATROL">
+                <description>Vehicle is patrolling along lines between waypoints.</description>
+            </entry>
+            <entry value="11" name="SLUGS_MODE_GROUNDED">
+                <description>Vehicle is grounded or an error has occurred.</description>
+            </entry>
+        </enum>
+
+        <enum name="CONTROL_SURFACE_FLAG">
+            <description>These flags encode the control surfaces for selective passthrough mode. If a bit is set then the pilot console
+            has control of the surface, and if not then the autopilot has control of the surface.</description>
+            <entry value="128" name="CONTROL_SURFACE_FLAG_THROTTLE">
+                 <description>0b10000000 Throttle control passes through to pilot console.</description>
+            </entry>
+            <entry value="64" name="CONTROL_SURFACE_FLAG_LEFT_AILERON">
+                 <description>0b01000000 Left aileron control passes through to pilot console.</description>
+            </entry>
+            <entry value="32" name="CONTROL_SURFACE_FLAG_RIGHT_AILERON">
+                  <description>0b00100000 Right aileron control passes through to pilot console.</description>
+            </entry>
+            <entry value="16" name="CONTROL_SURFACE_FLAG_RUDDER">
+                 <description>0b00010000 Rudder control passes through to pilot console.</description>
+            </entry>
+            <entry value="8" name="CONTROL_SURFACE_FLAG_LEFT_ELEVATOR">
+                 <description>0b00001000 Left elevator control passes through to pilot console.</description>
+            </entry>
+            <entry value="4" name="CONTROL_SURFACE_FLAG_RIGHT_ELEVATOR">
+                 <description>0b00000100 Right elevator control passes through to pilot console.</description>
+            </entry>
+            <entry value="2" name="CONTROL_SURFACE_FLAG_LEFT_FLAP">
+                 <description>0b00000010 Left flap control passes through to pilot console.</description>
+            </entry>
+            <entry value="1" name="CONTROL_SURFACE_FLAG_RIGHT_FLAP">
+                 <description>0b00000001 Right flap control passes through to pilot console.</description>
+            </entry>
+        </enum>
+    </enums>
+   <!-- 
+  <enum name="WP_PROTOCOL_STATE" > 
+    <description> Waypoint Protocol States </description> 
+    <entry name = "WP_PROT_IDLE"> 
+    <entry name = "WP_PROT_LIST_REQUESTED"> 
+    <entry name = "WP_PROT_NUM_SENT">
+    <entry name = "WP_PROT_TX_WP"> 
+    <entry name = "WP_PROT_RX_WP"> 
+    <entry name = "WP_PROT_SENDING_WP_IDLE"> 
+    <entry name = "WP_PROT_GETTING_WP_IDLE"> 
+  </enum>
+  -->
+  
+    <messages>
+       <message name="CPU_LOAD" id="170">
+         <description>Sensor and DSC control loads.</description>
+         <field name="sensLoad" type="uint8_t">Sensor DSC Load</field>
+         <field name="ctrlLoad" type="uint8_t">Control DSC Load</field>
+         <field name="batVolt" type="uint16_t">Battery Voltage in millivolts</field>     
+       </message>
+       
+       <message name="SENSOR_BIAS" id="172">
+         <description>Accelerometer and gyro biases.</description>
+         <field name="axBias" type="float">Accelerometer X bias (m/s)</field>
+         <field name="ayBias" type="float">Accelerometer Y bias (m/s)</field>
+         <field name="azBias" type="float">Accelerometer Z bias (m/s)</field>
+         <field name="gxBias" type="float">Gyro X bias (rad/s)</field>
+         <field name="gyBias" type="float">Gyro Y bias (rad/s)</field>
+         <field name="gzBias" type="float">Gyro Z bias (rad/s)</field>
+       </message>
+       
+      <message name="DIAGNOSTIC" id="173">
+         <description>Configurable diagnostic messages.</description>
+         <field name="diagFl1" type="float">Diagnostic float 1</field>
+         <field name="diagFl2" type="float">Diagnostic float 2</field>
+         <field name="diagFl3" type="float">Diagnostic float 3</field>
+         <field name="diagSh1" type="int16_t">Diagnostic short 1</field>
+         <field name="diagSh2" type="int16_t">Diagnostic short 2</field>
+         <field name="diagSh3" type="int16_t">Diagnostic short 3</field>
+      </message>
+
+      <message name="SLUGS_NAVIGATION" id="176">
+         <description>Data used in the navigation algorithm.</description>
+         <field name="u_m" type="float">Measured Airspeed prior to the nav filter in m/s</field>
+         <field name="phi_c" type="float">Commanded Roll</field>
+         <field name="theta_c" type="float">Commanded Pitch</field>
+         <field name="psiDot_c" type="float">Commanded Turn rate</field>
+         <field name="ay_body" type="float">Y component of the body acceleration</field>
+         <field name="totalDist" type="float">Total Distance to Run on this leg of Navigation</field>
+         <field name="dist2Go" type="float">Remaining distance to Run on this leg of Navigation</field>
+         <field name="fromWP" type="uint8_t">Origin WP</field>
+         <field name="toWP" type="uint8_t">Destination WP</field>
+         <field name="h_c" type="uint16_t">Commanded altitude in 0.1 m</field>
+      </message>
+      
+      <message name="DATA_LOG" id="177">
+         <description>Configurable data log probes to be used inside Simulink</description>
+         <field name="fl_1" type="float">Log value 1 </field>
+         <field name="fl_2" type="float">Log value 2 </field>
+         <field name="fl_3" type="float">Log value 3 </field>
+         <field name="fl_4" type="float">Log value 4 </field>
+         <field name="fl_5" type="float">Log value 5 </field>
+         <field name="fl_6" type="float">Log value 6 </field>
+      </message>
+
+      <message name="GPS_DATE_TIME" id="179">
+         <description>Pilot console PWM messges.</description>
+         <field name="year"  type="uint8_t">Year reported by Gps </field>
+         <field name="month" type="uint8_t">Month reported by Gps </field>
+         <field name="day"   type="uint8_t">Day reported by Gps </field>
+         <field name="hour"  type="uint8_t">Hour reported by Gps </field>
+         <field name="min"   type="uint8_t">Min reported by Gps </field>
+         <field name="sec"   type="uint8_t">Sec reported by Gps  </field>
+         <field name="clockStat"   type="uint8_t">Clock Status. See table 47 page 211 OEMStar Manual  </field>
+         <field name="visSat"   type="uint8_t">Visible satellites reported by Gps  </field>
+         <field name="useSat"   type="uint8_t">Used satellites in Solution  </field>
+         <field name="GppGl"   type="uint8_t">GPS+GLONASS satellites in Solution  </field>
+         <field name="sigUsedMask"   type="uint8_t">GPS and GLONASS usage mask (bit 0 GPS_used? bit_4 GLONASS_used?)</field>
+         <field name="percentUsed"   type="uint8_t">Percent used GPS</field>
+        </message>
+        
+      <message name="MID_LVL_CMDS" id="180">
+         <description>Mid Level commands sent from the GS to the autopilot. These are only sent when being operated in mid-level commands mode from the ground.</description>
+         <field name="target" type="uint8_t">The system setting the commands</field>
+         <field name="hCommand" type="float">Commanded Altitude in meters</field>
+         <field name="uCommand" type="float">Commanded Airspeed in m/s</field>
+         <field name="rCommand" type="float">Commanded Turnrate in rad/s</field>
+      </message>    
+
+      <message name="CTRL_SRFC_PT" id="181">
+        <description>This message sets the control surfaces for selective passthrough mode.</description>
+         <field name="target" type="uint8_t">The system setting the commands</field>
+         <field name="bitfieldPt" type="uint16_t">Bitfield containing the passthrough configuration, see CONTROL_SURFACE_FLAG ENUM.</field>
+      </message>  
+
+      <message name="SLUGS_CAMERA_ORDER" id="184">
+         <description>Orders generated to the SLUGS camera mount. </description>
+         <field name="target" type="uint8_t">The system reporting the action</field>
+         <field name="pan" type="int8_t">Order the mount to pan: -1 left, 0 No pan motion, +1 right</field>
+         <field name="tilt" type="int8_t">Order the mount to tilt: -1 down, 0 No tilt motion, +1 up</field>    
+         <field name="zoom" type="int8_t">Order the zoom values 0 to 10</field>      
+         <field name="moveHome" type="int8_t">Orders the camera mount to move home. The other fields are ignored when this field is set. 1: move home, 0 ignored</field>
+      </message>
+
+      <message name="CONTROL_SURFACE" id="185">
+         <description>Control for surface; pending and order to origin.</description>
+         <field name="target" type="uint8_t">The system setting the commands</field>
+         <field name="idSurface" type="uint8_t">ID control surface send 0: throttle 1: aileron 2: elevator 3: rudder</field>
+         <field name="mControl" type="float">Pending</field>
+         <field name="bControl" type="float">Order to origin</field>
+      </message>
+
+      <!-- Moved into MAV_CMD_RETURN_TO_BASE -->
+      <!--
+      <message name="SLUGS_RTB" id="187">
+         <description>Orders SLUGS to RTB. It also decides to either track a mobile or RTB </description>
+         <field name="target" type="uint8_t">The system ordered to RTB</field>
+         <field name="rtb" type="uint8_t">Order SLUGS to: 0: Stop RTB and resume flight; 1: RTB</field>
+         <field name="track_mobile" type="uint8_t">Order SLUGS to: 0: RTB to GS Location; 1: Track mobile </field>
+      </message>
+      -->
+
+       <message name="SLUGS_MOBILE_LOCATION" id="186">
+        <description>Transmits the last known position of the mobile GS to the UAV. Very relevant when Track Mobile is enabled</description>
+        <field name="target" type="uint8_t">The system reporting the action</field>
+        <field name="latitude" type="float">Mobile Latitude</field>
+        <field name="longitude" type="float">Mobile Longitude</field>
+      </message>
+      
+      <message name="SLUGS_CONFIGURATION_CAMERA" id="188">
+         <description>Control for camara.</description>
+         <field name="target" type="uint8_t">The system setting the commands</field>
+         <field name="idOrder" type="uint8_t">ID 0: brightness 1: aperture 2: iris 3: ICR 4: backlight</field>
+         <field name="order" type="uint8_t"> 1: up/on 2: down/off 3: auto/reset/no action</field>
+    </message>
+
+     <message name="ISR_LOCATION" id="189">
+      <description>Transmits the position of watch</description>
+      <field name="target" type="uint8_t">The system reporting the action</field>
+      <field name="latitude" type="float">ISR Latitude</field>
+      <field name="longitude" type="float">ISR Longitude</field>
+      <field name="height" type="float">ISR Height</field>
+      <field name="option1" type="uint8_t">Option 1</field>
+      <field name="option2" type="uint8_t">Option 2</field>
+      <field name="option3" type="uint8_t">Option 3</field>
+    </message>
+
+    <!-- Removed to MAV_CMD_TURN_LIGHT -->
+    <!-- 
+    <message name="TURN_LIGHT" id="190">
+        <description>Transmits the order to turn on lights</description>
+        <field name="target" type="uint8_t">The system ordered to turn on lights</field>
+        <field name="type" type="uint8_t">Type lights 0: Visible; 1: Infrared</field>
+        <field name="turn" type="uint8_t">Order turn on lights 1: Turn on; 0: Turn off</field>
+     </message>
+    -->
+
+    <message name="VOLT_SENSOR" id="191">
+        <description>Transmits the readings from the voltage and current sensors</description>
+        <field name="r2Type" type="uint8_t">It is the value of reading 2: 0 - Current, 1 - Foreward Sonar, 2 - Back Sonar, 3 - RPM</field>
+        <field name="voltage" type="uint16_t">Voltage in uS of PWM. 0 uS = 0V, 20 uS = 21.5V </field>
+        <field name="reading2" type="uint16_t">Depends on the value of r2Type (0) Current consumption in uS of PWM, 20 uS = 90Amp (1) Distance in cm (2) Distance in cm (3) Absolute value</field>
+     </message>
+     
+     <message name="PTZ_STATUS" id="192">
+         <description>Transmits the actual Pan, Tilt and Zoom values of the camera unit</description>
+         <field name="zoom" type="uint8_t">The actual Zoom Value</field>
+         <field name="pan" type="int16_t">The Pan value in 10ths of degree</field>
+         <field name="tilt" type="int16_t">The Tilt value in 10ths of degree</field>
+      </message>
+     
+     <message name="UAV_STATUS" id="193">
+         <description>Transmits the actual status values UAV in flight</description>
+         <field name="target" type="uint8_t">The ID system reporting the action</field>
+         <field name="latitude" type="float">Latitude UAV</field>
+         <field name="longitude" type="float">Longitude UAV</field>
+         <field name="altitude" type="float">Altitude UAV</field>
+         <field name="speed" type="float">Speed UAV</field>
+         <field name="course" type="float">Course UAV</field>
+      </message>
+      
+       <message name="STATUS_GPS" id="194">
+        <description>This contains the status of the GPS readings</description>
+        <field name="csFails" type="uint16_t">Number of times checksum has failed</field>
+        <field name="gpsQuality" type="uint8_t">The quality indicator, 0=fix not available or invalid, 1=GPS fix, 2=C/A differential GPS, 6=Dead reckoning mode, 7=Manual input mode (fixed position), 8=Simulator mode, 9= WAAS a</field>
+        <field name="msgsType" type="uint8_t"> Indicates if GN, GL or GP messages are being received</field>
+        <field name="posStatus" type="uint8_t"> A = data valid, V = data invalid</field>
+        <field name="magVar" type="float">Magnetic variation, degrees </field>
+        <field name="magDir" type="int8_t"> Magnetic variation direction E/W. Easterly variation (E) subtracts from True course and Westerly variation (W) adds to True course</field>
+        <field name="modeInd" type="uint8_t"> Positioning system mode indicator. A - Autonomous;D-Differential; E-Estimated (dead reckoning) mode;M-Manual input; N-Data not valid</field>
+      </message>
+
+    <message name="NOVATEL_DIAG" id="195">
+         <description>Transmits the diagnostics data from the Novatel OEMStar GPS</description>
+         <field name="timeStatus" type="uint8_t">The Time Status. See Table 8 page 27 Novatel OEMStar Manual</field>
+         <field name="receiverStatus" type="uint32_t">Status Bitfield. See table 69 page 350 Novatel OEMstar Manual</field>
+         <field name="solStatus" type="uint8_t">solution Status. See table 44 page 197</field>
+         <field name="posType" type="uint8_t">position type. See table 43 page 196</field>
+         <field name="velType" type="uint8_t">velocity type. See table 43 page 196</field>
+         <field name="posSolAge" type="float">Age of the position solution in seconds</field>
+         <field name="csFails" type="uint16_t">Times the CRC has failed since boot</field>
+      </message>
+      
+    <message name="SENSOR_DIAG" id="196">
+         <description>Diagnostic data Sensor MCU</description>
+         <field name="float1" type="float">Float field 1</field>
+         <field name="float2" type="float">Float field 2</field>
+         <field name="int1" type="int16_t">Int 16 field 1</field>
+         <field name="char1" type="int8_t">Int 8 field 1</field>
+  </message>
+
+
+  <message id="197" name="BOOT">
+       <description>The boot message indicates that a system is starting. The onboard software version allows to keep track of onboard soft/firmware revisions. This message allows the sensor and control MCUs to communicate version numbers on startup.</description>
+       <field type="uint32_t" name="version">The onboard software version</field>
+  </message>
+</messages>
+</mavlink>

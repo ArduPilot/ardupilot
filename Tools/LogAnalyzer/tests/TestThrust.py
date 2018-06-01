@@ -1,8 +1,5 @@
-from __future__ import print_function
-
-from LogAnalyzer import Test, TestResult
+from LogAnalyzer import Test,TestResult
 import DataflashLog
-from VehicleType import VehicleType
 
 
 class TestThrust(Test):
@@ -16,7 +13,7 @@ class TestThrust(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if logdata.vehicleType != VehicleType.Copter:
+        if logdata.vehicleType != "ArduCopter":
             self.result.status = TestResult.StatusType.NA
             return
 
@@ -27,16 +24,6 @@ class TestThrust(Test):
         if not "ATT" in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No ATT log data"
-            return
-
-        throut_key = None
-        for key in "ThO", "ThrOut":
-            if key in logdata.channels["CTUN"]:
-                throut_key = key
-                break
-        if throut_key is None:
-            self.result.status = TestResult.StatusType.UNKNOWN
-            self.result.statusMessage = "Could not find throttle out column"
             return
 
         # check for throttle (CTUN.ThrOut) above 700 for a chunk of time with copter not rising
@@ -51,7 +38,7 @@ class TestThrust(Test):
 
         # find any contiguous chunks where CTUN.ThrOut > highThrottleThreshold, ignore high throttle if tilt > tiltThreshold, and discard any segments shorter than minSampleLength
         start = None
-        data = logdata.channels["CTUN"][throut_key].listData
+        data = logdata.channels["CTUN"]["ThrOut"].listData
         for i in range(0,len(data)):
             (lineNumber,value) = data[i]
             isBelowTiltThreshold = True
@@ -65,7 +52,7 @@ class TestThrust(Test):
                     start = i
             elif start != None:
                 if (i-start) > minSampleLength:
-                    #print("Found high throttle chunk from line %d to %d (%d samples)" % (data[start][0],data[i][0],i-start+1))
+                    #print "Found high throttle chunk from line %d to %d (%d samples)" % (data[start][0],data[i][0],i-start+1)
                     highThrottleSegments.append((start,i))
                 start = None
 
@@ -78,7 +65,7 @@ class TestThrust(Test):
         for seg in highThrottleSegments:
             (startLine,endLine) = (data[seg[0]][0], data[seg[1]][0])
             avgClimbRate = logdata.channels["CTUN"][climbRate].getSegment(startLine,endLine).avg()
-            avgThrOut    = logdata.channels["CTUN"][throut_key].getSegment(startLine,endLine).avg()
+            avgThrOut    = logdata.channels["CTUN"]["ThrOut"].getSegment(startLine,endLine).avg()
             if avgClimbRate < climbThresholdFAIL:
                 self.result.status = TestResult.StatusType.FAIL
                 self.result.statusMessage = "Avg climb rate %.2f cm/s for throttle avg %d" % (avgClimbRate,avgThrOut)

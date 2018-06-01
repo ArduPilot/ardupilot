@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-from __future__ import print_function
-import errno
-import socket
-import struct
-import sys
-import time
-from math import cos, fabs, radians, sin, sqrt
 
+import socket, struct, time, errno
+from math import *
 
 class udp_out(object):
-    """A UDP output socket."""
+    '''a UDP output socket'''
     def __init__(self, device):
         a = device.split(':')
         if len(a) != 2:
@@ -20,11 +15,11 @@ class udp_out(object):
         self.port.setblocking(0)
         self.last_address = None
 
-    def recv(self, n=None):
+    def recv(self,n=None):
         try:
             data, self.last_address = self.port.recvfrom(300)
         except socket.error as e:
-            if e.errno in [errno.EAGAIN, errno.EWOULDBLOCK]:
+            if e.errno in [ errno.EAGAIN, errno.EWOULDBLOCK ]:
                 return ""
             raise
         return data
@@ -39,14 +34,11 @@ class udp_out(object):
 def ft2m(x):
     return x * 0.3048
 
-
 def m2ft(x):
     return x / 0.3048
 
-
 def kt2mps(x):
     return x * 0.514444444
-
 
 def mps2kt(x):
     return x / 0.514444444
@@ -89,19 +81,19 @@ while True:
     xAccel = sin(radians(pitchDeg))
     yAccel = -sin(radians(rollDeg)) * cos(radians(pitchDeg))
     zAccel = -cos(radians(rollDeg)) * cos(radians(pitchDeg))
-    scale = 9.81 / sqrt((xAccel*xAccel) + (yAccel*yAccel) + (zAccel*zAccel))
-    xAccel *= scale
-    yAccel *= scale
-    zAccel *= scale
+    scale = 9.81 / sqrt((xAccel*xAccel)+(yAccel*yAccel)+(zAccel*zAccel))
+    xAccel *= scale;
+    yAccel *= scale;
+    zAccel *= scale;
 
-    struc_buf = struct.pack('<17dI',
-                            latitude, longitude, altitude, heading,
-                            speedN, speedE, speedD,
-                            xAccel, yAccel, zAccel,
-                            rollRate, pitchRate, yawRate,
-                            rollDeg, pitchDeg, yawDeg,
-                            airspeed, magic)
-    udp.write(struc_buf)
+    buf = struct.pack('<17dI',
+                      latitude, longitude, altitude, heading,
+                      speedN, speedE, speedD,
+                      xAccel, yAccel, zAccel,
+                      rollRate, pitchRate, yawRate,
+                      rollDeg, pitchDeg, yawDeg,
+                      airspeed, magic)
+    udp.write(buf)
     time.sleep(deltaT)
 
     yawDeg += yawRate * deltaT

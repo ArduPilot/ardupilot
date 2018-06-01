@@ -1,10 +1,10 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
-#include <AP_HAL/utility/RCOutput_Tap.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
+#include <assert.h>
 
 #include "AP_HAL_VRBRAIN.h"
 #include "AP_HAL_VRBRAIN_Namespace.h"
@@ -17,12 +17,9 @@
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
-#include "I2CDevice.h"
-#include "SPIDevice.h"
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#endif
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
@@ -34,9 +31,11 @@
 #include <drivers/drv_hrt.h>
 
 using namespace VRBRAIN;
-using namespace ap;
 
-//static Empty::GPIO gpioDriver;
+static Empty::EmptySemaphore  i2cSemaphore;
+static Empty::EmptyI2CDriver  i2cDriver(&i2cSemaphore);
+static Empty::EmptySPIDeviceManager spiDeviceManager;
+//static Empty::EmptyGPIO gpioDriver;
 
 static VRBRAINScheduler schedulerInstance;
 static VRBRAINStorage storageDriver;
@@ -46,73 +45,51 @@ static VRBRAINAnalogIn analogIn;
 static VRBRAINUtil utilInstance;
 static VRBRAINGPIO gpioDriver;
 
-static VRBRAIN::I2CDeviceManager i2c_mgr_instance;
-static VRBRAIN::SPIDeviceManager spi_mgr_instance;
-
-#if defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
+//We only support 3 serials for VRBRAIN at the moment
+#if  defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS1"
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
+#define UARTE_DEFAULT_DEVICE "/dev/ttyS1"
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #else
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS0"
+#define UARTB_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS1"
+#define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #endif
+
 
 // 3 UART drivers, for GPS plus two mavlink-enabled devices
 static VRBRAINUARTDriver uartADriver(UARTA_DEFAULT_DEVICE, "APM_uartA");
@@ -120,7 +97,6 @@ static VRBRAINUARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
 static VRBRAINUARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
 static VRBRAINUARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
 static VRBRAINUARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
-static VRBRAINUARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
 
 HAL_VRBRAIN::HAL_VRBRAIN() :
     AP_HAL::HAL(
@@ -129,9 +105,10 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &uartCDriver,  /* uartC */
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
-        &uartFDriver,  /* uartF */
-        &i2c_mgr_instance,
-        &spi_mgr_instance,
+        &i2cDriver, /* Empty i2c */
+        &i2cDriver, /* Empty i2c */
+        &i2cDriver, /* Empty i2c */
+        &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
         &uartADriver, /* console */
@@ -139,9 +116,7 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
-        &utilInstance, /* util */
-        nullptr,    /* no onboard optical flow */
-        nullptr)   /* CAN */
+        &utilInstance) /* util */
 {}
 
 bool _vrbrain_thread_should_exit = false;        /**< Daemon exit flag */
@@ -154,7 +129,7 @@ extern const AP_HAL::HAL& hal;
 /*
   set the priority of the main APM task
  */
-void hal_vrbrain_set_priority(uint8_t priority)
+static void set_priority(uint8_t priority)
 {
     struct sched_param param;
     param.sched_priority = priority;
@@ -169,33 +144,37 @@ void hal_vrbrain_set_priority(uint8_t priority)
  */
 static void loop_overtime(void *)
 {
-    hal_vrbrain_set_priority(APM_OVERTIME_PRIORITY);
+    set_priority(APM_OVERTIME_PRIORITY);
     vrbrain_ran_overtime = true;
 }
 
-static AP_HAL::HAL::Callbacks* g_callbacks;
-
 static int main_loop(int argc, char **argv)
 {
+    extern void setup(void);
+    extern void loop(void);
+
+
     hal.uartA->begin(115200);
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.scheduler->init();
+    hal.scheduler->init(NULL);
+    hal.rcin->init(NULL);
+    hal.rcout->init(NULL);
+    hal.analogin->init(NULL);
+    hal.gpio->init();
 
-    // init the I2C wrapper class
-    VRBRAIN_I2C::init_lock();
-    
+
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    hal_vrbrain_set_priority(APM_STARTUP_PRIORITY);
+    set_priority(APM_STARTUP_PRIORITY);
 
     schedulerInstance.hal_initialized();
 
-    g_callbacks->setup();
+    setup();
     hal.scheduler->system_initialized();
 
     perf_counter_t perf_loop = perf_alloc(PC_ELAPSED, "APM_loop");
@@ -207,7 +186,7 @@ static int main_loop(int argc, char **argv)
     /*
       switch to high priority for main loop
      */
-    hal_vrbrain_set_priority(APM_MAIN_PRIORITY);
+    set_priority(APM_MAIN_PRIORITY);
 
     while (!_vrbrain_thread_should_exit) {
         perf_begin(perf_loop);
@@ -218,16 +197,16 @@ static int main_loop(int argc, char **argv)
           will only ever be called if a loop() call runs for more than
           0.1 second
          */
-        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, nullptr);
+        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
-        g_callbacks->loop();
+        loop();
 
         if (vrbrain_ran_overtime) {
             /*
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            hal_vrbrain_set_priority(APM_MAIN_PRIORITY);
+            set_priority(APM_MAIN_PRIORITY);
             perf_count(perf_overrun);
             vrbrain_ran_overtime = false;
         }
@@ -235,11 +214,11 @@ static int main_loop(int argc, char **argv)
         perf_end(perf_loop);
 
         /*
-          give up 250 microseconds of time, to ensure drivers get a
+          give up 500 microseconds of time, to ensure drivers get a
           chance to run. This relies on the accurate semaphore wait
           using hrt in semaphore.cpp
          */
-        hal.scheduler->delay_microseconds(250);
+        hal.scheduler->delay_microseconds(500);
     }
     thread_running = false;
     return 0;
@@ -253,7 +232,6 @@ static void usage(void)
     printf("\t-d2 DEVICE         set second terminal device (default %s)\n", UARTC_DEFAULT_DEVICE);
     printf("\t-d3 DEVICE         set 3rd terminal device (default %s)\n", UARTD_DEFAULT_DEVICE);
     printf("\t-d4 DEVICE         set 2nd GPS device (default %s)\n", UARTE_DEFAULT_DEVICE);
-    printf("\t-d5 DEVICE         set uartF (default %s)\n", UARTF_DEFAULT_DEVICE);
     printf("\n");
 }
 
@@ -265,7 +243,6 @@ void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
     const char *deviceC = UARTC_DEFAULT_DEVICE;
     const char *deviceD = UARTD_DEFAULT_DEVICE;
     const char *deviceE = UARTE_DEFAULT_DEVICE;
-    const char *deviceF = UARTF_DEFAULT_DEVICE;
 
     if (argc < 1) {
         printf("%s: missing command (try '%s start')", 
@@ -289,18 +266,16 @@ void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
             uartCDriver.set_device_path(deviceC);
             uartDDriver.set_device_path(deviceD);
             uartEDriver.set_device_path(deviceE);
-            uartFDriver.set_device_path(deviceF);
-
-            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s uartF=%s\n",
-                   SKETCHNAME, deviceA, deviceC, deviceD, deviceE, deviceF);
+            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s\n", 
+                   SKETCHNAME, deviceA, deviceC, deviceD, deviceE);
 
             _vrbrain_thread_should_exit = false;
-            daemon_task = px4_task_spawn_cmd(SKETCHNAME,
-                                             SCHED_FIFO,
-                                             APM_MAIN_PRIORITY,
-                                             APM_MAIN_THREAD_STACK_SIZE,
-                                             main_loop,
-                                             nullptr);
+            daemon_task = task_spawn_cmd(SKETCHNAME,
+                                     SCHED_FIFO,
+                                     APM_MAIN_PRIORITY,
+                                     8192,
+                                     main_loop,
+                                     NULL);
             exit(0);
         }
 
@@ -359,17 +334,6 @@ void HAL_VRBRAIN::run(int argc, char * const argv[], Callbacks* callbacks) const
                 deviceE = strdup(argv[i+1]);
             } else {
                 printf("missing parameter to -d4 DEVICE\n");
-                usage();
-                exit(1);
-            }
-        }
-
-        if (strcmp(argv[i], "-d5") == 0) {
-            // set uartF
-            if (argc > i + 1) {
-                deviceF = strdup(argv[i+1]);
-            } else {
-                printf("missing parameter to -d5 DEVICE\n");
                 usage();
                 exit(1);
             }

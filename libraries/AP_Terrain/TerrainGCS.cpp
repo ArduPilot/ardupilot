@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +45,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
 
     // see if we are waiting for disk read
     if (gcache.state == GRID_CACHE_DISKWAIT) {
-        // don't request data from the GCS till we know it's not on disk
+        // don't request data from the GCS till we know its not on disk
         return false;
     }
 
@@ -54,7 +55,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
         return false;
     }
 
-    if (!HAVE_PAYLOAD_SPACE(chan, TERRAIN_REQUEST)) {
+    if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REQUEST_LEN) {
         // not enough buffer space
         return false;
     }
@@ -63,7 +64,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
       ask the GCS to send a set of 4x4 grids
      */
     mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, bitmap_mask & ~grid.bitmap);
-    last_request_time_ms[chan] = AP_HAL::millis();
+    last_request_time_ms[chan] = hal.scheduler->millis();
 
     return true;
 }
@@ -101,7 +102,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     send_terrain_report(chan, loc, true);
 
     // did we request recently?
-    if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
+    if (hal.scheduler->millis() - last_request_time_ms[chan] < 2000) {
         // too soon to request again
         return;
     }
@@ -207,8 +208,8 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     uint16_t spacing = 0;
     Location current_loc;
     if (ahrs.get_position(current_loc) &&
-        height_amsl(ahrs.get_home(), home_terrain_height, false) &&
-        height_amsl(loc, terrain_height, false)) {
+        height_amsl(ahrs.get_home(), home_terrain_height) &&
+        height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
     } else if (extrapolate && have_current_loc_height) {
@@ -231,7 +232,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     }
     current_height += home_terrain_height - terrain_height;
 
-    if (HAVE_PAYLOAD_SPACE(chan, TERRAIN_REPORT)) {
+    if (comm_get_txspace(chan) >= MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_MSG_ID_TERRAIN_REPORT_LEN) {
         mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, 
                                         terrain_height, current_height,
                                         pending, loaded);

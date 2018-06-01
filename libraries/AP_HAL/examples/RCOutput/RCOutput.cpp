@@ -4,15 +4,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-void setup();
-void loop();
-
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-void setup (void)
+void setup (void) 
 {
-    hal.console->printf("Starting AP_HAL::RCOutput test\n");
-    for (uint8_t i = 0; i< 14; i++) {
+    hal.console->println("Starting AP_HAL::RCOutput test");
+    for (uint8_t i=0; i<14; i++) {
         hal.rcout->enable_ch(i);
     }
 }
@@ -20,9 +17,10 @@ void setup (void)
 static uint16_t pwm = 1500;
 static int8_t delta = 1;
 
-void loop (void)
+void loop (void) 
 {
-    for (uint8_t i=0; i < 14; i++) {
+    uint8_t i;
+    for (i=0; i<14; i++) {
         hal.rcout->write(i, pwm);
         pwm += delta;
         if (delta > 0 && pwm >= 2000) {

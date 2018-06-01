@@ -1,4 +1,5 @@
-#pragma once
+#ifndef AP_VEHICLETYPE_H
+#define AP_VEHICLETYPE_H
 
 class VehicleType {
 public:
@@ -9,3 +10,5 @@ public:
         VEHICLE_ROVER
     };
 };
+
+#endif

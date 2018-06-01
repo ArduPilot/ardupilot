@@ -1,3 +1,5 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -9,7 +11,7 @@ using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
 
-ADCSource::ADCSource(SITL_State *sitlState, int16_t pin) :
+ADCSource::ADCSource(SITL_State *sitlState, uint8_t pin) :
     _sitlState(sitlState),
     _pin(pin)
 {}
@@ -36,21 +38,12 @@ float ADCSource::read_latest() {
 
     case 1:
         return _sitlState->airspeed_pin_value;
-    
-    case 2:
-        return _sitlState->airspeed_2_pin_value;
 
     case 12:
         return _sitlState->current_pin_value;
 
     case 13:
         return _sitlState->voltage_pin_value;
-
-    case 14:
-        return _sitlState->current2_pin_value;
-
-    case 15:
-        return _sitlState->voltage2_pin_value;
 
     case ANALOG_INPUT_NONE:
     default:
@@ -62,10 +55,10 @@ void ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
 }
 
-void AnalogIn::init() {
+void SITLAnalogIn::init(void *ap_hal_scheduler) {
 }
 
-AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin) {
+AP_HAL::AnalogSource* SITLAnalogIn::channel(int16_t pin) {
     return new ADCSource(_sitlState, pin);
 }
 

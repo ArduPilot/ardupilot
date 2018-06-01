@@ -1,12 +1,12 @@
-#pragma once
+#ifndef __AP_HAL_LINUX_SPIUARTDRIVER_H__
+#define __AP_HAL_LINUX_SPIUARTDRIVER_H__
 
 #include "AP_HAL_Linux.h"
 
 #include "UARTDriver.h"
 
-namespace Linux {
 
-class SPIUARTDriver : public UARTDriver {
+class Linux::SPIUARTDriver : public Linux::UARTDriver {
 public:
     SPIUARTDriver();
     void begin(uint32_t b, uint16_t rxS, uint16_t txS);
@@ -16,13 +16,17 @@ protected:
     int _write_fd(const uint8_t *buf, uint16_t n);
     int _read_fd(uint8_t *buf, uint16_t n);
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
+private:
+    bool sem_take_nonblocking();
+    void sem_give();
 
-    uint8_t *_buffer;
+    AP_HAL::SPIDeviceDriver *_spi;
+    AP_HAL::Semaphore *_spi_sem;
 
     uint32_t _last_update_timestamp;
 
+    uint8_t *_buffer;
     bool _external;
 };
 
-}
+#endif //__AP_HAL_LINUX_SPIUARTDRIVER_H__

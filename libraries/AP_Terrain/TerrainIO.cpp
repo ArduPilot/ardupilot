@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,13 +28,11 @@
 
 #include <assert.h>
 #include <stdio.h>
-#if HAL_OS_POSIX_IO
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#endif
-#include <sys/types.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -98,7 +97,7 @@ void AP_Terrain::schedule_disk_io(void)
                 cache[cache_idx].grid = disk_block.block;
             }
             cache[cache_idx].state = GRID_CACHE_VALID;
-            cache[cache_idx].last_access_ms = AP_HAL::millis();
+            cache[cache_idx].last_access_ms = hal.scheduler->millis();
         }
         disk_io_state = DiskIoIdle;
         break;
@@ -151,18 +150,18 @@ void AP_Terrain::open_file(void)
         // already open on right file
         return;
     }
-    if (file_path == nullptr) {
+    if (file_path == NULL) {
         const char* terrain_dir = hal.util->get_custom_terrain_directory();
-        if (terrain_dir == nullptr) {
+        if (terrain_dir == NULL) {
             terrain_dir = HAL_BOARD_TERRAIN_DIRECTORY;
         }
         if (asprintf(&file_path, "%s/NxxExxx.DAT", terrain_dir) <= 0) {
             io_failure = true;
-            file_path = nullptr;
+            file_path = NULL;
             return;
         }
     }
-    if (file_path == nullptr) {
+    if (file_path == NULL) {
         io_failure = true;
         return;
     }
@@ -173,36 +172,22 @@ void AP_Terrain::open_file(void)
     }
     snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
-             (unsigned)MIN(abs((int32_t)block.lat_degrees), 99),
+             abs(block.lat_degrees),
              block.lon_degrees<0?'W':'E',
-             (unsigned)MIN(abs((int32_t)block.lon_degrees), 999));
+             abs(block.lon_degrees));
 
     // create directory if need be
     if (!directory_created) {
         *p = 0;
-        directory_created = !mkdir(file_path, 0755);
+        mkdir(file_path, 0755);
+        directory_created = true;
         *p = '/';
-
-        if (!directory_created) {
-            if (errno == EEXIST) {
-                // directory already existed
-                directory_created = true;
-            } else {
-                // if we didn't succeed at making the directory, then IO failed
-                io_failure = true;
-                return;
-            }
-        }
     }
 
     if (fd != -1) {
         ::close(fd);
     }
-#if HAL_OS_POSIX_IO
-    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC, 0644);
-#else
-    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC);
-#endif
+    fd = ::open(file_path, O_RDWR|O_CREAT, 0644);
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",

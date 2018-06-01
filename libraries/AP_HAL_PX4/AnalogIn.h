@@ -1,4 +1,7 @@
-#pragma once
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#ifndef __AP_HAL_PX4_ANALOGIN_H__
+#define __AP_HAL_PX4_ANALOGIN_H__
 
 #include "AP_HAL_PX4.h"
 #include <pthread.h>
@@ -11,7 +14,7 @@
 // these are virtual pins that read from the ORB
 #define PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN     100
 #define PX4_ANALOG_ORB_BATTERY_CURRENT_PIN     101
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define PX4_ANALOG_VCC_5V_PIN                4
 #define PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN       102
 #define PX4_ANALOG_ORB_SERVO_VRSSI_PIN         103
@@ -52,15 +55,15 @@ private:
 class PX4::PX4AnalogIn : public AP_HAL::AnalogIn {
 public:
     PX4AnalogIn();
-    void init() override;
-    AP_HAL::AnalogSource* channel(int16_t pin) override;
+    void init(void* implspecific);
+    AP_HAL::AnalogSource* channel(int16_t pin);
     void _timer_tick(void);
-    float board_voltage(void) override { return _board_voltage; }
-    float servorail_voltage(void) override { return _servorail_voltage; }
-    uint16_t power_status_flags(void) override { return _power_flags; }
+    float board_voltage(void) { return _board_voltage; }
+    float servorail_voltage(void) { return _servorail_voltage; }
+    uint16_t power_status_flags(void) { return _power_flags; }
 
 private:
-    int _adc_fd = -1;
+    int _adc_fd;
     int _battery_handle;
     int _servorail_handle;
     int _system_power_handle;
@@ -79,3 +82,4 @@ private:
 
     void next_stop_pin(void);
 };
+#endif // __AP_HAL_PX4_ANALOGIN_H__

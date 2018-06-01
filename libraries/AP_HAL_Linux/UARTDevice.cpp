@@ -1,21 +1,31 @@
-#include "UARTDevice.h"
-
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <stdio.h>
-#include <termios.h>
-#include <unistd.h>
-
 #include <AP_HAL/AP_HAL.h>
 
-UARTDevice::UARTDevice(const char *device_path):
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+
+#include <termios.h>
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
+
+#include "UARTDevice.h"
+
+#include <termios.h>
+#include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <poll.h>
+
+UARTDevice::UARTDevice(const char *device_path): 
     _device_path(device_path)
 {
 }
 
 UARTDevice::~UARTDevice()
 {
+
 }
 
 bool UARTDevice::close()
@@ -33,7 +43,7 @@ bool UARTDevice::close()
 
 bool UARTDevice::open()
 {
-    _fd = ::open(_device_path, O_RDWR | O_CLOEXEC | O_NOCTTY);
+    _fd = ::open(_device_path, O_RDWR | O_CLOEXEC);
 
     if (_fd < 0) {
         ::fprintf(stderr, "Failed to open UART device %s - %s\n",
@@ -70,7 +80,7 @@ ssize_t UARTDevice::write(const uint8_t *buf, uint16_t n)
 void UARTDevice::set_blocking(bool blocking)
 {
     int flags = fcntl(_fd, F_GETFL, 0);
-
+    
     if (blocking) {
         flags = flags & ~O_NONBLOCK;
     } else {
@@ -110,23 +120,4 @@ void UARTDevice::set_speed(uint32_t baudrate)
     tcsetattr(_fd, TCSANOW, &t);
 }
 
-void UARTDevice::set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_setting)
-{
-    struct termios t;
-
-    if (_flow_control == flow_control_setting) {
-        return;
-    }
-
-    tcgetattr(_fd, &t);
-
-    if (flow_control_setting != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
-        t.c_cflag |= CRTSCTS;
-    } else {
-        t.c_cflag &= ~CRTSCTS;
-    }
-
-    tcsetattr(_fd, TCSANOW, &t);
-
-    _flow_control = flow_control_setting;
-}
+#endif

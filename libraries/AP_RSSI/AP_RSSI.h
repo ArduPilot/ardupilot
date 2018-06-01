@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,7 +13,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+ 
+#ifndef AP_RSSI_H
+#define AP_RSSI_H
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -24,20 +27,14 @@ public:
     enum RssiType {
         RSSI_DISABLED           = 0,
         RSSI_ANALOG_PIN         = 1,
-        RSSI_RC_CHANNEL_VALUE   = 2,
-        RSSI_RECEIVER           = 3
+        RSSI_RC_CHANNEL_VALUE   = 2
     };
 
+    // constructor
     AP_RSSI();
 
-    /* Do not allow copies */
-    AP_RSSI(const AP_RSSI &other) = delete;
-    AP_RSSI &operator=(const AP_RSSI&) = delete;
-
     // destructor
-    ~AP_RSSI(void);
-
-    static AP_RSSI *get_instance();
+    ~AP_RSSI(void);        
 
     // Initialize the rssi object and prepare it for use
     void init();
@@ -57,8 +54,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-
-    static AP_RSSI *_s_instance;
 
     // RSSI parameters
     AP_Int8         rssi_type;                              // Type of RSSI being used
@@ -83,6 +78,4 @@ private:
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
 };
 
-namespace AP {
-    AP_RSSI *rssi();
-};
+#endif // AP_RSSI_H

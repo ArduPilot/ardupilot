@@ -1,12 +1,10 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 //
 // Unit tests for the AP_Math polygon code
 //
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-
-void setup();
-void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -62,50 +60,52 @@ static const struct {
  */
 void setup(void)
 {
-    uint32_t count;
+    unsigned i, count;
     bool all_passed = true;
     uint32_t start_time;
 
-    hal.console->printf("polygon unit tests\n\n");
+    hal.console->println("polygon unit tests\n");
 
     if (!Polygon_complete(OBC_boundary, ARRAY_SIZE(OBC_boundary))) {
-        hal.console->printf("OBC boundary is not complete!\n");
+        hal.console->println("OBC boundary is not complete!");
         all_passed = false;
     }
 
     if (Polygon_complete(OBC_boundary, ARRAY_SIZE(OBC_boundary)-1)) {
-        hal.console->printf("Polygon_complete test failed\n");
+        hal.console->println("Polygon_complete test failed");
         all_passed = false;
     }
 
-    for (uint32_t i = 0; i < ARRAY_SIZE(test_points); i++) {
-        bool result = Polygon_outside(test_points[i].point,
+    for (i=0; i<ARRAY_SIZE(test_points); i++) {
+        bool result;
+        result = Polygon_outside(test_points[i].point,
                 OBC_boundary, ARRAY_SIZE(OBC_boundary));
         hal.console->printf("%10f,%10f  %s  %s\n",
-                            (double)(1.0e-7f * test_points[i].point.x),
-                            (double)(1.0e-7f * test_points[i].point.y),
+                        1.0e-7f*test_points[i].point.x,
+                        1.0e-7f*test_points[i].point.y,
                         result ? "OUTSIDE" : "INSIDE ",
                         result == test_points[i].outside ? "PASS" : "FAIL");
         if (result != test_points[i].outside) {
             all_passed = false;
         }
     }
-    hal.console->printf("%s\n", all_passed ? "TEST PASSED" : "TEST FAILED");
+    hal.console->println(all_passed ? "TEST PASSED" : "TEST FAILED");
 
-    hal.console->printf("Speed test:\n");
-    start_time = AP_HAL::micros();
-    for (count = 0; count < 1000; count++) {
-        for (uint32_t i = 0; i < ARRAY_SIZE(test_points); i++) {
-            bool result = Polygon_outside(test_points[i].point,
+    hal.console->println("Speed test:");
+    start_time = hal.scheduler->micros();
+    for (count=0; count<1000; count++) {
+        for (i=0; i<ARRAY_SIZE(test_points); i++) {
+            bool result;
+            result = Polygon_outside(test_points[i].point,
                     OBC_boundary, ARRAY_SIZE(OBC_boundary));
             if (result != test_points[i].outside) {
                 all_passed = false;
             }
         }
     }
-    hal.console->printf("%u usec/call\n", (unsigned)((AP_HAL::micros()
-                    - start_time)/(count * ARRAY_SIZE(test_points))));
-    hal.console->printf("%s\n", all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
+    hal.console->printf("%u usec/call\n", (unsigned)((hal.scheduler->micros() 
+                    - start_time)/(count*ARRAY_SIZE(test_points))));
+    hal.console->println(all_passed ? "ALL TESTS PASSED" : "TEST FAILED");
 }
 
 void loop(void){}

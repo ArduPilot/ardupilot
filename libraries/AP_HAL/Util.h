@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __AP_HAL_UTIL_H__
+#define __AP_HAL_UTIL_H__
 
 #include <stdarg.h>
 #include "AP_HAL_Namespace.h"
@@ -18,14 +20,8 @@ public:
     void clear_capabilities(uint64_t cap) { capabilities &= ~(cap); }
     uint64_t get_capabilities() const { return capabilities; }
 
-    virtual const char* get_custom_log_directory() const { return nullptr; }
-    virtual const char* get_custom_terrain_directory() const { return nullptr;  }
-    virtual const char *get_custom_storage_directory() const { return nullptr;  }
-
-    // get path to custom defaults file for AP_Param
-    virtual const char* get_custom_defaults_file() const {
-        return HAL_PARAM_DEFAULTS_PATH;
-    }
+    virtual const char* get_custom_log_directory() { return NULL; } 
+    virtual const char* get_custom_terrain_directory() const { return NULL;  }
 
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
@@ -47,18 +43,6 @@ public:
     virtual void set_system_clock(uint64_t time_utc_usec) {}
 
     /*
-      get system clock in UTC milliseconds
-     */
-    uint64_t get_system_clock_ms() const;
-
-    /*
-      get system time in UTC hours, minutes, seconds and milliseconds
-     */
-    void get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms) const;
-
-    uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const;
-
-    /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
 
@@ -68,10 +52,16 @@ public:
     virtual bool get_system_id(char buf[40]) { return false; }
 
     /**
+       how much free memory do we have in bytes. If more than 0xFFFF
+       then return 0xFFFF. If unknown return 4096
+     */
+    virtual uint16_t available_memory(void) { return 4096; }
+
+    /**
        return commandline arguments, if available
      */
     virtual void commandline_arguments(uint8_t &argc, char * const *&argv) { argc = 0; }
-
+    
     /*
         ToneAlarm Driver
     */
@@ -82,46 +72,31 @@ public:
     /*
       return a stream for access to a system shell, if available
      */
-    virtual AP_HAL::BetterStream *get_shell_stream() { return nullptr; }
+    virtual AP_HAL::Stream *get_shell_stream() { return NULL; }
 
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}
 
-    /* Support for an imu heating system */
-    virtual void set_imu_target_temp(int8_t *target) {}
-    
     /*
       performance counter calls - wrapper around original PX4 interface
      */
     enum perf_counter_type {
-        PC_COUNT,        /**< count the number of times an event occurs */
-        PC_ELAPSED,      /**< measure the time elapsed performing an event */
-        PC_INTERVAL      /**< measure the interval between instances of an event */
+	PC_COUNT,		/**< count the number of times an event occurs */
+	PC_ELAPSED,		/**< measure the time elapsed performing an event */
+	PC_INTERVAL		/**< measure the interval between instances of an event */
     };
     typedef void *perf_counter_t;
-    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return nullptr; }
+    virtual perf_counter_t perf_alloc(perf_counter_type t, const char *name) { return NULL; }
     virtual void perf_begin(perf_counter_t h) {}
     virtual void perf_end(perf_counter_t h) {}
     virtual void perf_count(perf_counter_t h) {}
-
-    // create a new semaphore
-    virtual Semaphore *new_semaphore(void) { return nullptr; }
-
-    // allocate and free DMA-capable memory if possible. Otherwise return normal memory
-    enum Memory_Type {
-        MEM_DMA_SAFE,
-        MEM_FAST
-    };
-    virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
-    virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
-
-    /**
-       how much free memory do we have in bytes. If unknown return 4096
-     */
-    virtual uint32_t available_memory(void) { return 4096; }
+    
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
     uint64_t capabilities = 0;
 };
+
+#endif // __AP_HAL_UTIL_H__
+

@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +38,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Progmem/AP_Progmem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -88,7 +91,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
   auto-tuning table. This table gives the starting values for key
   tuning parameters based on a user chosen AUTOTUNE_LEVEL parameter
   from 1 to 10. Level 1 is a very soft tune. Level 10 is a very
-  aggressive tune.
+  agressive tune.
  */
 static const struct {
     float tau;
@@ -115,7 +118,7 @@ void AP_AutoTune::start(void)
 {
     running = true;
     state = DEMAND_UNSATURATED;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = hal.scheduler->millis();
 
     state_enter_ms = now;
     last_save_ms = now;
@@ -131,10 +134,10 @@ void AP_AutoTune::start(void)
         level = 1;
     }
 
-    current.rmax.set(tuning_table[level-1].rmax);
+    current.rmax.set(pgm_read_float(&tuning_table[level-1].rmax));
     // D gain is scaled to a fixed ratio of P gain
-    current.D.set(tuning_table[level-1].Dratio * current.P);
-    current.tau.set(tuning_table[level-1].tau);
+    current.D.set(   pgm_read_float(&tuning_table[level-1].Dratio) * current.P);
+    current.tau.set( pgm_read_float(&tuning_table[level-1].tau));
 
     current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
@@ -171,7 +174,7 @@ void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_ou
     // see what state we are in
     ATState new_state;
     float abs_desired_rate = fabsf(desired_rate);
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = hal.scheduler->millis();
 
     if (fabsf(servo_out) >= 45) {
         // we have saturated the servo demand (not including
@@ -218,7 +221,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("UNDER P -> %.3f\n", current.P.get());
         }
-        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
+        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
         break;
     case DEMAND_OVER_POS:
     case DEMAND_OVER_NEG:
@@ -229,7 +232,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
             }
             Debug("OVER P -> %.3f\n", current.P.get());
         }
-        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
+        current.D.set(   pgm_read_float(&tuning_table[aparm.autotune_level-1].Dratio) * current.P);
         break;
     }
 }
@@ -239,7 +242,7 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
  */
 void AP_AutoTune::check_save(void)
 {
-    if (AP_HAL::millis() - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
+    if (hal.scheduler->millis() - last_save_ms < AUTOTUNE_SAVE_PERIOD) {
         return;
     }
 
@@ -260,7 +263,7 @@ void AP_AutoTune::check_save(void)
 
     // the next values to save will be the ones we are flying now
     next_save = current;
-    last_save_ms = AP_HAL::millis();
+    last_save_ms = hal.scheduler->millis();
 }
 
 /*
@@ -273,10 +276,10 @@ void AP_AutoTune::log_param_change(float v, const char *suffix)
     }
     char key[AP_MAX_NAME_SIZE+1];
     if (type == AUTOTUNE_ROLL) {
-        strncpy(key, "RLL2SRV_", 9);
+        strncpy(key, "RLL2SRV_", 8);
         strncpy(&key[8], suffix, AP_MAX_NAME_SIZE-8);
     } else {
-        strncpy(key, "PTCH2SRV_", 10);
+        strncpy(key, "PTCH2SRV_", 9);
         strncpy(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
     key[AP_MAX_NAME_SIZE] = 0;
@@ -334,8 +337,8 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
 
     struct log_ATRP pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        time_us    : AP_HAL::micros64(),
-        type       : static_cast<uint8_t>(type),
+        time_us    : hal.scheduler->micros64(),
+        type       : type,
     	state      : (uint8_t)state,
         servo      : (int16_t)(servo*100),
         demanded   : demanded,

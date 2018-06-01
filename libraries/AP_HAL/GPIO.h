@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __AP_HAL_GPIO_H__
+#define __AP_HAL_GPIO_H__
 
 #include <stdint.h>
 
@@ -11,7 +13,6 @@
 #define HAL_GPIO_INTERRUPT_HIGH 1
 #define HAL_GPIO_INTERRUPT_FALLING 2
 #define HAL_GPIO_INTERRUPT_RISING 3
-#define HAL_GPIO_INTERRUPT_BOTH 4
 
 class AP_HAL::DigitalSource {
 public:
@@ -33,6 +34,8 @@ public:
     virtual uint8_t read(uint8_t pin) = 0;
     virtual void    write(uint8_t pin, uint8_t value) = 0;
     virtual void    toggle(uint8_t pin) = 0;
+    virtual void    setPWMPeriod(uint8_t pin, uint32_t time_us) {};
+    virtual void    setPWMDuty(uint8_t pin, uint8_t percent) {};
     virtual int8_t  analogPinToDigitalPin(uint8_t pin) = 0;
 
     /* Alternative interface: */
@@ -45,3 +48,5 @@ public:
     /* return true if USB cable is connected */
     virtual bool    usb_connected(void) = 0;
 };
+
+#endif // __AP_HAL_GPIO_H__

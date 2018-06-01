@@ -1,7 +1,9 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include "Tracker.h"
 
 /*
- * GCS controlled servo test mode
+ * control_servo_test.pde - GCS controlled servo test mode
  */
 
 /*
@@ -20,24 +22,21 @@ bool Tracker::servo_test_set_servo(uint8_t servo_num, uint16_t pwm)
 
     // ensure we are in servo test mode
     if (control_mode != SERVO_TEST) {
-        set_mode(SERVO_TEST, MODE_REASON_SERVOTEST);
+        set_mode(SERVO_TEST);
     }
 
     // set yaw servo pwm and send output to servo
     if (servo_num == CH_YAW) {
-        SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_yaw, pwm);
-        SRV_Channels::constrain_pwm(SRV_Channel::k_tracker_yaw);
+        channel_yaw.radio_out = constrain_int16(pwm, channel_yaw.radio_min, channel_yaw.radio_max);
+        channel_yaw.output();
     }
 
     // set pitch servo pwm and send output to servo
     if (servo_num == CH_PITCH) {
-        SRV_Channels::set_output_pwm(SRV_Channel::k_tracker_pitch, pwm);
-        SRV_Channels::constrain_pwm(SRV_Channel::k_tracker_pitch);
+        channel_pitch.radio_out = constrain_int16(pwm, channel_pitch.radio_min, channel_pitch.radio_max);
+        channel_pitch.output();
     }
 
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
-    
     // return success
     return true;
 }

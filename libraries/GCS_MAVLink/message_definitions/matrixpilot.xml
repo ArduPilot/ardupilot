@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+	<mavlink>
+	<include>common.xml</include>
+	<!-- note that UDB specific messages should use the command id
+      range from 150 to 250, to leave plenty of room for growth
+      of common.xml 
+
+      If you prototype a message here, then you should consider if it
+      is general enough to move into common.xml later
+    -->
+
+
+
+
+     <enums>
+          <enum name="MAV_PREFLIGHT_STORAGE_ACTION">
+               <description>Action required when performing CMD_PREFLIGHT_STORAGE</description>
+               <entry value="0" name="MAV_PFS_CMD_READ_ALL">
+                    <description>Read all parameters from storage</description>
+               </entry>
+               <entry value="1" name="MAV_PFS_CMD_WRITE_ALL">
+                    <description>Write all parameters to storage</description>
+               </entry>
+               <entry value="2" name="MAV_PFS_CMD_CLEAR_ALL">
+                    <description>Clear all  parameters in storage</description>
+               </entry>
+               <entry value="3" name="MAV_PFS_CMD_READ_SPECIFIC">
+                    <description>Read specific parameters from storage</description>
+               </entry>
+               <entry value="4" name="MAV_PFS_CMD_WRITE_SPECIFIC">
+                    <description>Write specific parameters to storage</description>
+               </entry>
+               <entry value="5" name="MAV_PFS_CMD_CLEAR_SPECIFIC">
+                    <description>Clear specific parameters in storage</description>
+               </entry>
+               <entry value="6" name="MAV_PFS_CMD_DO_NOTHING">
+                    <description>do nothing</description>
+               </entry>
+          </enum>
+
+          <enum name="MAV_CMD" >
+            <entry value="0" name="MAV_CMD_PREFLIGHT_STORAGE_ADVANCED">
+	<description>Request storage of different parameter values and logs. This command will be only accepted if in pre-flight mode.</description>
+	<param index="1">Storage action: Action defined by MAV_PREFLIGHT_STORAGE_ACTION_ADVANCED</param>
+	<param index="2">Storage area as defined by parameter database</param>
+	<param index="3">Storage flags as defined by parameter database</param>
+	<param index="4">Empty</param>
+	<param index="5">Empty</param>
+	<param index="6">Empty</param>
+	<param index="7">Empty</param>
+             </entry>
+          </enum>
+          
+     </enums>
+
+
+    <messages>
+    <message id="150" name="FLEXIFUNCTION_SET">
+      <description>Depreciated but used as a compiler flag.  Do not remove</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
+    <message id="151" name="FLEXIFUNCTION_READ_REQ">
+      <description>Reqest reading of flexifunction data</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="int16_t" name="read_req_type">Type of flexifunction data requested</field>
+      <field type="int16_t" name="data_index">index into data where needed</field>
+    </message>
+    <message id="152" name="FLEXIFUNCTION_BUFFER_FUNCTION">
+      <description>Flexifunction type and parameters for component at function index from buffer</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint16_t" name="func_index">Function index</field>
+      <field type="uint16_t" name="func_count">Total count of functions</field>
+      <field type="uint16_t" name="data_address">Address in the flexifunction data, Set to 0xFFFF to use address in target memory</field>
+      <field type="uint16_t" name="data_size">Size of the </field>
+      <field type="int8_t[48]" name="data">Settings data</field>
+    </message>
+    <message id="153" name="FLEXIFUNCTION_BUFFER_FUNCTION_ACK">
+      <description>Flexifunction type and parameters for component at function index from buffer</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint16_t" name="func_index">Function index</field>
+      <field type="uint16_t" name="result">result of acknowledge, 0=fail, 1=good</field>
+    </message>
+     <message id="155" name="FLEXIFUNCTION_DIRECTORY">
+      <description>Acknowldge sucess or failure of a flexifunction command</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint8_t" name="directory_type">0=inputs, 1=outputs</field>
+      <field type="uint8_t" name="start_index">index of first directory entry to write</field>
+      <field type="uint8_t" name="count">count of directory entries to write</field>
+      <field type="int8_t[48]" name="directory_data">Settings data</field>
+    </message>
+    <message id="156" name="FLEXIFUNCTION_DIRECTORY_ACK">
+      <description>Acknowldge sucess or failure of a flexifunction command</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint8_t" name="directory_type">0=inputs, 1=outputs</field>
+      <field type="uint8_t" name="start_index">index of first directory entry to write</field>
+      <field type="uint8_t" name="count">count of directory entries to write</field>
+      <field type="uint16_t" name="result">result of acknowledge, 0=fail, 1=good</field>
+    </message>
+    <message id="157" name="FLEXIFUNCTION_COMMAND">
+      <description>Acknowldge sucess or failure of a flexifunction command</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint8_t" name="command_type">Flexifunction command type</field>
+    </message>
+    <message id="158" name="FLEXIFUNCTION_COMMAND_ACK">
+      <description>Acknowldge sucess or failure of a flexifunction command</description>
+      <field type="uint16_t" name="command_type">Command acknowledged</field>
+      <field type="uint16_t" name="result">result of acknowledge</field>
+    </message>
+    <message id="170" name="SERIAL_UDB_EXTRA_F2_A">
+      <description>Backwards compatible MAVLink version of SERIAL_UDB_EXTRA - F2: Format Part A</description>
+      <field type="uint32_t" name="sue_time">Serial UDB Extra Time</field>
+      <field type="uint8_t" name="sue_status">Serial UDB Extra Status</field>
+      <field type="int32_t" name="sue_latitude">Serial UDB Extra Latitude</field>
+      <field type="int32_t" name="sue_longitude">Serial UDB Extra Longitude</field>
+      <field type="int32_t" name="sue_altitude">Serial UDB Extra Altitude</field>
+      <field type="uint16_t" name="sue_waypoint_index">Serial UDB Extra Waypoint Index</field>
+      <field type="int16_t" name="sue_rmat0">Serial UDB Extra Rmat 0</field>
+      <field type="int16_t" name="sue_rmat1">Serial UDB Extra Rmat 1</field>
+      <field type="int16_t" name="sue_rmat2">Serial UDB Extra Rmat 2</field>
+      <field type="int16_t" name="sue_rmat3">Serial UDB Extra Rmat 3</field>
+      <field type="int16_t" name="sue_rmat4">Serial UDB Extra Rmat 4</field>
+      <field type="int16_t" name="sue_rmat5">Serial UDB Extra Rmat 5</field>
+      <field type="int16_t" name="sue_rmat6">Serial UDB Extra Rmat 6</field>
+      <field type="int16_t" name="sue_rmat7">Serial UDB Extra Rmat 7</field>
+      <field type="int16_t" name="sue_rmat8">Serial UDB Extra Rmat 8</field>
+      <field type="uint16_t" name="sue_cog">Serial UDB Extra GPS Course Over Ground</field>
+      <field type="int16_t" name="sue_sog">Serial UDB Extra Speed Over Ground</field>
+      <field type="uint16_t" name="sue_cpu_load">Serial UDB Extra CPU Load</field>
+      <field type="int16_t" name="sue_voltage_milis">Serial UDB Extra Voltage in MilliVolts</field>
+      <field type="uint16_t" name="sue_air_speed_3DIMU">Serial UDB Extra 3D IMU Air Speed</field>
+      <field type="int16_t" name="sue_estimated_wind_0">Serial UDB Extra Estimated Wind 0</field>
+      <field type="int16_t" name="sue_estimated_wind_1">Serial UDB Extra Estimated Wind 1</field>
+      <field type="int16_t" name="sue_estimated_wind_2">Serial UDB Extra Estimated Wind 2</field>
+      <field type="int16_t" name="sue_magFieldEarth0">Serial UDB Extra Magnetic Field Earth 0 </field>
+      <field type="int16_t" name="sue_magFieldEarth1">Serial UDB Extra Magnetic Field Earth 1 </field>
+      <field type="int16_t" name="sue_magFieldEarth2">Serial UDB Extra Magnetic Field Earth 2 </field>
+      <field type="int16_t" name="sue_svs">Serial UDB Extra Number of Sattelites in View</field>
+      <field type="int16_t" name="sue_hdop">Serial UDB Extra GPS Horizontal Dilution of Precision</field>
+    </message>
+    <message id="171" name="SERIAL_UDB_EXTRA_F2_B">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA - F2: Part B</description>
+      <field type="uint32_t" name="sue_time">Serial UDB Extra Time</field>
+      <field type="int16_t" name="sue_pwm_input_1">Serial UDB Extra PWM Input Channel 1</field>
+      <field type="int16_t" name="sue_pwm_input_2">Serial UDB Extra PWM Input Channel 2</field>
+      <field type="int16_t" name="sue_pwm_input_3">Serial UDB Extra PWM Input Channel 3</field>
+      <field type="int16_t" name="sue_pwm_input_4">Serial UDB Extra PWM Input Channel 4</field>
+      <field type="int16_t" name="sue_pwm_input_5">Serial UDB Extra PWM Input Channel 5</field>
+      <field type="int16_t" name="sue_pwm_input_6">Serial UDB Extra PWM Input Channel 6</field>
+      <field type="int16_t" name="sue_pwm_input_7">Serial UDB Extra PWM Input Channel 7</field>
+      <field type="int16_t" name="sue_pwm_input_8">Serial UDB Extra PWM Input Channel 8</field>
+      <field type="int16_t" name="sue_pwm_input_9">Serial UDB Extra PWM Input Channel 9</field>
+      <field type="int16_t" name="sue_pwm_input_10">Serial UDB Extra PWM Input Channel 10</field>
+      <field type="int16_t" name="sue_pwm_output_1">Serial UDB Extra PWM Output Channel 1</field>
+      <field type="int16_t" name="sue_pwm_output_2">Serial UDB Extra PWM Output Channel 2</field>
+      <field type="int16_t" name="sue_pwm_output_3">Serial UDB Extra PWM Output Channel 3</field>
+      <field type="int16_t" name="sue_pwm_output_4">Serial UDB Extra PWM Output Channel 4</field>
+      <field type="int16_t" name="sue_pwm_output_5">Serial UDB Extra PWM Output Channel 5</field>
+      <field type="int16_t" name="sue_pwm_output_6">Serial UDB Extra PWM Output Channel 6</field>
+      <field type="int16_t" name="sue_pwm_output_7">Serial UDB Extra PWM Output Channel 7</field>
+      <field type="int16_t" name="sue_pwm_output_8">Serial UDB Extra PWM Output Channel 8</field>
+      <field type="int16_t" name="sue_pwm_output_9">Serial UDB Extra PWM Output Channel 9</field>
+      <field type="int16_t" name="sue_pwm_output_10">Serial UDB Extra PWM Output Channel 10</field>
+      <field type="int16_t" name="sue_imu_location_x">Serial UDB Extra IMU Location X</field>
+      <field type="int16_t" name="sue_imu_location_y">Serial UDB Extra IMU Location Y</field>
+      <field type="int16_t" name="sue_imu_location_z">Serial UDB Extra IMU Location Z</field>
+      <field type="uint32_t" name="sue_flags">Serial UDB Extra Status Flags</field>
+      <field type="int16_t" name="sue_osc_fails">Serial UDB Extra Oscillator Failure Count</field>
+      <field type="int16_t" name="sue_imu_velocity_x">Serial UDB Extra IMU Velocity X</field>
+      <field type="int16_t" name="sue_imu_velocity_y">Serial UDB Extra IMU Velocity Y</field>
+      <field type="int16_t" name="sue_imu_velocity_z">Serial UDB Extra IMU Velocity Z</field>
+      <field type="int16_t" name="sue_waypoint_goal_x">Serial UDB Extra Current Waypoint Goal X</field>
+      <field type="int16_t" name="sue_waypoint_goal_y">Serial UDB Extra Current Waypoint Goal Y</field>
+      <field type="int16_t" name="sue_waypoint_goal_z">Serial UDB Extra Current Waypoint Goal Z</field>
+      <field type="int16_t" name="sue_memory_stack_free">Serial UDB Extra Stack Memory Free</field>
+    </message>  
+    <message id="172" name="SERIAL_UDB_EXTRA_F4">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F4: format</description>
+      <field type="uint8_t" name="sue_ROLL_STABILIZATION_AILERONS">Serial UDB Extra Roll Stabilization with Ailerons Enabled</field>
+      <field type="uint8_t" name="sue_ROLL_STABILIZATION_RUDDER">Serial UDB Extra Roll Stabilization with Rudder Enabled</field>
+      <field type="uint8_t" name="sue_PITCH_STABILIZATION">Serial UDB Extra Pitch Stabilization Enabled</field>
+      <field type="uint8_t" name="sue_YAW_STABILIZATION_RUDDER">Serial UDB Extra Yaw Stabilization using Rudder Enabled</field>
+      <field type="uint8_t" name="sue_YAW_STABILIZATION_AILERON">Serial UDB Extra Yaw Stabilization using Ailerons Enabled</field>
+      <field type="uint8_t" name="sue_AILERON_NAVIGATION">Serial UDB Extra Navigation with Ailerons Enabled</field>
+      <field type="uint8_t" name="sue_RUDDER_NAVIGATION">Serial UDB Extra Navigation with Rudder Enabled</field>
+      <field type="uint8_t" name="sue_ALTITUDEHOLD_STABILIZED">Serial UDB Extra Type of Alitude Hold when in Stabilized Mode</field>
+      <field type="uint8_t" name="sue_ALTITUDEHOLD_WAYPOINT">Serial UDB Extra Type of Alitude Hold when in Waypoint Mode</field>
+      <field type="uint8_t" name="sue_RACING_MODE">Serial UDB Extra Firmware racing mode enabled</field>
+    </message>
+    <message id="173" name="SERIAL_UDB_EXTRA_F5">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F5: format</description>
+      <field type="float" name="sue_YAWKP_AILERON">Serial UDB YAWKP_AILERON Gain for Proporional control of navigation</field>
+      <field type="float" name="sue_YAWKD_AILERON">Serial UDB YAWKD_AILERON Gain for Rate control of navigation</field>
+      <field type="float" name="sue_ROLLKP">Serial UDB Extra ROLLKP Gain for Proportional control of roll stabilization</field>
+      <field type="float" name="sue_ROLLKD">Serial UDB Extra ROLLKD Gain for Rate control of roll stabilization</field>
+      <field type="float" name="sue_YAW_STABILIZATION_AILERON">YAW_STABILIZATION_AILERON Proportional control</field>
+      <field type="float" name="sue_AILERON_BOOST">Gain For Boosting Manual Aileron control When Plane Stabilized</field>
+    </message>
+    <message id="174" name="SERIAL_UDB_EXTRA_F6">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F6: format</description>
+      <field type="float" name="sue_PITCHGAIN">Serial UDB Extra PITCHGAIN Proportional Control</field>
+      <field type="float" name="sue_PITCHKD">Serial UDB Extra Pitch Rate Control</field>
+      <field type="float" name="sue_RUDDER_ELEV_MIX">Serial UDB Extra Rudder to Elevator Mix</field>
+      <field type="float" name="sue_ROLL_ELEV_MIX">Serial UDB Extra Roll to Elevator Mix</field>
+      <field type="float" name="sue_ELEVATOR_BOOST">Gain For Boosting Manual Elevator control When Plane Stabilized</field>
+    </message>
+    <message id="175" name="SERIAL_UDB_EXTRA_F7">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F7: format</description>
+      <field type="float" name="sue_YAWKP_RUDDER">Serial UDB YAWKP_RUDDER Gain for Proporional control of navigation</field>
+      <field type="float" name="sue_YAWKD_RUDDER">Serial UDB YAWKD_RUDDER Gain for Rate control of navigation</field>
+      <field type="float" name="sue_ROLLKP_RUDDER">Serial UDB Extra ROLLKP_RUDDER Gain for Proportional control of roll stabilization</field>
+      <field type="float" name="sue_ROLLKD_RUDDER">Serial UDB Extra ROLLKD_RUDDER Gain for Rate control of roll stabilization</field>
+      <field type="float" name="sue_RUDDER_BOOST">SERIAL UDB EXTRA Rudder Boost Gain to Manual Control when stabilized</field>
+      <field type="float" name="sue_RTL_PITCH_DOWN">Serial UDB Extra Return To Landing - Angle to Pitch Plane Down</field>
+    </message>
+    <message id="176" name="SERIAL_UDB_EXTRA_F8">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F8: format</description>
+      <field type="float" name="sue_HEIGHT_TARGET_MAX">Serial UDB Extra HEIGHT_TARGET_MAX</field>
+      <field type="float" name="sue_HEIGHT_TARGET_MIN">Serial UDB Extra HEIGHT_TARGET_MIN</field>
+      <field type="float" name="sue_ALT_HOLD_THROTTLE_MIN">Serial UDB Extra ALT_HOLD_THROTTLE_MIN</field>
+      <field type="float" name="sue_ALT_HOLD_THROTTLE_MAX">Serial UDB Extra ALT_HOLD_THROTTLE_MAX</field>
+      <field type="float" name="sue_ALT_HOLD_PITCH_MIN">Serial UDB Extra ALT_HOLD_PITCH_MIN</field>
+      <field type="float" name="sue_ALT_HOLD_PITCH_MAX">Serial UDB Extra ALT_HOLD_PITCH_MAX</field>
+      <field type="float" name="sue_ALT_HOLD_PITCH_HIGH">Serial UDB Extra ALT_HOLD_PITCH_HIGH</field>
+    </message>
+    <message id="177" name="SERIAL_UDB_EXTRA_F13">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F13: format</description>
+      <field type="int16_t" name="sue_week_no">Serial UDB Extra GPS Week Number</field>
+      <field type="int32_t" name="sue_lat_origin">Serial UDB Extra MP Origin Latitude</field>
+      <field type="int32_t" name="sue_lon_origin">Serial UDB Extra MP Origin Longitude</field>
+      <field type="int32_t" name="sue_alt_origin">Serial UDB Extra MP Origin Altitude Above Sea Level</field>
+    </message>
+    <message id="178" name="SERIAL_UDB_EXTRA_F14">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F14: format</description>
+      <field type="uint8_t" name="sue_WIND_ESTIMATION">Serial UDB Extra Wind Estimation Enabled</field>
+      <field type="uint8_t" name="sue_GPS_TYPE">Serial UDB Extra Type of GPS Unit</field>
+      <field type="uint8_t" name="sue_DR">Serial UDB Extra Dead Reckoning Enabled</field>
+      <field type="uint8_t" name="sue_BOARD_TYPE">Serial UDB Extra Type of UDB Hardware</field>
+      <field type="uint8_t" name="sue_AIRFRAME">Serial UDB Extra Type of Airframe</field>
+      <field type="int16_t" name="sue_RCON">Serial UDB Extra Reboot Regitster of DSPIC</field>
+      <field type="int16_t" name="sue_TRAP_FLAGS">Serial UDB Extra  Last dspic Trap Flags</field>
+      <field type="uint32_t" name="sue_TRAP_SOURCE">Serial UDB Extra Type Program Address of Last Trap</field>
+      <field type="int16_t" name="sue_osc_fail_count">Serial UDB Extra Number of Ocillator Failures</field>
+      <field type="uint8_t" name="sue_CLOCK_CONFIG">Serial UDB Extra UDB Internal Clock Configuration</field>
+      <field type="uint8_t" name="sue_FLIGHT_PLAN_TYPE">Serial UDB Extra Type of Flight Plan</field>
+    </message>
+    <message id="179" name="SERIAL_UDB_EXTRA_F15">
+      <description>Backwards compatible version of SERIAL_UDB_EXTRA F15 and F16: format</description>
+      <field type="uint8_t[40]" name="sue_ID_VEHICLE_MODEL_NAME">Serial UDB Extra Model Name Of Vehicle</field>
+      <field type="uint8_t[20]" name="sue_ID_VEHICLE_REGISTRATION">Serial UDB Extra Registraton Number of Vehicle</field>
+    </message>
+    <message id="180" name="SERIAL_UDB_EXTRA_F16">
+      <field type="uint8_t[40]" name="sue_ID_LEAD_PILOT">Serial UDB Extra Name of Expected Lead Pilot</field>
+      <field type="uint8_t[70]" name="sue_ID_DIY_DRONES_URL">Serial UDB Extra URL of Lead Pilot or Team</field>	
+    </message>
+    <message id="181" name="ALTITUDES">
+               <description>The altitude measured by sensors and IMU</description>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+               <field type="int32_t" name="alt_gps">GPS altitude in meters, expressed as * 1000 (millimeters), above MSL</field>
+               <field type="int32_t" name="alt_imu">IMU altitude above ground in meters, expressed as * 1000 (millimeters)</field>
+               <field type="int32_t" name="alt_barometric">barometeric altitude above ground in meters, expressed as * 1000 (millimeters)</field>
+               <field type="int32_t" name="alt_optical_flow">Optical flow altitude above ground in meters, expressed as * 1000 (millimeters)</field>
+               <field type="int32_t" name="alt_range_finder">Rangefinder Altitude above ground in meters, expressed as * 1000 (millimeters)</field>
+               <field type="int32_t" name="alt_extra">Extra altitude above ground in meters, expressed as * 1000 (millimeters)</field>
+     </message>
+     <message id="182" name="AIRSPEEDS">
+               <description>The airspeed measured by sensors and IMU</description>
+               <field type="uint32_t" name="time_boot_ms">Timestamp (milliseconds since system boot)</field>
+               <field type="int16_t" name="airspeed_imu">Airspeed estimate from IMU, cm/s</field>
+               <field type="int16_t" name="airspeed_pitot">Pitot measured forward airpseed, cm/s</field>
+               <field type="int16_t" name="airspeed_hot_wire">Hot wire anenometer measured airspeed, cm/s</field>
+               <field type="int16_t" name="airspeed_ultrasonic">Ultrasonic measured airspeed, cm/s</field>
+               <field type="int16_t" name="aoa">Angle of attack sensor, degrees * 10</field>
+               <field type="int16_t" name="aoy">Yaw angle sensor, degrees * 10</field>
+     </message>
+    
+   </messages>
+</mavlink>

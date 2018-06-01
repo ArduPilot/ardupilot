@@ -1,4 +1,7 @@
-#pragma once
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
+#ifndef __AP_INERTIALNAV_H__
+#define __AP_INERTIALNAV_H__
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>          // ArduPilot Mega IMU Library
@@ -117,3 +120,5 @@ public:
 #if AP_AHRS_NAVEKF_AVAILABLE
 #include "AP_InertialNav_NavEKF.h"
 #endif
+
+#endif // __AP_INERTIALNAV_H__

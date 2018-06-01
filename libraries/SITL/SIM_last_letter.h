@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,7 +41,7 @@ public:
     }
 
 private:
-    static const uint16_t fdm_port = 5002;
+    static const uint16_t fdm_port = 9002;
 
     /*
       packet sent to last_letter
@@ -70,6 +71,8 @@ private:
 
     uint64_t last_timestamp_us;
     SocketAPM sock;
+
+    const char *frame_str;
 };
 
 } // namespace SITL

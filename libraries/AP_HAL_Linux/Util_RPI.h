@@ -2,9 +2,7 @@
 
 #include "Util.h"
 
-namespace Linux {
-
-class UtilRPI : public Util {
+class Linux::UtilRPI : public Linux::Util {
 public:
     UtilRPI();
 
@@ -22,5 +20,3 @@ protected:
 private:
     int _rpi_version = 0;
 };
-
-}

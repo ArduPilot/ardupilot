@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
  * vector3.cpp
  * Copyright (C) Andrew Tridgell 2012
@@ -222,7 +223,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
         tmp = x; x = y; y = -tmp;
         return;
     }
-    case ROTATION_ROLL_90_PITCH_68_YAW_293: {
+    case ROTATION_YAW_293_PITCH_68_ROLL_90: {
         float tmpx = x;
         float tmpy = y;
         float tmpz = z;
@@ -231,42 +232,7 @@ void Vector3<T>::rotate(enum Rotation rotation)
         z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
         return;
     }
-    case ROTATION_PITCH_315: {
-        tmp = HALF_SQRT_2*(float)(x - z);
-        z   = HALF_SQRT_2*(float)(x + z);
-        x = tmp;
-        return;
     }
-    case ROTATION_ROLL_90_PITCH_315: {
-        tmp = z; z = y; y = -tmp;
-        tmp = HALF_SQRT_2*(float)(x - z);
-        z   = HALF_SQRT_2*(float)(x + z);
-        x = tmp;
-        return;
-    }
-    case ROTATION_CUSTOM: // no-op; caller should perform custom rotations via matrix multiplication
-        return;
-    }
-}
-
-template <typename T>
-void Vector3<T>::rotate_inverse(enum Rotation rotation)
-{
-    Vector3<T> x_vec(1.0f,0.0f,0.0f);
-    Vector3<T> y_vec(0.0f,1.0f,0.0f);
-    Vector3<T> z_vec(0.0f,0.0f,1.0f);
-
-    x_vec.rotate(rotation);
-    y_vec.rotate(rotation);
-    z_vec.rotate(rotation);
-
-    Matrix3<T> M(
-        x_vec.x, y_vec.x, z_vec.x,
-        x_vec.y, y_vec.y, z_vec.y,
-        x_vec.z, y_vec.z, z_vec.z
-    );
-
-    (*this) = M.mul_transpose(*this);
 }
 
 // vector cross product
@@ -287,7 +253,7 @@ T Vector3<T>::operator *(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::length(void) const
 {
-    return norm(x, y, z);
+    return pythagorous3(x, y, z);
 }
 
 template <typename T>
@@ -375,15 +341,7 @@ bool Vector3<T>::operator !=(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    float len = this->length() * v2.length();
-    if (len <= 0) {
-        return 0.0f;
-    }
-    float cosv = ((*this)*v2) / len;
-    if (fabsf(cosv) >= 1) {
-        return 0.0f;
-    }
-    return acosf(cosv);
+    return acosf((*this)*v2) / (float)((this->length()*v2.length()));
 }
 
 // multiplication of transpose by a vector
@@ -405,35 +363,8 @@ Matrix3<T> Vector3<T>::mul_rowcol(const Vector3<T> &v2) const
                       v1.z * v2.x, v1.z * v2.y, v1.z * v2.z);
 }
 
-// distance from the tip of this vector to a line segment specified by two vectors
-template <typename T>
-float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const
-{
-    // triangle side lengths
-    float a = (*this-seg_start).length();
-    float b = (seg_start-seg_end).length();
-    float c = (seg_end-*this).length();
-
-    // protect against divide by zero later
-    if (fabsf(b) < FLT_EPSILON) {
-        return 0.0f;
-    }
-
-    // semiperimeter of triangle
-    float s = (a+b+c) * 0.5f;
-
-    float area_squared = s*(s-a)*(s-b)*(s-c);
-    // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
-    if (area_squared < 0.0f) {
-        area_squared = 0.0f;
-    }
-    float area = safe_sqrt(area_squared);
-    return 2.0f*area/b;
-}
-
-// define for float
+// only define for float
 template void Vector3<float>::rotate(enum Rotation);
-template void Vector3<float>::rotate_inverse(enum Rotation);
 template float Vector3<float>::length(void) const;
 template Vector3<float> Vector3<float>::operator %(const Vector3<float> &v) const;
 template float Vector3<float>::operator *(const Vector3<float> &v) const;
@@ -453,13 +384,9 @@ template bool Vector3<float>::operator !=(const Vector3<float> &v) const;
 template bool Vector3<float>::is_nan(void) const;
 template bool Vector3<float>::is_inf(void) const;
 template float Vector3<float>::angle(const Vector3<float> &v) const;
-template float Vector3<float>::distance_to_segment(const Vector3<float> &seg_start, const Vector3<float> &seg_end) const;
 
-// define needed ops for Vector3l
-template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);
-
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
 template void Vector3<double>::rotate(enum Rotation);
-template void Vector3<double>::rotate_inverse(enum Rotation);
 template float Vector3<double>::length(void) const;
 template Vector3<double> Vector3<double>::operator %(const Vector3<double> &v) const;
 template double Vector3<double>::operator *(const Vector3<double> &v) const;
@@ -478,3 +405,5 @@ template bool Vector3<double>::operator ==(const Vector3<double> &v) const;
 template bool Vector3<double>::operator !=(const Vector3<double> &v) const;
 template bool Vector3<double>::is_nan(void) const;
 template bool Vector3<double>::is_inf(void) const;
+template float Vector3<double>::angle(const Vector3<double> &v) const;
+#endif

@@ -1,10 +1,9 @@
-#pragma once
 
-#include <AP_HAL/utility/RingBuffer.h>
+#ifndef __AP_HAL_VRBRAIN_UARTDRIVER_H__
+#define __AP_HAL_VRBRAIN_UARTDRIVER_H__
 
 #include "AP_HAL_VRBRAIN.h"
 #include <systemlib/perf_counter.h>
-#include "Semaphores.h"
 
 class VRBRAIN::VRBRAINUARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -19,9 +18,9 @@ public:
     bool tx_pending();
 
     /* VRBRAIN implementations of Stream virtual methods */
-    uint32_t available() override;
-    uint32_t txspace() override;
-    int16_t read() override;
+    int16_t available();
+    int16_t txspace();
+    int16_t read();
 
     /* VRBRAIN implementations of Print virtual methods */
     size_t write(uint8_t c);
@@ -40,10 +39,6 @@ public:
     void set_flow_control(enum flow_control flow_control);
     enum flow_control get_flow_control(void) { return _flow_control; }
 
-    void configure_parity(uint8_t v);
-    void set_stop_bits(int n);
-    bool set_unbuffered_writes(bool on);
-
 private:
     const char *_devpath;
     int _fd;
@@ -52,12 +47,21 @@ private:
     volatile bool _in_timer;
 
     bool _nonblocking_writes;
-    bool _unbuffered_writes;
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    ByteBuffer _readbuf{0};
-    ByteBuffer _writebuf{0};
+    uint8_t *_readbuf;
+    uint16_t _readbuf_size;
+
+    // _head is where the next available data is. _tail is where new
+    // data is put
+    volatile uint16_t _readbuf_head;
+    volatile uint16_t _readbuf_tail;
+
+    uint8_t *_writebuf;
+    uint16_t _writebuf_size;
+    volatile uint16_t _writebuf_head;
+    volatile uint16_t _writebuf_tail;
     perf_counter_t  _perf_uart;
 
     int _write_fd(const uint8_t *buf, uint16_t n);
@@ -72,6 +76,6 @@ private:
     uint32_t _total_read;
     uint32_t _total_written;
     enum flow_control _flow_control;
-
-    Semaphore _semaphore;
 };
+
+#endif // __AP_HAL_VRBRAIN_UARTDRIVER_H__

@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,7 +18,9 @@
   Mount driver backend class. Each supported mount type
   needs to have an object derived from this class.
  */
-#pragma once
+
+#ifndef __AP_MOUNT_BACKEND_H__
+#define __AP_MOUNT_BACKEND_H__
 
 #include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
@@ -41,9 +44,6 @@ public:
     // update mount position - should be called periodically
     virtual void update() = 0;
 
-    // used for gimbals that need to read INS data at full rate
-    virtual void update_fast() {}
-
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
@@ -66,13 +66,10 @@ public:
     virtual void control_msg(mavlink_message_t* msg);
 
     // status_msg - called to allow mounts to send their status to GCS via MAVLink
-    virtual void status_msg(mavlink_channel_t chan) {}
+    virtual void status_msg(mavlink_channel_t chan) {};
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg) {}
-
-    // handle a PARAM_VALUE message
-    virtual void handle_param_value(mavlink_message_t *msg) {}
 
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(mavlink_channel_t chan) {}
@@ -87,13 +84,15 @@ protected:
     float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan);
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
-    AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
+    AP_Mount::mount_state &_state;    // refernce to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
 };
+
+#endif // __AP_MOUNT_BACKEND_H__

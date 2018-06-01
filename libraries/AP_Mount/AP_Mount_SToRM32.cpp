@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include "AP_Mount_SToRM32.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -61,7 +63,7 @@ void AP_Mount_SToRM32::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
                 resend_now = true;
             }
@@ -73,7 +75,7 @@ void AP_Mount_SToRM32::update()
     }
 
     // resend target angles at least once per second
-    if (resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
+    if (resend_now || ((hal.scheduler->millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
         send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
     }
 }
@@ -113,7 +115,7 @@ void AP_Mount_SToRM32::find_gimbal()
     }
 
     // return if search time has has passed
-    if (AP_HAL::millis() > AP_MOUNT_STORM32_SEARCH_MS) {
+    if (hal.scheduler->millis() > AP_MOUNT_STORM32_SEARCH_MS) {
         return;
     }
 
@@ -131,7 +133,7 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     }
 
     // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, COMMAND_LONG)) {
+    if (comm_get_txspace(_chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_COMMAND_LONG_LEN) {
         return;
     }
 
@@ -152,5 +154,5 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
                                   mount_mode);
 
     // store time of send
-    _last_send = AP_HAL::millis();
+    _last_send = hal.scheduler->millis();
 }

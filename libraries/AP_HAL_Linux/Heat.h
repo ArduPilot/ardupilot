@@ -1,3 +1,4 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -12,14 +13,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-namespace Linux {
+#ifndef __HEAT_H__
+#define __HEAT_H__
 
-class Heat {
+class Linux::Heat {
 public:
     virtual void set_imu_temp(float current) { }
-    virtual void set_imu_target_temp(int8_t *target) { }
 };
-
-}
+#endif

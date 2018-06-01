@@ -15,9 +15,18 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
+#ifndef __BUZZER_H__
+#define __BUZZER_H__
 
-#include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
+# define BUZZER_PIN     63      // pin 63 on APM1
+#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
+ # define BUZZER_PIN    59      // pin 59 on APM2
+#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+ # define BUZZER_PIN    32
+#else
+ # define BUZZER_PIN    0       // pin undefined on other boards
+#endif
 
 #define BUZZER_ARMING_BUZZ_MS   3000    // arming buzz length in milliseconds (i.e. 3 seconds)
 
@@ -43,7 +52,6 @@ public:
     /// on - turns the buzzer on or off
     void on(bool on_off);
 
-    // Patterns - how many beeps will be played
     enum BuzzerPattern {
         NONE = 0,
         SINGLE_BUZZ = 1,
@@ -65,12 +73,13 @@ private:
         uint8_t arming              : 1;    // 1 if we are beginning the arming process
         uint8_t armed               : 1;    // 0 = disarmed, 1 = armed
         uint8_t failsafe_battery    : 1;    // 1 if battery failsafe has triggered
-        uint8_t ekf_bad             : 1;    // 1 if ekf position has gone bad
+        uint8_t ekf_bad            : 1;    // 1 if ekf position has gone bad
     } _flags;
 
     uint8_t         _counter;           // reduces 50hz update down to 10hz for internal processing
     BuzzerPattern   _pattern;           // current pattern
     uint8_t         _pattern_counter;   // used to time on/off of current patter
     uint32_t        _arming_buzz_start_ms;  // arming_buzz start time in milliseconds
-    uint8_t         _pin;
 };
+
+#endif // __BUZZER_H__

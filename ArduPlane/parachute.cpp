@@ -1,3 +1,5 @@
+// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include "Plane.h"
 
 
@@ -6,27 +8,20 @@
 */
 void Plane::parachute_check()
 {
-#if PARACHUTE == ENABLED
     parachute.update();
-#endif
 }
-
-#if PARACHUTE == ENABLED
 
 /*
   parachute_release - trigger the release of the parachute
 */
 void Plane::parachute_release()
 {
-    if (parachute.release_in_progress()) {
+    if (parachute.released()) {
         return;
     }
+    
     // send message to gcs and dataflash
-    if (parachute.released()) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released again");
-    } else {
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
-    }
+    gcs_send_text(MAV_SEVERITY_CRITICAL,"Parachute: Released");
 
     // release parachute
     parachute.release();
@@ -44,10 +39,15 @@ bool Plane::parachute_manual_release()
         return false;
     }
 
-    if (parachute.alt_min() > 0 && relative_ground_altitude(false) < parachute.alt_min() &&
-            auto_state.last_flying_ms > 0) {
-        // Allow manual ground tests by only checking if flying too low if we've taken off
-        gcs().send_text(MAV_SEVERITY_WARNING, "Parachute: Too low");
+    // do not release if vehicle is not flying
+    if (!is_flying()) {
+        // warn user of reason for failure
+        gcs_send_text(MAV_SEVERITY_WARNING,"Parachute: not flying");
+        return false;
+    }
+
+    if (relative_altitude() < parachute.alt_min()) {
+        gcs_send_text_fmt("Parachute: too low");
         return false;
     }
 
@@ -56,5 +56,3 @@ bool Plane::parachute_manual_release()
 
     return true;
 }
-
-#endif

@@ -18,11 +18,9 @@ enum compass_cal_status_t {
 
 class CompassCalibrator {
 public:
-    typedef uint8_t completion_mask_t[10];
-
     CompassCalibrator();
 
-    void start(bool retry, float delay, uint16_t offset_max);
+    void start(bool retry=false, bool autosave=false, float delay=0.0f);
     void clear();
 
     void update(bool &failure);
@@ -37,9 +35,9 @@ public:
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
 
     float get_completion_percent() const;
-    completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
+    bool get_autosave() const { return _autosave; }
     uint8_t get_attempt() const { return _attempt; }
 
 private:
@@ -79,15 +77,13 @@ private:
     // behavioral state
     float _delay_start_sec;
     uint32_t _start_time_ms;
+    bool _autosave;
     bool _retry;
     float _tolerance;
     uint8_t _attempt;
-    uint16_t _offset_max;
-
-    completion_mask_t _completion_mask;
 
     //fit state
-    class param_t _params;
+    struct param_t _params;
     uint16_t _fit_step;
     CompassSample *_sample_buffer;
     float _fitness; // mean squared residuals
@@ -118,22 +114,11 @@ private:
     float calc_mean_squared_residuals(const param_t& params) const;
     float calc_mean_squared_residuals() const;
 
-    void calc_initial_offset();
     void calc_sphere_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_sphere_fit();
 
     void calc_ellipsoid_jacob(const Vector3f& sample, const param_t& params, float* ret) const;
     void run_ellipsoid_fit();
 
-    /**
-     * Update #_completion_mask for the geodesic section of \p v. Corrections
-     * are applied to \p v with #_params.
-     *
-     * @param v[in] A vector representing one calibration sample.
-     */
-    void update_completion_mask(const Vector3f& v);
-    /**
-     * Reset and update #_completion_mask with the current samples.
-     */
-    void update_completion_mask();
+    uint16_t get_random();
 };

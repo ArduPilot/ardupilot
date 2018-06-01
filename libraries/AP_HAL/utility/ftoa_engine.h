@@ -27,7 +27,9 @@
   POSSIBILITY OF SUCH DAMAGE. */
 
 /* $Id: ftoa_engine.h 1218 2007-02-18 13:18:41Z dmix $ */
-#pragma once
+
+#ifndef	_FTOA_ENGINE_H
+#define	_FTOA_ENGINE_H
 
 #include <AP_HAL/AP_HAL.h>
 #include <stdint.h>
@@ -41,3 +43,5 @@ int16_t ftoa_engine(float val, char *buf,
 #define	FTOA_INF	4
 #define	FTOA_NAN	8
 #define	FTOA_CARRY	16	/* Carry was to master position.	*/
+
+#endif	/* !_FTOA_ENGINE_H */

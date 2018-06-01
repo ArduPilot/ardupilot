@@ -1,6 +1,6 @@
 Mission Planner source code has moved.
 
 Please goto
-https://github.com/ArduPilot/MissionPlanner
+https://github.com/diydrones/MissionPlanner
 or for those git inclined
-https://github.com/ArduPilot/MissionPlanner.git
+https://github.com/diydrones/MissionPlanner.git

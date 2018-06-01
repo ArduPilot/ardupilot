@@ -1,20 +1,22 @@
-#pragma once
+
+#ifndef __AP_HAL_LINUX_RCINPUT_PRU_H__
+#define __AP_HAL_LINUX_RCINPUT_PRU_H__
 
 /*
   This class implements RCInput on the BeagleBoneBlack with a PRU
   doing the edge detection of the PPM sum input
  */
 
-#include "RCInput.h"
+#include "AP_HAL_Linux.h"
 
+#define RCIN_PRUSS_SHAREDRAM_BASE   0x4a312000
 // we use 300 ring buffer entries to guarantee that a full 25 byte
 // frame of 12 bits per byte
 
-namespace Linux {
-
-class RCInput_PRU : public RCInput {
+class Linux::RCInput_PRU : public Linux::RCInput
+{
 public:
-    void init();
+    void init(void*);
     void _timer_tick(void);
 
  private:
@@ -34,4 +36,4 @@ public:
     uint16_t _s0_time;
 };
 
-}
+#endif // __AP_HAL_LINUX_RCINPUT_PRU_H__

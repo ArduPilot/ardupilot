@@ -1,8 +1,7 @@
-#pragma once
+#ifndef AP_LR_MSGHANDLER_H
+#define AP_LR_MSGHANDLER_H
 
 #include "MsgHandler.h"
-
-#include <functional>
 
 class LR_MsgHandler : public MsgHandler {
 public:
@@ -10,6 +9,7 @@ public:
                   DataFlash_Class &_dataflash,
                   uint64_t &last_timestamp_usec);
     virtual void process_message(uint8_t *msg) = 0;
+    bool set_parameter(const char *name, float value);
 
     // state for CHEK message
     struct CheckState {
@@ -70,10 +70,10 @@ private:
     AP_Airspeed &airspeed;
 };
 
-class LR_MsgHandler_NKF1 : public LR_MsgHandler
+class LR_MsgHandler_FRAM : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_NKF1(log_Format &_f, DataFlash_Class &_dataflash,
+    LR_MsgHandler_FRAM(log_Format &_f, DataFlash_Class &_dataflash,
 		    uint64_t &_last_timestamp_usec) :
 	LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
 
@@ -113,12 +113,13 @@ class LR_MsgHandler_BARO : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_BARO(log_Format &_f, DataFlash_Class &_dataflash,
-                    uint64_t &_last_timestamp_usec)
-        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec)
-        { };
+                    uint64_t &_last_timestamp_usec, AP_Baro &_baro)
+        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), baro(_baro) { };
 
     virtual void process_message(uint8_t *msg);
 
+private:
+    AP_Baro &baro;
 };
 
 
@@ -141,33 +142,37 @@ class LR_MsgHandler_GPS_Base : public LR_MsgHandler
 public:
     LR_MsgHandler_GPS_Base(log_Format &_f, DataFlash_Class &_dataflash,
                            uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                           uint32_t &_ground_alt_cm)
+                           uint32_t &_ground_alt_cm, float &_rel_altitude)
         : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
-          gps(_gps), ground_alt_cm(_ground_alt_cm) { };
+          gps(_gps), ground_alt_cm(_ground_alt_cm),
+          rel_altitude(_rel_altitude) { };
 
 protected:
-    void update_from_msg_gps(uint8_t imu_offset, uint8_t *data);
+    void update_from_msg_gps(uint8_t imu_offset, uint8_t *data, bool responsible_for_relalt);
 
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
+    float &rel_altitude;
 };
+
 
 class LR_MsgHandler_GPS : public LR_MsgHandler_GPS_Base
 {
 public:
     LR_MsgHandler_GPS(log_Format &_f, DataFlash_Class &_dataflash,
                    uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                   uint32_t &_ground_alt_cm)
+                   uint32_t &_ground_alt_cm, float &_rel_altitude)
         : LR_MsgHandler_GPS_Base(_f, _dataflash,_last_timestamp_usec,
-                              _gps, _ground_alt_cm),
-        gps(_gps), ground_alt_cm(_ground_alt_cm) { };
+                              _gps, _ground_alt_cm, _rel_altitude),
+          gps(_gps), ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
 
     void process_message(uint8_t *msg);
 
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
+    float &rel_altitude;
 };
 
 // it would be nice to use the same parser for both GPS message types
@@ -179,59 +184,17 @@ class LR_MsgHandler_GPS2 : public LR_MsgHandler_GPS_Base
 public:
     LR_MsgHandler_GPS2(log_Format &_f, DataFlash_Class &_dataflash,
                     uint64_t &_last_timestamp_usec, AP_GPS &_gps,
-                    uint32_t &_ground_alt_cm)
+                    uint32_t &_ground_alt_cm, float &_rel_altitude)
         : LR_MsgHandler_GPS_Base(_f, _dataflash, _last_timestamp_usec,
-                                 _gps, _ground_alt_cm), gps(_gps),
-        ground_alt_cm(_ground_alt_cm) { };
+                                 _gps, _ground_alt_cm,
+                                 _rel_altitude), gps(_gps),
+          ground_alt_cm(_ground_alt_cm), rel_altitude(_rel_altitude) { };
     virtual void process_message(uint8_t *msg);
 private:
     AP_GPS &gps;
     uint32_t &ground_alt_cm;
+    float &rel_altitude;
 };
-
-class LR_MsgHandler_GPA_Base : public LR_MsgHandler
-{
-
-public:
-    LR_MsgHandler_GPA_Base(log_Format &_f, DataFlash_Class &_dataflash,
-                           uint64_t &_last_timestamp_usec, AP_GPS &_gps)
-        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec), gps(_gps) { };
-
-protected:
-    void update_from_msg_gpa(uint8_t imu_offset, uint8_t *data);
-
-private:
-    AP_GPS &gps;
-};
-
-
-class LR_MsgHandler_GPA : public LR_MsgHandler_GPA_Base
-{
-public:
-    LR_MsgHandler_GPA(log_Format &_f, DataFlash_Class &_dataflash,
-                      uint64_t &_last_timestamp_usec, AP_GPS &_gps)
-        : LR_MsgHandler_GPA_Base(_f, _dataflash,_last_timestamp_usec,
-                              _gps), gps(_gps) { };
-
-    void process_message(uint8_t *msg);
-
-private:
-    AP_GPS &gps;
-};
-
-class LR_MsgHandler_GPA2 : public LR_MsgHandler_GPA_Base
-{
-public:
-    LR_MsgHandler_GPA2(log_Format &_f, DataFlash_Class &_dataflash,
-                       uint64_t &_last_timestamp_usec, AP_GPS &_gps)
-        : LR_MsgHandler_GPA_Base(_f, _dataflash, _last_timestamp_usec,
-                                 _gps), gps(_gps) { };
-    virtual void process_message(uint8_t *msg);
-private:
-    AP_GPS &gps;
-};
-
-
 
 
 
@@ -430,32 +393,11 @@ private:
 class LR_MsgHandler_PARM : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_PARM(log_Format &_f, DataFlash_Class &_dataflash,
-                       uint64_t &_last_timestamp_usec,
-                       const std::function<bool(const char *name, const float)>&set_parameter_callback) :
-        LR_MsgHandler(_f, _dataflash, _last_timestamp_usec),
-        _set_parameter_callback(set_parameter_callback)
-        {};
+    LR_MsgHandler_PARM(log_Format &_f, DataFlash_Class &_dataflash, uint64_t &_last_timestamp_usec) : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) {};
 
     virtual void process_message(uint8_t *msg);
-
-private:
-    bool set_parameter(const char *name, const float value);
-    const std::function<bool(const char *name, const float)>_set_parameter_callback;
 };
 
-class LR_MsgHandler_PM : public LR_MsgHandler
-{
-public:
-    LR_MsgHandler_PM(log_Format &_f, DataFlash_Class &_dataflash,
-                     uint64_t &_last_timestamp_usec)
-        : LR_MsgHandler(_f, _dataflash, _last_timestamp_usec) { };
-
-    virtual void process_message(uint8_t *msg);
-
-private:
-
-};
 
 class LR_MsgHandler_SIM : public LR_MsgHandler
 {
@@ -472,3 +414,6 @@ public:
 private:
     Vector3f &sim_attitude;
 };
+
+
+#endif

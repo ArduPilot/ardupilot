@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __AP_HAL_SITL_ANALOG_IN_H__
+#define __AP_HAL_SITL_ANALOG_IN_H__
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
@@ -7,9 +9,9 @@
 
 class HALSITL::ADCSource : public AP_HAL::AnalogSource {
 public:
-    friend class HALSITL::AnalogIn;
+    friend class HALSITL::SITLAnalogIn;
     /* pin designates the ADC input number */
-    ADCSource(SITL_State *sitlState, int16_t pin);
+    ADCSource(SITL_State *sitlState, uint8_t pin);
 
     /* implement AnalogSource virtual api: */
     float read_average();
@@ -25,15 +27,17 @@ public:
 
 private:
     SITL_State *_sitlState;
-    int16_t _pin;
+    uint8_t _pin;
 };
 
-/* AnalogIn : a concrete class providing the implementations of the
+/* SITLAnalogIn : a concrete class providing the implementations of the
  * timer event and the AP_HAL::AnalogIn interface */
-class HALSITL::AnalogIn : public AP_HAL::AnalogIn {
+class HALSITL::SITLAnalogIn : public AP_HAL::AnalogIn {
 public:
-    explicit AnalogIn(SITL_State *sitlState): _sitlState(sitlState) {}
-    void init();
+    SITLAnalogIn(SITL_State *sitlState) {
+        _sitlState = sitlState;
+    }
+    void init(void* ap_hal_scheduler);
     AP_HAL::AnalogSource* channel(int16_t n);
     float board_voltage(void) {
         return 5.0f;
@@ -42,3 +46,5 @@ private:
     static ADCSource* _channels[SITL_INPUT_MAX_CHANNELS];
     SITL_State *_sitlState;
 };
+
+#endif // __AP_HAL_SITL_ANALOG_IN_H__

@@ -1,17 +1,16 @@
 #!/bin/bash
 set -e
-set -x
 
 command -v yaourt >/dev/null 2>&1 || { echo >&2 "Please install yaourt first. Aborting."; exit 1; }
 
 CWD=$(pwd)
 OPT="/opt"
 
-BASE_PKGS="base-devel ccache git-core gsfonts tk wget"
-SITL_PKGS="python2-pip python-pip wxpython opencv python2-numpy python2-scipy"
-PX4_PKGS="lib32-glibc zip zlib ncurses cmake"
+BASE_PKGS="wget curl base-devel git-core tk gsfonts"
+SITL_PKGS="python2-pip python-pip wxpython2.8 opencv python2-numpy python2-scipy ccache"
+PX4_PKGS="lib32-glibc zip zlib ncurses"
 
-PYTHON2_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing"
+PYTHON2_PKGS="pymavlink MAVProxy droneapi argparse matplotlib pyparsing catkin_pkg"
 PYTHON3_PKGS="pyserial empy"
 ARCH_AUR_PKGS="genromfs"
 
@@ -19,7 +18,7 @@ ARCH_AUR_PKGS="genromfs"
 # (see https://launchpad.net/gcc-arm-embedded/)
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
+ARM_TARBALL_URL="http://firmware.diydrones.com/Tools/PX4-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
@@ -35,19 +34,15 @@ function prompt_user() {
 
 sudo usermod -a -G uucp $USER
 
-sudo pacman -S --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
-sudo pip2 -q install -U $PYTHON2_PKGS
-sudo pip3 -q install -U $PYTHON3_PKGS
-yaourt -S --noconfirm --needed $ARCH_AUR_PKGS
+sudo pacman -S --noconfirm $BASE_PKGS $SITL_PKGS $PX4_PKGS
+sudo pip2 -q install $PYTHON2_PKGS
+sudo pip3 -q install $PYTHON3_PKGS
+yaourt -S --noconfirm $ARCH_AUR_PKGS
 
 (
-    cd /usr/lib/ccache
-    if [ ! -f arm-none-eabi-g++ ]; then
-       sudo ln -s /usr/bin/ccache arm-none-eabi-g++
-    fi
-    if [ ! -f arm-none-eabi-g++ ]; then
-        sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
-    fi
+ cd /usr/lib/ccache
+ sudo ln -s /usr/bin/ccache arm-none-eabi-g++
+ sudo ln -s /usr/bin/ccache arm-none-eabi-gcc
 )
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
@@ -79,11 +74,10 @@ if  ! grep -Fxq "$exportline2" ~/.bashrc ; then
     fi
 fi
 
-SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 (
-    cd $SCRIPT_DIR
-    git submodule init
-    git submodule update --recursive
+ cd ./ardupilot
+ git submodule init
+ git submodule update
 )
 
 echo "Done. Please log out and log in again."

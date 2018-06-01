@@ -1,2 +1,0 @@
-all:
-	@$(MAKE) -C ../ -f Makefile.waf sub

@@ -1,10 +1,8 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-
-#include <AP_HAL/utility/RCOutput_Tap.h>
-#include <AP_HAL_Empty/AP_HAL_Empty.h>
-#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include "AP_HAL_PX4.h"
 #include "AP_HAL_PX4_Namespace.h"
@@ -17,12 +15,10 @@
 #include "AnalogIn.h"
 #include "Util.h"
 #include "GPIO.h"
-#include "I2CDevice.h"
-#include "SPIDevice.h"
+#include "I2CDriver.h"
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#endif
+#include <AP_HAL_Empty/AP_HAL_Empty.h>
+#include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 
 #include <stdlib.h>
 #include <systemlib/systemlib.h>
@@ -34,24 +30,18 @@
 #include <drivers/drv_hrt.h>
 
 using namespace PX4;
-using namespace ap;
 
-//static Empty::GPIO gpioDriver;
+static PX4I2CDriver i2cDriver;
+static Empty::EmptySPIDeviceManager spiDeviceManager;
+//static Empty::EmptyGPIO gpioDriver;
 
 static PX4Scheduler schedulerInstance;
 static PX4Storage storageDriver;
 static PX4RCInput rcinDriver;
-#if defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-static RCOutput_Tap rcoutDriver;
-#else
 static PX4RCOutput rcoutDriver;
-#endif
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
-
-static PX4::I2CDeviceManager i2c_mgr_instance;
-static PX4::SPIDeviceManager spi_mgr_instance;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
@@ -59,30 +49,12 @@ static PX4::SPIDeviceManager spi_mgr_instance;
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
 #define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTE_DEFAULT_DEVICE "/dev/ttyS6"
-#define UARTF_DEFAULT_DEVICE "/dev/ttyS5"
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS1"
-#define UARTD_DEFAULT_DEVICE "/dev/ttyS2"
-#define UARTE_DEFAULT_DEVICE "/dev/ttyS6" // frsky telem
-#define UARTF_DEFAULT_DEVICE "/dev/ttyS0" // wifi
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-#define UARTA_DEFAULT_DEVICE "/dev/ttyS1" // Aero
-#define UARTB_DEFAULT_DEVICE "/dev/ttyS5" // GPS
-#define UARTC_DEFAULT_DEVICE "/dev/ttyS3" // Telem
-// ttyS0: ESC
-// ttyS2: RC
-#define UARTD_DEFAULT_DEVICE "/dev/null"
-#define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #else
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
 #define UARTB_DEFAULT_DEVICE "/dev/ttyS3"
 #define UARTC_DEFAULT_DEVICE "/dev/ttyS2"
 #define UARTD_DEFAULT_DEVICE "/dev/null"
 #define UARTE_DEFAULT_DEVICE "/dev/null"
-#define UARTF_DEFAULT_DEVICE "/dev/null"
 #endif
 
 // 3 UART drivers, for GPS plus two mavlink-enabled devices
@@ -91,7 +63,6 @@ static PX4UARTDriver uartBDriver(UARTB_DEFAULT_DEVICE, "APM_uartB");
 static PX4UARTDriver uartCDriver(UARTC_DEFAULT_DEVICE, "APM_uartC");
 static PX4UARTDriver uartDDriver(UARTD_DEFAULT_DEVICE, "APM_uartD");
 static PX4UARTDriver uartEDriver(UARTE_DEFAULT_DEVICE, "APM_uartE");
-static PX4UARTDriver uartFDriver(UARTF_DEFAULT_DEVICE, "APM_uartF");
 
 HAL_PX4::HAL_PX4() :
     AP_HAL::HAL(
@@ -100,9 +71,10 @@ HAL_PX4::HAL_PX4() :
         &uartCDriver,  /* uartC */
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
-        &uartFDriver,  /* uartF */
-        &i2c_mgr_instance,
-        &spi_mgr_instance,
+        &i2cDriver, /* i2c */
+        NULL,   /* only one i2c */
+        NULL,   /* only one i2c */
+        &spiDeviceManager, /* spi */
         &analogIn, /* analogin */
         &storageDriver, /* storage */
         &uartADriver, /* console */
@@ -110,9 +82,7 @@ HAL_PX4::HAL_PX4() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
-        &utilInstance, /* util */
-        nullptr,    /* no onboard optical flow */
-        nullptr)   /* CAN */
+        &utilInstance) /* util */
 {}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
@@ -153,11 +123,13 @@ static int main_loop(int argc, char **argv)
     hal.uartC->begin(57600);
     hal.uartD->begin(57600);
     hal.uartE->begin(57600);
-    hal.scheduler->init();
+    hal.scheduler->init(NULL);
+    hal.rcin->init(NULL);
+    hal.rcout->init(NULL);
+    hal.analogin->init(NULL);
+    hal.gpio->init();
 
-    // init the I2C wrapper class
-    PX4_I2C::init_lock();
-    
+
     /*
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
@@ -189,7 +161,7 @@ static int main_loop(int argc, char **argv)
           will only ever be called if a loop() call runs for more than
           0.1 second
          */
-        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, nullptr);
+        hrt_call_after(&loop_overtime_call, 100000, (hrt_callout)loop_overtime, NULL);
 
         g_callbacks->loop();
 
@@ -224,7 +196,6 @@ static void usage(void)
     printf("\t-d2 DEVICE         set second terminal device (default %s)\n", UARTC_DEFAULT_DEVICE);
     printf("\t-d3 DEVICE         set 3rd terminal device (default %s)\n", UARTD_DEFAULT_DEVICE);
     printf("\t-d4 DEVICE         set 2nd GPS device (default %s)\n", UARTE_DEFAULT_DEVICE);
-    printf("\t-d5 DEVICE         set uartF (default %s)\n", UARTF_DEFAULT_DEVICE);
     printf("\n");
 }
 
@@ -236,7 +207,6 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
     const char *deviceC = UARTC_DEFAULT_DEVICE;
     const char *deviceD = UARTD_DEFAULT_DEVICE;
     const char *deviceE = UARTE_DEFAULT_DEVICE;
-    const char *deviceF = UARTF_DEFAULT_DEVICE;
 
     if (argc < 1) {
         printf("%s: missing command (try '%s start')", 
@@ -260,10 +230,8 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
             uartCDriver.set_device_path(deviceC);
             uartDDriver.set_device_path(deviceD);
             uartEDriver.set_device_path(deviceE);
-            uartFDriver.set_device_path(deviceF);
-
-            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s uartF=%s\n",
-                   SKETCHNAME, deviceA, deviceC, deviceD, deviceE, deviceF);
+            printf("Starting %s uartA=%s uartC=%s uartD=%s uartE=%s\n", 
+                   SKETCHNAME, deviceA, deviceC, deviceD, deviceE);
 
             _px4_thread_should_exit = false;
             daemon_task = px4_task_spawn_cmd(SKETCHNAME,
@@ -271,7 +239,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
                                              APM_MAIN_PRIORITY,
                                              APM_MAIN_THREAD_STACK_SIZE,
                                              main_loop,
-                                             nullptr);
+                                             NULL);
             exit(0);
         }
 
@@ -330,17 +298,6 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
                 deviceE = strdup(argv[i+1]);
             } else {
                 printf("missing parameter to -d4 DEVICE\n");
-                usage();
-                exit(1);
-            }
-        }
-
-        if (strcmp(argv[i], "-d5") == 0) {
-            // set uartF
-            if (argc > i + 1) {
-                deviceF = strdup(argv[i+1]);
-            } else {
-                printf("missing parameter to -d5 DEVICE\n");
                 usage();
                 exit(1);
             }

@@ -1,0 +1,61 @@
+#!/bin/sh
+
+case `uname` in
+    Darwin)
+	FG_DIR=/Volumes/Data/Applications/FlightGear.app/Contents/Resources
+	export DYLD_LIBRARY_PATH=${FG_DIR}/plugins
+	export LD_LIBRARY_PATH=${FG_DIR}/plugins
+	export FG_ROOT=${FG_DIR}/data
+	FGFS=${FG_DIR}/fgfs
+	FGFSOPTIONS=
+	;;
+    Linux)
+	FGFS=fgfs
+	FGFSOPTIONS=
+	;;
+esac
+
+if [ $# != 1 ]
+then
+	echo usage: $0 aircraft
+	echo choose one from below:
+	${FGFS} --show-aircraft
+	exit
+else
+	aircraft=$1
+fi
+
+if [ ! -z "${FG_DIR}" ]; then
+    if [ -d ${FG_DIR}/data/Protocol ]; then
+	    cp -v MAVLink.xml ${FG_DIR}/data/Protocol/
+    else
+	echo "FlightGear protocol definition directory ${FG_DIR}/data/Protocol doesn't exist."
+	exit 1
+    fi
+fi
+
+${FGFS} \
+    ${FGFSOPTIONS} \
+    --aircraft=$aircraft \
+    --geometry=400x300 \
+    --generic=socket,out,20,,5501,udp,MAVLink \
+    --generic=socket,in,50,,5500,udp,MAVLink \
+    --vc=30 \
+    --altitude=10000 \
+    --heading=90 \
+    --roll=0 \
+    --pitch=0 \
+    --wind=0@0 \
+    --turbulence=0.0 \
+    --prop:/sim/frame-rate-throttle-hz=30 \
+    --timeofday=noon \
+    --shading-flat \
+    --fog-disable \
+    --disable-specular-highlight \
+    --disable-skyblend \
+    --disable-random-objects \
+    --disable-panel \
+    --disable-horizon-effect \
+    --disable-clouds \
+    --disable-anti-alias-hud
+;;

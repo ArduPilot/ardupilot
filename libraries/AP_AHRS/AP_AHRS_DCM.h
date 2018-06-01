@@ -1,5 +1,6 @@
-#pragma once
-
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
+#ifndef __AP_AHRS_DCM_H__
+#define __AP_AHRS_DCM_H__
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,14 +22,36 @@
  *
  */
 
-class AP_AHRS_DCM : public AP_AHRS {
+class AP_AHRS_DCM : public AP_AHRS
+{
 public:
-    AP_AHRS_DCM()
-        : AP_AHRS()
-        , _error_rp(1.0f)
-        , _error_yaw(1.0f)
-        , _mag_earth(1, 0)
-        , _imu1_weight(0.5f)
+    // Constructors
+    AP_AHRS_DCM(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps) :
+        AP_AHRS(ins, baro, gps),
+        _omega_I_sum_time(0.0f),
+        _renorm_val_sum(0.0f),
+        _renorm_val_count(0),
+        _error_rp(1.0f),
+        _error_yaw(1.0f),
+        _gps_last_update(0),
+        _ra_deltat(0.0f),
+        _ra_sum_start(0),
+        _last_declination(0.0f),
+        _mag_earth(1,0),
+        _have_gps_lock(false),
+        _last_lat(0),
+        _last_lng(0),
+        _position_offset_north(0.0f),
+        _position_offset_east(0.0f),
+        _have_position(false),
+        _last_wind_time(0),
+        _last_airspeed(0.0f),
+        _last_consistent_heading(0),
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
+        _imu1_weight(0.5f),
+#endif
+        _last_failure_ms(0),
+        _last_startup_ms(0)
     {
         _dcm_matrix.identity();
 
@@ -38,69 +61,62 @@ public:
         _ki_yaw = 0.01f;
     }
 
-    /* Do not allow copies */
-    AP_AHRS_DCM(const AP_AHRS_DCM &other) = delete;
-    AP_AHRS_DCM &operator=(const AP_AHRS_DCM&) = delete;
-
-
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro() const override {
+    const Vector3f &get_gyro(void) const {
         return _omega;
     }
 
     // return rotation matrix representing rotaton from body to earth axes
-    const Matrix3f &get_rotation_body_to_ned() const override {
+    const Matrix3f &get_dcm_matrix(void) const {
         return _body_dcm_matrix;
     }
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift() const override {
+    const Vector3f &get_gyro_drift(void) const {
         return _omega_I;
     }
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
-    void reset_gyro_drift() override;
+    void reset_gyro_drift(void);
 
     // Methods
-    void            update(bool skip_ins_update=false) override;
-    void            reset(bool recover_eulers = false) override;
+    void            update(void);
+    void            reset(bool recover_eulers = false);
 
     // reset the current attitude, used on new IMU calibration
-    void reset_attitude(const float &roll, const float &pitch, const float &yaw) override;
+    void reset_attitude(const float &roll, const float &pitch, const float &yaw);
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc) const override;
+    virtual bool get_position(struct Location &loc) const;
 
     // status reporting
-    float           get_error_rp() const override {
+    float           get_error_rp(void) const {
         return _error_rp;
     }
-    float           get_error_yaw() const override {
+    float           get_error_yaw(void) const {
         return _error_yaw;
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() const override {
+    Vector3f wind_estimate(void) {
         return _wind;
     }
 
-    void get_relative_position_D_home(float &posD) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float *airspeed_ret) const override;
+    bool airspeed_estimate(float *airspeed_ret) const;
 
-    bool            use_compass() override;
+    bool            use_compass(void);
 
-    void set_home(const Location &loc) override;
+    void set_home(const Location &loc);
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
-    bool healthy() const override;
+    bool healthy(void) const;
 
     // time that the AHRS has been up
-    uint32_t uptime_ms() const override;
+    uint32_t uptime_ms(void) const;
 
 private:
     float _ki;
@@ -184,7 +200,9 @@ private:
     // estimated wind in m/s
     Vector3f _wind;
 
+#if HAL_CPU_CLASS >= HAL_CPU_CLASS_75
     float _imu1_weight;
+#endif
 
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;
@@ -192,3 +210,5 @@ private:
     // time when DCM was last reset
     uint32_t _last_startup_ms;
 };
+
+#endif // __AP_AHRS_DCM_H__

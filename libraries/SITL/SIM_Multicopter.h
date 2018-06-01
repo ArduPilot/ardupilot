@@ -1,3 +1,4 @@
+/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,14 +20,41 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
-#include "SIM_Motor.h"
-#include "SIM_Frame.h"
-
-#include "SIM_Sprayer.h"
-#include "SIM_Gripper_Servo.h"
-#include "SIM_Gripper_EPM.h"
 
 namespace SITL {
+
+/*
+  class to describe a motor position
+ */
+class Motor {
+public:
+    float angle;
+    bool clockwise;
+    uint8_t servo;
+
+    Motor(float _angle, bool _clockwise, uint8_t _servo) :
+        angle(_angle), // angle in degrees from front
+        clockwise(_clockwise), // clockwise == true, anti-clockwise == false
+        servo(_servo) // what servo output drives this motor
+    {}
+};
+
+/*
+  class to describe a multicopter frame type
+ */
+class Frame {
+public:
+    const char *name;
+    uint8_t num_motors;
+    const Motor *motors;
+
+    Frame(const char *_name,
+          uint8_t _num_motors,
+          const Motor *_motors) :
+        name(_name),
+        num_motors(_num_motors),
+        motors(_motors) {}
+};
 
 /*
   a multicopter simulator
@@ -43,18 +71,13 @@ public:
         return new MultiCopter(home_str, frame_str);
     }
 
-protected:
-    // calculate rotational and linear accelerations
-    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
-    Frame *frame;
+private:
+    const Frame *frame;
+    float hover_throttle; // 0..1
+    float terminal_velocity; // m/s
 
-    // The numbers below are the pwm output channels with "0" meaning the first output (aka RC1)
-    Sprayer sprayer{6, 7};
-    Gripper_Servo gripper{8};
-    Gripper_EPM gripper_epm{9};
-
-    float gross_mass() const override;
-
+    const float terminal_rotation_rate;
+    float thrust_scale;
 };
 
-}
+} // namespace SITL
