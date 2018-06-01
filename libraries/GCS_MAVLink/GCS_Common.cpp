@@ -1949,31 +1949,6 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 }
 
 
-void GCS_MAVLINK::handle_common_gps_message(mavlink_message_t *msg)
-{
-    AP::gps().handle_msg(msg);
-}
-
-
-void GCS_MAVLINK::handle_common_camera_message(const mavlink_message_t *msg)
-{
-    AP_Camera *camera = get_camera();
-    if (camera == nullptr) {
-        return;
-    }
-
-    switch (msg->msgid) {
-    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:      // MAV ID: 202
-        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONFIGURE
-        break;
-    case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        //deprecated.  Use MAV_CMD_DO_DIGICAM_CONTROL
-        camera->control_msg(msg);
-        break;
-    default:
-        break;
-    }
-}
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
 {
     AP_Camera *camera = get_camera();
@@ -2239,9 +2214,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_PARAM_SET:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
         handle_common_param_message(msg);
         break;
@@ -2260,22 +2233,22 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_timesync(msg);
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_ERASE:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
         break;
 
 
-    case MAVLINK_MSG_ID_DIGICAM_CONFIGURE:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
-        handle_common_camera_message(msg);
+        {
+            AP_Camera *camera = get_camera();
+            if (camera == nullptr) {
+                return;
+            }
+            camera->control_msg(msg);
+        }
         break;
 
     case MAVLINK_MSG_ID_SET_MODE:
@@ -2287,23 +2260,14 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_COUNT:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ITEM:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_REQUEST:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_ACK:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:
         handle_common_mission_message(msg);
         break;
@@ -2313,13 +2277,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_GPS_INPUT:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_HIL_GPS:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        handle_common_gps_message(msg);
+        AP::gps().handle_msg(msg);
         break;
 
     case MAVLINK_MSG_ID_STATUSTEXT:
@@ -2337,7 +2298,6 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         break;
 
     case MAVLINK_MSG_ID_RALLY_POINT:
-        FALLTHROUGH;
     case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
         handle_common_rally_message(msg);
         break;
@@ -2646,9 +2606,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        FALLTHROUGH;
     case MAV_CMD_DO_DIGICAM_CONTROL:
-        FALLTHROUGH;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         result = handle_command_camera(packet);
         break;
@@ -2680,11 +2638,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
         break;
 
     case MAV_CMD_DO_SET_SERVO:
-        FALLTHROUGH;
     case MAV_CMD_DO_REPEAT_SERVO:
-        FALLTHROUGH;
     case MAV_CMD_DO_SET_RELAY:
-        FALLTHROUGH;
     case MAV_CMD_DO_REPEAT_RELAY:
         result = handle_servorelay_message(packet);
         break;
@@ -2761,64 +2716,6 @@ void GCS_MAVLINK::send_hwstatus()
         chan,
         hal.analogin->board_voltage()*1000,
         0);
-}
-
-bool GCS_MAVLINK::try_send_gps_message(const enum ap_message id)
-{
-    bool ret = true;
-    switch(id) {
-    case MSG_SYSTEM_TIME:
-        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
-        send_system_time();
-        ret = true;
-        break;
-    case MSG_GPS_RAW:
-        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
-        AP::gps().send_mavlink_gps_raw(chan);
-        ret = true;
-        break;
-    case MSG_GPS_RTK:
-        CHECK_PAYLOAD_SIZE(GPS_RTK);
-        AP::gps().send_mavlink_gps_rtk(chan, 0);
-        ret = true;
-        break;
-    case MSG_GPS2_RAW:
-        CHECK_PAYLOAD_SIZE(GPS2_RAW);
-        AP::gps().send_mavlink_gps2_raw(chan);
-        ret = true;
-        break;
-    case MSG_GPS2_RTK:
-        CHECK_PAYLOAD_SIZE(GPS2_RTK);
-        AP::gps().send_mavlink_gps_rtk(chan, 1);
-        ret = true;
-        break;
-    default:
-        ret = true;
-        break;
-    }
-    return ret;
-}
-
-
-bool GCS_MAVLINK::try_send_camera_message(const enum ap_message id)
-{
-    AP_Camera *camera = get_camera();
-    if (camera == nullptr) {
-        return true;
-    }
-
-    bool ret = true;
-    switch(id) {
-    case MSG_CAMERA_FEEDBACK:
-        CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
-        camera->send_feedback(chan);
-        ret = true;
-        break;
-    default:
-        ret = true;
-        break;
-    }
-    return ret;
 }
 
 void GCS_MAVLINK::send_attitude() const
@@ -2906,15 +2803,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_CURRENT_WAYPOINT:
-        FALLTHROUGH;
     case MSG_MISSION_ITEM_REACHED:
-        FALLTHROUGH;
     case MSG_NEXT_WAYPOINT:
         ret = try_send_mission_message(id);
         break;
 
     case MSG_MAG_CAL_PROGRESS:
-        FALLTHROUGH;
     case MSG_MAG_CAL_REPORT:
         ret = try_send_compass_message(id);
         break;
@@ -2949,19 +2843,35 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_CAMERA_FEEDBACK:
-        ret = try_send_camera_message(id);
+        {
+            AP_Camera *camera = get_camera();
+            if (camera == nullptr) {
+                break;
+            }
+            CHECK_PAYLOAD_SIZE(CAMERA_FEEDBACK);
+            camera->send_feedback(chan);
+        }
         break;
 
-    case MSG_GPS_RAW:
-        FALLTHROUGH;
-    case MSG_GPS_RTK:
-        FALLTHROUGH;
-    case MSG_GPS2_RAW:
-        FALLTHROUGH;
-    case MSG_GPS2_RTK:
-        FALLTHROUGH;
     case MSG_SYSTEM_TIME:
-        ret = try_send_gps_message(id);
+        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+        send_system_time();
+        break;
+    case MSG_GPS_RAW:
+        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+        AP::gps().send_mavlink_gps_raw(chan);
+        break;
+    case MSG_GPS_RTK:
+        CHECK_PAYLOAD_SIZE(GPS_RTK);
+        AP::gps().send_mavlink_gps_rtk(chan, 0);
+        break;
+    case MSG_GPS2_RAW:
+        CHECK_PAYLOAD_SIZE(GPS2_RAW);
+        AP::gps().send_mavlink_gps2_raw(chan);
+        break;
+    case MSG_GPS2_RTK:
+        CHECK_PAYLOAD_SIZE(GPS2_RTK);
+        AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
 
     case MSG_LOCAL_POSITION:
