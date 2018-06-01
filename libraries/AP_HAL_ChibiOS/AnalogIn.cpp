@@ -303,7 +303,11 @@ void AnalogIn::_timer_tick(void)
     if (AP_HAL::millis() > 5000 && count++ == 10) {
         count = 0;
         uint16_t adc[6] {};
-        for (uint8_t i=0; i < ADC_GRP1_NUM_CHANNELS; i++) {
+        uint8_t n = ADC_GRP1_NUM_CHANNELS;
+        if (n > 6) {
+            n = 6;
+        }
+        for (uint8_t i=0; i < n; i++) {
             adc[i] = buf_adc[i];
         }
         mavlink_msg_ap_adc_send(MAVLINK_COMM_0, adc[0], adc[1], adc[2], adc[3], adc[4], adc[5]);
