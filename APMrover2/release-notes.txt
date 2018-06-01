@@ -1,11 +1,26 @@
 APMrover2 Release Notes:
 ========================
+Rover 3.4.0-rc1 01-Jun-2018
+Changes from 3.3.1-rc2:
+1) Loiter mode for boats
+2) Omni rover support (three wheeled rover with lateral movement)
+3) vision-position-estimate support for use with ROS
+4) Control improvements:
+   a) reversing control improvements
+   b) ATC_DECEL_MAX allows deceleration to be faster or slower than acceleration
+   c) PIVOT_TURN_RATE allows slower pivot turns
+   d) turn-rate I-term reset when switching in from manual modes
+5) NMEA Echosounder support for underwater depth monitoring
+6) Bug fixes:
+   a) fix forward/back acceleration limiting
+   b) MaxsonarI2C driver fix
+--------------------------------
 Rover 3.3.1-rc2 12-May-2018
 Changes from 3.3.1-rc1:
 1) Bug fix use of ATC_STR_RAT_MAX to limit maximum turn rate
 --------------------------------
 Rover V3.3.1-rc1 09-May-2018
-Changes from 3.3.1-rc1:
+Changes from 3.3.0:
 1) Vectored Thrust to improve attitude control for boats with rotating motors
 2) minor changes and bug fixes:
     a) remove jump forward when transitioning from forward to reverse
