@@ -133,6 +133,7 @@ void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
         if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
             distance = d;
             new_distance = true;
+            last_update_ms = AP_HAL::millis();
             _sem->give();
         }
     }
@@ -148,9 +149,10 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
             state.distance_cm = distance;
             new_distance = false;
             update_status();
-        } else {
+        } else if (AP_HAL::millis() - last_update_ms > 300) {
+            // if no updates for 0.3 seconds set no-data
             set_status(RangeFinder::RangeFinder_NoData);
         }
-         _sem->give();
+        _sem->give();
     }
 }
