@@ -1796,6 +1796,11 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         // play a tone
         AP_Notify::events.waypoint_complete = 1;
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+
+        Vector3f dest = copter.wp_nav->get_wp_destination() * 0.01f;
+        dest.z = -(dest.z);
+        copter.g2.smart_rtl.update(copter.position_ok(), dest);
+
         return true;
     }else{
         return false;

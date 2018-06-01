@@ -144,7 +144,7 @@ void Copter::ModeSmartRTL::pre_land_position_run()
 // save current position for use by the smart_rtl flight mode
 void Copter::ModeSmartRTL::save_position()
 {
-    const bool should_save_position = motors->armed() && (copter.control_mode != SMART_RTL);
+    const bool should_save_position = motors->armed() && (copter.control_mode != SMART_RTL) && (copter.control_mode != AUTO);
 
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
