@@ -297,11 +297,9 @@ protected:
     void handle_param_request_read(mavlink_message_t *msg);
     virtual bool params_ready() const { return true; }
 
-    void handle_common_gps_message(mavlink_message_t *msg);
     void handle_common_rally_message(mavlink_message_t *msg);
     void handle_rally_fetch_point(mavlink_message_t *msg);
     void handle_rally_point(mavlink_message_t *msg);
-    void handle_common_camera_message(const mavlink_message_t *msg);
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
@@ -361,8 +359,6 @@ protected:
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
-    bool try_send_camera_message(enum ap_message id);
-    bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 
