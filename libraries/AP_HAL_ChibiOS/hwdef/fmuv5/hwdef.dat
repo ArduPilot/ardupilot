@@ -5,9 +5,12 @@
 # but without the TFT interface
 MCU STM32F7xx STM32F767xx
 
-# we treat DTCM, SRAM1 and SRAM2 as a single memory region, but
-# use DMA management operations for all DMA transfers
-RAM_SIZE_KB 512
+# use SRAM1 and SRAM2 as main memory, giving the fastest possible
+# memory. Use DTCM for DMA memory as it needs no data cache operations
+RAM_SIZE_KB 384
+RAM_BASE_ADDRESS 0x20020000
+define DTCM_RAM_SIZE 128
+define DTCM_BASE_ADDRESS 0x20000000
 
 # crystal frequency
 OSCILLATOR_HZ 16000000

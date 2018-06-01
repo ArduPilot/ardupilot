@@ -30,13 +30,7 @@
 #include <chheap.h>
 #include <stdarg.h>
 
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-// to allow for dma management functions we need buffers to be
-// aligned to the cache line size
-#define MIN_ALIGNMENT 32
-#else
 #define MIN_ALIGNMENT 8
-#endif
 
 #if defined(CCM_RAM_SIZE)
 #ifndef CCM_BASE_ADDRESS
@@ -44,6 +38,11 @@
 #endif
 static memory_heap_t ccm_heap;
 static bool ccm_heap_initialised = false;
+#endif
+
+#if defined(DTCM_RAM_SIZE) && defined(DTCM_BASE_ADDRESS)
+static memory_heap_t dtcm_heap;
+static bool dtcm_heap_initialised = false;
 #endif
 
 void *malloc_ccm(size_t size)
@@ -64,6 +63,24 @@ void *malloc_ccm(size_t size)
     return p;
 }
 
+void *malloc_dtcm(size_t size)
+{
+    void *p = NULL;
+#if defined(DTCM_RAM_SIZE)
+    if (!dtcm_heap_initialised) {
+        dtcm_heap_initialised = true;
+        chHeapObjectInit(&dtcm_heap, (void *)DTCM_BASE_ADDRESS, DTCM_RAM_SIZE*1024);
+    }
+    p = chHeapAllocAligned(&dtcm_heap, size, CH_HEAP_ALIGNMENT);
+    if (p != NULL) {
+        memset(p, 0, size);
+    }
+#else
+    (void)size;
+#endif
+    return p;
+}
+
 void *malloc(size_t size)
 {
     if (size == 0) {
@@ -72,11 +89,23 @@ void *malloc(size_t size)
     void *p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
     if (p) {
         memset(p, 0, size);
-    } else {
-        // fall back to CCM memory when main memory full
-        p = malloc_ccm(size);
+        return p;
     }
-    return p;
+    if (!p) {
+        // fall back to CCM memory
+        p = malloc_ccm(size);
+        if (p) {
+            return p;
+        }
+    }
+    if (!p) {
+        // fall back to DTCM memory
+        p = malloc_dtcm(size);
+        if (p) {
+            return p;
+        }
+    }
+    return NULL;
 }
 
 void *calloc(size_t nmemb, size_t size)
@@ -107,6 +136,12 @@ size_t mem_available(void)
     size_t ccm_available = 0;
     chHeapStatus(&ccm_heap, &ccm_available, NULL);
     totalp += ccm_available;
+#endif
+
+#if defined(DTCM_RAM_SIZE) && defined(DTCM_BASE_ADDRESS)
+    size_t dtcm_available = 0;
+    chHeapStatus(&dtcm_heap, &dtcm_available, NULL);
+    totalp += dtcm_available;
 #endif
     
     return totalp;

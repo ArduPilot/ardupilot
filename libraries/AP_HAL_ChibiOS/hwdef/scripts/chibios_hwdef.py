@@ -310,10 +310,16 @@ def get_config(name, column=0, required=True, default=None, type=None, spaces=Fa
         ret = config[name][column]
     
     if type is not None:
-        try:
-            ret = type(ret)
-        except Exception:
-            error("Badly formed config value %s (got %s)" % (name, ret))
+        if type == int and ret.startswith('0x'):
+            try:
+                ret = int(ret,16)
+            except Exception:
+                error("Badly formed config value %s (got %s)" % (name, ret))
+        else:
+            try:
+                ret = type(ret)
+            except Exception:
+                error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
 
 def enable_can(f):
@@ -410,6 +416,7 @@ def write_ldscript(fname):
 
     # ram size
     ram_size = get_config('RAM_SIZE_KB', default=192, type=int)
+    ram_base = get_config('RAM_BASE_ADDRESS', default=0x20000000, type=int)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
     flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -420,11 +427,11 @@ def write_ldscript(fname):
 MEMORY
 {
     flash : org = 0x%08x, len = %uK
-    ram0  : org = 0x20000000, len = %uk
+    ram0  : org = 0x%08x, len = %uk
 }
 
 INCLUDE common.ld
-''' % (flash_base, flash_length, ram_size))
+''' % (flash_base, flash_length, ram_base, ram_size))
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
