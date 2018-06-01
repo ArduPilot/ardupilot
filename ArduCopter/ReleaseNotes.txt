@@ -1,5 +1,26 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc2 01-Jun-2018
+Changes from 3.6.0-rc1
+1) ChibiOS support for Holybro Kakute F4
+2) Range finders:
+    a) Benewake TFmini and TF02 support
+    b) WASP200 laser range finder support
+3) D-Shot and ESC telemetry support
+4) Vision-position-estimate support for use with ROS
+5) Bug fixes and minor enhancements:
+    a) TradHeli swash plate servo trim fixes
+    b) SmartRTL gives pilot yaw control
+    c) marvelmind reliability improvements
+    d) CoaxCopter and SingleCopter output fixes
+    e) Maxbotics I2C sonar health fix
+6) Safety fixes/improvements:
+    a) GPS/EKF failsafe disabled in Acro/Stabilize modes
+    b) interlock switch arming check fixed
+    c) Auxiliary switch de-bouncing
+    d) pre-arm check for GPS/AHRS difference changed to 2D (to avoid false positives)
+    e) startup crash fixed when VL53L0X lidar configured but not connected
+------------------------------------------------------------------
 Copter 3.6.0-rc1 19-Apr-2018
 Changes from 3.5.5
 1) ChibiOS support including F4BY, OpenPilot Revo Mini, TauLabs Sparky2 boards
