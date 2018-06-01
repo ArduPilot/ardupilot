@@ -12,6 +12,8 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/safety.h>
 #include <systemlib/board_serial.h>
+#include <drivers/drv_gpio.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,35 +37,35 @@ VRBRAINUtil::VRBRAINUtil(void) : Util()
 bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
 {
 	VRBRAINUARTDriver *uart = (VRBRAINUARTDriver *)stream;
-	int fd;
+    int fd;
 
-	// trigger exit in the other threads. This stops use of the
-	// various driver handles, and especially the px4io handle,
-	// which otherwise would cause a crash if px4io is stopped in
-	// the shell
-	_vrbrain_thread_should_exit = true;
+    // trigger exit in the other threads. This stops use of the
+    // various driver handles, and especially the px4io handle,
+    // which otherwise would cause a crash if px4io is stopped in
+    // the shell
+    _vrbrain_thread_should_exit = true;
+    
+    // take control of stream fd
+    fd = uart->_get_fd();
 
-	// take control of stream fd
-	fd = uart->_get_fd();
-
-	// mark it blocking (nsh expects a blocking fd)
-        unsigned v;
-        v = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, v & ~O_NONBLOCK);	
-
-	// setup the UART on stdin/stdout/stderr
-	close(0);
-	close(1);
-	close(2);
-	dup2(fd, 0);
-	dup2(fd, 1);
-	dup2(fd, 2);
-
-	nsh_consolemain(0, NULL);
-
-	// this shouldn't happen
-	hal.console->printf("shell exited\n");
-	return true;
+    // mark it blocking (nsh expects a blocking fd)
+    unsigned v;
+    v = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, v & ~O_NONBLOCK);	
+    
+    // setup the UART on stdin/stdout/stderr
+    close(0);
+    close(1);
+    close(2);
+    dup2(fd, 0);
+    dup2(fd, 1);
+    dup2(fd, 2);
+    
+    nsh_consolemain(0, nullptr);
+    
+    // this shouldn't happen
+    hal.console->printf("shell exited\n");
+    return true;
 }
 
 /*
@@ -71,6 +73,10 @@ bool VRBRAINUtil::run_debug_shell(AP_HAL::BetterStream *stream)
  */
 enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 {
+#if !HAL_HAVE_SAFETY_SWITCH
+    return AP_HAL::Util::SAFETY_NONE;
+#endif
+
     if (_safety_handle == -1) {
         _safety_handle = orb_subscribe(ORB_ID(safety));
     }
@@ -93,8 +99,8 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
 void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
 {
     timespec ts;
-    ts.tv_sec = time_utc_usec/1.0e6f;
-    ts.tv_nsec = (time_utc_usec % 1000000) * 1000;
+    ts.tv_sec = time_utc_usec/1000000ULL;
+    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
     clock_settime(CLOCK_REALTIME, &ts);    
 }
 
@@ -112,12 +118,16 @@ bool VRBRAINUtil::get_system_id(char buf[40])
     const char *board_type = "VRBRAINv51";
 #elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
     const char *board_type = "VRBRAINv52";
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
+    const char *board_type = "VRBRAINv52E";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
     const char *board_type = "VRUBRAINv51";
 #elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
     const char *board_type = "VRUBRAINv52";
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-    const char *board_type = "VRHEROv10";
+#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10)
+    const char *board_type = "VRCOREv10";
+#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
+    const char *board_type = "VRBRAINv54";
 #endif
     // this format is chosen to match the human_readable_serial()
     // function in auth.c
@@ -132,14 +142,133 @@ bool VRBRAINUtil::get_system_id(char buf[40])
 /**
    how much free memory do we have in bytes.
 */
-uint16_t VRBRAINUtil::available_memory(void)
+uint32_t VRBRAINUtil::available_memory(void)
 {
-    struct mallinfo mem;
-    mem = mallinfo();
-    if (mem.fordblks > 0xFFFF) {
-        return 0xFFFF;
+    return mallinfo().fordblks;
+}
+
+/*
+  AP_HAL wrapper around PX4 perf counters
+ */
+VRBRAINUtil::perf_counter_t VRBRAINUtil::perf_alloc(VRBRAINUtil::perf_counter_type t, const char *name)
+{
+    ::perf_counter_type vrbrain_t;
+    switch (t) {
+    case VRBRAINUtil::PC_COUNT:
+        vrbrain_t = ::PC_COUNT;
+        break;
+    case VRBRAINUtil::PC_ELAPSED:
+        vrbrain_t = ::PC_ELAPSED;
+        break;
+    case VRBRAINUtil::PC_INTERVAL:
+        vrbrain_t = ::PC_INTERVAL;
+        break;
+    default:
+        return nullptr;
     }
-    return mem.fordblks;
+    return (perf_counter_t)::perf_alloc(vrbrain_t, name);
+}
+
+void VRBRAINUtil::perf_begin(perf_counter_t h)
+{
+    ::perf_begin((::perf_counter_t)h);
+}
+
+void VRBRAINUtil::perf_end(perf_counter_t h)
+{
+    ::perf_end((::perf_counter_t)h);
+}
+
+void VRBRAINUtil::perf_count(perf_counter_t h)
+{
+    ::perf_count((::perf_counter_t)h);
+}
+
+void VRBRAINUtil::set_imu_temp(float current)
+{
+    if (!_heater.target || *_heater.target == -1) {
+        return;
+    }
+
+    // average over temperatures to remove noise
+    _heater.count++;
+    _heater.sum += current;
+    
+    // update once a second
+    uint32_t now = AP_HAL::millis();
+    if (now - _heater.last_update_ms < 1000) {
+        return;
+    }
+    _heater.last_update_ms = now;
+
+    current = _heater.sum / _heater.count;
+    _heater.sum = 0;
+    _heater.count = 0;
+
+    // experimentally tweaked for Pixhawk2
+    const float kI = 0.3f;
+    const float kP = 200.0f;
+    float target = (float)(*_heater.target);
+
+    // limit to 65 degrees to prevent damage
+    target = constrain_float(target, 0, 65);
+    
+    float err = target - current;
+
+    _heater.integrator += kI * err;
+    _heater.integrator = constrain_float(_heater.integrator, 0, 70);
+
+    float output = constrain_float(kP * err + _heater.integrator, 0, 100);
+    
+    // hal.console->printf("integrator %.1f out=%.1f temp=%.2f err=%.2f\n", _heater.integrator, output, current, err);
+
+    if (_heater.fd == -1) {
+        _heater.fd = open("/dev/px4io", O_RDWR);
+    }
+    if (_heater.fd != -1) {
+        ioctl(_heater.fd, GPIO_SET_HEATER_DUTY_CYCLE, (unsigned)output);
+    }
+   
+}
+
+void VRBRAINUtil::set_imu_target_temp(int8_t *target)
+{
+    _heater.target = target;
+}
+
+
+extern "C" {
+    extern void *fat_dma_alloc(size_t);
+    extern void fat_dma_free(void *, size_t);
+}
+
+/*
+  allocate DMA-capable memory if possible. Otherwise return normal
+  memory.
+*/
+void *VRBRAINUtil::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+
+
+
+
+
+
+
+    return calloc(1, size);
+
+}
+void VRBRAINUtil::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
+{
+
+
+
+
+
+
+
+    return free(ptr);
+
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN

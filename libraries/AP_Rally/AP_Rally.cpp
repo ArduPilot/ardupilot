@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Rally.h
 /// @brief   Handles rally point storage and retrieval.
 #include "AP_Rally.h"
@@ -10,26 +8,18 @@ extern const AP_HAL::HAL& hal;
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
-// ArduCopter/defines.h sets this, and this definition will be moved into ArduPlane/defines.h when that is patched to use the lib
-#ifdef APM_BUILD_DIRECTORY
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    #define RALLY_LIMIT_KM_DEFAULT 0.3f
-    #define RALLY_INCLUDE_HOME_DEFAULT 1
-  #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    #define RALLY_LIMIT_KM_DEFAULT 5.0f
-    #define RALLY_INCLUDE_HOME_DEFAULT 0
-  #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
-    #define RALLY_LIMIT_KM_DEFAULT 0.5f
-    #define RALLY_INCLUDE_HOME_DEFAULT 0
-  #endif
-#endif  // APM_BUILD_DIRECTORY
-
-#ifndef RALLY_LIMIT_KM_DEFAULT
-#define RALLY_LIMIT_KM_DEFAULT 1.0f
-#endif
-
-#ifndef RALLY_INCLUDE_HOME_DEFAULT
-#define RALLY_INCLUDE_HOME_DEFAULT 0
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+  #define RALLY_LIMIT_KM_DEFAULT 0.3f
+  #define RALLY_INCLUDE_HOME_DEFAULT 1
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+  #define RALLY_LIMIT_KM_DEFAULT 5.0f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+  #define RALLY_LIMIT_KM_DEFAULT 0.5f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
+#else
+  #define RALLY_LIMIT_KM_DEFAULT 1.0f
+  #define RALLY_INCLUDE_HOME_DEFAULT 0
 #endif
 
 const AP_Param::GroupInfo AP_Rally::var_info[] = {
@@ -43,7 +33,7 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
     // @DisplayName: Rally Limit
     // @Description: Maximum distance to rally point. If the closest rally point is more than this number of kilometers from the current position and the home location is closer than any of the rally points from the current position then do RTL to home rather than to the closest rally point. This prevents a leftover rally point from a different airfield being used accidentally. If this is set to 0 then the closest rally point is always used.
     // @User: Advanced
-    // @Units: kilometers
+    // @Units: km
     // @Increment: 0.1
     AP_GROUPINFO("LIMIT_KM", 1, AP_Rally, _rally_limit_km, RALLY_LIMIT_KM_DEFAULT),
 
@@ -94,7 +84,7 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _storage.write_block(i * sizeof(RallyLocation), &rallyLoc, sizeof(RallyLocation));
 
-    _last_change_time_ms = hal.scheduler->millis();
+    _last_change_time_ms = AP_HAL::millis();
 
     return true;
 }
@@ -132,7 +122,7 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
         Location rally_loc = rally_location_to_location(next_rally);
         float dis = get_distance(current_loc, rally_loc);
 
-        if (dis < min_dis || min_dis < 0) {
+        if (is_valid(rally_loc) && (dis < min_dis || min_dis < 0)) {
             min_dis = dis;
             return_loc = next_rally;
         }

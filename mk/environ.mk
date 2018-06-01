@@ -4,8 +4,11 @@
 #
 SYSTYPE			:=	$(shell uname)
 
-GIT_VERSION := $(shell git rev-parse HEAD | cut -c1-8)
+GIT_VERSION ?= $(shell git rev-parse HEAD | cut -c1-8)
 EXTRAFLAGS += -DGIT_VERSION="\"$(GIT_VERSION)\""
+
+# Add missing parts from libc and libstdc++ for all boards
+EXTRAFLAGS += -I$(SKETCHBOOK)/libraries/AP_Common/missing
 
 # force LANG to C so awk works sanely on MacOS
 export LANG=C
@@ -31,15 +34,6 @@ endif
 #
 ifeq ($(SKETCHBOOK),)
   SKETCHBOOK		:=	$(shell cd $(SRCROOT)/.. && pwd)
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../.. && pwd)
-  endif
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../.. && pwd)
-  endif
-  ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
-    SKETCHBOOK		:=	$(shell cd $(SRCROOT)/../../../.. && pwd)
-  endif
   ifeq ($(wildcard $(SKETCHBOOK)/libraries),)
     $(error ERROR: cannot determine sketchbook location - please specify on the commandline with SKETCHBOOK=<path>)
   endif
@@ -96,8 +90,8 @@ ifneq ($(findstring vrubrain, $(MAKECMDGOALS)),)
 BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
 
-ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
-# when building vrbrain we need all sources to be inside the sketchbook directory
+ifneq ($(findstring vrcore, $(MAKECMDGOALS)),)
+# when building vrcore we need all sources to be inside the sketchbook directory
 # as the NuttX build system relies on it
 BUILDROOT		:=	$(SKETCHBOOK)/Build.$(SKETCH)
 endif
@@ -117,6 +111,16 @@ ifneq ($(findstring CYGWIN, $(SYSTYPE)),)
   endif
 endif
 
+ifneq ($(findstring mavlink1, $(MAKECMDGOALS)),)
+EXTRAFLAGS += -DMAVLINK_PROTOCOL_VERSION=1
+MAVLINK_SUBDIR=v1.0
+MAVLINK_WIRE_PROTOCOL=1.0
+else
+EXTRAFLAGS += -DMAVLINK_PROTOCOL_VERSION=2
+MAVLINK_SUBDIR=v2.0
+MAVLINK_WIRE_PROTOCOL=2.0
+endif
+
 ifneq ($(APPDIR),)
 # this is a recusive PX4 build
 HAL_BOARD = HAL_BOARD_PX4
@@ -132,52 +136,6 @@ HAL_BOARD = HAL_BOARD_SITL
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
-ifneq ($(findstring linux, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NONE
-endif
-
-ifneq ($(findstring erleboard, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
-endif
-
-ifneq ($(findstring zynq, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_ZYNQ
-endif
-
-ifneq ($(findstring pxf, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_PXF
-endif
-
-ifneq ($(findstring bebop, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BEBOP
-endif
-
-
-ifneq ($(findstring navio, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_NAVIO
-endif
-
-ifneq ($(findstring raspilot, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_RASPILOT
-endif
-
-ifneq ($(findstring bbbmini, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-endif
-
-ifneq ($(findstring minlure, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_LINUX
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_LINUX_MINLURE
-endif
-
 ifneq ($(findstring vrbrain, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
@@ -188,23 +146,14 @@ HAL_BOARD = HAL_BOARD_VRBRAIN
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
-ifneq ($(findstring vrhero, $(MAKECMDGOALS)),)
+ifneq ($(findstring vrcore, $(MAKECMDGOALS)),)
 HAL_BOARD = HAL_BOARD_VRBRAIN
 HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
-ifneq ($(findstring apm1, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_APM1
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM1
-endif
-
-ifneq ($(findstring apm2, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_APM2
-HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_AVR_APM2
-endif
-
-ifneq ($(findstring flymaple, $(MAKECMDGOALS)),)
-HAL_BOARD = HAL_BOARD_FLYMAPLE
+ifneq ($(findstring f4light, $(MAKECMDGOALS)),)
+HAL_BOARD = HAL_BOARD_F4LIGHT
+HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_NONE
 endif
 
 # default to SITL

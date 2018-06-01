@@ -15,8 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __TONE_ALARM_PX4_H__
-#define __TONE_ALARM_PX4_H__
+#pragma once
 
 #include "NotifyDevice.h"
 
@@ -32,6 +31,9 @@ public:
     /// update - updates led according to timed_updated.  Should be called at 50Hz
     void update();
 
+    // handle a PLAY_TUNE message
+    void handle_play_tune(mavlink_message_t *msg);
+    
 private:
     /// play_tune - play one of the pre-defined tunes
     void play_tone(const uint8_t tone_index);
@@ -49,14 +51,18 @@ private:
 
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
-        uint8_t armed                 : 1;    // 0 = disarmed, 1 = armed
-        uint8_t failsafe_battery      : 1;    // 1 if battery failsafe
-        uint8_t parachute_release     : 1;    // 1 if parachute is being released
-        uint8_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
-        uint8_t failsafe_radio        : 1;    // 1 if radio failsafe
-        uint8_t vehicle_lost          : 1;    // 1 if lost copter tone requested
-        uint8_t compass_cal_running   : 1;    // 1 if compass calibration is running
+        uint16_t armed                 : 1;    // 0 = disarmed, 1 = armed
+        uint16_t failsafe_battery      : 1;    // 1 if battery failsafe
+        uint16_t parachute_release     : 1;    // 1 if parachute is being released
+        uint16_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
+        uint16_t failsafe_radio        : 1;    // 1 if radio failsafe
+        uint16_t vehicle_lost          : 1;    // 1 if lost copter tone requested
+        uint16_t compass_cal_running   : 1;    // 1 if compass calibration is running
+        uint16_t waiting_for_throw     : 1;    // 1 if waiting for copter throw launch
+        uint16_t leak_detected         : 1;    // 1 if leak detected
+        uint16_t powering_off          : 1;    // 1 if smart battery is powering off
     } flags;
+    bool _have_played_ready_tone : 1;
 
     int8_t _cont_tone_playing;
     int8_t _tone_playing;
@@ -69,5 +75,3 @@ private:
 
     const static Tone _tones[];
 };
-
-#endif // __TONE_ALARM_PX4_H__

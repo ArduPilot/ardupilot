@@ -11,7 +11,6 @@
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>
@@ -28,10 +27,13 @@
 
 #include <AP_Mount/AP_Mount.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 void setup () {
-    hal.console->println("Unit test for AP_Mount. This sketch"
+    hal.console->printf("%s\n", "Unit test for AP_Mount. This sketch"
                 "has no functionality, it only tests build.");
 }
 void loop () {}

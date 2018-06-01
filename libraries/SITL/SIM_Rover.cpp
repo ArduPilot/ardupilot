@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,23 +19,23 @@
 #include "SIM_Rover.h"
 
 #include <string.h>
+#include <stdio.h>
 
 namespace SITL {
 
 SimRover::SimRover(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     max_speed(20),
-    max_accel(30),
-    wheelbase(0.335),
-    wheeltrack(0.296),
+    max_accel(10),
     max_wheel_turn(35),
     turning_circle(1.8),
     skid_turn_rate(140), // degrees/sec
     skid_steering(false)
 {
-    skid_steering = strstr(frame_str, "skid") != NULL;
+    skid_steering = strstr(frame_str, "skid") != nullptr;
 
     if (skid_steering) {
+        printf("SKID Steering Rover Simulation Started\n");
         // these are taken from a 6V wild thumper with skid steering,
         // with a sabertooth controller
         max_accel = 14;
@@ -54,7 +53,7 @@ float SimRover::turn_circle(float steering)
     if (fabsf(steering) < 1.0e-6) {
         return 0;
     }
-    return turning_circle * sinf(radians(35)) / sinf(radians(steering*35));
+    return turning_circle * sinf(radians(max_wheel_turn)) / sinf(radians(steering*max_wheel_turn));
 }
 
 /*
@@ -69,7 +68,7 @@ float SimRover::calc_yaw_rate(float steering, float speed)
         return 0;
     }
     float d = turn_circle(steering);
-    float c = M_PI_F * d;
+    float c = M_PI * d;
     float t = c / speed;
     float rate = 360.0f / t;
     return rate;
@@ -149,10 +148,13 @@ void SimRover::update(const struct sitl_input &input)
 
     // new position vector
     position += velocity_ef * delta_time;
-    position.z = -home.alt*0.01f;
 
     // update lat/lon/altitude
     update_position();
+    time_advance();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

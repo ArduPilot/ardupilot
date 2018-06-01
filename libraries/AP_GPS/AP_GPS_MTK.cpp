@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -115,7 +114,7 @@ restart:
         // Receive message data
         //
         case 4:
-            _buffer.bytes[_payload_counter++] = data;
+            _buffer[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
             if (_payload_counter == sizeof(_buffer))
                 _step++;
@@ -147,7 +146,7 @@ restart:
             state.location.lng  = swap_int32(_buffer.msg.longitude) * 10;
             state.location.alt  = swap_int32(_buffer.msg.altitude);
             state.ground_speed      = swap_int32(_buffer.msg.ground_speed) * 0.01f;
-            state.ground_course_cd  = wrap_360_cd(swap_int32(_buffer.msg.ground_course) / 10000);
+            state.ground_course     = wrap_360(swap_int32(_buffer.msg.ground_course) * 1.0e-6f);
             state.num_sats          = _buffer.msg.satellites;
 
             if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
@@ -177,6 +176,7 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
                 break;
             }
             state.step = 0;
+            FALLTHROUGH;
         case 0:
 			state.ck_b = state.ck_a = state.payload_counter = 0;
             if(PREAMBLE1 == data)

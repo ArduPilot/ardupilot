@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,7 +27,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @DisplayName: Pitch Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved pitch angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
 	// @Range: 0.4 1.0
-	// @Units: seconds
+	// @Units: s
 	// @Increment: 0.1
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_PitchController, gains.tau,       0.5f),
@@ -39,7 +38,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Range: 0.1 3.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.4f),
+	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          0.6f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -55,13 +54,13 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Range: 0 0.5
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.04f),
+	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.15f),
 
 	// @Param: RMAX_UP
 	// @DisplayName: Pitch up max rate
 	// @Description: This sets the maximum nose up pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
-	// @Units: degrees/second
+	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("RMAX_UP",     4, AP_PitchController, gains.rmax,   0.0f),
@@ -70,7 +69,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @DisplayName: Pitch down max rate
 	// @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
 	// @Range: 0 100
-	// @Units: degrees/second
+	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
 	AP_GROUPINFO("RMAX_DN",     5, AP_PitchController, _max_rate_neg,   0.0f),
@@ -114,7 +113,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 */
 int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed)
 {
-	uint32_t tnow = hal.scheduler->millis();
+	uint32_t tnow = AP_HAL::millis();
 	uint32_t dt = tnow - _last_t;
 	
 	if (_last_t == 0 || dt > 1000) {
@@ -136,16 +135,30 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// This means elevator trim offset doesn't change as the value of scaler changes with airspeed
 	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
 	if (!disable_integrator && gains.I > 0) {
-        float ki_rate = gains.I * gains.tau;
+        float k_I = gains.I;
+        if (is_zero(gains.FF)) {
+            /*
+              if the user hasn't set a direct FF then assume they are
+              not doing sophisticated tuning. Set a minimum I value of
+              0.15 to ensure that the time constant for trimming in
+              pitch is not too long. We have had a lot of user issues
+              with very small I value leading to very slow pitch
+              trimming, which causes a lot of problems for TECS. A
+              value of 0.15 is still quite small, but a lot better
+              than what many users are running.
+             */
+            k_I = MAX(k_I, 0.15f);
+        }
+        float ki_rate = k_I * gains.tau;
 		//only integrate if gain and time step are positive and airspeed above min value.
 		if (dt > 0 && aspeed > 0.5f*float(aparm.airspeed_min)) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
 			if (_last_out < -45) {
 				// prevent the integrator from increasing if surface defln demand is above the upper limit
-				integrator_delta = max(integrator_delta , 0);
+				integrator_delta = MAX(integrator_delta , 0);
 			} else if (_last_out > 45) {
 				// prevent the integrator from decreasing if surface defln demand  is below the lower limit
-				integrator_delta = min(integrator_delta , 0);
+				integrator_delta = MIN(integrator_delta , 0);
 			}
 			_pid_info.I += integrator_delta;
 		}
@@ -162,7 +175,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
 	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
     // No conversion is required for K_D
     float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = max((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
+	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	
 	// Calculate the demanded control surface deflection
@@ -187,7 +200,27 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
 
 	_last_out += _pid_info.I;
-	
+
+    /*
+      when we are past the users defined roll limit for the
+      aircraft our priority should be to bring the aircraft back
+      within the roll limit. Using elevator for pitch control at
+      large roll angles is ineffective, and can be counter
+      productive as it induces earth-frame yaw which can reduce
+      the ability to roll. We linearly reduce elevator input when
+      beyond the configured roll limit, reducing to zero at 90
+      degrees
+    */
+    float roll_wrapped = fabsf(_ahrs.roll_sensor);
+    if (roll_wrapped > 9000) {
+        roll_wrapped = 18000 - roll_wrapped;
+    }
+    if (roll_wrapped > aparm.roll_limit_cd + 500 && aparm.roll_limit_cd < 8500 &&
+        labs(_ahrs.pitch_sensor) < 7000) {
+        float roll_prop = (roll_wrapped - (aparm.roll_limit_cd+500)) / (float)(9000 - aparm.roll_limit_cd);
+        _last_out *= (1 - roll_prop);
+    }
+    
 	// Convert to centi-degrees and constrain
 	return constrain_float(_last_out * 100, -4500, 4500);
 }
@@ -244,7 +277,7 @@ float AP_PitchController::_get_coordination_rate_offset(float &aspeed, bool &inv
         // don't do turn coordination handling when at very high pitch angles
         rate_offset = 0;
     } else {
-        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / max((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        rate_offset = cosf(_ahrs.pitch)*fabsf(ToDeg((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()) , float(aparm.airspeed_min))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
     }
 	if (inverted) {
 		rate_offset = -rate_offset;

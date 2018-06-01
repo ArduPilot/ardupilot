@@ -71,7 +71,7 @@ int main (void)
    uint32_t *iram;
    uint32_t *ctrl;
 
-   mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+   mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
 
    ring_buffer = (struct ring_buffer*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCIN_PRUSS_RAM_BASE);
    pwm = (struct pwm*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_RAM_BASE);

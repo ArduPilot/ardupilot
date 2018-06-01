@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,31 +12,29 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef __HEAT_PWM_H__
-#define __HEAT_PWM_H__
+#pragma once
 
 #include "AP_HAL_Linux.h"
+#include "PWM_Sysfs.h"
 #include "Heat.h"
 
-class Linux::HeatPwm : public Linux::Heat {
+namespace Linux {
+
+class HeatPwm : public Heat {
 public:
-    HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki,uint32_t period_ns, float target);
-    void set_imu_temp(float current)override;
+    HeatPwm(uint8_t pwm_num, float Kp, float Ki,
+            uint32_t period_ns);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
 
 private:
-    int _duty_fd = -1;
-    int _period_fd = -1;
-    int _run_fd = -1;
+    PWM_Sysfs_Base *_pwm;
     uint32_t _last_temp_update = 0;
     float _Kp;
     float _Ki;
     uint32_t _period_ns;
     float _sum_error;
-    float _target;
-
-    void _set_duty(uint32_t duty);
-    void _set_period(uint32_t period);
-    void _set_run();
+    int8_t *_target = nullptr;
 };
-#endif
+
+}

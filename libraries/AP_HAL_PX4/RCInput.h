@@ -1,27 +1,35 @@
-
-#ifndef __AP_HAL_PX4_RCINPUT_H__
-#define __AP_HAL_PX4_RCINPUT_H__
+#pragma once
 
 #include "AP_HAL_PX4.h"
 #include <drivers/drv_rc_input.h>
 #include <systemlib/perf_counter.h>
 #include <pthread.h>
+#include <AP_Radio/AP_Radio.h>
+
+
+#ifndef RC_INPUT_MAX_CHANNELS
+#define RC_INPUT_MAX_CHANNELS 18
+#endif
 
 class PX4::PX4RCInput : public AP_HAL::RCInput {
 public:
-    void init(void* machtnichts);
-    bool new_input();
-    uint8_t num_channels();
-    uint16_t read(uint8_t ch);
-    uint8_t read(uint16_t* periods, uint8_t len);
+    void init() override;
+    bool new_input() override;
+    uint8_t num_channels() override;
+    uint16_t read(uint8_t ch) override;
+    uint8_t read(uint16_t* periods, uint8_t len) override;
 
-    bool set_overrides(int16_t *overrides, uint8_t len);
-    bool set_override(uint8_t channel, int16_t override);
-    void clear_overrides();
+    int16_t get_rssi(void) override {
+        return _rssi;
+    }
+        
+    
+    bool set_override(uint8_t channel, int16_t override) override;
+    void clear_overrides() override;
 
     void _timer_tick(void);
 
-    bool rc_bind(int dsmMode);
+    bool rc_bind(int dsmMode) override;
 
 private:
     /* override state */
@@ -32,6 +40,13 @@ private:
     bool _override_valid;
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
-};
+    int16_t _rssi = -1;
 
-#endif // __AP_HAL_PX4_RCINPUT_H__
+    uint8_t last_input_source = input_rc_s::RC_INPUT_SOURCE_UNKNOWN;
+    const char *input_source_name(uint8_t id) const;
+
+#if HAL_RCINPUT_WITH_AP_RADIO
+    AP_Radio *radio;
+    uint32_t last_radio_us;
+#endif
+};

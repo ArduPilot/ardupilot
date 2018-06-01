@@ -1,7 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
 #include "RCInput_UART.h"
 
 #include <errno.h>
@@ -13,17 +9,17 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define MAGIC 0x55AA
+#include <AP_HAL/AP_HAL.h>
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+#define MAGIC 0x55AA
 
 using namespace Linux;
 
 RCInput_UART::RCInput_UART(const char *path)
 {
-    _fd = open(path, O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NDELAY);
+    _fd = open(path, O_RDONLY|O_NOCTTY|O_NONBLOCK|O_NDELAY|O_CLOEXEC);
     if (_fd < 0) {
-        hal.scheduler->panic("RCInput_UART: Error opening '%s': %s",
+        AP_HAL::panic("RCInput_UART: Error opening '%s': %s",
                              path, strerror(errno));
     }
 }
@@ -33,7 +29,7 @@ RCInput_UART::~RCInput_UART()
     close(_fd);
 }
 
-void RCInput_UART::init(void*)
+void RCInput_UART::init()
 {
     struct termios options;
 
@@ -50,7 +46,7 @@ void RCInput_UART::init(void*)
     options.c_oflag &= ~OPOST;
 
     if (tcsetattr(_fd, TCSANOW, &options) != 0) {
-        hal.scheduler->panic("RCInput_UART: error configuring device: %s",
+        AP_HAL::panic("RCInput_UART: error configuring device: %s",
                              strerror(errno));
     }
 
@@ -75,7 +71,7 @@ void RCInput_UART::_timer_tick()
 
     if (_data.magic != MAGIC) {
         /* try to find the magic number and move
-         * it to the beggining of our buffer */
+         * it to the beginning of our buffer */
         uint16_t magic = MAGIC;
 
         _pdata = (uint8_t *)memmem(&_data, sizeof(_data), &magic, sizeof(magic));
@@ -94,5 +90,3 @@ void RCInput_UART::_timer_tick()
     _pdata = (uint8_t *)&_data;
     _remain = sizeof(_data);
 }
-
-#endif

@@ -1,11 +1,12 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // Simple test for the StorageManager class
 //
 
 #include <AP_HAL/AP_HAL.h>
 #include <StorageManager/StorageManager.h>
+
+void setup();
+void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -43,12 +44,12 @@ static uint8_t pvalue(uint16_t offset)
 
 void setup(void)
 {
-    hal.console->println("StorageTest startup...");
+    hal.console->printf("StorageTest startup...\n");
 #if DO_INITIALISATION
-    for (uint8_t type=0; type<4; type++) {
+    for (uint8_t type = 0; type < 4; type++) {
         const StorageAccess &storage = all_storage[type];
         hal.console->printf("Init type %u\n", (unsigned)type);
-        for (uint16_t i=0; i<storage.size(); i++) {
+        for (uint16_t i = 0; i < storage.size(); i++) {
             storage.write_byte(i, pvalue(i));
         }
     }
@@ -92,7 +93,7 @@ void loop(void)
 
     count++;
     if (count % 10000 == 0) {
-        hal.console->printf("%u ops\n", count);
+        hal.console->printf("%u ops\n", (unsigned)count);
     }
 }
 

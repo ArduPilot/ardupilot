@@ -1,14 +1,9 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
   filter if available, and falls back to the AP_InertialNav filter
   when EKF is not available
  */
-
-
-#ifndef __AP_INERTIALNAV_NAVEKF_H__
-#define __AP_INERTIALNAV_NAVEKF_H__
+#pragma once
 
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
@@ -94,20 +89,6 @@ public:
     float       get_altitude() const;
 
     /**
-     * getHgtAboveGnd - get latest altitude estimate above ground level in centimetres and validity flag
-     * @return
-     */
-    bool       get_hagl(float &hagl) const;
-
-    /**
-     * get_hgt_ctrl_limit - get maximum height to be observed by the control loops in cm and a validity flag
-     * this is used to limit height during optical flow navigation
-     * it will return invalid when no limiting is required
-     * @return
-     */
-    bool       get_hgt_ctrl_limit(float& limit) const;
-
-    /**
      * get_velocity_z - returns the current climbrate.
      *
      * @see get_velocity().z
@@ -124,5 +105,3 @@ private:
     bool _haveabspos;
     AP_AHRS_NavEKF &_ahrs_ekf;
 };
-
-#endif // __AP_INERTIALNAV_NAVEKF_H__

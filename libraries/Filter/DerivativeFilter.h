@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +17,7 @@
 /// @file	Derivative.h
 /// @brief	A class to implement a derivative (slope) filter
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
-
-#ifndef __DERIVATIVE_FILTER_H__
-#define __DERIVATIVE_FILTER_H__
+#pragma once
 
 #include "FilterClass.h"
 #include "FilterWithBuffer.h"
@@ -56,7 +53,3 @@ private:
 typedef DerivativeFilter<float,5> DerivativeFilterFloat_Size5;
 typedef DerivativeFilter<float,7> DerivativeFilterFloat_Size7;
 typedef DerivativeFilter<float,9> DerivativeFilterFloat_Size9;
-
-
-#endif // __DERIVATIVE_FILTER_H__
-

@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file    AP_Rally.h
 /// @brief   Handles rally point storage, retrieval and lookup
 
@@ -14,8 +12,7 @@
  * - provides access to the rally points, including logic to find the nearest one
  *
  */
-#ifndef AP_Rally_h
-#define AP_Rally_h
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -38,9 +35,12 @@ struct PACKED RallyLocation {
 /// @class    AP_Rally
 /// @brief    Object managing Rally Points
 class AP_Rally {
-
 public:
     AP_Rally(AP_AHRS &ahrs);
+
+    /* Do not allow copies */
+    AP_Rally(const AP_Rally &other) = delete;
+    AP_Rally &operator=(const AP_Rally&) = delete;
 
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
@@ -49,7 +49,7 @@ public:
     uint8_t get_rally_max(void) const { return _storage.size() / AP_RALLY_WP_SIZE; }
 
     float get_rally_limit_km() const { return _rally_limit_km; }
-    
+
     Location rally_location_to_location(const RallyLocation &ret) const;
 
     // logic handling
@@ -63,6 +63,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    virtual bool is_valid(const Location &rally_point) const { return true; }
+
     static StorageAccess _storage;
 
     // internal variables
@@ -75,6 +77,3 @@ private:
 
     uint32_t _last_change_time_ms;
 };
-
-
-#endif // AP_Rally_h

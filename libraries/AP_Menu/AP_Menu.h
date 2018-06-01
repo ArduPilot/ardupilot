@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	menu.h
 /// @brief	Simple commandline menu subsystem.
 /// @discussion
@@ -12,9 +10,7 @@
 ///
 /// Arguments passed to the handler function are pre-converted to both
 /// long and float for convenience.
-
-#ifndef __AP_MENU_H__
-#define __AP_MENU_H__
+#pragma once
 
 #include <inttypes.h>
 #include <AP_HAL/AP_HAL.h>
@@ -173,5 +169,3 @@ private:
 #define MENU2(name, prompt, commands, preprompt)                                \
     static const char __menu_name__ ## name[] = prompt;      \
     static Menu name(__menu_name__ ## name, commands, ARRAY_SIZE(commands), preprompt)
-
-#endif // __AP_COMMON_MENU_H__

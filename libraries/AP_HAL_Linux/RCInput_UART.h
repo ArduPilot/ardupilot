@@ -7,20 +7,18 @@
 
 #define CHANNELS 8
 
-class Linux::RCInput_UART : public Linux::RCInput
+namespace Linux {
+
+class RCInput_UART : public RCInput
 {
 public:
     RCInput_UART(const char *path);
     ~RCInput_UART();
 
-    void init(void*) override;
+    void init() override;
     void _timer_tick(void) override;
 
 private:
-
-    uint8_t _count;
-    int8_t _direction;
-
     int _fd;
     uint8_t *_pdata;
     ssize_t _remain;
@@ -29,3 +27,5 @@ private:
         uint16_t values[CHANNELS];
     } _data;
 };
+
+}

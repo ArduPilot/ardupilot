@@ -1,28 +1,5 @@
 language: cpp
-sudo: required
-
-before_install:
-  -  APMDIR=$(pwd) && pushd .. && $APMDIR/Tools/scripts/install-travis-env.sh -y && . ~/.profile && popd
-
-script: 
-  - Tools/scripts/build_all_travis.sh
-
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/e5e0b55e353e53945b4b
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: false     # default: false
-
-env:
-  global:
-    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-    #   via the "travis encrypt" command using the project repo's public key
-    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
-  matrix:
-    - TRAVIS_BUILD_TARGET="px4-v2"
-    - TRAVIS_BUILD_TARGET="sitl linux navio raspilot minlure"
+sudo: false
 
 addons:
   coverity_scan:
@@ -33,3 +10,77 @@ addons:
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: coverity_scan
+    
+  apt:
+    sources:
+      - sourceline: 'ppa:george-edison55/cmake-3.x'
+      - ubuntu-toolchain-r-test
+#      - george-edison55-cmake-3.x
+#      - llvm-toolchain-precise-3.7
+    packages:
+      - build-essential
+      - gawk
+      - ccache
+      - genromfs
+      - libc6-i386
+      - libxml2-dev
+      - libxslt1-dev
+      - python-pip
+      - python-dev
+      - zlib1g-dev
+      - gcc-4.9
+      - g++-4.9
+      - cmake
+      - cmake-data
+#      - clang-3.7
+#      - llvm-3.7
+
+cache:
+  ccache: true
+  directories:
+    - $HOME/opt
+
+before_install:
+  - Tools/scripts/configure-ci.sh
+  - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
+
+script:
+  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
+  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle AntennaTracker
+  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduCopter
+  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduPlane
+  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduSub
+  - Tools/scripts/build_ci.sh
+
+before_cache:
+  - ccache -z
+
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/e5e0b55e353e53945b4b
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: false     # default: false
+
+compiler:
+  - gcc
+#  - clang
+
+env:
+  global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    - secure: "FjIwqZQV2FhNPWYITX5LZXTE38yYqBaQdbm3QmbEg/30wnPTm1ZOLIU7o/aSvX615ImR8kHoryvFPDQDWc6wWfqTEs3Ytq2kIvcIJS2Y5l/0PFfpWJoH5gRd6hDThnoi+1oVMLvj1+bhn4yFlCCQ2vT/jxoGfiQqqgvHtv4fLzI="
+
+matrix:
+  fast_finish: true
+  include:
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="px4-v2"
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="px4-v4 revo-mini"
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="sitltest-copter"
+    - compiler: "gcc"
+      env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane sitltest-rover"

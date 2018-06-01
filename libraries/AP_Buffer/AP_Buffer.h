@@ -1,10 +1,6 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /// @file	AP_Buffer.h
 /// @brief	fifo (queue) buffer template class
-
-#ifndef __AP_BUFFER_H__
-#define __AP_BUFFER_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -153,5 +149,3 @@ T& AP_Buffer<T,SIZE>::peek_mutable(uint8_t position)
     // return desired value
     return _buff[j];
 }
-
-#endif  // __AP_BUFFER_H__

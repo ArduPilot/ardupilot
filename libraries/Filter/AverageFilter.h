@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,9 +16,7 @@
 //
 /// @file	AverageFilter.h
 /// @brief	A class to provide the average of a number of samples
-
-#ifndef __AVERAGE_FILTER_H__
-#define __AVERAGE_FILTER_H__
+#pragma once
 
 #include "FilterClass.h"
 #include "FilterWithBuffer.h"
@@ -41,8 +38,9 @@ public:
     // reset - clear the filter
     virtual void        reset();
 
-private:
-    uint8_t        _num_samples; // the number of samples in the filter, maxes out at size of the filter
+protected:
+    // the number of samples in the filter, maxes out at size of the filter
+    uint8_t        _num_samples;
 };
 
 // Typedef for convenience (1st argument is the data type, 2nd is a larger datatype to handle overflows, 3rd is buffer size)
@@ -108,4 +106,72 @@ void AverageFilter<T,U,FILTER_SIZE>::        reset()
     _num_samples = 0;
 }
 
-#endif // __AVERAGE_FILTER_H__
+/*
+ * This filter is intended to be used with integral types to be faster and
+ * avoid loss of precision on floating point arithmetic. The integral type
+ * chosen must be one that fits FILTER_SIZE values you are filtering.
+ *
+ * Differently from other average filters, the result is only returned when
+ * getf()/getd() is called
+ */
+template <class T, class U, uint8_t FILTER_SIZE>
+class AverageIntegralFilter : public AverageFilter<T,U,FILTER_SIZE>
+{
+public:
+    /*
+     * Add a new raw value to the filter: method signature is maintained from
+     * AverageFilter, but it doesn't retrieve the filtered value: return value
+     * is always 0. Call getf()/getd() in order to get the filtered value.
+     */
+    virtual T apply(T sample) override;
+
+    // get the current value as a float
+    virtual float getf();
+
+    // get the current value as a double
+    virtual double getd();
+protected:
+    // the current sum of samples
+    U _sum = 0;
+};
+
+template <class T, class U, uint8_t FILTER_SIZE>
+T AverageIntegralFilter<T,U,FILTER_SIZE>::apply(T sample)
+{
+    T curr = this->samples[this->sample_index];
+
+    // call parent's parent apply function to get the sample into the array
+    FilterWithBuffer<T,FILTER_SIZE>::apply(sample);
+
+    // increment the number of samples so far
+    this->_num_samples++;
+    if (this->_num_samples > FILTER_SIZE || this->_num_samples == 0) {
+        this->_num_samples = FILTER_SIZE;
+    }
+
+    _sum -= curr;
+    _sum += sample;
+
+    // don't return the value: caller is forced to call getf() or getd()
+    return 0;
+}
+
+template <class T, class U, uint8_t FILTER_SIZE>
+float AverageIntegralFilter<T,U,FILTER_SIZE>::getf()
+{
+    if (this->_num_samples == 0) {
+        return 0.f;
+    }
+
+    return (float)_sum / this->_num_samples;
+}
+
+template <class T, class U, uint8_t FILTER_SIZE>
+double AverageIntegralFilter<T,U,FILTER_SIZE>::getd()
+{
+    if (this->_num_samples == 0) {
+        return 0.f;
+    }
+
+    return (double)_sum / this->_num_samples;
+}

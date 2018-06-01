@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -48,7 +46,7 @@ static const struct {
     { 11,  6.6f/4096  }, // analog airspeed input, 2:1 scaling
     { 12,  3.3f/4096  }, // analog2, on SPI port pin 3
     { 13, 16.8f/4096  }, // analog3, on SPI port pin 4
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
     { 2,   3.3f/4096  },    // 3DR Brick voltage, usually 10.1:1
                             // scaled from battery voltage
     { 3,   3.3f/4096  },    // 3DR Brick current, usually 17:1 scaled
@@ -60,9 +58,12 @@ static const struct {
     { 13,  3.3f/4096  },    // AUX ADC pin 4
     { 14,  3.3f/4096  },    // AUX ADC pin 3
     { 15,  6.6f/4096  },    // analog airspeed sensor, 2:1 scaling
+#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    { 1,   3.3f/4096  },
 #else
 #error "Unknown board type for AnalogIn scaling"
 #endif
+    { 0, 0.f          },
 };
 
 using namespace PX4;
@@ -116,7 +117,7 @@ float PX4AnalogSource::read_latest()
 float PX4AnalogSource::_pin_scaler(void)
 {
     float scaling = PX4_VOLTAGE_SCALING;
-    uint8_t num_scalings = ARRAY_SIZE(pin_scaling);
+    uint8_t num_scalings = ARRAY_SIZE(pin_scaling) - 1;
     for (uint8_t i=0; i<num_scalings; i++) {
         if (pin_scaling[i].pin == _pin) {
             scaling = pin_scaling[i].scaling;
@@ -198,11 +199,11 @@ PX4AnalogIn::PX4AnalogIn() :
     _power_flags(0)
 {}
 
-void PX4AnalogIn::init(void* machtnichts)
+void PX4AnalogIn::init()
 {
 	_adc_fd = open(ADC0_DEVICE_PATH, O_RDONLY | O_NONBLOCK);
     if (_adc_fd == -1) {
-        hal.scheduler->panic("Unable to open " ADC0_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " ADC0_DEVICE_PATH);
 	}
     _battery_handle   = orb_subscribe(ORB_ID(battery_status));
     _servorail_handle = orb_subscribe(ORB_ID(servorail_status));
@@ -223,7 +224,7 @@ void PX4AnalogIn::next_stop_pin(void)
         PX4::PX4AnalogSource *c = _channels[idx];
         if (c && c->_stop_pin != -1) {
             // found another stop pin
-            _stop_pin_change_time = hal.scheduler->millis();
+            _stop_pin_change_time = AP_HAL::millis();
             _current_stop_pin_i = idx;
 
             // set that pin high
@@ -248,8 +249,13 @@ void PX4AnalogIn::next_stop_pin(void)
  */
 void PX4AnalogIn::_timer_tick(void)
 {
+    if (_adc_fd == -1) {
+        // not initialised yet
+        return;
+    }
+
     // read adc at 100Hz
-    uint32_t now = hal.scheduler->micros();
+    uint32_t now = AP_HAL::micros();
     uint32_t delta_t = now - _last_run;
     if (delta_t < 10000) {
         return;
@@ -259,7 +265,7 @@ void PX4AnalogIn::_timer_tick(void)
     struct adc_msg_s buf_adc[PX4_ANALOG_MAX_CHANNELS];
 
     // cope with initial setup of stop pin
-    if (_channels[_current_stop_pin_i] == NULL ||
+    if (_channels[_current_stop_pin_i] == nullptr ||
         _channels[_current_stop_pin_i]->_stop_pin == -1) {
         next_stop_pin();
     }
@@ -269,7 +275,7 @@ void PX4AnalogIn::_timer_tick(void)
     if (ret > 0) {
         // match the incoming channels to the currently active pins
         for (uint8_t i=0; i<ret/sizeof(buf_adc[0]); i++) {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
             if (buf_adc[i].am_channel == 4) {
                 // record the Vcc value for later use in
                 // voltage_average_ratiometric()
@@ -283,12 +289,12 @@ void PX4AnalogIn::_timer_tick(void)
                   (unsigned)buf_adc[i].am_data);
             for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                 PX4::PX4AnalogSource *c = _channels[j];
-                if (c != NULL && buf_adc[i].am_channel == c->_pin) {
+                if (c != nullptr && buf_adc[i].am_channel == c->_pin) {
                     // add a value if either there is no stop pin, or
                     // the stop pin has been settling for enough time
                     if (c->_stop_pin == -1 || 
                         (_current_stop_pin_i == j &&
-                         hal.scheduler->millis() - _stop_pin_change_time > c->_settle_time_ms)) {
+                         AP_HAL::millis() - _stop_pin_change_time > c->_settle_time_ms)) {
                         c->_add_value(buf_adc[i].am_data, _board_voltage);
                         if (c->_stop_pin != -1 && _current_stop_pin_i == j) {
                             next_stop_pin();
@@ -310,7 +316,7 @@ void PX4AnalogIn::_timer_tick(void)
                 _battery_timestamp = battery.timestamp;
                 for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                     PX4::PX4AnalogSource *c = _channels[j];
-                    if (c == NULL) continue;
+                    if (c == nullptr) continue;
                     if (c->_pin == PX4_ANALOG_ORB_BATTERY_VOLTAGE_PIN) {
                         c->_add_value(battery.voltage_v / PX4_VOLTAGE_SCALING, 0);
                     }
@@ -325,7 +331,7 @@ void PX4AnalogIn::_timer_tick(void)
     }
 #endif
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
     // check for new servorail data on FMUv2
     if (_servorail_handle != -1) {
         struct servorail_status_s servorail;
@@ -337,7 +343,7 @@ void PX4AnalogIn::_timer_tick(void)
                 _servorail_voltage = servorail.voltage_v;
                 for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
                     PX4::PX4AnalogSource *c = _channels[j];
-                    if (c == NULL) continue;
+                    if (c == nullptr) continue;
                     if (c->_pin == PX4_ANALOG_ORB_SERVO_VOLTAGE_PIN) {
                         c->_add_value(servorail.voltage_v / PX4_VOLTAGE_SCALING, 0);
                     }
@@ -375,13 +381,13 @@ void PX4AnalogIn::_timer_tick(void)
 AP_HAL::AnalogSource* PX4AnalogIn::channel(int16_t pin) 
 {
     for (uint8_t j=0; j<PX4_ANALOG_MAX_CHANNELS; j++) {
-        if (_channels[j] == NULL) {
+        if (_channels[j] == nullptr) {
             _channels[j] = new PX4AnalogSource(pin, 0.0f);
             return _channels[j];
         }
     }
-    hal.console->println("Out of analog channels");
-    return NULL;
+    hal.console->printf("Out of analog channels\n");
+    return nullptr;
 }
 
 #endif // CONFIG_HAL_BOARD

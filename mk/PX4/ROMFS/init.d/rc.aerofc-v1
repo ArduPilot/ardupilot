@@ -1,0 +1,5 @@
+# AEROFC-V1 custom definitions
+
+set NSH_ERROR_UART1 /dev/ttyS4
+set NSH_ERROR_UART2 none
+set USB none

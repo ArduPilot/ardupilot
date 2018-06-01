@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +17,7 @@
 /// @file	ModeFilter.h
 /// @brief	A class to apply a mode filter which is basically picking the median value from the last x samples
 ///         the filter size (i.e buffer size) should always be an odd number
-
-#ifndef __MODE_FILTER_H__
-#define __MODE_FILTER_H__
+#pragma once
 
 #include <inttypes.h>
 #include "FilterClass.h"
@@ -35,9 +32,15 @@ public:
     // apply - Add a new raw value to the filter, retrieve the filtered result
     virtual T        apply(T sample);
 
+    // get - get latest filtered value from filter (equal to the value returned by latest call to apply method)
+    virtual T        get() const {
+        return _output;
+    }
+
 private:
     // private methods
     uint8_t         _return_element;
+    T               _output;
     void            isort(T sample, bool drop_high_sample);
     bool            drop_high_sample; // switch to determine whether to drop the highest or lowest sample when new value arrives
 };
@@ -63,6 +66,11 @@ typedef ModeFilter<uint16_t,4> ModeFilterUInt16_Size4;
 typedef ModeFilter<uint16_t,5> ModeFilterUInt16_Size5;
 typedef ModeFilter<uint16_t,6> ModeFilterUInt16_Size6;
 typedef ModeFilter<uint16_t,7> ModeFilterUInt16_Size7;
+typedef ModeFilter<float,3> ModeFilterFloat_Size3;
+typedef ModeFilter<float,4> ModeFilterFloat_Size4;
+typedef ModeFilter<float,5> ModeFilterFloat_Size5;
+typedef ModeFilter<float,6> ModeFilterFloat_Size6;
+typedef ModeFilter<float,7> ModeFilterFloat_Size7;
 
 // Constructor    //////////////////////////////////////////////////////////////
 
@@ -91,10 +99,10 @@ T ModeFilter<T,FILTER_SIZE>::        apply(T sample)
     // return results
     if( FilterWithBuffer<T,FILTER_SIZE>::sample_index < FILTER_SIZE ) {
         // middle sample if buffer is not yet full
-        return FilterWithBuffer<T,FILTER_SIZE>::samples[(FilterWithBuffer<T,FILTER_SIZE>::sample_index / 2)];
+        return _output = FilterWithBuffer<T,FILTER_SIZE>::samples[(FilterWithBuffer<T,FILTER_SIZE>::sample_index / 2)];
     }else{
         // return element specified by user in constructor
-        return FilterWithBuffer<T,FILTER_SIZE>::samples[_return_element];
+        return _output = FilterWithBuffer<T,FILTER_SIZE>::samples[_return_element];
     }
 }
 
@@ -143,5 +151,3 @@ void ModeFilter<T,FILTER_SIZE>::        isort(T new_sample, bool drop_high)
         FilterWithBuffer<T,FILTER_SIZE>::samples[i] = new_sample;
     }
 }
-
-#endif // __MODE_FILTER_H__

@@ -1,6 +1,4 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AC_CIRCLE_H
-#define AC_CIRCLE_H
+#pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -13,14 +11,12 @@
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
-#define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
-
 class AC_Circle
 {
 public:
 
     /// Constructor
-    AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosControl& pos_control);
+    AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -62,6 +58,12 @@ public:
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
     void get_closest_point_on_circle(Vector3f &result);
 
+    /// get horizontal distance to loiter target in cm
+    float get_distance_to_target() const { return _pos_control.get_distance_to_target(); }
+
+    /// get bearing to target in centi-degrees
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -84,7 +86,7 @@ private:
 
     // references to inertial nav and ahrs libraries
     const AP_InertialNav&       _inav;
-    const AP_AHRS&              _ahrs;
+    const AP_AHRS_View&         _ahrs;
     AC_PosControl&              _pos_control;
 
     // parameters
@@ -92,13 +94,11 @@ private:
     AP_Float    _rate;          // rotation speed in deg/sec
 
     // internal variables
-    uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total;   // total angle travelled in radians
+    float       _angle_total;   // total angle traveled in radians
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec
 };
-#endif	// AC_CIRCLE_H

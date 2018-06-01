@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,13 +14,11 @@
  */
 
 /*
- *       RC_Channel.cpp - Radio library for Arduino
- *       Code by Jason Short. DIYDrones.com
- *
+ *       RC_Channel.cpp - class for one RC channel input
  */
 
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
 extern const AP_HAL::HAL& hal;
@@ -30,120 +27,85 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-/// global array with pointers to all APM RC channels, will be used by AP_Mount
-/// and AP_Camera classes / It points to RC input channels, both APM1 and APM2
-/// only have 8 input channels.
-RC_Channel *RC_Channel::rc_ch[RC_MAX_CHANNELS];
+uint32_t RC_Channel::configured_mask;
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
-    // @Description: RC minimum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: RC minimum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("MIN",  0, RC_Channel, radio_min, 1100),
+    AP_GROUPINFO("MIN",  1, RC_Channel, radio_min, 1100),
 
     // @Param: TRIM
     // @DisplayName: RC trim PWM
-    // @Description: RC trim (neutral) PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: RC trim (neutral) PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("TRIM", 1, RC_Channel, radio_trim, 1500),
+    AP_GROUPINFO("TRIM", 2, RC_Channel, radio_trim, 1500),
 
     // @Param: MAX
     // @DisplayName: RC max PWM
-    // @Description: RC maximum PWM pulse width. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
-    // @Units: pwm
+    // @Description: RC maximum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
+    // @Units: PWM
     // @Range: 800 2200
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("MAX",  2, RC_Channel, radio_max, 1900),
+    AP_GROUPINFO("MAX",  3, RC_Channel, radio_max, 1900),
 
-    // @Param: REV
-    // @DisplayName: RC reverse
-    // @Description: Reverse servo operation. Set to 1 for normal (forward) operation. Set to -1 to reverse this channel.
-    // @Values: -1:Reversed,1:Normal
+    // @Param: REVERSED
+    // @DisplayName: RC reversed
+    // @Description: Reverse channel input. Set to 0 for normal operation. Set to 1 to reverse this input channel.
+    // @Values: 0:Normal,1:Reversed
     // @User: Advanced
-    AP_GROUPINFO("REV",  3, RC_Channel, _reverse, 1),
-
-    // Note: index 4 was used by the previous _dead_zone value. We
-    // changed it to 5 as dead zone values had previously been
-    // incorrectly saved, overriding user values. They were also
-    // incorrectly interpreted for the throttle on APM:Plane
+    AP_GROUPINFO("REVERSED",  4, RC_Channel, reversed, 0),
 
     // @Param: DZ
     // @DisplayName: RC dead-zone
-    // @Description: dead zone around trim or bottom
-    // @Units: pwm
+    // @Description: PWM dead zone in microseconds around trim or bottom
+    // @Units: PWM
     // @Range: 0 200
     // @User: Advanced
-    AP_GROUPINFO("DZ",   5, RC_Channel, _dead_zone, 0),
+    AP_GROUPINFO("DZ",   5, RC_Channel, dead_zone, 0),
 
     AP_GROUPEND
 };
 
-// setup the control preferences
-void
-RC_Channel::set_range(int16_t low, int16_t high)
+
+// constructor
+RC_Channel::RC_Channel(void)
 {
-    _type           = RC_CHANNEL_TYPE_RANGE;
-    _high           = high;
-    _low            = low;
-    _high_out       = high;
-    _low_out        = low;
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void
-RC_Channel::set_range_out(int16_t low, int16_t high)
+RC_Channel::set_range(uint16_t high)
 {
-    _high_out       = high;
-    _low_out        = low;
+    type_in = RC_CHANNEL_TYPE_RANGE;
+    high_in = high;
 }
 
 void
-RC_Channel::set_angle(int16_t angle)
+RC_Channel::set_angle(uint16_t angle)
 {
-    _type   = RC_CHANNEL_TYPE_ANGLE;
-    _high   = angle;
+    type_in = RC_CHANNEL_TYPE_ANGLE;
+    high_in = angle;
 }
 
 void
 RC_Channel::set_default_dead_zone(int16_t dzone)
 {
-    _dead_zone.set_default(abs(dzone));
-}
-
-void
-RC_Channel::set_reverse(bool reverse)
-{
-    if (reverse) _reverse = -1;
-    else _reverse = 1;
+    dead_zone.set_default(abs(dzone));
 }
 
 bool
 RC_Channel::get_reverse(void) const
 {
-    if (_reverse == -1) {
-        return true;
-    }
-    return false;
-}
-
-void
-RC_Channel::set_type(uint8_t t)
-{
-    _type = t;
-}
-
-// call after first read
-void
-RC_Channel::trim()
-{
-    radio_trim = radio_in;
+    return bool(reversed.get());
 }
 
 // read input from APM_RC - create a control_in value
@@ -152,87 +114,44 @@ RC_Channel::set_pwm(int16_t pwm)
 {
     radio_in = pwm;
 
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
+    if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
     } else {
-        //RC_CHANNEL_TYPE_ANGLE, RC_CHANNEL_TYPE_ANGLE_RAW
+        //RC_CHANNEL_TYPE_ANGLE
         control_in = pwm_to_angle();
     }
 }
 
-/*
-  call read() and set_pwm() on all channels
- */
+// recompute control values with no deadzone
+// When done this way the control_in value can be used as servo_out
+// to give the same output as input
 void
-RC_Channel::set_pwm_all(void)
+RC_Channel::recompute_pwm_no_deadzone()
 {
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (rc_ch[i] != NULL) {
-            rc_ch[i]->set_pwm(rc_ch[i]->read());
-        }
-    }
-}
-
-// read input from APM_RC - create a control_in value, but use a 
-// zero value for the dead zone. When done this way the control_in
-// value can be used as servo_out to give the same output as input
-void
-RC_Channel::set_pwm_no_deadzone(int16_t pwm)
-{
-    radio_in = pwm;
-
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
+    if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range_dz(0);
     } else {
-        //RC_CHANNEL_ANGLE, RC_CHANNEL_ANGLE_RAW
+        //RC_CHANNEL_ANGLE
         control_in = pwm_to_angle_dz(0);
     }
 }
-
-int16_t
-RC_Channel::control_mix(float value)
-{
-    return (1 - abs(control_in / _high)) * value + control_in;
-}
-
-// returns just the PWM without the offset from radio_min
-void
-RC_Channel::calc_pwm(void)
-{
-    if(_type == RC_CHANNEL_TYPE_RANGE) {
-        pwm_out         = range_to_pwm();
-        radio_out       = (_reverse >= 0) ? (radio_min + pwm_out) : (radio_max - pwm_out);
-
-    }else if(_type == RC_CHANNEL_TYPE_ANGLE_RAW) {
-        pwm_out         = (float)servo_out * 0.1f;
-        int16_t reverse_mul = (_reverse==-1?-1:1);
-        radio_out       = (pwm_out * reverse_mul) + radio_trim;
-
-    }else{     // RC_CHANNEL_TYPE_ANGLE
-        pwm_out         = angle_to_pwm();
-        radio_out       = pwm_out + radio_trim;
-    }
-
-    radio_out = constrain_int16(radio_out, radio_min.get(), radio_max.get());
-}
-
 
 /*
   return the center stick position expressed as a control_in value
   used for thr_mid in copter
  */
-int16_t
-RC_Channel::get_control_mid() const {
-    if (_type == RC_CHANNEL_TYPE_RANGE) {
-        int16_t r_in = (radio_min.get()+radio_max.get())/2;
+int16_t RC_Channel::get_control_mid() const
+{
+    if (type_in == RC_CHANNEL_TYPE_RANGE) {
+        int16_t r_in = (radio_min.get() + radio_max.get())/2;
 
-        if (_reverse == -1) {
+        if (reversed) {
             r_in = radio_max.get() - (r_in - radio_min.get());
         }
 
-        int16_t radio_trim_low  = radio_min + _dead_zone;
+        int16_t radio_trim_low  = radio_min + dead_zone;
 
-        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
     } else {
         return 0;
     }
@@ -240,39 +159,22 @@ RC_Channel::get_control_mid() const {
 
 // ------------------------------------------
 
-void
-RC_Channel::load_eeprom(void)
+void RC_Channel::load_eeprom(void)
 {
     radio_min.load();
     radio_trim.load();
     radio_max.load();
-    _reverse.load();
-    _dead_zone.load();
+    reversed.load();
+    dead_zone.load();
 }
 
-void
-RC_Channel::save_eeprom(void)
+void RC_Channel::save_eeprom(void)
 {
     radio_min.save();
     radio_trim.save();
     radio_max.save();
-    _reverse.save();
-    _dead_zone.save();
-}
-
-// ------------------------------------------
-
-void
-RC_Channel::zero_min_max()
-{
-    radio_min = radio_max = radio_in;
-}
-
-void
-RC_Channel::update_min_max()
-{
-    radio_min = min(radio_min.get(), radio_in);
-    radio_max = max(radio_max.get(), radio_in);
+    reversed.save();
+    dead_zone.save();
 }
 
 /*
@@ -280,22 +182,29 @@ RC_Channel::update_min_max()
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
 {
-    int16_t radio_trim_high = radio_trim + dead_zone;
-    int16_t radio_trim_low  = radio_trim - dead_zone;
+    int16_t radio_trim_high = _trim + _dead_zone;
+    int16_t radio_trim_low  = _trim - _dead_zone;
 
-    // prevent div by 0
-    if ((radio_trim_low - radio_min) == 0 || (radio_max - radio_trim_high) == 0)
+    int16_t reverse_mul = (reversed?-1:1);
+    if (radio_in > radio_trim_high && radio_max != radio_trim_high) {
+        return reverse_mul * ((int32_t)high_in * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+    } else if (radio_in < radio_trim_low && radio_trim_low != radio_min) {
+        return reverse_mul * ((int32_t)high_in * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+    } else {
         return 0;
+    }
+}
 
-    int16_t reverse_mul = (_reverse==-1?-1:1);
-    if(radio_in > radio_trim_high) {
-        return reverse_mul * ((int32_t)_high * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
-    }else if(radio_in < radio_trim_low) {
-        return reverse_mul * ((int32_t)_high * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
-    }else
-        return 0;
+/*
+  return an "angle in centidegrees" (normally -4500 to 4500) from
+  the current radio_in value using the specified dead_zone
+ */
+int16_t
+RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone)
+{
+    return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
 
 /*
@@ -305,42 +214,29 @@ RC_Channel::pwm_to_angle_dz(uint16_t dead_zone)
 int16_t
 RC_Channel::pwm_to_angle()
 {
-	return pwm_to_angle_dz(_dead_zone);
+	return pwm_to_angle_dz(dead_zone);
 }
 
-
-int16_t
-RC_Channel::angle_to_pwm()
-{
-    int16_t reverse_mul = (_reverse==-1?-1:1);
-    if((servo_out * reverse_mul) > 0) {
-        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_max - radio_trim)) / (int32_t)_high;
-    } else {
-        return reverse_mul * ((int32_t)servo_out * (int32_t)(radio_trim - radio_min)) / (int32_t)_high;
-    }
-}
 
 /*
   convert a pulse width modulation value to a value in the configured
   range, using the specified deadzone
  */
 int16_t
-RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
+RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
-    if (_reverse == -1) {
+    if (reversed) {
 	    r_in = radio_max.get() - (r_in - radio_min.get());
     }
 
-    int16_t radio_trim_low  = radio_min + dead_zone;
+    int16_t radio_trim_low  = radio_min + _dead_zone;
 
-    if (r_in > radio_trim_low)
-        return (_low + ((int32_t)(_high - _low) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
-    else if (dead_zone > 0)
-        return 0;
-    else
-        return _low;
+    if (r_in > radio_trim_low) {
+        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+    }
+    return 0;
 }
 
 /*
@@ -350,17 +246,16 @@ RC_Channel::pwm_to_range_dz(uint16_t dead_zone)
 int16_t
 RC_Channel::pwm_to_range()
 {
-    return pwm_to_range_dz(_dead_zone);
+    return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t
-RC_Channel::range_to_pwm()
+int16_t RC_Channel::get_control_in_zero_dz(void)
 {
-    if (_high_out == _low_out) {
-        return radio_trim;
+    if (type_in == RC_CHANNEL_TYPE_RANGE) {
+        return pwm_to_range_dz(0);
     }
-    return ((int32_t)(servo_out - _low_out) * (int32_t)(radio_max - radio_min)) / (int32_t)(_high_out - _low_out);
+    return pwm_to_angle_dz(0);
 }
 
 // ------------------------------------------
@@ -369,10 +264,16 @@ float
 RC_Channel::norm_input()
 {
     float ret;
-    int16_t reverse_mul = (_reverse==-1?-1:1);
+    int16_t reverse_mul = (reversed?-1:1);
     if (radio_in < radio_trim) {
+        if (radio_min >= radio_trim) {
+            return 0.0f;
+        }
         ret = reverse_mul * (float)(radio_in - radio_trim) / (float)(radio_trim - radio_min);
     } else {
+        if (radio_max <= radio_trim) {
+            return 0.0f;
+        }
         ret = reverse_mul * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
     }
     return constrain_float(ret, -1.0f, 1.0f);
@@ -381,10 +282,10 @@ RC_Channel::norm_input()
 float
 RC_Channel::norm_input_dz()
 {
-    int16_t dz_min = radio_trim - _dead_zone;
-    int16_t dz_max = radio_trim + _dead_zone;
+    int16_t dz_min = radio_trim - dead_zone;
+    int16_t dz_max = radio_trim + dead_zone;
     float ret;
-    int16_t reverse_mul = (_reverse==-1?-1:1);
+    int16_t reverse_mul = (reversed?-1:1);
     if (radio_in < dz_min && dz_min > radio_min) {
         ret = reverse_mul * (float)(radio_in - dz_min) / (float)(dz_min - radio_min);
     } else if (radio_in > dz_max && radio_max > dz_max) {
@@ -402,113 +303,49 @@ uint8_t
 RC_Channel::percent_input()
 {
     if (radio_in <= radio_min) {
-        return _reverse==-1?100:0;
+        return reversed?100:0;
     }
     if (radio_in >= radio_max) {
-        return _reverse==-1?0:100;
+        return reversed?0:100;
     }
     uint8_t ret = 100.0f * (radio_in - radio_min) / (float)(radio_max - radio_min);
-    if (_reverse == -1) {
+    if (reversed) {
         ret = 100 - ret;
     }
     return ret;
 }
 
-float
-RC_Channel::norm_output()
-{
-    int16_t mid = (radio_max + radio_min) / 2;
-    float ret;
-    if (mid <= radio_min) {
-        return 0;
-    }
-    if (radio_out < mid) {
-        ret = (float)(radio_out - mid) / (float)(mid - radio_min);
-    } else if (radio_out > mid) {
-        ret = (float)(radio_out - mid) / (float)(radio_max  - mid);
-    } else {
-        ret = 0;
-    }
-    if (_reverse == -1) {
-	    ret = -ret;
-    }
-    return ret;
-}
-
-void RC_Channel::output() const
-{
-    hal.rcout->write(_ch_out, radio_out);
-}
-
-void RC_Channel::output_trim() const
-{
-    hal.rcout->write(_ch_out, radio_trim);
-}
-
-void RC_Channel::output_trim_all()
-{
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (rc_ch[i] != NULL) {
-            rc_ch[i]->output_trim();
-        }
-    }
-}
-
-/*
-  setup the failsafe value to the trim value for all channels
- */
-void RC_Channel::setup_failsafe_trim_all()
-{
-    for (uint8_t i=0; i<RC_MAX_CHANNELS; i++) {
-        if (rc_ch[i] != NULL) {
-            hal.rcout->set_failsafe_pwm(1U<<i, rc_ch[i]->radio_trim);
-        }
-    }
-}
-
 void
 RC_Channel::input()
 {
-    radio_in = hal.rcin->read(_ch_out);
+    radio_in = hal.rcin->read(ch_in);
 }
 
 uint16_t
 RC_Channel::read() const
 {
-    return hal.rcin->read(_ch_out);
+    return hal.rcin->read(ch_in);
 }
 
-void
-RC_Channel::enable_out()
+/*
+  Return true if the channel is at trim and within the DZ
+*/
+bool RC_Channel::in_trim_dz()
 {
-    hal.rcout->enable_ch(_ch_out);
+    return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
-void
-RC_Channel::disable_out()
-{
-    hal.rcout->disable_ch(_ch_out);
-}
 
-RC_Channel *RC_Channel::rc_channel(uint8_t i)
+bool RC_Channel::min_max_configured() const
 {
-    if (i >= RC_MAX_CHANNELS) {
-        return NULL;
+    if (configured_mask & (1U << ch_in)) {
+        return true;
     }
-    return rc_ch[i];
-}
-
-// return a limit PWM value
-uint16_t RC_Channel::get_limit_pwm(LimitValue limit) const
-{
-    switch (limit) {
-    case RC_CHANNEL_LIMIT_TRIM:
-        return radio_trim;
-    case RC_CHANNEL_LIMIT_MAX:
-        return get_reverse() ? radio_min : radio_max;
-    case RC_CHANNEL_LIMIT_MIN:
-        return get_reverse() ? radio_max : radio_min;
+    if (radio_min.configured() && radio_max.configured()) {
+        // once a channel is known to be configured it has to stay
+        // configured due to the nature of AP_Param
+        configured_mask |= (1U<<ch_in);
+        return true;
     }
-    // invalid limit value, return trim
-    return radio_trim;
+    return false;
 }

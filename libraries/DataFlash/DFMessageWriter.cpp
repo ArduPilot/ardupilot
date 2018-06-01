@@ -1,6 +1,9 @@
+#include "AP_Common/AP_FWVersion.h"
 #include "DFMessageWriter.h"
 
-#include "DataFlash.h"
+#define FORCE_VERSION_H_INCLUDE
+#include "ap_version.h"
+#undef FORCE_VERSION_H_INCLUDE
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,6 +26,9 @@ void DFMessageWriter_DFLogStart::reset()
 
     stage = ls_blockwriter_stage_init;
     next_format_to_send = 0;
+    _next_unit_to_send = 0;
+    _next_multiplier_to_send = 0;
+    _next_format_unit_to_send = 0;
     ap = AP_Param::first(&token, &type);
 }
 
@@ -31,34 +37,60 @@ void DFMessageWriter_DFLogStart::process()
     switch(stage) {
     case ls_blockwriter_stage_init:
         stage = ls_blockwriter_stage_formats;
-        // fall through
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_formats:
         // write log formats so the log is self-describing
-        while (next_format_to_send < _DataFlash._num_types) {
-            if (!_DataFlash.Log_Write_Format(&_DataFlash._structures[next_format_to_send])) {
+        while (next_format_to_send < _dataflash_backend->num_types()) {
+            if (!_dataflash_backend->Log_Write_Format(_dataflash_backend->structure(next_format_to_send))) {
                 return; // call me again!
             }
-            // provide hook to avoid corrupting the APM1/APM2
-            // dataflash by writing too fast:
-            _DataFlash.WroteStartupFormat();
             next_format_to_send++;
         }
         _fmt_done = true;
         stage = ls_blockwriter_stage_parms;
-        // fall through
+        FALLTHROUGH;
+
+    case ls_blockwriter_stage_units:
+        while (_next_unit_to_send < _dataflash_backend->num_units()) {
+            if (!_dataflash_backend->Log_Write_Unit(_dataflash_backend->unit(_next_unit_to_send))) {
+                return; // call me again!
+            }
+            _next_unit_to_send++;
+        }
+        stage = ls_blockwriter_stage_multipliers;
+        FALLTHROUGH;
+
+    case ls_blockwriter_stage_multipliers:
+        while (_next_multiplier_to_send < _dataflash_backend->num_multipliers()) {
+            if (!_dataflash_backend->Log_Write_Multiplier(_dataflash_backend->multiplier(_next_multiplier_to_send))) {
+                return; // call me again!
+            }
+            _next_multiplier_to_send++;
+        }
+        stage = ls_blockwriter_stage_units;
+        FALLTHROUGH;
+
+    case ls_blockwriter_stage_format_units:
+        while (_next_format_unit_to_send < _dataflash_backend->num_types()) {
+            if (!_dataflash_backend->Log_Write_Format_Units(_dataflash_backend->structure(_next_format_unit_to_send))) {
+                return; // call me again!
+            }
+            _next_format_unit_to_send++;
+        }
+        stage = ls_blockwriter_stage_parms;
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_parms:
         while (ap) {
-            if (!_DataFlash.Log_Write_Parameter(ap, token, type)) {
+            if (!_dataflash_backend->Log_Write_Parameter(ap, token, type)) {
                 return;
             }
             ap = AP_Param::next_scalar(&token, &type);
-            _DataFlash.WroteStartupParam();
         }
 
         stage = ls_blockwriter_stage_sysinfo;
-        // fall through
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_sysinfo:
         _writesysinfo.process();
@@ -66,7 +98,7 @@ void DFMessageWriter_DFLogStart::process()
             return;
         }
         stage = ls_blockwriter_stage_write_entire_mission;
-        // fall through
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_write_entire_mission:
         _writeentiremission.process();
@@ -74,20 +106,20 @@ void DFMessageWriter_DFLogStart::process()
             return;
         }
         stage = ls_blockwriter_stage_vehicle_messages;
-        // fall through
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_vehicle_messages:
         // we guarantee 200 bytes of space for the vehicle startup
         // messages.  This allows them to be simple functions rather
         // than e.g. DFMessageWriter-based state machines
-        if (_DataFlash._vehicle_messages) {
-            if (_DataFlash.bufferspace_available() < 200) {
+        if (_dataflash_backend->vehicle_message_writer()) {
+            if (_dataflash_backend->bufferspace_available() < 200) {
                 return;
             }
-            _DataFlash._vehicle_messages();
+            (_dataflash_backend->vehicle_message_writer())();
         }
         stage = ls_blockwriter_stage_done;
-        // fall through
+        FALLTHROUGH;
 
     case ls_blockwriter_stage_done:
         break;
@@ -113,61 +145,54 @@ void DFMessageWriter_WriteSysInfo::process() {
 
     case ws_blockwriter_stage_init:
         stage = ws_blockwriter_stage_firmware_string;
-        // fall through
+        FALLTHROUGH;
 
     case ws_blockwriter_stage_firmware_string:
-        if (! _DataFlash.Log_Write_Message(_firmware_string)) {
+        if (! _dataflash_backend->Log_Write_Message(_firmware_string)) {
             return; // call me again
         }
         stage = ws_blockwriter_stage_git_versions;
-        // fall through
+        FALLTHROUGH;
 
     case ws_blockwriter_stage_git_versions:
 #if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        if (! _DataFlash.Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
+        if (! _dataflash_backend->Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
             return; // call me again
         }
 #endif
         stage = ws_blockwriter_stage_system_id;
-        // fall through
+        FALLTHROUGH;
 
     case ws_blockwriter_stage_system_id:
         char sysid[40];
         if (hal.util->get_system_id(sysid)) {
-            if (! _DataFlash.Log_Write_Message(sysid)) {
+            if (! _dataflash_backend->Log_Write_Message(sysid)) {
                 return; // call me again
             }
         }
-        // fall through
     }
 
     _finished = true;  // all done!
 }
 
-// void DataFlash_Class::Log_Write_SysInfo(const char *firmware_string)
-// {
-//     DFMessageWriter_WriteSysInfo writer(firmware_string);
-//     writer->process();
-// }
-
 void DFMessageWriter_WriteEntireMission::process() {
     switch(stage) {
 
     case em_blockwriter_stage_init:
-        if (_mission == NULL) {
+        if (_mission == nullptr) {
             stage = em_blockwriter_stage_done;
             break;
         } else {
             stage = em_blockwriter_stage_write_new_mission_message;
         }
-        // fall through
+        FALLTHROUGH;
 
     case em_blockwriter_stage_write_new_mission_message:
-        if (! _DataFlash.Log_Write_Message("New mission")) {
+        if (! _dataflash_backend->Log_Write_Message("New mission")) {
             return; // call me again
         }
         stage = em_blockwriter_stage_write_mission_items;
-        // fall through
+        FALLTHROUGH;
 
     case em_blockwriter_stage_write_mission_items:
         AP_Mission::Mission_Command cmd;
@@ -175,14 +200,14 @@ void DFMessageWriter_WriteEntireMission::process() {
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
             if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_DataFlash.Log_Write_Mission_Cmd(*_mission, cmd)) {
+                if (!_dataflash_backend->Log_Write_Mission_Cmd(*_mission, cmd)) {
                     return; // call me again
                 }
             }
             _mission_number_to_send++;
         }
         stage = em_blockwriter_stage_done;
-        // fall through
+        FALLTHROUGH;
 
     case em_blockwriter_stage_done:
         break;

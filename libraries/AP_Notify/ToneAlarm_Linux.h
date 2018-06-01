@@ -15,8 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __TONE_ALARM_Linux_H__
-#define __TONE_ALARM_Linux_H__
+#pragma once
 
 #include "NotifyDevice.h"
 
@@ -42,5 +41,3 @@ private:
         bool parachute_release  : 1;    // true if parachute is being released
     } flags;
 };
-
-#endif // __TONE_ALARM_Linux_H__

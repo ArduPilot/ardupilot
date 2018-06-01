@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -15,6 +13,7 @@
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
 
@@ -23,46 +22,48 @@
 
 using namespace HALSITL;
 
-static SITLEEPROMStorage sitlEEPROMStorage;
+static EEPROMStorage sitlEEPROMStorage;
 static SITL_State sitlState;
-static SITLScheduler sitlScheduler(&sitlState);
-static SITLRCInput  sitlRCInput(&sitlState);
-static SITLRCOutput sitlRCOutput(&sitlState);
-static SITLAnalogIn sitlAnalogIn(&sitlState);
+static Scheduler sitlScheduler(&sitlState);
+static RCInput  sitlRCInput(&sitlState);
+static RCOutput sitlRCOutput(&sitlState);
+static AnalogIn sitlAnalogIn(&sitlState);
+static GPIO sitlGPIO(&sitlState);
 
 // use the Empty HAL for hardware we don't emulate
-static Empty::EmptyGPIO emptyGPIO;
-static Empty::EmptySemaphore emptyI2Csemaphore;
-static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
-static Empty::EmptySPIDeviceManager emptySPI;
+static Empty::I2CDeviceManager i2c_mgr_instance;
+static Empty::SPIDeviceManager emptySPI;
+static Empty::OpticalFlow emptyOpticalFlow;
 
-static SITLUARTDriver sitlUart0Driver(0, &sitlState);
-static SITLUARTDriver sitlUart1Driver(1, &sitlState);
-static SITLUARTDriver sitlUart2Driver(2, &sitlState);
-static SITLUARTDriver sitlUart3Driver(3, &sitlState);
-static SITLUARTDriver sitlUart4Driver(4, &sitlState);
+static UARTDriver sitlUart0Driver(0, &sitlState);
+static UARTDriver sitlUart1Driver(1, &sitlState);
+static UARTDriver sitlUart2Driver(2, &sitlState);
+static UARTDriver sitlUart3Driver(3, &sitlState);
+static UARTDriver sitlUart4Driver(4, &sitlState);
+static UARTDriver sitlUart5Driver(5, &sitlState);
 
-static SITLUtil utilInstance;
+static Util utilInstance(&sitlState);
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
-        &sitlUart0Driver,  /* uartA */
-        &sitlUart1Driver,  /* uartB */
-        &sitlUart2Driver,  /* uartC */
-        &sitlUart3Driver,  /* uartD */
-        &sitlUart4Driver,  /* uartE */
-        &emptyI2C, /* i2c */
-        &emptyI2C, /* i2c */
-        &emptyI2C, /* i2c */
-        &emptySPI, /* spi */
-        &sitlAnalogIn, /* analogin */
+        &sitlUart0Driver,   /* uartA */
+        &sitlUart1Driver,   /* uartB */
+        &sitlUart2Driver,   /* uartC */
+        &sitlUart3Driver,   /* uartD */
+        &sitlUart4Driver,   /* uartE */
+        &sitlUart5Driver,   /* uartF */
+        &i2c_mgr_instance,
+        &emptySPI,          /* spi */
+        &sitlAnalogIn,      /* analogin */
         &sitlEEPROMStorage, /* storage */
-        &sitlUart0Driver, /* console */
-        &emptyGPIO, /* gpio */
-        &sitlRCInput,  /* rcinput */
-        &sitlRCOutput, /* rcoutput */
-        &sitlScheduler, /* scheduler */
-        &utilInstance), /* util */
+        &sitlUart0Driver,   /* console */
+        &sitlGPIO,          /* gpio */
+        &sitlRCInput,       /* rcinput */
+        &sitlRCOutput,      /* rcoutput */
+        &sitlScheduler,     /* scheduler */
+        &utilInstance,      /* util */
+        &emptyOpticalFlow, /* onboard optical flow */
+        nullptr),           /* CAN */
     _sitl_state(&sitlState)
 {}
 
@@ -71,23 +72,24 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
 
     _sitl_state->init(argc, argv);
-    scheduler->init(NULL);
+    scheduler->init();
     uartA->begin(115200);
 
-    rcin->init(NULL);
-    rcout->init(NULL);
+    rcin->init();
+    rcout->init();
 
-    //spi->init(NULL);
-    //i2c->begin();
-    //i2c->setTimeout(100);
-    analogin->init(NULL);
+    // spi->init();
+    analogin->init();
 
     callbacks->setup();
     scheduler->system_initialized();
 
-    for (;;) {
+    while (!HALSITL::Scheduler::_should_reboot) {
         callbacks->loop();
+        HALSITL::Scheduler::_run_io_procs(false);
     }
+    execv(argv[0], argv);
+    AP_HAL::panic("PANIC: REBOOT FAILED");
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
@@ -95,4 +97,4 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
     return hal;
 }
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

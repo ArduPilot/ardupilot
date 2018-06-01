@@ -9,14 +9,26 @@
 
 <body>
 <div id="main">
-<a href="http://autotest.diydrones.com/">
+<a href="http://autotest.ardupilot.org/">
 <div id="logo">
 </div>
 </a>
 
+<style>
+#jdlogo {
+        top: 15px;
+        right: 20px;
+        position: absolute;
+}
+</style>
+
+<div id=jdlogo>
+Servers by <a href=http://www.jDrones.com/>jDrones</a>
+</div>
+       
 <h2>Automatic test run at ${date}</h2>
 
-<div id="git">Test run on git commit <a href="https://github.com/diydrones/ardupilot/commit/${githash}">${githash}</a>
+<div id="git">Test run on git commit <a href="https://github.com/ArduPilot/ardupilot/commit/${githash}">${githash}</a>
 </div>
 
 <h2>Test Results</h2>

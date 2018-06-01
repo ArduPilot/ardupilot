@@ -8,32 +8,33 @@
 // GNU General Public License for more details.
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+#include "RCOutput_AioPRU.h"
 
+#include <fcntl.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-
-#include "RCOutput_AioPRU.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/mman.h>
-#include <signal.h>
-
-#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_bin.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBLUE_bin.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_POCKET_bin.h"
+#else
+#include "../../Tools/Linux_HAL_Essentials/pru/aiopru/RcAioPRU_BBBMINI_bin.h"
+#endif
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
 static void catch_sigbus(int sig)
 {
-    hal.scheduler->panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
 }
-void RCOutput_AioPRU::init(void* machtnicht)
+void RCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
    uint32_t *iram;
@@ -41,7 +42,7 @@ void RCOutput_AioPRU::init(void* machtnicht)
 
    signal(SIGBUS,catch_sigbus);
 
-   mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
+   mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
 
    pwm = (struct pwm*) mmap(0, 0x1000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_RAM_BASE);
    iram = (uint32_t*)mmap(0, 0x2000, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, RCOUT_PRUSS_IRAM_BASE);
@@ -49,15 +50,14 @@ void RCOutput_AioPRU::init(void* machtnicht)
 
    close(mem_fd);
 
-   // Reset PRU 1
+   // Reset PRU
    *ctrl = 0;
-   hal.scheduler->delay(1);
 
    // Load firmware
    memcpy(iram, PRUcode, sizeof(PRUcode));
 
-   // Start PRU 1
-   *ctrl = 3;
+   // Start PRU
+   *ctrl |= 2;
 
    // all outputs default to 50Hz, the top level vehicle code
    // overrides this when necessary
@@ -104,7 +104,12 @@ void RCOutput_AioPRU::disable_ch(uint8_t ch)
 void RCOutput_AioPRU::write(uint8_t ch, uint16_t period_us)
 {
    if(ch < PWM_CHAN_COUNT) {
-      pwm->channel[ch].time_high = TICK_PER_US * period_us;
+       if (corked) {
+           pending_mask |= (1U << ch);
+           pending[ch] = period_us;
+       } else {
+           pwm->channel[ch].time_high = TICK_PER_US * period_us;
+       }
    }
 }
 
@@ -132,5 +137,21 @@ void RCOutput_AioPRU::read(uint16_t* period_us, uint8_t len)
    }
 }
 
-#endif
+void RCOutput_AioPRU::cork(void)
+{
+    corked = true;
+}
 
+void RCOutput_AioPRU::push(void)
+{
+    if (!corked) {
+        return;
+    }
+    corked = false;
+    for (uint8_t i=0; i<PWM_CHAN_COUNT; i++) {
+        if (pending_mask & (1U<<i)) {
+            write(i, pending[i]);
+        }
+    }
+    pending_mask = 0;
+}

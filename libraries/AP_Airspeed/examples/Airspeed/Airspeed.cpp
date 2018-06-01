@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,30 +14,48 @@
  */
 
 /*
- *   Airspeed.pde - airspeed example sketch
+ *   Airspeed.cpp - airspeed example sketch
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_ADC/AP_ADC.h>
-#include <AP_ADC_AnalogSource/AP_ADC_AnalogSource.h>
 #include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
+void setup();
+void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-static AP_Vehicle::FixedWing aparm;
+float temperature;
 
-AP_Airspeed airspeed(aparm);
+AP_Airspeed airspeed;
+static AP_BoardConfig board_config;
+
+namespace {
+// try to set the object value but provide diagnostic if it failed
+void set_object_value(const void *object_pointer,
+                      const struct AP_Param::GroupInfo *group_info,
+                      const char *name, float value)
+{
+    if (!AP_Param::set_object_value(object_pointer, group_info, name, value)) {
+        hal.console->printf("WARNING: AP_Param::set object value \"%s::%s\" Failed.\n",
+                            group_info->name, name);
+    }
+}
+}
 
 void setup()
 {
-    hal.console->println("ArduPilot Airspeed library test");
+    hal.console->printf("ArduPilot Airspeed library test\n");
 
-    AP_Param::set_object_value(&airspeed, airspeed.var_info, "_PIN", 65);
+    set_object_value(&airspeed, airspeed.var_info, "PIN", 65);
+    set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
+    set_object_value(&airspeed, airspeed.var_info, "USE", 1);
+
+    board_config.init();
 
     airspeed.init();
     airspeed.calibrate(false);
@@ -47,12 +64,20 @@ void setup()
 void loop(void)
 {
     static uint32_t timer;
-    if((hal.scheduler->millis() - timer) > 100) {
-        timer = hal.scheduler->millis();
+    if ((AP_HAL::millis() - timer) > 100) {
+        timer = AP_HAL::millis();
         airspeed.read();
-        hal.console->printf("airspeed %.2f\n", airspeed.get_airspeed());
+        airspeed.get_temperature(temperature);
+
+        hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
+                            (double)airspeed.get_airspeed(), (double)temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

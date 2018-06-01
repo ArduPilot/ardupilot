@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "AP_Mount_Alexmos.h"
 
 extern const AP_HAL::HAL& hal;
@@ -37,6 +36,7 @@ void AP_Mount_Alexmos::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+            control_axis(_angle_ef_target_rad, false);
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
@@ -48,7 +48,7 @@ void AP_Mount_Alexmos::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(_frontend._ahrs.get_gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, false);
                 control_axis(_angle_ef_target_rad, false);
             }
@@ -165,7 +165,7 @@ void AP_Mount_Alexmos::write_params()
 */
 void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
 {
-    if (_port->txspace() < (size + 5)) {
+    if (_port->txspace() < (size + 5U)) {
         return;
     }
     uint8_t checksum = 0;
@@ -267,7 +267,7 @@ void AP_Mount_Alexmos::read_incoming()
             case 4: // parsing body
                 _checksum += data;
                 if (_payload_counter < sizeof(_buffer)) {
-                    _buffer.bytes[_payload_counter] = data;
+                    _buffer[_payload_counter] = data;
                 }
                 if (++_payload_counter == _payload_length)
                     _step++;

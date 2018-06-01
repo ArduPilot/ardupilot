@@ -2,7 +2,9 @@
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 
 #include "GPIO.h"
 #include <stdio.h>
@@ -17,7 +19,6 @@
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 GPIO_BBB::GPIO_BBB()
 {}
 
@@ -30,9 +31,9 @@ void GPIO_BBB::init()
     // Idea taken from https://groups.google.com/forum/#!msg/beagleboard/OYFp4EXawiI/Mq6s3sg14HoJ
 
     uint8_t bank_enable[3] = { 5, 65, 105 };
-    int export_fd = open("/sys/class/gpio/export", O_WRONLY);
+    int export_fd = open("/sys/class/gpio/export", O_WRONLY | O_CLOEXEC);
     if (export_fd == -1) {
-        hal.scheduler->panic("unable to open /sys/class/gpio/export");
+        AP_HAL::panic("unable to open /sys/class/gpio/export");
     }
     for (uint8_t i=0; i<3; i++) {
         dprintf(export_fd, "%u\n", (unsigned)bank_enable[i]);
@@ -41,7 +42,7 @@ void GPIO_BBB::init()
 
 
     /* open /dev/mem */
-    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC) ) < 0) {
+    if ((mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC)) < 0) {
             printf("can't open /dev/mem \n");
             exit (-1);
     }
@@ -51,7 +52,7 @@ void GPIO_BBB::init()
     for (uint8_t i=0; i<LINUX_GPIO_NUM_BANKS; i++) {
         gpio_bank[i].base = (volatile unsigned *)mmap(0, GPIO_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, offsets[i]);
         if ((char *)gpio_bank[i].base == MAP_FAILED) {
-            hal.scheduler->panic("unable to map GPIO bank");
+            AP_HAL::panic("unable to map GPIO bank");
         }
         gpio_bank[i].oe = gpio_bank[i].base + GPIO_OE;
         gpio_bank[i].in = gpio_bank[i].base + GPIO_IN;
@@ -130,4 +131,6 @@ bool GPIO_BBB::usb_connected(void)
 
 #endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF ||
        // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD ||
-       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI ||
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE ||
+       // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET

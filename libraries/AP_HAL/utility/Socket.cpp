@@ -169,7 +169,7 @@ bool SocketAPM::pollin(uint32_t timeout_ms)
     tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
-    if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
+    if (select(fd+1, &fds, nullptr, nullptr, &tv) != 1) {
         return false;
     }
     return true;
@@ -190,7 +190,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
     tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000UL;
 
-    if (select(fd+1, NULL, &fds, NULL, &tv) != 1) {
+    if (select(fd+1, nullptr, &fds, nullptr, &tv) != 1) {
         return false;
     }
     return true;
@@ -211,12 +211,12 @@ bool SocketAPM::listen(uint16_t backlog)
 SocketAPM *SocketAPM::accept(uint32_t timeout_ms)
 {
     if (!pollin(timeout_ms)) {
-        return NULL;
+        return nullptr;
     }
 
-    int newfd = ::accept(fd, NULL, NULL);
+    int newfd = ::accept(fd, nullptr, nullptr);
     if (newfd == -1) {
-        return NULL;
+        return nullptr;
     }
     // turn off nagle for lower latency
     int one = 1;

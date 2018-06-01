@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# unpack latest MissionPlanner*.zip on firmware.diydrones.com
+# unpack latest MissionPlanner*.zip on firmware.ardupilot.org
 # to facilitate upgrade of existing MissionPlanner installs
 
 export PATH=$PATH:/bin:/usr/bin

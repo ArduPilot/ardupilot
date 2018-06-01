@@ -461,7 +461,7 @@ uint32_t count = 0;
 		#else
 			data	=	pgm_read_word_near(0);	//*	get the first word of the user program
 		#endif
-			if (data != 0xffff)					//*	make sure its valid before jumping to it.
+			if (data != 0xffff)					//*	make sure it's valid before jumping to it.
 			{
 				asm volatile(
 						"clr	r30		\n\t"
@@ -656,9 +656,9 @@ int main(void)
 					if (exPointCntr == 3)
 					{
 						RunMonitor();
-						exPointCntr		=	0;	//	reset back to zero so we dont get in an endless loop
+						exPointCntr		=	0;	//	reset back to zero so we don't get in an endless loop
 						isLeave			=	1;
-						msgParseState	=	99;	//*	we dont want it do anything
+						msgParseState	=	99;	//*	we don't want it do anything
 						break;
 					}
 				}
@@ -836,7 +836,7 @@ int main(void)
 
 				case CMD_LEAVE_PROGMODE_ISP:
 					isLeave	=	1;
-					//*	fall thru
+					//*	fall through
 
 				case CMD_SET_PARAMETER:
 				case CMD_ENTER_PROGMODE_ISP:

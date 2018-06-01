@@ -16,9 +16,10 @@ AuxiliaryBusSlave::~AuxiliaryBusSlave()
 {
 }
 
-AuxiliaryBus::AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves)
+AuxiliaryBus::AuxiliaryBus(AP_InertialSensor_Backend &backend, uint8_t max_slaves, uint32_t devid)
     : _max_slaves(max_slaves)
     , _ins_backend(backend)
+    , _devid(devid)
 {
     _slaves = (AuxiliaryBusSlave**) calloc(max_slaves, sizeof(AuxiliaryBusSlave*));
 }

@@ -1,23 +1,23 @@
 #!/usr/bin/env python
-'''
+"""
 Python interface to euroc ROS multirotor simulator
 See https://pixhawk.org/dev/ros/sitl
-'''
+"""
+
+import time
+
+import mav_msgs.msg as mav_msgs
+import px4.msg as px4
+import rosgraph_msgs.msg as rosgraph_msgs
+import rospy
+import sensor_msgs.msg as sensor_msgs
 
 from aircraft import Aircraft
-import util, time, math
-from math import degrees, radians
 from rotmat import Vector3, Matrix3
-from pymavlink.quaternion import Quaternion
-import rospy
-import std_msgs.msg as std_msgs
-import mav_msgs.msg as mav_msgs
-import rosgraph_msgs.msg as rosgraph_msgs
-import sensor_msgs.msg as sensor_msgs
-import px4.msg as px4
+
 
 def quat_to_dcm(q1, q2, q3, q4):
-    '''convert quaternion to DCM'''
+    """Convert quaternion to DCM."""
     q3q3 = q3 * q3
     q3q4 = q3 * q4
     q2q2 = q2 * q2
@@ -33,7 +33,7 @@ def quat_to_dcm(q1, q2, q3, q4):
     m.a.y =   2.0*(q2q3 - q1q4)
     m.a.z =   2.0*(q2q4 + q1q3)
     m.b.x =   2.0*(q2q3 + q1q4)
-    m.b.y = 1.0-2.0*(q2q2 + q4q4)
+    m.b.y =   1.0-2.0*(q2q2 + q4q4)
     m.b.z =   2.0*(q3q4 - q1q2)
     m.c.x =   2.0*(q2q4 - q1q3)
     m.c.y =   2.0*(q3q4 + q1q2)
@@ -42,7 +42,7 @@ def quat_to_dcm(q1, q2, q3, q4):
 
 
 class IrisRos(Aircraft):
-    '''a IRIS MultiCopter from ROS'''
+    """A IRIS MultiCopter from ROS."""
     def __init__(self):
         Aircraft.__init__(self)
         self.max_rpm = 1200
@@ -51,11 +51,11 @@ class IrisRos(Aircraft):
         self.have_new_pos = False
 
         topics = {
-            "/clock"                       : (self.clock_cb, rosgraph_msgs.Clock),
-            "/iris/imu"                    : (self.imu_cb, sensor_msgs.Imu),
+            "/clock"                        : (self.clock_cb, rosgraph_msgs.Clock),
+            "/iris/imu"                     : (self.imu_cb, sensor_msgs.Imu),
             "/iris/vehicle_local_position"  : (self.pos_cb, px4.vehicle_local_position),
             }
-        
+
         rospy.init_node('ArduPilot', anonymous=True)
         for topic in topics.keys():
             (callback, msgtype) = topics[topic]
@@ -65,9 +65,9 @@ class IrisRos(Aircraft):
                                          mav_msgs.CommandMotorSpeed,
                                          queue_size=1)
         self.last_time = 0
-   
+
         # spin() simply keeps python from exiting until this node is stopped
-        #rospy.spin()
+        # rospy.spin()
 
     def clock_cb(self, msg):
         self.time_now = self.time_base + msg.clock.secs + msg.clock.nsecs*1.0e-9
@@ -85,7 +85,7 @@ class IrisRos(Aircraft):
                                -msg.orientation.y,
                                -msg.orientation.z)
         self.have_new_imu = True
-        
+
     def pos_cb(self, msg):
         self.velocity = Vector3(msg.vx, msg.vy, msg.vz)
         self.position = Vector3(msg.x, msg.y, msg.z)

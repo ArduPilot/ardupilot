@@ -1,5 +1,41 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 1.0.0 28-Jul-2016
+Changes from 0.8.0
+1) Compensate for tracker tilt by converting earth-frame angle targets to body-frame servo outputs
+2) Tracker location provided by EKF (still falls back to raw GPS if EKF is unable to provide position estimate)
+3) PITCH_MIN, PITCH_MAX parameters replace PITCH_RANGE
+------------------------------------------------------------------
+AntennaTracker 0.8.0 22-Jun-2016
+Changes from 0.7.8
+1) Added PITCH2SRV_FILT, YAW2SRV_FILT added to smooth input to controllers.  Lower values lead to more delay but smoother motion.
+2) Estimate vehicle's altitude between telemetry updates when using ALT_SOURCE = GPS
+3) Bug fix to vehicle position estimate (was using vehicle's heading instead of 3D velocity vector)
+4) Added MAV_UPDATE_RATE parameter to allow more easily setting the rate the vehicle sends position data
+------------------------------------------------------------------
+AntennaTracker 0.7.8 10-Jun-2016
+Changes from 0.7.7
+1) Bug fix to VBAR dataflash logging
+2) VPOS dataflash logging message captures vehicle position
+------------------------------------------------------------------
+AntennaTracker 0.7.7 31-May-2016
+Changes from 0.7.6
+1) SERVO_TYPE parameter split into SERVO_PITCH_TYPE, SERVO_YAW_TYPE to allow different servo types for each axis
+2) ALT_SOURCE parameter added to allow selecting vehicle's GPS as an altitude source instead of vehicle's baro
+3) VBAR dataflash log message added to capture vehicle barometer data
+------------------------------------------------------------------
+AntennaTracker 0.7.6 08-Feb-2016
+Changes from 0.7.5
+1) Fix logging of attitude and mode to dataflash 
+------------------------------------------------------------------
+AntennaTracker 0.7.5 27-Dec-2015
+Changes from 0.7.4
+1) Add dataflash logging
+------------------------------------------------------------------
+AntennaTracker 0.7.4 23-Dec-2015
+Changes from 0.7.2
+1) Request baro pressure from vehicle at 1hz
+------------------------------------------------------------------
 AntennaTracker 0.7.2 1-Aug-2015
 Changes from 0.7.1
 1) Fixed Pitch

@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,9 +17,7 @@
 /// @file	FilterClass.h
 /// @brief	A pure virtual interface class
 ///
-
-#ifndef __FILTER_CLASS_H__
-#define __FILTER_CLASS_H__
+#pragma once
 
 #include <inttypes.h>
 
@@ -43,6 +40,3 @@ typedef Filter<int16_t> FilterInt16;
 typedef Filter<uint16_t> FilterUInt16;
 typedef Filter<int32_t> FilterInt32;
 typedef Filter<uint32_t> FilterUInt32;
-
-#endif // __FILTER_CLASS_H__
-

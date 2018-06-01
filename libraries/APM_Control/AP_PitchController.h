@@ -1,7 +1,4 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-#ifndef __AP_PITCH_CONTROLLER_H__
-#define __AP_PITCH_CONTROLLER_H__
+#pragma once
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
@@ -12,13 +9,17 @@
 
 class AP_PitchController {
 public:
-	AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash) :
-		aparm(parms),
-        autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash),
-        _ahrs(ahrs)
-    { 
-		AP_Param::setup_object_defaults(this, var_info);
-	}
+    AP_PitchController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
+        : aparm(parms)
+        , autotune(gains, AP_AutoTune::AUTOTUNE_PITCH, parms, _dataflash)
+        , _ahrs(ahrs)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+
+    /* Do not allow copies */
+    AP_PitchController(const AP_PitchController &other) = delete;
+    AP_PitchController &operator=(const AP_PitchController&) = delete;
 
 	int32_t get_rate_out(float desired_rate, float scaler);
 	int32_t get_servo_out(int32_t angle_err, float scaler, bool disable_integrator);
@@ -32,8 +33,13 @@ public:
 
 	static const struct AP_Param::GroupInfo var_info[];
 
+    AP_Float &kP(void) { return gains.P; }
+    AP_Float &kI(void) { return gains.I; }
+    AP_Float &kD(void) { return gains.D; }
+    AP_Float &kFF(void) { return gains.FF; }
+
 private:
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune autotune;
 	AP_Int16 _max_rate_neg;
@@ -49,5 +55,3 @@ private:
 	AP_AHRS &_ahrs;
 	
 };
-
-#endif // __AP_PITCH_CONTROLLER_H__

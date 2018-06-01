@@ -17,7 +17,7 @@
 // V2.2.3 - Implemented 0.5us cut filter to remove servo input capture jitter.
 
 // 04-08-2011
-// V2.2.4 - Implemented PPM passtrough funtion.
+// V2.2.4 - Implemented PPM passtrough function.
 //          Shorting channel 2&3 enabled ppm passtrough on channel 1.
 
 // 04-08-2011
@@ -842,7 +842,7 @@ void ppm_encoder_init( void )
         uint16_t input_channel_count[ SERVO_CHANNELS ];
         uint8_t input_current; // Input pin level mask
         uint8_t input_previous; // Input pin level mask
-        uint8_t input_int_mask; // Active input pin interupt mask
+        uint8_t input_int_mask; // Active input pin interrupt mask
         
     INPUT_ACTIVE_CHANNEL_CHECK:
 
@@ -897,7 +897,7 @@ void ppm_encoder_init( void )
                 // Set active channel in servo_input_connected[..]
                 servo_input_connected[ (input_channel << 1) + 1 ] = true;    
                 
-                // Set interupt pin mask for active channel
+                // Set interrupt pin mask for active channel
                 input_int_mask |= 1 << input_channel;
 
             }
