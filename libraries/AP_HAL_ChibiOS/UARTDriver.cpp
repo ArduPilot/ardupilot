@@ -54,7 +54,6 @@ uint32_t UARTDriver::last_thread_run_us;
 #define EVT_DATA EVENT_MASK(0)
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-tx_bounce_buf_ready(true),
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600),
@@ -165,6 +164,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _baudrate = b;
     }
 
+    if (rx_bounce_buf == nullptr) {
+        rx_bounce_buf = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    }
+    if (tx_bounce_buf == nullptr) {
+        tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        tx_bounce_buf_ready = true;
+    }
+    
     /*
       allocate the write buffer
      */
