@@ -99,12 +99,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         return;
     }
     uint32_t ticks;
-    if (usec >= 4096) {
-        // we need to use 64 bit calculations for tick conversions
-        ticks = US2ST64(usec);
-    } else {
-        ticks = US2ST(usec);
-    }
+    ticks = chTimeUS2I(usec);
     if (ticks == 0) {
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
