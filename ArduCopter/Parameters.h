@@ -16,15 +16,6 @@ public:
     //
     static const uint16_t        k_format_version = 120;
 
-    // The parameter software_type is set up solely for ground station use
-    // and identifies the software type (eg ArduPilotMega versus
-    // ArduCopterMega)
-    // GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
-    // values within that range to identify different branches.
-    //
-    static const uint16_t        k_software_type = 10;          // 0 for APM
-                                                                // trunk
-
     // Parameter identities.
     //
     // The enumeration defined here is used to ensure that every parameter
@@ -48,7 +39,7 @@ public:
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-        k_param_software_type,
+        k_param_software_type, // deprecated
         k_param_ins_old,                        // *** Deprecated, remove with next eeprom number change
         k_param_ins,                            // libraries/AP_InertialSensor variables
         k_param_NavEKF2_old, // deprecated - remove
@@ -375,7 +366,6 @@ public:
     };
 
     AP_Int16        format_version;
-    AP_Int8         software_type;
 
     // Telemetry control
     //
