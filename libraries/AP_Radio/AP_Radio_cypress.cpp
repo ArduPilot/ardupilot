@@ -950,7 +950,7 @@ void AP_Radio_cypress::setup_timeout(uint32_t timeout_ms)
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     hrt_call_after(&wait_call, timeout_ms*1000, (hrt_callout)irq_timeout_trampoline, nullptr);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    chVTSet(&timeout_vt, MS2ST(timeout_ms), trigger_timeout_event, nullptr);
+    chVTSet(&timeout_vt, chTimeMS2I(timeout_ms), trigger_timeout_event, nullptr);
 #endif
 }
 

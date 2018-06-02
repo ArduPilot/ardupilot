@@ -303,7 +303,7 @@ void AP_Radio_cc2500::radio_init(void)
         protocolState = STATE_BIND_TUNING;
     }
 
-    chVTSet(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
+    chVTSet(&timeout_vt, chTimeMS2I(10), trigger_timeout_event, nullptr);
 }
 
 void AP_Radio_cc2500::trigger_irq_radio_event()
@@ -320,7 +320,7 @@ void AP_Radio_cc2500::trigger_timeout_event(void *arg)
     (void)arg;
     //we are called from ISR context
     chSysLockFromISR();
-    chVTSetI(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
+    chVTSetI(&timeout_vt, chTimeMS2I(10), trigger_timeout_event, nullptr);
     chEvtSignalI(_irq_handler_ctx, EVT_TIMEOUT);
     chSysUnlockFromISR();
 }
@@ -597,7 +597,7 @@ void AP_Radio_cc2500::irq_handler(void)
             stats.recv_packets++;
 
             packet_timer = irq_time_us;
-            chVTSet(&timeout_vt, MS2ST(10), trigger_timeout_event, nullptr);
+            chVTSet(&timeout_vt, chTimeMS2I(10), trigger_timeout_event, nullptr);
         
             cc2500.Strobe(CC2500_SIDLE);
             cc2500.SetPower(get_transmit_power());
@@ -675,7 +675,7 @@ void AP_Radio_cc2500::irq_timeout(void)
             nextChannel(chanskip);
             // to keep the timeouts 1ms behind the expected time we
             // need to set the timeout to 9ms
-            chVTSet(&timeout_vt, MS2ST(9), trigger_timeout_event, nullptr);
+            chVTSet(&timeout_vt, chTimeMS2I(9), trigger_timeout_event, nullptr);
             lost++;
         }
         break;
