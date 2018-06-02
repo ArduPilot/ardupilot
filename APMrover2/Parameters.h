@@ -15,13 +15,12 @@ public:
     // by newer code.
     //
     static const uint16_t k_format_version = 16;
-    static const uint16_t k_software_type = 20;
 
     enum {
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-        k_param_software_type,
+        k_param_software_type, // unused
         k_param_BoardConfig_CAN,
 
         // Misc
@@ -207,7 +206,6 @@ public:
         };
 
     AP_Int16    format_version;
-    AP_Int8     software_type;
 
     // Misc
     //
