@@ -22,20 +22,16 @@ extern "C" {
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
 
-/*
-  invalidate data cache following a DMA transfer into memory.
- */
-void dma_invalidate(void *buf, uint32_t size);
-
-/*
-  flush data cache into RAM before a DMA transfer
- */
-void dma_flush(const void *buf, uint32_t size);
-
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 // print stack usage
 void show_stack_usage(void);
 #endif
+
+// allocation functions in malloc.c    
+size_t mem_available(void);
+void *malloc_ccm(size_t size);
+void *malloc_dtcm(size_t size);
+void *malloc_dma(size_t size);
     
 #ifdef __cplusplus
 }

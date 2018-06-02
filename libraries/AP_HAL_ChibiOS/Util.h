@@ -21,14 +21,6 @@
 #include "Semaphores.h"
 #include "ToneAlarm.h"
 
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-// on F7 we check we are in the DTCM region, and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xFFFE0001) == 0x20000000)
-#else
-// this checks an address is in main memory and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xF0000001) == 0x20000000)
-#endif
-
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {

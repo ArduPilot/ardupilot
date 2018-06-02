@@ -252,4 +252,10 @@ define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # define HAL_SPI_CHECK_CLOCK_FREQ 1
 
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
 ROMFS io_firmware.bin Tools/IO_Firmware/fmuv2_IO.bin
