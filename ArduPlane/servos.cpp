@@ -403,7 +403,6 @@ void Plane::set_servos_flaps(void)
     // work out any manual flap input
     RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
     if (flapin != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        flapin->input();
         manual_flap_percent = flapin->percent_input();
     }
 
