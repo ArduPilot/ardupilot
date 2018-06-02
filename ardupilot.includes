@@ -1228,3 +1228,6 @@ Tools/Linux_HAL_Essentials/pru/pwmpru
 Tools/Linux_HAL_Essentials/pru/rangefinderpru
 Tools/Linux_HAL_Essentials/pru/rcinpru
 Tools/Replay
+libraries/AP_HAL_ChibiOS/hwdef/fmuv3
+libraries/AP_HAL_ChibiOS/hwdef/fmuv2
+libraries/AP_HAL_ChibiOS/hwdef/fmuv4
