@@ -19,6 +19,9 @@
 #include <string.h>
 #include <stm32_dma.h>
 
+/*
+  setup the timer capture digital filter for a channel
+ */
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode)
 {
     switch (channel) {
@@ -34,6 +37,39 @@ void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t fil
     case 3:
         tim->CCMR2 |= STM32_TIM_CCMR2_IC4F(filter_mode);
         break;
+    }
+}
+
+/*
+  set the input source of a timer channel
+ */    
+void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source)
+{
+    switch (channel) {
+        case 0:
+            tim->CCER &= ~STM32_TIM_CCER_CC1E;
+            tim->CCMR1 &= ~STM32_TIM_CCMR1_CC1S_MASK;
+            tim->CCMR1 |= STM32_TIM_CCMR1_CC1S(input_source);
+            tim->CCER |= STM32_TIM_CCER_CC1E;
+            break;
+        case 1:
+            tim->CCER &= ~STM32_TIM_CCER_CC2E;
+            tim->CCMR1 &= ~STM32_TIM_CCMR1_CC2S_MASK;
+            tim->CCMR1 |= STM32_TIM_CCMR1_CC2S(input_source);
+            tim->CCER |= STM32_TIM_CCER_CC2E;
+            break;
+        case 2:
+            tim->CCER &= ~STM32_TIM_CCER_CC3E;
+            tim->CCMR2 &= ~STM32_TIM_CCMR2_CC3S_MASK;
+            tim->CCMR2 |= STM32_TIM_CCMR2_CC3S(input_source);
+            tim->CCER |= STM32_TIM_CCER_CC3E;
+            break;
+        case 3:
+            tim->CCER &= ~STM32_TIM_CCER_CC4E;
+            tim->CCMR2 &= ~STM32_TIM_CCMR2_CC4S_MASK;
+            tim->CCMR2 |= STM32_TIM_CCMR2_CC4S(input_source);
+            tim->CCER |= STM32_TIM_CCER_CC4E;
+            break;
     }
 }
 

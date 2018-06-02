@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
+void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source);
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 // print stack usage
@@ -32,7 +33,7 @@ size_t mem_available(void);
 void *malloc_ccm(size_t size);
 void *malloc_dtcm(size_t size);
 void *malloc_dma(size_t size);
-    
+
 #ifdef __cplusplus
 }
 #endif
