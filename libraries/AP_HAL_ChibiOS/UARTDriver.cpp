@@ -71,7 +71,7 @@ void UARTDriver::uart_thread(void* arg)
 
     uart_thread_ctx = chThdGetSelfX();
     while (true) {
-        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
         uint32_t now = AP_HAL::micros();
         if (now - last_thread_run_us >= 1000) {
             // run them all if it's been more than 1ms since we ran
@@ -600,7 +600,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
     }
     _wait.n = n;
     _wait.thread_ctx = chThdGetSelfX();
-    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, MS2ST(timeout_ms));
+    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, chTimeMS2I(timeout_ms));
     return (mask & EVT_DATA) != 0;
 }
 
