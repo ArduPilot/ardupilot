@@ -164,7 +164,7 @@ void AP_IOMCU::thread_main(void)
     trigger_event(IOEVENT_INIT);
     
     while (true) {
-        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(10));
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
 
         // check for pending IO events
         if (mask & EVENT_MASK(IOEVENT_SEND_PWM_OUT)) {
