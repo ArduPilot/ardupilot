@@ -925,8 +925,8 @@ def write_GPIO_config(f):
         f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s, %2uU)\n' % (gpio, port, pin))
     f.write('#define HAL_GPIO_PINS { \\\n')
     for (gpio, pwm, port, pin, p) in gpios:
-        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU), EXT_MODE_GPIO%s }, /* %s */ \\\n' %
-                (gpio, pwm, port, pin, port, p))
+        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU)}, /* %s */ \\\n' %
+                (gpio, pwm, port, pin, p))
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
