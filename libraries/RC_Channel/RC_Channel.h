@@ -68,9 +68,6 @@ public:
     // read the input value from hal.rcin for this channel
     uint16_t    read() const;
 
-    // read input from hal.rcin and set as pwm input for channel
-    void        input();
-
     static const struct AP_Param::GroupInfo var_info[];
 
     // return true if input is within deadzone of trim

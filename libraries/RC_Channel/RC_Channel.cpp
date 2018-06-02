@@ -319,12 +319,6 @@ RC_Channel::percent_input()
     return ret;
 }
 
-void
-RC_Channel::input()
-{
-    radio_in = hal.rcin->read(ch_in);
-}
-
 uint16_t
 RC_Channel::read() const
 {
