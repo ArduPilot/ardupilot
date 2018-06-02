@@ -21,6 +21,7 @@
 #include <chheap.h>
 #include "ToneAlarm.h"
 #include "RCOutput.h"
+#include "hwdef/common/stm32_util.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -33,12 +34,6 @@ extern const AP_HAL::HAL& hal;
 using namespace ChibiOS;
 
 #if CH_CFG_USE_HEAP == TRUE
-
-extern "C" {
-    size_t mem_available(void);
-    void *malloc_ccm(size_t size);
-    void *malloc_dtcm(size_t size);
-};
 
 /**
    how much free memory do we have in bytes.
@@ -55,12 +50,9 @@ uint32_t Util::available_memory(void)
 
 void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
-#if defined(DTCM_RAM_SIZE) && defined(DTCM_BASE_ADDRESS)
     if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
-        return malloc_dtcm(size);
-    }
-#endif
-    if (mem_type == AP_HAL::Util::MEM_FAST) {
+        return malloc_dma(size);
+    } else if (mem_type == AP_HAL::Util::MEM_FAST) {
         return try_alloc_from_ccm_ram(size);
     } else {
         return calloc(1, size);

@@ -43,7 +43,7 @@ void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer)
  */
 void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf, uint32_t size)
 {
-    if (IS_DMA_SAFE(*buf)) {
+    if (!bouncebuffer || IS_DMA_SAFE(*buf)) {
         // nothing needs to be done
         return;
     }
@@ -66,7 +66,7 @@ void bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
  */
 void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf, uint32_t size)
 {
-    if (buf == bouncebuffer->dma_buf) {
+    if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");        
         memcpy(bouncebuffer->orig_buf, buf, size);
         bouncebuffer->busy = false;
@@ -79,7 +79,7 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
  */
 void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t **buf, uint32_t size)
 {
-    if (IS_DMA_SAFE(*buf)) {
+    if (!bouncebuffer || IS_DMA_SAFE(*buf)) {
         // nothing needs to be done
         return;
     }
@@ -103,7 +103,7 @@ void bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
  */
 void bouncebuffer_finish_write(struct bouncebuffer_t *bouncebuffer, const uint8_t *buf)
 {
-    if (buf == bouncebuffer->dma_buf) {
+    if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_wite");        
         bouncebuffer->busy = false;
     }

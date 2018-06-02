@@ -241,16 +241,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-    uint8_t *recv_buf = recv;
-    const uint8_t *send_buf = send;
-
-    bus.bouncebuffer_setup(send_buf, send_len, recv_buf, recv_len);
-
-    if (send_len) {
-        dma_flush(send_buf, send_len);
-    }
-        
     i2cAcquireBus(I2CD[bus.busnum].i2c);
+
+    bus.bouncebuffer_setup(send, send_len, recv, recv_len);
     
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
@@ -260,13 +253,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         bus.i2c_active = true;
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         if(send_len == 0) {
-            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv_buf, recv_len, MS2ST(timeout_ms));
+            ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, MS2ST(timeout_ms));
         } else {
-            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send_buf, send_len,
-                                           recv_buf, recv_len, MS2ST(timeout_ms));
-        }
-        if (recv_len) {
-            dma_invalidate(recv_buf, recv_len);
+            ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send, send_len,
+                                           recv, recv_len, MS2ST(timeout_ms));
         }
            
         bus.i2c_active = false;
@@ -279,13 +269,12 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
             osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         } else {
             osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-            if (recv_buf != recv) {
-                memcpy(recv, recv_buf, recv_len);
-            }
+            bus.bouncebuffer_finish(send, recv, recv_len);
             i2cReleaseBus(I2CD[bus.busnum].i2c);
             return true;
         }
     }
+    bus.bouncebuffer_finish(send, recv, recv_len);
     i2cReleaseBus(I2CD[bus.busnum].i2c);
     return false;
 }

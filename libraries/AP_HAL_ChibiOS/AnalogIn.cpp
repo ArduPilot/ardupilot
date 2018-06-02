@@ -187,7 +187,6 @@ void AnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
     if (buffer != samples) {
         return;
     }
-    dma_invalidate(buffer, ADC_DMA_BUF_DEPTH * ADC_GRP1_NUM_CHANNELS * sizeof(adcsample_t));
     for (uint8_t i = 0; i < ADC_DMA_BUF_DEPTH; i++) {
         for (uint8_t j = 0; j < ADC_GRP1_NUM_CHANNELS; j++) { 
             sample_sum[j] += *buffer++;

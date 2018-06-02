@@ -144,26 +144,18 @@ void SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     if (!set_chip_select(true)) {
         return;
     }
-    uint8_t *recv_buf = recv;
-    const uint8_t *send_buf = send;
 
-    bus.bouncebuffer_setup(send_buf, len, recv_buf, len);
+    bus.bouncebuffer_setup(send, len, recv, len);
 
     if (send == nullptr) {
-        spiReceive(spi_devices[device_desc.bus].driver, len, recv_buf);
-        dma_invalidate(recv_buf, len);
+        spiReceive(spi_devices[device_desc.bus].driver, len, recv);
     } else if (recv == nullptr) {
-        dma_flush(send_buf, len);
-        spiSend(spi_devices[device_desc.bus].driver, len, send_buf);
+        spiSend(spi_devices[device_desc.bus].driver, len, send);
     } else {
-        dma_flush(send_buf, len);
-        spiExchange(spi_devices[device_desc.bus].driver, len, send_buf, recv_buf);
-        dma_invalidate(recv_buf, len);
+        spiExchange(spi_devices[device_desc.bus].driver, len, send, recv);
     }
 
-    if (recv_buf != recv) {
-        memcpy(recv, recv_buf, len);
-    }
+    bus.bouncebuffer_finish(send, recv, len);
     
     set_chip_select(old_cs_forced);
 }

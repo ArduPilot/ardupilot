@@ -29,6 +29,7 @@
 #include <hal.h>
 #include <chheap.h>
 #include <stdarg.h>
+#include "stm32_util.h"
 
 #define MIN_ALIGNMENT 8
 
@@ -106,6 +107,22 @@ void *malloc(size_t size)
         }
     }
     return NULL;
+}
+
+/*
+  allocte DMA-safe memory
+ */
+void *malloc_dma(size_t size)
+{
+#if defined(DTCM_RAM_SIZE)
+    return malloc_dtcm(size);
+#else
+    void *p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    if (p) {
+        memset(p, 0, size);
+    }
+    return p;
+#endif
 }
 
 void *calloc(size_t nmemb, size_t size)
