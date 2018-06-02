@@ -28,7 +28,6 @@ static struct gpio_entry {
     bool enabled;
     uint8_t pwm_num;
     ioline_t pal_line;
-    uint16_t port;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
@@ -50,10 +49,7 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
     return NULL;
 }
 
-static void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel);
-
-static EXTConfig extcfg;
-static AP_HAL::Proc ext_irq[EXT_MAX_CHANNELS]; // ext int irq list
+static void pal_interrupt_cb(void *arg);
 
 GPIO::GPIO()
 {}
@@ -125,58 +121,16 @@ extern const AP_HAL::HAL& hal;
  */
 bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 {
-    uint8_t pad = PAL_PAD(line);
-    stm32_gpio_t *pal_port = PAL_PORT(line);
-    uint8_t ext_port = 0xff;
-    const struct {
-        stm32_gpio_t *port;
-        uint8_t ext_port;
-    } port_mapping[] = {
-        { GPIOA, EXT_MODE_GPIOA },
-        { GPIOB, EXT_MODE_GPIOB },
-        { GPIOC, EXT_MODE_GPIOC },
-        { GPIOD, EXT_MODE_GPIOD },
-        { GPIOE, EXT_MODE_GPIOE },
-        { GPIOF, EXT_MODE_GPIOF },
-#ifdef GPIOG
-        { GPIOG, EXT_MODE_GPIOG },
-#endif
-#ifdef GPIOH
-        { GPIOH, EXT_MODE_GPIOH },
-#endif
-#if defined(GPIOI) && defined(GPIOI_BASE)
-        { GPIOI, EXT_MODE_GPIOI },
-#endif
-    };
-    // convert the line to a EXT_MODE_GPIOn value,  this is STM32 specific
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(port_mapping); i++) {
-        if (pal_port == port_mapping[i].port) {
-            ext_port = port_mapping[i].ext_port;
-        }
-    }
-    if (ext_port == 0xff) {
-        return false;
-    }
-    if (p && ext_irq[pad] != nullptr && ext_irq[pad] != p) {
-        // already used
-        return false;
-    } else if (!p && !ext_irq[pad]) {
-        // nothing to remove
-        return false;
-    }
     uint32_t chmode = 0;
     switch(mode) {
-        case HAL_GPIO_INTERRUPT_LOW:
-            chmode = EXT_CH_MODE_LOW_LEVEL;
-            break;
         case HAL_GPIO_INTERRUPT_FALLING:
-            chmode = EXT_CH_MODE_FALLING_EDGE;
+            chmode = PAL_EVENT_MODE_FALLING_EDGE;
             break;
         case HAL_GPIO_INTERRUPT_RISING:
-            chmode = EXT_CH_MODE_RISING_EDGE;
+            chmode = PAL_EVENT_MODE_RISING_EDGE;
             break;
         case HAL_GPIO_INTERRUPT_BOTH:
-            chmode = EXT_CH_MODE_BOTH_EDGES;
+            chmode = PAL_EVENT_MODE_BOTH_EDGES;
             break;
         default:
             if (p) {
@@ -184,16 +138,9 @@ bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
             }
             break;
     }
-    if (_ext_started) {
-        extStop(&EXTD1);
-        _ext_started = false;
-    }
-    extcfg.channels[pad].mode = chmode;
-    extcfg.channels[pad].mode |= (p?EXT_CH_MODE_AUTOSTART:0) | ext_port;
-    ext_irq[pad] = p;
-    extcfg.channels[pad].cb = ext_interrupt_cb;
-    extStart(&EXTD1, &extcfg);
-    _ext_started = true;
+    palDisableLineEvent(line);
+    palEnableLineEvent(line, chmode);
+    palSetLineCallback(line, pal_interrupt_cb, (void*)p);
     return true;
 }
 
@@ -239,10 +186,10 @@ void DigitalSource::toggle()
     palToggleLine(line);
 }
 
-void ext_interrupt_cb(EXTDriver *extp, expchannel_t channel)
+void pal_interrupt_cb(void *arg)
 {
-    if (ext_irq[channel] != nullptr) {
-        ext_irq[channel]();
+    if (arg != nullptr) {
+        ((AP_HAL::Proc)arg)();
     }
 }
 
