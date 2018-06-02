@@ -128,5 +128,11 @@ for t in $CI_BUILD_TARGET; do
     fi
 done
 
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle AntennaTracker
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduCopter
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduPlane
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduSub
+
 echo build OK
 exit 0
