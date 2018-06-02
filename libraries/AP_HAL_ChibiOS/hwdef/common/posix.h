@@ -125,8 +125,8 @@ typedef struct utimbuf
    time_t modtime;      /* modification time */
 } utime_t;
 
-#if _USE_LFN != 0
-#define MAX_NAME_LEN _MAX_LFN 
+#if FF_USE_LFN != 0
+#define MAX_NAME_LEN FF_MAX_LFN 
 #else
 #define MAX_NAME_LEN 13
 #endif

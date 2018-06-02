@@ -66,6 +66,13 @@
 #endif
 
 /**
+ * @brief   Enables the cryptographic subsystem.
+ */
+#if !defined(HAL_USE_CRY) || defined(__DOXYGEN__)
+#define HAL_USE_CRY                         FALSE
+#endif
+
+/**
  * @brief   Enables the DAC subsystem.
  */
 #if !defined(HAL_USE_DAC) || defined(__DOXYGEN__)
@@ -76,7 +83,7 @@
  * @brief   Enables the EXT subsystem.
  */
 #if !defined(HAL_USE_EXT) || defined(__DOXYGEN__)
-#define HAL_USE_EXT                 TRUE
+#define HAL_USE_EXT                 FALSE
 #endif
 
 /**
@@ -185,6 +192,26 @@
 #define HAL_USE_USB                 FALSE
 #endif
 
+/*===========================================================================*/
+/* PAL driver related settings.                                              */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(PAL_USE_CALLBACKS) || defined(__DOXYGEN__)
+#define PAL_USE_CALLBACKS                   TRUE
+#endif
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(PAL_USE_WAIT) || defined(__DOXYGEN__)
+#define PAL_USE_WAIT                        FALSE
+#endif
+
 /**
  * @brief   Enables the WDG subsystem.
  */
@@ -221,6 +248,55 @@
  */
 #if !defined(CAN_USE_SLEEP_MODE) || defined(__DOXYGEN__)
 #define CAN_USE_SLEEP_MODE          TRUE
+#endif
+
+/**
+ * @brief   Enforces the driver to use direct callbacks rather than OSAL events.
+ */
+#if !defined(CAN_ENFORCE_USE_CALLBACKS) || defined(__DOXYGEN__)
+#define CAN_ENFORCE_USE_CALLBACKS           FALSE
+#endif
+
+/*===========================================================================*/
+/* CRY driver related settings.                                              */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables the SW fall-back of the cryptographic driver.
+ * @details When enabled, this option, activates a fall-back software
+ *          implementation for algorithms not supported by the underlying
+ *          hardware.
+ * @note    Fall-back implementations may not be present for all algorithms.
+ */
+#if !defined(HAL_CRY_USE_FALLBACK) || defined(__DOXYGEN__)
+#define HAL_CRY_USE_FALLBACK                FALSE
+#endif
+
+/**
+ * @brief   Makes the driver forcibly use the fall-back implementations.
+ */
+#if !defined(HAL_CRY_ENFORCE_FALLBACK) || defined(__DOXYGEN__)
+#define HAL_CRY_ENFORCE_FALLBACK            FALSE
+#endif
+
+/*===========================================================================*/
+/* DAC driver related settings.                                              */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(DAC_USE_WAIT) || defined(__DOXYGEN__)
+#define DAC_USE_WAIT                        TRUE
+#endif
+
+/**
+ * @brief   Enables the @p dacAcquireBus() and @p dacReleaseBus() APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(DAC_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define DAC_USE_MUTUAL_EXCLUSION            TRUE
 #endif
 
 /*===========================================================================*/
@@ -269,6 +345,26 @@
 #endif
 
 /*===========================================================================*/
+/* QSPI driver related settings.                                             */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(QSPI_USE_WAIT) || defined(__DOXYGEN__)
+#define QSPI_USE_WAIT                       TRUE
+#endif
+
+/**
+ * @brief   Enables the @p qspiAcquireBus() and @p qspiReleaseBus() APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(QSPI_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define QSPI_USE_MUTUAL_EXCLUSION           TRUE
+#endif
+
+/*===========================================================================*/
 /* SDC driver related settings.                                              */
 /*===========================================================================*/
 
@@ -297,6 +393,20 @@
  */
 #if !defined(SDC_NICE_WAITING) || defined(__DOXYGEN__)
 #define SDC_NICE_WAITING            TRUE
+#endif
+
+/**
+ * @brief   OCR initialization constant for V20 cards.
+ */
+#if !defined(SDC_INIT_OCR_V20) || defined(__DOXYGEN__)
+#define SDC_INIT_OCR_V20                    0x50FF8000U
+#endif
+
+/**
+ * @brief   OCR initialization constant for non-V20 cards.
+ */
+#if !defined(SDC_INIT_OCR) || defined(__DOXYGEN__)
+#define SDC_INIT_OCR                        0x80100000U
 #endif
 
 /*===========================================================================*/
@@ -359,11 +469,27 @@
 #endif
 
 /**
+ * @brief   Enables circular transfers APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(SPI_USE_CIRCULAR) || defined(__DOXYGEN__)
+#define SPI_USE_CIRCULAR                    FALSE
+#endif
+
+/**
  * @brief   Enables the @p spiAcquireBus() and @p spiReleaseBus() APIs.
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(SPI_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
 #define SPI_USE_MUTUAL_EXCLUSION    TRUE
+#endif
+
+/**
+ * @brief   Handling method for SPI CS line.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(SPI_SELECT_MODE) || defined(__DOXYGEN__)
+#define SPI_SELECT_MODE                     SPI_SELECT_MODE_PAD
 #endif
 
 /*===========================================================================*/

@@ -109,20 +109,12 @@ include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
-VARIOUSSRC = $(STREAMSSRC)
-
-VARIOUSINC = $(STREAMSINC)
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(STARTUPSRC) \
-       $(KERNSRC) \
-       $(PORTSRC) \
-       $(OSALSRC) \
-       $(HALSRC) \
-       $(PLATFORMSRC) \
-       $(VARIOUSSRC) \
-       $(FATFSSRC) \
-	   $(HWDEF)/common/stubs.c \
+
+CSRC = $(sort $(ALLCSRC))
+
+CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/board.c \
 	   $(HWDEF)/common/usbcfg.c \
 	   $(HWDEF)/common/flash.c \
@@ -142,7 +134,7 @@ endif
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(CHCPPSRC)
+CPPSRC = $(sort $(ALLCPPSRC))
 
 # C sources to be compiled in ARM mode regardless of the global setting.
 # NOTE: Mixing ARM and THUMB mode enables the -mthumb-interwork compiler
@@ -165,13 +157,11 @@ TCSRC =
 TCPPSRC =
 
 # List ASM source files here
-ASMSRC =
-ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
+ASMSRC = $(ALLASMSRC)
+ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
-         $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(FATFSINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(VARIOUSINC) $(CHCPPINC) \
-		 $(HWDEF)/common
+         $(ALLINC) $(HWDEF)/common
 
 #
 # Project, sources and paths
