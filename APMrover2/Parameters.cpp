@@ -16,14 +16,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION",   1),
 
-    // @Param: SYSID_SW_TYPE
-    // @DisplayName: Software Type
-    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
-    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
-    // @User: Advanced
-    // @ReadOnly: True
-    GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
-
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Rangefinder=16384, Arming=32768, FullLogs=65535
