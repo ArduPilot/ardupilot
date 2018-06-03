@@ -896,6 +896,7 @@ AP_GPS_UBLOX::_parse_gps(void)
               acc_d_mm
         );
 
+#if UBLOX_DEBUGGING
     	std::bitset<32> flags = _buffer.rtk.flags_bitfield;
     	uint8_t gnss_fix_ok = flags[0];
     	uint8_t diff_soln = flags[1];
@@ -915,6 +916,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         		ref_pos_miss,
         		ref_obs_miss
         );
+#endif
        }
        break;
     case MSG_STATUS:
@@ -1394,6 +1396,3 @@ void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
                                            _version.swVersion);
     }
 }
-
-//The "31.18.15 UBX-NAV-RELPOSNED (0x01 0x3C)" contains the relative position in
-
