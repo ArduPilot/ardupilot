@@ -1789,12 +1789,19 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // start timer if necessary
     if(loiter_time == 0) {
         loiter_time = millis();
+		if(loiter_time_max > 0) {
+			// play a tone
+			AP_Notify::events.waypoint_complete = 1;	
+			gcs().send_text(MAV_SEVERITY_INFO, "Delay in arrival at command #%i",cmd.index);
+			}
     }
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        // play a tone
-        AP_Notify::events.waypoint_complete = 1;
+		if(loiter_time_max == 0) {
+			// play a tone
+			AP_Notify::events.waypoint_complete = 1;
+			}
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }else{
