@@ -319,43 +319,46 @@ float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruis
 
 // calculated a reduced speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
 // should be called after calc_lateral_acceleration and before calc_throttle
-// relies on these internal members being updated: lateral_acceleration, _yaw_error_cd, _distance_to_destination
+// relies on these internal members being updated: _yaw_error_cd, _distance_to_destination
 float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
 {
-    // this method makes use the following internal variables
-    const float yaw_error_cd = _yaw_error_cd;
-    const float target_lateral_accel_G = attitude_control.get_desired_lat_accel();
-    const float distance_to_waypoint = _distance_to_destination;
-
-    // calculate the yaw_error_ratio which is the error (capped at 90degrees) expressed as a ratio (from 0 ~ 1)
-    float yaw_error_ratio = constrain_float(fabsf(yaw_error_cd / 9000.0f), 0.0f, 1.0f);
-
-    // apply speed_turn_gain parameter (expressed as a percentage) to yaw_error_ratio
-    yaw_error_ratio *= (100 - g.speed_turn_gain) * 0.01f;
-
-    // calculate absolute lateral acceleration expressed as a ratio (from 0 ~ 1) of the vehicle's maximum lateral acceleration
-    const float lateral_accel_ratio = constrain_float(fabsf(target_lateral_accel_G / (g.turn_max_g * GRAVITY_MSS)), 0.0f, 1.0f);
-
-    // calculate a lateral acceleration based speed scaling
-    const float lateral_accel_speed_scaling = 1.0f - lateral_accel_ratio * yaw_error_ratio;
-
-    // calculate a pivot steering based speed scaling (default to no reduction)
-    float pivot_speed_scaling = 1.0f;
-    if (rover.use_pivot_steering(yaw_error_cd)) {
-        pivot_speed_scaling = 0.0f;
+    // reduce speed to zero during pivot turns
+    if (rover.use_pivot_steering(_yaw_error_cd)) {
+        return 0.0f;
     }
 
-    // scaled speed
-    float speed_scaled = desired_speed * MIN(lateral_accel_speed_scaling, pivot_speed_scaling);
+    // reduce speed to limit overshoot from line between origin and destination
+    // calculate number of degrees vehicle must turn to face waypoint
+    const float heading_cd = is_negative(desired_speed) ? wrap_180_cd(ahrs.yaw_sensor + 18000) : ahrs.yaw_sensor;
+    const float wp_yaw_diff = wrap_180_cd(rover.nav_controller->target_bearing_cd() - heading_cd);
+    const float turn_angle_rad = fabsf(radians(wp_yaw_diff * 0.01f));
+
+    // calculate distance from vehicle to line + wp_overshoot
+    const float line_yaw_diff = wrap_180_cd(get_bearing_cd(_origin, _destination) - heading_cd);
+    const float crosstrack_error = rover.nav_controller->crosstrack_error();
+    const float dist_from_line = fabsf(crosstrack_error);
+    const bool heading_away = is_positive(line_yaw_diff) == is_positive(crosstrack_error);
+    const float wp_overshoot_adj = heading_away ? -dist_from_line : dist_from_line;
+
+    // calculate radius of circle that touches vehicle's current position and heading and target position and heading
+    float radius_m = 999.0f;
+    float radius_calc_denom = fabsf(1.0f - cosf(turn_angle_rad));
+    if (!is_zero(radius_calc_denom)) {
+        radius_m = MAX(0.0f, rover.g.waypoint_overshoot + wp_overshoot_adj) / radius_calc_denom;
+    }
+
+    // calculate and limit speed to allow vehicle to stay on circle
+    float overshoot_speed_max = safe_sqrt(g.turn_max_g * GRAVITY_MSS * MAX(g2.turn_radius, radius_m));
+    float speed_max = constrain_float(desired_speed, -overshoot_speed_max, overshoot_speed_max);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(distance_to_waypoint) && is_positive(attitude_control.get_decel_max())) {
-        const float speed_max = safe_sqrt(2.0f * distance_to_waypoint * attitude_control.get_decel_max() + sq(_desired_speed_final));
-        speed_scaled = constrain_float(speed_scaled, -speed_max, speed_max);
+    if (is_positive(_distance_to_destination) && is_positive(attitude_control.get_decel_max())) {
+        const float dist_speed_max = safe_sqrt(2.0f * _distance_to_destination * attitude_control.get_decel_max() + sq(_desired_speed_final));
+        speed_max = constrain_float(speed_max, -dist_speed_max, dist_speed_max);
     }
 
     // return minimum speed
-    return speed_scaled;
+    return speed_max;
 }
 
 // calculate the lateral acceleration target to cause the vehicle to drive along the path from origin to destination
