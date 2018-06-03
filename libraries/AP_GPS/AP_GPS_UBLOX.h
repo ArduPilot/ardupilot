@@ -52,6 +52,7 @@
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
 #define RATE_SOL 1
+#define RATE_RTK 1
 #define RATE_PVT 1
 #define RATE_VELNED 1
 #define RATE_DOP 1
@@ -72,6 +73,7 @@
 #define CONFIG_GNSS          (1<<11)
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
+#define CONFIG_RATE_RTK      (1<<14)
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -276,6 +278,24 @@ private:
         uint32_t heading_accuracy;
     };
 
+    struct PACKED ubx_nav_relposned {
+        uint8_t version;
+        uint8_t reserved1;
+        uint16_t ref_station_id;
+        uint32_t itow_ms;      // GPS time of week
+        int32_t rel_pos_n_cm;  //position(meters) = (rel_pos + rel_pos_hp*1e-02)/100.0;
+        int32_t rel_pos_e_cm;
+        int32_t rel_pos_d_cm;
+        int8_t rel_pos_hp_n_mm;
+        int8_t rel_pos_hp_e_mm;
+        int8_t rel_pos_hp_d_mm;
+        uint8_t reserved2;
+        uint32_t acc_n_mm;
+        uint32_t acc_e_mm;
+        uint32_t acc_d_mm;
+        uint32_t flags_bitfield;
+    };
+
     // Lea6 uses a 60 byte message
     struct PACKED ubx_mon_hw_60 {
         uint32_t pinSel;
@@ -421,6 +441,7 @@ private:
         ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
+        ubx_nav_relposned rtk;
     } _buffer;
 
     enum ubs_protocol_bytes {
@@ -451,7 +472,8 @@ private:
         MSG_MON_VER = 0x04,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
-        MSG_RXM_RAWX = 0x15
+        MSG_RXM_RAWX = 0x15,
+        MSG_NAV_RELPOSNED = 0x3c
     };
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
@@ -488,6 +510,7 @@ private:
         STEP_PVT = 0,
         STEP_NAV_RATE, // poll NAV rate
         STEP_SOL,
+        STEP_RTK,
         STEP_PORT,
         STEP_STATUS,
         STEP_POSLLH,

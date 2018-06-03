@@ -18,6 +18,7 @@
 //	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
+#include <bitset>
 #include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"
 #include <AP_HAL/Util.h>
@@ -131,6 +132,11 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
         break;
+    case STEP_RTK:
+        if(!_request_message_rate(CLASS_NAV, MSG_NAV_RELPOSNED)) {
+            _next_message--;
+        }
+        break;
     case STEP_VELNED:
         if(!_request_message_rate(CLASS_NAV, MSG_VELNED)) {
             _next_message--;
@@ -222,6 +228,15 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             } else {
                 _configure_message_rate(msg_class, msg_id, RATE_SOL);
                 _unconfigured_messages |= CONFIG_RATE_SOL;
+                _cfg_needs_save = true;
+            }
+            break;
+        case MSG_NAV_RELPOSNED:
+            if(rate == RATE_RTK) {
+                _unconfigured_messages &= ~CONFIG_RATE_RTK;
+            } else {
+                _configure_message_rate(msg_class, msg_id, RATE_RTK);
+                _unconfigured_messages |= CONFIG_RATE_RTK;
                 _cfg_needs_save = true;
             }
             break;
@@ -1379,3 +1394,6 @@ void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
                                            _version.swVersion);
     }
 }
+
+//The "31.18.15 UBX-NAV-RELPOSNED (0x01 0x3C)" contains the relative position in
+
