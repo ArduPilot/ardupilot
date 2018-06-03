@@ -617,9 +617,9 @@ void AC_PosControl::run_z_controller()
     i = _pid_accel_z.get_integrator();
 
     // ensure imax is always large enough to overpower hover throttle
-//    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
-//        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
-//    }
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
 
     // update i term as long as we haven't breached the limits or the I term will certainly reduce
     // To-Do: should this be replaced with limits check from attitude_controller?
