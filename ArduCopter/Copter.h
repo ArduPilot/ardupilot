@@ -55,7 +55,6 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
-#include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
@@ -87,6 +86,8 @@
 // Configuration
 #include "defines.h"
 #include "config.h"
+
+#include "RC_Channel.h"         // RC Channel Library
 
 #include "GCS_Mavlink.h"
 #include "GCS_Copter.h"
@@ -194,6 +195,8 @@ public:
 #endif
     friend class AP_Arming_Copter;
     friend class ToyMode;
+    friend class RC_Channel_Copter;
+    friend class RC_Channels_Copter;
 
     Copter(void);
 
@@ -233,6 +236,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
+    const uint8_t num_flight_modes = 6;
 
     AP_Baro barometer;
     Compass compass;
@@ -352,19 +356,6 @@ private:
 
     control_mode_t prev_control_mode;
     mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
-
-    // Structure used to detect changes in the flight mode control switch
-    struct {
-        int8_t debounced_switch_position;   // currently used switch position
-        int8_t last_switch_position;        // switch position in previous iteration
-        uint32_t last_edge_time_ms;         // system time that switch position was last changed
-    } control_switch_state;
-
-    // de-bounce counters for switches.cpp
-    struct debounce {
-        uint8_t count;
-        uint8_t ch_flag;
-    } aux_debounce[(CH_12 - CH_7)+1];
 
     RCMapper rcmap;
 
@@ -664,6 +655,7 @@ private:
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
+    void read_aux_all(void);
     void fourhundred_hz_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -892,15 +884,6 @@ private:
 
     // switches.cpp
     void read_control_switch();
-    bool check_if_auxsw_mode_used(uint8_t auxsw_mode_check);
-    bool check_duplicate_auxsw(void);
-    void reset_control_switch();
-    uint8_t read_3pos_switch(uint8_t chan);
-    void read_aux_switches();
-    void init_aux_switches();
-    void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
-    void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
-    bool debounce_aux_switch(uint8_t chan, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 
