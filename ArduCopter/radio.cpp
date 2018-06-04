@@ -11,20 +11,20 @@ void Copter::default_dead_zones()
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
-    RC_Channels::rc_channel(CH_6)->set_default_dead_zone(10);
+    rc().channel(CH_6)->set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
 #endif
-    RC_Channels::rc_channel(CH_6)->set_default_dead_zone(0);
+    rc().channel(CH_6)->set_default_dead_zone(0);
 }
 
 void Copter::init_rc_in()
 {
-    channel_roll     = RC_Channels::rc_channel(rcmap.roll()-1);
-    channel_pitch    = RC_Channels::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_yaw      = RC_Channels::rc_channel(rcmap.yaw()-1);
+    channel_roll     = rc().channel(rcmap.roll()-1);
+    channel_pitch    = rc().channel(rcmap.pitch()-1);
+    channel_throttle = rc().channel(rcmap.throttle()-1);
+    channel_yaw      = rc().channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
@@ -33,10 +33,10 @@ void Copter::init_rc_in()
     channel_throttle->set_range(1000);
 
     //set auxiliary servo ranges
-    RC_Channels::rc_channel(CH_5)->set_range(1000);
-    RC_Channels::rc_channel(CH_6)->set_range(1000);
-    RC_Channels::rc_channel(CH_7)->set_range(1000);
-    RC_Channels::rc_channel(CH_8)->set_range(1000);
+    rc().channel(CH_5)->set_range(1000);
+    rc().channel(CH_6)->set_range(1000);
+    rc().channel(CH_7)->set_range(1000);
+    rc().channel(CH_8)->set_range(1000);
 
     // set default dead zones
     default_dead_zones();
@@ -95,7 +95,7 @@ void Copter::read_radio()
 {
     uint32_t tnow_ms = millis();
 
-    if (RC_Channels::read_input()) {
+    if (rc().read_input()) {
         ap.new_radio_frame = true;
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
