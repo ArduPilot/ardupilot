@@ -53,6 +53,7 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
 // get a handle for DMA sharing DMA channels with other subsystems
 void I2CBus::dma_init(void)
 {
+    chMtxObjectInit(&dma_lock);
     dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));    
@@ -163,12 +164,14 @@ I2CDevice::~I2CDevice()
  */
 void I2CBus::dma_allocate(Shared_DMA *ctx)
 {
+    chMtxLock(&dma_lock);    
     if (!i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
         i2cStart(I2CD[busnum].i2c, &i2ccfg);
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
         i2c_started = true;
     }
+    chMtxUnlock(&dma_lock);    
 }
 
 /*
@@ -176,12 +179,14 @@ void I2CBus::dma_allocate(Shared_DMA *ctx)
  */
 void I2CBus::dma_deallocate(Shared_DMA *)
 {
+    chMtxLock(&dma_lock);    
     if (i2c_started) {
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
         i2cStop(I2CD[busnum].i2c);
         osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
         i2c_started = false;
     }
+    chMtxUnlock(&dma_lock);    
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
