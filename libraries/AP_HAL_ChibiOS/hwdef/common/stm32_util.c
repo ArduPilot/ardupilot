@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stm32_dma.h>
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode)
 {
@@ -54,3 +55,13 @@ void show_stack_usage(void)
   } while (tp != NULL);
 }
 #endif
+
+/*
+  flush all memory. Used in chSysHalt()
+ */
+void memory_flush_all(void)
+{
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+    dmaBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
+#endif
+}

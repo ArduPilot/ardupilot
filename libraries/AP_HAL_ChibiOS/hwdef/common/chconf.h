@@ -520,11 +520,13 @@
  * @brief   System halt hook.
  * @details This hook is invoked in case to a system halting error before
  *          the system is halted.
+ *
+ * We flush all memory on STM32F7 to allow gdb to access variables currently
+ * in the dcache
  */
-
 #define CH_CFG_SYSTEM_HALT_HOOK(reason) do {                               \
-        extern int printf(const char *fmt, ...); \
-        printf(reason); \
+        extern void memory_flush_all(void); \
+        memory_flush_all(); \
 } while(0)
 
 /**
