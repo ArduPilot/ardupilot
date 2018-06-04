@@ -39,6 +39,12 @@ public:
     uint32_t busclock;
     bool i2c_started;
     bool i2c_active;
+
+    // we need an additional lock in the dma_allocate and
+    // dma_deallocate functions to cope with 3-way contention as we
+    // have two DMA channels that we are handling with the shared_dma
+    // code
+    mutex_t dma_lock;
     
     void dma_allocate(Shared_DMA *);
     void dma_deallocate(Shared_DMA *);
