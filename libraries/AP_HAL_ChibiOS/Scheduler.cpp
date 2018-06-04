@@ -244,18 +244,10 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
     // stop sdcard driver, if active
     sdcard_stop();
+
+    // disable all interrupt sources
+    port_disable();
     
-    // lock all shared DMA channels. This has the effect of waiting
-    // till the sensor buses are idle
-    Shared_DMA::lock_all();
-
-    // disable interrupts
-    disable_interrupts_save();
-
-    // wait for 1ms to ensure all pending DMAs are complete
-    uint32_t start_us = AP_HAL::micros();
-    while (AP_HAL::micros() - start_us < 1000) ; // busy loop
-
     // reboot
     NVIC_SystemReset();
 }
