@@ -8,7 +8,7 @@
 // tuning - updates parameters based on the ch6 tuning knob's position
 //  should be called at 3.3hz
 void Copter::tuning() {
-    RC_Channel *rc6 = RC_Channels::rc_channel(CH_6);
+    RC_Channel *rc6 = rc().channel(CH_6);
 
     // exit immediately if not using tuning function, or when radio failsafe is invoked, so tuning values are not set to zero
     if ((g.radio_tuning <= 0) || failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
