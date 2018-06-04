@@ -565,12 +565,12 @@ void Copter::ModeAuto::exit_mission()
     // play a tone
     AP_Notify::events.mission_complete = 1;
     // if we are not on the ground switch to loiter or land
-    if(!ap.land_complete) {
+    if (!ap.land_complete) {
         // try to enter loiter but if that fails land
-        if(!loiter_start()) {
+        if (!loiter_start()) {
             set_mode(LAND, MODE_REASON_MISSION_END);
         }
-    }else{
+    } else {
         // if we've landed it's safe to disarm
         copter.init_disarm_motors();
     }
@@ -645,7 +645,7 @@ Return true if we do not recognize the command so that we move on to the next co
 
 bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
-    switch(cmd.id) {
+    switch (cmd.id) {
     //
     // navigation commands
     //
@@ -919,7 +919,7 @@ void Copter::ModeAuto::loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if(!copter.failsafe.radio) {
+    if (!copter.failsafe.radio) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
@@ -1112,7 +1112,7 @@ void Copter::ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         Location_Class target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
-    }else{
+    } else {
         // set landing state
         land_state = LandStateType_Descending;
 
@@ -1267,7 +1267,7 @@ void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         // if the next nav command is a waypoint set end type to spline or straight
         if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-        }else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
+        } else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
             seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
         }
     }
@@ -1354,7 +1354,7 @@ void Copter::ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 
 void Copter::ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if(cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
+    if (cmd.p1 == 1 || (cmd.content.location.lat == 0 && cmd.content.location.lng == 0 && cmd.content.location.alt == 0)) {
         copter.set_home_to_current_location(false);
     } else {
         copter.set_home(cmd.content.location, false);
@@ -1374,7 +1374,7 @@ void Copter::ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if MOUNT == ENABLED
-    if(!copter.camera_mount.has_pan_control()) {
+    if (!copter.camera_mount.has_pan_control()) {
         auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,0);
     }
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
@@ -1728,7 +1728,7 @@ bool Copter::ModeAuto::verify_loiter_time()
     }
 
     // start our loiter timer
-    if( loiter_time == 0 ) {
+    if ( loiter_time == 0 ) {
         loiter_time = millis();
     }
 
@@ -1782,34 +1782,31 @@ bool Copter::ModeAuto::verify_yaw()
 bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if( !copter.wp_nav->reached_wp_destination() ) {
+    if ( !copter.wp_nav->reached_wp_destination() ) {
         return false;
     }
 
     // start timer if necessary
-    if(loiter_time == 0) {
+    if (loiter_time == 0) {
         loiter_time = millis();
-		if(loiter_time_max > 0) {
+		if (loiter_time_max > 0) {
 			// play a tone
-			AP_Notify::events.waypoint_complete = 1;	
-			gcs().send_text(MAV_SEVERITY_INFO, "Delay in arrival at command #%i",cmd.index);
+			AP_Notify::events.waypoint_complete = 1;
 			}
     }
 
     // check if timer has run out
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-		if(loiter_time_max == 0) {
+		if (loiter_time_max == 0) {
 			// play a tone
 			AP_Notify::events.waypoint_complete = 1;
 			}
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    }else{
+    } else {
         return false;
     }
 }
-
-
 
 // verify_circle - check if we have circled the point enough
 bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
@@ -1841,18 +1838,16 @@ bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
 }
 
-
-
 // verify_spline_wp - check if we have reached the next way point using spline
 bool Copter::ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if( !copter.wp_nav->reached_wp_destination() ) {
+    if ( !copter.wp_nav->reached_wp_destination() ) {
         return false;
     }
 
     // start timer if necessary
-    if(loiter_time == 0) {
+    if (loiter_time == 0) {
         loiter_time = millis();
     }
 
@@ -1860,7 +1855,7 @@ bool Copter::ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    }else{
+    } else {
         return false;
     }
 }
