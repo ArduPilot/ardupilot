@@ -61,6 +61,8 @@ SPIBus::SPIBus(uint8_t _bus) :
     DeviceBus(APM_SPI_PRIORITY),
     bus(_bus)
 {
+    chMtxObjectInit(&dma_lock);
+    
     // allow for sharing of DMA channels with other peripherals
     dma_handle = new Shared_DMA(spi_devices[bus].dma_channel_rx,
                                 spi_devices[bus].dma_channel_tx,
@@ -82,11 +84,13 @@ void SPIBus::dma_allocate(Shared_DMA *ctx)
  */
 void SPIBus::dma_deallocate(Shared_DMA *ctx)
 {
+    chMtxLock(&dma_lock);    
     // another non-SPI peripheral wants one of our DMA channels
     if (spi_started) {
         spiStop(spi_devices[bus].driver);
         spi_started = false;
     }
+    chMtxUnlock(&dma_lock);    
 }
 
 
