@@ -322,6 +322,17 @@ def get_config(name, column=0, required=True, default=None, type=None, spaces=Fa
                 error("Badly formed config value %s (got %s)" % (name, ret))
     return ret
 
+def get_mcu_config(name, required=False):
+    '''get a value from the mcu dictionary'''
+    lib = get_mcu_lib(mcu_type)
+    if not hasattr(lib, 'mcu'):
+        error("Missing mcu config for %s" % mcu_type)
+    if not name in lib.mcu:
+        if required:
+            error("Missing required mcu config %s for %s" % (name, mcu_type))
+        return None
+    return lib.mcu[name]
+
 def enable_can(f):
     '''setup for a CAN enabled board'''
     f.write('#define HAL_WITH_UAVCAN 1\n')
@@ -384,18 +395,35 @@ def write_mcu_config(f):
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     f.write('#define CRT1_AREAS_NUMBER 1\n')
-    if mcu_type in ['STM32F427xx', 'STM32F407xx','STM32F405xx']:
-        def_ccm_size = 64
-    else:
-        def_ccm_size = None
-    ccm_size = get_config(
-        'CCM_RAM_SIZE_KB', default=def_ccm_size, required=False, type=int)
+
+    # get core-coupled-memory if available (not be DMA capable)
+    ccm_size = get_mcu_config('CCM_RAM_SIZE_KB')
     if ccm_size is not None:
-        f.write('#define CCM_RAM_SIZE %u\n' % ccm_size)
+        f.write('\n// core-coupled memory\n')
+        f.write('#define CCM_RAM_SIZE_KB %u\n' % ccm_size)
+        f.write('#define CCM_BASE_ADDRESS 0x%08x\n' % get_mcu_config('CCM_BASE_ADDRESS', True))
+
+    # get DTCM memory if available (DMA-capable with no cache flush/invalidate)
+    dtcm_size = get_mcu_config('DTCM_RAM_SIZE_KB')
+    if dtcm_size is not None:
+        f.write('\n// DTCM memory\n')
+        f.write('#define DTCM_RAM_SIZE_KB %u\n' % dtcm_size)
+        f.write('#define DTCM_BASE_ADDRESS 0x%08x\n' % get_mcu_config('DTCM_BASE_ADDRESS', True))
+        
     flash_reserve_start = get_config(
         'FLASH_RESERVE_START_KB', default=16, type=int)
+    f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % flash_reserve_start)
     f.write('\n')
+
+    ram_size_kb = get_mcu_config('RAM_SIZE_KB', True)
+    ram_base_address = get_mcu_config('RAM_BASE_ADDRESS', True)
+    f.write('// main memory size and address\n')
+    f.write('#define HAL_RAM_SIZE_KB %uU\n' % ram_size_kb)
+    f.write('#define HAL_RAM_BASE_ADDRESS 0x%08x\n' % ram_base_address)
+
+    f.write('\n// CPU serial number (12 bytes)\n')
+    f.write('#define UDID_START 0x%08x\n\n' % get_mcu_config('UDID_START', True))
 
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
@@ -415,8 +443,8 @@ def write_ldscript(fname):
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
     # ram size
-    ram_size = get_config('RAM_SIZE_KB', default=192, type=int)
-    ram_base = get_config('RAM_BASE_ADDRESS', default=0x20000000, type=int)
+    ram_size = get_mcu_config('RAM_SIZE_KB', True)
+    ram_base = get_mcu_config('RAM_BASE_ADDRESS', True)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
     flash_length = flash_size - (flash_reserve_start + flash_reserve_end)

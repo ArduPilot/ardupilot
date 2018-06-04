@@ -10,6 +10,24 @@ build = {
     "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F7xx/platform.mk"
     }
 
+# MCU parameters
+mcu = {
+    # location of MCU serial number
+    'UDID_START' : 0x1FF0F420,
+
+    # base address of main memory. We use SRAM1/SRAM2 as main memory
+    # for maximum speed (using the dcache). DMA will be done from DTCM
+    # memory
+    'RAM_BASE_ADDRESS' : 0x20010000,
+
+    # size of main memory
+    'RAM_SIZE_KB' : 256,
+
+    # DTCM ram address and size
+    'DTCM_BASE_ADDRESS' : 0x20000000,
+    'DTCM_RAM_SIZE_KB' : 64,
+}
+
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
 	# extracted from tabula-STM32F745-222.csv

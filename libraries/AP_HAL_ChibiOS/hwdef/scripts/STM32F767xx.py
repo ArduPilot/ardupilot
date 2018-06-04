@@ -25,6 +25,24 @@ pincount = {
 }
 
 
+# MCU parameters
+mcu = {
+    # location of MCU serial number
+    'UDID_START' : 0x1FF0F420,
+
+    # base address of main memory. We use SRAM1/SRAM2 as main memory
+    # for maximum speed (using the dcache). DMA will be done from DTCM
+    # memory
+    'RAM_BASE_ADDRESS' : 0x20020000,
+
+    # size of main memory
+    'RAM_SIZE_KB' : 384,
+
+    # DTCM ram address and size
+    'DTCM_BASE_ADDRESS' : 0x20000000,
+    'DTCM_RAM_SIZE_KB' : 128,
+}
+
 DMA_Map = {
 	# format is (DMA_TABLE, StreamNum, Channel)
 	"ADC1"    	:	[(2,0,0),(2,4,0)],

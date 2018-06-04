@@ -23,8 +23,6 @@ STM32_PWM_USE_TIM3 TRUE
 # board voltage
 STM32_VDD 330U
 
-RAM_SIZE_KB 256
-
 # flash size
 FLASH_SIZE_KB 1024
 
