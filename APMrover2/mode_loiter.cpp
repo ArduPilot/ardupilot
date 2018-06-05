@@ -43,8 +43,8 @@ void ModeLoiter::update()
         }
 
         // reduce desired speed if yaw_error is large
-        // note: copied from calc_reduced_speed_for_turn_or_distance
-        float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * ((100.0f - g.speed_turn_gain) * 0.01f);
+        // 45deg of error reduces speed to 75%, 90deg of error reduces speed to 50%
+        float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
         _desired_speed *= yaw_error_ratio;
     }
 
