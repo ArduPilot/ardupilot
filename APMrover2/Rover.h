@@ -558,6 +558,10 @@ public:
     void mavlink_delay_cb();
     void failsafe_check();
 
+    // BalanceBot.cpp
+    void balance_pitch(float &, bool);
+    bool is_BalanceBot() const;
+
     void update_soft_armed();
     // Motor test
     void motor_test_output();
