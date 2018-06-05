@@ -30,8 +30,7 @@ class AP_Camera {
 
 public:
     AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
-        : _trigger_counter(0) // count of number of cycles shutter has been held open
-        , _image_index(0)
+        : _image_index(0)
         , log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
         , ahrs(_ahrs)

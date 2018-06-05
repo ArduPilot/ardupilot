@@ -85,15 +85,6 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
-
-    // @Param: TRIGG_TIME
-    // @DisplayName: Duration that shutter is held open
-    // @Description: How long the shutter will be held open in seconds
-    // @Units: seconds
-    // @Increment: 0.01
-    // @Range: 0 5
-    // @User: Standard
-    AP_GROUPINFO("TRIGG_TIME",    10, AP_Camera, _trigger_duration, 0.1),
     
     // @Param: AUTO_ONLY
     // @DisplayName: Distance-trigging in AUTO mode only
@@ -101,6 +92,15 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:Always,1:Only when in AUTO
     // @User: Standard
     AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
+    
+    // @Param: TRIGG_DUR
+    // @DisplayName: Duration that shutter is held open
+    // @Description: How long the shutter will be held open in seconds
+    // @Units: s
+    // @Increment: 0.01
+    // @Range: 0 5
+    // @User: Standard
+    AP_GROUPINFO("TRIGG_DUR",    11, AP_Camera, _trigger_duration, 0.1),
 
     AP_GROUPEND
 };
