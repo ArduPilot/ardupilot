@@ -134,6 +134,10 @@ private:
     adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
     disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
     update_flight_stage_fn_t update_flight_stage_fn;
+    
+    // saved bearing for yaw correction after touchdown
+    float runway_bearing;
+    bool touched_down;
 
     // support for deepstall landings
     AP_Landing_Deepstall deepstall;
@@ -152,6 +156,7 @@ private:
     AP_Int8 flap_percent;
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
+    AP_Float touchdown_altitude;
 
     // Land Type STANDARD GLIDE SLOPE
 
