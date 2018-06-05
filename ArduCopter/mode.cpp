@@ -247,6 +247,8 @@ void Copter::update_flight_mode()
     // Update EKF speed limit - used to limit speed when we are using optical flow
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
+    target_rangefinder_alt_used = false;
+
     flightmode->run();
 }
 

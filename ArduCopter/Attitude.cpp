@@ -170,6 +170,8 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 
     uint32_t now = millis();
 
+    target_rangefinder_alt_used = true;
+
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
         target_rangefinder_alt = rangefinder_state.alt_cm + current_alt_target - current_alt;
