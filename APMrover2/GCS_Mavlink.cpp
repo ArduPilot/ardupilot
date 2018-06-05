@@ -211,6 +211,21 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+
+    // pitch to throttle pid
+    if (g.gcs_pid_mask & 4) {
+        pid_info = &g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
+                                    pid_info->desired,
+                                    ahrs.pitch,
+                                    0,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Rover::send_fence_status(mavlink_channel_t chan)
