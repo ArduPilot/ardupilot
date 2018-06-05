@@ -748,6 +748,7 @@ void QuadPlane::run_z_controller(void)
         // controller. We need to assume the integrator may be way off
 
         // the base throttle we start at is the current throttle we are using
+        // note that AC_PosControl::run_z_controller() adds the Z pid (_pid_accel_z) output to _motors.get_throttle_hover()
         float base_throttle = constrain_float(motors->get_throttle() - motors->get_throttle_hover(), -1, 1) * 1000;
         pos_control->get_accel_z_pid().set_integrator(base_throttle);
 
