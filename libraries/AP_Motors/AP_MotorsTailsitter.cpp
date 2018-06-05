@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #define SERVO_OUTPUT_RANGE  4500
 #define THROTTLE_RANGE       100
 
-// init
+// init *** note that frame_type is ignored ***
 void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // record successful initialisation if what we setup was the desired frame_class
