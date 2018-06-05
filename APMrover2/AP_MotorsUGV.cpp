@@ -241,6 +241,10 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // slew limit throttle
     slew_limit_throttle(dt);
 
+    if (rover.is_BalanceBot()) {
+        rover.balance_pitch(_throttle, armed);
+    }
+
     // output for regular steering/throttle style frames
     output_regular(armed, ground_speed, _steering, _throttle);
 
