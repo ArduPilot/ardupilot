@@ -163,6 +163,11 @@ float Copter::get_non_takeoff_throttle()
 float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
 {
 #if RANGEFINDER_ENABLED == ENABLED
+    if (!copter.rangefinder_alt_ok()) {
+        // if rangefinder is not ok, do not use surface tracking
+        return target_rate;
+    }
+
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
