@@ -774,10 +774,10 @@ def write_PWM_config(f):
         for p in pwm_out:
             if p.type != t:
                 continue
-            chan_str = p.label[7]
+            chan_str = p.label[-1]
             is_complementary = p.label[-1] == 'N';
             if not is_int(chan_str):
-                error("Bad channel for PWM %s" % p)
+                error("Bad channel for PWM %s chan_str=%s" % (p, chan_str))
             chan = int(chan_str)
             if chan not in [1, 2, 3, 4]:
                 error("Bad channel number %u for PWM %s" % (chan, p))
@@ -1058,7 +1058,7 @@ def build_peripheral_list():
             elif not p.has_extra('ALARM') and not p.has_extra('RCININT'):
                 # get the TIMn_UP DMA channels for DShot
                 label = type + '_UP'
-                if not label in peripherals:
+                if not label in peripherals and not p.has_extra('NODMA'):
                     peripherals.append(label)
         done.add(type)
     return peripherals
