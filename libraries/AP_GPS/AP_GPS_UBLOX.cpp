@@ -18,7 +18,6 @@
 //	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
-#include <bitset>
 #include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"
 #include <AP_HAL/Util.h>
@@ -33,7 +32,7 @@
 #endif
 
 
-#define UBLOX_DEBUGGING 0
+#define UBLOX_DEBUGGING 1
 #define UBLOX_FAKE_3DLOCK 0
 
 extern const AP_HAL::HAL& hal;
@@ -872,9 +871,9 @@ AP_GPS_UBLOX::_parse_gps(void)
 
         state.rtk_age_ms    = 0xFFFFFFFF;
 
-    	state.rtk_baseline_x_mm = _buffer.rtk.rel_pos_n_cm*10+_buffer.rtk.rel_pos_hp_n_mm;
-    	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm;
-    	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm;
+    	state.rtk_baseline_x_mm = _buffer.rtk.rel_pos_n_cm*10+_buffer.rtk.rel_pos_hp_n_mm/10.0;
+    	state.rtk_baseline_y_mm = _buffer.rtk.rel_pos_e_cm*10+_buffer.rtk.rel_pos_hp_e_mm/10.0;
+    	state.rtk_baseline_z_mm = _buffer.rtk.rel_pos_d_cm*10+_buffer.rtk.rel_pos_hp_d_mm/10.0;
 
     	int32_t acc_n_mm = _buffer.rtk.acc_n_mm;
     	int32_t acc_e_mm = _buffer.rtk.acc_e_mm;
@@ -897,14 +896,14 @@ AP_GPS_UBLOX::_parse_gps(void)
         );
 
 #if UBLOX_DEBUGGING
-    	std::bitset<32> flags = _buffer.rtk.flags_bitfield;
-    	uint8_t gnss_fix_ok = flags[0];
-    	uint8_t diff_soln = flags[1];
-    	uint8_t rel_pos_valid = flags[2];
-    	uint8_t carr_soln = flags[4] << 1 | flags[3];
-    	uint8_t is_moving = flags[5];
-    	uint8_t ref_pos_miss =  flags[6];
-    	uint8_t ref_obs_miss = flags[7];
+		uint32_t flags = _buffer.rtk.flags_bitfield;
+		uint8_t gnss_fix_ok = flags & 1;
+		uint8_t diff_soln = flags & (1 << 1);
+		uint8_t rel_pos_valid = flags & (1 << 2);
+		uint8_t carr_soln = ((flags & (1 << 4)) << 1) | (flags & (1 << 3));
+		uint8_t is_moving = flags & (1 << 5);
+		uint8_t ref_pos_miss = flags & (1 << 6);
+		uint8_t ref_obs_miss = flags & (1 << 2);
 
         Debug("MSG_NAV_RELPOSNED RTK Status: fix_ok=%u, diff_soln=%u, rel_pos_valid=%u,"
         		" carr_soln=%u, is_moving=%u, ref_pos_miss=%u, ref_obs_miss=%u",
