@@ -27,6 +27,7 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CAN.h>
 
+#include <DataFlash/DataFlash.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "shared_dma.h"
@@ -237,6 +238,9 @@ void Scheduler::reboot(bool hold_in_bootloader)
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
+
+    //stop logging
+    DataFlash_Class::instance()->StopLogging();
 
     // stop sdcard driver, if active
     sdcard_stop();
