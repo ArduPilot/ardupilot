@@ -28,6 +28,9 @@ public:
     // initialise motors
     void init();
 
+    // return true if motors are active
+    bool active() const;
+
     // setup output in case of main CPU failure
     void setup_safety_output();
 

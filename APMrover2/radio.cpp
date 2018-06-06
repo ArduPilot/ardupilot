@@ -80,7 +80,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active()) {
+    } else if (!g2.motors.active()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         if (channel_steer->get_control_in() < -4000) {
             const uint32_t now = millis();

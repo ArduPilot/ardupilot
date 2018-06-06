@@ -265,24 +265,3 @@ void Rover::read_aux_switch()
         break;
     }
 }
-
-// return true if motors are moving
-bool Rover::motor_active()
-{
-    // if soft disarmed, motors not active
-    if (!hal.util->get_soft_armed()) {
-        return false;
-    }
-
-    // check throttle is active
-    if (!is_zero(g2.motors.get_throttle())) {
-        return true;
-    }
-
-    // skid-steering vehicles active when steering
-    if (g2.motors.have_skid_steering() && !is_zero(g2.motors.get_steering())) {
-        return true;
-    }
-
-    return false;
-}

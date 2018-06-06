@@ -443,7 +443,6 @@ private:
     void do_aux_function_change_mode(Mode &mode,
                                      const aux_switch_pos ch_flag);
     void read_aux_switch();
-    bool motor_active();
 
     // crash_check.cpp
     void crash_check();
