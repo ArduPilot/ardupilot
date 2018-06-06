@@ -673,3 +673,24 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
 }
+
+// return true if motors are moving
+bool AP_MotorsUGV::active() const
+{
+    // if soft disarmed, motors not active
+    if (!hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    // check throttle is active
+    if (!is_zero(get_throttle())) {
+        return true;
+    }
+
+    // skid-steering vehicles active when steering
+    if (have_skid_steering() && !is_zero(get_steering())) {
+        return true;
+    }
+
+    return false;
+}

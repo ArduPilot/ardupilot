@@ -441,7 +441,6 @@ private:
     aux_switch_pos read_aux_switch_pos();
     void init_aux_switch();
     void read_aux_switch();
-    bool motor_active();
 
     // crash_check.cpp
     void crash_check();
