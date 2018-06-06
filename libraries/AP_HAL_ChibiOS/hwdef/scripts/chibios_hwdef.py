@@ -755,7 +755,7 @@ def write_PWM_config(f):
 
     f.write('// PWM timer config\n')
     for t in sorted(pwm_timers):
-        n = int(t[3])
+        n = int(t[3:])
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
     f.write('\n')
@@ -763,7 +763,7 @@ def write_PWM_config(f):
     groups = []
     for t in sorted(pwm_timers):
         group = len(groups) + 1
-        n = int(t[3])
+        n = int(t[3:])
         chan_list = [255, 255, 255, 255]
         chan_mode = [
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED',
