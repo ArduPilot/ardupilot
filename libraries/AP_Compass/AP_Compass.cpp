@@ -736,6 +736,8 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_FMUV5:
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_IST8310_I2C_ADDR),
                                                               false, ROTATION_ROLL_180_YAW_90), AP_Compass_IST8310::name, false);
+        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(2, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                              false, ROTATION_ROLL_180_YAW_90), AP_Compass_IST8310::name, false);
         break;
         
     case AP_BoardConfig::PX4_BOARD_SP01:
