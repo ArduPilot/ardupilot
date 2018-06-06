@@ -105,7 +105,7 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 */
 void Rover::stats_update(void)
 {
-    g2.stats.set_flying(motor_active());
+    g2.stats.set_flying(g2.motors.active());
     g2.stats.update();
 }
 #endif
