@@ -1,4 +1,4 @@
-# cube-orange is a varient of the fmuv3 cube from Hex with a STM32F777 MCU
+# The CUBE orange is a varient of The CUBE Black from ProfiCNC/Hex with a STM32F777 MCU
 
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
@@ -16,9 +16,6 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 # get it added to that repository so we don't get conflicts.
 
 # Note that APJ is "ArduPilot JSON Firmware Format"
-
-# board ID for firmware load
-APJ_BOARD_ID 9
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -79,10 +76,10 @@ FLASH_SIZE_KB 2048
 # if creating a board for a RTF vehicle you may wish to customise these
 
 # USB setup
-USB_VENDOR 0x0483 # ST
-USB_PRODUCT 0x5740
-USB_STRING_MANUFACTURER "ArduPilot"
-USB_STRING_PRODUCT "%BOARD%"
+USB_VENDOR 0x2DAE # ONLY FOR USE BY ProfiCNC / HEX! NOBODY ELSE
+USB_PRODUCT 0x1002
+USB_STRING_MANUFACTURER "Hex Technology Limited"
+USB_STRING_PRODUCT "ProfiCNC The CUBE Orange"
 USB_STRING_SERIAL  "%SERIAL%"
 
 # now define the order that I2C buses are presented in the hal.i2c API
@@ -408,7 +405,7 @@ define HAL_STORAGE_SIZE 16384
 # enable RAMTROM parameter storage
 define HAL_WITH_RAMTRON 1
 
-# setup for the possibility of an IMU heater as the pixhawk2 cube has
+# setup for the possibility of an IMU heater as the The CUBE has
 # an IMU header
 define HAL_HAVE_IMU_HEATER 1
 
