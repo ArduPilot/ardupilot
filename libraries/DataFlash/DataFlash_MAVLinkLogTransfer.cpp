@@ -298,6 +298,7 @@ bool DataFlash_Class::handle_log_send_data()
     _log_data_remaining -= len;
     if (ret < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN || _log_data_remaining == 0) {
         _log_sending = false;
+        _in_log_download = false;
         _log_sending_link = nullptr;
     }
     return true;
