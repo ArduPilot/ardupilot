@@ -434,7 +434,7 @@ private:
     void delay(uint32_t ms);
 
     // control_modes.cpp
-    Mode *mode_from_mode_num(enum mode num);
+    Mode *mode_from_mode_num(enum Mode::Number num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
