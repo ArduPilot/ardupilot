@@ -1281,7 +1281,7 @@ AP_Mission *GCS_MAVLINK_Rover::get_mission()
 
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
-    Mode *new_mode = rover.mode_from_mode_num((enum mode)mode);
+    Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
     if (new_mode == nullptr) {
         return false;
     }

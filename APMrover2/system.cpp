@@ -146,7 +146,7 @@ void Rover::init_ardupilot()
 
     startup_ground();
 
-    Mode *initial_mode = mode_from_mode_num((enum mode)g.initial_mode.get());
+    Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
     }
@@ -262,7 +262,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 #endif
 
 #if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode->mode_number() == AUTO);
+    camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
 #endif
 
     old_mode.exit();
