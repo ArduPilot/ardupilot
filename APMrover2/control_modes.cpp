@@ -2,38 +2,38 @@
 
 static const int16_t CH_7_PWM_TRIGGER = 1800;
 
-Mode *Rover::mode_from_mode_num(const enum mode num)
+Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
 {
     Mode *ret = nullptr;
     switch (num) {
-    case MANUAL:
+    case Mode::Number::MANUAL:
         ret = &mode_manual;
         break;
-    case ACRO:
+    case Mode::Number::ACRO:
         ret = &mode_acro;
         break;
-    case STEERING:
+    case Mode::Number::STEERING:
         ret = &mode_steering;
         break;
-    case HOLD:
+    case Mode::Number::HOLD:
         ret = &mode_hold;
         break;
-    case LOITER:
+    case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
-    case AUTO:
+    case Mode::Number::AUTO:
         ret = &mode_auto;
         break;
-    case RTL:
+    case Mode::Number::RTL:
         ret = &mode_rtl;
         break;
-    case SMART_RTL:
+    case Mode::Number::SMART_RTL:
         ret = &mode_smartrtl;
         break;
-    case GUIDED:
+    case Mode::Number::GUIDED:
        ret = &mode_guided;
         break;
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
     default:
@@ -76,7 +76,7 @@ void Rover::read_control_switch()
             return;
         }
 
-        Mode *new_mode = mode_from_mode_num((enum mode)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum Mode::Number)modes[switchPosition].get());
         if (new_mode != nullptr) {
             set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }

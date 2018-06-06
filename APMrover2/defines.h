@@ -34,21 +34,6 @@ enum ch7_option {
 #define HIL_MODE_DISABLED 0
 #define HIL_MODE_SENSORS  1
 
-// Auto Pilot modes
-// ----------------
-enum mode {
-    MANUAL       = 0,
-    ACRO         = 1,
-    STEERING     = 3,
-    HOLD         = 4,
-    LOITER       = 5,
-    AUTO         = 10,
-    RTL          = 11,
-    SMART_RTL    = 12,
-    GUIDED       = 15,
-    INITIALISING = 16
-};
-
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
