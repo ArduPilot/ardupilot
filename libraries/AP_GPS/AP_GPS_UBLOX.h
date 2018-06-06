@@ -510,7 +510,6 @@ private:
         STEP_PVT = 0,
         STEP_NAV_RATE, // poll NAV rate
         STEP_SOL,
-        STEP_RTK,
         STEP_PORT,
         STEP_STATUS,
         STEP_POSLLH,
@@ -525,6 +524,7 @@ private:
         STEP_RAW,
         STEP_RAWX,
         STEP_VERSION,
+        STEP_NAV_RELPOSNED,
         STEP_LAST
     };
 

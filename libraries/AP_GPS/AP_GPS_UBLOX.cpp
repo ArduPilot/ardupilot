@@ -132,7 +132,7 @@ AP_GPS_UBLOX::_request_next_config(void)
             _next_message--;
         }
         break;
-    case STEP_RTK:
+    case STEP_NAV_RELPOSNED:
         if(!_request_message_rate(CLASS_NAV, MSG_NAV_RELPOSNED)) {
             _next_message--;
         }
