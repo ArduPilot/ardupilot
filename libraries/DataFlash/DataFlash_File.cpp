@@ -849,7 +849,7 @@ uint16_t DataFlash_File::get_num_logs()
 void DataFlash_File::stop_logging(void)
 {
     // best-case effort to avoid annoying the IO thread
-    const bool have_sem = write_fd_semaphore->take(1);
+    const bool have_sem = write_fd_semaphore->take(1000);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
@@ -904,7 +904,7 @@ uint16_t DataFlash_File::start_new_log(void)
     if (log_num > MAX_LOG_FILES) {
         log_num = 1;
     }
-    if (!write_fd_semaphore->take(1)) {
+    if (!write_fd_semaphore->take(1000)) {
         _open_error = true;
         return 0xFFFF;
     }
