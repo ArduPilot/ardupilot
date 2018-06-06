@@ -1496,9 +1496,32 @@ class AutoTestCopter(AutoTest):
             if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
                 raise NotAchievedException("Laser enabled in SYS_STATUS")
 
+            self.progress("Re-enabling rangefinder")
+            self.set_rc(9, 2000)
+            self.delay_sim_time(1)
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser not enabled in SYS_STATUS")
+
+            self.takeoff(10, mode="LOITER")
+
+            m_r = self.mav.recv_match(type='RANGEFINDER',
+                                      blocking=True)
+            m_p = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                      blocking=True)
+
+            if abs(m_r.distance - m_p.relative_alt/1000) > 1:
+                raise NotAchievedException("rangefinder/global position int mismatch")
+
+            self.land()
+
         except Exception as e:
             self.progress("Exception caught")
             ex = e
+        self.land()
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
