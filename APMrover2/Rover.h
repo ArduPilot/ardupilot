@@ -440,6 +440,8 @@ private:
     void reset_control_switch();
     aux_switch_pos read_aux_switch_pos();
     void init_aux_switch();
+    void do_aux_function_change_mode(Mode &mode,
+                                     const aux_switch_pos ch_flag);
     void read_aux_switch();
     bool motor_active();
 
