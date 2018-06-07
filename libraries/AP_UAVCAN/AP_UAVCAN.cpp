@@ -34,6 +34,7 @@
 #include <uavcan/equipment/indication/RGB565.hpp>
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
+#include <uavcan/equipment/esc/Status.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -348,6 +349,47 @@ static void battery_info_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equi
 {   battery_info_st_cb(msg, 1); }
 static void (*battery_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
         = { battery_info_st_cb0, battery_info_st_cb1 };
+        
+//--- EscStatus ---
+static void escstatus_st_cb_func(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg, uint8_t mgr)
+{
+    if (hal.can_mgr[mgr] == nullptr) {
+        return;
+    }
+
+    AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    AP_UAVCAN::EscStatus_Data *data = ap_uavcan->escstatus_getptrto_data((uint8_t) msg.esc_index);
+    if (data == nullptr) {
+        return;
+    }
+    
+    if (!ap_uavcan->escstatus_sem_take()) {
+        return;
+    }
+    
+    data->error_count = msg.error_count;
+    data->voltage = msg.voltage;
+    data->current = msg.current;
+    data->temperature = msg.temperature;
+    data->rpm = msg.rpm;
+    data->power_rating_pct = msg.power_rating_pct;
+    data->dataflash_update = true;
+    
+    ap_uavcan->escstatus_sem_give();
+}
+
+static void escstatus_st_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg)
+{   escstatus_st_cb_func(msg, 0); }
+static void escstatus_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg)
+{   escstatus_st_cb_func(msg, 1); }
+static void (*escstatus_st_cb[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>& msg)
+        = { escstatus_st_cb0, escstatus_st_cb1 };
+
+
 
 // publisher interfaces
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
@@ -399,9 +441,14 @@ AP_UAVCAN::AP_UAVCAN() :
         _bi_BM_listener_to_id[i] = UINT8_MAX;
         _bi_BM_listeners[i] = nullptr;
     }
-
+    
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        _escstatus.id[i] = UINT8_MAX;
+    }
+    
     SRV_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
+    _escstatus_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
@@ -423,7 +470,7 @@ bool AP_UAVCAN::try_init(void)
                 }
             }
 
-            if(_uavcan_i == UINT8_MAX) {
+            if (_uavcan_i == UINT8_MAX) {
                 return false;
             }
 
@@ -510,6 +557,14 @@ bool AP_UAVCAN::try_init(void)
                     const int battery_info_start_res = battery_info_st->start(battery_info_st_cb_arr[_uavcan_i]);
                     if (battery_info_start_res < 0) {
                         debug_uavcan(1, "UAVCAN BatteryInfo subscriber start problem\n\r");
+                        return false;
+                    }
+
+                    uavcan::Subscriber<uavcan::equipment::esc::Status> *esc_st;
+                    esc_st = new uavcan::Subscriber<uavcan::equipment::esc::Status>(*node);
+                    const int esc_st_start_res = esc_st->start(escstatus_st_cb[_uavcan_i]);
+                    if (esc_st_start_res < 0) {
+                        debug_uavcan(1, "UAVCAN EscStatus subscriber start problem\n\r");
                         return false;
                     }
 
@@ -1392,6 +1447,70 @@ AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
         return nullptr;
     }
     return hal.can_mgr[iface]->get_UAVCAN();
+}
+
+bool AP_UAVCAN::escstatus_get_data(uint8_t id, AP_UAVCAN::EscStatus_Data *data)
+{
+    // check if id is already in list, and if it is take it
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == id) {
+            escstatus_sem_take();
+            *data = _escstatus.data[i];
+            escstatus_sem_take();
+            
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+AP_UAVCAN::EscStatus_Data* AP_UAVCAN::escstatus_getptrto_data(uint8_t id)
+{
+    // check if id is already in list, and if it is take it
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == id) {
+            return &_escstatus.data[i];
+        }
+    }
+    
+    // if id is not yet in list, find the first free spot, and take that
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == UINT8_MAX) {
+            _escstatus.id[i] = id;
+            return &_escstatus.data[i];
+        }
+    }
+    
+    return nullptr;
+}
+
+void AP_UAVCAN::escstatus_mark_dataflash_updated(uint8_t id)
+{
+    // check if id is already in list, and if it is take it
+    for (uint8_t i = 0; i < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; i++) {
+        if (_escstatus.id[i] == id) {
+            escstatus_sem_take();
+            _escstatus.data[i].dataflash_update = false;
+            escstatus_sem_give();
+            
+            return;
+        }
+    }
+}
+
+bool AP_UAVCAN::escstatus_sem_take()
+{
+    bool sem_ret = _escstatus_sem->take(10);
+    if (!sem_ret) {
+        debug_uavcan(1, "AP_UAVCAN ESC status semaphore fail\n\r");
+    }
+    return sem_ret;
+}
+
+void AP_UAVCAN::escstatus_sem_give()
+{
+    _escstatus_sem->give();
 }
 
 #endif // HAL_WITH_UAVCAN

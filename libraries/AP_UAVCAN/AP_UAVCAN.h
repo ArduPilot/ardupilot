@@ -47,6 +47,8 @@
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 #define AP_UAVCAN_LED_DELAY_MILLISECONDS 50
 
+#define AP_UAVCAN_ESCSTATUS_MAX_NUMBER 8
+
 class AP_UAVCAN {
 public:
     AP_UAVCAN();
@@ -130,6 +132,25 @@ public:
     // output from do_cyclic
     void SRV_send_servos();
     void SRV_send_esc();
+    
+    // --- EscStatus ---
+    // currently, we do nothing than to write the data to dataflash
+    // => we do not need a listener, we can do it in _update_data()
+    // this of course needs to change once we have a proper class which wants to listen to EscStatus
+    struct EscStatus_Data {
+        uint32_t error_count;
+        float voltage;
+        float current;
+        float temperature;
+        int32_t rpm;
+        uint8_t power_rating_pct;
+        bool dataflash_update;
+    };
+    bool escstatus_get_data(uint8_t id, EscStatus_Data *data);
+    EscStatus_Data* escstatus_getptrto_data(uint8_t id);
+    void escstatus_mark_dataflash_updated(uint8_t id);
+    bool escstatus_sem_take();
+    void escstatus_sem_give();
 
 private:
     // ------------------------- GPS
@@ -196,6 +217,14 @@ private:
 
     AP_HAL::Semaphore *SRV_sem;
     AP_HAL::Semaphore *_led_out_sem;
+    AP_HAL::Semaphore *_escstatus_sem;
+
+    // --- EscStatus ---
+    struct {
+        uint16_t id[AP_UAVCAN_ESCSTATUS_MAX_NUMBER];
+        EscStatus_Data data[AP_UAVCAN_ESCSTATUS_MAX_NUMBER];
+    } _escstatus;
+
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()
