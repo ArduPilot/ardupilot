@@ -3,7 +3,7 @@
 setup board.h for chibios
 '''
 
-import argparse, sys, fnmatch, os, dma_resolver, shlex, pickle
+import argparse, sys, fnmatch, os, dma_resolver, shlex, pickle, re
 import shutil
 
 parser = argparse.ArgumentParser("chibios_pins.py")
@@ -639,7 +639,19 @@ def write_I2C_config(f):
             % (n, n, n, n))
     f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
-
+def parse_timer(str):
+    '''parse timer channel string, i.e TIM8_CH2N'''
+    result = re.match(r'TIM([0-9]*)_CH([1234])(N?)', str)
+    if result:
+        tim = int(result.group(1))
+        chan = int(result.group(2))
+        compl = result.group(3) == 'N'
+        if tim < 1 or tim > 17:
+            error("Bad timer number %s in %s" % (tim, str))
+        return (tim, chan, compl)
+    else:
+        error("Bad timer definition %s" % str)
+ 
 def write_PWM_config(f):
     '''write PWM config defines'''
     rc_in = None
@@ -667,50 +679,37 @@ def write_PWM_config(f):
         f.write('#define HAL_USE_PWM FALSE\n')
         
     if rc_in is not None:
-        a = rc_in.label.split('_')
-        chan_str = a[1][2:]
-        timer_str = a[0][3:]
-        if chan_str[-1] == 'N':
+        (n, chan, compl) = parse_timer(rc_in.label)
+        if compl:
             # it is an inverted channel
             f.write('#define HAL_RCIN_IS_INVERTED\n')
-            chan_str = chan_str[:-1]
-        if not is_int(chan_str) or not is_int(timer_str):
-            error("Bad timer channel %s" % rc_in.label)
-        if int(chan_str) not in [1, 2]:
+        if chan not in [1, 2]:
             error(
                 "Bad channel number, only channel 1 and 2 supported for RCIN")
-        n = int(a[0][3:])
         f.write('// RC input config\n')
         f.write('#define HAL_USE_ICU TRUE\n')
         f.write('#define STM32_ICU_USE_TIM%u TRUE\n' % n)
         f.write('#define RCIN_ICU_TIMER ICUD%u\n' % n)
-        f.write('#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % int(chan_str))
-        f.write('#define STM32_RCIN_DMA_STREAM STM32_TIM_TIM%u_CH%u_DMA_STREAM\n' % (n, int(chan_str)))
-        f.write('#define STM32_RCIN_DMA_CHANNEL STM32_TIM_TIM%u_CH%u_DMA_CHAN\n' % (n, int(chan_str)))
+        f.write('#define RCIN_ICU_CHANNEL ICU_CHANNEL_%u\n' % chan)
+        f.write('#define STM32_RCIN_DMA_STREAM STM32_TIM_TIM%u_CH%u_DMA_STREAM\n' % (n, chan))
+        f.write('#define STM32_RCIN_DMA_CHANNEL STM32_TIM_TIM%u_CH%u_DMA_CHAN\n' % (n, chan))
         f.write('\n')
         
     if rc_in_int is not None:
-        a = rc_in_int.label.split('_')
-        chan_str = a[1][2:]
-        timer_str = a[0][3:]
-        if not is_int(chan_str) or not is_int(timer_str):
-            error("Bad timer channel %s" % rc_in.label)
-        n = int(a[0][3:])
+        (n, chan, compl) = parse_timer(rc_in_int.label)
+        if compl:
+            error('Complementary channel is not supported for RCININT %s' % rc_in_int.label)        
         f.write('// RC input config\n')
         f.write('#define HAL_USE_EICU TRUE\n')
         f.write('#define STM32_EICU_USE_TIM%u TRUE\n' % n)
         f.write('#define RCININT_EICU_TIMER EICUD%u\n' % n)
-        f.write('#define RCININT_EICU_CHANNEL EICU_CHANNEL_%u\n' % int(chan_str))
+        f.write('#define RCININT_EICU_CHANNEL EICU_CHANNEL_%u\n' % chan)
         f.write('\n')
 
     if alarm is not None:
-
-        a = alarm.label.split('_')
-        chan_str = a[1][2:]
-        timer_str = a[0][3:]
-        if not is_int(chan_str) or not is_int(timer_str):
-            error("Bad timer channel %s" % alarm.label)
-        n = int(timer_str)
+        (n, chan, compl) = parse_timer(alarm.label)
+        if compl:
+            error("Complementary channel is not supported for ALARM %s" % alarm.label)        
         f.write('\n')
         f.write('// Alarm PWM output config\n')
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
@@ -720,9 +719,6 @@ def write_PWM_config(f):
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED',
             'PWM_OUTPUT_DISABLED', 'PWM_OUTPUT_DISABLED'
         ]
-        chan = int(chan_str)
-        if chan not in [1, 2, 3, 4]:
-            error("Bad channel number %u for ALARM PWM %s" % (chan, p))
         chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
 
         pwm_clock = 1000000
@@ -774,16 +770,10 @@ def write_PWM_config(f):
         for p in pwm_out:
             if p.type != t:
                 continue
-            chan_str = p.label[-1]
-            is_complementary = p.label[-1] == 'N';
-            if not is_int(chan_str):
-                error("Bad channel for PWM %s chan_str=%s" % (p, chan_str))
-            chan = int(chan_str)
-            if chan not in [1, 2, 3, 4]:
-                error("Bad channel number %u for PWM %s" % (chan, p))
+            (n, chan, compl) = parse_timer(p.label)
             pwm = p.extra_value('PWM', type=int)
             chan_list[chan - 1] = pwm - 1
-            if is_complementary:
+            if compl:
                 chan_mode[chan - 1] = 'PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH'
             else:
                 chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
