@@ -1456,7 +1456,7 @@ bool AP_UAVCAN::escstatus_get_data(uint8_t id, AP_UAVCAN::EscStatus_Data *data)
         if (_escstatus.id[i] == id) {
             escstatus_sem_take();
             *data = _escstatus.data[i];
-            escstatus_sem_take();
+            escstatus_sem_give();
             
             return true;
         }
