@@ -89,11 +89,13 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
         _ekf_type.set(2);
     }
 
+
+    update_DCM(skip_ins_update);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     update_SITL();
 #endif
 
-    update_DCM(skip_ins_update);
     if (_ekf_type == 2) {
         // if EK2 is primary then run EKF2 first to give it CPU
         // priority
@@ -418,12 +420,15 @@ bool AP_AHRS_NavEKF::get_position(struct Location &loc) const
         
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
-        const struct SITL::sitl_fdm &fdm = _sitl->state;
-        memset(&loc, 0, sizeof(loc));
-        loc.lat = fdm.latitude * 1e7;
-        loc.lng = fdm.longitude * 1e7;
-        loc.alt = fdm.altitude*100;
-        return true;
+        if (_sitl) {
+            const struct SITL::sitl_fdm &fdm = _sitl->state;
+            memset(&loc, 0, sizeof(loc));
+            loc.lat = fdm.latitude * 1e7;
+            loc.lng = fdm.longitude * 1e7;
+            loc.alt = fdm.altitude*100;
+            return true;
+        }
+        break;
     }
 #endif
         
@@ -580,8 +585,12 @@ Vector2f AP_AHRS_NavEKF::groundspeed_vector(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
-        const struct SITL::sitl_fdm &fdm = _sitl->state;
-        return Vector2f(fdm.speedN, fdm.speedE);
+        if (_sitl) {
+            const struct SITL::sitl_fdm &fdm = _sitl->state;
+            return Vector2f(fdm.speedN, fdm.speedE);
+        } else {
+            return AP_AHRS_DCM::groundspeed_vector();
+        }
     }
 #endif
     }
@@ -604,11 +613,14 @@ bool AP_AHRS_NavEKF::set_origin(const Location &loc)
         return ret3;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKF_TYPE_SITL: {
-        struct SITL::sitl_fdm &fdm = _sitl->state;
-        fdm.home = loc;
-        return true;
-    }
+    case EKF_TYPE_SITL:
+        if (_sitl) {
+            struct SITL::sitl_fdm &fdm = _sitl->state;
+            fdm.home = loc;
+            return true;
+        } else {
+            return false;
+        }
 #endif
 
     default:
@@ -641,6 +653,9 @@ bool AP_AHRS_NavEKF::get_velocity_NED(Vector3f &vec) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
+        if (!_sitl) {
+            return false;
+        }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         vec = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);
         return true;
@@ -712,11 +727,14 @@ bool AP_AHRS_NavEKF::get_vert_pos_rate(float &velocity) const
         return true;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKF_TYPE_SITL: {
-        const struct SITL::sitl_fdm &fdm = _sitl->state;
-        velocity = fdm.speedD;
-        return true;
-    }
+    case EKF_TYPE_SITL:
+        if (_sitl) {
+            const struct SITL::sitl_fdm &fdm = _sitl->state;
+            velocity = fdm.speedD;
+            return true;
+        } else {
+            return false;
+        }
 #endif
     }
 }
@@ -737,6 +755,9 @@ bool AP_AHRS_NavEKF::get_hagl(float &height) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
+        if (!_sitl) {
+            return false;
+        }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         height = fdm.altitude - get_home().alt*0.01f;
         return true;
@@ -782,6 +803,9 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
+        if (!_sitl) {
+            return false;
+        }
         Location loc;
         get_position(loc);
         const Vector2f diff2d = location_diff(get_home(), loc);
@@ -885,6 +909,9 @@ bool AP_AHRS_NavEKF::get_relative_position_D_origin(float &posD) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL: {
+        if (!_sitl) {
+            return false;
+        }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         posD = -(fdm.altitude - get_home().alt*0.01f);
         return true;
@@ -1443,6 +1470,9 @@ bool AP_AHRS_NavEKF::get_origin(Location &ret) const
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKF_TYPE_SITL:
+        if (!_sitl) {
+            return false;
+        }
         const struct SITL::sitl_fdm &fdm = _sitl->state;
         ret = fdm.home;
         return true;
