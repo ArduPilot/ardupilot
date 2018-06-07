@@ -1570,9 +1570,9 @@ void DataFlash_Class::Log_Write_ESC(void)
             struct log_Esc pkt = {
                 LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + j)),
                 time_us     : time_us,
-                rpm         : (int16_t)(data.rpm),
-                voltage     : (int16_t)(data.voltage * 100.0f + 0.5f),
-                current     : (int16_t)(data.current * 100.0f + 0.5f),
+                rpm         : (int32_t)(data.rpm),
+                voltage     : (uint16_t)(data.voltage * 100.0f + 0.5f),
+                current     : (uint16_t)(data.current * 100.0f + 0.5f),
                 temperature : (int16_t)(data.temperature * 100.0f + 0.5f),
                 current_tot : 0
             };
@@ -1580,8 +1580,6 @@ void DataFlash_Class::Log_Write_ESC(void)
             
             ap_uavcan->escstatus_mark_dataflash_updated(j);
         }
-        
-        ap_uavcan->escstatus_sem_give();
     }
 #endif // HAL_WITH_UAVCAN
 
