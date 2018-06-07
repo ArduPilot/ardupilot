@@ -12,6 +12,10 @@
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RangeFinder/RangeFinder_Backend.h>
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#endif
+
 #include "DataFlash.h"
 #include "DataFlash_File.h"
 #include "DataFlash_File_sd.h"
@@ -1545,6 +1549,42 @@ void DataFlash_Class::Log_Write_ESC(void)
         }
     }
 #endif // CONFIG_HAL_BOARD
+
+#if HAL_WITH_UAVCAN
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            continue;
+        }
+        
+        uint64_t time_us = AP_HAL::micros64();
+        for (uint8_t j = 0; j < AP_UAVCAN_ESCSTATUS_MAX_NUMBER; j++) {
+            AP_UAVCAN::EscStatus_Data data;
+            if (!ap_uavcan->escstatus_get_data(j, &data)) {
+                continue;
+            }
+            if (data.dataflash_update == false) {
+                continue;
+            }
+            
+            struct log_Esc pkt = {
+                LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + j)),
+                time_us     : time_us,
+                rpm         : (int16_t)(data.rpm),
+                voltage     : (int16_t)(data.voltage * 100.0f + 0.5f),
+                current     : (int16_t)(data.current * 100.0f + 0.5f),
+                temperature : (int16_t)(data.temperature * 100.0f + 0.5f),
+                current_tot : 0
+            };
+            WriteBlock(&pkt, sizeof(pkt));
+            
+            ap_uavcan->escstatus_mark_dataflash_updated(j);
+        }
+        
+        ap_uavcan->escstatus_sem_give();
+    }
+#endif // HAL_WITH_UAVCAN
+
 }
 
 // Write a AIRSPEED packet
