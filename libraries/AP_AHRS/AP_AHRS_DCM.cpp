@@ -692,6 +692,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _position_offset_north = 0;
         _position_offset_east = 0;
 
+        if (!home_is_set() && !_home_alt_set_from_gps) {
+            _home.alt = _gps.location().alt;
+            _home_alt_set_from_gps = true;
+        }
+
         // once we have a single GPS lock, we can update using
         // dead-reckoning from then on
         _have_position = true;
@@ -981,6 +986,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
+
     loc.alt = AP::baro().get_altitude() * 100 + _home.alt;
     loc.relative_alt = 0;
     loc.terrain_alt = 0;
@@ -990,6 +996,12 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
         location_update(loc, _gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
+    }
+    // we rely on the home altitude to produce an absolute altitude,
+    // as barometric delta only gets you so far.  However, if we have
+    // gotten an altitude from the GPS we will use that...
+    if (!home_is_set() && !_home_alt_set_from_gps) {
+        return false;
     }
     return _have_position;
 }

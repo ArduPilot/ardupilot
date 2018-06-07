@@ -194,4 +194,9 @@ private:
 
     // time when DCM was last reset
     uint32_t _last_startup_ms;
+
+    // we may set _home.alt from the GPS to avoid a circular
+    // dependency when attempting to use DCM's position to set home
+    // location.
+    bool _home_alt_set_from_gps;
 };
