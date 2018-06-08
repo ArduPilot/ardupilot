@@ -131,6 +131,7 @@ protected:
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
     AP_Float _vector_throttle_base;  // throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
+    AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500

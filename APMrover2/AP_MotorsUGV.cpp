@@ -88,6 +88,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VEC_THR_BASE", 10, AP_MotorsUGV, _vector_throttle_base, 0.0f),
 
+    // @Param: SPD_SCA_BASE
+    // @DisplayName: Motor speed scaling base speed
+    // @Description: Speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
+    // @Units: m/s
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("SPD_SCA_BASE", 11, AP_MotorsUGV, _speed_scale_base, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -431,9 +439,9 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                     steering *= constrain_float(_vector_throttle_base / fabsf(throttle), 0.0f, 1.0f);
                 }
             } else {
-                // scale steering down as speed increase above 1m/s
-                if (fabsf(ground_speed) > 1.0f) {
-                    steering *= (1.0f / fabsf(ground_speed));
+                // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
+                if (is_positive(_speed_scale_base) && (fabsf(ground_speed) > _speed_scale_base)) {
+                    steering *= (_speed_scale_base / fabsf(ground_speed));
                 } else {
                     // regular steering rover at low speed so set limits to stop I-term build-up in controllers
                     if (!have_skid_steering()) {
