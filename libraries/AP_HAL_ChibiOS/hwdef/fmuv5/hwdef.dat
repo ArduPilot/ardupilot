@@ -85,14 +85,11 @@ PF0 I2C2_SDA I2C2
 PH7 I2C3_SCL I2C3
 PH8 I2C3_SDA I2C3
 
-# I2C4 disabled due to DMA conflicts.
-# to support I2C4 we will need to add support in ChibiOS for
-# using DMA on some I2C devices and not on others
-#PF14 I2C4_SCK I2C4
-#PF15 I2C4_SDA I2C4
+PF14 I2C4_SCK I2C4 NODMA
+PF15 I2C4_SDA I2C4 NODMA
 
 # order of I2C buses
-I2C_ORDER I2C2 I2C1 I2C3
+I2C_ORDER I2C2 I2C1 I2C3 I2C4
 
 
 # enable pins
