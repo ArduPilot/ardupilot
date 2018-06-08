@@ -1039,29 +1039,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                                                      packet.param4, (uint8_t)packet.param5);
             break;
 
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!copter.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                    case GRIPPER_ACTION_RELEASE:
-                        copter.g2.gripper.release();
-                        break;
-                    case GRIPPER_ACTION_GRAB:
-                        copter.g2.gripper.grab();
-                        break;
-                    default:
-                        result = MAV_RESULT_FAILED;
-                        break;
-                }
-            }
-            break;
-#endif
-
 #if WINCH_ENABLED == ENABLED
         case MAV_CMD_DO_WINCH:
             // param1 : winch number (ignored)
