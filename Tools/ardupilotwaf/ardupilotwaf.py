@@ -75,6 +75,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Proximity',
     'AP_Gripper',
     'AP_RTC',
+    'AC_Sprayer',
 ]
 
 def get_legacy_defines(sketch_name):
