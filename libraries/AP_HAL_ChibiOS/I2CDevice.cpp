@@ -255,6 +255,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
+
+        // if we are not using DMA then we may need to start the bus here
+        bus.dma_allocate(bus.dma_handle);
+        
         bus.i2c_active = true;
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
         if(send_len == 0) {

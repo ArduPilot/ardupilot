@@ -627,17 +627,22 @@ def write_I2C_config(f):
     for dev in i2c_list:
         if not dev.startswith('I2C') or dev[3] not in "1234":
             error("Bad I2C_ORDER element %s" % dev)
+        n = int(dev[3:])
+        devlist.append('HAL_I2C%u_CONFIG' % n)
+        f.write('''
+#if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
+#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM }
+#else
+#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE }
+#endif
+'''
+            % (n, n, n, n, n, n, n, n))
         if dev + "_SCL" in bylabel:
             p = bylabel[dev + "_SCL"]
             f.write(
                 '#define HAL_%s_SCL_AF %d\n' % (dev, p.af)
             )
-        n = int(dev[3:])
-        devlist.append('HAL_I2C%u_CONFIG' % n)
-        f.write(
-            '#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM }\n'
-            % (n, n, n, n))
-    f.write('#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
+    f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 def parse_timer(str):
     '''parse timer channel string, i.e TIM8_CH2N'''
@@ -942,7 +947,6 @@ def write_hwdef_header(outfilename):
 
     write_mcu_config(f)
     write_USB_config(f)
-    write_I2C_config(f)
     write_SPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
@@ -957,6 +961,7 @@ def write_hwdef_header(outfilename):
 
     write_PWM_config(f)
     
+    write_I2C_config(f)
     write_UART_config(f)
 
     if len(romfs) > 0:
@@ -1033,8 +1038,15 @@ def build_peripheral_list():
             continue
         for prefix in prefixes:
             if type.startswith(prefix):
-                peripherals.append(type + "_TX")
-                peripherals.append(type + "_RX")
+                ptx = type + "_TX"
+                prx = type + "_RX"
+                peripherals.append(ptx)
+                peripherals.append(prx)
+                if not ptx in bylabel:
+                    bylabel[ptx] = p
+                if not prx in bylabel:
+                    bylabel[prx] = p
+                
         if type.startswith('ADC'):
             peripherals.append(type)
         if type.startswith('SDIO') or type.startswith('SDMMC'):
