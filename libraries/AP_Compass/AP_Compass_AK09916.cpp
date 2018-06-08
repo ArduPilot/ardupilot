@@ -119,17 +119,52 @@ bool AP_Compass_AK09916::init()
             // not an ICM_WHOAMI
             goto fail;
         }
-        // see if ICM20948 is sleeping
-        if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
+        uint8_t retries = 5;
+        do {
+            // reset then bring sensor out of sleep mode
+            if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x80)) {
+                goto fail;
+            }
+            hal.scheduler->delay(10);
+
+            if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x00)) {
+                goto fail;
+            }
+            hal.scheduler->delay(10);
+            
+            // see if ICM20948 is sleeping
+            if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
+                goto fail;
+            }
+            if ((rval & 0x40) == 0) {
+                break;
+            }
+        } while (retries--);
+       
+        if (rval & 0x40) {
+            // it didn't come out of sleep
             goto fail;
         }
-        if (rval & 0x40) {
-            // bring out of sleep mode, use internal oscillator
-            dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x00);
-            hal.scheduler->delay(10);
+
+        // initially force i2c bypass off
+        dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x00);
+        hal.scheduler->delay(1);
+
+        // now check if a AK09916 shows up on the bus. If it does then
+        // we have both a real AK09916 and a ICM20948 with an embedded
+        // AK09916. In that case we will fail the driver load and use
+        // the main AK09916 driver
+        uint16_t whoami;
+        if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
+            // a device is replying on the AK09916 I2C address, don't
+            // load the ICM20948
+            hal.console->printf("ICM20948: AK09916 bus conflict\n");
+            goto fail;
         }
-        // enable i2c bypass
+
+        // now force bypass on
         dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x02);
+        hal.scheduler->delay(1);
     }
 
     uint16_t whoami;
