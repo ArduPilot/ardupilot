@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <hal.h>
-#include <chmemheaps.h>
+#include <ch.h>
 #include <stdarg.h>
 #include "stm32_util.h"
 
