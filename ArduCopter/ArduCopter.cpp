@@ -115,6 +115,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if MODE_SMARTRTL_ENABLED == ENABLED
     SCHED_TASK_CLASS(Copter::ModeSmartRTL, &copter.mode_smartrtl,       save_position,    3, 100),
 #endif
+#if SPRAYER_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AC_Sprayer,           &copter.sprayer,             update,           3,  90),
+#endif
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,     75),
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,           accumulate,      50,  90),
@@ -411,9 +414,6 @@ void Copter::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-#if SPRAYER_ENABLED == ENABLED
-    sprayer.update();
-#endif
 
     // update ch6 in flight tuning
     tuning();
