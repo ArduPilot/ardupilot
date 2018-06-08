@@ -256,8 +256,8 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         AP::gps().time_epoch_usec(),
         0, 0, _image_index,
         current_loc.lat, current_loc.lng,
-        altitude*1e-2, altitude_rel*1e-2,
-        ahrs.roll_sensor*1e-2, ahrs.pitch_sensor*1e-2, ahrs.yaw_sensor*1e-2,
+        altitude*1e-2f, altitude_rel*1e-2f,
+        ahrs.roll_sensor*1e-2f, ahrs.pitch_sensor*1e-2f, ahrs.yaw_sensor*1e-2f,
         0.0f, CAMERA_FEEDBACK_PHOTO, _feedback_events);
 }
 
@@ -287,7 +287,7 @@ void AP_Camera::update()
         return;
     }
 
-    if (_max_roll > 0 && labs(ahrs.roll_sensor*1e-2) > _max_roll) {
+    if (_max_roll > 0 && labs(ahrs.roll_sensor*1e-2f) > _max_roll) {
         return;
     }
 
