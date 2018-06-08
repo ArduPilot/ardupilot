@@ -449,7 +449,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                         limit.steer_right = true;
                     }
                 }
-                // reverse steering output if backing up
+                // reverse steering direction when backing up
                 if (is_negative(ground_speed)) {
                     steering *= -1.0f;
                 }
