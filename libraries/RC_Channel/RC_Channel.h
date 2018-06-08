@@ -179,8 +179,10 @@ protected:
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
 
-    void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
+    void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
+    void do_aux_function_relay(uint8_t relay, bool val);
+    void do_aux_function_sprayer(const aux_switch_pos_t ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
