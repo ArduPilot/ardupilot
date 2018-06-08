@@ -29,6 +29,9 @@ extern const AP_HAL::HAL& hal;
 
 #include <GCS_MAVLink/GCS.h>
 
+#include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_Gripper/AP_Gripper.h>
+
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
@@ -414,10 +417,14 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case CAMERA_TRIGGER:
     case DO_NOTHING:
         break;
+    case GRIPPER:
+    case SPRAYER:
+        do_aux_function(ch_option, ch_flag);
+        break;
     default:
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to initialise RC function (%u)", ch_option);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Initialisation failed");
+        AP_HAL::panic("RC function (%u) initialisation", ch_option);
 #endif
         break;
     }
@@ -473,11 +480,49 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     servorelayevents->do_set_relay(relay, val);
 }
 
+void RC_Channel::do_aux_function_sprayer(const aux_switch_pos_t ch_flag)
+{
+    AC_Sprayer *sprayer = AP::sprayer();
+    if (sprayer == nullptr) {
+        return;
+    }
+
+    sprayer->run(ch_flag == HIGH);
+    // if we are disarmed the pilot must want to test the pump
+    sprayer->test_pump((ch_flag == HIGH) && !hal.util->get_soft_armed());
+}
+
+void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
+{
+    AP_Gripper *gripper = AP::gripper();
+    if (gripper == nullptr) {
+        return;
+    }
+
+    switch(ch_flag) {
+    case LOW:
+        gripper->release();
+//        copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case HIGH:
+        gripper->grab();
+//        copter.Log_Write_Event(DATA_GRIPPER_GRAB);
+        break;
+    }
+}
+
 void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
     case CAMERA_TRIGGER:
         do_aux_function_camera_trigger(ch_flag);
+        break;
+
+    case GRIPPER:
+        do_aux_function_gripper(ch_flag);
         break;
 
     case RELAY:
@@ -491,6 +536,10 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
     case RELAY4:
         do_aux_function_relay(3, ch_flag == HIGH);
+        break;
+
+    case SPRAYER:
+        do_aux_function_sprayer(ch_flag);
         break;
 
     default:
