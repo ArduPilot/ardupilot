@@ -43,15 +43,18 @@ public:
     // steering controller
     //
 
-    // return a steering servo output from -1.0 to +1.0 given a desired lateral acceleration rate in m/s/s.
+    // return a steering servo output given a desired lateral acceleration rate in m/s/s.
     // positive lateral acceleration is to the right.  dt should normally be the main loop rate.
+    // return value is normally in range -1.0 to +1.0 but can be higher or lower
     float get_steering_out_lat_accel(float desired_accel, bool motor_limit_left, bool motor_limit_right, float dt);
 
-    // return a steering servo output from -1 to +1 given a heading in radians
+    // return a steering servo output given a heading in radians
+    // return value is normally in range -1.0 to +1.0 but can be higher or lower
     float get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right, float dt);
 
-    // return a steering servo output from -1 to +1 given a
-    // desired yaw rate in radians/sec. Positive yaw is to the right.
+    // return a steering servo output given a desired yaw rate in radians/sec.
+    // positive yaw is to the right
+    // return value is normally in range -1.0 to +1.0 but can be higher or lower
     float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
