@@ -46,7 +46,6 @@ LIBRARIES += AP_Terrain
 LIBRARIES += AP_RPM
 LIBRARIES += AP_JSButton
 LIBRARIES += AP_LeakDetector
-LIBRARIES += AP_Gripper
 LIBRARIES += AP_Beacon
 LIBRARIES += AP_TemperatureSensor
 LIBRARIES += AP_Arming

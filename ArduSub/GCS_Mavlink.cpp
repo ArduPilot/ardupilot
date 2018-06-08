@@ -990,29 +990,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             // param4 : timeout (in seconds)
             break;
 
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if (!sub.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                case GRIPPER_ACTION_RELEASE:
-                    sub.g2.gripper.release();
-                    break;
-                case GRIPPER_ACTION_GRAB:
-                    sub.g2.gripper.grab();
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-            }
-            break;
-#endif
-
         default:
             result = handle_command_long_message(packet);
             break;
