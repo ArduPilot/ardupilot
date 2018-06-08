@@ -108,7 +108,7 @@ void AnalogIn::_timer_event(void)
         goto next_channel;
     }
 
-    if (cnv_started && !(dev->adcx->SR & ADC_SR_EOC))	{
+    if (cnv_started && !(dev->regs->SR & ADC_SR_EOC))	{
 	    // ADC Conversion is still running - this should not happens, as we are called at 1khz.
 	    // SO - more likely we forget to start conversion or some went wrong...
 	    // let's fix it
@@ -128,7 +128,7 @@ void AnalogIn::_timer_event(void)
 
     _channel_repeat_count = 0;
     if (cnv_started)  { 
-        uint16_t sample = (uint16_t)(dev->adcx->DR & ADC_DR_DATA);
+        uint16_t sample = (uint16_t)(dev->regs->DR & ADC_DR_DATA);
         /* Give the active channel a new sample */
         _channels[_active_channel]->new_sample( sample );
     }

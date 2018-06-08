@@ -267,8 +267,8 @@ again:
 #ifdef I2C_DEBUG
     {
      I2C_State &sp = log[log_ptr]; // remember last operation
-     sp.st_sr1      = _dev->I2Cx->SR1;
-     sp.st_sr2      = _dev->I2Cx->SR2;
+     sp.st_sr1      = _dev->regs->SR1;
+     sp.st_sr2      = _dev->regs->SR2;
      }
 #endif
 
@@ -301,9 +301,9 @@ again:
      sp.send_len = send_len;
      sp.recv_len = recv_len;
      sp.ret      = ret;
-     sp.sr1      = _dev->I2Cx->SR1;
-     sp.sr2      = _dev->I2Cx->SR2;
-     sp.cr1      = _dev->I2Cx->CR1;
+     sp.sr1      = _dev->regs->SR1;
+     sp.sr2      = _dev->regs->SR2;
+     sp.cr1      = _dev->regs->CR1;
      sp.state    = _state;
      sp.pos      = I2C_FINISH;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
@@ -330,7 +330,7 @@ again:
         need_reset = true;
         _initialized=false; // will be reinitialized at next transfer
 
-        _dev->I2Cx->CR1 |= I2C_CR1_SWRST; // set for some time
+        _dev->regs->CR1 |= I2C_CR1_SWRST; // set for some time
         
         // we not count such errors as _lockup_count
     
@@ -344,10 +344,10 @@ again:
     if(ret != I2C_NO_DEVICE) { // for all errors except NO_DEVICE do bus reset
 
         if(ret == I2C_BUS_BUSY) {
-            _dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
+            _dev->regs->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
             hal_yield(0);
-            _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag            
-            _dev->I2Cx->CR1 |= I2C_CR1_PE; // enable
+            _dev->regs->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag            
+            i2c_peripheral_enable(_dev);
         }
 
         if((_retries-retries) > 0 || ret==I2C_BUS_ERR){ // not reset bus or log error on 1st try, except ArbitrationLost error
@@ -383,7 +383,7 @@ void I2CDevice::do_bus_reset(){ // public - with semaphores
 
 void I2CDevice::_do_bus_reset(){ // private
     _dev->state->busy=true;
-    _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear soft reset flag
+    _dev->regs->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear soft reset flag
 
     if(!need_reset) return; // already done
     
@@ -445,8 +445,8 @@ uint32_t I2CDevice::i2c_write(uint8_t addr, const uint8_t *tx_buff, uint8_t len)
     _error = I2C_ERR_TIMEOUT;
 
     // Bus got!  enable Acknowledge for our operation
-    _dev->I2Cx->CR1 |= I2C_CR1_ACK; 
-    _dev->I2Cx->CR1 &= ~I2C_NACKPosition_Next; 
+    _dev->regs->CR1 |= I2C_CR1_ACK; 
+    _dev->regs->CR1 &= ~I2C_NACK_POS_Next; 
 
     // need to wait until  transfer complete 
     uint32_t t = hal_micros();
@@ -456,8 +456,8 @@ uint32_t I2CDevice::i2c_write(uint8_t addr, const uint8_t *tx_buff, uint8_t len)
 
     EnterCriticalSection;
     // Send START condition
-    _dev->I2Cx->CR1 |= I2C_CR1_START;
-     _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN;    // Enable interrupts
+     _dev->regs->CR1 |= I2C_CR1_START;
+     i2c_enable_irq(_dev, I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);    // Enable interrupts
 
      if(_task) Scheduler::task_pause(timeout);
     LeaveCriticalSection;
@@ -490,8 +490,8 @@ uint32_t I2CDevice::i2c_read(uint8_t addr, const uint8_t *tx_buff, uint8_t txlen
     _state = I2C_want_SB;
     _error = I2C_ERR_TIMEOUT;
 
-    _dev->I2Cx->CR1 &= ~I2C_NACKPosition_Next;  // I2C_NACKPosition_Current
-    _dev->I2Cx->CR1 |= I2C_CR1_ACK;             // enable Acknowledge for our operation
+    _dev->regs->CR1 &= ~I2C_NACK_POS_Next;  // I2C_NACKPosition_Current
+    _dev->regs->CR1 |= I2C_CR1_ACK;             // enable Acknowledge for our operation
 
     uint32_t t = hal_micros();
     uint32_t timeout = i2c_bit_time * 9 * (txlen+rxlen) * 8 + 100; // time to transfer all data *8 plus 100uS
@@ -503,9 +503,9 @@ uint32_t I2CDevice::i2c_read(uint8_t addr, const uint8_t *tx_buff, uint8_t txlen
      I2C_State &sp = log[log_ptr]; // remember last operation
      
      sp.time     = Scheduler::_micros();
-     sp.cr1      = _dev->I2Cx->CR1;
-     sp.sr1      = _dev->I2Cx->SR1;
-     sp.sr2      = _dev->I2Cx->SR2;
+     sp.cr1      = _dev->regs->CR1;
+     sp.sr1      = _dev->regs->SR1;
+     sp.sr2      = _dev->regs->SR2;
      sp.state    = _state;
      sp.pos      = I2C_START;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
@@ -513,17 +513,17 @@ uint32_t I2CDevice::i2c_read(uint8_t addr, const uint8_t *tx_buff, uint8_t txlen
     }
 #endif
 
-    _dev->I2Cx->CR1 |= I2C_CR1_START;    // Send START condition
+    _dev->regs->CR1 |= I2C_CR1_START;    // Send START condition
      if(_task) Scheduler::task_pause(timeout);
-     _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN;    // Enable interrupts
+     i2c_enable_irq(_dev, I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);    // Enable interrupts
 
 #ifdef I2C_DEBUG
      I2C_State &sp = log[log_ptr]; // remember last operation
      
      sp.time     = Scheduler::_micros();
-     sp.cr1      = _dev->I2Cx->CR1;
-     sp.sr1      = _dev->I2Cx->SR1;
-     sp.sr2      = _dev->I2Cx->SR2;
+     sp.cr1      = _dev->regs->CR1;
+     sp.sr1      = _dev->regs->SR1;
+     sp.sr2      = _dev->regs->SR2;
      sp.state    = _state;
      sp.pos      = I2C_START;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
@@ -549,14 +549,14 @@ void I2CDevice::isr_ev(){
     // get err parameter 
     asm volatile("MOV     %0, r1\n\t"  : "=rm" (err));
 
-    uint32_t sr1itflags = _dev->I2Cx->SR1;
-    uint32_t itsources  = _dev->I2Cx->CR2;
+    uint32_t sr1itflags = _dev->regs->SR1;
+    uint32_t itsources  = _dev->regs->CR2;
 
     if(err){
 
         /* I2C Bus error interrupt occurred ----------------------------------------*/
         if(((sr1itflags & I2C_BIT_BERR) != RESET) && ((itsources & I2C_IE_ERR) != RESET)) {    /* Clear BERR flag */
-          _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_BERR); // Errata 2.4.6
+          _dev->regs->SR1 = (uint16_t)(~I2C_BIT_BERR); // Errata 2.4.6
         }
   
         /* I2C Arbitration Loss error interrupt occurred ---------------------------*/
@@ -564,13 +564,13 @@ void I2CDevice::isr_ev(){
           _error = I2C_BUS_ERR;
     
           /* Clear ARLO flag */
-          _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_ARLO); // reset them
+          _dev->regs->SR1 = (uint16_t)(~I2C_BIT_ARLO); // reset them
         }
   
         /* I2C Acknowledge failure error interrupt occurred ------------------------*/
         if(((sr1itflags & I2C_BIT_AF) != RESET) && ((itsources & I2C_IE_ERR) != RESET))  {
             /* Clear AF flag */
-            _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_AF); // reset it
+            _dev->regs->SR1 = (uint16_t)(~I2C_BIT_AF); // reset it
 
             if(_state == I2C_want_ADDR) { // address transfer
                 _error = I2C_NO_DEVICE;
@@ -580,7 +580,7 @@ void I2CDevice::isr_ev(){
                 _error = I2C_ERROR;
             }
     
-            _dev->I2Cx->CR1 |= I2C_CR1_STOP;          /* Generate Stop */      
+            _dev->regs->CR1 |= I2C_CR1_STOP;          /* Generate Stop */      
         }
 
 #ifdef I2C_DEBUG
@@ -588,8 +588,8 @@ void I2CDevice::isr_ev(){
      
      sp.time     = Scheduler::_micros();
      sp.sr1      = sr1itflags;
-     sp.sr2      = _dev->I2Cx->SR2;
-     sp.cr1      = _dev->I2Cx->CR1;
+     sp.sr2      = _dev->regs->SR2;
+     sp.cr1      = _dev->regs->CR1;
      sp.state    = _state;
      sp.pos      = I2C_ERR;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
@@ -612,7 +612,7 @@ void I2CDevice::isr_ev(){
                 _state = I2C_want_RX_ADDR;
             }
 
-            _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_STOP);    /* clear STOP condition - just to touch CR1*/
+            _dev->regs->CR1 &= (uint16_t)(~I2C_CR1_STOP);    /* clear STOP condition - just to touch CR1*/
         }
         /* ADDR Set --------------------------------------------------------------*/
         else if(((sr1itflags & I2C_BIT_ADDR & I2C_BIT_MASK) != RESET) && ((itsources & I2C_IE_EVT) != RESET))    {
@@ -622,17 +622,17 @@ void I2CDevice::isr_ev(){
                 // all flags set before
                 _state = I2C_want_TXE;
             }else {      // receive
-                _dev->I2Cx->CR2 |= I2C_CR2_ITBUFEN; // enable RXNE interrupt
+                i2c_enable_irq(_dev, I2C_CR2_ITBUFEN); // enable RXNE interrupt
                 if(_rx_len == 1) {                 // Disable Acknowledge for 1-byte transfer
-                    _dev->I2Cx->CR1 &= ~I2C_CR1_ACK;
+                    _dev->regs->CR1 &= ~I2C_CR1_ACK;
                 } else {
-                    _dev->I2Cx->CR1 |= I2C_CR1_ACK;
+                    _dev->regs->CR1 |= I2C_CR1_ACK;
                 }
                 _state = I2C_want_RXNE;
             }        
         }
     
-        uint32_t sr2itflags   = _dev->I2Cx->SR2; // read SR2 - ADDR is cleared
+        uint32_t sr2itflags   = _dev->regs->SR2; // read SR2 - ADDR is cleared
     
         if((itsources & I2C_IE_BUF) != RESET ){ // data io
 
@@ -640,21 +640,21 @@ void I2CDevice::isr_ev(){
                 if((sr2itflags & (I2C_BIT_TRA) & I2C_BIT_MASK) != RESET) {    // I2C in mode Transmitter
 
                     if(_tx_len) {
-                        _dev->I2Cx->DR = *_tx_buff++; // 1 byte
+                        _dev->regs->DR = *_tx_buff++; // 1 byte
                         _tx_len--;
                     } else { // tx is over and last byte is sent
-                        _dev->I2Cx->CR2 &= ~I2C_CR2_ITBUFEN; // disable TXE interrupt
+                        i2c_disable_irq(_dev, I2C_CR2_ITBUFEN); // disable TXE interrupt
                     }        
                 }
             } 
             if((sr1itflags & I2C_BIT_RXNE & I2C_BIT_MASK) != RESET)   {       // RXNE set
                 if(_rx_len && !_tx_len) {
-                    *_rx_buff++ = (uint8_t)(_dev->I2Cx->DR);
+                    *_rx_buff++ = (uint8_t)(_dev->regs->DR);
                     _rx_len -= 1; // 1 byte done
 	        
                     if(_rx_len == 1) { // last second byte
-                        _dev->I2Cx->CR1 &= ~I2C_CR1_ACK;     // Disable Acknowledgement - send NACK for last byte 
-                        _dev->I2Cx->CR1 |= I2C_CR1_STOP;     // Send STOP
+                        _dev->regs->CR1 &= ~I2C_CR1_ACK;     // Disable Acknowledgement - send NACK for last byte 
+                        _dev->regs->CR1 |= I2C_CR1_STOP;     // Send STOP
                     } else if(_rx_len==0) {
                         _error = I2C_OK;
                         _state = I2C_done;
@@ -662,7 +662,7 @@ void I2CDevice::isr_ev(){
                         finish_transfer();
                     }
                 } else { // fake byte after enable ITBUF
-                    (void)_dev->I2Cx->DR;
+                    (void)_dev->regs->DR;
                 }
             }
         }
@@ -674,11 +674,11 @@ void I2CDevice::isr_ev(){
                     delay_ns100(3);
                     
                     // Send START condition a second time
-                    _dev->I2Cx->CR1 |= I2C_CR1_START;
+                    _dev->regs->CR1 |= I2C_CR1_START;
                     _state = I2C_want_RX_SB;
-                    _dev->I2Cx->CR2 &= ~I2C_CR2_ITBUFEN; // disable TXE interrupt - just for case, should be disabled
+                    i2c_disable_irq(_dev, I2C_CR2_ITBUFEN); // disable TXE interrupt - just for case, should be disabled
                 } else {   
-                    _dev->I2Cx->CR1 |= I2C_CR1_STOP;     // Send STOP condition
+                    _dev->regs->CR1 |= I2C_CR1_STOP;     // Send STOP condition
                     _error = I2C_OK;                    // TX is done
                     _state = I2C_done;
                     finish_transfer();
@@ -695,7 +695,7 @@ void I2CDevice::isr_ev(){
      sp.time     = Scheduler::_micros();
      sp.sr1      = sr1itflags;
      sp.sr2      = sr2itflags;
-     sp.cr1      = _dev->I2Cx->CR1;
+     sp.cr1      = _dev->regs->CR1;
      sp.state    = _state;
      sp.pos      = I2C_ISR;
      if(log_ptr<I2C_LOG_SIZE-1) log_ptr++;
@@ -708,9 +708,9 @@ void I2CDevice::isr_ev(){
 
 void I2CDevice::finish_transfer(){
 
-    _dev->I2Cx->CR2 &= ~(I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);    // Disable interrupts
+    i2c_disable_irq(_dev, I2C_CR2_ITBUFEN | I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);    // Disable interrupts
     i2c_clear_isr_handler(_dev);
-    _dev->I2Cx->CR1 &= ~(I2C_CR1_STOP | I2C_CR1_START); // clear CR1 - just for case
+    _dev->regs->CR1 &= ~(I2C_CR1_STOP | I2C_CR1_START); // clear CR1 - just for case
 
     Handler h;
     if( (h=_completion_cb) ){    // io completion
@@ -733,23 +733,23 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
     uint8_t i;
     for(i=0; i<10; i++){
 
-        if( (_dev->I2Cx->CR1 & I2C_CR1_PE) ) {
+        if( (_dev->regs->CR1 & I2C_CR1_PE) ) {
             ret=I2C_OK;
         } else {
             ret=91;
         }
        // Wait to make sure that STOP control bit has been cleared - bus released
         t = hal_micros();
-        while (_dev->I2Cx->CR1 & I2C_CR1_STOP ){
-            if((sr1=_dev->I2Cx->SR1) & I2C_BIT_BERR & I2C_BIT_MASK) _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_BERR); // Errata 2.4.6
+        while (_dev->regs->CR1 & I2C_CR1_STOP ){
+            if((sr1=_dev->regs->SR1) & I2C_BIT_BERR & I2C_BIT_MASK) _dev->regs->SR1 = (uint16_t)(~I2C_BIT_BERR); // Errata 2.4.6
 
             if(sr1 & I2C_BIT_ARLO & I2C_BIT_MASK) { // arbitration lost or bus error
-                _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_ARLO); // reset them
+                _dev->regs->SR1 = (uint16_t)(~I2C_BIT_ARLO); // reset them
                 ret= I2C_STOP_BERR; // bus error on STOP
                 break;
             }
             if(sr1 & I2C_BIT_TIMEOUT & I2C_BIT_MASK) { // bus timeout
-                _dev->I2Cx->SR1 = (uint16_t)(~I2C_BIT_TIMEOUT); // reset it
+                _dev->regs->SR1 = (uint16_t)(~I2C_BIT_TIMEOUT); // reset it
                 ret= I2C_ERR_STOP_TIMEOUT;                             // STOP generated by hardware
                 break;
             }
@@ -763,7 +763,7 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
 
         /* wait while the bus is busy */
         t = hal_micros();
-        while ((_dev->I2Cx->SR2 & (I2C_BIT_BUSY) & I2C_BIT_MASK) != 0) {
+        while ((_dev->regs->SR2 & (I2C_BIT_BUSY) & I2C_BIT_MASK) != 0) {
             if (hal_micros() - t > I2C_SMALL_TIMEOUT) {
                 ret=2; // bus busy
                 break;
@@ -775,10 +775,11 @@ uint32_t I2CDevice::wait_stop_done(bool is_write){
 
         if(ret==I2C_OK) return ret;
         
-        _dev->I2Cx->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
+        _dev->regs->CR1 |= I2C_CR1_SWRST;           // set SoftReset for some time 
         hal_yield(0);
-        _dev->I2Cx->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag                    
-        _dev->I2Cx->CR1 |= I2C_CR1_PE; // enable
+
+        _dev->regs->CR1 &= (uint16_t)(~I2C_CR1_SWRST); // clear SoftReset flag
+        i2c_peripheral_enable(_dev);
 
         if(i>1){
             last_error = ret;   // remember

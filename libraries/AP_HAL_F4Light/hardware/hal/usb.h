@@ -45,10 +45,9 @@
 #define USB_TXFIFO_SIZE 256
 
 
-
 #define USB_IRQ		OTG_FS_IRQn
 #define USB_AF		GPIO_AF_OTG1_FS
-#define USB_CLOCK	RCC_AHB2Periph_OTG_FS
+#define USB_CLOCK	RCC_AHB2_bit_OTG_FS
 
 
 /* USB D-/D+ (DM/DP) */
@@ -192,7 +191,7 @@ void VCP_MarkRead(unsigned sz);
 /* Mark space as written */
 void VCP_MarkWritten(unsigned sz);
 
-int usb_periphcfg(FunctionalState state);
+int usb_periphcfg(bool state);
 
 
 void VCP_SetUSBTxBlocking(uint8_t Mode);
@@ -306,18 +305,6 @@ typedef enum usb_dev_state {
     USB_ADDRESSED,
     USB_CONFIGURED
 } usb_dev_state;
-    
-    
-// Encapsulates global state formerly handled by usb_lib/ 
-/*
-typedef struct usblib_dev {
-    uint32_t irq_mask;
-    void (**ep_int_in)(void);
-    void (**ep_int_out)(void);
-    usb_dev_state state;
-    usb_dev_state prevState;
-    rcc_clk_id clk_id;
-} usblib_dev;
-*/
+
 
 #endif

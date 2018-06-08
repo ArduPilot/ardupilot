@@ -1,7 +1,57 @@
 #pragma once
 
-#include "stm32f4xx_flash.h"
 #include <stdio.h>
+
+typedef enum
+{
+  FLASH_BUSY = 1,
+  FLASH_ERROR_PGS,
+  FLASH_ERROR_PGP,
+  FLASH_ERROR_PGA,
+  FLASH_ERROR_WRP,
+  FLASH_ERROR_PROGRAM,
+  FLASH_ERROR_OPERATION,
+  FLASH_COMPLETE
+} FLASH_Status;
+
+//unlock keys
+#define RDP_KEY                  (0x00A5)
+#define FLASH_KEY1               (0x45670123L)
+#define FLASH_KEY2               (0xCDEF89ABL)
+#define FLASH_OPT_KEY1           (0x08192A3BL)
+#define FLASH_OPT_KEY2           (0x4C5D6E7FL)
+
+#define FLASH_PRG_SIZE_BYTE           (0L<<8)
+#define FLASH_PRG_SIZE_HALF_WORD      (1L<<8)
+#define FLASH_PRG_SIZE_WORD           (2L<<8)
+#define FLASH_PRG_SIZE_DOUBLE_WORD    (3L<<8)
+#define FLASH_PRG_SIZE_MASK           (~FLASH_PRG_SIZE_DOUBLE_WORD)
+
+#define OPTCR_BYTES                   ((volatile uint8_t *)&FLASH->OPTCR)
+#define OPTCR_WORDS                   ((volatile uint16_t *)&FLASH->OPTCR)
+
+#define FLASH_BIT_EOP                 (1L<<0)  // End of Operation
+#define FLASH_BIT_OPERR               (1L<<1)  // operation Error
+#define FLASH_BIT_WRPERR              (1L<<4)  // Write protected error
+#define FLASH_BIT_PGAERR              (1L<<5)  // Programming Alignment error
+#define FLASH_BIT_PGPERR              (1L<<6)  // Programming Parallelism error
+#define FLASH_BIT_PGSERR              (1L<<7)  // Programming Sequence error
+#define FLASH_BIT_BSY                 (1L<<16)  // Busy               
+
+#define OB_WRP_Sector_0       (1L<<0)
+#define OB_WRP_Sector_1       (1L<<1)
+#define OB_WRP_Sector_2       (1L<<2)
+#define OB_WRP_Sector_3       (1L<<3)
+#define OB_WRP_Sector_4       (1L<<4)
+#define OB_WRP_Sector_5       (1L<<5)
+#define OB_WRP_Sector_6       (1L<<6)
+#define OB_WRP_Sector_7       (1L<<7)
+#define OB_WRP_Sector_8       (1L<<8)
+#define OB_WRP_Sector_9       (1L<<9)
+#define OB_WRP_Sector_10      (1L<<10)
+#define OB_WRP_Sector_11      (1L<<11)
+#define OB_WRP_Sector_All     (0x00000FFFL)
+
 
 /* Page status definitions */
 #define EEPROM_ERASED			((uint16_t)0xFFFF)	/* PAGE is empty */
@@ -24,7 +74,7 @@ enum {
 
 #define EEPROM_DEFAULT_DATA		0xFFFF
 
-#define FLASH_CR_ERRIE ((uint32_t)0x02000000) // not in stm32f4xx.h somehow
+#define FLASH_CR_ERRIE (0x02000000) // not in stm32f4xx.h somehow
 
 class EEPROMClass
 {
@@ -108,7 +158,7 @@ public:
 	uint16_t _CheckErasePage(uint32_t, uint16_t);
         static FLASH_Status _ErasePageByAddress(uint32_t Page_Address);
 
-        static void FLASH_OB_WRPConfig(uint32_t OB_WRP, FunctionalState NewState);
+        static void OB_WRPConfig(uint16_t OB_WRP, bool v);
 
 private:
 	uint32_t PageBase0; // uses 2 flash pages
@@ -118,6 +168,15 @@ private:
 
 	uint16_t _init(void);
 	uint16_t _format(void);
+	static void reset_flash_errors();
+	static FLASH_Status GetStatus(void);
+        static FLASH_Status WaitForLastOperation(void);
+        static FLASH_Status ProgramHalfWord(uint32_t Address, uint16_t Data);
+        static FLASH_Status ProgramByte(uint32_t Address, uint8_t Data);
+        static FLASH_Status EraseSector(uint32_t FLASH_Sector);
+        static inline void Lock(void){   FLASH->CR |= FLASH_CR_LOCK; }
+        static inline void Unlock(void){  if((FLASH->CR & FLASH_CR_LOCK) )  {  FLASH->KEYR = FLASH_KEY1;   FLASH->KEYR = FLASH_KEY2;  } }
+        
 
 	FLASH_Status _ErasePage(uint32_t);
 

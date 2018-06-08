@@ -52,15 +52,13 @@ based on:
  * @see timer_dev
  */
 typedef enum timer_type {
-    TIMER_ADVANCED,             /**< Advanced type */
-    TIMER_GENERAL,              /**< General purpose type */
-    TIMER_BASIC                 /**< Basic type */
+    TIMER_ADVANCED,  
+    TIMER_GENERAL,
+    TIMER_BASIC  
 } timer_type;
 
 
 typedef void (* TimerHandler)(TIM_TypeDef *tim);
-
-
 
 void TIM2_IRQHandler(void);
 void TIM3_IRQHandler(void);
@@ -315,16 +313,16 @@ void TIM8_IRQHandler(void);
 
 #define TIMER_CCER_CC4P_BIT             13
 #define TIMER_CCER_CC4E_BIT             12
-#define TIMER_CCER_CC3NP_BIT             11
-#define TIMER_CCER_CC3NE_BIT             10
+#define TIMER_CCER_CC3NP_BIT            11
+#define TIMER_CCER_CC3NE_BIT            10
 #define TIMER_CCER_CC3P_BIT             9
 #define TIMER_CCER_CC3E_BIT             8
-#define TIMER_CCER_CC2NP_BIT             7
-#define TIMER_CCER_CC2NE_BIT             6
+#define TIMER_CCER_CC2NP_BIT            7
+#define TIMER_CCER_CC2NE_BIT            6
 #define TIMER_CCER_CC2P_BIT             5
 #define TIMER_CCER_CC2E_BIT             4
-#define TIMER_CCER_CC1NP_BIT             3
-#define TIMER_CCER_CC1NE_BIT             2
+#define TIMER_CCER_CC1NP_BIT            3
+#define TIMER_CCER_CC1NE_BIT            2
 #define TIMER_CCER_CC1P_BIT             1
 #define TIMER_CCER_CC1E_BIT             0
 
@@ -409,9 +407,38 @@ void TIM8_IRQHandler(void);
 #define TIMER_DCR_DBA_DCR               0x12
 #define TIMER_DCR_DBA_DMAR              0x13
 
+
+#define TIM_OCMode_Timing               (0<<4)
+#define TIM_OCMode_Active               (1<<4)
+#define TIM_OCMode_Inactive             (2<<4)
+#define TIM_OCMode_Toggle               (3<<4)
+#define TIM_OCMode_PWM1                 (6<<4)
+#define TIM_OCMode_PWM2                 (7<<4)
+
+#define TIM_CounterMode_Up              (0<<4)
+#define TIM_CounterMode_Down            (1<<4)
+#define TIM_CounterMode_CenterAligned1  (2<<4)
+#define TIM_CounterMode_CenterAligned2  (4<<4)
+#define TIM_CounterMode_CenterAligned3  (6<<4)
+
+#define TIM_PSCReloadMode_Update        (0)
+#define TIM_PSCReloadMode_Immediate     (1)
+
+#define TIM_ICSelection_DirectTI        (1) // TIM Input 1, 2, 3 or 4 is selected to be connected to IC1, IC2, IC3 or IC4, respectively
+#define TIM_ICSelection_IndirectTI      (2) // TIM Input 1, 2, 3 or 4 is selected to be connected to IC2, IC1, IC4 or IC3, respectively
+#define TIM_ICSelection_TRC             (3) // TIM Input 1, 2, 3 or 4 is selected to be connected to TRC.
+
+
+#define TIM_ICPSC_DIV1                  (0x0) // capture each time an edge is detected on the capture input
+#define TIM_ICPSC_DIV2                  (0x4) // capture once every 2 events
+#define TIM_ICPSC_DIV4                  (0x8) // capture once every 4 events
+#define TIM_ICPSC_DIV8                  (0xC) // capture once every 8 events
+
 /*
  * Convenience routines
  */
+
+
 
 /**
  * Used to configure the behavior of a timer channel.  Note that not
@@ -419,31 +446,23 @@ void TIM8_IRQHandler(void);
  */
 /* TODO TIMER_PWM_CENTER_ALIGNED, TIMER_INPUT_CAPTURE, TIMER_ONE_PULSE */
 typedef enum timer_mode {
-    TIMER_DISABLED, /**< In this mode, the timer stops counting,
-                         channel interrupts are detached, and no state
-                         changes are output. */
-    TIMER_PWM, /**< PWM output mode. This is the default mode for pins
-                    after initialization. */
-    /* TIMER_PWM_CENTER_ALIGNED, /\**< Center-aligned PWM output mode. *\/ */
-    TIMER_OUTPUT_COMPARE, /**< In this mode, the timer counts from 0
-                               to its reload value repeatedly; every
-                               time the counter value reaches one of
-                               the channel compare values, the
+    TIMER_DISABLED, /* In this mode, the timer stops counting, channel interrupts are detached, and no state changes are output */
+    TIMER_PWM,      /* PWM output mode. This is the default mode for pins after initialization */
+    TIMER_OUTPUT_COMPARE, /* In this mode, the timer counts from 0 to its reload value repeatedly; every
+                               time the counter value reaches one of the channel compare values, the 
                                corresponding interrupt is fired. */
-    /* TIMER_INPUT_CAPTURE, /\**< In this mode, the timer can measure the */
-    /*                           pulse lengths of input signals. *\/ */
-    /* TIMER_ONE_PULSE /\**< In this mode, the timer can generate a single */
-    /*                      pulse on a GPIO pin for a specified amount of */
-    /*                      time. *\/ */
+    // TIMER_PWM_CENTER_ALIGNED, /* Center-aligned PWM output mode */
+    // TIMER_INPUT_CAPTURE,   /* In this mode, the timer can measure the pulse lengths of input signals. */ 
+    // TIMER_ONE_PULSE        /* In this mode, the timer can generate a single pulse on a GPIO pin for a specified amount of time. */
 } timer_mode;
 
 /** Timer channel numbers */
 typedef enum timer_Channel {
     NO_CH = 0,
-    TIMER_CH1 = 1, /**< Channel 1 */
-    TIMER_CH2 = 2, /**< Channel 2 */
-    TIMER_CH3 = 3, /**< Channel 3 */
-    TIMER_CH4 = 4, /**< Channel 4 */
+    TIMER_CH1 = 1, /* Channel 1 */
+    TIMER_CH2 = 2, /* Channel 2 */
+    TIMER_CH3 = 3, /* Channel 3 */
+    TIMER_CH4 = 4, /* Channel 4 */
     TIMER_CH_MAX = 8,
     
     TIMER_CH1N = 9,  /**< Channel 1N */
@@ -477,47 +496,28 @@ enum {
  * for each value.
  */
 typedef enum timer_interrupt_id {
-    TIMER_UPDATE_INTERRUPT=0, /**< Update interrupt, available on all timers. */
-    TIMER_CC1_INTERRUPT, /**< Capture/compare 1 interrupt, available on general and advanced timers only. */
-    TIMER_CC2_INTERRUPT, /**< Capture/compare 2 interrupt, general and advanced timers only. */
-    TIMER_CC3_INTERRUPT, /**< Capture/compare 3 interrupt, general and advanced timers only. */
-    TIMER_CC4_INTERRUPT, /**< Capture/compare 4 interrupt, general and advanced timers only. */
-    TIMER_COM_INTERRUPT, /**< COM interrupt, advanced timers only */
-    TIMER_TRG_INTERRUPT, /**< Trigger interrupt, general and advanced timers only */
-    TIMER_BREAK_INTERRUPT /**< Break interrupt, advanced timers only. */
+    TIMER_UPDATE_INTERRUPT=0, /* Update interrupt, available on all timers. */
+    TIMER_CC1_INTERRUPT,      /* Capture/compare 1 interrupt, available on general and advanced timers only. */
+    TIMER_CC2_INTERRUPT,      /* Capture/compare 2 interrupt, general and advanced timers only. */
+    TIMER_CC3_INTERRUPT,      /* Capture/compare 3 interrupt, general and advanced timers only. */
+    TIMER_CC4_INTERRUPT,      /* Capture/compare 4 interrupt, general and advanced timers only. */
+    TIMER_COM_INTERRUPT,      /* COM interrupt, advanced timers only */
+    TIMER_TRG_INTERRUPT,      /* Trigger interrupt, general and advanced timers only */
+    TIMER_BREAK_INTERRUPT     /* Break interrupt, advanced timers only. */
 } timer_interrupt_id;
 
 
 typedef enum timer_oc_mode {
-    TIMER_OC_MODE_FROZEN = 0 << 4, /**< Frozen: comparison between output
-                                      compare register and counter has no
-                                      effect on the outputs. */
-    TIMER_OC_MODE_ACTIVE_ON_MATCH = 1 << 4, /**< OCxREF signal is forced
-                                               high when the count matches
-                                               the channel capture/compare
-                                               register. */
-    TIMER_OC_MODE_INACTIVE_ON_MATCH = 2 << 4, /**< OCxREF signal is forced
-                                                 low when the counter matches
-                                                 the channel capture/compare
-                                                 register. */
-    TIMER_OC_MODE_TOGGLE = 3 << 4, /**< OCxREF toggles when counter
-                                      matches the cannel capture/compare
-                                      register. */
-    TIMER_OC_MODE_FORCE_INACTIVE = 4 << 4, /**< OCxREF is forced low. */
-    TIMER_OC_MODE_FORCE_ACTIVE = 5 << 4, /**< OCxREF is forced high. */
-    TIMER_OC_MODE_PWM_1 = 6 << 4, /**< PWM mode 1.  In upcounting, channel is
-                                     active as long as count is less than
-                                     channel capture/compare register, else
-                                     inactive.  In downcounting, channel is
-                                     inactive as long as count exceeds
-                                     capture/compare register, else
-                                     active. */
-    TIMER_OC_MODE_PWM_2 = 7 << 4  /**< PWM mode 2. In upcounting, channel is
-                                     inactive as long as count is less than
-                                     capture/compare register, else active.
-                                     In downcounting, channel is active as
-                                     long as count exceeds capture/compare
-                                     register, else inactive. */
+    TIMER_OC_MODE_FROZEN = 0 << 4, /**< Frozen: comparison between output compare register and counter has no effect on the outputs. */
+    TIMER_OC_MODE_ACTIVE_ON_MATCH = 1 << 4,   /* OCxREF signal is forced high when the count matches the channel capture/compare register. */
+    TIMER_OC_MODE_INACTIVE_ON_MATCH = 2 << 4, /* OCxREF signal is forced low when the counter matches the channel capture/compare register. */
+    TIMER_OC_MODE_TOGGLE = 3 << 4,            /* OCxREF toggles when counter matches the cannel capture/compare register. */
+    TIMER_OC_MODE_FORCE_INACTIVE = 4 << 4,    /* OCxREF is forced low. */
+    TIMER_OC_MODE_FORCE_ACTIVE = 5 << 4,      /* OCxREF is forced high. */
+    TIMER_OC_MODE_PWM_1 = 6 << 4, /* PWM mode 1. In upcounting, channel is active as long as count is less than channel capture/compare register, else inactive.
+                                      In downcounting, channel is inactive as long as count exceeds capture/compare register, else active. */
+    TIMER_OC_MODE_PWM_2 = 7 << 4  /* PWM mode 2. In upcounting, channel is inactive as long as count is less than capture/compare register, else active.
+                                      In downcounting, channel is active as long as count exceeds capture/compare register, else inactive. */
 } timer_oc_mode;
 
 
@@ -551,17 +551,17 @@ typedef enum Timer_cc_Polarity {
  * @see timer_oc_set_mode()
  */
 typedef enum timer_oc_mode_flags {
-    TIMER_OC_CE = BIT(7),       /**< Output compare clear enable. */
-    TIMER_OC_PE = BIT(3),       /**< Output compare preload enable. */
-    TIMER_OC_FE = BIT(2)        /**< Output compare fast enable. */
+    TIMER_OC_CE = BIT(7),       /* Output compare clear enable. */
+    TIMER_OC_PE = BIT(3),       /* Output compare preload enable. */
+    TIMER_OC_FE = BIT(2)        /* Output compare fast enable. */
 } timer_oc_mode_flags;
 
 
 typedef struct TimerState {
-    volatile uint8_t busy;
-    bool update;
-    uint32_t freq; //      real frequency that programmed to timer
-    float freq_scale; // needed/real frequencies ratio
+    volatile uint8_t busy;      // timer is in use, used only in soft_I2C driver
+    bool update;                // timer need to be updated
+    uint32_t freq;              // real frequency that programmed to timer
+    float freq_scale;           // needed/real frequencies ratio
 } timerState;
 
 
@@ -570,24 +570,20 @@ typedef struct TIM_DMA {
     uint8_t    dma_channel;
 } Tim_dma;
 
-/** Timer device type */
-struct Timer_dev {
-    TIM_TypeDef *regs;
-    uint32_t clk;
-    Handler *handlers;          // < User IRQ handlers
-    timerState *state;
-    Tim_dma ch_dma[4];
-    uint16_t af;                // GPIO AF number
-    //
-    timer_type         type;         // < Timer's type 
-    uint8_t      n_handlers;         // number of handlers
-    uint8_t             bus;         // APB1 or APB2
-    uint8_t              id;         // timer's number
-    //
-};
+/* Timer device type */
+typedef struct Timer_dev {
+    TIM_TypeDef       *regs;
+    uint32_t            clk;    // clock bit
+    Handler       *handlers;    // User IRQ handlers
+    timerState       *state;    // timer's state in RAM
+    Tim_dma       ch_dma[4];    // dma channels per timer's channel
+    uint16_t             af;    // GPIO AF number
+    timer_type         type;    // Timer's type 
+    uint8_t      n_handlers;    // number of handlers
+    uint8_t             bus;    // APB1 or APB2
+    uint8_t              id;    // timer's number
+} timer_dev;
 
-
-typedef struct Timer_dev timer_dev;
 
 extern const timer_dev timers[];
 
@@ -860,7 +856,7 @@ static inline void timer_cc_enable(const timer_dev *dev, timer_Channel channel) 
     if(channel < TIMER_CH_MAX){
         *bb_perip(&(dev->regs->CCER), 4 * (channel - 1)) = 1;
     } else {
-        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK) - 1) + 2) = 1;    
+        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK) - 1) + 2) = 1; // inverted channels on advanced timers   
     }
 #else
     switch(channel) {
@@ -893,7 +889,7 @@ static inline void timer_cc_disable(const timer_dev *dev, timer_Channel channel)
     if(channel < TIMER_CH_MAX){
         *bb_perip(&(dev->regs->CCER), 4 * (channel - 1)) = 0;
     } else {
-        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK) - 1) + 2) = 0;
+        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK) - 1) + 2) = 0; // inverted channels on advanced timers
     }
 #else    
     switch(channel){
@@ -926,7 +922,7 @@ static inline timer_cc_polarity timer_cc_get_pol(const timer_dev *dev, timer_Cha
     if(channel < TIMER_CH_MAX){
         return (timer_cc_polarity)(*bb_perip(&(dev->regs->CCER), 4 * (channel-1) + 1));
     } else {
-        return (timer_cc_polarity)(*bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK)-1) + 3));    
+        return (timer_cc_polarity)(*bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK)-1) + 3));    // inverted channels on advanced timers
     }
 }
 
@@ -951,7 +947,7 @@ static inline void timer_cc_set_pol(const timer_dev *dev, timer_Channel channel,
     if(channel < TIMER_CH_MAX){
         *bb_perip(&(dev->regs->CCER), 4 * (channel - 1) + 1) = pol;
     }else {
-        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK)- 1) + 3) = pol;
+        *bb_perip(&(dev->regs->CCER), 4 * ((channel&TIMER_CH_MASK)- 1) + 3) = pol;      // inverted channels on advanced timers
     }
 }
 
@@ -973,10 +969,8 @@ static inline uint8_t timer_dma_get_burst_len(const timer_dev *dev) {
  *               per DMA request, from 1 to 18.
  */
 static inline void timer_dma_set_burst_len(const timer_dev *dev, uint8_t length) {
-    uint32_t tmp = dev->regs->DCR;
-    tmp &= ~TIMER_DCR_DBL;
-    tmp |= (length - 1) << 8;
-    dev->regs->DCR = tmp;
+    uint32_t tmp = dev->regs->DCR  & ~TIMER_DCR_DBL;
+    dev->regs->DCR = tmp  | (length - 1) << 8;
 }
 
 /**
@@ -1041,10 +1035,8 @@ static inline timer_dma_base_addr timer_dma_get_base_addr(const timer_dev *dev) 
  */
 static inline void timer_dma_set_base_addr(const timer_dev *dev,
                                            timer_dma_base_addr dma_base) {
-    uint32_t tmp = dev->regs->DCR;
-    tmp &= ~TIMER_DCR_DBA;
-    tmp |= dma_base;
-    dev->regs->DCR = tmp;
+    uint32_t tmp = dev->regs->DCR  & ~TIMER_DCR_DBA;
+    dev->regs->DCR = tmp  | dma_base;
 }
 
 
@@ -1123,7 +1115,6 @@ static inline void timer_ic_set_mode(const timer_dev *dev,
  * @see timer_channel
  */
 static inline void timer_enable_irq(const timer_dev *dev, timer_interrupt_id interrupt) {
-//    *bb_perip(&(dev->regs->DIER), interrupt) = 1;
     dev->regs->DIER |= 1<<(interrupt & TIMER_CH_MASK);
 }
 
@@ -1136,7 +1127,6 @@ static inline void timer_enable_irq(const timer_dev *dev, timer_interrupt_id int
  * @see timer_channel
  */
 static inline void timer_disable_irq(const timer_dev *dev, timer_interrupt_id interrupt) {
-//    *bb_perip(&(dev->regs->DIER), interrupt) = 0;
     dev->regs->DIER &= ~(1<<(interrupt & TIMER_CH_MASK));
 }
 

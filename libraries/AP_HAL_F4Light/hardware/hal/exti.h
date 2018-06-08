@@ -9,51 +9,83 @@
 #endif
  
 
+
+#define EXTI_Line0       (1L<<0)     // External IRQ line 0 
+#define EXTI_Line1       (1L<<1)     // External IRQ line 1 
+#define EXTI_Line2       (1L<<2)     // External IRQ line 2 
+#define EXTI_Line3       (1L<<3)     // External IRQ line 3 
+#define EXTI_Line4       (1L<<4)     // External IRQ line 4 
+#define EXTI_Line5       (1L<<5)     // External IRQ line 5 
+#define EXTI_Line6       (1L<<6)     // External IRQ line 6 
+#define EXTI_Line7       (1L<<7)     // External IRQ line 7 
+#define EXTI_Line8       (1L<<8)     // External IRQ line 8 
+#define EXTI_Line9       (1L<<9)     // External IRQ line 9 
+#define EXTI_Line10      (1L<<10)    // External IRQ line 10 
+#define EXTI_Line11      (1L<<11)    // External IRQ line 11 
+#define EXTI_Line12      (1L<<12)    // External IRQ line 12 
+#define EXTI_Line13      (1L<<13)    // External IRQ line 13 
+#define EXTI_Line14      (1L<<14)    // External IRQ line 14 
+#define EXTI_Line15      (1L<<15)    // External IRQ line 15 
+#define EXTI_Line16      (1L<<16)    // External IRQ line 16 is PVD Output 
+#define EXTI_Line17      (1L<<17)    // External IRQ line 17 is RTC Alarm event 
+#define EXTI_Line18      (1L<<18)    // External IRQ line 18 is USB OTG FS Wakeup from suspend event 
+#define EXTI_Line19      (1L<<19)    // External IRQ line 19 is Ethernet Wakeup event 
+#define EXTI_Line20      (1L<<20)    // External IRQ line 20 is USB OTG HS (configured in FS) Wakeup event  
+#define EXTI_Line21      (1L<<21)    // External IRQ line 21 is RTC Tamper and Time Stamp events 
+#define EXTI_Line22      (1L<<22)    // External IRQ line 22 is RTC Wakeup event 
+
+
+typedef enum
+{
+  EXTI_Trigger_Rising = 0x08,   // offset of EXTI_RTSR to use as address shift
+  EXTI_Trigger_Falling = 0x0C,  // offset of EXTI_FTSR
+  EXTI_Trigger_Rising_Falling = 0x10, // offset of EXTI_SWIER, but not used in address calculations
+} EXTITrigger_t;
+
 /**
  * External interrupt line numbers.
  */
 typedef enum afio_exti_num {
-    AFIO_EXTI_0,                /**< External interrupt line 0. */
-    AFIO_EXTI_1,                /**< External interrupt line 1. */
-    AFIO_EXTI_2,                /**< External interrupt line 2. */
-    AFIO_EXTI_3,                /**< External interrupt line 3. */
-    AFIO_EXTI_4,                /**< External interrupt line 4. */
-    AFIO_EXTI_5,                /**< External interrupt line 5. */
-    AFIO_EXTI_6,                /**< External interrupt line 6. */
-    AFIO_EXTI_7,                /**< External interrupt line 7. */
-    AFIO_EXTI_8,                /**< External interrupt line 8. */
-    AFIO_EXTI_9,                /**< External interrupt line 9. */
-    AFIO_EXTI_10,               /**< External interrupt line 10. */
-    AFIO_EXTI_11,               /**< External interrupt line 11. */
-    AFIO_EXTI_12,               /**< External interrupt line 12. */
-    AFIO_EXTI_13,               /**< External interrupt line 13. */
-    AFIO_EXTI_14,               /**< External interrupt line 14. */
-    AFIO_EXTI_15,               /**< External interrupt line 15. */
+    AFIO_EXTI_0,                // external IRQ line 0
+    AFIO_EXTI_1,                // external IRQ line 1 
+    AFIO_EXTI_2,                // external IRQ line 2 
+    AFIO_EXTI_3,                // external IRQ line 3 
+    AFIO_EXTI_4,                // external IRQ line 4 
+    AFIO_EXTI_5,                // external IRQ line 5 
+    AFIO_EXTI_6,                // external IRQ line 6 
+    AFIO_EXTI_7,                // external IRQ line 7 
+    AFIO_EXTI_8,                // external IRQ line 8 
+    AFIO_EXTI_9,                // external IRQ line 9 
+    AFIO_EXTI_10,               // external IRQ line 10 
+    AFIO_EXTI_11,               // external IRQ line 11 
+    AFIO_EXTI_12,               // external IRQ line 12 
+    AFIO_EXTI_13,               // external IRQ line 13 
+    AFIO_EXTI_14,               // external IRQ line 14 
+    AFIO_EXTI_15,               // external IRQ line 15 
 } afio_exti_num;
 
 /**
- * @brief External interrupt line port selector.
+ * external interrupt line port selector.
  *
  * Used to determine which GPIO port to map an external interrupt line
  * onto. */
 /* (See AFIO sections, below) */
 typedef enum afio_exti_port {
-    AFIO_EXTI_PA,               /**< Use port A (PAx) pin. */
-    AFIO_EXTI_PB,               /**< Use port B (PBx) pin. */
-    AFIO_EXTI_PC,               /**< Use port C (PCx) pin. */
-    AFIO_EXTI_PD,               /**< Use port D (PDx) pin. */
-    AFIO_EXTI_PE,               /**< Use port E (PEx) pin. */
-    AFIO_EXTI_PF,               /**< Use port E (PEx) pin. */
-    AFIO_EXTI_PG,               /**< Use port E (PEx) pin. */    
+    AFIO_EXTI_PA,               // use port A
+    AFIO_EXTI_PB,               // use port B
+    AFIO_EXTI_PC,               // use port C
+    AFIO_EXTI_PD,               // use port D
+    AFIO_EXTI_PE,               // use port E
+    AFIO_EXTI_PF,               // use port F
+    AFIO_EXTI_PG,               // use port G
 } afio_exti_port;
 
-/** External interrupt trigger mode */
+/** external interrupt trigger mode */
 typedef enum exti_trigger_mode {
-    EXTI_RISING,         /**< Trigger on the rising edge */
-    EXTI_FALLING,        /**< Trigger on the falling edge */
-    EXTI_RISING_FALLING  /**< Trigger on both the rising and falling edges */
+    EXTI_RISING         = EXTI_Trigger_Rising,         // trigger on the rising edge 
+    EXTI_FALLING        = EXTI_Trigger_Falling,        // trigger on the falling edge 
+    EXTI_RISING_FALLING = EXTI_Trigger_Rising_Falling, // trigger on both the rising and falling edges 
 } exti_trigger_mode;
-
 
   
 void exti_init();
@@ -74,17 +106,22 @@ void exti_init();
  * @see voidFuncPtr
  * @see exti_trigger_mode
  */
-void exti_attach_interrupt(afio_exti_num num,
-                           afio_exti_port port,
-                           Handler handler,
-                           exti_trigger_mode mode);
-
-
 void exti_attach_interrupt_pri(afio_exti_num num,
                            afio_exti_port port,
                            Handler handler,
                            exti_trigger_mode mode,
                            uint8_t priority);
+
+
+static inline void exti_attach_interrupt(afio_exti_num num,
+                           afio_exti_port port,
+                           Handler handler,
+                           exti_trigger_mode mode)
+{
+    exti_attach_interrupt_pri(num, port, handler, mode, GPIO_INT_PRIORITY);
+}
+
+
 /**
  * @brief Unregister an external interrupt handler
  * @param num Number of the external interrupt line to disable.
@@ -92,8 +129,7 @@ void exti_attach_interrupt_pri(afio_exti_num num,
  */
 void exti_detach_interrupt(afio_exti_num num);
 
-
-void exti_enable_interrupt(afio_exti_num num, bool e); // needed access to internal data
+void exti_enable_irq(afio_exti_num num, bool e); // needed access to internal data
 
 /**
  * Re-enable interrupts.
@@ -121,11 +157,9 @@ static INLINE void noInterrupts() {
         __disable_irq();
 }
 
-
-
-static inline void exti_clear_pending_bit(uint32_t EXTI_Line)
+static inline void exti_clear_pending_bit(uint32_t line)
 {
-  EXTI->PR = EXTI_Line;
+  EXTI->PR = line;
 }
 
 

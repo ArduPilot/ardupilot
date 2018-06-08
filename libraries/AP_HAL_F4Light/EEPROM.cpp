@@ -17,6 +17,8 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#define SECTOR_MASK               ((uint32_t)0xFFFFFF07)
+
 /*
     address not uses 2 high bits so we will use them as flags of right written slot - if address has high bit then it written wrong
 */
@@ -27,36 +29,104 @@ EEPROMClass::EEPROMClass(void)
 {
 }
 
-static void reset_flash_errors(){
+void EEPROMClass::reset_flash_errors(){
     if(FLASH->SR & 0xE0) FLASH->SR = 0xE0; // reset Programming Sequence, Parallelism and Alignment errors
-    if(FLASH->SR & FLASH_FLAG_WRPERR) {  // write protection detected
-        FLASH_OB_Unlock();
+    if(FLASH->SR & FLASH_BIT_WRPERR) {  // write protection detected
         
-        FLASH_OB_WRPConfig(OB_WRP_Sector_All, DISABLE); // remove protection            
-        FLASH->SR |= FLASH_FLAG_WRPERR; // reset flag
+        if((FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) != 0){    // Authorizes the Option Byte register programming 
+            FLASH->OPTKEYR = FLASH_OPT_KEY1;
+            FLASH->OPTKEYR = FLASH_OPT_KEY2;
+        }
+        
+        OB_WRPConfig(OB_WRP_Sector_All, false); // remove protection
+        FLASH->SR |= FLASH_BIT_WRPERR; // reset flag
     }
 }
 
-// библиотечная версия содержит ошибку и не разблокирует память
-void EEPROMClass::FLASH_OB_WRPConfig(uint32_t OB_WRP, FunctionalState NewState)
+
+FLASH_Status EEPROMClass::GetStatus(void){
+  FLASH_Status status = FLASH_COMPLETE;
+
+  if((FLASH->SR & FLASH_BIT_BSY) == FLASH_BIT_BSY) {
+    status = FLASH_BUSY;
+  } else if((FLASH->SR & FLASH_BIT_WRPERR) != 0) {
+      status = FLASH_ERROR_WRP;
+  } else if((FLASH->SR & (uint32_t)0xEF) != 0) {
+      status = FLASH_ERROR_PROGRAM;
+  } else if((FLASH->SR & FLASH_BIT_OPERR) != 0) {
+      status = FLASH_ERROR_OPERATION;
+  } else {
+      status = FLASH_COMPLETE;
+  }
+  return status;
+}
+
+/**
+  * @brief  Waits for a FLASH operation to complete.
+  * @param  None
+  * @retval FLASH Status: The returned value can be: FLASH_BUSY, FLASH_ERROR_PROGRAM,
+  *                       FLASH_ERROR_WRP, FLASH_ERROR_OPERATION or FLASH_COMPLETE.
+  */
+FLASH_Status EEPROMClass::WaitForLastOperation(void) {
+
+    FLASH_Status status;
+  /* Wait for the FLASH operation to complete by polling on BUSY flag to be reset.
+     Even if the FLASH operation fails, the BUSY flag will be reset and an error
+     flag will be set */
+  do {
+      status = GetStatus();
+  } while(status == FLASH_BUSY);
+
+  return status;
+}
+
+
+void EEPROMClass::OB_WRPConfig(uint16_t OB_WRP, bool v)
 { 
   
-  /* Check the parameters */
-  assert_param(IS_OB_WRP(OB_WRP));
-  assert_param(IS_FUNCTIONAL_STATE(NewState));
-    
-    FLASH_WaitForLastOperation();
+    WaitForLastOperation();
 
-//  if(status == FLASH_COMPLETE) {  тут может быть любая ошибка - оттого мы и вызываем разблокировку!
-    if(NewState != DISABLE)
-    {
-      *(__IO uint16_t*)OPTCR_BYTE2_ADDRESS &= (~OB_WRP);
+    if(v) {
+      OPTCR_WORDS[1] &= (uint16_t)~OB_WRP;
+    } else {
+      OPTCR_WORDS[1] |= OB_WRP;
     }
-    else
-    {
-      *(__IO uint16_t*)OPTCR_BYTE2_ADDRESS |= (uint16_t)OB_WRP;
-    }
-//  }
+}
+
+
+FLASH_Status EEPROMClass::ProgramHalfWord(uint32_t Address, uint16_t Data)
+{
+  FLASH_Status status = WaitForLastOperation();
+
+  if(status == FLASH_COMPLETE) {    // if the previous operation is completed, proceed to program the new data 
+    FLASH->CR &= FLASH_PRG_SIZE_MASK;
+    FLASH->CR |= FLASH_PRG_SIZE_HALF_WORD;
+    FLASH->CR |= FLASH_CR_PG;
+
+    *(__IO uint16_t*)Address = Data;
+
+    status = WaitForLastOperation(); // Wait for last operation to be completed 
+    FLASH->CR &= (~FLASH_CR_PG); // after the program operation is completed, disable the PG Bit 
+  }
+  return status;
+}
+
+FLASH_Status EEPROMClass::ProgramByte(uint32_t Address, uint8_t Data)
+{
+  FLASH_Status status = WaitForLastOperation();
+
+  if(status == FLASH_COMPLETE)  {    // if the previous operation is completed, proceed to program the new data 
+    FLASH->CR &= FLASH_PRG_SIZE_MASK;
+    FLASH->CR |= FLASH_PRG_SIZE_BYTE;
+    FLASH->CR |= FLASH_CR_PG;
+
+    *(__IO uint8_t*)Address = Data;
+
+    status = WaitForLastOperation(); // Wait for last operation to be completed 
+    FLASH->CR &= (~FLASH_CR_PG); // after the program operation is completed, disable the PG Bit 
+  }
+  
+  return status;
 }
 
 
@@ -64,7 +134,7 @@ void EEPROMClass::FLASH_OB_WRPConfig(uint32_t OB_WRP, FunctionalState NewState)
 FLASH_Status EEPROMClass::write_16(uint32_t addr, uint16_t data){
     uint16_t n_try=16;
 again:
-    FLASH_Status  sts = FLASH_ProgramHalfWord(addr, data);
+    FLASH_Status  sts = ProgramHalfWord(addr, data);
     
     if(sts != FLASH_COMPLETE ) {
         reset_flash_errors();
@@ -74,11 +144,12 @@ again:
     return sts;
 }
 
+
 FLASH_Status EEPROMClass::write_8(uint32_t addr, uint8_t data){ 
     uint16_t n_try=16;
 again:
 
-    FLASH_Status  sts = FLASH_ProgramByte(addr, data);
+    FLASH_Status  sts = ProgramByte(addr, data);
     
     if(sts != FLASH_COMPLETE ) {
         reset_flash_errors();
@@ -90,14 +161,14 @@ again:
 }
 
 void EEPROMClass::FLASH_Lock_check(){
-    FLASH_Lock();
+    Lock();
     FLASH->CR |= FLASH_CR_ERRIE;
     FLASH->ACR |= FLASH_ACR_DCEN; // enable data cache again
 }
 
 void EEPROMClass::FLASH_Unlock_dis(){
     FLASH->ACR &= ~FLASH_ACR_DCEN; // disable data cache
-    FLASH_Unlock();
+    Unlock();
 }
 
 /**
@@ -143,7 +214,7 @@ FLASH_Status EEPROMClass::_ErasePageByAddress(uint32_t Page_Address)
 
     uint8_t n_try = 16;
 again:
-    FLASH_Status ret = FLASH_EraseSector(8 * FLASH_Sector, VoltageRange_3);
+    FLASH_Status ret = EraseSector(8 * FLASH_Sector);
 
     if(ret != FLASH_COMPLETE ) {
         reset_flash_errors();
@@ -151,6 +222,28 @@ again:
     }
 	
     return ret;
+}
+
+FLASH_Status EEPROMClass::EraseSector(uint32_t sector)
+{
+  FLASH_Status  status = WaitForLastOperation();
+
+  if(status == FLASH_COMPLETE)  {
+    /* if the previous operation is completed, proceed to erase the sector */
+    FLASH->CR &= FLASH_PRG_SIZE_MASK;
+    FLASH->CR |= FLASH_PRG_SIZE_WORD; // we operates at 3.3
+    FLASH->CR &= SECTOR_MASK;
+    FLASH->CR |= FLASH_CR_SER | sector;
+    FLASH->CR |= FLASH_CR_STRT;
+
+    status = WaitForLastOperation();
+
+    // when the erase operation is completed, disable the SER Bit
+    FLASH->CR &= (~FLASH_CR_SER);
+    FLASH->CR &= SECTOR_MASK;
+  }
+
+  return status;
 }
 
 /**
@@ -440,7 +533,7 @@ uint16_t EEPROMClass::_init(void) //
 
         if(PageSize == 0) return _status; // no real Init call
 
-	FLASH_Unlock();
+	Unlock();
 
 	erased0 = read_16(PageBase0 + 2);
 	if (erased0 == 0xffff) erased0 = 0;
@@ -601,7 +694,7 @@ error:
 
 uint16_t EEPROMClass::format(void){
     uint16_t status;
-    FLASH_Unlock();
+    Unlock();
     status = _format();
     FLASH_Lock_check();
     return status;
@@ -688,7 +781,7 @@ uint16_t EEPROMClass::write(uint16_t Address, uint16_t Data)
 	if (Address == 0xFFFF)
 		return EEPROM_BAD_ADDRESS;
 
-        FLASH_Unlock();
+        Unlock();
 
 	// Write the variable virtual address and value in the EEPROM
 	uint16_t status = _VerifyPageFullWriteVariable(Address & ADDRESS_MASK, Data);

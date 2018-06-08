@@ -203,13 +203,13 @@ void clock_gettime(uint32_t a1, void *a2) { return; }
 int val_read(void *dest, volatile const void *src, int bytes)
 {
 
-        int i;
+    int i;
 
-        for (i = 0; i < bytes / 4; i++) {
-                *(((volatile unsigned *)dest) + i) = *(((volatile unsigned *)src) + i);
-        }
+    for (i = 0; i < bytes / 4; i++) {
+        *(((volatile unsigned *)dest) + i) = *(((volatile unsigned *)src) + i);
+    }
 
-        return i * 4;
+    return i * 4;
 }
 
 

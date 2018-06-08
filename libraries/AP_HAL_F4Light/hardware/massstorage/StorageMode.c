@@ -5,7 +5,7 @@
 */
 
 #include "StorageMode.h"
-
+#include <exti.h>
 
 // defines of disk status
 #include "../sd/FatFs/diskio.h"
@@ -85,7 +85,7 @@ void OTG_FS_WKUP_IRQHandler(void)
     systemInit(0);
     USB_OTG_UngateClock(&USB_OTG_dev);
   }
-  EXTI_ClearITPendingBit(EXTI_Line18);
+  EXTI->PR = EXTI_Line18; // clear IT Pending bit
 }
 #endif
 

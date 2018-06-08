@@ -354,23 +354,18 @@ void SetSysClock(uint8_t oc)
   RCC->CR |= ((uint32_t)RCC_CR_HSEON);
  
   /* Wait till HSE is ready and if Time out is reached exit */
-  do
-  {
+  do {
     HSEStatus = RCC->CR & RCC_CR_HSERDY;
     StartUpCounter++;
   } while((HSEStatus == 0) && (StartUpCounter != HSE_STARTUP_TIMEOUT));
 
-  if ((RCC->CR & RCC_CR_HSERDY) != RESET)
-  {
+  if ((RCC->CR & RCC_CR_HSERDY) != RESET) {
     HSEStatus = (uint32_t)0x01;
-  }
-  else
-  {
+  } else {
     HSEStatus = (uint32_t)0x00;
   }
 
-  if (HSEStatus == (uint32_t)0x01)
-  {
+  if (HSEStatus == (uint32_t)0x01) {
     /* Enable high performance mode, System frequency up to 168 MHz */
     RCC->APB1ENR |= RCC_APB1ENR_PWREN;
     PWR->CR |= PWR_CR_PMODE;  
