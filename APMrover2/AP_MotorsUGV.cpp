@@ -161,7 +161,7 @@ void AP_MotorsUGV::setup_servo_output()
 //   no scaling by speed or angle should be performed
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
-    _steering = constrain_float(steering, -4500.0f, 4500.0f);
+    _steering = steering;
     _scale_steering = apply_scaling;
 }
 
@@ -229,9 +229,6 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // sanity check parameters
     sanity_check_parameters();
-
-    // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
-    set_limits_from_input(armed, _steering, _throttle);
 
     // slew limit throttle
     slew_limit_throttle(dt);
@@ -465,6 +462,13 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
         }
     }
 
+    // clear and set limits based on input
+    // we do this here because vectored thrust or speed scaling may have reduced steering request
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
+
     // always allow steering to move
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 }
@@ -475,6 +479,13 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
     if (!has_lateral_control()) {
         return;
     }
+
+    // clear and set limits based on input
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
+
     if (armed) {
         // scale throttle, steering and lateral to -1 ~ 1
         const float scaled_throttle = throttle / 100.0f;
@@ -526,6 +537,12 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     if (!have_skid_steering()) {
         return;
     }
+
+    // clear and set limits based on input
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
 
     // handle simpler disarmed case
     if (!armed) {
