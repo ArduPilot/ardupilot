@@ -18,7 +18,7 @@
 #include <AP_Math/AP_Math.h>
 
 #include "Util.h"
-#include <chlib.h>
+#include <ch.h>
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
