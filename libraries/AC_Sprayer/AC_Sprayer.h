@@ -38,6 +38,9 @@ public:
     AC_Sprayer(const AC_Sprayer &other) = delete;
     AC_Sprayer &operator=(const AC_Sprayer&) = delete;
 
+    static AC_Sprayer *get_instance();
+    static AC_Sprayer *_s_instance;
+
     /// run - allow or disallow spraying to occur
     void run(bool true_false);
 
@@ -81,4 +84,8 @@ private:
     uint32_t        _speed_under_min_time;  ///< time at which we fell below speed minimum
 
     void stop_spraying();
+};
+
+namespace AP {
+    AC_Sprayer *sprayer();
 };
