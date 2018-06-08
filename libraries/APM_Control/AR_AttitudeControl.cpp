@@ -285,7 +285,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     const float d = _steer_rate_pid.get_d();
 
     // constrain and return final output
-    return constrain_float(ff + p + i + d, -1.0f, 1.0f);
+    return (ff + p + i + d);
 }
 
 // get latest desired turn rate in rad/sec (recorded during calls to get_steering_out_rate)
