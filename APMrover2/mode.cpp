@@ -216,6 +216,16 @@ void Mode::set_desired_speed_to_default(bool rtl)
     _desired_speed = get_speed_default(rtl);
 }
 
+// set desired speed in m/s
+bool Mode::set_desired_speed(float speed)
+{
+    if (!is_negative(speed)) {
+        _desired_speed = speed;
+        return true;
+    }
+    return false;
+}
+
 void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
 {
     // add in speed nudging
