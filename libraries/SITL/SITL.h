@@ -70,6 +70,7 @@ public:
         GPS_TYPE_FILE  = 7,
         GPS_TYPE_NOVA  = 8,
         GPS_TYPE_SBP2   = 9,
+        GPS_TYPE_CAN   = 10,
     };
 
     struct sitl_fdm state;
