@@ -510,6 +510,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 
         switch (packet.command) {
 
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            if (rover.control_mode->set_desired_speed(packet.param2)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
         case MAV_CMD_DO_SET_HOME: {
             // assume failure
             result = MAV_RESULT_FAILED;
@@ -686,6 +696,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 default:
                     result = MAV_RESULT_FAILED;
                     break;
+            }
+            break;
+
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            if (rover.control_mode->set_desired_speed(packet.param2)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
             }
             break;
 
