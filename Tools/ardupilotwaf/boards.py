@@ -292,7 +292,29 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-            
+
+        if self.with_uavcan:
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+            env.INCLUDES += [cfg.srcnode.find_dir('modules/uavcan/libuavcan_drivers/linux/include/').abspath()]
+            env.GIT_SUBMODULES += [
+                'uavcan'
+            ]
+
+
+class sitlcan(sitl):
+    def __init__(self):
+        self.with_uavcan = True
+    def configure_env(self, cfg, env):
+        super(sitlcan, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            UAVCAN_CPP_VERSION ='UAVCAN_CPP11',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_SITL_CAN',
+            UAVCAN_EXCEPTIONS = 0,
+        )
+        env.CXXFLAGS.remove('-fno-exceptions')
+        env.CXXFLAGS += ['-fexceptions']
+
+
 class chibios(Board):
     toolchain = 'arm-none-eabi'
 
