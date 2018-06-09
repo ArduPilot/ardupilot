@@ -100,11 +100,13 @@ void AP_BoardConfig_CAN::setup_canbus(void)
     // Create all drivers that we need
     bool initret = true;
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
+        // Check the driver number assigned to this physical interface
         uint8_t drv_num = _var_info_can[i]._driver_number;
 
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
-                
+                // CAN Manager is the driver
+                // So if this driver was not created before for other physical interface - do it
                 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new PX4::PX4CANManager;
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -112,9 +114,9 @@ void AP_BoardConfig_CAN::setup_canbus(void)
                 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
                     const_cast <AP_HAL::HAL&> (hal).can_mgr[drv_num - 1] = new ChibiOS::CANManager;
                 #endif
-                
             }
 
+            // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret &= hal.can_mgr[drv_num - 1]->begin(_var_info_can[i]._can_bitrate, i);
             } else {
