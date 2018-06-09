@@ -679,7 +679,8 @@ void AP_UAVCAN::do_cyclic(void)
 
     auto *node = get_node();
 
-    const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+    //const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
+    const int error = node->spinOnce();
 
     if (error < 0) {
         hal.scheduler->delay_microseconds(100);
@@ -1224,7 +1225,7 @@ AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node, uint8_t sensor_id)
 /*
  * Find discovered mag node with smallest node ID and which is taken N times,
  * where N is less than its maximum sensor id.
- * This allows multiple AP_Compass_UAVCAN instanses listening multiple compasses
+ * This allows multiple AP_Compass_UAVCAN instances listening multiple compasses
  * that are on one node.
  */
 uint8_t AP_UAVCAN::find_smallest_free_mag_node()
@@ -1233,6 +1234,13 @@ uint8_t AP_UAVCAN::find_smallest_free_mag_node()
 
     for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
         if (_mag_node_taken[i] < _mag_node_max_sensorid_count[i]) {
+            if (_mag_nodes[i] == UINT8_MAX)
+            {
+                _mag_nodes[i] = 20;
+                _mag_node_max_sensorid_count[i] = 0;
+                debug_uavcan(2, "AP_UAVCAN: Compass: register sensor id %d on node %d\n\r", 0, 20);
+                return _mag_nodes[i];
+            }
             ret = MIN(ret, _mag_nodes[i]);
         }
     }
