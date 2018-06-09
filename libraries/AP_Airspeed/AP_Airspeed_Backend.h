@@ -35,6 +35,9 @@ public:
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
+    
+    // callback for UAVCAN messages
+    virtual void handle_airspeed_msg(float pressure, float temperature) {}
 
 protected:
     int8_t get_pin(void) const;
