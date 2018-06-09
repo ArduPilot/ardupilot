@@ -17,6 +17,9 @@
 #include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
+#if HAL_WITH_UAVCAN && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_SITL_CAN
+#include "CAN.h"
+#endif
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>

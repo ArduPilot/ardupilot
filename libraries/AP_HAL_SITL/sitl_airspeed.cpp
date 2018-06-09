@@ -15,6 +15,9 @@
 #include "SITL_State.h"
 #include <SITL/SITL.h>
 #include <AP_Math/AP_Math.h>
+#if HAL_WITH_UAVCAN
+#include <uavcan/equipment/air_data/IndicatedAirspeed.hpp>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,6 +52,7 @@ void SITL_State::_update_airspeed(float airspeed)
         float tube_pressure = abs(_sitl->arspd2_fail_pressure - _barometer->get_pressure() + _sitl->arspd2_fail_pitot_pressure);
         airspeed2 = 340.29409348 * sqrt(5 * (pow((tube_pressure / SSL_AIR_PRESSURE + 1), 2.0/7.0) - 1.0));
     }
+
 
     float airspeed_pressure = (airspeed * airspeed) / airspeed_ratio;
     float airspeed2_pressure = (airspeed2 * airspeed2) / airspeed_ratio;

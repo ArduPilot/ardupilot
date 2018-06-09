@@ -7,6 +7,7 @@
 #include <pthread.h>
 
 #define SITL_SCHEDULER_MAX_TIMER_PROCS 4
+#define SITL_CAN_PRIORITY 179
 
 /* Scheduler implementation: */
 class HALSITL::Scheduler : public AP_HAL::Scheduler {

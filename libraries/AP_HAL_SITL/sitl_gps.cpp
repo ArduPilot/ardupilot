@@ -27,6 +27,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <string>
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <uavcan/Timestamp.hpp>
+#include <uavcan/equipment/gnss/Fix.hpp>
+#include <uavcan_linux/uavcan_linux.hpp>
+#include <uavcan_linux/helpers.hpp>
+#include <uavcan/protocol/param/ExecuteOpcode.hpp>
+#endif
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -43,7 +52,11 @@ static struct gps_state {
     uint32_t last_update; // milliseconds
 } gps_state, gps2_state;
 
-/*
+#if HAL_WITH_UAVCAN
+uavcan_linux::NodePtr can_node_gps;
+#endif
+
+    /*
   hook for reading from the GPS pipe
  */
 ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
@@ -1157,7 +1170,33 @@ void SITL_State::_update_gps_file(uint8_t instance)
     }
 }
 
-/*
+
+void SITL_State::_update_gps_can(const struct gps_data *d, uint8_t instance)
+{
+#if HAL_WITH_UAVCAN
+    auto fix_pub = node->makePublisher<uavcan::equipment::gnss::Fix>();
+    uavcan::equipment::gnss::Fix fix;
+    //fix.gnss_timestamp
+    fix.gnss_time_standard = 0;
+    fix.num_leap_seconds = 0;
+    fix.longitude_deg_1e8 = d->longitude * 1E8;
+    fix.latitude_deg_1e8 = d->latitude * 1E8;
+    //fix.height_ellipsoid_mm
+    //fix.height_msl_mm
+    fix.ned_velocity[0] = d->speedN;
+    fix.ned_velocity[1] = d->speedE;
+    fix.ned_velocity[2] = d->speedD;
+    fix.sats_used = _sitl->gps_numsats;
+    fix.status = 3;
+    fix.pdop = 1;
+    //fix.position_covariance
+    //fix.velocity_covariance
+    
+    (void)fix_pub->broadcast(fix);
+#endif
+}
+
+    /*
   possibly send a new GPS packet
  */
 void SITL_State::_update_gps(double latitude, double longitude, float altitude,
@@ -1293,7 +1332,7 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
     }
 }
 
-void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *data, uint8_t instance) {
+void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *data, uint8_t instance){
     switch (gps_type) {
         case SITL::SITL::GPS_TYPE_NONE:
             // no GPS attached
@@ -1329,6 +1368,10 @@ void SITL_State::_update_gps_instance(SITL::SITL::GPSType gps_type, const struct
 
         case SITL::SITL::GPS_TYPE_NOVA:
             _update_gps_nova(data, instance);
+            break;
+
+        case SITL::SITL::GPS_TYPE_CAN:
+            _update_gps_can(data, instance);
             break;
 
         case SITL::SITL::GPS_TYPE_FILE:
