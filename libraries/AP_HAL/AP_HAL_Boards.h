@@ -9,6 +9,7 @@
 #define HAL_BOARD_SITL     3
 #define HAL_BOARD_SMACCM   4  // unused
 #define HAL_BOARD_PX4      5
+//#define HAL_BOARD_SITL_CAN 6
 #define HAL_BOARD_LINUX    7
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
@@ -17,6 +18,7 @@
 
 /* Default board subtype is -1 */
 #define HAL_BOARD_SUBTYPE_NONE -1
+#define HAL_BOARD_SUBTYPE_SITL_CAN -2
 
 /* HAL Linux sub-types, starting at 1000 */
 #define HAL_BOARD_SUBTYPE_LINUX_NONE       1000
