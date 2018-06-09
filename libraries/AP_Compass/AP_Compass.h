@@ -14,6 +14,11 @@
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
 
+#if HAL_WITH_UAVCAN && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_SITL_CAN
+#include <uavcan_linux/uavcan_linux.hpp>
+#include <uavcan_linux/helpers.hpp>
+#endif
+
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
 #define AP_COMPASS_MOT_COMP_THROTTLE    0x01
@@ -329,8 +334,11 @@ public:
     }
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
-
-private:
+#if HAL_WITH_UAVCAN && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_SITL_CAN
+    const char *_uavcan_interface;
+    uavcan_linux::NodePtr node;
+#endif
+  private:
     static Compass *_singleton;
     /// Register a new compas driver, allocating an instance number
     ///
