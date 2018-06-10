@@ -10,7 +10,6 @@
 #include "DataFlash_Revo.h"
 #endif
 
-
 DataFlash_Class *DataFlash_Class::_instance;
 
 extern const AP_HAL::HAL& hal;

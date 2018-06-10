@@ -23,6 +23,7 @@
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
+#include <AP_LandingGear/AP_LandingGear.h>
 
 #include <stdint.h>
 
@@ -154,6 +155,7 @@ public:
     void Log_Write(const char *name, const char *labels, const char *fmt, ...);
     void Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list);
+    void Log_Write_LandingGear(AP_LandingGear::LG_LandingGear_State state, AP_LandingGear::LG_WOW_State wow_state);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {

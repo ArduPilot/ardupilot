@@ -1774,3 +1774,15 @@ void DataFlash_Class::Log_Write_SRTL(bool active, uint16_t num_points, uint16_t 
     };
     WriteBlock(&pkt_srtl, sizeof(pkt_srtl));
 }
+
+void DataFlash_Class::Log_Write_LandingGear(AP_LandingGear::LG_LandingGear_State state,
+                                            AP_LandingGear::LG_WOW_State wow_state)
+{
+    struct log_LandingGear pkt_lgr = {
+        LOG_PACKET_HEADER_INIT(LOG_LGR_MSG),
+        time_us         : AP_HAL::micros64(),
+        gear_state      : state,
+        WOW_state       : wow_state
+    };
+    WriteBlock(&pkt_lgr, sizeof(pkt_lgr));
+}

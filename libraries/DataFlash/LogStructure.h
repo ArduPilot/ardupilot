@@ -916,6 +916,13 @@ struct PACKED log_Rate {
     float   control_accel;
     float   accel;
     float   accel_out;
+};          
+
+struct PACKED log_LandingGear {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    int8_t gear_state;
+    int8_t WOW_state;
 };
 
 // #if SBP_HW_LOGGING
@@ -1406,7 +1413,10 @@ Format characters in the format string for binary log messages
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" },  \
+    { LOG_LGR_MSG, sizeof(log_LandingGear), \
+      "LGR", "Qbb", "TimeUS,LandingGear,WeightOnWheels", "s--", "F00" }  
+
 
 
 // #if SBP_HW_LOGGING
@@ -1558,6 +1568,9 @@ enum LogMessages : uint8_t {
     LOG_ISBD_MSG,
     LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
+
+    LOG_LGR_MSG,
+
     _LOG_LAST_MSG_
 };
 
