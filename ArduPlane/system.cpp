@@ -170,6 +170,13 @@ void Plane::init_ardupilot()
     camera_mount.init(serial_manager);
 #endif
 
+#if LANDING_GEAR_ENABLED == ENABLED
+    // initialise landing gear position
+    g2.landing_gear.init();
+    gear.last_auto_cmd = -1;
+    gear.last_cmd = -1;
+#endif
+
 #if FENCE_TRIGGERED_PIN > 0
     hal.gpio->pinMode(FENCE_TRIGGERED_PIN, HAL_GPIO_OUTPUT);
     hal.gpio->write(FENCE_TRIGGERED_PIN, 0);
