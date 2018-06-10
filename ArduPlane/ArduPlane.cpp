@@ -101,6 +101,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+#if LANDING_GEAR_ENABLED == ENABLED
+    SCHED_TASK_CLASS(AP_LandingGear, &plane.g2.landing_gear, update, 10, 50),
+#endif
 };
 
 constexpr int8_t Plane::_failsafe_priorities[5];
