@@ -122,6 +122,9 @@ void Copter::ModeLoiter::run()
 #if FRAME_CONFIG == HELI_FRAME
         // force descent rate and call position controller
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+        if (ap.land_complete_maybe) {
+            pos_control->relax_alt_hold_controllers(0.0f);
+        }
 #else
         loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
