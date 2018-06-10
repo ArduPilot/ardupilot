@@ -90,6 +90,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper, &plane.g2.gripper, update, 10, 75),
 #endif
+    SCHED_TASK_CLASS(AP_LandingGear, &plane.g2.landing_gear, update, 10, 50),
 };
 
 constexpr int8_t Plane::_failsafe_priorities[5];
