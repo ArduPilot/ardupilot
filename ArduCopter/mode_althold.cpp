@@ -66,6 +66,9 @@ void Copter::ModeAltHold::run()
         // force descent rate and call position controller
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
         heli_flags.init_targets_on_arming=true;
+        if (ap.land_complete_maybe) {
+            pos_control->relax_alt_hold_controllers(0.0f);
+        }
 #else
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
