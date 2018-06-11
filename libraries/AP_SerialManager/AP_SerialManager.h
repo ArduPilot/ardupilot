@@ -100,6 +100,7 @@ public:
         SerialProtocol_Sbus1 = 15,
         SerialProtocol_ESCTelemetry = 16,
         SerialProtocol_Devo_Telem = 17,
+        SerialProtocol_STorM32_Native = 18,          // STorM32 using native serial protocol
     };
 
     // get singleton instance
