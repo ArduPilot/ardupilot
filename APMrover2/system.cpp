@@ -337,7 +337,7 @@ bool Rover::should_log(uint32_t mask)
  */
 void Rover::change_arm_state(void)
 {
-    Log_Arm_Disarm();
+    Log_Write_Arm_Disarm();
     update_soft_armed();
 }
 
