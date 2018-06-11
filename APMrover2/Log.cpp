@@ -40,6 +40,28 @@ void Rover::Log_Write_Attitude()
     DataFlash.Log_Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
 }
 
+// Write a range finder depth message
+void Rover::Log_Write_Depth()
+{
+    // only log depth on boats with working downward facing range finders
+    if (!rover.is_boat() || !rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+        return;
+    }
+
+    // get position
+    Location loc;
+    if (!rover.ahrs.get_position(loc)) {
+        return;
+    }
+
+    DataFlash.Log_Write("DPTH", "TimeUS,Lat,Lng,Depth",
+                        "sDUm", "FGG0", "QLLf",
+                        AP_HAL::micros64(),
+                        loc.lat,
+                        loc.lng,
+                        (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f));
+}
+
 struct PACKED log_Error {
   LOG_PACKET_HEADER;
   uint64_t time_us;

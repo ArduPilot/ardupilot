@@ -226,6 +226,7 @@ void Rover::read_rangefinders(void)
     }
 
     Log_Write_Rangefinder();
+    Log_Write_Depth();
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.rangefinder_debounce &&
