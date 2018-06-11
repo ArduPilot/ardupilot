@@ -85,7 +85,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     enum ap_var_type ptype;
     ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
 
-    terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 }
 
 
