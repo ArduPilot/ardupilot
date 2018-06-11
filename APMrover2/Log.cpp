@@ -166,7 +166,8 @@ struct PACKED log_Arm_Disarm {
     uint16_t arm_checks;
 };
 
-void Rover::Log_Arm_Disarm() {
+void Rover::Log_Write_Arm_Disarm()
+{
     struct log_Arm_Disarm pkt = {
         LOG_PACKET_HEADER_INIT(LOG_ARM_DISARM_MSG),
         time_us                 : AP_HAL::micros64(),
@@ -322,7 +323,7 @@ void Rover::Log_Write_Rangefinder() {}
 void Rover::Log_Write_Attitude() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Rover::Log_Arm_Disarm() {}
+void Rover::Log_Write_Arm_Disarm() {}
 void Rover::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Rover::Log_Write_Steering() {}
 void Rover::Log_Write_WheelEncoder() {}
