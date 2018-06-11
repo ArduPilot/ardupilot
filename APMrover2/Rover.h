@@ -476,7 +476,6 @@ private:
     void gcs_retry_deferred(void);
 
     // Log.cpp
-    void Log_Write_Performance();
     void Log_Write_Steering();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Throttle();
