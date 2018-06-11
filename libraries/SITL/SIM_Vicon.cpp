@@ -121,7 +121,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 bool Vicon::init_sitl_pointer()
 {
     if (_sitl == nullptr) {
-        _sitl = (SITL *)AP_Param::find_object("SIM_");
+        _sitl = AP::sitl();
         if (_sitl == nullptr) {
             return false;
         }
