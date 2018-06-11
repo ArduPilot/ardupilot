@@ -476,21 +476,21 @@ private:
     void gcs_retry_deferred(void);
 
     // Log.cpp
-    void Log_Write_Steering();
-    void Log_Write_Startup(uint8_t type);
-    void Log_Write_Throttle();
-    void Log_Write_Nav_Tuning();
-    void Log_Write_Attitude();
-    void Log_Write_Rangefinder();
     void Log_Write_Arm_Disarm();
-    void Log_Write_RC(void);
+    void Log_Write_Attitude();
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
-    void Log_Write_WheelEncoder();
+    void Log_Write_Nav_Tuning();
     void Log_Write_Proximity();
+    void Log_Write_Startup(uint8_t type);
+    void Log_Write_Steering();
+    void Log_Write_Throttle();
+    void Log_Write_Rangefinder();
+    void Log_Write_RC(void);
+    void Log_Write_WheelEncoder();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void Log_Write_Vehicle_Startup_Messages();
 
     // Parameters.cpp
     void load_parameters(void);
