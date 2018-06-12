@@ -52,7 +52,7 @@ class DataFlash_Class
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
-    DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask);
+    DataFlash_Class(const AP_Int32 &log_bitmask);
 
     /* Do not allow copies */
     DataFlash_Class(const DataFlash_Class &other) = delete;
@@ -240,7 +240,6 @@ private:
     #define DATAFLASH_MAX_BACKENDS 2
     uint8_t _next_backend;
     DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
-    const char *_firmware_string;
     const AP_Int32 &_log_bitmask;
 
     void internal_error() const;
