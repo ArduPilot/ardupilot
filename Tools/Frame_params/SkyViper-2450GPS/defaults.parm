@@ -174,7 +174,7 @@ TCAL_ENABLED           2
 TCAL_BARO_EXP        1.2
 
 # landing
-LAND_SPEED_HIGH      150
+LAND_SPEED_HIGH      350
 
 # logging
 LOG_BACKEND_TYPE       2
