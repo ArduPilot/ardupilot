@@ -17,6 +17,7 @@ rm -rf $BUILDROOT
 export GIT_VERSION="ci_test"
 export NUTTX_GIT_VERSION="ci_test"
 export PX4_GIT_VERSION="ci_test"
+export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 
 # If CI_BUILD_TARGET is not set, build 3 different ones

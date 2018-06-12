@@ -395,6 +395,7 @@ class chibios(Board):
 
     def build(self, bld):
         super(chibios, self).build(bld)
+        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
 
     def pre_build(self, bld):
