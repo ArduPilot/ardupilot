@@ -1,6 +1,6 @@
 APMrover2 Release Notes:
 ========================
-Rover 3.4.0-rc1 01-Jun-2018
+Rover 3.4.0 12-Jun-2018 / 3.4.0-rc1 01-Jun-2018
 Changes from 3.3.1-rc2:
 1) Loiter mode for boats
 2) Omni rover support (three wheeled rover with lateral movement)
