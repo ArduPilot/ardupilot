@@ -2171,7 +2171,8 @@ void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
     Quaternion attitude = Quaternion(m.q);
     const float posErr = 0; // parameter required?
     const float angErr = 0; // parameter required?
-    const uint32_t timestamp_ms = m.time_usec * 0.001;
+    // correct offboard timestamp to be in local ms since boot
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ATT_POS_MOCAP));
     const uint32_t reset_timestamp_ms = 0; // no data available
 
     AP::ahrs().writeExtNavData(sensor_offset,
