@@ -23,7 +23,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_IRLock_SITL.h"
-
+#include <SITL/SITL.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -36,12 +36,13 @@ AP_IRLock_SITL::AP_IRLock_SITL() :
     sock(true)
 {}
 
-void AP_IRLock_SITL::init()
+void AP_IRLock_SITL::init(int8_t bus)
 {
+    SITL::SITL *sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     // try to bind to a specific port so that if we restart ArduPilot
     // Gazebo keeps sending us packets. Not strictly necessary but
     // useful for debugging
-    sock.bind("127.0.0.1", 9005);
+    sock.bind("127.0.0.1", sitl->irlock_port);
 
     sock.reuseaddress();
     sock.set_blocking(false);

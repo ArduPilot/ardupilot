@@ -14,10 +14,14 @@
 #define AP_RELAY_NUM_RELAYS 4
 
 /// @class	AP_Relay
-/// @brief	Class to manage the APM relay
+/// @brief	Class to manage the ArduPilot relay
 class AP_Relay {
 public:
     AP_Relay();
+
+    /* Do not allow copies */
+    AP_Relay(const AP_Relay &other) = delete;
+    AP_Relay &operator=(const AP_Relay&) = delete;
 
     // setup the relay pin
     void        init();

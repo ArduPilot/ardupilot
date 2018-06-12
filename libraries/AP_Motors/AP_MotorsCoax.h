@@ -37,9 +37,6 @@ public:
     // set update rate to motors - a value in hertz
     void                set_update_rate( uint16_t speed_hz );
 
-    // enable - starts allowing signals to be sent to motors
-    virtual void        enable();
-
     // output_test - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
@@ -59,8 +56,4 @@ protected:
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
-    SRV_Channel         *_servo1;
-    SRV_Channel         *_servo2;
-    SRV_Channel         *_servo3;
-    SRV_Channel         *_servo4;
 };

@@ -3,7 +3,7 @@
 from xml.sax.saxutils import escape, quoteattr
 
 from emit import Emit
-from param import known_param_fields
+from param import known_param_fields, known_units
 
 
 # Emit APM documentation in an machine readable XML format
@@ -57,9 +57,17 @@ class XmlEmit(Emit):
                         values = (param.__dict__[field]).split(',')
                         for value in values:
                             v = value.split(':')
+                            if len(v) != 2:
+                                raise ValueError("Bad value (%s)" % v)
                             t += '''<value code=%s>%s</value>\n''' % (quoteattr(v[0]), escape(v[1]))  # i.e. numeric value, string label
 
                         t += "</values>\n"
+                    elif field == 'Units':
+                        abreviated_units = param.__dict__[field]
+                        if abreviated_units != '':
+                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            t += '''<field name=%s>%s</field>\n''' % (quoteattr(field), escape(abreviated_units))  # i.e. A/s
+                            t += '''<field name=%s>%s</field>\n''' % (quoteattr('UnitText'), escape(units))        # i.e. ampere per second
                     else:
                         t += '''<field name=%s>%s</field>\n''' % (quoteattr(field), escape(param.__dict__[field]))  # i.e. Range: 0 10
 

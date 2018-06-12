@@ -8,7 +8,6 @@ class DataFlash_Backend
 {
 
 public:
-    FUNCTOR_TYPEDEF(print_mode_fn, void, AP_HAL::BetterStream*, uint8_t);
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
     DataFlash_Backend(DataFlash_Class &front,
@@ -18,7 +17,7 @@ public:
 
     void internal_error();
 
-    virtual bool CardInserted(void) = 0;
+    virtual bool CardInserted(void) const = 0;
 
     // erase handling
     virtual void EraseAll() = 0;
@@ -35,7 +34,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    virtual bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface
     virtual uint16_t find_last_log() = 0;
@@ -43,27 +42,18 @@ public:
     virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs() = 0;
-    virtual void LogReadProcess(const uint16_t list_entry,
-                                uint16_t start_page, uint16_t end_page,
-                                print_mode_fn printMode,
-                                AP_HAL::BetterStream *port) = 0;
-    virtual void DumpPageInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ShowDeviceInfo(AP_HAL::BetterStream *port) = 0;
-    virtual void ListAvailableLogs(AP_HAL::BetterStream *port) = 0;
 
-    void EnableWrites(bool enable) { _writes_enabled = enable; }
-    bool logging_started(void) const { return log_write_started; }
+    virtual bool logging_started(void) const = 0;
 
-    virtual void Init() {
-        _writes_enabled = true;
-    }
+    virtual void Init() { }
 
     void set_mission(const AP_Mission *mission);
 
     virtual uint32_t bufferspace_available() = 0;
 
+    virtual void PrepForArming() { }
+
     virtual uint16_t start_new_log(void) = 0;
-    bool log_write_started;
 
     /* stop logging - close output files etc etc.
      *
@@ -74,6 +64,7 @@ public:
     virtual void stop_logging(void) = 0;
 
     void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
+    void Log_Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only DataFlash_File support this:
@@ -89,6 +80,12 @@ public:
 
     uint8_t num_types() const;
     const struct LogStructure *structure(uint8_t structure) const;
+
+    uint8_t num_units() const;
+    const struct UnitStructure *unit(uint8_t unit) const;
+
+    uint8_t num_multipliers() const;
+    const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     bool Log_Write_Format(const struct LogStructure *structure);
@@ -123,9 +120,12 @@ public:
 
     virtual void vehicle_was_disarmed() { };
 
+    bool Log_Write_Unit(const struct UnitStructure *s);
+    bool Log_Write_Multiplier(const struct MultiplierStructure *s);
+    bool Log_Write_Format_Units(const struct LogStructure *structure);
+
+
 protected:
-    uint32_t dropped;
-    uint8_t internal_errors; // uint8_t - wishful thinking?
 
     DataFlash_Class &_front;
 
@@ -133,14 +133,9 @@ protected:
     virtual void periodic_1Hz(const uint32_t now);
     virtual void periodic_fullrate(const uint32_t now);
 
-    /*
-    read and print a log entry using the format strings from the given structure
-    */
-    void _print_log_entry(uint8_t msg_type,
-                          print_mode_fn print_mode,
-                          AP_HAL::BetterStream *port);
-
-    bool _writes_enabled = false;
+    bool ShouldLog(bool is_critical);
+    virtual bool WritesOK() const = 0;
+    virtual bool StartNewLogOK() const;
 
     /*
       read a block
@@ -154,14 +149,19 @@ protected:
     DFMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
-    uint32_t _internal_errors;
+    uint8_t _internal_errors;
     uint32_t _dropped;
 
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
 
+    virtual bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
+
+    bool _initialised;
+
 private:
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
+    bool have_logged_armed;
 };

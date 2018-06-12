@@ -89,6 +89,9 @@ private:
     enum log_start_blockwriter_stage {
         ls_blockwriter_stage_init,
         ls_blockwriter_stage_formats,
+        ls_blockwriter_stage_units,
+        ls_blockwriter_stage_multipliers,
+        ls_blockwriter_stage_format_units,
         ls_blockwriter_stage_parms,
         ls_blockwriter_stage_sysinfo,
         ls_blockwriter_stage_write_entire_mission,
@@ -101,6 +104,11 @@ private:
     log_start_blockwriter_stage stage = ls_blockwriter_stage_init;
 
     uint16_t next_format_to_send;
+
+    uint8_t _next_unit_to_send;
+    uint8_t _next_format_unit_to_send;
+    uint8_t _next_multiplier_to_send;
+
     AP_Param::ParamToken token;
     AP_Param *ap;
     enum ap_var_type type;

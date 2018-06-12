@@ -28,13 +28,49 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include "pthread.h"
 
 extern const AP_HAL::HAL& hal;
 
-namespace SITL {
+using namespace SITL;
 
 // the asprintf() calls are not worth checking for SITL
 #pragma GCC diagnostic ignored "-Wunused-result"
+
+static const struct {
+    const char *name;
+    float value;
+} sim_defaults[] = {
+    { "AHRS_EKF_TYPE", 10 },
+    { "INS_GYR_CAL", 0 },
+    { "SERVO1_MIN", 1000 },
+    { "SERVO1_MAX", 2000 },
+    { "SERVO2_MIN", 1000 },
+    { "SERVO2_MAX", 2000 },
+    { "SERVO3_MIN", 1000 },
+    { "SERVO3_MAX", 2000 },
+    { "SERVO4_MIN", 1000 },
+    { "SERVO4_MAX", 2000 },
+    { "SERVO5_MIN", 1000 },
+    { "SERVO5_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "SERVO6_MIN", 1000 },
+    { "SERVO6_MAX", 2000 },
+    { "INS_ACC2OFFS_X",    0.001 },
+    { "INS_ACC2OFFS_Y",    0.001 },
+    { "INS_ACC2OFFS_Z",    0.001 },
+    { "INS_ACC2SCAL_X",    1.001 },
+    { "INS_ACC2SCAL_Y",    1.001 },
+    { "INS_ACC2SCAL_Z",    1.001 },
+    { "INS_ACCOFFS_X",     0.001 },
+    { "INS_ACCOFFS_Y",     0.001 },
+    { "INS_ACCOFFS_Z",     0.001 },
+    { "INS_ACCSCAL_X",     1.001 },
+    { "INS_ACCSCAL_Y",     1.001 },
+    { "INS_ACCSCAL_Z",     1.001 },
+};
+
 
 FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
@@ -47,30 +83,49 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     if (colon) {
         controller_ip = colon+1;
     }
-    // FlightAxis sensor data is not good enough for EKF. Use fake EKF by default
-    AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
-    AP_Param::set_default_by_name("INS_GYR_CAL", 0);
-
-    if (strstr(frame_str, "pitch270")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_270;
-    }
-    if (strstr(frame_str, "pitch90")) {
-        // rotate tailsitter airframes for fixed wing view
-        rotation = ROTATION_PITCH_90;
+    for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
+        AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
     }
 
-    switch (rotation) {
-    case ROTATION_NONE:
-        break;
-    case ROTATION_PITCH_90:
-        att_rotation.from_euler(0, radians(90), 0);
-        break;
-    case ROTATION_PITCH_270:
-        att_rotation.from_euler(0, radians(270), 0);
-        break;
-    default:
-        AP_HAL::panic("Unsupported flightaxis rotation %u\n", (unsigned)rotation);
+    /* Create the thread that will be waiting for data from FlightAxis */
+    mutex = hal.util->new_semaphore();
+
+    int ret = pthread_create(&thread, NULL, update_thread, this);
+    if (ret != 0) {
+        AP_HAL::panic("SIM_FlightAxis: failed to create thread");
+    }
+}
+    
+/*
+  update thread trampoline
+ */
+void *FlightAxis::update_thread(void *arg)
+{
+    FlightAxis *flightaxis = (FlightAxis *)arg;
+
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+    //Cygwin doesn't support pthread_setname_np
+#elif defined(__APPLE__) && defined(__MACH__)
+    pthread_setname_np("ardupilot-flightaxis");
+#else
+    pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
+#endif
+    
+    flightaxis->update_loop();
+    return nullptr;
+}
+
+/*
+  main update loop
+ */
+void FlightAxis::update_loop(void)
+{
+    while (true) {
+        struct sitl_input new_input;
+        mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        new_input = last_input;
+        mutex->give();
+        exchange_data(new_input);
     }
 }
 
@@ -267,7 +322,18 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
                                scaled_servos[7]);
 
     if (reply) {
+        mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
+        double dt = state.m_currentPhysicsTime_SEC - lastt_s;
+        if (dt > 0 && dt < 0.1) {
+            if (average_frame_time_s < 1.0e-6) {
+                average_frame_time_s = dt;
+            }
+            average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
+        }
+        socket_frame_counter++;
+        mutex->give();
         free(reply);
     }
 }
@@ -278,21 +344,43 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    exchange_data(input);
-
+    mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    
+    last_input = input;
+    
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
     if (dt_seconds < 0) {
         // cope with restarting RealFlight while connected
         initial_time_s = time_now_us * 1.0e-6f;
         last_time_s = state.m_currentPhysicsTime_SEC;
         position_offset.zero();
+        mutex->give();
         return;
     }
-    if (dt_seconds < 0.0001f) {
-        // we probably got a repeated frame
-        time_now_us += 1;
+    if (dt_seconds < 0.00001f) {
+        float delta_time = 0.001;
+        // don't go past the next expected frame
+        if (delta_time + extrapolated_s > average_frame_time_s) {
+            delta_time = average_frame_time_s - extrapolated_s;
+        }
+        if (delta_time <= 0) {
+            usleep(1000);
+            mutex->give();
+            return;
+        }
+        time_now_us += delta_time * 1.0e6;
+        extrapolate_sensors(delta_time);
+        update_position();
+        update_mag_field_bf();
+        mutex->give();
+        usleep(delta_time*1.0e6);
+        extrapolated_s += delta_time;
+        report_FPS();
         return;
     }
+
+    extrapolated_s = 0;
+    
     if (initial_time_s <= 0) {
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;
@@ -321,14 +409,6 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body(state.m_accelerationBodyAX_MPS2,
                state.m_accelerationBodyAY_MPS2,
                state.m_accelerationBodyAZ_MPS2);
-
-    if (rotation != ROTATION_NONE) {
-        dcm.transpose();
-        dcm = att_rotation * dcm;
-        dcm.transpose();
-        gyro.rotate(rotation);
-        accel_body.rotate(rotation);
-    }
 
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
     if (state.m_isTouchingGround) {
@@ -366,16 +446,16 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     update_position();
-    time_now_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
-
-    if (frame_counter++ % 1000 == 0) {
-        if (last_frame_count_s != 0) {
-            printf("%.2f FPS\n",
-                   1000 / (state.m_currentPhysicsTime_SEC - last_frame_count_s));
-        } else {
-            printf("Initial position %f %f %f\n", position.x, position.y, position.z);
+    time_advance();
+    uint64_t new_time_us = (state.m_currentPhysicsTime_SEC - initial_time_s)*1.0e6;
+    if (new_time_us < time_now_us) {
+        uint64_t dt_us = time_now_us - new_time_us;
+        if (dt_us > 500000) {
+            // time going backwards
+            time_now_us = new_time_us;
         }
-        last_frame_count_s = state.m_currentPhysicsTime_SEC;
+    } else {
+        time_now_us = new_time_us;
     }
 
     last_time_s = state.m_currentPhysicsTime_SEC;
@@ -384,6 +464,26 @@ void FlightAxis::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+    mutex->give();
+
+    report_FPS();
 }
 
-} // namespace SITL
+/*
+  report frame rates
+ */
+void FlightAxis::report_FPS(void)
+{
+    if (frame_counter++ % 1000 == 0) {
+        if (last_frame_count_s != 0) {
+            uint64_t frames = socket_frame_counter - last_socket_frame_counter;
+            last_socket_frame_counter = socket_frame_counter;
+            double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
+            printf("%.2f/%.2f FPS avg=%.2f\n",
+                   frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+        } else {
+            printf("Initial position %f %f %f\n", position.x, position.y, position.z);
+        }
+        last_frame_count_s = state.m_currentPhysicsTime_SEC;
+    }
+}

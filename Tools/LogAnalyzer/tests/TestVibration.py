@@ -1,5 +1,8 @@
-from LogAnalyzer import Test,TestResult
+from __future__ import print_function
+
+from LogAnalyzer import Test, TestResult
 import DataflashLog
+from VehicleType import VehicleType
 
 import numpy
 
@@ -15,7 +18,7 @@ class TestVibration(Test):
     def run(self, logdata, verbose):
         self.result = TestResult()
 
-        if logdata.vehicleType != "ArduCopter":
+        if logdata.vehicleType != VehicleType.Copter:
             self.result.status = TestResult.StatusType.NA
             return
 
@@ -43,7 +46,7 @@ class TestVibration(Test):
         # TODO: accumulate all LOITER chunks over min size, or just use the largest one?
         startLine = chunks[0][0]
         endLine   = chunks[0][1]
-        #print "TestVibration using LOITER chunk from lines %s to %s" % (`startLine`, `endLine`)
+        #print("TestVibration using LOITER chunk from lines %s to %s" % (repr(startLine), repr(endLine)))
 
         def getStdDevIMU(logdata, channelName, startLine,endLine):
             loiterData = logdata.channels["IMU"][channelName].getSegment(startLine,endLine)

@@ -56,7 +56,7 @@ void NavEKF3_core::controlMagYawReset()
     if (flightResetAllowed && !assume_zero_sideslip()) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         // and can perform a final reset of the yaw and field states
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -5.0f;
+        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -EKF3_MAG_FINAL_RESET_ALT;
 
         // check for increasing height
         bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
@@ -119,14 +119,14 @@ void NavEKF3_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
             }
 
             // send in-flight yaw alignment status to console
             if (finalResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
             } else if (interimResetRequest) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned\n",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
             }
 
             // update the yaw reset completed status
@@ -191,7 +191,7 @@ void NavEKF3_core::realignYawGPS()
             initialiseQuatCovariances(angleErrVarVec);
 
             // send yaw alignment information to console
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
 
             // record the yaw reset event
@@ -310,7 +310,7 @@ void NavEKF3_core::SelectMagFusion()
 /*
  * Fuse magnetometer measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 */
 void NavEKF3_core::FuseMagnetometer()
 {
@@ -459,6 +459,7 @@ void NavEKF3_core::FuseMagnetometer()
             SK_MX[2] = SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2;
             SK_MX[3] = 2.0f*q0*q2 - 2.0f*q1*q3;
             SK_MX[4] = 2.0f*q0*q3 + 2.0f*q1*q2;
+
             Kfusion[0] = SK_MX[0]*(P[0][19] + P[0][1]*SH_MAG[0] - P[0][2]*SH_MAG[1] + P[0][3]*SH_MAG[2] + P[0][0]*SK_MX[2] - P[0][16]*SK_MX[1] + P[0][17]*SK_MX[4] - P[0][18]*SK_MX[3]);
             Kfusion[1] = SK_MX[0]*(P[1][19] + P[1][1]*SH_MAG[0] - P[1][2]*SH_MAG[1] + P[1][3]*SH_MAG[2] + P[1][0]*SK_MX[2] - P[1][16]*SK_MX[1] + P[1][17]*SK_MX[4] - P[1][18]*SK_MX[3]);
             Kfusion[2] = SK_MX[0]*(P[2][19] + P[2][1]*SH_MAG[0] - P[2][2]*SH_MAG[1] + P[2][3]*SH_MAG[2] + P[2][0]*SK_MX[2] - P[2][16]*SK_MX[1] + P[2][17]*SK_MX[4] - P[2][18]*SK_MX[3]);
@@ -469,20 +470,23 @@ void NavEKF3_core::FuseMagnetometer()
             Kfusion[7] = SK_MX[0]*(P[7][19] + P[7][1]*SH_MAG[0] - P[7][2]*SH_MAG[1] + P[7][3]*SH_MAG[2] + P[7][0]*SK_MX[2] - P[7][16]*SK_MX[1] + P[7][17]*SK_MX[4] - P[7][18]*SK_MX[3]);
             Kfusion[8] = SK_MX[0]*(P[8][19] + P[8][1]*SH_MAG[0] - P[8][2]*SH_MAG[1] + P[8][3]*SH_MAG[2] + P[8][0]*SK_MX[2] - P[8][16]*SK_MX[1] + P[8][17]*SK_MX[4] - P[8][18]*SK_MX[3]);
             Kfusion[9] = SK_MX[0]*(P[9][19] + P[9][1]*SH_MAG[0] - P[9][2]*SH_MAG[1] + P[9][3]*SH_MAG[2] + P[9][0]*SK_MX[2] - P[9][16]*SK_MX[1] + P[9][17]*SK_MX[4] - P[9][18]*SK_MX[3]);
-            Kfusion[10] = SK_MX[0]*(P[10][19] + P[10][1]*SH_MAG[0] - P[10][2]*SH_MAG[1] + P[10][3]*SH_MAG[2] + P[10][0]*SK_MX[2] - P[10][16]*SK_MX[1] + P[10][17]*SK_MX[4] - P[10][18]*SK_MX[3]);
-            Kfusion[11] = SK_MX[0]*(P[11][19] + P[11][1]*SH_MAG[0] - P[11][2]*SH_MAG[1] + P[11][3]*SH_MAG[2] + P[11][0]*SK_MX[2] - P[11][16]*SK_MX[1] + P[11][17]*SK_MX[4] - P[11][18]*SK_MX[3]);
-            Kfusion[12] = SK_MX[0]*(P[12][19] + P[12][1]*SH_MAG[0] - P[12][2]*SH_MAG[1] + P[12][3]*SH_MAG[2] + P[12][0]*SK_MX[2] - P[12][16]*SK_MX[1] + P[12][17]*SK_MX[4] - P[12][18]*SK_MX[3]);
-            Kfusion[13] = SK_MX[0]*(P[13][19] + P[13][1]*SH_MAG[0] - P[13][2]*SH_MAG[1] + P[13][3]*SH_MAG[2] + P[13][0]*SK_MX[2] - P[13][16]*SK_MX[1] + P[13][17]*SK_MX[4] - P[13][18]*SK_MX[3]);
-            Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] - P[14][2]*SH_MAG[1] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[4] - P[14][18]*SK_MX[3]);
-            Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] - P[15][2]*SH_MAG[1] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[4] - P[15][18]*SK_MX[3]);
 
-            // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
-                Kfusion[22] = SK_MX[0]*(P[22][19] + P[22][1]*SH_MAG[0] - P[22][2]*SH_MAG[1] + P[22][3]*SH_MAG[2] + P[22][0]*SK_MX[2] - P[22][16]*SK_MX[1] + P[22][17]*SK_MX[4] - P[22][18]*SK_MX[3]);
-                Kfusion[23] = SK_MX[0]*(P[23][19] + P[23][1]*SH_MAG[0] - P[23][2]*SH_MAG[1] + P[23][3]*SH_MAG[2] + P[23][0]*SK_MX[2] - P[23][16]*SK_MX[1] + P[23][17]*SK_MX[4] - P[23][18]*SK_MX[3]);
+            if (!inhibitDelAngBiasStates) {
+                Kfusion[10] = SK_MX[0]*(P[10][19] + P[10][1]*SH_MAG[0] - P[10][2]*SH_MAG[1] + P[10][3]*SH_MAG[2] + P[10][0]*SK_MX[2] - P[10][16]*SK_MX[1] + P[10][17]*SK_MX[4] - P[10][18]*SK_MX[3]);
+                Kfusion[11] = SK_MX[0]*(P[11][19] + P[11][1]*SH_MAG[0] - P[11][2]*SH_MAG[1] + P[11][3]*SH_MAG[2] + P[11][0]*SK_MX[2] - P[11][16]*SK_MX[1] + P[11][17]*SK_MX[4] - P[11][18]*SK_MX[3]);
+                Kfusion[12] = SK_MX[0]*(P[12][19] + P[12][1]*SH_MAG[0] - P[12][2]*SH_MAG[1] + P[12][3]*SH_MAG[2] + P[12][0]*SK_MX[2] - P[12][16]*SK_MX[1] + P[12][17]*SK_MX[4] - P[12][18]*SK_MX[3]);
             } else {
-                Kfusion[22] = 0.0f;
-                Kfusion[23] = 0.0f;
+                // zero indexes 10 to 12 = 3*4 bytes
+                memset(&Kfusion[10], 0, 12);
+            }
+
+            if (!inhibitDelVelBiasStates) {
+                Kfusion[13] = SK_MX[0]*(P[13][19] + P[13][1]*SH_MAG[0] - P[13][2]*SH_MAG[1] + P[13][3]*SH_MAG[2] + P[13][0]*SK_MX[2] - P[13][16]*SK_MX[1] + P[13][17]*SK_MX[4] - P[13][18]*SK_MX[3]);
+                Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] - P[14][2]*SH_MAG[1] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[4] - P[14][18]*SK_MX[3]);
+                Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] - P[15][2]*SH_MAG[1] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[4] - P[15][18]*SK_MX[3]);
+            } else {
+                // zero indexes 13 to 15 = 3*4 bytes
+                memset(&Kfusion[13], 0, 12);
             }
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
@@ -493,9 +497,17 @@ void NavEKF3_core::FuseMagnetometer()
                 Kfusion[20] = SK_MX[0]*(P[20][19] + P[20][1]*SH_MAG[0] - P[20][2]*SH_MAG[1] + P[20][3]*SH_MAG[2] + P[20][0]*SK_MX[2] - P[20][16]*SK_MX[1] + P[20][17]*SK_MX[4] - P[20][18]*SK_MX[3]);
                 Kfusion[21] = SK_MX[0]*(P[21][19] + P[21][1]*SH_MAG[0] - P[21][2]*SH_MAG[1] + P[21][3]*SH_MAG[2] + P[21][0]*SK_MX[2] - P[21][16]*SK_MX[1] + P[21][17]*SK_MX[4] - P[21][18]*SK_MX[3]);
             } else {
-                for (uint8_t i=16; i<=21; i++) {
-                    Kfusion[i] = 0.0f;
-                }
+                // zero indexes 16 to 21 = 6*4 bytes
+                memset(&Kfusion[16], 0, 24);
+            }
+
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[22] = SK_MX[0]*(P[22][19] + P[22][1]*SH_MAG[0] - P[22][2]*SH_MAG[1] + P[22][3]*SH_MAG[2] + P[22][0]*SK_MX[2] - P[22][16]*SK_MX[1] + P[22][17]*SK_MX[4] - P[22][18]*SK_MX[3]);
+                Kfusion[23] = SK_MX[0]*(P[23][19] + P[23][1]*SH_MAG[0] - P[23][2]*SH_MAG[1] + P[23][3]*SH_MAG[2] + P[23][0]*SK_MX[2] - P[23][16]*SK_MX[1] + P[23][17]*SK_MX[4] - P[23][18]*SK_MX[3]);
+            } else {
+                // zero indexes 22 to 23 = 2*4 bytes
+                memset(&Kfusion[22], 0, 8);
             }
 
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
@@ -533,20 +545,25 @@ void NavEKF3_core::FuseMagnetometer()
             Kfusion[7] = SK_MY[0]*(P[7][20] + P[7][0]*SH_MAG[2] + P[7][1]*SH_MAG[1] + P[7][2]*SH_MAG[0] - P[7][3]*SK_MY[2] - P[7][17]*SK_MY[1] - P[7][16]*SK_MY[3] + P[7][18]*SK_MY[4]);
             Kfusion[8] = SK_MY[0]*(P[8][20] + P[8][0]*SH_MAG[2] + P[8][1]*SH_MAG[1] + P[8][2]*SH_MAG[0] - P[8][3]*SK_MY[2] - P[8][17]*SK_MY[1] - P[8][16]*SK_MY[3] + P[8][18]*SK_MY[4]);
             Kfusion[9] = SK_MY[0]*(P[9][20] + P[9][0]*SH_MAG[2] + P[9][1]*SH_MAG[1] + P[9][2]*SH_MAG[0] - P[9][3]*SK_MY[2] - P[9][17]*SK_MY[1] - P[9][16]*SK_MY[3] + P[9][18]*SK_MY[4]);
-            Kfusion[10] = SK_MY[0]*(P[10][20] + P[10][0]*SH_MAG[2] + P[10][1]*SH_MAG[1] + P[10][2]*SH_MAG[0] - P[10][3]*SK_MY[2] - P[10][17]*SK_MY[1] - P[10][16]*SK_MY[3] + P[10][18]*SK_MY[4]);
-            Kfusion[11] = SK_MY[0]*(P[11][20] + P[11][0]*SH_MAG[2] + P[11][1]*SH_MAG[1] + P[11][2]*SH_MAG[0] - P[11][3]*SK_MY[2] - P[11][17]*SK_MY[1] - P[11][16]*SK_MY[3] + P[11][18]*SK_MY[4]);
-            Kfusion[12] = SK_MY[0]*(P[12][20] + P[12][0]*SH_MAG[2] + P[12][1]*SH_MAG[1] + P[12][2]*SH_MAG[0] - P[12][3]*SK_MY[2] - P[12][17]*SK_MY[1] - P[12][16]*SK_MY[3] + P[12][18]*SK_MY[4]);
-            Kfusion[13] = SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
-            Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
-            Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
-            // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
-                Kfusion[22] = SK_MY[0]*(P[22][20] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][17]*SK_MY[1] - P[22][16]*SK_MY[3] + P[22][18]*SK_MY[4]);
-                Kfusion[23] = SK_MY[0]*(P[23][20] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][17]*SK_MY[1] - P[23][16]*SK_MY[3] + P[23][18]*SK_MY[4]);
+
+            if (!inhibitDelAngBiasStates) {
+                Kfusion[10] = SK_MY[0]*(P[10][20] + P[10][0]*SH_MAG[2] + P[10][1]*SH_MAG[1] + P[10][2]*SH_MAG[0] - P[10][3]*SK_MY[2] - P[10][17]*SK_MY[1] - P[10][16]*SK_MY[3] + P[10][18]*SK_MY[4]);
+                Kfusion[11] = SK_MY[0]*(P[11][20] + P[11][0]*SH_MAG[2] + P[11][1]*SH_MAG[1] + P[11][2]*SH_MAG[0] - P[11][3]*SK_MY[2] - P[11][17]*SK_MY[1] - P[11][16]*SK_MY[3] + P[11][18]*SK_MY[4]);
+                Kfusion[12] = SK_MY[0]*(P[12][20] + P[12][0]*SH_MAG[2] + P[12][1]*SH_MAG[1] + P[12][2]*SH_MAG[0] - P[12][3]*SK_MY[2] - P[12][17]*SK_MY[1] - P[12][16]*SK_MY[3] + P[12][18]*SK_MY[4]);
             } else {
-                Kfusion[22] = 0.0f;
-                Kfusion[23] = 0.0f;
+                // zero indexes 10 to 12 = 3*4 bytes
+                memset(&Kfusion[10], 0, 12);
             }
+
+            if (!inhibitDelVelBiasStates) {
+                Kfusion[13] = SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
+                Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
+                Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
+            } else {
+                // zero indexes 13 to 15 = 3*4 bytes
+                memset(&Kfusion[13], 0, 12);
+            }
+
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
                 Kfusion[16] = SK_MY[0]*(P[16][20] + P[16][0]*SH_MAG[2] + P[16][1]*SH_MAG[1] + P[16][2]*SH_MAG[0] - P[16][3]*SK_MY[2] - P[16][17]*SK_MY[1] - P[16][16]*SK_MY[3] + P[16][18]*SK_MY[4]);
@@ -556,9 +573,17 @@ void NavEKF3_core::FuseMagnetometer()
                 Kfusion[20] = SK_MY[0]*(P[20][20] + P[20][0]*SH_MAG[2] + P[20][1]*SH_MAG[1] + P[20][2]*SH_MAG[0] - P[20][3]*SK_MY[2] - P[20][17]*SK_MY[1] - P[20][16]*SK_MY[3] + P[20][18]*SK_MY[4]);
                 Kfusion[21] = SK_MY[0]*(P[21][20] + P[21][0]*SH_MAG[2] + P[21][1]*SH_MAG[1] + P[21][2]*SH_MAG[0] - P[21][3]*SK_MY[2] - P[21][17]*SK_MY[1] - P[21][16]*SK_MY[3] + P[21][18]*SK_MY[4]);
             } else {
-                for (uint8_t i=16; i<=21; i++) {
-                    Kfusion[i] = 0.0f;
-                }
+                // zero indexes 16 to 21 = 6*4 bytes
+                memset(&Kfusion[16], 0, 24);
+            }
+
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[22] = SK_MY[0]*(P[22][20] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][17]*SK_MY[1] - P[22][16]*SK_MY[3] + P[22][18]*SK_MY[4]);
+                Kfusion[23] = SK_MY[0]*(P[23][20] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][17]*SK_MY[1] - P[23][16]*SK_MY[3] + P[23][18]*SK_MY[4]);
+            } else {
+                // zero indexes 22 to 23 = 2*4 bytes
+                memset(&Kfusion[22], 0, 8);
             }
 
             // set flags to indicate to other processes that fusion has been performede and is required on the next frame
@@ -596,20 +621,25 @@ void NavEKF3_core::FuseMagnetometer()
             Kfusion[7] = SK_MZ[0]*(P[7][21] + P[7][0]*SH_MAG[1] - P[7][1]*SH_MAG[2] + P[7][3]*SH_MAG[0] + P[7][2]*SK_MZ[2] + P[7][18]*SK_MZ[1] + P[7][16]*SK_MZ[4] - P[7][17]*SK_MZ[3]);
             Kfusion[8] = SK_MZ[0]*(P[8][21] + P[8][0]*SH_MAG[1] - P[8][1]*SH_MAG[2] + P[8][3]*SH_MAG[0] + P[8][2]*SK_MZ[2] + P[8][18]*SK_MZ[1] + P[8][16]*SK_MZ[4] - P[8][17]*SK_MZ[3]);
             Kfusion[9] = SK_MZ[0]*(P[9][21] + P[9][0]*SH_MAG[1] - P[9][1]*SH_MAG[2] + P[9][3]*SH_MAG[0] + P[9][2]*SK_MZ[2] + P[9][18]*SK_MZ[1] + P[9][16]*SK_MZ[4] - P[9][17]*SK_MZ[3]);
-            Kfusion[10] = SK_MZ[0]*(P[10][21] + P[10][0]*SH_MAG[1] - P[10][1]*SH_MAG[2] + P[10][3]*SH_MAG[0] + P[10][2]*SK_MZ[2] + P[10][18]*SK_MZ[1] + P[10][16]*SK_MZ[4] - P[10][17]*SK_MZ[3]);
-            Kfusion[11] = SK_MZ[0]*(P[11][21] + P[11][0]*SH_MAG[1] - P[11][1]*SH_MAG[2] + P[11][3]*SH_MAG[0] + P[11][2]*SK_MZ[2] + P[11][18]*SK_MZ[1] + P[11][16]*SK_MZ[4] - P[11][17]*SK_MZ[3]);
-            Kfusion[12] = SK_MZ[0]*(P[12][21] + P[12][0]*SH_MAG[1] - P[12][1]*SH_MAG[2] + P[12][3]*SH_MAG[0] + P[12][2]*SK_MZ[2] + P[12][18]*SK_MZ[1] + P[12][16]*SK_MZ[4] - P[12][17]*SK_MZ[3]);
-            Kfusion[13] = SK_MZ[0]*(P[13][21] + P[13][0]*SH_MAG[1] - P[13][1]*SH_MAG[2] + P[13][3]*SH_MAG[0] + P[13][2]*SK_MZ[2] + P[13][18]*SK_MZ[1] + P[13][16]*SK_MZ[4] - P[13][17]*SK_MZ[3]);
-            Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] - P[14][1]*SH_MAG[2] + P[14][3]*SH_MAG[0] + P[14][2]*SK_MZ[2] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[4] - P[14][17]*SK_MZ[3]);
-            Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] - P[15][1]*SH_MAG[2] + P[15][3]*SH_MAG[0] + P[15][2]*SK_MZ[2] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[4] - P[15][17]*SK_MZ[3]);
-            // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
-                Kfusion[22] = SK_MZ[0]*(P[22][21] + P[22][0]*SH_MAG[1] - P[22][1]*SH_MAG[2] + P[22][3]*SH_MAG[0] + P[22][2]*SK_MZ[2] + P[22][18]*SK_MZ[1] + P[22][16]*SK_MZ[4] - P[22][17]*SK_MZ[3]);
-                Kfusion[23] = SK_MZ[0]*(P[23][21] + P[23][0]*SH_MAG[1] - P[23][1]*SH_MAG[2] + P[23][3]*SH_MAG[0] + P[23][2]*SK_MZ[2] + P[23][18]*SK_MZ[1] + P[23][16]*SK_MZ[4] - P[23][17]*SK_MZ[3]);
+
+            if (!inhibitDelAngBiasStates) {
+                Kfusion[10] = SK_MZ[0]*(P[10][21] + P[10][0]*SH_MAG[1] - P[10][1]*SH_MAG[2] + P[10][3]*SH_MAG[0] + P[10][2]*SK_MZ[2] + P[10][18]*SK_MZ[1] + P[10][16]*SK_MZ[4] - P[10][17]*SK_MZ[3]);
+                Kfusion[11] = SK_MZ[0]*(P[11][21] + P[11][0]*SH_MAG[1] - P[11][1]*SH_MAG[2] + P[11][3]*SH_MAG[0] + P[11][2]*SK_MZ[2] + P[11][18]*SK_MZ[1] + P[11][16]*SK_MZ[4] - P[11][17]*SK_MZ[3]);
+                Kfusion[12] = SK_MZ[0]*(P[12][21] + P[12][0]*SH_MAG[1] - P[12][1]*SH_MAG[2] + P[12][3]*SH_MAG[0] + P[12][2]*SK_MZ[2] + P[12][18]*SK_MZ[1] + P[12][16]*SK_MZ[4] - P[12][17]*SK_MZ[3]);
             } else {
-                Kfusion[22] = 0.0f;
-                Kfusion[23] = 0.0f;
+                // zero indexes 10 to 12 = 3*4 bytes
+                memset(&Kfusion[10], 0, 12);
             }
+
+            if (!inhibitDelVelBiasStates) {
+                Kfusion[13] = SK_MZ[0]*(P[13][21] + P[13][0]*SH_MAG[1] - P[13][1]*SH_MAG[2] + P[13][3]*SH_MAG[0] + P[13][2]*SK_MZ[2] + P[13][18]*SK_MZ[1] + P[13][16]*SK_MZ[4] - P[13][17]*SK_MZ[3]);
+                Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] - P[14][1]*SH_MAG[2] + P[14][3]*SH_MAG[0] + P[14][2]*SK_MZ[2] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[4] - P[14][17]*SK_MZ[3]);
+                Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] - P[15][1]*SH_MAG[2] + P[15][3]*SH_MAG[0] + P[15][2]*SK_MZ[2] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[4] - P[15][17]*SK_MZ[3]);
+            } else {
+                // zero indexes 13 to 15 = 3*4 bytes
+                memset(&Kfusion[13], 0, 12);
+            }
+
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
                 Kfusion[16] = SK_MZ[0]*(P[16][21] + P[16][0]*SH_MAG[1] - P[16][1]*SH_MAG[2] + P[16][3]*SH_MAG[0] + P[16][2]*SK_MZ[2] + P[16][18]*SK_MZ[1] + P[16][16]*SK_MZ[4] - P[16][17]*SK_MZ[3]);
@@ -619,9 +649,17 @@ void NavEKF3_core::FuseMagnetometer()
                 Kfusion[20] = SK_MZ[0]*(P[20][21] + P[20][0]*SH_MAG[1] - P[20][1]*SH_MAG[2] + P[20][3]*SH_MAG[0] + P[20][2]*SK_MZ[2] + P[20][18]*SK_MZ[1] + P[20][16]*SK_MZ[4] - P[20][17]*SK_MZ[3]);
                 Kfusion[21] = SK_MZ[0]*(P[21][21] + P[21][0]*SH_MAG[1] - P[21][1]*SH_MAG[2] + P[21][3]*SH_MAG[0] + P[21][2]*SK_MZ[2] + P[21][18]*SK_MZ[1] + P[21][16]*SK_MZ[4] - P[21][17]*SK_MZ[3]);
             } else {
-                for (uint8_t i=16; i<=21; i++) {
-                    Kfusion[i] = 0.0f;
-                }
+                // zero indexes 16 to 21 = 6*4 bytes
+                memset(&Kfusion[16], 0, 24);
+            }
+
+            // zero Kalman gains to inhibit wind state estimation
+            if (!inhibitWindStates) {
+                Kfusion[22] = SK_MZ[0]*(P[22][21] + P[22][0]*SH_MAG[1] - P[22][1]*SH_MAG[2] + P[22][3]*SH_MAG[0] + P[22][2]*SK_MZ[2] + P[22][18]*SK_MZ[1] + P[22][16]*SK_MZ[4] - P[22][17]*SK_MZ[3]);
+                Kfusion[23] = SK_MZ[0]*(P[23][21] + P[23][0]*SH_MAG[1] - P[23][1]*SH_MAG[2] + P[23][3]*SH_MAG[0] + P[23][2]*SK_MZ[2] + P[23][18]*SK_MZ[1] + P[23][16]*SK_MZ[4] - P[23][17]*SK_MZ[3]);
+            } else {
+                // zero indexes 22 to 23 = 2*4 bytes
+                memset(&Kfusion[22], 0, 8);
             }
 
             // set flags to indicate to other processes that fusion has been performede and is required on the next frame
@@ -695,6 +733,8 @@ void NavEKF3_core::FuseMagnetometer()
             } else if (obsIndex == 2) {
                 faultStatus.bad_zmag = true;
             }
+            CovarianceInit();
+            return;
         }
     }
 }
@@ -703,7 +743,7 @@ void NavEKF3_core::FuseMagnetometer()
 /*
  * Fuse magnetic heading measurement using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magnetometer failures.
@@ -764,7 +804,7 @@ void NavEKF3_core::fuseEulerYaw()
         Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
 
     } else {
-        // calculate observaton jacobian when we are observing a rotation in a 312 sequence
+        // calculate observation jacobian when we are observing a rotation in a 312 sequence
         float t9 = q0*q3;
         float t10 = q1*q2;
         float t2 = t9-t10;
@@ -806,7 +846,7 @@ void NavEKF3_core::fuseEulerYaw()
     Vector3f magMeasNED = Tbn_zeroYaw*magDataDelayed.mag;
 
     // Use the difference between the horizontal projection and declination to give the measured yaw
-    // If we can't use compass data, set the  meaurement to the predicted
+    // If we can't use compass data, set the  measurement to the predicted
     // to prevent uncontrolled variance growth whilst on ground without magnetometer
     float measured_yaw;
     if (use_compass() && yawAlignComplete) {
@@ -930,7 +970,7 @@ void NavEKF3_core::fuseEulerYaw()
 /*
  * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/priseborough/InertialNav/blob/master/derivations/RotationVectorAttitudeParameterisation/GenerateNavFilterEquations.m
+ * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
  * or some other absolute position or velocity reference
 */
@@ -999,20 +1039,44 @@ void NavEKF3_core::FuseDeclination(float declErr)
     Kfusion[7] = -t4*t13*(P[7][16]*magE-P[7][17]*magN);
     Kfusion[8] = -t4*t13*(P[8][16]*magE-P[8][17]*magN);
     Kfusion[9] = -t4*t13*(P[9][16]*magE-P[9][17]*magN);
-    Kfusion[10] = -t4*t13*(P[10][16]*magE-P[10][17]*magN);
-    Kfusion[11] = -t4*t13*(P[11][16]*magE-P[11][17]*magN);
-    Kfusion[12] = -t4*t13*(P[12][16]*magE-P[12][17]*magN);
-    Kfusion[13] = -t4*t13*(P[13][16]*magE-P[13][17]*magN);
-    Kfusion[14] = -t4*t13*(P[14][16]*magE-P[14][17]*magN);
-    Kfusion[15] = -t4*t13*(P[15][16]*magE-P[15][17]*magN);
-    Kfusion[16] = -t4*t13*(P[16][16]*magE-P[16][17]*magN);
-    Kfusion[17] = -t4*t13*(P[17][16]*magE-P[17][17]*magN);
-    Kfusion[18] = -t4*t13*(P[18][16]*magE-P[18][17]*magN);
-    Kfusion[19] = -t4*t13*(P[19][16]*magE-P[19][17]*magN);
-    Kfusion[20] = -t4*t13*(P[20][16]*magE-P[20][17]*magN);
-    Kfusion[21] = -t4*t13*(P[21][16]*magE-P[21][17]*magN);
-    Kfusion[22] = -t4*t13*(P[22][16]*magE-P[22][17]*magN);
-    Kfusion[23] = -t4*t13*(P[23][16]*magE-P[23][17]*magN);
+
+    if (!inhibitDelAngBiasStates) {
+        Kfusion[10] = -t4*t13*(P[10][16]*magE-P[10][17]*magN);
+        Kfusion[11] = -t4*t13*(P[11][16]*magE-P[11][17]*magN);
+        Kfusion[12] = -t4*t13*(P[12][16]*magE-P[12][17]*magN);
+    } else {
+        // zero indexes 10 to 12 = 3*4 bytes
+        memset(&Kfusion[10], 0, 12);
+    }
+
+    if (!inhibitDelVelBiasStates) {
+        Kfusion[13] = -t4*t13*(P[13][16]*magE-P[13][17]*magN);
+        Kfusion[14] = -t4*t13*(P[14][16]*magE-P[14][17]*magN);
+        Kfusion[15] = -t4*t13*(P[15][16]*magE-P[15][17]*magN);
+    } else {
+        // zero indexes 13 to 15 = 3*4 bytes
+        memset(&Kfusion[13], 0, 12);
+    }
+
+    if (!inhibitMagStates) {
+        Kfusion[16] = -t4*t13*(P[16][16]*magE-P[16][17]*magN);
+        Kfusion[17] = -t4*t13*(P[17][16]*magE-P[17][17]*magN);
+        Kfusion[18] = -t4*t13*(P[18][16]*magE-P[18][17]*magN);
+        Kfusion[19] = -t4*t13*(P[19][16]*magE-P[19][17]*magN);
+        Kfusion[20] = -t4*t13*(P[20][16]*magE-P[20][17]*magN);
+        Kfusion[21] = -t4*t13*(P[21][16]*magE-P[21][17]*magN);
+    } else {
+        // zero indexes 16 to 21 = 6*4 bytes
+        memset(&Kfusion[16], 0, 24);
+    }
+
+    if (!inhibitWindStates) {
+        Kfusion[22] = -t4*t13*(P[22][16]*magE-P[22][17]*magN);
+        Kfusion[23] = -t4*t13*(P[23][16]*magE-P[23][17]*magN);
+    } else {
+        // zero indexes 22 to 23 = 2*4 bytes
+        memset(&Kfusion[22], 0, 8);
+    }
 
     // get the magnetic declination
     float magDecAng = use_compass() ? _ahrs->get_compass()->get_declination() : 0;
@@ -1117,7 +1181,7 @@ void NavEKF3_core::alignMagStateDeclination()
     }
 }
 
-// record a magentic field state reset event
+// record a magnetic field state reset event
 void NavEKF3_core::recordMagReset()
 {
     magStateInitComplete = true;

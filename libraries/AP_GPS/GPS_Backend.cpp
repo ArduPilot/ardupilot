@@ -16,6 +16,16 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#define GPS_BACKEND_DEBUGGING 0
+
+#if GPS_BACKEND_DEBUGGING
+ # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#else
+ # define Debug(fmt, args ...)
+#endif
+
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -95,8 +105,8 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     ret -= 272764785UL;
 
     // get GPS week and time
-    state.time_week = ret / SEC_PER_WEEK;
-    state.time_week_ms = (ret % SEC_PER_WEEK) * MSEC_PER_SEC;
+    state.time_week = ret / AP_SEC_PER_WEEK;
+    state.time_week_ms = (ret % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC;
     state.time_week_ms += msec;
 }
 
@@ -112,3 +122,97 @@ void AP_GPS_Backend::fill_3d_velocity(void)
     state.velocity.z = 0;
     state.have_vertical_velocity = false;
 }
+
+void
+AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
+{
+    // not all backends have valid ports
+    if (port != nullptr) {
+        if (port->txspace() > len) {
+            port->write(data, len);
+        } else {
+            Debug("GPS %d: Not enough TXSPACE", state.instance + 1);
+        }
+    }
+}
+
+void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) const
+{
+    const uint8_t instance = state.instance;
+    const struct AP_GPS::detect_state dstate = gps.detect_state[instance];
+
+    if (dstate.auto_detected_baud) {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: detected as %s at %d baud",
+                 instance + 1,
+                 name(),
+                 gps._baudrates[dstate.current_baud]);
+    } else {
+        hal.util->snprintf(buffer, buflen,
+                 "GPS %d: specified as %s",
+                 instance + 1,
+                 name());
+    }
+}
+
+
+void AP_GPS_Backend::broadcast_gps_type() const
+{
+    char buffer[64];
+    _detection_message(buffer, sizeof(buffer));
+    gcs().send_text(MAV_SEVERITY_INFO, buffer);
+}
+
+void AP_GPS_Backend::Write_DataFlash_Log_Startup_messages() const
+{
+    char buffer[64];
+    _detection_message(buffer, sizeof(buffer));
+    DataFlash_Class::instance()->Log_Write_Message(buffer);
+}
+
+bool AP_GPS_Backend::should_df_log() const
+{
+    return gps.should_df_log();
+}
+
+
+void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
+{
+    const uint8_t instance = state.instance;
+    // send status
+    switch (instance) {
+        case 0:
+            mavlink_msg_gps_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+        case 1:
+            mavlink_msg_gps2_rtk_send(chan,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_week_number,
+                                 state.rtk_time_week_ms,
+                                 0,  // Not implemented yet
+                                 0,  // Not implemented yet
+                                 state.rtk_num_sats,
+                                 state.rtk_baseline_coords_type,
+                                 state.rtk_baseline_x_mm,
+                                 state.rtk_baseline_y_mm,
+                                 state.rtk_baseline_z_mm,
+                                 state.rtk_accuracy,
+                                 state.rtk_iar_num_hypotheses);
+            break;
+    }
+}
+

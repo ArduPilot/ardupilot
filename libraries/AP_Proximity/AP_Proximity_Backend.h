@@ -62,7 +62,7 @@ public:
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
     // get distances in 8 directions. used for sending distances to ground station
-    bool get_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
+    bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
 protected:
 
@@ -90,7 +90,7 @@ protected:
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 
     // sectors
-    uint8_t _num_sectors = 8;
+    uint8_t _num_sectors = PROXIMITY_MAX_DIRECTION;
     uint16_t _sector_middle_deg[PROXIMITY_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315, 0, 0, 0, 0};  // middle angle of each sector
     uint8_t _sector_width_deg[PROXIMITY_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45, 0, 0, 0, 0};        // width (in degrees) of each sector
 

@@ -15,7 +15,7 @@ AC_PrecLand_SITL_Gazebo::AC_PrecLand_SITL_Gazebo(const AC_PrecLand& frontend, AC
 // init - perform initialisation of this backend
 void AC_PrecLand_SITL_Gazebo::init()
 {
-    irlock.init();
+    irlock.init(get_bus());
 }
 
 // update - give chance to driver to get updates from sensor

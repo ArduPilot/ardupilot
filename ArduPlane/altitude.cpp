@@ -312,7 +312,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 /*
   check for FBWB_min_altitude_cm violation
  */
-void Plane::check_minimum_altitude(void)
+void Plane::check_fbwb_minimum_altitude(void)
 {
     if (g.FBWB_min_altitude_cm == 0) {
         return;
@@ -574,7 +574,7 @@ void Plane::rangefinder_height_update(void)
 {
     float distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f;
     
-    if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && home_is_set != HOME_UNSET) {
+    if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
             rangefinder_state.initial_range = distance;
@@ -603,10 +603,10 @@ void Plane::rangefinder_height_update(void)
                 (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
                  control_mode == QLAND ||
                  control_mode == QRTL ||
-                 (control_mode == AUTO && plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_VTOL_LAND)) &&
+                 (control_mode == AUTO && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
-                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
         rangefinder_state.last_distance = distance;
@@ -643,7 +643,7 @@ void Plane::rangefinder_height_update(void)
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs_send_text_fmt(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }

@@ -29,6 +29,8 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -42,8 +44,7 @@ void update_motors();
 #define HELI_TEST       0   // set to 1 to test helicopters
 #define NUM_OUTPUTS     4   // set to 6 for hexacopter, 8 for octacopter and heli
 
-RC_Channel rc1(0), rc2(1), rc3(2), rc4(3);
-RC_Channel rc7(6), rsc(8), h1(0), h2(1), h3(2), h4(3);
+SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
 //AP_MotorsTri	motors(400);
@@ -64,18 +65,17 @@ void setup()
     motors.set_throttle_range(1000,2000);
     motors.set_throttle_avg_max(0.5f);
 #endif
-    motors.enable();
     motors.output_min();
 
     // setup radio
-	rc3.set_radio_min(1000);
-    rc3.set_radio_max(2000);
+    SRV_Channels::srv_channel(2)->set_output_min(1000);
+    SRV_Channels::srv_channel(2)->set_output_max(2000);
 
     // set rc channel ranges
-    rc1.set_angle(4500);
-    rc2.set_angle(4500);
-    rc3.set_range(1000);
-    rc4.set_angle(4500);
+    SRV_Channels::srv_channel(0)->set_angle(4500);
+    SRV_Channels::srv_channel(1)->set_angle(4500);
+    SRV_Channels::srv_channel(2)->set_range(1000);
+    SRV_Channels::srv_channel(3)->set_angle(4500);
 
     hal.scheduler->delay(1000);
 }
@@ -133,11 +133,12 @@ void stability_test()
     int16_t rpy_tests[] = {0, 1000, 2000, 3000, 4500, -1000, -2000, -3000, -4500};
     uint8_t rpy_tests_num = sizeof(rpy_tests) / sizeof(int16_t);
 
-    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)rc3.get_radio_min(),(int)rc3.get_radio_max());
+    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)SRV_Channels::srv_channel(2)->get_output_min(),(int)SRV_Channels::srv_channel(2)->get_output_max());
 
     // arm motors
     motors.armed(true);
     motors.set_interlock(true);
+    SRV_Channels::enable_aux_servos();
 
 #if NUM_OUTPUTS <= 4
     hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,AvgOut,LimRP,LimY,LimThD,LimThU\n");                       // quad
@@ -210,7 +211,7 @@ void stability_test()
 void update_motors()
 {
     // call update motors 1000 times to get any ramp limiting complete
-    for (uint16_t i=0; i<4000; i++) {
+    for (uint16_t i=0; i<1000; i++) {
         motors.output();
     }
 }

@@ -21,7 +21,6 @@
 
 const extern AP_HAL::HAL& hal;
 static bool _start_collect_sample;
-static void _snoop(const mavlink_message_t* msg);
 
 uint8_t AP_AccelCal::_num_clients = 0;
 AP_AccelCal_Client* AP_AccelCal::_clients[AP_ACCELCAL_MAX_NUM_CLIENTS] {};
@@ -97,8 +96,7 @@ void AP_AccelCal::update()
                                 return;
                         }
                         _printf("Place vehicle %s and press any key.", msg);
-                        // setup snooping of packets so we can see the COMMAND_ACK
-                        _gcs->set_snoop(_snoop);
+                        _waiting_for_mavlink_ack = true;
                     }
                 }
 
@@ -156,6 +154,23 @@ void AP_AccelCal::update()
                 fail();
                 return;
         }
+    } else if (_last_result != ACCEL_CAL_NOT_STARTED) {
+        // only continuously report if we have ever completed a calibration
+        uint32_t now = AP_HAL::millis();
+        if (now - _last_position_request_ms > AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS) {
+            _last_position_request_ms = now;
+            switch (_last_result) {
+                case ACCEL_CAL_SUCCESS:
+                    _gcs->send_accelcal_vehicle_position(ACCELCAL_VEHICLE_POS_SUCCESS);
+                    break;
+                case ACCEL_CAL_FAILED:
+                    _gcs->send_accelcal_vehicle_position(ACCELCAL_VEHICLE_POS_FAILED);
+                    break;
+                default:
+                    // should never hit this state
+                    break;
+            }
+        }
     }
 }
 
@@ -181,6 +196,8 @@ void AP_AccelCal::start(GCS_MAVLINK *gcs)
     _last_position_request_ms = 0;
     _step = 0;
 
+    _last_result = ACCEL_CAL_NOT_STARTED;
+
     update_status();
 }
 
@@ -191,6 +208,8 @@ void AP_AccelCal::success()
     for(uint8_t i=0 ; i < _num_clients ; i++) {
         _clients[i]->_acal_event_success();
     }
+
+    _last_result = ACCEL_CAL_SUCCESS;
 
     clear();
 }
@@ -203,6 +222,8 @@ void AP_AccelCal::cancel()
         _clients[i]->_acal_event_cancellation();
     }
 
+    _last_result = ACCEL_CAL_NOT_STARTED;
+
     clear();
 }
 
@@ -213,6 +234,8 @@ void AP_AccelCal::fail()
     for(uint8_t i=0 ; i < _num_clients ; i++) {
         _clients[i]->_acal_event_failure();
     }
+
+    _last_result = ACCEL_CAL_FAILED;
 
     clear();
 }
@@ -227,8 +250,6 @@ void AP_AccelCal::clear()
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->clear();
     }
-
-    _gcs = nullptr;
 
     _step = 0;
     _started = false;
@@ -254,8 +275,6 @@ void AP_AccelCal::collect_sample()
     for(uint8_t i=0 ; (cal = get_calibrator(i))  ; i++) {
         cal->collect_sample();
     }
-    // setup snooping of packets so we can see the COMMAND_ACK
-    _gcs->set_snoop(nullptr);
     _start_collect_sample = false;
     update_status();
 }
@@ -334,8 +353,12 @@ bool AP_AccelCal::client_active(uint8_t client_num)
     return (bool)_clients[client_num]->_acal_get_calibrator(0);
 }
 
-static void _snoop(const mavlink_message_t* msg)
+void AP_AccelCal::handleMessage(const mavlink_message_t* msg)
 {
+    if (!_waiting_for_mavlink_ack) {
+        return;
+    }
+    _waiting_for_mavlink_ack = false;
     if (msg->msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
         _start_collect_sample = true;
     }

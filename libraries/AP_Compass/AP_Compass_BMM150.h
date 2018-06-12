@@ -66,4 +66,7 @@ private:
         int8_t xy2;
         uint16_t xyz1;
     } _dig;
+
+    uint32_t _last_read_ms;
+    AP_HAL::Util::perf_counter_t _perf_err;
 };

@@ -31,46 +31,46 @@
 class AP_Camera {
 
 public:
-    /// Constructor
-    ///
-    AP_Camera(AP_Relay *obj_relay) :
-        _trigger_counter(0),    // count of number of cycles shutter has been held open
-        _image_index(0)
+    AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
+        : _trigger_counter(0) // count of number of cycles shutter has been held open
+        , _image_index(0)
+        , log_camera_bit(_log_camera_bit)
+        , current_loc(_loc)
+        , ahrs(_ahrs)
     {
-		AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
     }
 
-    // single entry point to take pictures
-    //  set send_mavlink_msg to true to send DO_DIGICAM_CONTROL message to all components
-    void            trigger_pic(bool send_mavlink_msg);
+    /* Do not allow copies */
+    AP_Camera(const AP_Camera &other) = delete;
+    AP_Camera &operator=(const AP_Camera&) = delete;
 
-    // de-activate the trigger after some delay, but without using a delay() function
-    // should be called at 50hz from main program
-    void            trigger_pic_cleanup();
 
     // MAVLink methods
-    void            control_msg(mavlink_message_t* msg);
-    void            send_feedback(mavlink_channel_t chan, AP_GPS &gps, const AP_AHRS &ahrs, const Location &current_loc);
+    void            control_msg(const mavlink_message_t* msg);
+    void            send_feedback(mavlink_channel_t chan);
 
     // Command processing
     void            configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
-    // handle camera control. Return true if picture was triggered
-    bool            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
+    // handle camera control
+    void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
     void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
 
-    // Update location of vehicle and return true if a picture should be taken
-    bool update_location(const struct Location &loc, const AP_AHRS &ahrs);
+    void take_picture();
 
-    // check if trigger pin has fired
-    bool check_trigger_pin(void);
+    // Update - to be called periodically @at least 10Hz
+    void update();
 
-    // return true if we are using a feedback pin
-    bool using_feedback_pin(void) const { return _feedback_pin > 0; }
-    
+    // update camera trigger - 50Hz
+    void update_trigger();
+
     static const struct AP_Param::GroupInfo        var_info[];
+
+    // set if vehicle is in AUTO mode
+    void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
 private:
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
@@ -80,6 +80,8 @@ private:
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
+    AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
+    bool            _is_in_auto_mode;   // true if in AUTO mode
 
     void            servo_pic();        // Servo operated camera
     void            relay_pic();        // basic relay activation
@@ -96,6 +98,7 @@ private:
     uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
+    uint16_t        _feedback_events;   // number of feedback events since boot
 
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
@@ -105,4 +108,24 @@ private:
     static volatile bool   _camera_triggered;
     bool            _timer_installed:1;
     uint8_t         _last_pin_state;
+
+    void log_picture();
+
+    uint32_t log_camera_bit;
+    const struct Location &current_loc;
+    const AP_AHRS &ahrs;
+
+    // entry point to trip local shutter (e.g. by relay or servo)
+    void trigger_pic();
+
+    // de-activate the trigger after some delay, but without using a delay() function
+    // should be called at 50hz from main program
+    void trigger_pic_cleanup();
+
+    // check if trigger pin has fired
+    bool check_trigger_pin(void);
+
+    // return true if we are using a feedback pin
+    bool using_feedback_pin(void) const { return _feedback_pin > 0; }
+
 };

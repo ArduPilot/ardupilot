@@ -106,10 +106,6 @@ void AP_ServoRelayEvents::update_events(void)
         return;
     }
 
-    if (channel > NUM_SERVO_CHANNELS || channel == 0) {
-        return;
-    }
-
     start_time_ms = AP_HAL::millis();
 
     switch (type) {
@@ -136,4 +132,16 @@ void AP_ServoRelayEvents::update_events(void)
         // toggle bottom bit so servos flip in value
         repeat ^= 1;
     }
+}
+
+// singleton instance
+AP_ServoRelayEvents *AP_ServoRelayEvents::_singleton;
+
+namespace AP {
+
+AP_ServoRelayEvents *servorelayevents()
+{
+    return AP_ServoRelayEvents::get_singleton();
+}
+
 }

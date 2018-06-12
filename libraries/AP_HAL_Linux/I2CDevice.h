@@ -94,18 +94,14 @@ public:
 
     I2CDeviceManager();
 
-    /*
-     * Get device by looking up the I2C bus on the buses from @devpaths.
-     *
-     * Each string in @devpaths are possible locations for the bus as
-     * returned by 'udevadm info -q path /dev/i2c-X'. The first I2C bus
-     * matching a prefix in @devpaths is returned.
-     */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(
-            std::vector<const char *> devpaths, uint8_t address);
+            std::vector<const char *> devpaths, uint8_t address) override;
 
     /* AP_HAL::I2CDeviceManager implementation */
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) override;
 
     /*
      * Stop all I2C threads and block until they are finalized. This doesn't

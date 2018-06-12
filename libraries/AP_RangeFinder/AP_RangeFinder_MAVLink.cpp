@@ -25,8 +25,8 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_ranger, instance, _state)
+AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state) :
+    AP_RangeFinder_Backend(_state)
 {
     last_update_ms = AP_HAL::millis();
     distance_cm = 0;
@@ -36,7 +36,7 @@ AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder &_ranger, uint8_t ins
    detect if a MAVLink rangefinder is connected. We'll detect by
    checking a parameter.
 */
-bool AP_RangeFinder_MAVLink::detect(RangeFinder &_ranger, uint8_t instance)
+bool AP_RangeFinder_MAVLink::detect()
 {
     // Assume that if the user set the RANGEFINDER_TYPE parameter to MAVLink,
     // there is an attached MAVLink rangefinder
@@ -56,6 +56,7 @@ void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
         last_update_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
     }
+    sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
 }
 
 /*

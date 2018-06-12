@@ -20,15 +20,15 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_Navigation/AP_Navigation.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_Landing_Deepstall.h"
 
 /// @class  AP_Landing
 /// @brief  Class managing ArduPlane landing methods
-class AP_Landing
-{
-public:
+class AP_Landing {
     friend class AP_Landing_Deepstall;
 
+public:
     FUNCTOR_TYPEDEF(set_target_altitude_proportion_fn_t, void, const Location&, float);
     FUNCTOR_TYPEDEF(constrain_target_altitude_location_fn_t, void, const Location&, const Location&);
     FUNCTOR_TYPEDEF(adjusted_altitude_cm_fn_t, int32_t);
@@ -36,7 +36,6 @@ public:
     FUNCTOR_TYPEDEF(disarm_if_autoland_complete_fn_t, void);
     FUNCTOR_TYPEDEF(update_flight_stage_fn_t, void);
 
-    // constructor
     AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_SpdHgt_Controller, AP_Navigation *_nav_controller, AP_Vehicle::FixedWing &_aparm,
                set_target_altitude_proportion_fn_t _set_target_altitude_proportion_fn,
                constrain_target_altitude_location_fn_t _constrain_target_altitude_location_fn,
@@ -44,6 +43,10 @@ public:
                adjusted_relative_altitude_cm_fn_t _adjusted_relative_altitude_cm_fn,
                disarm_if_autoland_complete_fn_t _disarm_if_autoland_complete_fn,
                update_flight_stage_fn_t _update_flight_stage_fn);
+
+    /* Do not allow copies */
+    AP_Landing(const AP_Landing &other) = delete;
+    AP_Landing &operator=(const AP_Landing&) = delete;
 
 
     // NOTE: make sure to update is_type_valid()
@@ -68,9 +71,14 @@ public:
     bool is_on_approach(void) const;
     bool is_ground_steering_allowed(void) const;
     bool is_throttle_suppressed(void) const;
+    bool is_flying_forward(void) const;
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
+    bool send_landing_message(mavlink_channel_t chan);
+
+    // terminate the flight with an immediate landing, returns false if unable to be used for termination
+    bool terminate(void);
 
     // helper functions
     bool restart_landing_sequence(void);
@@ -92,14 +100,13 @@ public:
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
-    void log(void) const;
+    void Log(void) const;
     const DataFlash_Class::PID_Info * get_pid_info(void) const;
 
     // landing altitude offset (meters)
     float alt_offset;
 
 private:
-
     struct {
         // denotes if a go-around has been commanded for landing
         bool commanded_go_around:1;
@@ -118,9 +125,6 @@ private:
     AP_AHRS &ahrs;
     AP_SpdHgtControl *SpdHgt_Controller;
     AP_Navigation *nav_controller;
-
-    // support for deepstall landings
-    AP_Landing_Deepstall deepstall;
     
     AP_Vehicle::FixedWing &aparm;
 
@@ -130,6 +134,9 @@ private:
     adjusted_relative_altitude_cm_fn_t adjusted_relative_altitude_cm_fn;
     disarm_if_autoland_complete_fn_t disarm_if_autoland_complete_fn;
     update_flight_stage_fn_t update_flight_stage_fn;
+
+    // support for deepstall landings
+    AP_Landing_Deepstall deepstall;
 
     AP_Int16 pitch_cd;
     AP_Float flare_alt;

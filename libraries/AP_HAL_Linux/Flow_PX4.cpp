@@ -73,7 +73,7 @@ Flow_PX4::Flow_PX4(uint32_t width, uint32_t bytesperline,
      * So _num_blocks = _width / (2 * _search_size + 3)
      */
     _num_blocks = _width / (2 * _search_size + 3);
-    _pixstep = ceil(((float)(_pixhi - _pixlo)) / _num_blocks);
+    _pixstep = ceilf(((float)(_pixhi - _pixlo)) / _num_blocks);
 }
 
 /**

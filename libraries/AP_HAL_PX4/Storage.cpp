@@ -11,6 +11,8 @@
 #include <ctype.h>
 #include <nuttx/progmem.h>
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 #include "Storage.h"
 using namespace PX4;
 
@@ -26,6 +28,8 @@ using namespace PX4;
 #define MTD_PARAMS_FILE "/fs/mtd"
 
 extern const AP_HAL::HAL& hal;
+
+extern "C" int mtd_main(int, char **);
 
 PX4Storage::PX4Storage(void) :
     _perf_storage(perf_alloc(PC_ELAPSED, "APM_storage")),
@@ -193,6 +197,17 @@ void PX4Storage::_mtd_write(uint16_t line)
  */
 void PX4Storage::_mtd_load(void)
 {
+    if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "start " MTD_PARAMS_FILE)) {
+        printf("mtd: started OK\n");
+        if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
+            printf("mtd: readtest OK\n");
+        } else {
+            AP_BoardConfig::sensor_config_error("mtd: failed readtest");
+        }
+    } else {
+        AP_BoardConfig::sensor_config_error("mtd: failed start");
+    }
+
     int fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (fd == -1) {
         AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
@@ -252,7 +267,19 @@ void PX4Storage::_flash_write(uint16_t line)
 bool PX4Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
     size_t base_address = up_progmem_getaddress(_flash_page+sector);
-    return up_progmem_write(base_address+offset, data, length) == length;
+    bool ret = up_progmem_write(base_address+offset, data, length) == length;
+    if (!ret && _flash_erase_ok()) {
+        // we are getting flash write errors while disarmed. Try
+        // re-writing all of flash
+        uint32_t now = AP_HAL::millis();
+        if (now - _last_re_init_ms > 5000) {
+            _last_re_init_ms = now;
+            bool ok = _flash.re_initialise();
+            printf("Storage: failed at %u:%u for %u - re-init %u\n",
+                   sector, offset, length, (unsigned)ok);
+        }
+    }
+    return ret;
 }
 
 /*

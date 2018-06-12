@@ -44,7 +44,7 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation) :
 }
 
 // update state
-void AP_AHRS_View::update(void)
+void AP_AHRS_View::update(bool skip_ins_update)
 {
     rot_body_to_ned = ahrs.get_rotation_body_to_ned();
     gyro = ahrs.get_gyro();
@@ -62,6 +62,9 @@ void AP_AHRS_View::update(void)
     roll_sensor  = degrees(roll) * 100;
     pitch_sensor = degrees(pitch) * 100;
     yaw_sensor   = degrees(yaw) * 100;
+    if (yaw_sensor < 0) {
+        yaw_sensor += 36000;
+    }
 
     ahrs.calc_trig(rot_body_to_ned,
                    trig.cos_roll, trig.cos_pitch, trig.cos_yaw,
@@ -73,4 +76,18 @@ Vector3f AP_AHRS_View::get_gyro_latest(void) const {
     Vector3f gyro_latest = ahrs.get_gyro_latest();
     gyro_latest.rotate(rotation);
     return gyro_latest;
+}
+
+// rotate a 2D vector from earth frame to body frame
+Vector2f AP_AHRS_View::rotate_earth_to_body2D(const Vector2f &ef) const
+{
+    return Vector2f(ef.x * trig.cos_yaw + ef.y * trig.sin_yaw,
+                    -ef.x * trig.sin_yaw + ef.y * trig.cos_yaw);
+}
+
+// rotate a 2D vector from earth frame to body frame
+Vector2f AP_AHRS_View::rotate_body_to_earth2D(const Vector2f &bf) const
+{
+    return Vector2f(bf.x * trig.cos_yaw - bf.y * trig.sin_yaw,
+                    bf.x * trig.sin_yaw + bf.y * trig.cos_yaw);
 }

@@ -95,9 +95,6 @@ struct Vector2
     // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     float angle(const Vector2<T> &v2) const;
 
-    // computes the angle in radians between the origin and this vector
-    T angle(void) const;
-
     // check if any elements are NAN
     bool is_nan(void) const;
 
@@ -107,6 +104,15 @@ struct Vector2
     // check if all elements are zero
     bool is_zero(void) const { return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON); }
 
+    // allow a vector2 to be used as an array, 0 indexed
+    T & operator[](uint8_t i) {
+        T *_v = &x;
+#if MATH_CHECK_INDEXES
+        assert(i >= 0 && i < 2);
+#endif
+        return _v[i];
+    }
+
     const T & operator[](uint8_t i) const {
         const T *_v = &x;
 #if MATH_CHECK_INDEXES
@@ -114,7 +120,7 @@ struct Vector2
 #endif
         return _v[i];
     }
-
+    
     // zero the vector
     void zero()
     {
@@ -214,6 +220,15 @@ struct Vector2
         const Vector2<T> delta = closest - p;
         return delta.length();
     }
+
+    // find the intersection between two line segments
+    // returns true if they intersect, false if they do not
+    // the point of intersection is returned in the intersection argument
+    static bool segment_intersection(const Vector2<T>& seg1_start, const Vector2<T>& seg1_end, const Vector2<T>& seg2_start, const Vector2<T>& seg2_end, Vector2<T>& intersection);
+
+    // find the intersection between a line segment and a circle
+    // returns true if they intersect and intersection argument is updated with intersection closest to seg_start
+    static bool circle_segment_intersection(const Vector2<T>& seg_start, const Vector2<T>& seg_end, const Vector2<T>& circle_center, float radius, Vector2<T>& intersection);
 
 };
 

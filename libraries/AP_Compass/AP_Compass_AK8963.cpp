@@ -167,11 +167,7 @@ bool AP_Compass_AK8963::init()
 
     bus_sem->give();
 
-    /* timer needs to be called every 10ms so set the freq_div to 10 */
-    if (!_bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void))) {
-        // fallback to timer
-        _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update_timer, void), 10);
-    }
+    _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
     return true;
 
@@ -219,7 +215,6 @@ void AP_Compass_AK8963::_update()
 {
     struct sample_regs regs;
     Vector3f raw_field;
-    uint32_t time_us = AP_HAL::micros();
 
     if (!_bus->block_read(AK8963_HXL, (uint8_t *) &regs, sizeof(regs))) {
         return;
@@ -245,7 +240,7 @@ void AP_Compass_AK8963::_update()
     rotate_field(raw_field, _compass_instance);
 
     // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, time_us, _compass_instance);
+    publish_raw_field(raw_field, _compass_instance);
 
     // correct raw_field for known errors
     correct_field(raw_field, _compass_instance);
@@ -263,28 +258,6 @@ void AP_Compass_AK8963::_update()
         }
         _sem->give();
     }
-}
-
-/*
-  update from timer callback
- */
-void AP_Compass_AK8963::_update_timer()
-{
-    uint32_t now = AP_HAL::micros();
-
-    if (!_timesliced && now - _last_update_timestamp < 10000) {
-        return;
-    }
-
-    if (!_bus->get_semaphore()->take_nonblocking()) {
-        return;
-    }
-
-    _update();
-    
-    _last_update_timestamp = now;
-    
-    _bus->get_semaphore()->give();
 }
 
 bool AP_Compass_AK8963::_check_id()

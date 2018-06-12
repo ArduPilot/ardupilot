@@ -1,37 +1,9 @@
 #include "Sub.h"
 
-#define ARM_DELAY               20  // called at 10hz so 2 seconds
-#define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
-#define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
-
-//static uint32_t auto_disarm_begin;
-
-// auto_disarm_check
-// Automatically disarm the vehicle under some set of conditions
-// What those conditions should be TBD
-void Sub::auto_disarm_check()
+// enable_motor_output() - enable and output lowest possible value to motors
+void Sub::enable_motor_output()
 {
-    // Disable for now
-
-    //    uint32_t tnow_ms = millis();
-    //    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
-    //
-    //    // exit immediately if we are already disarmed, or if auto
-    //    // disarming is disabled
-    //    if (!motors.armed() || disarm_delay_ms == 0) {
-    //        auto_disarm_begin = tnow_ms;
-    //        return;
-    //    }
-    //
-    //    if(!mode_has_manual_throttle(control_mode) || !ap.throttle_zero) {
-    //      auto_disarm_begin = tnow_ms;
-    //    }
-    //
-    //    if(tnow > auto_disarm_begin + disarm_delay_ms) {
-    //      init_disarm_motors();
-    //      auto_disarm_begin = tnow_ms;
-    //    }
+    motors.output_min();
 }
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
@@ -53,41 +25,36 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
         return false;
     }
 
-    // disable cpu failsafe because initialising everything takes a while
-    failsafe_disable();
+    // let dataflash know that we're armed (it may open logs e.g.)
+    DataFlash_Class::instance()->set_vehicle_armed(true);
 
-    // reset battery failsafe
-    set_failsafe_battery(false);
+    // disable cpu failsafe because initialising everything takes a while
+    mainloop_failsafe_disable();
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
-    // call update_notify a few times to ensure the message gets out
+    // call notify update a few times to ensure the message gets out
     for (uint8_t i=0; i<=10; i++) {
-        update_notify();
+        notify.update();
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Arming motors");
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
 #endif
-
-    // Remember Orientation
-    // --------------------
-    init_simple_bearing();
 
     initial_armed_bearing = ahrs.yaw_sensor;
 
-    if (ap.home_state == HOME_UNSET) {
+    if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
 
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ap.home_state == HOME_SET_NOT_LOCKED) {
+    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location();
+        set_home_to_current_location(false);
     }
-    calc_distance_and_bearing();
-
+	
     // enable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
@@ -105,10 +72,10 @@ bool Sub::init_arm_motors(bool arming_from_gcs)
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
 
     // reenable failsafe
-    failsafe_enable();
+    mainloop_failsafe_enable();
 
     // perf monitor ignores delay due to arming
-    perf_ignore_this_loop();
+    scheduler.perf_info.ignore_this_loop();
 
     // flag exiting this function
     in_arm_motors = false;
@@ -125,8 +92,8 @@ void Sub::init_disarm_motors()
         return;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs_send_text(MAV_SEVERITY_INFO, "Disarming motors");
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
 #endif
 
     // save compass offsets learned by the EKF if enabled
@@ -148,14 +115,14 @@ void Sub::init_disarm_motors()
     // reset the mission
     mission.reset();
 
-    // suspend logging
-    if (!DataFlash.log_while_disarmed()) {
-        DataFlash.EnableWrites(false);
-    }
+    DataFlash_Class::instance()->set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
+
+    // clear input holds
+    clear_input_hold();
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
@@ -163,40 +130,10 @@ void Sub::motors_output()
 {
     // check if we are performing the motor test
     if (ap.motor_test) {
-        motor_test_output();
-    } else {
-        if (!ap.using_interlock) {
-            // if not using interlock switch, set according to Emergency Stop status
-            // where Emergency Stop is forced false during arming if Emergency Stop switch
-            // is not used. Interlock enabled means motors run, so we must
-            // invert motor_emergency_stop status for motors to run.
-            motors.set_interlock(!ap.motor_emergency_stop);
-        }
-        motors.output();
+        return; // Placeholder
     }
-}
-
-// check for pilot stick input to trigger lost vehicle alarm
-void Sub::lost_vehicle_check()
-{
-    static uint8_t soundalarm_counter;
-
-    // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors.armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
-        if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
-            if (AP_Notify::flags.vehicle_lost == false) {
-                AP_Notify::flags.vehicle_lost = true;
-                gcs_send_text(MAV_SEVERITY_NOTICE,"Locate vehicle alarm");
-            }
-        } else {
-            soundalarm_counter++;
-        }
-    } else {
-        soundalarm_counter = 0;
-        if (AP_Notify::flags.vehicle_lost == true) {
-            AP_Notify::flags.vehicle_lost = false;
-        }
-    }
+    motors.set_interlock(true);
+    motors.output();
 }
 
 // translate wpnav roll/pitch outputs to lateral/forward

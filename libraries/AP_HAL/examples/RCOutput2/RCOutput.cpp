@@ -6,6 +6,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
 
+void setup();
+void loop();
+void drive(uint16_t hz_speed);
+
 #define MENU_FUNC(func) FUNCTOR_BIND(&commands, &Menu_Commands::func, int8_t, uint8_t, const Menu::arg *)
 
 #define ESC_HZ     490

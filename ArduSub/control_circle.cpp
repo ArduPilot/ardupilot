@@ -5,25 +5,24 @@
  */
 
 // circle_init - initialise circle controller flight mode
-bool Sub::circle_init(bool ignore_checks)
+bool Sub::circle_init()
 {
-    if (position_ok() || ignore_checks) {
-        circle_pilot_yaw_override = false;
-
-        // initialize speeds and accelerations
-        pos_control.set_speed_xy(wp_nav.get_speed_xy());
-        pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-        pos_control.set_jerk_xy_to_default();
-        pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-        pos_control.set_accel_z(g.pilot_accel_z);
-
-        // initialise circle controller including setting the circle center based on vehicle speed
-        circle_nav.init();
-
-        return true;
-    }else{
+    if (!position_ok()) {
         return false;
     }
+
+    circle_pilot_yaw_override = false;
+
+    // initialize speeds and accelerations
+    pos_control.set_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_accel_z(g.pilot_accel_z);
+
+    // initialise circle controller including setting the circle center based on vehicle speed
+    circle_nav.init();
+
+    return true;
 }
 
 // circle_run - runs the circle flight mode
@@ -36,11 +35,11 @@ void Sub::circle_run()
     // update parameters, to allow changing at runtime
     pos_control.set_speed_xy(wp_nav.get_speed_xy());
     pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         // To-Do: add some initialisation of position controllers
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
@@ -78,9 +77,9 @@ void Sub::circle_run()
 
     // call attitude controller
     if (circle_pilot_yaw_override) {
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true);
     }
 
     // adjust climb rate using rangefinder

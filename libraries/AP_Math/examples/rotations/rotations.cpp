@@ -5,12 +5,17 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static void print_vector(Vector3f &v)
 {
     hal.console->printf("[%.4f %.4f %.4f]\n",
-                        v.x, v.y, v.z);
+                        (double)v.x,
+                        (double)v.y,
+                        (double)v.z);
 }
 
 // test rotation method accuracy
@@ -19,20 +24,19 @@ static void test_rotation_accuracy(void)
     Matrix3f attitude;
     Vector3f small_rotation;
     float roll, pitch, yaw;
-    int16_t i;
     float rot_angle;
 
     hal.console->printf("\nRotation method accuracy:\n");
 
     // test roll
-    for( i=0; i<90; i++ ) {
+    for(int16_t i = 0; i < 90; i++ ) {
 
         // reset initial attitude
-        attitude.from_euler(0,0,0);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
 
         // calculate small rotation vector
         rot_angle = ToRad(i);
-        small_rotation = Vector3f(rot_angle,0,0);
+        small_rotation = Vector3f(rot_angle, 0.0f, 0.0f);
 
         // apply small rotation
         attitude.rotate(small_rotation);
@@ -42,8 +46,8 @@ static void test_rotation_accuracy(void)
 
         // now try via from_axis_angle
         Matrix3f r2;
-        r2.from_axis_angle(Vector3f(1,0,0), rot_angle);
-        attitude.from_euler(0,0,0);
+        r2.from_axis_angle(Vector3f(1.0f, 0.0f, 0.0f), rot_angle);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
         attitude = r2 * attitude;
 
         float roll2, pitch2, yaw2;
@@ -51,18 +55,20 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(roll), ToDeg(roll2));
+                            (int)i,
+                            (double)ToDeg(roll),
+                            (double)ToDeg(roll2));
     }
 
     // test pitch
-    for( i=0; i<90; i++ ) {
+    for(int16_t i = 0; i < 90; i++ ) {
 
         // reset initial attitude
-        attitude.from_euler(0,0,0);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
 
         // calculate small rotation vector
         rot_angle = ToRad(i);
-        small_rotation = Vector3f(0,rot_angle,0);
+        small_rotation = Vector3f(0.0f ,rot_angle, 0.0f);
 
         // apply small rotation
         attitude.rotate(small_rotation);
@@ -72,8 +78,8 @@ static void test_rotation_accuracy(void)
 
         // now try via from_axis_angle
         Matrix3f r2;
-        r2.from_axis_angle(Vector3f(0,1,0), rot_angle);
-        attitude.from_euler(0,0,0);
+        r2.from_axis_angle(Vector3f(0.0f ,1.0f, 0.0f), rot_angle);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
         attitude = r2 * attitude;
 
         float roll2, pitch2, yaw2;
@@ -81,19 +87,21 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(pitch), ToDeg(pitch2));
+                            (int)i,
+                            (double)ToDeg(pitch),
+                            (double)ToDeg(pitch2));
     }
     
 
     // test yaw
-    for( i=0; i<90; i++ ) {
+    for(int16_t i = 0; i < 90; i++ ) {
 
         // reset initial attitude
-        attitude.from_euler(0,0,0);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
 
         // calculate small rotation vector
         rot_angle = ToRad(i);
-        small_rotation = Vector3f(0,0,rot_angle);
+        small_rotation = Vector3f(0.0f, 0.0f, rot_angle);
 
         // apply small rotation
         attitude.rotate(small_rotation);
@@ -103,8 +111,8 @@ static void test_rotation_accuracy(void)
 
         // now try via from_axis_angle
         Matrix3f r2;
-        r2.from_axis_angle(Vector3f(0,0,1), rot_angle);
-        attitude.from_euler(0,0,0);
+        r2.from_axis_angle(Vector3f(0.0f, 0.0f, 1.0f), rot_angle);
+        attitude.from_euler(0.0f, 0.0f, 0.0f);
         attitude = r2 * attitude;
 
         float roll2, pitch2, yaw2;
@@ -112,7 +120,9 @@ static void test_rotation_accuracy(void)
         
         // display results
         hal.console->printf("actual angle: %d  angle1:%4.2f  angle2:%4.2f\n",
-                            (int)i,ToDeg(yaw), ToDeg(yaw2));
+                            (int)i,
+                            (double)ToDeg(yaw),
+                            (double)ToDeg(yaw2));
     }
 }
 
@@ -151,19 +161,19 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
 static void test_rotate_inverse(void)
 {
     hal.console->printf("\nrotate inverse test(Vector (1,1,1)):\n");
-    Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f,1.0f,1.0f);
-    for (enum Rotation r=ROTATION_NONE; 
-         r<ROTATION_MAX;
+    Vector3f vec(1.0f,1.0f,1.0f), cmp_vec(1.0f, 1.0f, 1.0f);
+    for (enum Rotation r = ROTATION_NONE;
+         r < ROTATION_MAX;
          r = (enum Rotation)((uint8_t)r+1)) {
-        hal.console->printf("\nROTATION(%d) ",r);
+        hal.console->printf("\nROTATION(%d) ", r);
         vec.rotate(r);
         print_vector(vec);
 
-        hal.console->printf("INV_ROTATION(%d)",r);
+        hal.console->printf("INV_ROTATION(%d)", r);
         vec.rotate_inverse(r);
         print_vector(vec);
-        if((vec - cmp_vec).length() > 1e-5) {
-            hal.console->printf("Rotation Test Failed!!! %.8f\n",(vec - cmp_vec).length());
+        if ((vec - cmp_vec).length() > 1e-5) {
+            hal.console->printf("Rotation Test Failed!!! %.8f\n", (double)(vec - cmp_vec).length());
             return;
         }
     }
@@ -196,18 +206,18 @@ static void test_eulers(void)
     test_euler(ROTATION_ROLL_270_YAW_90,  270,   0,  90);
     test_euler(ROTATION_ROLL_270_YAW_135, 270,   0, 135);
     test_euler(ROTATION_PITCH_90,           0,  90,   0);
-    test_euler(ROTATION_PITCH_270,          0, 270,   0);    
-    test_euler(ROTATION_PITCH_180_YAW_90,   0, 180,  90);    
-    test_euler(ROTATION_PITCH_180_YAW_270,  0, 180, 270);    
-    test_euler(ROTATION_ROLL_90_PITCH_90,  90,  90,   0);    
-    test_euler(ROTATION_ROLL_180_PITCH_90,180,  90,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_90,270,  90,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_180, 90, 180,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_180,270,180,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_270, 90, 270,   0);    
-    test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);    
-    test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);    
-    test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);    
+    test_euler(ROTATION_PITCH_270,          0, 270,   0);
+    test_euler(ROTATION_PITCH_180_YAW_90,   0, 180,  90);
+    test_euler(ROTATION_PITCH_180_YAW_270,  0, 180, 270);
+    test_euler(ROTATION_ROLL_90_PITCH_90,  90,  90,   0);
+    test_euler(ROTATION_ROLL_180_PITCH_90,180,  90,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_90,270,  90,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_180, 90, 180,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_180,270,180,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_270, 90, 270,   0);
+    test_euler(ROTATION_ROLL_180_PITCH_270,180,270,   0);
+    test_euler(ROTATION_ROLL_270_PITCH_270,270,270,   0);
+    test_euler(ROTATION_ROLL_90_PITCH_180_YAW_90, 90, 180,  90);
     test_euler(ROTATION_ROLL_90_YAW_270,   90,   0, 270);
     test_euler(ROTATION_ROLL_90_PITCH_68_YAW_293,90,68.8,293.3);
 }
@@ -215,10 +225,10 @@ static void test_eulers(void)
 static bool have_rotation(const Matrix3f &m)
 {
     Matrix3f mt = m.transposed();
-    for (enum Rotation r=ROTATION_NONE; 
-         r<ROTATION_MAX;
-         r = (enum Rotation)((uint8_t)r+1)) {
-        Vector3f v(1,2,3);
+    for (enum Rotation r = ROTATION_NONE;
+         r < ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)(r + 1))) {
+        Vector3f v(1.0f, 2.0f, 3.0f);
         Vector3f v2 = v;
         v2.rotate(r);
         v2 = mt * v2;
@@ -232,10 +242,9 @@ static bool have_rotation(const Matrix3f &m)
 static void missing_rotations(void)
 {
     hal.console->printf("testing for missing rotations\n");
-    uint16_t roll, pitch, yaw;
-    for (yaw=0; yaw<360; yaw += 90)
-        for (pitch=0; pitch<360; pitch += 90)
-            for (roll=0; roll<360; roll += 90) {
+    for (uint16_t yaw = 0; yaw < 360; yaw += 90)
+        for (uint16_t pitch = 0; pitch < 360; pitch += 90)
+            for (uint16_t roll = 0; roll < 360; roll += 90) {
                 Matrix3f m;
                 m.from_euler(ToRad(roll), ToRad(pitch), ToRad(yaw));
                 if (!have_rotation(m)) {
@@ -244,16 +253,41 @@ static void missing_rotations(void)
             }
 }
 
+static void test_rotate_matrix(void)
+{
+    for (enum Rotation r = ROTATION_NONE;
+         r < ROTATION_MAX;
+         r = (enum Rotation)((uint8_t)r+1)) {
+        //hal.console->printf("\nROTATION(%d)\n", r);
+        Vector3f vec(1,2,3);
+        Vector3f vec2 = vec;
+        vec.rotate(r);
+        Matrix3f m;
+        m.from_rotation(r);
+        vec2 = m * vec2;
+        //print_vector(vec);
+        //print_vector(vec2);
+        if ((vec - vec2).length() > 1e-5) {
+            hal.console->printf("Rotation Test Failed!!! %.8f\n", (double)(vec - vec2).length());
+            return;
+        }
+    }
+    hal.console->printf("test_rotate_matrix passed\n");
+}
+
+
 /*
  *  rotation tests
  */
 void setup(void)
 {
+    hal.console->begin(115200);
     hal.console->printf("rotation unit tests\n\n");
     test_rotation_accuracy();
     test_eulers();
     missing_rotations();
     test_rotate_inverse();
+    test_rotate_matrix();
     hal.console->printf("rotation unit tests done\n\n");
 }
 

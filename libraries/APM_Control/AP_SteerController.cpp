@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @DisplayName: Steering Time Constant
 	// @Description: This controls the time constant in seconds from demanded to achieved steering angle. A value of 0.75 is a good default and will work with nearly all rovers. Ground steering in aircraft needs a bit smaller time constant, and a value of 0.5 is recommended for best ground handling in fixed wing aircraft. A value of 0.75 means that the controller will try to correct any deviation between the desired and actual steering angle in 0.75 seconds. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the vehicle can achieve.
 	// @Range: 0.4 1.0
-	// @Units: seconds
+	// @Units: s
 	// @Increment: 0.1
 	// @User: Advanced
 	AP_GROUPINFO("TCONST",      0, AP_SteerController, _tau,       0.75f),
@@ -62,6 +62,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This limits the number of degrees of steering in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the vehicle is severely out of trim.
 	// @Range: 0 4500
 	// @Increment: 1
+	// @Units: cdeg
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
 
@@ -70,7 +71,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This is the minimum assumed ground speed in meters/second for steering. Having a minimum speed prevents oscillations when the vehicle first starts moving. The vehicle can still drive slower than this limit, but the steering calculations will be done based on this minimum speed.
 	// @Range: 0 5
 	// @Increment: 0.1
-    // @Units: m/s
+	// @Units: m/s
 	// @User: User
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
@@ -89,7 +90,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Description: Speed after that the maximum degree of steering will start to derate. Set this speed to a maximum speed that a plane can do controlled turn at maximum angle of steering wheel without rolling to wing. If 0 then no derating is used.
     // @Range: 0.0 30.0
     // @Increment: 0.1
-	// @Units: m/s
+    // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("DRTSPD",  8, AP_SteerController, _deratespeed,        0),
 
@@ -98,7 +99,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Description: Degrees of steering wheel to derate at each additional m/s of speed above "Derating speed". Should be set so that at higher speeds the plane does not roll to the wing in turns.
     // @Range: 0.0 50.0
     // @Increment: 0.1
-    // @Units: degree/(m/s)
+    // @Units: deg/m/s
     // @User: Advanced
     AP_GROUPINFO("DRTFCT", 9, AP_SteerController, _deratefactor,        10),
 
@@ -107,7 +108,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Description: The angle that limits smallest angle of steering wheel at maximum speed. Even if it should derate below, it will stop derating at this angle.
     // @Range: 0.0 4500.0
     // @Increment: 0.1
-    // @Units: Centidegrees
+    // @Units: cdeg
     // @User: Advanced
     AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree,        4500),
 
@@ -144,7 +145,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // We do this in earth frame to allow for rover leaning over in hard corners
     float yaw_rate_earth = ToDeg(_ahrs.get_yaw_rate_earth());
     if (_reverse) {
-        yaw_rate_earth = wrap_180(180 + yaw_rate_earth);
+        yaw_rate_earth *= -1.0f;
     }
     float rate_error = (desired_rate - yaw_rate_earth) * scaler;
 	

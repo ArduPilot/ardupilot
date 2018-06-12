@@ -6,18 +6,15 @@
  */
 
 // althold_init - initialise althold controller
-bool Sub::althold_init(bool ignore_checks)
+bool Sub::althold_init()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "Depth hold requires external pressure sensor.");
+    if(!control_check_barometer()) {
         return false;
     }
-#endif
 
     // initialize vertical speeds and leash lengths
     // sets the maximum speed up and down returned by position controller
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -36,10 +33,10 @@ void Sub::althold_run()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
-    if (!motors.armed() || !motors.get_interlock()) {
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -50,9 +47,6 @@ void Sub::althold_run()
 
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
@@ -60,13 +54,9 @@ void Sub::althold_run()
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
-    // get pilot desired climb rate
-    float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
-
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         last_pilot_heading = ahrs.yaw_sensor;
         last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
@@ -78,32 +68,32 @@ void Sub::althold_run()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
             last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute absolute bearing
-            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true);
         }
     }
 
-    // adjust climb rate using rangefinder
-    if (rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+    if (fabsf(channel_throttle->norm_input()-0.5) > 0.05) { // Throttle input above 5%
+        // output pilot's throttle
+        attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
+        // reset z targets to current values
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+    } else { // hold z
+
+        if (ap.at_bottom) {
+            pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
+            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        } else if (rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
+            float target_climb_rate = get_surface_tracking_climb_rate(0, pos_control.get_alt_target(), G_Dt);
+            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        }
+        pos_control.update_z_controller();
     }
 
-    // call z axis position controller
-    if (ap.at_bottom) {
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
-        pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
-    } else {
-        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-    }
-
-    pos_control.update_z_controller();
-
-    //control_in is range 0-1000
-    //radio_in is raw pwm value
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
 }

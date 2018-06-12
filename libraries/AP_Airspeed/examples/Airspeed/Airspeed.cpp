@@ -22,12 +22,17 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+
+void setup();
+void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 float temperature;
 
 AP_Airspeed airspeed;
+static AP_BoardConfig board_config;
 
 namespace {
 // try to set the object value but provide diagnostic if it failed
@@ -50,7 +55,7 @@ void setup()
     set_object_value(&airspeed, airspeed.var_info, "ENABLE", 1);
     set_object_value(&airspeed, airspeed.var_info, "USE", 1);
 
-    AP_BoardConfig{}.init();
+    board_config.init();
 
     airspeed.init();
     airspeed.calibrate(false);
@@ -65,9 +70,14 @@ void loop(void)
         airspeed.get_temperature(temperature);
 
         hal.console->printf("airspeed %5.2f temperature %6.2f healthy = %u\n",
-                            airspeed.get_airspeed(), temperature, airspeed.healthy());
+                            (double)airspeed.get_airspeed(), (double)temperature, airspeed.healthy());
     }
     hal.scheduler->delay(1);
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

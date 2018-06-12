@@ -6,15 +6,15 @@
 
 void Copter::default_dead_zones()
 {
-    channel_roll->set_default_dead_zone(10);
-    channel_pitch->set_default_dead_zone(10);
+    channel_roll->set_default_dead_zone(20);
+    channel_pitch->set_default_dead_zone(20);
 #if FRAME_CONFIG == HELI_FRAME
     channel_throttle->set_default_dead_zone(10);
     channel_yaw->set_default_dead_zone(15);
     RC_Channels::rc_channel(CH_6)->set_default_dead_zone(10);
 #else
     channel_throttle->set_default_dead_zone(30);
-    channel_yaw->set_default_dead_zone(10);
+    channel_yaw->set_default_dead_zone(20);
 #endif
     RC_Channels::rc_channel(CH_6)->set_default_dead_zone(0);
 }
@@ -43,14 +43,23 @@ void Copter::init_rc_in()
 
     // initialise throttle_zero flag
     ap.throttle_zero = true;
+
+    // Allow override by default at start
+    ap.rc_override_enable = true;
 }
 
  // init_rc_out -- initialise motors and check if pilot wants to perform ESC calibration
 void Copter::init_rc_out()
 {
-    motors->set_update_rate(g.rc_speed);
     motors->set_loop_rate(scheduler.get_loop_rate_hz());
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
+
+    // enable aux servos to cope with multiple output channels per motor
+    SRV_Channels::enable_aux_servos();
+
+    // update rate must be set after motors->init() to allow for motor mapping
+    motors->set_update_rate(g.rc_speed);
+
 #if FRAME_CONFIG != HELI_FRAME
     motors->set_throttle_range(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #else
@@ -58,22 +67,6 @@ void Copter::init_rc_out()
     // take a proportion of speed.
     hal.rcout->set_esc_scaling(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
 #endif
-
-    // delay up to 2 second for first radio input
-    uint8_t i = 0;
-    while ((i++ < 100) && (last_radio_update_ms == 0)) {
-        delay(20);
-        read_radio();
-    }
-
-    // check if we should enter esc calibration mode
-    esc_calibration_startup_check();
-
-    // enable output to motors
-    arming.pre_arm_rc_checks(true);
-    if (ap.pre_arm_rc_check) {
-        enable_motor_output();
-    }
 
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
@@ -85,6 +78,9 @@ void Copter::init_rc_out()
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
     BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
+
+    // check if we should enter esc calibration mode
+    esc_calibration_startup_check();
 }
 
 
@@ -92,7 +88,6 @@ void Copter::init_rc_out()
 void Copter::enable_motor_output()
 {
     // enable motors
-    motors->enable();
     motors->output_min();
 }
 
@@ -100,9 +95,8 @@ void Copter::read_radio()
 {
     uint32_t tnow_ms = millis();
 
-    if (hal.rcin->new_input()) {
+    if (RC_Channels::read_input()) {
         ap.new_radio_frame = true;
-        RC_Channels::set_pwm_all();
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
@@ -111,9 +105,6 @@ void Copter::read_radio()
         if (!failsafe.rc_override_active) {
             ap.rc_receiver_present = true;
         }
-
-        // update output on any aux channels, for manual passthru
-        SRV_Channels::output_ch_all();
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
@@ -187,7 +178,9 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // if not using throttle interlock and non-zero throttle and not E-stopped,
     // or using motor interlock and it's enabled, then motors are running, 
     // and we are flying. Immediately set as non-zero
-    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_emergency_stop) || (ap.using_interlock && motors->get_interlock())) {
+    if ((!ap.using_interlock && (throttle_control > 0) && !ap.motor_emergency_stop) ||
+        (ap.using_interlock && motors->get_interlock()) ||
+        ap.armed_with_switch) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {
@@ -198,5 +191,21 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
 // pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax copters)
 void Copter::radio_passthrough_to_motors()
 {
-    motors->set_radio_passthrough(channel_roll->get_control_in()/1000.0f, channel_pitch->get_control_in()/1000.0f, channel_throttle->get_control_in()/1000.0f, channel_yaw->get_control_in()/1000.0f);
+    motors->set_radio_passthrough(channel_roll->norm_input(),
+                                  channel_pitch->norm_input(),
+                                  channel_throttle->get_control_in_zero_dz()*0.001,
+                                  channel_yaw->norm_input());
+}
+
+/*
+  return the throttle input for mid-stick as a control-in value
+ */
+int16_t Copter::get_throttle_mid(void)
+{
+#if TOY_MODE_ENABLED == ENABLED
+    if (g2.toy_mode.enabled()) {
+        return g2.toy_mode.get_throttle_mid();
+    }
+#endif
+    return channel_throttle->get_control_mid();
 }

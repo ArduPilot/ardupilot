@@ -3,7 +3,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include "AC_PrecLand.h"
 
 class AC_PrecLand_Backend
@@ -39,6 +38,9 @@ public:
     // parses a mavlink message from the companion computer
     virtual void handle_msg(mavlink_message_t* msg) {};
 
+    // get bus parameter
+    int8_t get_bus(void) const { return _frontend._bus.get(); }
+    
 protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state

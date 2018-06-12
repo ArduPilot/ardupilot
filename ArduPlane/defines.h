@@ -7,7 +7,6 @@
 #define FALSE 0
 
 #define DEBUG 0
-#define LOITER_RANGE 60 // for calculating power outside of loiter radius
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
@@ -32,17 +31,19 @@ enum gcs_failsafe {
                                  // while in AUTO mode
 };
 
+enum failsafe_action_short {
+    FS_ACTION_SHORT_BESTGUESS = 0,      // CIRCLE/no change(if already in AUTO|GUIDED|LOITER)
+    FS_ACTION_SHORT_CIRCLE = 1,
+    FS_ACTION_SHORT_FBWA = 2,
+    FS_ACTION_SHORT_DISABLED = 3,
+};
 
-// active altitude sensor
-// ----------------------
-#define SONAR 0
-#define BARO 1
-
-#define PITOT_SOURCE_ADC 1
-#define PITOT_SOURCE_ANALOG_PIN 2
-
-#define T6 1000000
-#define T7 10000000
+enum failsafe_action_long {
+    FS_ACTION_LONG_CONTINUE = 0,
+    FS_ACTION_LONG_RTL = 1,
+    FS_ACTION_LONG_GLIDE = 2,
+    FS_ACTION_LONG_PARACHUTE = 3,
+};
 
 enum FlightMode {
     MANUAL        = 0,
@@ -115,21 +116,22 @@ typedef enum GeofenceEnableReason {
     GCS_TOGGLED          //Fence enabled/disabled by the GCS via Mavlink
 } GeofenceEnableReason;
 
-//repeating events
-#define NO_REPEAT 0
-#define CH_5_TOGGLE 1
-#define CH_6_TOGGLE 2
-#define CH_7_TOGGLE 3
-#define CH_8_TOGGLE 4
-#define RELAY_TOGGLE 5
-#define STOP_REPEAT 10
+// PID broadcast bitmask
+enum tuning_pid_bits {
+    TUNING_BITS_ROLL  = (1 <<  0),
+    TUNING_BITS_PITCH = (1 <<  1),
+    TUNING_BITS_YAW   = (1 <<  2),
+    TUNING_BITS_STEER = (1 <<  3),
+    TUNING_BITS_LAND  = (1 <<  4),
+    TUNING_BITS_END // dummy just used for static checking
+};
 
+static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to be set by MAVLink");
 
 // Logging message types
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_PERFORMANCE_MSG,
     LOG_STARTUP_MSG,
     TYPE_AIRSTART_MSG,
     TYPE_GROUNDSTART_MSG,
@@ -146,6 +148,7 @@ enum log_messages {
     LOG_PIQP_MSG,
     LOG_PIQY_MSG,
     LOG_PIQA_MSG,
+    LOG_AETR_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -154,7 +157,7 @@ enum log_messages {
 #define MASK_LOG_PM                     (1<<3)
 #define MASK_LOG_CTUN                   (1<<4)
 #define MASK_LOG_NTUN                   (1<<5)
-#define MASK_LOG_MODE                   (1<<6)
+//#define MASK_LOG_MODE                 (1<<6) // no longer used
 #define MASK_LOG_IMU                    (1<<7)
 #define MASK_LOG_CMD                    (1<<8)
 #define MASK_LOG_CURRENT                (1<<9)
@@ -166,51 +169,12 @@ enum log_messages {
 #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 
-// Waypoint Modes
-// ----------------
-#define ABS_WP 0
-#define REL_WP 1
-
-// Command Queues
-// ---------------
-#define COMMAND_MUST 0
-#define COMMAND_MAY 1
-#define COMMAND_NOW 2
-
-// Events
-// ------
-#define EVENT_WILL_REACH_WAYPOINT 1
-#define EVENT_SET_NEW_COMMAND_INDEX 2
-#define EVENT_LOADED_WAYPOINT 3
-#define EVENT_LOOP 4
-
-// Climb rate calculations
-#define ALTITUDE_HISTORY_LENGTH 8       //Number of (time,altitude) points to
-                                        // regress a climb rate from
-
-#define AN4                     4
-#define AN5                     5
-
-#define SPEEDFILT 400                   // centimeters/second; the speed below
-                                        // which a groundstart will be
-                                        // triggered
-
-// convert a boolean (0 or 1) to a sign for multiplying (0 maps to 1, 1 maps
-// to -1)
-#define BOOL_TO_SIGN(bvalue) ((bvalue) ? -1 : 1)
-
 // altitude control algorithms
 enum {
     ALT_CONTROL_DEFAULT      = 0,
     ALT_CONTROL_NON_AIRSPEED = 1,
     ALT_CONTROL_TECS         = 2,
     ALT_CONTROL_AIRSPEED     = 3
-};
-
-// attitude controller choice
-enum {
-    ATT_CONTROL_PID = 0,
-    ATT_CONTROL_APMCONTROL = 1
 };
 
 enum {

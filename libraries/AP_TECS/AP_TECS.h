@@ -29,14 +29,18 @@
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller) :
-        _ahrs(ahrs),
-        aparm(parms),
-        _landing(landing),
-        _soaring_controller(soaring_controller)
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller)
+        : _ahrs(ahrs)
+        , aparm(parms)
+        , _landing(landing)
+        , _soaring_controller(soaring_controller)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
+
+    /* Do not allow copies */
+    AP_TECS(const AP_TECS &other) = delete;
+    AP_TECS &operator=(const AP_TECS&) = delete;
 
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
@@ -370,4 +374,3 @@ private:
     // current time constant
     float timeConstant(void) const;
 };
-

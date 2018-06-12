@@ -35,7 +35,7 @@ public:
     void read_block(void *dst, uint16_t src, size_t n);
     void write_block(uint16_t dst, const void* src, size_t n);
 
-    void _timer_tick(void);
+    void _timer_tick(void) override;
 
 private:
     volatile bool _initialised;
@@ -46,6 +46,7 @@ private:
     Bitmask _dirty_mask{PX4_STORAGE_NUM_LINES};
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
+    uint32_t _last_re_init_ms;
 
 #if !USE_FLASH_STORAGE
     int _fd = -1;

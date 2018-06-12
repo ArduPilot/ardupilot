@@ -49,7 +49,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     rot_accel = Vector3f(0,0,0);
 
     // slight positive buoyancy
-    body_accel = Vector3f(0,0,-GRAVITY_MSS * 1.1);
+    body_accel = Vector3f(0, 0, -calculate_buoyancy_acceleration());
 
     for (int i = 0; i < 6; i++) {
         Thruster t = vectored_thrusters[i];
@@ -63,11 +63,6 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         body_accel += t.linear * output * 2.5;
 
         rot_accel += t.rotational * output;
-    }
-
-    // Limit movement at the surface of the water
-    if (position.z < 0 && body_accel.z < 0) {
-    	body_accel.z = GRAVITY_MSS;
     }
 
     // Limit movement at the sea floor
@@ -91,6 +86,29 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     }
 }
 
+/**
+* @brief Calculate buoyancy force of the frame
+*
+* @return float
+*/
+float Submarine::calculate_buoyancy_acceleration()
+{
+    float below_water_level = position.z - frame_proprietary.height/2;
+
+    // Completely above water level
+    if (below_water_level < 0) {
+        return 0.0f;
+    }
+
+    // Completely below water level
+    if (below_water_level > frame_proprietary.height/2) {
+        return frame_proprietary.bouyancy_acceleration;
+    }
+
+    // bouyant force is proportional to fraction of height in water
+    return frame_proprietary.bouyancy_acceleration * below_water_level/frame_proprietary.height;
+};
+
 /*
   update the Submarine simulation by one time step
  */
@@ -107,6 +125,7 @@ void Submarine::update(const struct sitl_input &input)
 
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();

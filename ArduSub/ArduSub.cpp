@@ -31,29 +31,29 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(auto_disarm_check,     10,     50),
-    SCHED_TASK(auto_trim,             10,     75),
     SCHED_TASK(read_rangefinder,      20,    100),
     SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(run_nav_updates,       50,    100),
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK(update_turn_counter,   10,     50),
     SCHED_TASK(compass_accumulate,   100,    100),
-    SCHED_TASK(barometer_accumulate,  50,     90),
-    SCHED_TASK(update_notify,         50,     90),
+    SCHED_TASK_CLASS(AP_Baro,             &sub.barometer,    accumulate,          50,  90),
+    SCHED_TASK_CLASS(AP_Notify,           &sub.notify,       update,              50,  90),
     SCHED_TASK(one_hz_loop,            1,    100),
-    SCHED_TASK(ekf_check,             10,     75),
-    SCHED_TASK(lost_vehicle_check,    10,     50),
     SCHED_TASK(gcs_check_input,      400,    180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
     SCHED_TASK(gcs_send_deferred,     50,    550),
     SCHED_TASK(gcs_data_stream_send,  50,    550),
-    SCHED_TASK(update_mount,          50,     75),
-    SCHED_TASK(update_trigger,        50,     75),
+#if MOUNT == ENABLED
+    SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
+#endif
+#if CAMERA == ENABLED
+    SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update_trigger,      50,  75),
+#endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK(dataflash_periodic,    400,    300),
-    SCHED_TASK(perf_update,           0.1,    75),
+    SCHED_TASK_CLASS(DataFlash_Class,     &sub.DataFlash,    periodic_tasks,     400, 300),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50),
+    SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75),
 #if RPM_ENABLED == ENABLED
     SCHED_TASK(rpm_update,            10,    200),
 #endif
@@ -61,7 +61,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(accel_cal_update,      10,    100),
     SCHED_TASK(terrain_update,        10,    100),
 #if GRIPPER_ENABLED == ENABLED
-    SCHED_TASK(gripper_update,            10,     75),
+    SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,       update,              10,  75),
 #endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75),
@@ -80,106 +80,43 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
 };
 
+constexpr int8_t Sub::_failsafe_priorities[5];
 
 void Sub::setup()
 {
-    cliSerial = hal.console;
-
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
     init_ardupilot();
 
     // initialise the main loop scheduler
-    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
-
-    // setup initial performance counters
-    perf_info_reset();
-    fast_loopTimer = AP_HAL::micros();
-}
-
-/*
-  if the compass is enabled then try to accumulate a reading
- */
-void Sub::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }
-}
-
-/*
-  try to accumulate a baro reading
- */
-void Sub::barometer_accumulate(void)
-{
-    barometer.accumulate();
-}
-
-void Sub::perf_update(void)
-{
-    if (should_log(MASK_LOG_PM)) {
-        Log_Write_Performance();
-    }
-    if (scheduler.debug()) {
-        gcs_send_text_fmt(MAV_SEVERITY_WARNING, "PERF: %u/%u %lu %lu\n",
-                          (unsigned)perf_info_get_num_long_running(),
-                          (unsigned)perf_info_get_num_loops(),
-                          (unsigned long)perf_info_get_max_time(),
-                          (unsigned long)perf_info_get_min_time());
-    }
-    perf_info_reset();
-    pmTest1 = 0;
+    scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks), MASK_LOG_PM);
 }
 
 void Sub::loop()
 {
-    // wait for an INS sample
-    ins.wait_for_sample();
-
-    uint32_t timer = micros();
-
-    // check loop time
-    perf_info_check_loop_time(timer - fast_loopTimer);
-
-    // used by PI Loops
-    G_Dt                    = (float)(timer - fast_loopTimer) / 1000000.0f;
-    fast_loopTimer          = timer;
-
-    // for mainloop failure monitoring
-    mainLoop_count++;
-
-    // Execute the fast loop
-    // ---------------------
-    fast_loop();
-
-    // tell the scheduler one tick has passed
-    scheduler.tick();
-
-    // run all the tasks that are due to run. Note that we only
-    // have to call this once per loop, as the tasks are scheduled
-    // in multiples of the main loop tick. So if they don't run on
-    // the first call to the scheduler they won't run on a later
-    // call until scheduler.tick() is called again
-    uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
-    scheduler.run(time_available);
+    scheduler.loop();
+    G_Dt = scheduler.get_loop_period_s();
 }
 
 
 // Main loop - 400hz
 void Sub::fast_loop()
 {
+    // update INS immediately to get current gyro data populated
+    ins.update();
+
     if (control_mode != MANUAL) { //don't run rate controller in manual mode
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
 
-    // IMU DCM Algorithm
-    // --------------------
-    read_AHRS();
-
     // send outputs to the motors library
     motors_output();
+
+    // run EKF state estimator (expensive)
+    // --------------------
+    read_AHRS();
 
     // Inertial Nav
     // --------------------
@@ -187,8 +124,6 @@ void Sub::fast_loop()
 
     // check if ekf has reset target heading
     check_ekf_yaw_reset();
-
-    crash_check(MAIN_LOOP_SECONDS);
 
     // run the attitude controllers
     update_flight_mode();
@@ -213,43 +148,18 @@ void Sub::fast_loop()
 // 50 Hz tasks
 void Sub::fifty_hz_loop()
 {
-    // check auto_armed status
-    update_auto_armed();
-
     // check pilot input failsafe
-    failsafe_manual_control_check();
+    failsafe_pilot_input_check();
 
-    if (hal.rcin->new_input()) {
-        // Update servo output
-        RC_Channels::set_pwm_all();
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_mount_tilt, 20.0f, 0.02f);
-        SRV_Channels::output_ch_all();
-    }
-}
+    failsafe_crash_check();
 
-// update_mount - update camera mount position
-// should be run at 50hz
-void Sub::update_mount()
-{
-#if MOUNT == ENABLED
-    // update camera mount's position
-    camera_mount.update();
-#endif
-}
+    failsafe_ekf_check();
 
+    failsafe_sensors_check();
 
-// update camera trigger
-void Sub::update_trigger(void)
-{
-#if CAMERA == ENABLED
-    camera.trigger_pic_cleanup();
-    if (camera.check_trigger_pin()) {
-        gcs_send_message(MSG_CAMERA_FEEDBACK);
-        if (should_log(MASK_LOG_CAMERA)) {
-            DataFlash.Log_Write_Camera(ahrs, gps, current_loc);
-        }
-    }
-#endif
+    // Update rc input/output
+    RC_Channels::read_input();
+    SRV_Channels::output_ch_all();
 }
 
 // update_batt_compass - read battery and compass
@@ -257,7 +167,7 @@ void Sub::update_trigger(void)
 void Sub::update_batt_compass(void)
 {
     // read battery before compass because it may be used for motor interference compensation
-    read_battery();
+    battery.read();
 
     if (g.compass_enabled) {
         // update compass with throttle value - used for compassmot
@@ -282,7 +192,7 @@ void Sub::ten_hz_logging_loop()
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
         }
     }
     if (should_log(MASK_LOG_MOTBATT)) {
@@ -295,10 +205,10 @@ void Sub::ten_hz_logging_loop()
         DataFlash.Log_Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
-        Log_Write_Nav_Tuning();
+        pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_Vibration(ins);
+        DataFlash.Log_Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control.control_monitor_log();
@@ -309,12 +219,6 @@ void Sub::ten_hz_logging_loop()
 // should be run at 25hz
 void Sub::twentyfive_hz_logging()
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    // HIL needs very fast update of the servo values
-    gcs_send_message(MSG_RADIO_OUT);
-#endif
-
-#if HIL_MODE == HIL_MODE_DISABLED
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
         DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
@@ -322,26 +226,22 @@ void Sub::twentyfive_hz_logging()
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, g.pid_accel_z.get_pid_info());
+            DataFlash.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
         }
     }
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU(ins);
+        DataFlash.Log_Write_IMU();
     }
-#endif
-}
-
-void Sub::dataflash_periodic(void)
-{
-    DataFlash.periodic_tasks();
 }
 
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
-    set_leak_status(leak_detector.update());
+    leak_detector.update();
+
+    failsafe_leak_check();
 
     failsafe_internal_pressure_check();
 
@@ -358,18 +258,15 @@ void Sub::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
-    update_events();
-
-#if CH6_TUNE_ENABLED == ENABLED
-    // update ch6 in flight tuning
-    tuning();
-#endif
+    ServoRelayEvents.update_events();
 }
 
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
-    AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
+    bool arm_check = arming.pre_arm_checks(false);
+    ap.pre_arm_check = arm_check;
+    AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
 
     if (should_log(MASK_LOG_ANY)) {
@@ -387,13 +284,8 @@ void Sub::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
-    check_usb_mux();
-
     // update position controller alt limits
     update_poscon_alt_max();
-
-    // enable/disable raw gyro/accel logging
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
 
     // log terrain data
     terrain_logging();
@@ -411,13 +303,8 @@ void Sub::update_GPS(void)
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
-
-            // log GPS message
-            if (should_log(MASK_LOG_GPS) && !ahrs.have_ekf_logging()) {
-                DataFlash.Log_Write_GPS(gps, i);
-            }
-
             gps_updated = true;
+            break;
         }
     }
 
@@ -425,73 +312,9 @@ void Sub::update_GPS(void)
         // set system time if necessary
         set_system_time_from_GPS();
 
-        // checks to initialise home and take location based pictures
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-
 #if CAMERA == ENABLED
-            if (camera.update_location(current_loc, sub.ahrs) == true) {
-                do_take_picture();
-            }
+        camera.update();
 #endif
-        }
-    }
-}
-
-void Sub::init_simple_bearing()
-{
-    // capture current cos_yaw and sin_yaw values
-    simple_cos_yaw = ahrs.cos_yaw();
-    simple_sin_yaw = ahrs.sin_yaw();
-
-    // initialise super simple heading (i.e. heading towards home) to be 180 deg from simple mode heading
-    super_simple_last_bearing = wrap_360_cd(ahrs.yaw_sensor+18000);
-    super_simple_cos_yaw = simple_cos_yaw;
-    super_simple_sin_yaw = simple_sin_yaw;
-
-    // log the simple bearing to dataflash
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(DATA_INIT_SIMPLE_BEARING, ahrs.yaw_sensor);
-    }
-}
-
-// update_simple_mode - rotates pilot input if we are in simple mode
-void Sub::update_simple_mode(void)
-{
-    float rollx, pitchx;
-
-    // exit immediately if no new radio frame or not in simple mode
-    if (ap.simple_mode == 0) {
-        return;
-    }
-
-    if (ap.simple_mode == 1) {
-        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    } else {
-        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
-    }
-
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
-    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
-}
-
-// update_super_simple_bearing - adjusts simple bearing based on location
-// should be called after home_bearing has been updated
-void Sub::update_super_simple_bearing(bool force_update)
-{
-    // check if we are in super simple mode and at least 10m from home
-    if (force_update || (ap.simple_mode == 2 && home_distance > SUPER_SIMPLE_RADIUS)) {
-        // check the bearing to home has changed by at least 5 degrees
-        if (labs(super_simple_last_bearing - home_bearing) > 500) {
-            super_simple_last_bearing = home_bearing;
-            float angle_rad = radians((super_simple_last_bearing+18000)/100);
-            super_simple_cos_yaw = cosf(angle_rad);
-            super_simple_sin_yaw = sinf(angle_rad);
-        }
     }
 }
 
@@ -499,13 +322,9 @@ void Sub::read_AHRS(void)
 {
     // Perform IMU calculations and get attitude info
     //-----------------------------------------------
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before ahrs update
-    gcs_check_input();
-#endif
-
-    ahrs.update();
-    ahrs_view.update();
+    // <true> tells AHRS to skip INS update as we have already done it in fast_loop()
+    ahrs.update(true);
+    ahrs_view.update(true);
 }
 
 // read baro and rangefinder altitude at 10hz
@@ -518,6 +337,20 @@ void Sub::update_altitude()
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }
+}
+
+bool Sub::control_check_barometer()
+{
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor is not connected.");
+        return false;
+    } else if (failsafe.sensor_health) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Depth sensor error.");
+        return false;
+    }
+#endif
+    return true;
 }
 
 AP_HAL_MAIN_CALLBACKS(&sub);

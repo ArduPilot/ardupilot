@@ -17,6 +17,7 @@
  *       AP_Motors6DOF.cpp - ArduSub motors library
  */
 
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Motors6DOF.h"
 
@@ -88,6 +89,34 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("FV_CPLNG_K", 9, AP_Motors6DOF, _forwardVerticalCouplingFactor, 1.0),
+
+    // @Param: 9_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("9_DIRECTION", 10, AP_Motors6DOF, _motor_reverse[8], 1),
+
+    // @Param: 10_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("10_DIRECTION", 11, AP_Motors6DOF, _motor_reverse[9], 1),
+
+    // @Param: 11_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("11_DIRECTION", 12, AP_Motors6DOF, _motor_reverse[10], 1),
+
+    // @Param: 12_DIRECTION
+    // @DisplayName: Motor normal or reverse
+    // @Description: Used to change motor rotation directions without changing wires
+    // @Values: 1:normal,-1:reverse
+    // @User: Standard
+    AP_GROUPINFO("12_DIRECTION", 13, AP_Motors6DOF, _motor_reverse[11], 1),
 
     AP_GROUPEND
 };
@@ -183,13 +212,11 @@ void AP_Motors6DOF::output_min()
 
     // fill the motor_out[] array for HIL use and send minimum value to each motor
     // ToDo find a field to store the minimum pwm instead of hard coding 1500
-    hal.rcout->cork();
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, 1500);
         }
     }
-    hal.rcout->push();
 }
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
@@ -233,13 +260,16 @@ void AP_Motors6DOF::output_to_motors()
     }
 
     // send output to each motor
-    hal.rcout->cork();
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, motor_out[i]);
         }
     }
-    hal.rcout->push();
+}
+
+float AP_Motors6DOF::get_current_limit_max_throttle()
+{
+    return 1.0f;
 }
 
 // output_armed - sends commands to the motors
@@ -314,6 +344,43 @@ void AP_Motors6DOF::output_armed_stabilizing()
             }
         }
     }
+
+    const AP_BattMonitor &battery = AP::battery();
+
+	// Current limiting
+    if (_batt_current_max <= 0.0f || !battery.has_current()) {
+        return;
+    }
+
+    float _batt_current = battery.current_amps();
+
+    float _batt_current_delta = _batt_current - _batt_current_last;
+
+    float loop_interval = 1.0f/_loop_rate;
+
+    float _current_change_rate = _batt_current_delta / loop_interval;
+
+    float predicted_current = _batt_current + (_current_change_rate * loop_interval * 5);
+
+    float batt_current_ratio = _batt_current/_batt_current_max;
+
+    float predicted_current_ratio = predicted_current/_batt_current_max;
+    _batt_current_last = _batt_current;
+
+    if (predicted_current > _batt_current_max * 1.5f) {
+        batt_current_ratio = 2.5f;
+    } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
+        batt_current_ratio = predicted_current_ratio;
+    }
+    _output_limited += (loop_interval/(loop_interval+_batt_current_time_constant)) * (1 - batt_current_ratio);
+
+    _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
+
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            _thrust_rpyt_out[i] *= _output_limited;
+        }
+    }
 }
 
 // output_armed - sends commands to the motors
@@ -370,7 +437,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
     if (forward_coupling_limit < 0) {
         forward_coupling_limit = 0;
     }
-    int8_t forward_coupling_direction[] = {-1,-1,1,1,0,0,0,0};
+    int8_t forward_coupling_direction[] = {-1,-1,1,1,0,0,0,0,0,0,0,0};
 
     // calculate linear command for each motor
     // linear factors should be 0.0 or 1.0 for now

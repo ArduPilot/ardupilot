@@ -41,7 +41,7 @@ static inline uint64_t now_nsec()
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_nsec + (ts.tv_sec * NSEC_PER_SEC);
+    return ts.tv_nsec + (ts.tv_sec * AP_NSEC_PER_SEC);
 }
 
 Perf *Perf::get_instance()

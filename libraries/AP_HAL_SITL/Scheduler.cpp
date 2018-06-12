@@ -13,8 +13,6 @@ extern const AP_HAL::HAL& hal;
 
 
 AP_HAL::Proc Scheduler::_failsafe = nullptr;
-volatile bool Scheduler::_timer_suspended = false;
-volatile bool Scheduler::_timer_event_missed = false;
 
 AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_timer_procs = 0;
@@ -23,6 +21,7 @@ bool Scheduler::_in_timer_proc = false;
 AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
+bool Scheduler::_should_reboot = false;
 
 Scheduler::Scheduler(SITL_State *sitlState) :
     _sitlState(sitlState),
@@ -52,18 +51,9 @@ void Scheduler::delay(uint16_t ms)
         delay_microseconds(1000);
         ms--;
         if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+            call_delay_cb();
         }
     }
-}
-
-void Scheduler::register_delay_callback(AP_HAL::Proc proc,
-        uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -99,22 +89,6 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::suspend_timer_procs() {
-    _timer_suspended = true;
-}
-
-void Scheduler::resume_timer_procs() {
-    _timer_suspended = false;
-    if (_timer_event_missed) {
-        _timer_event_missed = false;
-        _run_timer_procs(false);
-    }
-}
-
-bool Scheduler::in_timerprocess() {
-    return _in_timer_proc || _in_io_proc;
-}
-
 void Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
@@ -143,10 +117,10 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    hal.uartA->printf("REBOOT NOT IMPLEMENTED\r\n\n");
+    _should_reboot = true;
 }
 
-void Scheduler::_run_timer_procs(bool called_from_isr)
+void Scheduler::_run_timer_procs()
 {
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the
@@ -166,15 +140,11 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i]) {
-                _timer_proc[i]();
-            }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i]) {
+            _timer_proc[i]();
         }
-    } else if (called_from_isr) {
-        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup
@@ -185,31 +155,28 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     _in_timer_proc = false;
 }
 
-void Scheduler::_run_io_procs(bool called_from_isr)
+void Scheduler::_run_io_procs()
 {
     if (_in_io_proc) {
         return;
     }
     _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i]) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i]) {
+            _io_proc[i]();
         }
-    } else if (called_from_isr) {
-        _timer_event_missed = true;
     }
 
     _in_io_proc = false;
 
-    UARTDriver::from(hal.uartA)->_timer_tick();
-    UARTDriver::from(hal.uartB)->_timer_tick();
-    UARTDriver::from(hal.uartC)->_timer_tick();
-    UARTDriver::from(hal.uartD)->_timer_tick();
-    UARTDriver::from(hal.uartE)->_timer_tick();
+    hal.uartA->_timer_tick();
+    hal.uartB->_timer_tick();
+    hal.uartC->_timer_tick();
+    hal.uartD->_timer_tick();
+    hal.uartE->_timer_tick();
+    hal.uartF->_timer_tick();
 }
 
 /*
@@ -218,7 +185,10 @@ void Scheduler::_run_io_procs(bool called_from_isr)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     _stopped_clock_usec = time_usec;
-    _run_io_procs(false);
+    if (time_usec - _last_io_run > 10000) {
+        _last_io_run = time_usec;
+        _run_io_procs();
+    }
 }
 
 #endif

@@ -20,6 +20,7 @@
 #include <systemlib/mixer/mixer.h>
 #include <modules/px4iofirmware/protocol.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
+#include <utility>
 
 #define PX4_LIM_RC_MIN 900
 #define PX4_LIM_RC_MAX 2100
@@ -42,6 +43,146 @@ bool Plane::print_buffer(char *&buf, uint16_t &buf_size, const char *fmt, ...)
     return true;
 }
 
+/* 
+   create a mixer for a normal angle channel
+*/
+bool Plane::mix_one_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan)
+{
+    const float limit = 10000;
+    const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
+
+    bool is_throttle = in_chan==rcmap.throttle()-1;
+    int16_t outch_trim = is_throttle?1500:outch->get_trim();
+
+    outch_trim = constrain_int16(outch_trim, outch->get_output_min()+1, outch->get_output_max()-1);
+
+    if (!print_buffer(buf, buf_size, "M: 1\n")) {
+        return false;
+    }
+
+    int32_t out_min = limit*(outch_trim - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
+    int32_t out_max = limit*(outch->get_output_max() - outch_trim) / (PX4_LIM_RC_MAX - 1500);
+    int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
+    int32_t reverse = outch->get_reversed()?-1:1;
+
+    if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
+                      int(out_min*reverse),
+                      int(out_max*reverse),
+                      int(out_trim),
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
+                      in_chan,
+                      int(limit), int(limit),
+                      0,
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    return true;
+}
+
+/*
+  mix two channels using elevon style mixer
+*/
+bool Plane::mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel)
+{
+    const float limit = 10000;
+    const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
+    int16_t outch_trim = outch->get_trim();
+
+    outch_trim = constrain_int16(outch_trim, outch->get_output_min()+1, outch->get_output_max()-1);
+
+    if (!print_buffer(buf, buf_size, "M: 2\n")) {
+        return false;
+    }
+
+    int32_t out_min = limit*(outch->get_trim() - outch->get_output_min()) / (1500 - PX4_LIM_RC_MIN);
+    int32_t out_max = limit*(outch->get_output_max() - outch->get_trim()) / (PX4_LIM_RC_MAX - 1500);
+    int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
+    int32_t in_mul2 = left_channel?-1:1;
+    float in_gain = g.mixing_gain;
+    int32_t reverse = outch->get_reversed()?-1:1;
+
+    if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
+                      int(out_min*reverse),
+                      int(out_max*reverse),
+                      int(out_trim),
+                      int(-limit*2), int(limit*2))) {
+        return false;
+    }
+    if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
+                      in_chan1,
+                      int(limit*in_gain), int(limit*in_gain),
+                      0,
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
+                      in_chan2,
+                      int(limit*in_gain*in_mul2), int(limit*in_gain*in_mul2),
+                      0,
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    return true;
+}
+
+/* 
+   create a mixer for k_manual and k_rcin*
+*/
+bool Plane::mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan)
+{
+    const float limit = 10000;
+
+    if (!print_buffer(buf, buf_size, "M: 1\n")) {
+        return false;
+    }
+
+    if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
+                      int(limit),
+                      int(limit),
+                      0,
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n",
+                      in_chan,
+                      int(limit), int(limit),
+                      0,
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    return true;
+}
+
+/* 
+   create a mixer for outputting trim only
+*/
+bool Plane::mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan)
+{
+    const float limit = 10000;
+    const SRV_Channel *outch = SRV_Channels::srv_channel(out_chan);
+
+    int16_t outch_trim = outch->get_trim();
+    outch_trim = constrain_int16(outch_trim, outch->get_output_min()+1, outch->get_output_max()-1);
+
+    if (!print_buffer(buf, buf_size, "M: 0\n")) {
+        return false;
+    }
+
+    int32_t out_trim = limit*(outch_trim - 1500) / ((PX4_LIM_RC_MAX - PX4_LIM_RC_MIN) / 2);
+
+    if (!print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
+                      int(limit),
+                      int(limit),
+                      int(out_trim),
+                      int(-limit), int(limit))) {
+        return false;
+    }
+    return true;
+}
+
 /*
   create a PX4 mixer buffer given the current fixed wing parameters, returns the size of the buffer used
  */
@@ -49,166 +190,56 @@ uint16_t Plane::create_mixer(char *buf, uint16_t buf_size, const char *filename)
 {
     char *buf0 = buf;
     uint16_t buf_size0 = buf_size;
-
-    /*
-      this is the equivalent of channel_output_mixer()
-     */
-    const int8_t mixmul[5][2] = { { 0, 0 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 }};
-    // these are the internal clipping limits. Use scale_max1 when
-    // clipping to user specified min/max is wanted. Use scale_max2
-    // when no clipping is wanted (simulated by setting a very large
-    // clipping value)
-    const float scale_max1 = 10000;
-    const float scale_max2 = 1000000;
-    // range for mixers
-    const uint16_t mix_max = scale_max1 * g.mixing_gain;
-    // scaling factors used by PX4IO between pwm and internal values,
-    // as configured in setup_failsafe_mixing() below
-    const float pwm_min = PX4_LIM_RC_MIN;
-    const float pwm_max = PX4_LIM_RC_MAX;
-    const float pwm_scale = 2*scale_max1/(pwm_max - pwm_min);
+    uint16_t manual_mask = uint16_t(g2.manual_rc_mask.get());
 
     for (uint8_t i=0; i<8; i++) {
-        int32_t c1, c2, mix=0;
-        bool rev = false;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(i);
-        if (i == rcmap.pitch()-1 && g.vtail_output > MIXING_DISABLED && g.vtail_output <= MIXING_DNDN) {
-            // first channel of VTAIL mix
-            c1 = rcmap.yaw()-1;
-            c2 = i;
-            rev = false;
-            mix = -mix_max*mixmul[g.vtail_output][0];
-        } else if (i == rcmap.yaw()-1 && g.vtail_output > MIXING_DISABLED && g.vtail_output <= MIXING_DNDN) {
-            // second channel of VTAIL mix
-            c1 = rcmap.pitch()-1;
-            c2 = i;
-            rev = true;
-            mix = mix_max*mixmul[g.vtail_output][1];
-        } else if (i == rcmap.roll()-1 && g.elevon_output > MIXING_DISABLED && 
-                   g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
-            // first channel of ELEVON mix
-            c1 = i;
-            c2 = rcmap.pitch()-1;
-            rev = true;
-            mix = mix_max*mixmul[g.elevon_output][1];
-        } else if (i == rcmap.pitch()-1 && g.elevon_output > MIXING_DISABLED && 
-                   g.elevon_output <= MIXING_DNDN && g.vtail_output == 0) {
-            // second channel of ELEVON mix
-            c1 = i;
-            c2 = rcmap.roll()-1;
-            rev = false;
-            mix = mix_max*mixmul[g.elevon_output][0];
-        } else if (function == SRV_Channel::k_aileron || 
-                   function == SRV_Channel::k_flaperon1 || 
-                   function == SRV_Channel::k_flaperon2) {
-            // a secondary aileron. We don't mix flap input in yet for flaperons
-            c1 = rcmap.roll()-1;
-        } else if (function == SRV_Channel::k_elevator) {
-            // a secondary elevator
-            c1 = rcmap.pitch()-1;
-        } else if (function == SRV_Channel::k_rudder || 
-                   function == SRV_Channel::k_steering) {
-            // a secondary rudder or wheel
-            c1 = rcmap.yaw()-1;
-        } else if (g.flapin_channel > 0 &&
-                   (function == SRV_Channel::k_flap ||
-                    function == SRV_Channel::k_flap_auto)) {
-            // a flap output channel, and we have a manual flap input channel
-            c1 = g.flapin_channel-1;
-        } else if (i < 4 ||
-                   function == SRV_Channel::k_elevator_with_input ||
-                   function == SRV_Channel::k_aileron_with_input ||
-                   function == SRV_Channel::k_manual) {
-            // a pass-thru channel
-            c1 = i;
-        } else {
-            // a empty output
-            if (!print_buffer(buf, buf_size, "Z:\n")) {
-                return 0;
-            }
+        if ((1U<<i) & manual_mask) {
+            // handle MANUAL_RCMASK channels
+            mix_passthrough(buf, buf_size, i, i);
             continue;
         }
-        if (mix == 0) {
-            // pass through channel, possibly with reversal. We also
-            // adjust the gain based on the range of input and output
-            // channels and adjust for trims
-            const RC_Channel *chan1 = RC_Channels::rc_channel(i);
-            const RC_Channel *chan2 = RC_Channels::rc_channel(c1);
-            int16_t chan1_trim = (i==rcmap.throttle()-1?1500:chan1->get_radio_trim());
-            int16_t chan2_trim = (c1==rcmap.throttle()-1?1500:chan2->get_radio_trim());
-            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            // if the input and output channels are the same then we
-            // apply clipping. This allows for direct pass-thru
-            int32_t limit = (c1==i?scale_max2:scale_max1);
-            int32_t in_scale_low;
-            if (chan2_trim <= chan2->get_radio_min()) {
-                in_scale_low = scale_max1;
-            } else {
-                in_scale_low = scale_max1*(chan2_trim - pwm_min)/(float)(chan2_trim - chan2->get_radio_min());
-            }
-            int32_t in_scale_high;
-            if (chan2->get_radio_max() <= chan2_trim) {
-                in_scale_high = scale_max1;
-            } else {
-                in_scale_high = scale_max1*(pwm_max - chan2_trim)/(float)(chan2->get_radio_max() - chan2_trim);
-            }
-            if (chan1->get_reverse() != chan2->get_reverse()) {
-                in_scale_low = -in_scale_low;
-                in_scale_high = -in_scale_high;
-            }
-            if (!print_buffer(buf, buf_size, "M: 1\n") ||
-                !print_buffer(buf, buf_size, "O: %d %d %d %d %d\n",
-                              (int)(pwm_scale*(chan1_trim - chan1->get_radio_min())),
-                              (int)(pwm_scale*(chan1->get_radio_max() - chan1_trim)),
-                              (int)(pwm_scale*(chan1_trim - 1500)),
-                              (int)-scale_max2, (int)scale_max2) ||
-                !print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", c1,
-                              in_scale_low,
-                              in_scale_high,
-                              0,
-                              -limit, limit)) {
-                return 0;
-            }
-        } else {
-            const RC_Channel *chan1 = RC_Channels::rc_channel(c1);
-            const RC_Channel *chan2 = RC_Channels::rc_channel(c2);
-            int16_t chan1_trim = (c1==rcmap.throttle()-1?1500:chan1->get_radio_trim());
-            int16_t chan2_trim = (c2==rcmap.throttle()-1?1500:chan2->get_radio_trim());
-            chan1_trim = constrain_int16(chan1_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            chan2_trim = constrain_int16(chan2_trim, PX4_LIM_RC_MIN+1, PX4_LIM_RC_MAX-1);
-            // mix of two input channels to give an output channel. To
-            // make the mixer match the behaviour of APM we need to
-            // scale and offset the input channels to undo the affects
-            // of the PX4IO input processing
-            if (!print_buffer(buf, buf_size, "M: 2\n") ||
-                !print_buffer(buf, buf_size, "O: %d %d 0 %d %d\n", mix, mix, (int)-scale_max1, (int)scale_max1)) {
-                return 0;
-            }
-            int32_t in_scale_low = pwm_scale*(chan1_trim - pwm_min);
-            int32_t in_scale_high = pwm_scale*(pwm_max - chan1_trim);
-            int32_t offset = pwm_scale*(chan1_trim - 1500);
-            if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
-                              c1, in_scale_low, in_scale_high, offset,
-                              (int)-scale_max2, (int)scale_max2)) {
-                return 0;
-            }
-            in_scale_low = pwm_scale*(chan2_trim - pwm_min);
-            in_scale_high = pwm_scale*(pwm_max - chan2_trim);
-            offset = pwm_scale*(chan2_trim - 1500);
-            if (rev) {
-                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
-                                  c2, in_scale_low, in_scale_high, offset,
-                                  (int)-scale_max2, (int)scale_max2)) {
-                    return 0;
-                }
-            } else {
-                if (!print_buffer(buf, buf_size, "S: 0 %u %d %d %d %d %d\n", 
-                                  c2, -in_scale_low, -in_scale_high, -offset,
-                                  (int)-scale_max2, (int)scale_max2)) {
-                    return 0;
-                }
-            }
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(i);
+        switch (function) {
+        case SRV_Channel::k_aileron:
+        case SRV_Channel::k_flaperon_left:
+        case SRV_Channel::k_flaperon_right:
+            mix_one_channel(buf, buf_size, i, rcmap.roll()-1);
+            break;
+        case SRV_Channel::k_elevator:
+            mix_one_channel(buf, buf_size, i, rcmap.pitch()-1);
+            break;
+        case SRV_Channel::k_throttle:
+            mix_one_channel(buf, buf_size, i, rcmap.throttle()-1);
+            break;
+        case SRV_Channel::k_rudder:
+        case SRV_Channel::k_steering:
+            mix_one_channel(buf, buf_size, i, rcmap.yaw()-1);
+            break;
+        case SRV_Channel::k_elevon_left:
+        case SRV_Channel::k_dspoilerLeft1:
+        case SRV_Channel::k_dspoilerLeft2:
+            mix_two_channels(buf, buf_size, i, rcmap.pitch()-1, rcmap.roll()-1, true);
+            break;
+        case SRV_Channel::k_elevon_right:
+        case SRV_Channel::k_dspoilerRight1:
+        case SRV_Channel::k_dspoilerRight2:
+            mix_two_channels(buf, buf_size, i, rcmap.pitch()-1, rcmap.roll()-1, false);
+            break;
+        case SRV_Channel::k_vtail_left:
+            mix_two_channels(buf, buf_size, i, rcmap.pitch()-1, rcmap.yaw()-1, true);
+            break;
+        case SRV_Channel::k_vtail_right:
+            mix_two_channels(buf, buf_size, i, rcmap.pitch()-1, rcmap.yaw()-1, false);
+            break;
+        case SRV_Channel::k_manual:
+            mix_passthrough(buf, buf_size, i, i);
+            break;
+        case SRV_Channel::k_rcin1 ... SRV_Channel::k_rcin16:
+            mix_passthrough(buf, buf_size, i, uint8_t(function - SRV_Channel::k_rcin1));
+            break;
+        default:
+            mix_trim_channel(buf, buf_size, i);
+            break;
         }
     }    
 
@@ -238,8 +269,9 @@ bool Plane::setup_failsafe_mixing(void)
     enum AP_HAL::Util::safety_state old_state = hal.util->safety_switch_state();
     struct pwm_output_values pwm_values = {.values = {0}, .channel_count = 8};
     unsigned mixer_status = 0;
+    uint16_t manual_mask = uint16_t(g2.manual_rc_mask.get());
 
-    buf = (char *)malloc(buf_size);
+    buf = (char *)calloc(1, buf_size);
     if (buf == nullptr) {
         goto failed;
     }
@@ -299,34 +331,25 @@ bool Plane::setup_failsafe_mixing(void)
             continue;
         }
         struct pwm_output_rc_config config;
-        /*
-          we use a min/max of 900/2100 to allow for pass-thru of
-          larger values than the RC min/max range. This mimics the APM
-          behaviour of pass-thru in manual, which allows for dual-rate
-          transmitter setups in manual mode to go beyond the ranges
-          used in stabilised modes
-         */
         config.channel = i;
-        config.rc_min = 900;
-        config.rc_max = 2100;
+        // use high rc limits to allow for correct pass-thru channels
+        // without limits
+        config.rc_min = ch->get_radio_min();
+        config.rc_max = ch->get_radio_max();
         if (rcmap.throttle()-1 == i) {
-            // throttle uses a trim of 1500, so we don't get division
+            // throttle uses a trim between min and max, so we don't get division
             // by small numbers near RC3_MIN
-            config.rc_trim = 1500;
+            config.rc_trim = (config.rc_min + config.rc_max)/2;
         } else {
             config.rc_trim = constrain_int16(ch->get_radio_trim(), config.rc_min+1, config.rc_max-1);
         }
         config.rc_dz = 0; // zero for the purposes of manual takeover
 
-        // we set reverse as false, as users of ArduPilot will have
-        // input reversed on transmitter, so from the point of view of
-        // the mixer the input is never reversed. The one exception is
-        // the 2nd channel, which is reversed inside the PX4IO code,
-        // so needs to be unreversed here to give sane behaviour.
+        config.rc_reverse = ch->get_reverse();
+
         if (i == 1) {
-            config.rc_reverse = true;
-        } else {
-            config.rc_reverse = false;
+            // undo the reversal of channel2 in px4io
+            config.rc_reverse = !config.rc_reverse;
         }
 
         if (i+1 == g.override_channel.get()) {
@@ -343,6 +366,13 @@ bool Plane::setup_failsafe_mixing(void)
             config.rc_max = 1813; // round 1812.5 up to grant > 1750
             config.rc_min = 1000;
             config.rc_trim = 1500;
+        } else if (manual_mask & (1U<<i)) {
+            // use fixed limits for manual_mask channels
+            config.rc_assignment = i;
+            config.rc_reverse = i==1?true:false;
+            config.rc_max = PX4_LIM_RC_MAX;
+            config.rc_min = PX4_LIM_RC_MIN;
+            config.rc_trim = 1500;
         } else {
             config.rc_assignment = i;
         }
@@ -354,11 +384,10 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
-            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
+        if (SRV_Channel::is_motor(SRV_Channels::channel_function(i))) {
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
-            pwm_values.values[i] = 900;
+            pwm_values.values[i] = PX4_LIM_RC_MIN;
         }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MIN_PWM, (long unsigned int)&pwm_values) != 0) {
@@ -367,12 +396,11 @@ bool Plane::setup_failsafe_mixing(void)
     }
 
     for (uint8_t i = 0; i < pwm_values.channel_count; i++) {
-        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_motor1 &&
-            SRV_Channels::channel_function(i) <= SRV_Channel::k_motor8) {
+        if (SRV_Channel::is_motor(SRV_Channels::channel_function(i))) {
             hal.rcout->write(i, quadplane.thr_min_pwm);
             pwm_values.values[i] = quadplane.thr_min_pwm;
         } else {
-            pwm_values.values[i] = 2100;
+            pwm_values.values[i] = PX4_LIM_RC_MAX;
         }
     }
     if (ioctl(px4io_fd, PWM_SERVO_SET_MAX_PWM, (long unsigned int)&pwm_values) != 0) {
@@ -415,6 +443,5 @@ failed:
     }
     return ret;
 }
-
 
 #endif // CONFIG_HAL_BOARD

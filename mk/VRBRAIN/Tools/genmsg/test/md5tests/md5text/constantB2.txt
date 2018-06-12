@@ -1,3 +1,0 @@
-#blah
-string foo ="#bar
-#b

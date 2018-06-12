@@ -89,6 +89,10 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     { "MFT100L10>BBBBBBBB", false},
     #define AP_NOTIFY_PX4_TONE_LEAK_DETECTED 26
     { "MBT255L8>A+AA-", true},
+    #define AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN 27
+    { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
+    #define AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
+    { "MFT200L4<B#4A#6G#6", false },
 };
 
 bool ToneAlarm_PX4::init()
@@ -162,6 +166,14 @@ void ToneAlarm_PX4::update()
     }
 
     check_cont_tone();
+    
+    if (AP_Notify::flags.powering_off) {
+        if (!flags.powering_off) {
+            play_tone(AP_NOTIFY_PX4_TONE_QUIET_SHUTDOWN);
+        }
+        flags.powering_off = AP_Notify::flags.powering_off;
+        return;
+    }
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
         if(AP_Notify::flags.compass_cal_running) {
@@ -265,6 +277,12 @@ void ToneAlarm_PX4::update()
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;
         if (flags.pre_arm_check) {
             play_tone(AP_NOTIFY_PX4_TONE_QUIET_READY_OR_FINISHED);
+            _have_played_ready_tone = true;
+        } else {
+            // only play sad tone if we've ever played happy tone:
+            if (_have_played_ready_tone) {
+                play_tone(AP_NOTIFY_PX4_TONE_QUIET_NOT_READY_OR_NOT_FINISHED);
+            }
         }
     }
 

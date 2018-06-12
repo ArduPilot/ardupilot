@@ -1,5 +1,4 @@
 #include "Sub.h"
-#include "version.h"
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -8,107 +7,56 @@
 *
 *****************************************************************************/
 
-#if CLI_ENABLED == ENABLED
-
-// This is the help function
-int8_t Sub::main_menu_help(uint8_t argc, const Menu::arg *argv)
-{
-    cliSerial->printf("Commands:\n"
-                      "  logs\n"
-                      "  setup\n"
-                      "  test\n"
-                      "  reboot\n"
-                      "\n");
-    return (0);
-}
-
-// Command/function table for the top-level menu.
-const struct Menu::command main_menu_commands[] = {
-    //   command        function called
-    //   =======        ===============
-    {"logs",                MENU_FUNC(process_logs)},
-    {"setup",               MENU_FUNC(setup_mode)},
-    {"test",                MENU_FUNC(test_mode)},
-    {"reboot",              MENU_FUNC(reboot_board)},
-    {"help",                MENU_FUNC(main_menu_help)},
-};
-
-// Create the top-level menu object.
-MENU(main_menu, THISFIRMWARE, main_menu_commands);
-
-int8_t Sub::reboot_board(uint8_t argc, const Menu::arg *argv)
-{
-    hal.scheduler->reboot(false);
-    return 0;
-}
-
-// the user wants the CLI. It never exits
-void Sub::run_cli(AP_HAL::UARTDriver *port)
-{
-    cliSerial = port;
-    Menu::set_port(port);
-    port->set_blocking_writes(true);
-
-    // disable the mavlink delay callback
-    hal.scheduler->register_delay_callback(NULL, 5);
-
-    // disable main_loop failsafe
-    failsafe_disable();
-
-    // cut the engines
-    if (motors.armed()) {
-        motors.armed(false);
-        motors.output();
-    }
-
-    while (1) {
-        main_menu.run();
-    }
-}
-
-#endif // CLI_ENABLED
-
 static void mavlink_delay_cb_static()
 {
     sub.mavlink_delay_cb();
 }
 
-
 static void failsafe_check_static()
 {
-    sub.failsafe_check();
+    sub.mainloop_failsafe_check();
 }
 
 void Sub::init_ardupilot()
 {
-    if (!hal.gpio->usb_connected()) {
-        // USB is not connected, this means UART0 may be a Xbee, with
-        // its darned bricking problem. We can't write to it for at
-        // least one second after powering up. Simplest solution for
-        // now is to delay for 1 second. Something more elegant may be
-        // added later
-        hal.scheduler->delay(1000);
-    }
-
     // initialise serial port
     serial_manager.init_console();
 
-    cliSerial->printf("\n\nInit " FIRMWARE_STRING
-                      "\n\nFree RAM: %u\n",
-                      (unsigned)hal.util->available_memory());
-
-    //
-    // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)
-    //
-    report_version();
+    hal.console->printf("\n\nInit %s"
+                        "\n\nFree RAM: %u\n",
+                        fwver.fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM
     load_parameters();
 
     BoardConfig.init();
+#if HAL_WITH_UAVCAN
+    BoardConfig_CAN.init();
+#endif
 
+#if AP_FEATURE_BOARD_DETECT
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_by_name("GND_EXT_BUS", 0);
+        break;
+    default:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#endif
+
+    // identify ourselves correctly with the ground station
+    mavlink_system.sysid = g.sysid_this_mav;
+    
     // initialise serial port
     serial_manager.init();
+
+    // setup first port early to allow BoardConfig to report errors
+    gcs().chan(0).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, 0);
 
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
@@ -130,18 +78,8 @@ void Sub::init_ardupilot()
     // hal.scheduler->delay.
     hal.scheduler->register_delay_callback(mavlink_delay_cb_static, 5);
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    ap.usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
-    for (uint8_t i = 0; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        gcs_chan[i].setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
-    }
-
-    // identify ourselves correctly with the ground station
-    mavlink_system.sysid = g.sysid_this_mav;
+    gcs().setup_uarts(serial_manager);
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -165,7 +103,8 @@ void Sub::init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
     // Do GPS init
-    gps.init(&DataFlash, serial_manager);
+    gps.set_log_gps_bit(MASK_LOG_GPS);
+    gps.init(serial_manager);
 
     if (g.compass_enabled) {
         init_compass();
@@ -177,7 +116,6 @@ void Sub::init_ardupilot()
 #endif
 
     // init Location class
-    Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location_Class::set_terrain(&terrain);
     wp_nav.set_terrain(&terrain);
@@ -185,57 +123,37 @@ void Sub::init_ardupilot()
 
 #if AVOIDANCE_ENABLED == ENABLED
     wp_nav.set_avoidance(&avoid);
+    loiter_nav.set_avoidance(&avoid);
 #endif
 
     pos_control.set_dt(MAIN_LOOP_SECONDS);
 
     // init the optical flow sensor
+#if OPTFLOW == ENABLED
     init_optflow();
+#endif
 
 #if MOUNT == ENABLED
     // initialise camera mount
-    camera_mount.init(&DataFlash, serial_manager);
+    camera_mount.init(serial_manager);
 #endif
 
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
 
-#if CLI_ENABLED == ENABLED
-    if (g.cli_enabled) {
-        const char *msg = "\nPress ENTER 3 times to start interactive setup\n";
-        cliSerial->println(msg);
-        if (gcs_chan[1].initialised && (gcs_chan[1].get_uart() != NULL)) {
-            gcs_chan[1].get_uart()->println(msg);
-        }
-        if (num_gcs > 2 && gcs_chan[2].initialised && (gcs_chan[2].get_uart() != NULL)) {
-            gcs_chan[2].get_uart()->println(msg);
-        }
-    }
-#endif // CLI_ENABLED
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs_send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        hal.scheduler->delay(1000);
-    }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
-#endif
-
-    // read Baro pressure at ground
-    //-----------------------------
-    init_barometer(false);
+    // Init baro and determine if we have external (depth) pressure sensor
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
+    barometer.calibrate(false);
     barometer.update();
 
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
-        if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER && barometer.healthy(i)) {
+        if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
+            depth_sensor_idx = i;
             ap.depth_sensor_present = true;
-            break;
+            sensor_health.depth = barometer.healthy(depth_sensor_idx); // initialize health flag
+            break; // Go with the first one we find
         }
     }
 
@@ -252,11 +170,6 @@ void Sub::init_ardupilot()
 
     leak_detector.init();
 
-    // backwards compatibility
-    if (attitude_control.get_accel_yaw_max() < 110000.0f) {
-        attitude_control.save_accel_yaw_max(110000.0f);
-    }
-
     last_pilot_heading = ahrs.yaw_sensor;
 
     // initialise rangefinder
@@ -272,6 +185,12 @@ void Sub::init_ardupilot()
     // initialise mission library
     mission.init();
 
+    // initialise DataFlash library
+#if LOGGING_ENABLED == ENABLED
+    DataFlash.set_mission(&mission);
+    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+#endif
+
     startup_INS_ground();
 
     // we don't want writes to the serial port to cause us to pause
@@ -280,15 +199,17 @@ void Sub::init_ardupilot()
     serial_manager.set_blocking_writes_all(false);
 
     // enable CPU failsafe
-    failsafe_enable();
+    mainloop_failsafe_enable();
 
-    ins.set_raw_logging(should_log(MASK_LOG_IMU_RAW));
-    ins.set_dataflash(&DataFlash);
+    ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // init vehicle capabilties
     init_capabilities();
 
-    cliSerial->print("\nReady to FLY ");
+    // disable safety if requested
+    BoardConfig.init_safety();    
+    
+    hal.console->print("\nInit complete");
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -311,21 +232,7 @@ void Sub::startup_INS_ground()
     ahrs.reset();
 }
 
-// calibrate gyros - returns true if succesfully calibrated
-bool Sub::calibrate_gyros()
-{
-    // gyro offset calibration
-    sub.ins.init_gyro();
-
-    // reset ahrs gyro bias
-    if (sub.ins.gyro_calibrated_ok_all()) {
-        sub.ahrs.reset_gyro_drift();
-        return true;
-    }
-
-    return false;
-}
-
+// calibrate gyros - returns true if successfully calibrated
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
 bool Sub::position_ok()
 {
@@ -381,54 +288,14 @@ bool Sub::optflow_position_ok()
 #endif
 }
 
-// update_auto_armed - update status of auto_armed flag
-void Sub::update_auto_armed()
-{
-    // disarm checks
-    if (ap.auto_armed) {
-        // if motors are disarmed, auto_armed should also be false
-        if (!motors.armed()) {
-            set_auto_armed(false);
-            return;
-        }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
-        if (mode_has_manual_throttle(control_mode) && ap.throttle_zero && !failsafe.manual_control) {
-            set_auto_armed(false);
-        }
-    } else {
-        // arm checks
-        // if motors are armed and throttle is above zero auto_armed should be true
-        if (motors.armed()) {
-            set_auto_armed(true);
-        }
-    }
-}
-
-void Sub::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == ap.usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    ap.usb_connected = usb_check;
-}
-
 /*
   should we log a message type now?
  */
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    if (!(mask & g.log_bitmask) || in_mavlink_delay) {
-        return false;
-    }
-    bool ret = motors.armed() || DataFlash.log_while_disarmed();
-    if (ret && !DataFlash.logging_started() && !in_log_download) {
-        start_logging();
-    }
-    return ret;
+    ap.logging_started = DataFlash.logging_started();
+    return DataFlash.should_log(mask);
 #else
     return false;
 #endif

@@ -8,62 +8,53 @@
 #define AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT    1250    // default PWM value to move servo to when landing gear is up
 #define AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT     1750    // default PWM value to move servo to when landing gear is down
 
-// Gear command modes
-enum LandingGearCommandMode {
-    LandingGear_Deploy,
-    LandingGear_Auto,
-    LandingGear_Retract
-};
-
 /// @class	AP_LandingGear
 /// @brief	Class managing the control of landing gear
 class AP_LandingGear {
-
 public:
-
-    /// Constructor
-    AP_LandingGear() :
-        _retract_enabled(false),
-        _deployed(false),
-        _force_deploy(false),
-        _command_mode(LandingGear_Deploy)
-    {
+    AP_LandingGear() {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
     }
 
-    /// enabled - returns true if landing gear retract is enabled
-    bool enabled() const { return _retract_enabled; }
+    /* Do not allow copies */
+    AP_LandingGear(const AP_LandingGear &other) = delete;
+    AP_LandingGear &operator=(const AP_LandingGear&) = delete;
 
-    /// deployed - returns true if the landing gear is deployed
+    // Gear command modes
+    enum LandingGearCommand {
+        LandingGear_Retract,
+        LandingGear_Deploy,
+        LandingGear_Deploy_And_Keep_Deployed,
+    };
+
+    // Gear command modes
+    enum LandingGearStartupBehaviour {
+        LandingGear_Startup_WaitForPilotInput = 0,
+        LandingGear_Startup_Retract = 1,
+        LandingGear_Startup_Deploy = 2,
+    };
+
+    /// initialise state of landing gear
+    void init();
+
+    /// returns true if the landing gear is deployed
     bool deployed() const { return _deployed; }
 
-    /// update - should be called at 10hz
-    void update();
-
-    /// set_cmd_mode - set command mode to deploy, auto or retract
-    void set_cmd_mode(LandingGearCommandMode cmd) { _command_mode = cmd; }
-
-    /// force_deploy - set to true to force gear to deploy
-    void force_deploy(bool force) { _force_deploy = force;}
+    /// set landing gear position to retract, deploy or deploy-and-keep-deployed
+    void set_position(LandingGearCommand cmd);
 
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
-
-    bool     _retract_enabled;          // true if landing gear retraction is enabled
-
     // Parameters
     AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
     AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed
+    AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
-    bool        _force_deploy;          // used by main code to force landing gear to deploy, such as in Land mode
-    LandingGearCommandMode  _command_mode;  // pilots commanded control mode: Manual Deploy, Auto, or Manual Retract
-    
-    /// enable - enable landing gear retraction
-    void enable(bool on_off);
+    bool        _deploy_lock;           // used to force landing gear to remain deployed until another regular Deploy command is received to reduce accidental retraction
     
     /// retract - retract landing gear
     void retract();

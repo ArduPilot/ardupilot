@@ -1,129 +1,203 @@
 #include <AP_Math/AP_Math.h>
+#include <AP_AHRS/AP_AHRS.h>
 
-#include "AP_Compass.h"
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Declination/AP_Declination.h>
+#include <DataFlash/DataFlash.h>
 
-// don't allow any axis of the offset to go above 2000
-#define COMPASS_OFS_LIMIT 2000
+#include "Compass_learn.h"
+
+#include <stdio.h>
+
+extern const AP_HAL::HAL &hal;
+
+// constructor
+CompassLearn::CompassLearn(AP_AHRS &_ahrs, Compass &_compass) :
+    ahrs(_ahrs),
+    compass(_compass)
+{
+}
 
 /*
- *  this offset learning algorithm is inspired by this paper from Bill Premerlani
- *
- *  http://gentlenav.googlecode.com/files/MagnetometerOffsetNullingRevisited.pdf
- *
- *  The base algorithm works well, but is quite sensitive to
- *  noise. After long discussions with Bill, the following changes were
- *  made:
- *
- *   1) we keep a history buffer that effectively divides the mag
- *      vectors into a set of N streams. The algorithm is run on the
- *      streams separately
- *
- *   2) within each stream we only calculate a change when the mag
- *      vector has changed by a significant amount.
- *
- *  This gives us the property that we learn quickly if there is no
- *  noise, but still learn correctly (and slowly) in the face of lots of
- *  noise.
+  update when new compass sample available
  */
-void
-Compass::learn_offsets(void)
+void CompassLearn::update(void)
 {
-    if (_learn == 0) {
-        // auto-calibration is disabled
+    if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
+        !hal.util->get_soft_armed() || ahrs.get_time_flying_ms() < 3000) {
+        // only learn when flying and with enough time to be clear of
+        // the ground
         return;
     }
 
-    // this gain is set so we converge on the offsets in about 5
-    // minutes with a 10Hz compass
-    const float gain = 0.01f;
-    const float max_change = 10.0f;
-    const float min_diff = 50.0f;
-
-    if (!_null_init_done) {
-        // first time through
-        _null_init_done = true;
-        for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-            const Vector3f &field = _state[k].field;
-            const Vector3f &ofs = _state[k].offset.get();
-            for (uint8_t i=0; i<_mag_history_size; i++) {
-                // fill the history buffer with the current mag vector,
-                // with the offset removed
-                _state[k].mag_history[i] = Vector3i(roundf(field.x) - ofs.x, 
-                                                    roundf(field.y) - ofs.y, 
-                                                    roundf(field.z) - ofs.z);
-            }
-            _state[k].mag_history_index = 0;
+    if (!have_earth_field) {
+        Location loc;
+        if (!ahrs.get_position(loc)) {
+            // need to wait till we have a global position
+            return;
         }
+
+        // setup the expected earth field at this location
+        float declination_deg=0, inclination_deg=0, intensity_gauss=0;
+        AP_Declination::get_mag_field_ef(loc.lat*1.0e-7, loc.lng*1.0e-7, intensity_gauss, declination_deg, inclination_deg);
+
+        // create earth field
+        mag_ef = Vector3f(intensity_gauss*1000, 0.0, 0.0);
+        Matrix3f R;
+
+        R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
+        mag_ef = R * mag_ef;
+
+        sem = hal.util->new_semaphore();
+
+        have_earth_field = true;
+
+        // form eliptical correction matrix and invert it. This is
+        // needed to remove the effects of the eliptical correction
+        // when calculating new offsets
+        const Vector3f &diagonals = compass.get_diagonals(0);
+        const Vector3f &offdiagonals = compass.get_offdiagonals(0);
+        mat = Matrix3f(
+            diagonals.x, offdiagonals.x, offdiagonals.y,
+            offdiagonals.x,    diagonals.y, offdiagonals.z,
+            offdiagonals.y, offdiagonals.z,    diagonals.z
+            );
+        if (!mat.invert()) {
+            // if we can't invert, use the identity matrix
+            mat.identity();
+        }
+
+        // set initial error to field intensity
+        for (uint16_t i=0; i<num_sectors; i++) {
+            errors[i] = intensity_gauss*1000;
+        }
+        
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
+    }
+
+    if (sample_available) {
+        // last sample still being processed by IO thread
         return;
     }
 
-    for (uint8_t k=0; k<COMPASS_MAX_INSTANCES; k++) {
-        const Vector3f &ofs = _state[k].offset.get();
-        const Vector3f &field = _state[k].field;
-        Vector3f b1, diff;
-        float length;
+    Vector3f field = compass.get_field(0);
+    Vector3f field_change = field - last_field;
+    if (field_change.length() < min_field_change) {
+        return;
+    }
+    
+    if (sem->take_nonblocking()) {
+        // give a sample to the backend to process
+        new_sample.field = field;
+        new_sample.offsets = compass.get_offsets(0);
+        new_sample.attitude = Vector3f(ahrs.roll, ahrs.pitch, ahrs.yaw);
+        sample_available = true;
+        last_field = field;
+        num_samples++;
+        sem->give();
+    }
 
-        if (ofs.is_nan()) {
-            // offsets are bad possibly due to a past bug - zero them
-            _state[k].offset.set(Vector3f());
+    if (sample_available) {
+        DataFlash_Class::instance()->Log_Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+                                               AP_HAL::micros64(),
+                                               (double)best_offsets.x,
+                                               (double)best_offsets.y,
+                                               (double)best_offsets.z,
+                                               (double)best_error,
+                                               (double)best_yaw_deg,
+                                               (double)worst_error,
+                                               num_samples);
+    }
+
+    if (!converged && sem->take_nonblocking()) {
+        // stop updating the offsets once converged
+        compass.set_offsets(0, best_offsets);
+        if (num_samples > 30 && best_error < 50 && worst_error > 65) {
+            // set the offsets and enable compass for EKF use. Let the
+            // EKF learn the remaining compass offset error
+            compass.save_offsets(0);
+            compass.set_use_for_yaw(0, true);
+            compass.set_learn_type(Compass::LEARN_EKF, true);
+            converged = true;
+        }
+        sem->give();
+    }
+}
+
+/*
+  we run the math intensive calculations in the IO thread
+ */
+void CompassLearn::io_timer(void)
+{
+    if (!sample_available) {
+        return;
+    }
+    struct sample s;
+    if (!sem->take_nonblocking()) {
+        return;
+    }
+    s = new_sample;
+    sample_available = false;
+    sem->give();
+
+    process_sample(s);
+}
+
+/*
+  process a new compass sample
+ */
+void CompassLearn::process_sample(const struct sample &s)
+{
+    uint16_t besti = 0;
+    float bestv = 0, worstv=0;
+
+    /*
+      we run through the 72 possible yaw error values, and for each
+      one we calculate a value for the compass offsets if that yaw
+      error is correct. 
+     */
+    for (uint16_t i=0; i<num_sectors; i++) {
+        float yaw_err_deg = i*(360/num_sectors);
+
+        // form rotation matrix for the euler attitude
+        Matrix3f dcm;
+        dcm.from_euler(s.attitude.x, s.attitude.y, wrap_2PI(s.attitude.z + radians(yaw_err_deg)));
+
+        // calculate the field we would expect to get if this yaw error is correct
+        Vector3f expected_field = dcm.transposed() * mag_ef;
+
+        // calculate a value for the compass offsets for this yaw error
+        Vector3f v1 = mat * s.field;
+        Vector3f v2 = mat * expected_field;
+        Vector3f offsets = (v2 - v1) + s.offsets;
+        float delta = (offsets - predicted_offsets[i]).length();
+
+        if (num_samples == 1) {
+            predicted_offsets[i] = offsets;
+        } else {
+            // lowpass the predicted offsets and the error
+            const float learn_rate = 0.92;
+            predicted_offsets[i] = predicted_offsets[i] * learn_rate + offsets * (1-learn_rate);
+            errors[i] = errors[i] * learn_rate + delta * (1-learn_rate);
         }
 
-        // get a past element
-        b1 = Vector3f(_state[k].mag_history[_state[k].mag_history_index].x,
-                      _state[k].mag_history[_state[k].mag_history_index].y,
-                      _state[k].mag_history[_state[k].mag_history_index].z);
-
-        // the history buffer doesn't have the offsets
-        b1 += ofs;
-
-        // get the current vector
-        const Vector3f &b2 = field;
-
-        // calculate the delta for this sample
-        diff = b2 - b1;
-        length = diff.length();
-        if (length < min_diff) {
-            // the mag vector hasn't changed enough - we don't get
-            // enough information from this vector to use it.
-            // Note that we don't put the current vector into the mag
-            // history here. We want to wait for a larger rotation to
-            // build up before calculating an offset change, as accuracy
-            // of the offset change is highly dependent on the size of the
-            // rotation.
-            _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
-            continue;
+        // keep track of the current best prediction
+        if (i == 0 || errors[i] < bestv) {
+            besti = i;
+            bestv = errors[i];
         }
-
-        // put the vector in the history
-        _state[k].mag_history[_state[k].mag_history_index] = Vector3i(roundf(field.x) - ofs.x, 
-                                                                      roundf(field.y) - ofs.y, 
-                                                                      roundf(field.z) - ofs.z);
-        _state[k].mag_history_index = (_state[k].mag_history_index + 1) % _mag_history_size;
-
-        // equation 6 of Bills paper
-        diff = diff * (gain * (b2.length() - b1.length()) / length);
-
-        // limit the change from any one reading. This is to prevent
-        // single crazy readings from throwing off the offsets for a long
-        // time
-        length = diff.length();
-        if (length > max_change) {
-            diff *= max_change / length;
+        // also keep the worst error. This is used as part of the convergence test
+        if (i == 0 || errors[i] > worstv) {
+            worstv = errors[i];
         }
+    }
 
-        Vector3f new_offsets = _state[k].offset.get() - diff;
-
-        if (new_offsets.is_nan()) {
-            // don't apply bad offsets
-            continue;
-        }
-
-        // constrain offsets
-        new_offsets.x = constrain_float(new_offsets.x, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-        new_offsets.y = constrain_float(new_offsets.y, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-        new_offsets.z = constrain_float(new_offsets.z, -COMPASS_OFS_LIMIT, COMPASS_OFS_LIMIT);
-            
-        // set the new offsets
-        _state[k].offset.set(new_offsets);
+    if (sem->take_nonblocking()) {
+        // pass the current estimate to the front-end
+        best_offsets = predicted_offsets[besti];
+        best_error = bestv;
+        worst_error = worstv;
+        best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
+        sem->give();
     }
 }

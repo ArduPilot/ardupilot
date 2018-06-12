@@ -45,6 +45,12 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         frame_type = "y6";
     } else if (strstr(frame_str, "-tri")) {
         frame_type = "tri";
+    } else if (strstr(frame_str, "-tilttrivec")) {
+        frame_type = "tilttrivec";
+        // fwd motor gives zero thrust
+        thrust_scale = 0;
+    } else if (strstr(frame_str, "-tilthvec")) {
+        frame_type = "tilthvec";
     } else if (strstr(frame_str, "-tilttri")) {
         frame_type = "tilttri";
         // fwd motor gives zero thrust
@@ -110,6 +116,7 @@ void QuadPlane::update(const struct sitl_input &input)
 
     // update lat/lon/altitude
     update_position();
+    time_advance();
 
     // update magnetic field
     update_mag_field_bf();

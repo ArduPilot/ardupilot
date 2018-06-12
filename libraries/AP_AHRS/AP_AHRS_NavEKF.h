@@ -22,6 +22,8 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+
+#define AP_AHRS_NAVEKF_AVAILABLE 1
 #include "AP_AHRS.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -33,11 +35,10 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
-#define AP_AHRS_NAVEKF_AVAILABLE 1
+
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-class AP_AHRS_NavEKF : public AP_AHRS_DCM
-{
+class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
         FLAG_NONE = 0,
@@ -45,8 +46,11 @@ public:
     };
 
     // Constructor
-    AP_AHRS_NavEKF(AP_InertialSensor &ins, AP_Baro &baro, AP_GPS &gps, RangeFinder &rng,
-                   NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
+    AP_AHRS_NavEKF(NavEKF2 &_EKF2, NavEKF3 &_EKF3, Flags flags = FLAG_NONE);
+
+    /* Do not allow copies */
+    AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
+    AP_AHRS_NavEKF &operator=(const AP_AHRS_NavEKF&) = delete;
 
     // return the smoothed gyro vector corrected for drift
     const Vector3f &get_gyro(void) const override;
@@ -59,7 +63,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
 
-    void            update() override;
+    void            update(bool skip_ins_update=false) override;
     void            reset(bool recover_eulers = false) override;
 
     // reset the current attitude, used on new IMU calibration
@@ -69,14 +73,14 @@ public:
     bool get_position(struct Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const;
+    bool get_hagl(float &hagl) const override;
 
     // status reporting of estimated error
     float           get_error_rp() const override;
     float           get_error_yaw() const override;
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() override;
+    Vector3f wind_estimate() const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -101,10 +105,13 @@ public:
     }
     
     // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers) override;
+    bool get_secondary_attitude(Vector3f &eulers) const override;
 
+    // return secondary attitude solution if available, as quaternion
+    bool get_secondary_quaternion(Quaternion &quat) const override;
+    
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc) override;
+    bool get_secondary_position(struct Location &loc) const override;
 
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector() override;
@@ -118,11 +125,13 @@ public:
     // blended accelerometer values in the earth frame in m/s/s
     const Vector3f &get_accel_ef_blended() const override;
 
-    // set home location
-    void set_home(const Location &loc) override;
+    // set the EKF's origin location in 10e7 degrees.  This should only
+    // be called when the EKF has no absolute position reference (i.e. GPS)
+    // from which to decide the origin on its own
+    bool set_origin(const Location &loc) override;
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool get_origin(Location &ret) const;
+    bool get_origin(Location &ret) const override;
 
     bool have_inertial_nav() const override;
 
@@ -145,16 +154,22 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate(float &velocity);
+    bool get_vert_pos_rate(float &velocity) const;
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset);
+
+    // write body odometry measurements to the EKF
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+
+    // Write position and quaternion data from an external navigation system
+    void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) override;
 
     // inhibit GPS usage
     uint8_t setInhibitGPS(void);
 
     // get speed limit
-    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler);
+    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     void set_ekf_use(bool setting);
 
@@ -169,7 +184,7 @@ public:
 
     // get compass offset estimates
     // true if offsets are valid
-    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets);
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // report any reason for why the backend is refusing to initialise
     const char *prearm_failure_reason(void) const override;
@@ -198,15 +213,17 @@ public:
     bool resetHeightDatum() override;
 
     // send a EKF_STATUS_REPORT for current EKF
-    void send_ekf_status_report(mavlink_channel_t chan);
+    void send_ekf_status_report(mavlink_channel_t chan) const;
     
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const;
+    bool get_hgt_ctrl_limit(float &limit) const override;
 
-    // get_llh - updates the provided location with the latest calculated location including absolute altitude
-    //  returns true on success (i.e. the EKF knows it's latest position), false on failure
+    // get_location - updates the provided location with the latest
+    // calculated location including absolute altitude
+    // returns true on success (i.e. the EKF knows it's latest
+    // position), false on failure
     bool get_location(struct Location &loc) const;
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
@@ -224,7 +241,7 @@ public:
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);
 
-    bool getGpsGlitchStatus();
+    bool getGpsGlitchStatus() const;
 
     // used by Replay to force start at right timestamp
     void force_ekf_start(void) { _force_ekf = true; }
@@ -237,7 +254,7 @@ public:
 
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const override;
-    
+
 private:
     enum EKF_TYPE {EKF_TYPE_NONE=0,
                    EKF_TYPE3=3,
@@ -268,7 +285,7 @@ private:
     Flags _ekf_flags;
 
     uint8_t ekf_type(void) const;
-    void update_DCM(void);
+    void update_DCM(bool skip_ins_update);
     void update_EKF2(void);
     void update_EKF3(void);
 
@@ -277,6 +294,7 @@ private:
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
+    uint32_t _last_body_odm_update_ms = 0;
     void update_SITL(void);
 #endif    
 };

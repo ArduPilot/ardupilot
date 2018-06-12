@@ -60,7 +60,9 @@ private:
         uint16_t compass_cal_running   : 1;    // 1 if compass calibration is running
         uint16_t waiting_for_throw     : 1;    // 1 if waiting for copter throw launch
         uint16_t leak_detected         : 1;    // 1 if leak detected
+        uint16_t powering_off          : 1;    // 1 if smart battery is powering off
     } flags;
+    bool _have_played_ready_tone : 1;
 
     int8_t _cont_tone_playing;
     int8_t _tone_playing;

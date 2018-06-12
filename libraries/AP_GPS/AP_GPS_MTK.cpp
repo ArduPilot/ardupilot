@@ -176,6 +176,7 @@ AP_GPS_MTK::_detect(struct MTK_detect_state &state, uint8_t data)
                 break;
             }
             state.step = 0;
+            FALLTHROUGH;
         case 0:
 			state.ck_b = state.ck_a = state.payload_counter = 0;
             if(PREAMBLE1 == data)

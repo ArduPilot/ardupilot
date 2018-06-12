@@ -16,6 +16,7 @@ from waflib import Errors, Context, Utils
 from waflib.Configure import conf
 from waflib.Tools import compiler_c, compiler_cxx
 from waflib.Tools import clang, clangxx, gcc, gxx
+from waflib import Logs
 
 import os
 import re
@@ -126,12 +127,15 @@ def find_toolchain_program(cfg, filename, **kw):
     return cfg.find_program(filename, **kw)
 
 def configure(cfg):
-    if cfg.env.TOOLCHAIN == 'native':
-        cfg.load('compiler_cxx compiler_c')
-        return
-
     _filter_supported_c_compilers('gcc', 'clang')
     _filter_supported_cxx_compilers('g++', 'clang++')
+
+    if cfg.env.TOOLCHAIN == 'native':
+        cfg.load('compiler_cxx compiler_c')
+        if cfg.env.COMPILER_CC == 'clang' or cfg.env.COMPILER_CXX == 'clang++':
+            Logs.warn("Warning! Native clang builds can be unstable, please use gcc/g++. \
+\nRefer ardupilot.org docs for more details.")
+        return
 
     cfg.find_toolchain_program('ar')
 

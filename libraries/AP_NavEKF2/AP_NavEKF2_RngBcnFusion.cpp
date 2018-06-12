@@ -249,8 +249,8 @@ void NavEKF2_core::FuseRngBcn()
 }
 
 /*
-Use range beaon measurements to calculate a static position using a 3-state EKF algorithm.
-Algorihtm based on the following:
+Use range beacon measurements to calculate a static position using a 3-state EKF algorithm.
+Algorithm based on the following:
 https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon.m
 */
 void NavEKF2_core::FuseRngBcnStatic()
@@ -260,7 +260,7 @@ void NavEKF2_core::FuseRngBcnStatic()
 
     /*
     The first thing to do is to check if we have started the alignment and if not, initialise the
-    states and covariance to a first guess. To do this iterate through the avilable beacons and then
+    states and covariance to a first guess. To do this iterate through the available beacons and then
     initialise the initial position to the mean beacon position. The initial position uncertainty
     is set to the mean range measurement.
     */

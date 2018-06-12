@@ -3,9 +3,6 @@
 # APM startup script for NuttX on PX4
 
 # To disable APM startup add a /fs/microsd/APM/nostart file
-# To enable mkblctrl startup add a /fs/microsd/APM/mkblctrl file
-# To enable mkblctrl_+ startup add a /fs/microsd/APM/mkblctrl_+ file
-# To enable mkblctrl_x startup add a /fs/microsd/APM/mkblctrl_x file
 
 # check for an old file called APM, caused by 
 # a bug in an earlier firmware release
@@ -58,46 +55,6 @@ then
     echo "uorb started OK"
 else
     sh /etc/init.d/rc.error
-fi
-
-# start mkblctrl driver if configured
-if [ -f /fs/microsd/APM/mkblctrl ]
-then
-    echo "Setting up mkblctrl driver"
-    echo "Setting up mkblctrl driver" >> $logfile
-    mkblctrl -d /dev/pwm_output
-fi
-
-if [ -f /fs/microsd/APM/mkblctrl_+ ]
-then
-    echo "Setting up mkblctrl driver +"
-    echo "Setting up mkblctrl driver +" >> $logfile
-    mkblctrl -mkmode + -d /dev/pwm_output
-fi
-
-if [ -f /fs/microsd/APM/mkblctrl_x ]
-then
-    echo "Setting up mkblctrl driver x"
-    echo "Setting up mkblctrl driver x" >> $logfile
-    mkblctrl -mkmode x -d /dev/pwm_output
-fi
-
-if mtd start /fs/mtd
-then
-    echo "started mtd driver OK"
-else
-    echo "failed to start mtd driver"
-    echo "failed to start mtd driver" >> $logfile
-    sh /etc/init.d/rc.error           
-fi
-
-if mtd readtest /fs/mtd
-then
-    echo "mtd readtest OK"
-else
-    echo "failed to read mtd"
-    echo "failed to read mtd" >> $logfile
-    sh /etc/init.d/rc.error           
 fi
 
 echo Starting ArduPilot

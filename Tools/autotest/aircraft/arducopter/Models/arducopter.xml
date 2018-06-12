@@ -17,7 +17,7 @@
   <animation>
     <type>spin</type>
     <object-name>propeller0</object-name>
-    <property>/engines/engine[0]/rpm</property>
+    <property>engines/engine[0]/rpm</property>
     <factor>100</factor>
     <axis>
       <x1-m>0.000</x1-m>
@@ -36,7 +36,7 @@
   <animation>
     <type>spin</type>
     <object-name>propeller1</object-name>
-    <property>/engines/engine[1]/rpm</property>
+    <property>engines/engine[1]/rpm</property>
     <factor>100</factor>
     <axis>
       <x1-m>0.000</x1-m>
@@ -55,7 +55,7 @@
   <animation>
     <type>spin</type>
     <object-name>propeller2</object-name>
-    <property>/engines/engine[2]/rpm</property>
+    <property>engines/engine[2]/rpm</property>
     <factor>100</factor>
     <axis>
       <x1-m>0.288</x1-m>
@@ -74,7 +74,7 @@
   <animation>
     <type>spin</type>
     <object-name>propeller3</object-name>
-    <property>/engines/engine[3]/rpm</property>
+    <property>engines/engine[3]/rpm</property>
     <factor>100</factor>
     <axis>
       <x1-m>-0.288</x1-m>

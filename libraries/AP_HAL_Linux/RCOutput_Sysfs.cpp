@@ -37,7 +37,7 @@ RCOutput_Sysfs::~RCOutput_Sysfs()
         delete _pwm_channels[i];
     }
 
-    delete _pwm_channels;
+    delete [] _pwm_channels;
 }
 
 void RCOutput_Sysfs::init()
@@ -45,6 +45,8 @@ void RCOutput_Sysfs::init()
     for (uint8_t i = 0; i < _channel_count; i++) {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
         _pwm_channels[i] = new PWM_Sysfs_Bebop(_channel_base+i);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
+        _pwm_channels[i] = new PWM_Sysfs(_chip+i, 0);
 #else
         _pwm_channels[i] = new PWM_Sysfs(_chip, _channel_base+i);
 #endif
@@ -136,6 +138,9 @@ void RCOutput_Sysfs::cork(void)
 
 void RCOutput_Sysfs::push(void)
 {
+    if (!_corked) {
+        return;
+    }
     for (uint8_t i=0; i<_channel_count; i++) {
         if ((1U<<i) & _pending_mask) {
             _pwm_channels[i]->set_duty_cycle(usec_to_nsec(_pending[i]));

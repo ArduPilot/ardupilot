@@ -46,7 +46,6 @@ public:
     void update(void);
 
 private:
-    const struct sitl_fdm &fdm;
     const char *target_address = "127.0.0.1";
     const uint16_t target_port = 5762;
 

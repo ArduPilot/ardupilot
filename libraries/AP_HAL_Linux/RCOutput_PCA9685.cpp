@@ -133,7 +133,7 @@ void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
      * different from @freq_hz due to rounding/ceiling. We use ceil() rather
      * than round() so the resulting frequency is never greater than @freq_hz
      */
-    uint8_t prescale = ceil(_osc_clock / (4096 * freq_hz)) - 1;
+    uint8_t prescale = ceilf(_osc_clock / (4096 * freq_hz)) - 1;
     _frequency = _osc_clock / (4096 * (prescale + 1));
 
     /* Write prescale value to match frequency */
@@ -176,8 +176,10 @@ void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
     _pulses_buffer[ch] = period_us;
     _pending_write_mask |= (1U << ch);
 
-    if (!_corking)
+    if (!_corking) {
+        _corking = true;
         push();
+    }
 }
 
 void RCOutput_PCA9685::cork()
@@ -187,6 +189,9 @@ void RCOutput_PCA9685::cork()
 
 void RCOutput_PCA9685::push()
 {
+    if (!_corking) {
+        return;
+    }
     _corking = false;
 
     if (_pending_write_mask == 0)

@@ -45,6 +45,12 @@ public:
     virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                                      uint32_t len) = 0;
 
+    /* 
+     *  send N bytes of clock pulses without taking CS. This is used
+     *  when initialising microSD interfaces over SPI
+    */
+    virtual bool clock_pulse(uint32_t len) { return false; }
+    
     /* See Device::get_semaphore() */
     virtual Semaphore *get_semaphore() override = 0;
 
@@ -63,6 +69,12 @@ public:
     {
         return nullptr;
     }
+
+    /* Return the number of SPI devices currently registered. */
+    virtual uint8_t get_count() { return 0; }
+
+    /* Get spi device name at @idx */
+    virtual const char *get_device_name(uint8_t idx) { return nullptr; }
 };
 
 }

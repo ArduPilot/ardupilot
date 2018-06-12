@@ -209,7 +209,7 @@ void SoloGimbal::update_estimators()
 }
 
 void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     if (ins_index < ins.get_gyro_count()) {
         if (!ins.get_delta_angle(ins_index,dAng)) {
@@ -219,7 +219,7 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 }
 
 void SoloGimbal::update_fast() {
-    const AP_InertialSensor &ins = _ahrs.get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     if (ins.get_gyro_health(0) && ins.get_gyro_health(1)) {
         // dual gyro mode - average first two gyros
@@ -371,9 +371,12 @@ void SoloGimbal::update_target(Vector3f newTarget)
     _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90),radians(0));
 }
 
-void SoloGimbal::write_logs(DataFlash_Class* dataflash)
+void SoloGimbal::write_logs()
 {
-    if (dataflash == nullptr) return;
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash == nullptr) {
+        return;
+    }
 
     uint32_t tstamp = AP_HAL::millis();
     Vector3f eulerEst;

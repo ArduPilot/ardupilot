@@ -7,6 +7,7 @@ Written by Jon Challinger January 2015
 import json
 import sys
 import os
+import posixpath
 import subprocess
 import argparse
 
@@ -28,25 +29,25 @@ f.close()
 
 if args.ardupilot is not None:
     try:
-        fw_json["ardupilot_git_hash"] = subprocess.check_output(["git", "--git-dir", os.path.join(args.ardupilot,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
+        fw_json["ardupilot_git_hash"] = subprocess.check_output(["git", "--git-dir", posixpath.join(args.ardupilot,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
     except:
         print("Failed to get apm hash")
         
 if args.px4 is not None:
     try:
-        fw_json["px4_git_hash"] = subprocess.check_output(["git", "--git-dir", os.path.join(args.px4,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
+        fw_json["px4_git_hash"] = subprocess.check_output(["git", "--git-dir", posixpath.join(args.px4,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
     except:
         print("Failed to get px4 hash")
 
 if args.nuttx is not None:
     try:
-        fw_json["nuttx_git_hash"] = subprocess.check_output(["git", "--git-dir", os.path.join(args.nuttx,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
+        fw_json["nuttx_git_hash"] = subprocess.check_output(["git", "--git-dir", posixpath.join(args.nuttx,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
     except:
         print("Failed to get nuttx hash")
 
 if args.uavcan is not None:
     try:
-        fw_json["uavcan_git_hash"] = subprocess.check_output(["git", "--git-dir", os.path.join(args.uavcan,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
+        fw_json["uavcan_git_hash"] = subprocess.check_output(["git", "--git-dir", posixpath.join(args.uavcan,".git"), "rev-parse", "HEAD"]).strip().decode('ascii')
     except:
         print("Failed to get uavcan hash")
 

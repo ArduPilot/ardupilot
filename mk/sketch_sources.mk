@@ -64,9 +64,9 @@ LIBTOKENS += \
 	AP_HAL_VRBRAIN
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_QURT)
+ifeq ($(HAL_BOARD),HAL_BOARD_F4LIGHT)
 LIBTOKENS += \
-	AP_HAL_QURT
+	AP_HAL_F4Light
 endif
 
 #

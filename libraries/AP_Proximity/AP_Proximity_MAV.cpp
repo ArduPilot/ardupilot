@@ -36,7 +36,8 @@ AP_Proximity_MAV::AP_Proximity_MAV(AP_Proximity &_frontend,
 void AP_Proximity_MAV::update(void)
 {
     // check for timeout and set health status
-    if ((_last_update_ms == 0) || (AP_HAL::millis() - _last_update_ms > PROXIMITY_MAV_TIMEOUT_MS)) {
+    if ((_last_update_ms == 0 || (AP_HAL::millis() - _last_update_ms > PROXIMITY_MAV_TIMEOUT_MS)) &&
+        (_last_upward_update_ms == 0 || (AP_HAL::millis() - _last_upward_update_ms > PROXIMITY_MAV_TIMEOUT_MS))) {
         set_status(AP_Proximity::Proximity_NoData);
     } else {
         set_status(AP_Proximity::Proximity_Good);
@@ -64,9 +65,9 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         uint8_t sector = packet.orientation;
         _angle[sector] = sector * 45;
         _distance[sector] = packet.current_distance / 100.0f;
-        _distance_valid[sector] = true;
         _distance_min = packet.min_distance / 100.0f;
         _distance_max = packet.max_distance / 100.0f;
+        _distance_valid[sector] = (_distance[sector] >= _distance_min) && (_distance[sector] <= _distance_max);
         _last_update_ms = AP_HAL::millis();
         update_boundary_for_sector(sector);
     }

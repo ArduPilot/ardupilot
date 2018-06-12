@@ -7,15 +7,15 @@
 #if POSHOLD_ENABLED == ENABLED
 
 // poshold_init - initialise PosHold controller
-bool Sub::poshold_init(bool ignore_checks)
+bool Sub::poshold_init()
 {
     // fail to initialise PosHold mode if no GPS lock
-    if (!position_ok() && !ignore_checks) {
+    if (!position_ok()) {
         return false;
     }
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -24,7 +24,7 @@ bool Sub::poshold_init(bool ignore_checks)
 
     // set target to current position
     // only init here as we can switch to PosHold in flight with a velocity <> 0 that will be used as _last_vel in PosControl and never updated again as we inhibit Reset_I
-    wp_nav.init_loiter_target();
+    loiter_nav.init_target();
 
     last_pilot_heading = ahrs.yaw_sensor;
 
@@ -36,42 +36,35 @@ bool Sub::poshold_init(bool ignore_checks)
 void Sub::poshold_run()
 {
     uint32_t tnow = AP_HAL::millis();
-    // convert inertial nav earth-frame velocities to body-frame
-    //    const Vector3f& vel = inertial_nav.get_velocity();
-    //    float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
-    //    float vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors.armed() || !ap.auto_armed || !motors.get_interlock()) {
+    // if not armed set throttle to zero and exit immediately
+    if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        wp_nav.init_loiter_target();
+        loiter_nav.init_target();
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
     }
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // set motors to full range
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run loiter controller
-    wp_nav.update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     ///////////////////////
     // update xy outputs //
-    int16_t pilot_lateral = channel_lateral->norm_input();
-    int16_t pilot_forward = channel_forward->norm_input();
+    float pilot_lateral = channel_lateral->norm_input();
+    float pilot_forward = channel_forward->norm_input();
 
     float lateral_out = 0;
     float forward_out = 0;
 
     // Allow pilot to reposition the sub
-    if (pilot_lateral != 0 || pilot_forward != 0) {
+    if (fabsf(pilot_lateral) > 0.1 || fabsf(pilot_forward) > 0.1) {
         lateral_out = pilot_lateral;
         forward_out = pilot_forward;
-        wp_nav.init_loiter_target(); // initialize target to current position after repositioning
+        loiter_nav.init_target(); // initialize target to current position after repositioning
     } else {
         translate_wpnav_rp(lateral_out, forward_out);
     }
@@ -92,7 +85,7 @@ void Sub::poshold_run()
 
     // update attitude controller targets
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         last_pilot_heading = ahrs.yaw_sensor;
         last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
@@ -104,11 +97,11 @@ void Sub::poshold_run()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
             last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute absolute bearing
-            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, last_pilot_heading, true);
         }
     }
 
@@ -117,7 +110,7 @@ void Sub::poshold_run()
 
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -g.pilot_velocity_z_max, g.pilot_velocity_z_max);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // adjust climb rate using rangefinder
     if (rangefinder_alt_ok()) {
@@ -127,19 +120,10 @@ void Sub::poshold_run()
 
     // call z axis position controller
     if (ap.at_bottom) {
-        pos_control.relax_alt_hold_controllers(0.0); // clear velocity and position targets, and integrator
+        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // clear velocity and position targets, and integrator
         pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
     } else {
-        if (inertial_nav.get_altitude() < g.surface_depth) { // pilot allowed to move up or down freely
-            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        } else if (target_climb_rate < 0) { // pilot allowed to move only down freely
-            if (pos_control.get_vel_target_z() > 0) {
-                pos_control.relax_alt_hold_controllers(0); // reset target velocity and acceleration
-            }
-            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        } else if (pos_control.get_alt_target() > g.surface_depth) { // hold depth at surface level.
-            pos_control.set_alt_target(g.surface_depth);
-        }
+        pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
 
     pos_control.update_z_controller();

@@ -6,6 +6,10 @@
 
 #include "AP_Baro_Backend.h"
 
+#ifndef HAL_BARO_BMP280_I2C_ADDR
+ #define HAL_BARO_BMP280_I2C_ADDR (0x76)
+#endif
+
 class AP_Baro_BMP280 : public AP_Baro_Backend
 {
 public:
@@ -17,7 +21,6 @@ public:
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
 private:
-    virtual ~AP_Baro_BMP280(void) {};
 
     bool _init(void);
     void _timer(void);

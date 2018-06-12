@@ -7,7 +7,7 @@
 #pragma once
 
 #include <AP_HAL/utility/Socket.h>
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "IRLock.h"
 
 class AP_IRLock_SITL : public IRLock
@@ -16,10 +16,10 @@ public:
     AP_IRLock_SITL();
 
     // init - initialize sensor library
-    virtual void init();
+    void init(int8_t bus) override;
 
     // retrieve latest sensor data - returns true if new data is available
-    virtual bool update();
+    bool update() override;
 
 private:
 
@@ -38,3 +38,4 @@ private:
     uint32_t _last_timestamp;
     SocketAPM sock;
 };
+#endif // CONFIG_HAL_BOARD

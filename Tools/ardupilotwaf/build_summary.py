@@ -209,9 +209,8 @@ def options(opt):
 
     g.add_option('--summary-all',
         action='store_true',
-        help='''
-Print build summary for all targets. By default, only information about the
-first %d targets will be printed.
+        help='''Print build summary for all targets. By default, only
+information about the first %d targets will be printed.
 ''' % MAX_TARGETS)
 
 def configure(cfg):

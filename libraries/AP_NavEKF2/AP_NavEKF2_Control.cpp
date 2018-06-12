@@ -169,7 +169,8 @@ void NavEKF2_core::setAidingMode()
         // GPS aiding is the preferred option unless excluded by the user
         bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
         bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
-        if(canUseGPS || canUseRangeBeacon) {
+        bool canUseExtNav = readyToUseExtNav();
+        if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
@@ -206,17 +207,17 @@ void NavEKF2_core::setAidingMode()
         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
 
         // Check if GPS is being used
-        bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+        bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
         // Check if attitude drift has been constrained by a measurement source
-        bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
+        bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || rngBcnUsed;
 
         // check if velocity drift has been constrained by a measurement source
         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
 
         // check if position drift has been constrained by a measurement source
-        bool posAiding = gpsPosUsed || rngBcnUsed;
+        bool posAiding = posUsed || rngBcnUsed;
 
         // Check if the loss of attitude aiding has become critical
         bool attAidLossCritical = false;
@@ -269,7 +270,7 @@ void NavEKF2_core::setAidingMode()
         switch (PV_AidingMode) {
         case AID_NONE:
             // We have ceased aiding
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
             velTimeout = true;            
@@ -288,7 +289,7 @@ void NavEKF2_core::setAidingMode()
 
         case AID_RELATIVE:
             // We have commenced aiding, but GPS usage has been prohibited so use optical flow only
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using optical flow",(unsigned)imu_index);
             posTimeout = true;
             velTimeout = true;
             // Reset the last valid flow measurement time
@@ -300,17 +301,30 @@ void NavEKF2_core::setAidingMode()
         case AID_ABSOLUTE: {
             bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit);
             bool canUseRangeBeacon = readyToUseRangeBeacon();
+            bool canUseExtNav = readyToUseExtNav();
             // We have commenced aiding and GPS usage is allowed
             if (canUseGPS) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
             }
             posTimeout = false;
             velTimeout = false;
             // We have commenced aiding and range beacon usage is allowed
             if (canUseRangeBeacon) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffset);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffset);
+            }
+            // We have commenced aiding and external nav usage is allowed
+            if (canUseExtNav) {
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u is using external nav data",(unsigned)imu_index);
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NED = %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,(double)extNavDataDelayed.pos.x,(double)extNavDataDelayed.pos.y,(double)extNavDataDelayed.pos.z);
+                // handle yaw reset as special case
+                extNavYawResetRequest = true;
+                controlMagYawReset();
+                // handle height reset as special case
+                hgtMea = -extNavDataDelayed.pos.z;
+                posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                ResetHeight();
             }
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
@@ -339,7 +353,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
     tiltErrFilt = alpha*temp + (1.0f-alpha)*tiltErrFilt;
     if (tiltErrFilt < 0.005f && !tiltAlignComplete) {
         tiltAlignComplete = true;
-        GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u tilt alignment complete",(unsigned)imu_index);
     }
 
     // submit yaw and magnetic field reset requests depending on whether we have compass data
@@ -385,6 +399,12 @@ bool NavEKF2_core::readyToUseRangeBeacon(void) const
     return tiltAlignComplete && yawAlignComplete && rngBcnGoodToAlign && rngBcnDataToFuse;
 }
 
+// return true if the filter to be ready to use external nav data
+bool NavEKF2_core::readyToUseExtNav(void) const
+{
+    return tiltAlignComplete && extNavDataToFuse;
+}
+
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
@@ -403,12 +423,13 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
 }
 
 // set the LLH location of the filters NED origin
-bool NavEKF2_core::setOriginLLH(struct Location &loc)
+bool NavEKF2_core::setOriginLLH(const Location &loc)
 {
-    if (PV_AidingMode == AID_ABSOLUTE) {
+    if (PV_AidingMode == AID_ABSOLUTE && !extNavUsedForPos) {
         return false;
     }
     EKF_origin = loc;
+    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
@@ -419,11 +440,16 @@ bool NavEKF2_core::setOriginLLH(struct Location &loc)
 void NavEKF2_core::setOrigin()
 {
     // assume origin at current GPS location (no averaging)
-    EKF_origin = _ahrs->get_gps().location();
+    EKF_origin = AP::gps().location();
+    // if flying, correct for height change from takeoff so that the origin is at field elevation
+    if (inFlight) {
+        EKF_origin.alt += (int32_t)(100.0f * stateStruct.position.z);
+    }
+    ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin set to GPS",(unsigned)imu_index);
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin set to GPS",(unsigned)imu_index);
 }
 
 // record a yaw reset event
@@ -494,7 +520,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     filterStatus.flags.takeoff = expectGndEffectTakeoff; // The EKF has been told to expect takeoff and is in a ground effect mitigation mode
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE); // The GPS is glitching
+    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && !extNavUsedForPos; // GPS glitching is affecting navigation accuracy
 }
 
 #endif // HAL_CPU_CLASS

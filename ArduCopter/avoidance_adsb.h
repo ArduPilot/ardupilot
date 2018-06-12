@@ -7,19 +7,21 @@
 // AP_Avoidance, this class allows Copter to override base
 // functionality - for example, not doing anything while landed.
 class AP_Avoidance_Copter : public AP_Avoidance {
-
 public:
+    AP_Avoidance_Copter(AP_AHRS &ahrs, class AP_ADSB &adsb)
+        : AP_Avoidance(ahrs, adsb)
+    {
+    }
 
-    AP_Avoidance_Copter(AP_AHRS &ahrs, class AP_ADSB &adsb) :
-        AP_Avoidance(ahrs, adsb) { }
+    /* Do not allow copies */
+    AP_Avoidance_Copter(const AP_Avoidance_Copter &other) = delete;
+    AP_Avoidance_Copter &operator=(const AP_Avoidance_Copter&) = delete;
 
 private:
-
     // helper function to set modes and always succeed
     void set_mode_else_try_RTL_else_LAND(control_mode_t mode);
 
 protected:
-
     // override avoidance handler
     MAV_COLLISION_ACTION handle_avoidance(const AP_Avoidance::Obstacle *obstacle, MAV_COLLISION_ACTION requested_action) override;
 

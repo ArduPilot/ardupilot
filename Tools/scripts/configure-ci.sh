@@ -12,7 +12,7 @@ ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
-CCACHE_ROOT="ccache-3.2.5"
+CCACHE_ROOT="ccache-3.3.4"
 CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 
 mkdir -p $HOME/opt
@@ -32,9 +32,12 @@ if [ ! -d "$HOME/opt/$dir" ]; then
   tar -xf $RPI_TARBALL -C opt $dir
 fi
 
-# CCache
+# ccache
 dir=$CCACHE_ROOT
 if [ ! -d "$HOME/opt/$dir" ]; then
+  # if version 3 isn't there, try to remove older v2 folders from CI cache
+  rm -rf "$HOME/opt"/ccache-3.2*
+
   wget https://www.samba.org/ftp/ccache/$CCACHE_TARBALL
   tar -xf $CCACHE_TARBALL
   pushd $CCACHE_ROOT

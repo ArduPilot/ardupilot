@@ -21,8 +21,8 @@ uint8_t GPIO::read(uint8_t pin)
     if (!_sitlState->_sitl) {
         return 0;
     }
-    uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
-    return static_cast<uint8_t>((mask & (1U << pin)) ? 1 : 0);
+    uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
+    return static_cast<uint16_t>((mask & (1U << pin)) ? 1 : 0);
 }
 
 void GPIO::write(uint8_t pin, uint8_t value)
@@ -30,8 +30,8 @@ void GPIO::write(uint8_t pin, uint8_t value)
     if (!_sitlState->_sitl) {
         return;
     }
-    uint8_t mask = static_cast<uint8_t>(_sitlState->_sitl->pin_mask.get());
-    uint8_t new_mask = mask;
+    uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
+    uint16_t new_mask = mask;
     if (value) {
         new_mask |= (1U << pin);
     } else {
@@ -49,7 +49,7 @@ void GPIO::toggle(uint8_t pin)
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO::channel(uint16_t n) {
-    if (n < 8) {  // (ie. sizeof(pin_mask)*8)
+    if (n < 16) {  // (ie. sizeof(pin_mask)*8)
         return new DigitalSource(static_cast<uint8_t>(n));
     } else {
         return nullptr;

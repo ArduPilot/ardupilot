@@ -13,26 +13,9 @@
 #       add them to the per-configuration scripts instead.
 #
 
-#
-# Default to auto-start mode.  An init script on the microSD card
-# can change this to prevent automatic startup of the flight script.
-#
-set MODE autostart
 set USB autoconnect
-
-#
-
-#
-
-
-if rgbled start
-then
-    set HAVE_RGBLED 1
-    # show startup white
-    rgbled rgb 16 16 16
-else
-    set HAVE_RGBLED 0
-fi
+set NSH_ERROR_UART1 /dev/ttyACM0
+set NSH_ERROR_UART2 /dev/ttyS0
 
 #
 # Try to mount the microSD card.
@@ -51,45 +34,20 @@ then
     fi
 else
     set HAVE_MICROSD 0
-    echo "Trying format of microSD"
-    tone_alarm MBAGP
-    if mkfatfs /dev/mmcsd0
-    then
-        echo "microSD card formatted"
-            if mount -t vfat /dev/mmcsd0 /fs/microsd
-            then
-                echo "format succeeded"
-                set HAVE_MICROSD 1
-                if [ -f /etc/tones/startup ]
-                then
-                    tone_alarm /etc/tones/startup
-                else
-                    tone_alarm 1
-                fi
-            else
-                echo "mount failed"
-                tone_alarm MNBG
-                if [ $HAVE_RGBLED == 1 ]
-                then
-                    rgbled rgb 16 0 0
-                fi
-            fi
-    else
-        echo "format failed"
-        tone_alarm MNBGG
-        if [ $HAVE_RGBLED == 1 ]
-        then
-                rgbled rgb 16 0 0
-        fi
-    fi
+    tone_alarm MNBGG
 fi
 
+# Look for an additional init script that allows changing the default
+# behavior. Settings may be overriden in the following order:
 #
-# Look for an init script on the microSD card.
-#
-# To prevent automatic startup in the current flight mode,
-# the script should set MODE to some other value.
-#
+# board-specific file
+# etc/rc on microSD card
+# etc/rc.txt on microSD card
+if [ -f /etc/init.d/rc.board ]
+then
+    echo "[init] reading /etc/init.d/rc.board"
+    sh /etc/init.d/rc.board
+fi
 if [ -f /fs/microsd/etc/rc ]
 then
     echo "[init] reading /fs/microsd/etc/rc"

@@ -32,8 +32,6 @@ public:
     Location_Class(const Location& loc);
     Location_Class(const Vector3f &ekf_offset_neu);
 
-    /// accept reference to ahrs and (indirectly) EKF
-    static void set_ahrs(const AP_AHRS_NavEKF* ahrs) { _ahrs = ahrs; }
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     // operators
@@ -55,10 +53,11 @@ public:
     // the original frame or desired frame is above-terrain
     bool change_alt_frame(ALT_FRAME desired_frame);
 
-    // get position as a vector from home (x,y only or x,y,z)
+    // get position as a vector from origin (x,y only or x,y,z)
     // return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet
-    bool get_vector_xy_from_origin_NEU(Vector3f &vec_neu) const;
+    // x, y and z are in centimetres
+    bool get_vector_xy_from_origin_NE(Vector2f &vec_ne) const;
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const;
 
     // return distance in meters between two locations
@@ -72,7 +71,6 @@ public:
     void zero(void) { lat = lng = alt = 0; options = 0; }
 
 private:
-    static const AP_AHRS_NavEKF *_ahrs;
     static AP_Terrain *_terrain;
 };
 

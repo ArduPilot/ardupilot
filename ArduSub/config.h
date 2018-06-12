@@ -38,19 +38,9 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduSub
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
-#define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
-#define MAGNETOMETER ENABLED
-
 // run at 400Hz on all systems
 # define MAIN_LOOP_RATE    400
 # define MAIN_LOOP_SECONDS 0.0025f
-# define MAIN_LOOP_MICROS  2500
 
 #ifndef SURFACE_DEPTH_DEFAULT
 # define SURFACE_DEPTH_DEFAULT -10.0f // pressure sensor reading 10cm depth means craft is considered surfaced
@@ -69,14 +59,6 @@
 
 #ifndef CIRCLE_NAV_ENABLED
 # define CIRCLE_NAV_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Channel 6 Tuning
-//
-
-#ifndef CH6_TUNE_ENABLED
-# define CH6_TUNE_ENABLED DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -147,82 +129,6 @@
 # define MAV_SYSTEM_ID          1
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef FS_BATT_VOLTAGE_DEFAULT
-# define FS_BATT_VOLTAGE_DEFAULT       0       // default battery voltage below which failsafe will be triggered
-#endif
-
-#ifndef FS_BATT_MAH_DEFAULT
-# define FS_BATT_MAH_DEFAULT             0         // default battery capacity (in mah) below which failsafe will be triggered
-#endif
-
-#ifndef BOARD_VOLTAGE_MIN
-# define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
-#endif
-
-#ifndef BOARD_VOLTAGE_MAX
-# define BOARD_VOLTAGE_MAX             5.8f        // max board voltage in volts for pre-arm checks
-#endif
-
-// prearm GPS hdop check
-#ifndef GPS_HDOP_GOOD_DEFAULT
-# define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
-#endif
-
-// GCS failsafe
-#ifndef FS_GCS
-# define FS_GCS                        DISABLED
-#endif
-#ifndef FS_GCS_TIMEOUT_MS
-# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after 5 seconds with no GCS heartbeat
-#endif
-
-// Radio failsafe while using RC_override
-#ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
-# define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
-#endif
-
-// Radio failsafe
-#ifndef FS_RADIO_TIMEOUT_MS
-#define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 miliseconds with No RC Input
-#endif
-
-// missing terrain data failsafe
-#ifndef FS_TERRAIN_TIMEOUT_MS
-#define FS_TERRAIN_TIMEOUT_MS          1000     // 1 second of unhealthy rangefinder and/or missing terrain data will trigger failsafe
-#endif
-
-#ifndef PREARM_DISPLAY_PERIOD
-# define PREARM_DISPLAY_PERIOD 30
-#endif
-
-// pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
-# define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
-#endif
-
-// arming check's maximum acceptable accelerometer vector difference (in m/s/s) between primary and backup accelerometers
-#ifndef PREARM_MAX_ACCEL_VECTOR_DIFF
-#define PREARM_MAX_ACCEL_VECTOR_DIFF      0.70f    // pre arm accel check will fail if primary and backup accelerometer vectors differ by 0.7m/s/s
-#endif
-
-// arming check's maximum acceptable rotation rate difference (in rad/sec) between primary and backup gyros
-#ifndef PREARM_MAX_GYRO_VECTOR_DIFF
-#define PREARM_MAX_GYRO_VECTOR_DIFF       0.0873f  // pre arm gyro check will fail if primary and backup gyro vectors differ by 0.0873 rad/sec (=5deg/sec)
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  EKF Failsafe
-#ifndef FS_EKF_ACTION_DEFAULT
-# define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_DISABLED  // EKF failsafe
-#endif
-#ifndef FS_EKF_THRESHOLD_DEFAULT
-# define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
-#endif
-
 #ifndef EKF_ORIGIN_MAX_DIST_M
 # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
 #endif
@@ -231,22 +137,6 @@
 //  MAGNETOMETER
 #ifndef MAGNETOMETER
 # define MAGNETOMETER                   ENABLED
-#endif
-
-// expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#ifndef COMPASS_MAGFIELD_EXPECTED
-#define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
-#endif
-
-// max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
-#ifndef CONFIG_ARCH_BOARD_PX4FMU_V1
-#ifndef COMPASS_OFFSETS_MAX
-# define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
-#endif
-#else   // SITL, etc
-#ifndef COMPASS_OFFSETS_MAX
-# define COMPASS_OFFSETS_MAX          500
-#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -268,47 +158,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// RADIO CONFIGURATION
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
-// FLIGHT_MODE
-//
-
-#ifndef FLIGHT_MODE_1
-# define FLIGHT_MODE_1                  MANUAL
-#endif
-#ifndef FLIGHT_MODE_2
-# define FLIGHT_MODE_2                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_3
-# define FLIGHT_MODE_3                  ALT_HOLD
-#endif
-#ifndef FLIGHT_MODE_4
-# define FLIGHT_MODE_4                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_5
-# define FLIGHT_MODE_5                  STABILIZE
-#endif
-#ifndef FLIGHT_MODE_6
-# define FLIGHT_MODE_6                  STABILIZE
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Throttle Failsafe
-//
-#ifndef FS_THR_VALUE_DEFAULT
-# define FS_THR_VALUE_DEFAULT             975
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // CAMERA TRIGGER AND CONTROL
 //
 #ifndef CAMERA
-# define CAMERA        ENABLED
+# define CAMERA        DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -329,7 +182,7 @@
 #endif
 
 #ifndef ACRO_YAW_P
-# define ACRO_YAW_P                4.5f
+# define ACRO_YAW_P                3.375f
 #endif
 
 #ifndef ACRO_LEVEL_MAX_ANGLE
@@ -348,42 +201,9 @@
 #define ACRO_EXPO_DEFAULT          0.3f
 #endif
 
-// RTL Mode
-#ifndef RTL_ALT_FINAL
-# define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.
-#endif
-
-#ifndef RTL_ALT
-# define RTL_ALT                    1500    // default alt to return to home in cm, 0 = Maintain current altitude
-#endif
-
-#ifndef RTL_ALT_MIN
-# define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
-#endif
-
-#ifndef RTL_CLIMB_MIN_DEFAULT
-# define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
-#endif
-
-#ifndef RTL_ABS_MIN_CLIMB
-# define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
-#endif
-
-#ifndef RTL_CONE_SLOPE_DEFAULT
-# define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
-#endif
-
-#ifndef RTL_MIN_CONE_SLOPE
-# define RTL_MIN_CONE_SLOPE        0.5f    // minimum slope of cone
-#endif
-
-#ifndef RTL_LOITER_TIME
-# define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before begining final descent
-#endif
-
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
-# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_CORRECT_XTRACK
 #endif
 
 #ifndef AUTO_YAW_SLEW_RATE
@@ -392,11 +212,6 @@
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
 # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before vehicle is aimed at ground course
-#endif
-
-// Super Simple mode
-#ifndef SUPER_SIMPLE_RADIUS
-# define SUPER_SIMPLE_RADIUS       1000
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -408,41 +223,12 @@
 #ifndef DEFAULT_ANGLE_MAX
 # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
 #endif
-#ifndef ANGLE_RATE_MAX
-# define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
 #ifndef POS_XY_P
 # define POS_XY_P               1.0f
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Stop mode defaults
-//
-#ifndef BRAKE_MODE_SPEED_Z
-# define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
-#endif
-#ifndef BRAKE_MODE_DECEL_RATE
-# define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Velocity (horizontal) gains
-//
-#ifndef VEL_XY_P
-# define VEL_XY_P              1.0f
-#endif
-#ifndef VEL_XY_I
-# define VEL_XY_I              0.5f
-#endif
-#ifndef VEL_XY_IMAX
-# define VEL_XY_IMAX           1000
-#endif
-#ifndef VEL_XY_FILT_HZ
-# define VEL_XY_FILT_HZ        5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -460,47 +246,12 @@
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
-#ifndef ALT_HOLD_P
-# define ALT_HOLD_P            3.0f
-#endif
-
-// Velocity (vertical) control gains
-#ifndef VEL_Z_P
-# define VEL_Z_P       8.0f
-#endif
-
-// Accel (vertical) control gains
-#ifndef ACCEL_Z_P
-# define ACCEL_Z_P     0.50f
-#endif
-#ifndef ACCEL_Z_I
-# define ACCEL_Z_I     0.1f
-#endif
-#ifndef ACCEL_Z_D
-# define ACCEL_Z_D     0.0f
-#endif
-#ifndef ACCEL_Z_IMAX
-# define ACCEL_Z_IMAX  100
-#endif
-#ifndef ACCEL_Z_FILT_HZ
-# define ACCEL_Z_FILT_HZ   20.0f
-#endif
-
 // default maximum vertical velocity and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
 # define PILOT_VELZ_MAX    500     // maximum vertical velocity in cm/s
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
 # define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
-#endif
-
-// max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
-#ifndef ALT_HOLD_INIT_MAX_OVERSHOOT
-# define ALT_HOLD_INIT_MAX_OVERSHOOT 200
-#endif
-// the acceleration used to define the distance-velocity curve
-#ifndef ALT_HOLD_ACCEL_MAX
-# define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
@@ -533,11 +284,7 @@
     MASK_LOG_MOTBATT
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// AP_Limits Defaults
-//
-
-// Enable/disable AP_Limits
+// Enable/disable Fence
 #ifndef AC_FENCE
 #define AC_FENCE ENABLED
 #endif
@@ -548,28 +295,4 @@
 
 #ifndef AC_TERRAIN
 #define AC_TERRAIN DISABLED // Requires Rally enabled as well
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Developer Items
-//
-
-// use this to completely disable the CLI
-#ifndef CLI_ENABLED
-#  define CLI_ENABLED           ENABLED
-#endif
-
-#ifndef XTRACK_P
-#define XTRACK_P            1.0f
-#define XTRACK_I            0.5f
-#define XTRACK_D            0.0f
-#define XTRACK_IMAX         1000
-#define XTRACK_FILT_HZ  5.0f
-#define XTRACK_DT 0.05f
-#define HEAD_P          1.0f
-#define HEAD_I          0.5f
-#define HEAD_D          0.0f
-#define HEAD_IMAX           1000
-#define HEAD_FILT_HZ        5.0f
-#define HEAD_DT         0.05f
 #endif

@@ -65,8 +65,12 @@ public:
         return &businfo[_busnum<num_buses?_busnum:0].semaphore;
     }
 
+    void set_split_transfers(bool set) override {
+        _split_transfers = set;
+    }
+    
 private:
-    static const uint8_t num_buses = 2;
+    static const uint8_t num_buses = 3;
     static DeviceBus businfo[num_buses];
     
     uint8_t _busnum;
@@ -74,6 +78,7 @@ private:
     uint8_t _address;
     perf_counter_t perf;
     char *pname;
+    bool _split_transfers;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
@@ -85,7 +90,10 @@ public:
         return static_cast<I2CDeviceManager*>(i2c_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address) override;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+                                                 uint32_t bus_clock=400000,
+                                                 bool use_smbus = false,
+                                                 uint32_t timeout_ms=4) override;
 };
 
 }

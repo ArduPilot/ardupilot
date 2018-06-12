@@ -16,7 +16,7 @@ void Copter::update_land_and_crash_detectors()
     // update 1hz filtered acceleration
     Vector3f accel_ef = ahrs.get_accel_ef_blended();
     accel_ef.z += GRAVITY_MSS;
-    land_accel_ef_filter.apply(accel_ef, MAIN_LOOP_SECONDS);
+    land_accel_ef_filter.apply(accel_ef, scheduler.get_loop_period_s());
 
     update_land_detector();
 
@@ -63,7 +63,7 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
 #endif
 
-        // check that the airframe is not accelerating (not falling or breaking after fast forward flight)
+        // check that the airframe is not accelerating (not falling or braking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX);
 
         // check that vertical speed is within 1m/s of zero
@@ -104,11 +104,16 @@ void Copter::set_land_complete(bool b)
     }
     ap.land_complete = b;
 
+#if STATS_ENABLED == ENABLED
     g2.stats.set_flying(!b);
+#endif
 
+    // tell AHRS flying state
+    ahrs.set_likely_flying(!b);
+    
     // trigger disarm-on-land if configured
     bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
-    bool mode_disarms_on_land = mode_allows_arming(control_mode,false) && !mode_has_manual_throttle(control_mode);
+    const bool mode_disarms_on_land = flightmode->allows_arming(false) && !flightmode->has_manual_throttle();
 
     if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
         init_disarm_motors();
@@ -140,7 +145,7 @@ void Copter::update_throttle_thr_mix()
         return;
     }
 
-    if (mode_has_manual_throttle(control_mode)) {
+    if (flightmode->has_manual_throttle()) {
         // manual throttle
         if(channel_throttle->get_control_in() <= 0) {
             attitude_control->set_throttle_mix_min();

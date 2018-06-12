@@ -101,8 +101,6 @@ public:
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
-    void inject_data(const uint8_t *data, uint16_t len) override;
-    
     bool is_configured(void) {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
         if (!gps._auto_config) {
@@ -116,9 +114,12 @@ public:
     }
 
     void broadcast_configuration_failure_reason(void) const override;
+    void Write_DataFlash_Log_Startup_messages() const override;
 
-    // return velocity lag
-    float get_lag(void) const override;
+    // get the velocity lag, returns true if the driver is confident in the returned value
+    bool get_lag(float &lag_sec) const override;
+
+    const char *name() const override { return "u-blox"; }
 
 private:
     // u-blox UBX protocol essentials
@@ -476,7 +477,9 @@ private:
         UBLOX_5,
         UBLOX_6,
         UBLOX_7,
-        UBLOX_M8
+        UBLOX_M8,
+        UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
+                                                 // flagging state in the driver
     };
 
     enum config_step {
@@ -522,6 +525,7 @@ private:
     uint8_t         _next_message;
     uint8_t         _ublox_port;
     bool            _have_version;
+    struct ubx_mon_ver _version;
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
 
@@ -559,10 +563,8 @@ private:
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
 
     void unexpected_message(void);
-    void write_logging_headers(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-    void log_mon_ver(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 

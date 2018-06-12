@@ -4,6 +4,7 @@ import os
 import random
 import re
 import sys
+import tempfile
 import time
 from math import acos, atan2, cos, pi, sqrt
 from subprocess import PIPE, Popen, call, check_call
@@ -98,14 +99,16 @@ def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
 
-def build_SITL(build_target, j=None, debug=False, board='sitl'):
+def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True):
     """Build desktop SITL."""
 
     # first configure
-    waf_configure(board, j=j, debug=debug)
+    if configure:
+        waf_configure(board, j=j, debug=debug)
 
     # then clean
-    waf_clean()
+    if clean:
+        waf_clean()
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
@@ -187,17 +190,37 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
-def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None, unhide_parameters=False):
+def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
+    synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
+               unhide_parameters=False, gdbserver=False):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd.extend(['valgrind', '-q', '--log-file=%s' % valgrind_log_filepath(binary=binary, model=model)])
-    if gdb:
+        # we specify a prefix for vgdb-pipe because on Vagrant virtual
+        # machines the pipes are created on the mountpoint for the
+        # shared directory with the host machine.  mmap's,
+        # unsurprisingly, fail on files created on that mountpoint.
+        vgdb_prefix = os.path.join(tempfile.gettempdir(), "vgdb-pipe")
+        log_file = valgrind_log_filepath(binary=binary, model=model)
+        cmd.extend([
+            'valgrind',
+            '--vgdb-prefix=%s' % vgdb_prefix,
+            '-q',
+            '--log-file=%s' % log_file])
+    if gdbserver:
+        cmd.extend(['gdbserver', 'localhost:3333'])
+        if gdb:
+            # attach gdb to the gdbserver:
+            f = open("/tmp/x.gdb", "w")
+            f.write("target extended-remote localhost:3333\nc\n")
+            f.close()
+            run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
+    elif gdb:
         f = open("/tmp/x.gdb", "w")
         f.write("r\n")
         f.close()
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
-    
+
     cmd.append(binary)
     if wipe:
         cmd.append('-w')
@@ -234,7 +257,7 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False, synthetic_clock=Tr
 
 
 def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1:5760',
-                        options=None, logfile=sys.stdout):
+                        options=[], logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
     import pexpect
     global close_list
@@ -245,8 +268,7 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     if aircraft is None:
         aircraft = 'test.%s' % atype
     cmd += ' --aircraft=%s' % aircraft
-    if options is not None:
-        cmd += ' ' + options
+    cmd += ' ' + ' '.join(options)
     ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)

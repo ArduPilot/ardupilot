@@ -29,6 +29,8 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 RC_Channel *RC_Channels::channels;
+bool RC_Channels::has_new_overrides;
+AP_Float *RC_Channels::override_timeout;
 
 const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Group: 1_
@@ -94,6 +96,14 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Group: 16_
     // @Path: RC_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[15], "16_", 16, RC_Channels, RC_Channel),
+
+    // @Param: _OVERRIDE_TIME
+    // @DisplayName: RC override timeout
+    // @Description: Timeout after which RC overrides will no longer be used, and RC input will resume, 0 will disable RC overrides
+    // @User: Advanced
+    // @Range: 0.0 120.0
+    // @Units: s
+    AP_GROUPINFO("_OVERRIDE_TIME", 32, RC_Channels, _override_timeout, 3.0),
     
     AP_GROUPEND
 };
@@ -105,6 +115,8 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
 RC_Channels::RC_Channels(void)
 {
     channels = obj_channels;
+
+    override_timeout = &_override_timeout;
     
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
@@ -115,13 +127,88 @@ RC_Channels::RC_Channels(void)
     }
 }
 
-/*
-  call read() and set_pwm() on all channels
- */
-void
-RC_Channels::set_pwm_all(void)
+uint16_t RC_Channels::get_radio_in(const uint8_t chan)
 {
+    if (chan >= NUM_RC_CHANNELS) {
+        return 0;
+    }
+    return channels[chan].get_radio_in();
+}
+
+uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
+{
+    uint8_t read_channels = MIN(num_channels, NUM_RC_CHANNELS);
+    for (uint8_t i = 0; i < read_channels; i++) {
+        chans[i] = channels[i].get_radio_in();
+    }
+
+    // clear any excess channels we couldn't read
+    if (read_channels < num_channels) {
+        memset(&chans[NUM_RC_CHANNELS], 0, sizeof(uint16_t) * (num_channels - read_channels));
+    }
+
+    return read_channels;
+}
+
+/*
+  call read() and set_pwm() on all channels if there is new data
+ */
+bool
+RC_Channels::read_input(void)
+{
+    if (!hal.rcin->new_input() && !has_new_overrides) {
+        return false;
+    }
+
+    has_new_overrides = false;
+
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channels[i].set_pwm(channels[i].read());
     }
+
+    return true;
+}
+
+uint8_t RC_Channels::get_valid_channel_count(void)
+{
+    return MIN(NUM_RC_CHANNELS, hal.rcin->num_channels());
+}
+
+int16_t RC_Channels::get_receiver_rssi(void)
+{
+    return hal.rcin->get_rssi();
+}
+
+void RC_Channels::clear_overrides(void)
+{
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        channels[i].clear_override();
+    }
+    // we really should set has_new_overrides to true, and rerun read_input from
+    // the vehicle code however doing so currently breaks the failsafe system on
+    // copter and plane, RC_Channels needs to control failsafes to resolve this
+}
+
+void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
+{
+    if (chan < NUM_RC_CHANNELS) {
+        channels[chan].set_override(value, timestamp_ms);
+        has_new_overrides = true;
+    }
+}
+
+bool RC_Channels::has_active_overrides()
+{
+    for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
+        if (channels[i].has_override()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool RC_Channels::receiver_bind(const int dsmMode)
+{
+    return hal.rcin->rc_bind(dsmMode);
 }

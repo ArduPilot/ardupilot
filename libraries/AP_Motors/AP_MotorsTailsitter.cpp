@@ -35,39 +35,63 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_TAILSITTER);
 }
 
+
+/// Constructor
+AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) :
+    AP_MotorsMulticopter(loop_rate, speed_hz)
+{
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
+    SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
+}
+
 void AP_MotorsTailsitter::output_to_motors()
 {
     if (!_flags.initialised_ok) {
         return;
     }
+    float throttle = _throttle;
+    float throttle_left  = 0;
+    float throttle_right = 0;
+    
     switch (_spool_mode) {
         case SHUT_DOWN:
-            _aileron = 0;
-            _elevator = 0;
-            _rudder = 0;
-            _throttle = 0;
+            throttle = 0;
+            // set limits flags
+            limit.roll_pitch = true;
+            limit.yaw = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
             break;
         case SPIN_WHEN_ARMED:
             // sends output to motors when armed but not flying
-            _aileron = 0;
-            _elevator = 0;
-            _rudder = 0;
-            _throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
+            throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
+            // set limits flags
+            limit.roll_pitch = true;
+            limit.yaw = true;
+            limit.throttle_lower = true;
+            limit.throttle_upper = true;
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
-        case SPOOL_DOWN:
+        case SPOOL_DOWN: {
+            throttle = _spin_min + throttle * (1 - _spin_min);
+            throttle_left  = constrain_float(throttle + _rudder*0.5, _spin_min, 1);
+            throttle_right = constrain_float(throttle - _rudder*0.5, _spin_min, 1);
+            // initialize limits flags
+            limit.roll_pitch = false;
+            limit.yaw = false;
+            limit.throttle_lower = false;
+            limit.throttle_upper = false;
             break;
+        }
     }
     // outputs are setup here, and written to the HAL by the plane servos loop
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  _aileron*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, _elevator*SERVO_OUTPUT_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder,   _rudder*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, _throttle*THROTTLE_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle*THROTTLE_RANGE);
 
     // also support differential roll with twin motors
-    float throttle_left  = constrain_float(_throttle + _rudder*0.5, 0, 1);
-    float throttle_right = constrain_float(_throttle - _rudder*0.5, 0, 1);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft,  throttle_left*THROTTLE_RANGE);
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right*THROTTLE_RANGE);
 

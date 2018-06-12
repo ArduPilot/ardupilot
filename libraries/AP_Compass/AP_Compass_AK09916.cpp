@@ -37,8 +37,17 @@
 #define REG_CNTL2           0x31
 #define REG_CNTL3           0x32
 
+#define REG_ICM_WHOAMI      0x00
+#define REG_ICM_PWR_MGMT_1  0x06
+#define REG_ICM_INT_PIN_CFG 0x0f
+
+#define ICM_WHOAMI_VAL      0xEA
+
 extern const AP_HAL::HAL &hal;
 
+/*
+  probe for AK09916 directly on I2C
+ */
 AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                               bool force_external,
@@ -47,7 +56,33 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), force_external, rotation);
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), nullptr,
+                                                        force_external,
+                                                        rotation, AK09916_I2C);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+}
+
+
+/*
+  probe for AK09916 connected via an ICM20948
+ */
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(Compass &compass,
+                                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+                                                       bool force_external,
+                                                       enum Rotation rotation)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), std::move(dev_icm),
+                                                        force_external,
+                                                        rotation, AK09916_ICM20948_I2C);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -58,10 +93,14 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(Compass &compass,
 
 AP_Compass_AK09916::AP_Compass_AK09916(Compass &compass,
                                        AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev_icm,
                                        bool _force_external,
-                                       enum Rotation _rotation)
+                                       enum Rotation _rotation,
+                                       enum bus_type _bus_type)
     : AP_Compass_Backend(compass)
+    , bus_type(_bus_type)
     , dev(std::move(_dev))
+    , dev_icm(std::move(_dev_icm))
     , force_external(_force_external)
     , rotation(_rotation)
 {
@@ -71,6 +110,61 @@ bool AP_Compass_AK09916::init()
 {
     if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return false;
+    }
+
+    if (bus_type == AK09916_ICM20948_I2C && dev_icm) {
+        uint8_t rval;
+        if (!dev_icm->read_registers(REG_ICM_WHOAMI, &rval, 1) ||
+            rval != ICM_WHOAMI_VAL) {
+            // not an ICM_WHOAMI
+            goto fail;
+        }
+        uint8_t retries = 5;
+        do {
+            // reset then bring sensor out of sleep mode
+            if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x80)) {
+                goto fail;
+            }
+            hal.scheduler->delay(10);
+
+            if (!dev_icm->write_register(REG_ICM_PWR_MGMT_1, 0x00)) {
+                goto fail;
+            }
+            hal.scheduler->delay(10);
+            
+            // see if ICM20948 is sleeping
+            if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
+                goto fail;
+            }
+            if ((rval & 0x40) == 0) {
+                break;
+            }
+        } while (retries--);
+       
+        if (rval & 0x40) {
+            // it didn't come out of sleep
+            goto fail;
+        }
+
+        // initially force i2c bypass off
+        dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x00);
+        hal.scheduler->delay(1);
+
+        // now check if a AK09916 shows up on the bus. If it does then
+        // we have both a real AK09916 and a ICM20948 with an embedded
+        // AK09916. In that case we will fail the driver load and use
+        // the main AK09916 driver
+        uint16_t whoami;
+        if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
+            // a device is replying on the AK09916 I2C address, don't
+            // load the ICM20948
+            hal.console->printf("ICM20948: AK09916 bus conflict\n");
+            goto fail;
+        }
+
+        // now force bypass on
+        dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x02);
+        hal.scheduler->delay(1);
     }
 
     uint16_t whoami;
@@ -98,7 +192,7 @@ bool AP_Compass_AK09916::init()
         set_external(compass_instance, true);
     }
     
-    dev->set_device_type(DEVTYPE_AK09916);
+    dev->set_device_type(bus_type == AK09916_ICM20948_I2C?DEVTYPE_ICM20948:DEVTYPE_AK09916);
     set_dev_id(compass_instance, dev->get_bus_id());
 
     // call timer() at 100Hz
@@ -142,7 +236,7 @@ void AP_Compass_AK09916::timer()
     rotate_field(field, compass_instance);
 
     /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, AP_HAL::micros(), compass_instance);
+    publish_raw_field(field, compass_instance);
 
     /* correct raw_field for known errors */
     correct_field(field, compass_instance);

@@ -1,14 +1,11 @@
 #include "Sub.h"
 
 
-bool Sub::surface_init(bool ignore_checks)
+bool Sub::surface_init()
 {
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    if (!ap.depth_sensor_present) { // can't hold depth without a depth sensor, exit immediately.
-        gcs_send_text(MAV_SEVERITY_WARNING, "Surface mode requires external pressure sensor.");
+    if(!control_check_barometer()) {
         return false;
     }
-#endif
 
     // initialize vertical speeds and leash lengths
     pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
@@ -28,7 +25,7 @@ void Sub::surface_run()
     float target_yaw_rate;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed() || !motors.get_interlock()) {
+    if (!motors.armed()) {
         motors.output_min();
         motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
@@ -48,7 +45,7 @@ void Sub::surface_run()
     target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // call attitude controller
-    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
     float cmb_rate = constrain_float(abs(wp_nav.get_speed_up()), 1, pos_control.get_speed_up());

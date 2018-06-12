@@ -27,13 +27,13 @@ extern const AP_HAL::HAL& hal;
 /**
    handle a SERIAL_CONTROL message
  */
-void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
+void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
 {
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(msg, &packet);
 
     AP_HAL::UARTDriver *port = nullptr;
-    AP_HAL::Stream *stream = nullptr;
+    AP_HAL::BetterStream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
@@ -53,20 +53,30 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         break;
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.uartB;
-        gps.lock_port(0, exclusive);
+        AP::gps().lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
         stream = port = hal.uartE;
-        gps.lock_port(1, exclusive);
+        AP::gps().lock_port(1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();
+        if (stream == nullptr) {
+            return;
+        }
         break;
     default:
         // not supported yet
         return;
     }
-    
+    if (stream == nullptr) {
+        // this is probably very bad
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("stream is nullptr");
+#endif
+        return;
+    }
+
     if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow

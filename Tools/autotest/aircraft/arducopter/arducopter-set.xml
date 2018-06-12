@@ -54,6 +54,20 @@ Arducotper UAV Model
       <!-- controllable -->
     </flight>
   </controls>
+  <engines>
+     <engine n="0">
+        <rpm>0</rpm>
+     </engine>
+     <engine n="1">
+        <rpm>0</rpm>
+     </engine>
+     <engine n="2">
+        <rpm>0</rpm>
+     </engine>
+     <engine n="3">
+        <rpm>0</rpm>
+     </engine>
+  </engines>
   <consumables>
     <fuel>
       <tank n="0">
