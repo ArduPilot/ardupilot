@@ -152,6 +152,7 @@ void Rover::init_ardupilot()
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
 
+    occupancy_grid.init();
 
     // set the correct flight mode
     // ---------------------------
