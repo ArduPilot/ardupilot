@@ -141,6 +141,8 @@ void DFMessageWriter_DFLogStart::set_mission(const AP_Mission *mission)
 
 
 void DFMessageWriter_WriteSysInfo::process() {
+    const AP_FWVersion &fwver = AP::fwversion();
+
     switch(stage) {
 
     case ws_blockwriter_stage_init:
@@ -148,18 +150,28 @@ void DFMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case ws_blockwriter_stage_firmware_string:
-        if (! _dataflash_backend->Log_Write_Message(_firmware_string)) {
+        if (! _dataflash_backend->Log_Write_Message(fwver.fw_string)) {
             return; // call me again
         }
         stage = ws_blockwriter_stage_git_versions;
         FALLTHROUGH;
 
     case ws_blockwriter_stage_git_versions:
-#if defined(PX4_GIT_VERSION) && defined(NUTTX_GIT_VERSION)
-        if (! _dataflash_backend->Log_Write_Message("PX4: " PX4_GIT_VERSION " NuttX: " NUTTX_GIT_VERSION)) {
-            return; // call me again
+        if (fwver.middleware_name && fwver.os_name) {
+            if (! _dataflash_backend->Log_Write_MessageF("%s: %s %s: %s",
+                                                        fwver.middleware_name,
+                                                        fwver.middleware_hash_str,
+                                                        fwver.os_name,
+                                                        fwver.os_hash_str)) {
+                return; // call me again
+            }
+        } else if (fwver.os_name) {
+            if (! _dataflash_backend->Log_Write_MessageF("%s: %s",
+                                                        fwver.os_name,
+                                                        fwver.os_hash_str)) {
+                return; // call me again
+            }
         }
-#endif
         stage = ws_blockwriter_stage_system_id;
         FALLTHROUGH;
 

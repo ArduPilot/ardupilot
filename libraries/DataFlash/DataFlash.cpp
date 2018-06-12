@@ -62,9 +62,8 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
 
 #define streq(x, y) (!strcmp(x, y))
 
-DataFlash_Class::DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask)
-    : _firmware_string(firmware_string)
-    , _log_bitmask(log_bitmask)
+DataFlash_Class::DataFlash_Class(const AP_Int32 &log_bitmask)
+    : _log_bitmask(log_bitmask)
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_instance != nullptr) {
@@ -93,7 +92,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
@@ -111,7 +110,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
 
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
 
   #if defined(BOARD_SDCARD_NAME) || defined(BOARD_DATAFLASH_FATFS)
@@ -138,7 +137,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             return;
         }
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_MAVLink(*this,
                                                             message_writer);
