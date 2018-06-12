@@ -43,6 +43,9 @@ public:
     AP_Rally &operator=(const AP_Rally&) = delete;
 
     // data handling
+    bool add_rally_point(const RallyLocation &rallyLoc);
+    uint8_t get_rally_point_total_count() const;
+    bool increment_rally_point_total_count();
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;
     bool set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc);
     uint8_t get_rally_total() const { return _rally_point_total_count; }
@@ -52,8 +55,28 @@ public:
 
     Location rally_location_to_location(const RallyLocation &ret) const;
 
+    // cmd_nav_rally handling
+    enum cmd_go_to_rally {
+        UNDEFINED               = 0,
+        GO_TO_RALLY_ID          = 1,
+        GO_TO_NEAREST_RALLY     = 2, //rally only excluding home
+        GO_TO_NEW_RALLY         = 3
+    };
+
+    void reset_cmd_go_to_rally() { _cmd_go_to_rally = UNDEFINED; }
+    void set_cmd_go_to_rally_id() { _cmd_go_to_rally = GO_TO_RALLY_ID; }
+    void set_cmd_go_to_rally_only() { _cmd_go_to_rally = GO_TO_NEAREST_RALLY; }
+    void set_cmd_go_to_rally_new() { _cmd_go_to_rally = GO_TO_NEW_RALLY; }
+
+    uint8_t get_cmd_go_to_rally() const { return _cmd_go_to_rally; }
+    void set_go_to_rally_id(uint8_t id) { _go_to_rally_id = id; }
+    uint8_t get_go_to_rally_id() const { return _go_to_rally_id; }
+    Location get_cmd_go_to_rally_point_location(const Location &current_loc) const;
+
+
     // logic handling
     Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const;
+    Location calc_best_rally_location(const Location &current_loc) const;
     bool find_nearest_rally_point(const Location &myloc, RallyLocation &ret) const;
 
     // last time rally points changed
@@ -76,4 +99,8 @@ private:
     AP_Int8  _rally_incl_home;
 
     uint32_t _last_change_time_ms;
+
+    // cmd_nav_rally parameters
+    enum cmd_go_to_rally _cmd_go_to_rally;
+    uint8_t _go_to_rally_id = 0;
 };

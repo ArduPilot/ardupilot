@@ -55,6 +55,20 @@ AP_Rally::AP_Rally(AP_AHRS &ahrs)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// add and save a new rally point to EEPROM
+bool AP_Rally::add_rally_point(const RallyLocation &rallyLoc)
+{
+    uint8_t rallyId = _rally_point_total_count;
+    _rally_point_total_count.set_and_save_ifchanged(_rally_point_total_count+1); //increment RALLY_TOTAL parameter
+    if (set_rally_point_with_index(rallyId, rallyLoc)) {
+        return true;
+    } else {
+        //sanity check failed, change the rally count back to previous value.
+        _rally_point_total_count.set_and_save_ifchanged(_rally_point_total_count-1);
+        return false;
+    }
+}
+
 // get a rally point from EEPROM
 bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
 {
@@ -156,6 +170,66 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
         // no valid rally point, return home position
         return_loc = home_loc;
         return_loc.alt = rtl_home_alt;
+        return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+    }
+
+    return return_loc;
+}
+// return best rally location from current position - not including home or km limit
+Location AP_Rally::calc_best_rally_location(const Location &current_loc) const
+{
+    RallyLocation ral_loc = {};
+    Location return_loc = {};
+    const struct Location &home_loc = _ahrs.get_home();
+    
+    find_nearest_rally_point(current_loc, ral_loc);  
+    return_loc = rally_location_to_location(ral_loc);     
+    if (!is_valid(return_loc)) {
+        // no valid rally point, return home position
+        return_loc = home_loc;
+        return_loc.alt = _ahrs.get_home().alt;
+        return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+    }
+
+    return return_loc;
+}
+
+Location AP_Rally::get_cmd_go_to_rally_point_location(const Location &current_loc) const
+{
+    RallyLocation ral_loc = {};
+    Location return_loc = {};
+    const struct Location &home_loc = _ahrs.get_home();
+    
+    switch (get_cmd_go_to_rally()) {
+
+        case UNDEFINED :
+        break;
+
+        case GO_TO_NEAREST_RALLY :
+            return_loc = calc_best_rally_location(current_loc);
+        break;
+
+        case GO_TO_RALLY_ID :            
+            if (get_rally_point_with_index(get_go_to_rally_id(), ral_loc)) {
+                return_loc = rally_location_to_location(ral_loc);
+            }
+        break;
+
+        case GO_TO_NEW_RALLY :
+            if (get_rally_point_with_index(_rally_point_total_count -1 , ral_loc)) {
+                return_loc = rally_location_to_location(ral_loc);
+            }
+        break;
+
+        default:
+        break;
+        
+    }
+    
+    if (!is_valid(return_loc)) {
+        // no valid rally point, return home position
+        return_loc = home_loc;
+        return_loc.alt = _ahrs.get_home().alt;
         return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
     }
 
