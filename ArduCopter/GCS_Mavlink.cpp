@@ -1062,6 +1062,38 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+#if AC_RALLY == ENABLED
+        case MAV_CMD_NAV_RALLY_POINT: //not including home
+
+            if (!is_zero(packet.param1)) { // Go to a specific rally ID
+                copter.rally.set_cmd_go_to_rally_id();
+                copter.rally.set_go_to_rally_id((uint8_t)packet.param2);
+            } else if (!is_zero(packet.param3)) { // Go to nearest rally from loc except home
+                copter.rally.set_cmd_go_to_rally_only();
+            } else if (!is_zero(packet.param4)) { // Go to new rally location (and save it in EEPROM)
+                copter.rally.set_cmd_go_to_rally_new();
+                
+                RallyLocation rally_location;
+                rally_location.lat = (int32_t)(packet.param5 * 1.0e7f);
+                rally_location.lng = (int32_t)(packet.param6 * 1.0e7f);
+                rally_location.alt = (int32_t)(packet.param7);
+
+                // sanity check location
+                if (!check_latlng(rally_location.lat, rally_location.lng)) {
+                    result = MAV_RESULT_FAILED;
+                    break;
+                }
+                
+                copter.rally.add_rally_point(rally_location);
+                
+            }
+
+            copter.set_mode(RTL, MODE_REASON_GCS_COMMAND);
+            result = MAV_RESULT_ACCEPTED;
+
+            break;
+#endif
+
 #if WINCH_ENABLED == ENABLED
         case MAV_CMD_DO_WINCH:
             // param1 : winch number (ignored)
