@@ -40,7 +40,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{"DF Test 0.1", log_bitmask};
+    DataFlash_Class dataflash{log_bitmask};
 
 };
 
