@@ -1,5 +1,13 @@
 APMrover2 Release Notes:
 ========================
+Rover 3.4.1-rc1 12-Jun-2018
+Changes from 3.4.0:
+1) lane based speed control (vehicle slows to stay close to line between waypoints), WP_OVERSHOOT replaces SPEED_TURN_GAIN 
+2) MOT_SPD_SCA_BASE allow configuring speed above which speed scaling begins
+3) disable acceleration limits when ATC_ACCEL_MAX is zero
+4) accept DO_CHANGE_SPEED commands in Auto, Guided, RTL, SmartRTL
+5) DPTH dataflash log messages for recording downward facing echosounders on boats 
+--------------------------------
 Rover 3.4.0 12-Jun-2018 / 3.4.0-rc1 01-Jun-2018
 Changes from 3.3.1-rc2:
 1) Loiter mode for boats
