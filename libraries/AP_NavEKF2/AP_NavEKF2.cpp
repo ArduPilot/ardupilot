@@ -1332,7 +1332,7 @@ uint32_t NavEKF2::getLastVelNorthEastReset(Vector2f &vel) const
 const char *NavEKF2::prearm_failure_reason(void) const
 {
     if (!core) {
-        return nullptr;
+        return "EKF2 not enabled";
     }
     return core[primary].prearm_failure_reason();
 }
