@@ -35,5 +35,8 @@ public:
     void read() override;
 
     // BLHeliESC provides current info
-    bool has_current() const override { return true; };
+    bool has_current() const override { return have_current; };
+
+private:
+    bool have_current;
 };
