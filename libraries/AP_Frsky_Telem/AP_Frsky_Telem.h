@@ -120,7 +120,9 @@ public:
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    void init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const uint32_t *ap_valuep = nullptr);
+    void init(const AP_SerialManager &serial_manager,
+              const uint8_t mav_type,
+              const uint32_t *ap_valuep = nullptr);
 
     // add statustext message to FrSky lib message queue
     void queue_message(MAV_SEVERITY severity, const char *text);
@@ -141,6 +143,8 @@ public:
 
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
 
+    void set_frame_string(const char *string) { _frame_string = string; }
+
 private:
     AP_AHRS &_ahrs;
     const AP_BattMonitor &_battery;
@@ -149,6 +153,8 @@ private:
     AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
     bool _initialised_uart;
     uint16_t _crc;
+
+    const char *_frame_string;
 
     struct
     {
