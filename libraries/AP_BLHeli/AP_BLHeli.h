@@ -32,6 +32,8 @@
 #include "msp_protocol.h"
 #include "blheli_4way_protocol.h"
 
+#define AP_BLHELI_MAX_ESCS 8
+
 class AP_BLHeli {
 
 public:
@@ -50,20 +52,21 @@ public:
         uint16_t consumption;// mAh
         uint16_t rpm;        // eRPM
         uint16_t count;
+        uint32_t timestamp_ms;
     };
 
     // get the most recent telemetry data packet for a motor
-    bool get_telem_data(uint8_t esc_index, struct telem_data &td, uint32_t &timestamp_ms);
+    bool get_telem_data(uint8_t esc_index, struct telem_data &td);
 
-    static AP_BLHeli *get_instance(void) {
-        return instance;
+    static AP_BLHeli *get_singleton(void) {
+        return singleton;
     }
 
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
 private:
-    static AP_BLHeli *instance;
+    static AP_BLHeli *singleton;
     
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
@@ -190,11 +193,10 @@ private:
     AP_HAL::UARTDriver *debug_uart;
     AP_HAL::UARTDriver *telem_uart;    
     
-    static const uint8_t max_motors = 8;
+    static const uint8_t max_motors = AP_BLHELI_MAX_ESCS;
     uint8_t num_motors;
 
     struct telem_data last_telem[max_motors];
-    uint32_t last_telem_ms[max_motors];
 
     // have we initialised the interface?
     bool initialised;
