@@ -29,7 +29,7 @@ void AP_BattMonitor_BLHeliESC::init(void)
 
 void AP_BattMonitor_BLHeliESC::read(void)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_instance();
+    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (!blheli) {
         return;
     }
@@ -42,21 +42,25 @@ void AP_BattMonitor_BLHeliESC::read(void)
     uint32_t now = AP_HAL::millis();
     uint32_t highest_ms=0;
     
-    for (uint8_t i=0; i<8; i++) {
+    for (uint8_t i=0; i<AP_BLHELI_MAX_ESCS; i++) {
         AP_BLHeli::telem_data td;
-        uint32_t timestamp_ms;
-        blheli->get_telem_data(i, td, timestamp_ms);
-        if (now - timestamp_ms > 1000) {
+        blheli->get_telem_data(i, td);
+
+        // accumulate consumed_sum regardless of age, to cope with ESC
+        // dropping out
+        consumed_sum += td.consumption;
+        
+        if (now - td.timestamp_ms > 1000) {
             // don't use old data
             continue;
         }
+        
         num_escs++;
         voltage_sum += td.voltage;
         current_sum += td.current;
-        consumed_sum += td.consumption;
         temperature_sum += td.temperature;
-        if (timestamp_ms > highest_ms) {
-            highest_ms = timestamp_ms;
+        if (td.timestamp_ms > highest_ms) {
+            highest_ms = td.timestamp_ms;
         }
     }
 
@@ -73,6 +77,12 @@ void AP_BattMonitor_BLHeliESC::read(void)
     _state.consumed_mah = consumed_sum;
     _state.last_time_micros = highest_ms * 1000;
     _state.temperature_time = highest_ms;
+
+    if (current_sum > 0) {
+        // if we have ever got a current value then we know we have a
+        // current sensor
+        have_current = true;
+    }
 }
 
 #endif // HAVE_AP_BLHELI_SUPPORT
