@@ -24,7 +24,7 @@ void Sub::init_ardupilot()
 
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
-                        fwver.fw_string,
+                        AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
     // load parameters from EEPROM

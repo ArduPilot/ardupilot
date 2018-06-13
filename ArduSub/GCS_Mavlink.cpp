@@ -1369,11 +1369,6 @@ bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
     return sub.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
 
-const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
-{
-    return sub.fwver;
-}
-
 int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {
     if (!sub.ap.depth_sensor_present) {
         return 0;
