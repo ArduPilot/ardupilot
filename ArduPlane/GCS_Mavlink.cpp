@@ -1709,8 +1709,3 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
     }
     return false;
 }
-
-const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
-{
-    return plane.fwver;
-}

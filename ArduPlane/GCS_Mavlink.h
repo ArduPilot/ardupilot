@@ -23,7 +23,6 @@ protected:
     AP_Camera *get_camera() const override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_Rally *get_rally() const override;
-    const AP_FWVersion &get_fwver() const override;
 
     uint8_t sysid_my_gcs() const override;
 
