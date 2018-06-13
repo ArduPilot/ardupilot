@@ -97,14 +97,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     AP_GROUPEND
 };
 
-AP_BLHeli *AP_BLHeli::instance;
+AP_BLHeli *AP_BLHeli::singleton;
 
 // constructor
 AP_BLHeli::AP_BLHeli(void)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
-    instance = this;
+    singleton = this;
 }
 
 /*
@@ -1213,15 +1213,14 @@ void AP_BLHeli::update(void)
 }
 
 // get the most recent telemetry data packet for a motor
-bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td, uint32_t &timestamp_ms)
+bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td)
 {
     if (esc_index >= max_motors) {
         return false;
     }
-    if (last_telem_ms[esc_index] == 0) {
+    if (last_telem[esc_index].timestamp_ms == 0) {
         return false;
     }
-    timestamp_ms = last_telem_ms[esc_index];
     td = last_telem[esc_index];
     return true;
 }
@@ -1273,10 +1272,10 @@ void AP_BLHeli::read_telemetry_packet(void)
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
     td.rpm = (buf[7]<<8) | buf[8];
+    td.timestamp_ms = AP_HAL::millis();
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
-    last_telem_ms[last_telem_esc] = AP_HAL::millis();
     
     DataFlash_Class *df = DataFlash_Class::instance();
     if (df && df->logging_enabled()) {
@@ -1382,7 +1381,7 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
     uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<num_motors; i++) {
         uint8_t idx = i % 4;
-        if (last_telem_ms[i] && (now - last_telem_ms[i] < 1000)) {
+        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
             temperature[idx]  = last_telem[i].temperature;
             voltage[idx]      = last_telem[i].voltage;
             current[idx]      = last_telem[i].current;
@@ -1399,7 +1398,7 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
         }
         if (i % 4 == 3 || i == num_motors - 1) {
             if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                break;
+                return;
             }
             if (i < 4) {
                 mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
