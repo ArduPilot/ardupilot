@@ -212,7 +212,9 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
                                     battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current in centiampere
                                     battery.has_current(instance) ? battery.consumed_mah(instance) : -1,       // total consumed current in milliampere.hour
                                     battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
-                                    battery.capacity_remaining_pct(instance));
+                                    battery.capacity_remaining_pct(instance),
+                                    0, // time remaining, seconds (not provided)
+                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED);
 }
 
 // returns true if all battery instances were reported
@@ -2989,7 +2991,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #ifdef HAVE_AP_BLHELI_SUPPORT
     case MSG_ESC_TELEMETRY: {
         CHECK_PAYLOAD_SIZE(ESC_TELEMETRY_1_TO_4);
-        AP_BLHeli *blheli = AP_BLHeli::get_instance();
+        AP_BLHeli *blheli = AP_BLHeli::get_singleton();
         if (blheli) {
             blheli->send_esc_telemetry_mavlink(uint8_t(chan));
         }
