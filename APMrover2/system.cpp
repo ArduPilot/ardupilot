@@ -24,7 +24,7 @@ void Rover::init_ardupilot()
 
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
-                        fwver.fw_string,
+                        AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
     //
@@ -80,7 +80,7 @@ void Rover::init_ardupilot()
 
     // setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.init(serial_manager, fwver.fw_string, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
+    frsky_telemetry.init(serial_manager, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init(serial_manager);
