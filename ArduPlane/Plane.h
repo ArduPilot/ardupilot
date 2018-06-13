@@ -158,7 +158,6 @@ public:
     void loop() override;
 
 private:
-    static const AP_FWVersion fwver;
 
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
