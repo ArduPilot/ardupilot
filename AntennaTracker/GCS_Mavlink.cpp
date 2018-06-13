@@ -665,11 +665,6 @@ bool GCS_MAVLINK_Tracker::set_mode(uint8_t mode)
     return false;
 }
 
-const AP_FWVersion &GCS_MAVLINK_Tracker::get_fwver() const
-{
-    return tracker.fwver;
-}
-
 /* dummy methods to avoid having to link against AP_Camera */
 void AP_Camera::control_msg(mavlink_message_t const*) {}
 void AP_Camera::configure(float, float, float, float, float, float, float) {}

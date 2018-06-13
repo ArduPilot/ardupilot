@@ -18,7 +18,6 @@ protected:
     AP_Mission *get_mission() override { return nullptr; };
     AP_Rally *get_rally() const override { return nullptr; };
     AP_Camera *get_camera() const override { return nullptr; };
-    const AP_FWVersion &get_fwver() const override;
 
     uint8_t sysid_my_gcs() const override;
 
