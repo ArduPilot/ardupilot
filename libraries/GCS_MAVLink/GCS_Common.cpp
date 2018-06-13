@@ -1492,7 +1492,7 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint16_t product_id = 0;
     uint64_t uid = 0;
     uint8_t  uid2[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_UID2_LEN] = {0};
-    const AP_FWVersion &version = get_fwver();
+    const AP_FWVersion &version = AP::fwversion();
 
     flight_sw_version = version.major << (8 * 3) | \
                         version.minor << (8 * 2) | \
@@ -2422,12 +2422,17 @@ void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t *msg)
 void GCS_MAVLINK::send_banner()
 {
     // mark the firmware version in the tlog
-    const AP_FWVersion &fwver = get_fwver();
+    const AP_FWVersion &fwver = AP::fwversion();
+
     send_text(MAV_SEVERITY_INFO, fwver.fw_string);
 
-    if (fwver.middleware_hash_str && fwver.os_hash_str) {
-        send_text(MAV_SEVERITY_INFO, "PX4: %s NuttX: %s",
-                  fwver.middleware_hash_str, fwver.os_hash_str);
+    if (fwver.middleware_name && fwver.os_name) {
+        send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",
+                  fwver.middleware_name, fwver.middleware_hash_str,
+                  fwver.os_name, fwver.os_hash_str);
+    } else if (fwver.os_name) {
+        send_text(MAV_SEVERITY_INFO, "%s: %s",
+                  fwver.os_name, fwver.os_hash_str);
     }
 
     // send system ID if we can

@@ -257,7 +257,6 @@ protected:
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
-    virtual const AP_FWVersion &get_fwver() const = 0;
     void set_ekf_origin(const Location& loc);
 
     virtual MAV_TYPE frame_type() const = 0;
