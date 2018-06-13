@@ -1310,8 +1310,3 @@ bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
     }
     return rover.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }
-
-const AP_FWVersion &GCS_MAVLINK_Rover::get_fwver() const
-{
-    return rover.fwver;
-}

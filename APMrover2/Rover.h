@@ -126,7 +126,6 @@ public:
     void loop(void) override;
 
 private:
-    static const AP_FWVersion fwver;
 
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
