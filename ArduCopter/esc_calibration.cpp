@@ -184,17 +184,18 @@ void Copter::esc_calibration_auto()
     // delay for 5 seconds while outputting pulses
     uint32_t tstart = millis();
     while (millis() - tstart < 5000) {
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        SRV_Channels::push();
         esc_calibration_notify();
         delay(3);
     }
 
-    // reduce throttle to minimum
-    motors->set_throttle_passthrough_for_esc_calibration(0.0f);
-
     // block until we restart
     while(1) {
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
+        SRV_Channels::push();
         esc_calibration_notify();
         delay(3);
     }
