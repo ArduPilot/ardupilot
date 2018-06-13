@@ -111,7 +111,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         position.z,
         roll,
         pitch,
-        yaw);
+        yaw,
+        NULL);
 
     uint32_t delay_ms = 25 + unsigned(random()) % 300;
     time_send_us = now_us + delay_ms * 1000UL;
