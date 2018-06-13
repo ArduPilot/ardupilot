@@ -1700,8 +1700,3 @@ bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
 #endif
     return copter.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
 }
-
-const AP_FWVersion &GCS_MAVLINK_Copter::get_fwver() const
-{
-    return copter.fwver;
-}
