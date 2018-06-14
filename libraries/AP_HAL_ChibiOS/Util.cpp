@@ -179,3 +179,18 @@ void Util::_toneAlarm_timer_tick() {
 }
 #endif // HAL_PWM_ALARM
 
+/*
+  set HW RTC in UTC microseconds
+*/
+void Util::set_hw_rtc(uint64_t time_utc_usec)
+{
+    stm32_set_utc_usec(time_utc_usec);
+}
+
+/*
+  get system clock in UTC microseconds
+*/
+uint64_t Util::get_hw_rtc() const
+{
+    return stm32_get_utc_usec();
+}
