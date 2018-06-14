@@ -23,12 +23,12 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
 
-    // @Param: RADUSED
-    // @DisplayName: Circle Radius used
-    // @Description: Use the radius at the center of the circle.
-    // @Values: 0:Not used,1:Used
+    // @Param: BASEPOINT
+    // @DisplayName: Base Point
+    // @Description: The base point is the center of the circle or the starting point of the arc.
+    // @Values: 0:Center,1:Arc
     // @User: Standard
-    AP_GROUPINFO("RADUSED",    2, AC_Circle, _radius_used, AC_CIRCLE_RADIUS_USED),
+    AP_GROUPINFO("BASEPOINT",    2, AC_Circle, _base_point, AC_CIRCLE_ARC),
 
     AP_GROUPEND
 };
@@ -93,7 +93,7 @@ void AC_Circle::init()
     const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
-    if (_radius_used) {
+    if (_base_point == AC_CIRCLE_ARC) {
         _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
         _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
     } else {
