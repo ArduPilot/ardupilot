@@ -661,7 +661,11 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
             // it is the file we are currently writing
             free(fname);
             write_fd_semaphore->give();
-            return hal.util->get_system_clock_ms() / 1000U;
+            uint64_t utc_usec;
+            if (!AP::rtc().get_utc_usec(utc_usec)) {
+                return 0;
+            }
+            return utc_usec / 1000000U;
         }
         write_fd_semaphore->give();
     }
