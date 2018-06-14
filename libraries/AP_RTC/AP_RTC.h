@@ -1,26 +1,26 @@
 #pragma once
 
+#include <AP_Param/AP_Param.h>
+
 #include <stdint.h>
 
 class AP_RTC {
 
 public:
 
-    AP_RTC() {
-        if (_singleton != nullptr) {
-            // it's an error to get here.  But I don't want to include
-            // AP_HAL here
-            return;
-        }
-        _singleton = this;
-    }
+    AP_RTC();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int8 allowed_types;
 
     // ordering is important in source_type; lower-numbered is
-    // considered a better time source.
+    // considered a better time source.  These values are documented
+    // and used in the parameters!
     enum source_type : uint8_t {
-        SOURCE_GPS,
-        SOURCE_MAVLINK_SYSTEM_TIME,
-        SOURCE_HW,
+        SOURCE_GPS = 0,
+        SOURCE_MAVLINK_SYSTEM_TIME = 1,
+        SOURCE_HW = 2,
         SOURCE_NONE,
     };
 
