@@ -17,6 +17,7 @@
 #include "GPIO.h"
 #include "SITL_State.h"
 #include "Util.h"
+#include "SITLFS.h"
 
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -47,6 +48,8 @@ static UARTDriver sitlUart6Driver(6, &sitlState);
 
 static Util utilInstance(&sitlState);
 
+static SITLFS sitlfs;
+
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
         &sitlUart0Driver,   /* uartA */
@@ -68,7 +71,8 @@ HAL_SITL::HAL_SITL() :
         &utilInstance,      /* util */
         &emptyOpticalFlow, /* onboard optical flow */
         &emptyFlash, /* flash driver */
-        nullptr),           /* CAN */
+        nullptr,           /* CAN */
+        &sitlfs),
     _sitl_state(&sitlState)
 {}
 

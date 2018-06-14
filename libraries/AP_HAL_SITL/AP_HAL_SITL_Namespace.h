@@ -17,4 +17,5 @@ class GPIO;
 class DigitalSource;
 class HALSITLCAN;
 class HALSITLCANDriver;
+class SITLFS;
 }  // namespace HALSITL
