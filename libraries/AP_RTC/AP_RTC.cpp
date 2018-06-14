@@ -13,10 +13,40 @@ const char *AP_RTC::_clock_source_types[] = {
     "NONE",
 };
 
+AP_RTC::AP_RTC()
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    if (_singleton != nullptr) {
+        // it's an error to get here.  But I don't want to include
+        // AP_HAL here
+        return;
+    }
+    _singleton = this;
+}
+
+
+// table of user settable parameters
+const AP_Param::GroupInfo AP_RTC::var_info[] = {
+
+    // @Param: _TYPES
+    // @DisplayName: Allowed sources of RTC time
+    // @Description: Specifies which sources of UTC time will be accepted
+    // @Bitmask: 0:GPS,1:MAVLINK_SYSTEM_TIME,2:HW
+    // @User: Advanced
+    AP_GROUPINFO("_TYPES",  1, AP_RTC, allowed_types, 1),
+
+    AP_GROUPEND
+};
+
 void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
     if (type >= rtc_source_type) {
         // e.g. system-time message when we've been set by the GPS
+        return;
+    }
+
+    // check it's from an allowed sources:
+    if (!(allowed_types & (1<<type))) {
         return;
     }
 
