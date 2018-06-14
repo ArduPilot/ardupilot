@@ -86,11 +86,8 @@ private:
     // possibly time-consuming preparations handling
     void Prep_MinSpace();
     uint16_t find_oldest_log();
-    int64_t disk_space_avail();
-    int64_t disk_space();
     float avail_space_percent();
 
-    bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
