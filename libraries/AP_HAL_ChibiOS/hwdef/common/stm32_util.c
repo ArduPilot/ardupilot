@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stm32_dma.h>
+#include <hrt.h>
+
+static int64_t utc_time_offset;
 
 /*
   setup the timer capture digital filter for a channel
@@ -100,4 +103,118 @@ void memory_flush_all(void)
 #if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
     dmaBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
 #endif
+}
+
+/*
+  set the utc time
+ */
+void stm32_set_utc_usec(uint64_t time_utc_usec)
+{
+    uint64_t now = hrt_micros();
+    if (now <= time_utc_usec) {
+        utc_time_offset = time_utc_usec - now;
+    }
+}
+
+/*
+  get system clock in UTC microseconds
+*/
+uint64_t stm32_get_utc_usec()
+{
+    return hrt_micros() + utc_time_offset;
+}
+
+struct utc_tm {
+    uint8_t tm_year; // since 1900
+    uint8_t tm_mon;  // zero based
+    uint8_t tm_mday; // zero based
+    uint8_t tm_hour;
+    uint8_t tm_min;
+    uint8_t tm_sec;
+};
+
+
+/*
+  return true if a year is a leap year
+ */
+static bool is_leap(uint32_t y)
+{
+    y += 1900;
+    return (y % 4) == 0 && ((y % 100) != 0 || (y % 400) == 0);
+}
+
+static const uint8_t ndays[2][12] ={
+    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
+
+/*
+  parse a seconds since 1970 into a utc_tm structure
+  code based on _der_gmtime from samba
+ */
+static void parse_utc_seconds(uint64_t utc_sec, struct utc_tm *tm)
+{
+    uint32_t secday = utc_sec % (3600U * 24U);
+    uint32_t days = utc_sec / (3600U * 24U);
+
+    memset(tm, 0, sizeof(*tm));
+
+    tm->tm_sec = secday % 60U;
+    tm->tm_min = (secday % 3600U) / 60U;
+    tm->tm_hour = secday / 3600U;
+    tm->tm_year = 70;
+
+    if (days > (2000 * 365)) {
+        // don't look for dates too far into the future
+        return;
+    }
+
+    while (true) {
+        unsigned dayinyear = (is_leap(tm->tm_year) ? 366 : 365);
+        if (days < dayinyear) {
+            break;
+        }
+        tm->tm_year += 1;
+        days -= dayinyear;
+    }
+    tm->tm_mon = 0;
+
+    while (true) {
+        unsigned daysinmonth = ndays[is_leap(tm->tm_year)?1:0][tm->tm_mon];
+        if (days < daysinmonth) {
+            break;
+        }
+        days -= daysinmonth;
+        tm->tm_mon++;
+    }
+    tm->tm_mday = days + 1;
+}
+
+
+/*
+  get time for fat filesystem. This is based on
+  rtcConvertDateTimeToFAT from the ChibiOS RTC driver. We don't use
+  the hw RTC clock as it is very inaccurate
+ */
+uint32_t get_fattime()
+{
+    if (utc_time_offset == 0) {
+        // return a fixed time
+        return ((uint32_t)0 | (1 << 16)) | (1 << 21);
+    }
+    uint64_t utc_usec = stm32_get_utc_usec();
+    uint64_t utc_sec = utc_usec / 1000000UL;
+    struct utc_tm tm;
+
+    parse_utc_seconds(utc_sec, &tm);
+    
+    uint32_t fattime;
+
+    fattime  = tm.tm_sec  >> 1U;
+    fattime |= tm.tm_min  << 5U;
+    fattime |= tm.tm_hour << 11U;
+    fattime |= tm.tm_mday << 16U;
+    fattime |= (tm.tm_mon+1)  << 21U;
+    fattime |= (uint32_t)((tm.tm_year-80) << 25U);
+    
+    return fattime;
 }

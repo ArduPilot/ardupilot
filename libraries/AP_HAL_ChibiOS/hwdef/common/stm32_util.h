@@ -34,6 +34,10 @@ void *malloc_ccm(size_t size);
 void *malloc_dtcm(size_t size);
 void *malloc_dma(size_t size);
 
+// UTC system clock handling    
+void stm32_set_utc_usec(uint64_t time_utc_usec);
+uint64_t stm32_get_utc_usec(void);
+    
 #ifdef __cplusplus
 }
 #endif
