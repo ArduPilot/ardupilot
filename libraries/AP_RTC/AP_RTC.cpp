@@ -79,11 +79,13 @@ bool AP_RTC::get_utc_usec(uint64_t &usec) const
     return true;
 }
 
-void AP_RTC::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms)
+bool AP_RTC::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms)
 {
      // get time of day in ms
     uint64_t time_ms = 0;
-    get_utc_usec(time_ms); // may fail, leaving time_ms at 0
+    if (!get_utc_usec(time_ms)) {
+        return false;
+    }
     time_ms /= 1000U;
 
     // separate time into ms, sec, min, hour and days but all expressed in milliseconds
@@ -96,6 +98,8 @@ void AP_RTC::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int
     sec = sec_ms / 1000;
     min = min_ms / (60 * 1000);
     hour = hour_ms / (60 * 60 * 1000);
+
+    return true;
 }
 
 // get milliseconds from now to a target time of day expressed as hour, min, sec, ms
@@ -119,7 +123,9 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
 
     // get start_time_ms as h, m, s, ms
     int32_t curr_hour, curr_min, curr_sec, curr_ms;
-    get_system_clock_utc(curr_hour, curr_min, curr_sec, curr_ms);
+    if (!get_system_clock_utc(curr_hour, curr_min, curr_sec, curr_ms)) {
+        return 0;
+    }
     int32_t total_delay_ms = 0;
 
     // calculate ms to target
