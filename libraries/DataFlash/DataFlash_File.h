@@ -65,6 +65,9 @@ protected:
 
 private:
     int _write_fd;
+    char *_write_filename;
+    uint32_t _last_write_ms;
+    
     int _read_fd;
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
