@@ -68,4 +68,14 @@ private:
         uint32_t last_update_ms;
     } heater;
 #endif
+
+    /*
+      set HW RTC in UTC microseconds
+     */
+    void set_hw_rtc(uint64_t time_utc_usec) override;
+
+    /*
+      get system clock in UTC microseconds
+     */
+    uint64_t get_hw_rtc() const override;
 };
