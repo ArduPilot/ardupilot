@@ -1269,12 +1269,12 @@ void AP_Param::setup_sketch_defaults(void)
 
 // Load all variables from EEPROM
 //
-bool AP_Param::load_all(bool check_defaults_file)
+bool AP_Param::load_all()
 {
     struct Param_header phdr;
     uint16_t ofs = sizeof(AP_Param::EEPROM_header);
 
-    reload_defaults_file(check_defaults_file);
+    reload_defaults_file();
 
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
@@ -1304,13 +1304,13 @@ bool AP_Param::load_all(bool check_defaults_file)
 /*
   reload from hal.util defaults file
  */
-void AP_Param::reload_defaults_file(bool panic_on_error)
+void AP_Param::reload_defaults_file()
 {
     if (param_defaults_data.length != 0) {
-        load_embedded_param_defaults(false);
+        load_embedded_param_defaults();
         return;
     }
-    
+
 #if HAL_OS_POSIX_IO == 1
     /*
       if the HAL specifies a defaults parameter file then override
@@ -1318,7 +1318,7 @@ void AP_Param::reload_defaults_file(bool panic_on_error)
      */
     const char *default_file = hal.util->get_custom_defaults_file();
     if (default_file) {
-        if (load_defaults_file(default_file, panic_on_error)) {
+        if (load_defaults_file(default_file)) {
             printf("Loaded defaults from %s\n", default_file);
         } else {
             printf("Failed to load defaults from %s\n", default_file);
@@ -1786,7 +1786,7 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value)
 #include <stdio.h>
 
 // increments num_defaults for each default found in filename
-bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error)
+bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
 {
     FILE *f = fopen(filename, "r");
     if (f == nullptr) {
@@ -1805,17 +1805,11 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
         }
         enum ap_var_type var_type;
         if (!find(pname, &var_type)) {
-            if (panic_on_error) {
-                fclose(f);
-                ::printf("invalid param %s in defaults file\n", pname);
-                AP_HAL::panic("AP_Param: Invalid param in defaults file");
-                return false;
-            } else {
-                continue;
-            }
+            continue;
         }
         num_defaults++;
     }
+
     fclose(f);
 
     return true;
@@ -1840,6 +1834,8 @@ bool AP_Param::read_param_defaults_file(const char *filename)
         enum ap_var_type var_type;
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
+            ::printf("Ignored unknown param %s in defaults file %s\n",
+                     pname, filename);
             continue;
         }
         param_overrides[idx].object_ptr = vp;
@@ -1856,7 +1852,7 @@ bool AP_Param::read_param_defaults_file(const char *filename)
 /*
   load a default set of parameters from a file
  */
-bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
+bool AP_Param::load_defaults_file(const char *filename)
 {
     if (filename == nullptr) {
         return false;
@@ -1872,7 +1868,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
     for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
          pname != nullptr;
          pname = strtok_r(nullptr, ",", &saveptr)) {
-        if (!count_defaults_in_file(pname, num_defaults, panic_on_error)) {
+        if (!count_defaults_in_file(pname, num_defaults)) {
             free(mutable_filename);
             return false;
         }
@@ -1915,7 +1911,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool panic_on_error)
 /*
   count the number of embedded parameter defaults
  */
-bool AP_Param::count_embedded_param_defaults(uint16_t &count, bool panic_on_error)
+bool AP_Param::count_embedded_param_defaults(uint16_t &count)
 {
     const volatile char *ptr = param_defaults_data.data;
     uint16_t length = param_defaults_data.length;
@@ -1953,13 +1949,9 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count, bool panic_on_erro
 
         enum ap_var_type var_type;
         if (!find(pname, &var_type)) {
-            if (panic_on_error) {
-                ::printf("invalid param %s in defaults file\n", pname);
-                AP_HAL::panic("AP_Param: Invalid param in embedded defaults");
-            } else {
-                continue;
-            }
+            continue;
         }
+
         count++;
     }
     return true;
@@ -1969,7 +1961,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count, bool panic_on_erro
 /*
   load a default set of parameters from a embedded parameter region
  */
-void AP_Param::load_embedded_param_defaults(bool panic_on_error)
+void AP_Param::load_embedded_param_defaults()
 {
     if (param_overrides != nullptr) {
         free(param_overrides);
@@ -1978,7 +1970,7 @@ void AP_Param::load_embedded_param_defaults(bool panic_on_error)
     
     num_param_overrides = 0;
     uint16_t num_defaults = 0;
-    if (!count_embedded_param_defaults(num_defaults, panic_on_error)) {
+    if (!count_embedded_param_defaults(num_defaults)) {
         return;
     }
 
@@ -2023,6 +2015,8 @@ void AP_Param::load_embedded_param_defaults(bool panic_on_error)
         enum ap_var_type var_type;
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
+            ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
+                     pname, ptr - param_defaults_data.data);
             continue;
         }
         param_overrides[idx].object_ptr = vp;
