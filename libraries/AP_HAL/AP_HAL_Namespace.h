@@ -30,6 +30,9 @@ namespace AP_HAL {
     class OpticalFlow;
 
     class CANProtocol;
+
+    class FS;
+
     class CANManager;
     class CAN;
 
