@@ -1093,7 +1093,7 @@ struct PACKED log_DSTL {
 #define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U"
 #define GPS_FMT   "QBIHBcLLefffB"
 #define GPS_UNITS "s---SmDUmnhn-"
-#define GPS_MULTS "F---0BGGBBB0-"
+#define GPS_MULTS "F---0BGGB000-"
 
 #define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
 #define GYR_FMT    "QQfff"
