@@ -631,6 +631,15 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
     if (fname == nullptr) {
         return 0;
     }
+    if (_write_fd != -1 && write_fd_semaphore->take_nonblocking()) {
+        if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
+            // it is the file we are currently writing
+            free(fname);
+            write_fd_semaphore->give();
+            return _write_offset;
+        }
+        write_fd_semaphore->give();
+    }
     struct stat st;
     if (::stat(fname, &st) != 0) {
         printf("Unable to fetch Log File Size: %s\n", strerror(errno));
@@ -646,6 +655,15 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
+    }
+    if (_write_fd != -1 && write_fd_semaphore->take_nonblocking()) {
+        if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
+            // it is the file we are currently writing
+            free(fname);
+            write_fd_semaphore->give();
+            return hal.util->get_system_clock_ms() / 1000U;
+        }
+        write_fd_semaphore->give();
     }
     struct stat st;
     if (::stat(fname, &st) != 0) {
@@ -882,20 +900,25 @@ uint16_t DataFlash_File::start_new_log(void)
     if (log_num > MAX_LOG_FILES) {
         log_num = 1;
     }
-    char *fname = _log_file_name(log_num);
-    if (fname == nullptr) {
-        _open_error = true;
-        return 0xFFFF;
-    }
     if (!write_fd_semaphore->take(1)) {
         _open_error = true;
         return 0xFFFF;
     }
+    if (_write_filename) {
+        free(_write_filename);
+        _write_filename = nullptr;        
+    }
+    _write_filename = _log_file_name(log_num);
+    if (_write_filename == nullptr) {
+        _open_error = true;
+        write_fd_semaphore->give();
+        return 0xFFFF;
+    }
 #if HAL_OS_POSIX_IO
-    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
+    _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0666);
 #else
     //TODO add support for mode flags
-    _write_fd = ::open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
+    _write_fd = ::open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC);
 #endif
     _cached_oldest_log = 0;
 
@@ -905,19 +928,18 @@ uint16_t DataFlash_File::start_new_log(void)
         write_fd_semaphore->give();
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
-                 fname, strerror(saved_errno));
+                 _write_filename, strerror(saved_errno));
         hal.console->printf("Log open fail for %s - %s\n",
-                            fname, strerror(saved_errno));
-        free(fname);
+                            _write_filename, strerror(saved_errno));
         return 0xFFFF;
     }
-    free(fname);
+    _last_write_ms = AP_HAL::millis();
     _write_offset = 0;
     _writebuf.clear();
     write_fd_semaphore->give();
 
     // now update lastlog.txt with the new log number
-    fname = _lastlog_file_name();
+    char *fname = _lastlog_file_name();
 
     // we avoid fopen()/fprintf() here as it is not available on as many
     // systems as open/write
@@ -1038,14 +1060,20 @@ void DataFlash_File::_io_timer(void)
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        hal.util->perf_count(_perf_errors);
-        last_io_operation = "close";
-        close(_write_fd);
-        last_io_operation = "";
-        _write_fd = -1;
-        _initialised = false;
-        printf("Failed to write to File: %s\n", strerror(errno));
+        if (tnow - _last_write_ms > 2000) {
+            // if we can't write for 2 seconds we give up and close
+            // the file. This allows us to cope with temporary write
+            // failures caused by directory listing
+            hal.util->perf_count(_perf_errors);
+            last_io_operation = "close";
+            close(_write_fd);
+            last_io_operation = "";
+            _write_fd = -1;
+            _initialised = false;
+            printf("Failed to write to File: %s\n", strerror(errno));
+        }
     } else {
+        _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
         /*
