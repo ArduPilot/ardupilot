@@ -36,7 +36,7 @@ AP_Proximity_TeraRangerTowerEvo::AP_Proximity_TeraRangerTowerEvo(AP_Proximity &_
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
     }
-    // _last_request_sent_ms = AP_HAL::millis();
+    _last_request_sent_ms = AP_HAL::millis();
 }
 
 // detect if a TeraRanger Tower proximity sensor is connected by looking for a configured serial port
@@ -93,11 +93,10 @@ void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
     }
     if (_current_init_state == InitState_Sequence) {
         //set tower mode - 4 sensors are triggered at once with 90 deg angle between each sensor
-        //if this mode is not set the tower will default to sequential mode
-        set_mode(SEQUENCE_MODE, 4);
+        set_mode(TOWER_MODE, 4);
         _current_init_state = InitState_Rate;
     } else if (_current_init_state == InitState_Rate) {
-        //set update rate of the sensor. If it's not set it will default to ASAP mode
+        //set update rate of the sensor.
         set_mode(REFRESH_50_HZ, 5);
         _current_init_state = InitState_StreamStart;
     } else if (_current_init_state == InitState_StreamStart) {
@@ -174,7 +173,7 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
         _distance[sector] = ((float) distance_cm) / 1000;
         
         //check for target too far, target too close and sensor not connected
-        _distance_valid[sector] = distance_cm != 0xffff; //&& distance_cm != 0x0000 && distance_cm != 0x0001;
+        _distance_valid[sector] = distance_cm != 0xffff && distance_cm != 0x0000 && distance_cm != 0x0001;
         _last_distance_received_ms = AP_HAL::millis();
         // update boundary used for avoidance
         update_boundary_for_sector(sector);
