@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:UseBest,2:Blend
+    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, 1),
 
@@ -722,7 +722,10 @@ void AP_GPS::update(void)
     } else {
         // use switch logic to find best GPS
         uint32_t now = AP_HAL::millis();
-        if (_auto_switch >= 1) {
+        if (_auto_switch == 3) {
+            // select the second GPS instance
+            primary_instance = 1;
+        } else if (_auto_switch >= 1) {
             // handling switching away from blended GPS
             if (primary_instance == GPS_BLENDED_INSTANCE) {
                 primary_instance = 0;
