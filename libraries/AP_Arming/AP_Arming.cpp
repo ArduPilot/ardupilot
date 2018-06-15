@@ -176,6 +176,7 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     }
 
     const Vector3f &prime_accel_vec = ins.get_accel();
+    const uint32_t now = AP_HAL::millis();
     for(uint8_t i=0; i<ins.get_accel_count(); i++) {
         if (!ins.use_accel(i)) {
             continue;
@@ -198,9 +199,9 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
         vec_diff.z *= 0.5f;
 
         if (vec_diff.length() <= threshold) {
-            last_accel_pass_ms[i] = AP_HAL::millis();
+            last_accel_pass_ms[i] = now;
         }
-        if (AP_HAL::millis() - last_accel_pass_ms[i] > 10000) {
+        if (now - last_accel_pass_ms[i] > 10000) {
             return false;
         }
     }
@@ -215,6 +216,7 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
     }
 
     const Vector3f &prime_gyro_vec = ins.get_gyro();
+    const uint32_t now = AP_HAL::millis();
     for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
         if (!ins.use_gyro(i)) {
             continue;
@@ -225,9 +227,9 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         // allow for up to 5 degrees/s difference. Pass if it has
         // been OK in last 10 seconds
         if (vec_diff.length() <= radians(5)) {
-            last_gyro_pass_ms[i] = AP_HAL::millis();
+            last_gyro_pass_ms[i] = now;
         }
-        if (AP_HAL::millis() - last_gyro_pass_ms[i] > 10000) {
+        if (now - last_gyro_pass_ms[i] > 10000) {
             return false;
         }
     }
