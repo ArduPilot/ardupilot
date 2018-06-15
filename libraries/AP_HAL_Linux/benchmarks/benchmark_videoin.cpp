@@ -23,6 +23,7 @@ static void BM_Crop8bpp(benchmark::State& state)
     new_buffer = (uint8_t *)malloc(state.range_x() * state.range_y());
     if (!new_buffer) {
         fprintf(stderr, "error: couldn't malloc new_buffer\n");
+        free(buffer);
         return;
     }
 
@@ -50,6 +51,7 @@ static void BM_YuyvToGrey(benchmark::State& state)
     new_buffer = (uint8_t *)malloc(state.range_x() / 2);
     if (!new_buffer) {
         fprintf(stderr, "error: couldn't malloc new_buffer\n");
+        free(buffer);
         return;
     }
 
