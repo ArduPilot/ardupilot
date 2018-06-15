@@ -171,13 +171,14 @@ bool AP_Arming::logging_checks(bool report)
 
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
-    if (ins.get_accel_count() <= 1) {
+    const uint8_t accel_count = ins.get_accel_count();
+    if (accel_count <= 1) {
         return true;
     }
 
     const Vector3f &prime_accel_vec = ins.get_accel();
     const uint32_t now = AP_HAL::millis();
-    for(uint8_t i=0; i<ins.get_accel_count(); i++) {
+    for(uint8_t i=0; i<accel_count; i++) {
         if (!ins.use_accel(i)) {
             continue;
         }
@@ -211,13 +212,14 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 
 bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
 {
-    if (ins.get_gyro_count() <= 1) {
+    const uint8_t gyro_count = ins.get_gyro_count();
+    if (gyro_count <= 1) {
         return true;
     }
 
     const Vector3f &prime_gyro_vec = ins.get_gyro();
     const uint32_t now = AP_HAL::millis();
-    for(uint8_t i=0; i<ins.get_gyro_count(); i++) {
+    for(uint8_t i=0; i<gyro_count; i++) {
         if (!ins.use_gyro(i)) {
             continue;
         }
