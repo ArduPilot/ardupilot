@@ -28,9 +28,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_SITL::detect(AP_InertialSensor &_im
     return sensor;
 }
 
-bool AP_InertialSensor_SITL::init_sensor(void) 
+bool AP_InertialSensor_SITL::init_sensor(void)
 {
-    sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
+    sitl = AP::sitl();
     if (sitl == nullptr) {
         return false;
     }
