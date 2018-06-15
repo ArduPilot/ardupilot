@@ -306,6 +306,7 @@ void Plane::one_second_loop()
     ahrs.set_orientation();
 
     adsb.set_stall_speed_cm(aparm.airspeed_min);
+    adsb.set_max_speed(aparm.airspeed_max);
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -435,15 +436,9 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 5;
 
             } else {
-                init_home();
+                set_home_persistently(gps.location());
 
-                // set system clock for log timestamps
-                uint64_t gps_timestamp = gps.time_epoch_usec();
-                
-                hal.util->set_system_clock(gps_timestamp);
-
-                // update signing timestamp
-                GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
+                next_WP_loc = prev_WP_loc = home;
 
                 if (g.compass_enabled) {
                     // Set compass declination automatically

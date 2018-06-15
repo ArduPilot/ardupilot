@@ -96,14 +96,6 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
     return AP_HAL::Util::SAFETY_DISARMED;
 }
 
-void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
-{
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-}
-
 /*
   display VRBRAIN system identifer - board type and serial number
  */

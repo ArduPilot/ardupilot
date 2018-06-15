@@ -19,7 +19,7 @@
 #include "AP_HAL_ChibiOS.h"
 #include "Semaphores.h"
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #endif
 
@@ -50,26 +50,19 @@ public:
         return _rssi;
     }
         
-    
-    bool set_override(uint8_t channel, int16_t override) override;
-    void clear_overrides() override;
-
     void _timer_tick(void);
     bool rc_bind(int dsmMode) override;
 
 private:
-    /* override state */
-    uint16_t _override[RC_INPUT_MAX_CHANNELS];
     uint16_t _rc_values[RC_INPUT_MAX_CHANNELS] = {0};
 
     uint64_t _last_read;
-    bool _override_valid;
     uint8_t _num_channels;
     Semaphore rcin_mutex;
     int16_t _rssi = -1;
     uint32_t _rcin_timestamp_last_signal;
     bool _init;
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     bool _radio_init;
     AP_Radio *radio;
     uint32_t last_radio_us;

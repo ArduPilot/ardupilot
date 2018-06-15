@@ -227,6 +227,11 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             fprintf(stderr, "socket failed - %s\n", strerror(errno));
             exit(1);
         }
+        ret = fcntl(_listen_fd, F_SETFD, FD_CLOEXEC);
+        if (ret == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+            exit(1);
+        }
 
         /* we want to be able to re-use ports quickly */
         if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
@@ -303,6 +308,11 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     _fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_fd == -1) {
         fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
 
@@ -518,12 +528,12 @@ void UARTDriver::_timer_tick(void)
   
   A return value of zero means the HAL does not support this API
 */
-uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     uint64_t last_receive_us = _receive_timestamp;
     if (_uart_baudrate > 0) {
         // assume 10 bits per byte. 
-        uint32_t transport_time_us = (1000000UL * 10UL / _uart_baudrate) * nbytes;
+        uint32_t transport_time_us = (1000000UL * 10UL / _uart_baudrate) * (nbytes+available());
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;

@@ -23,6 +23,7 @@
 #include "shared_dma.h"
 #include <AP_Math/AP_Math.h>
 #include "Scheduler.h"
+#include "hwdef/common/stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,7 +54,6 @@ uint32_t UARTDriver::last_thread_run_us;
 #define EVT_DATA EVENT_MASK(0)
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-tx_bounce_buf_ready(true),
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600),
@@ -114,6 +114,17 @@ void UARTDriver::thread_init(void)
 }
 
 
+/*
+  hook to allow printf() to work on hal.console when we don't have a
+  dedicated debug console
+ */
+static int hal_console_vprintf(const char *fmt, va_list arg)
+{
+    hal.console->vprintf(fmt, arg);
+    return 1; // wrong length, but doesn't matter for what this is used for
+}
+
+
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_init();
@@ -153,6 +164,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _baudrate = b;
     }
 
+    if (rx_bounce_buf == nullptr) {
+        rx_bounce_buf = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    }
+    if (tx_bounce_buf == nullptr) {
+        tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        tx_bounce_buf_ready = true;
+    }
+    
     /*
       allocate the write buffer
      */
@@ -261,6 +280,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     // setup flow control
     set_flow_control(_flow_control);
+
+    if (serial_num == 0 && _initialised) {
+#ifndef HAL_STDOUT_SERIAL
+        // setup hal.console to take printf() output
+        vprintf_console_hook = hal_console_vprintf;
+#endif
+    }
 }
 
 void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
@@ -347,6 +373,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (len == 0) {
         return;
     }
+
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
     uart_drv->receive_timestamp_update();
@@ -970,12 +997,12 @@ void UARTDriver::receive_timestamp_update(void)
   
   A return value of zero means the HAL does not support this API
 */
-uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes) const
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     uint64_t last_receive_us = _receive_timestamp[_receive_timestamp_idx];
     if (_baudrate > 0 && !sdef.is_usb) {
         // assume 10 bits per byte. For USB we assume zero transport delay
-        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * nbytes;
+        uint32_t transport_time_us = (1000000UL * 10UL / _baudrate) * (nbytes + available());
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;

@@ -1,3 +1,34 @@
+Release 3.9.0beta1, 21st May 2018
+---------------------------------
+
+This is the first in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+The main changes are for supporting two new HALs (hardware abstraction
+layers). One is the port to ChibiOS and the second is the F4Light HAL.
+
+These ports bring a host of new flight board options, and a lot of new
+features. Some highlights include:
+
+ - support for many inexpensive STM32F4 based flight boards
+
+ - support for DShot output for BLHeli ESCs, including ESC telemetry
+   feedback
+
+ - new battery monitoring system with more flexible failsafe options
+
+ - support for Devo telemetry output
+
+ - a new position hold library for multicopters which improves
+   quadplane VTOL support
+
+This release is fully compatible with previous releases, and users
+should not notice a significant difference in flight. The focus of the
+beta testing will be on ensuring that the new flight board support is
+stable.
+
+Happy flying!
+
 Release 3.8.5, 25th April 2018
 ------------------------------
 

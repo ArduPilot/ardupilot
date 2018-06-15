@@ -28,12 +28,6 @@ void Scheduler::register_io_process(AP_HAL::MemberProc k)
 void Scheduler::register_timer_failsafe(AP_HAL::Proc, uint32_t period_us)
 {}
 
-void Scheduler::suspend_timer_procs()
-{}
-
-void Scheduler::resume_timer_procs()
-{}
-
 void Scheduler::system_initialized()
 {}
 

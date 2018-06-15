@@ -168,11 +168,11 @@ void Copter::init_ardupilot()
 #endif
 
     // init Location class
-    Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location_Class::set_terrain(&terrain);
     wp_nav->set_terrain(&terrain);
 #endif
+
 #if AC_AVOID_ENABLED == ENABLED
     wp_nav->set_avoidance(&avoid);
     loiter_nav->set_avoidance(&avoid);

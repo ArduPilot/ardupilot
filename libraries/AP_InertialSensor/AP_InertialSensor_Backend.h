@@ -104,6 +104,7 @@ public:
         DEVTYPE_GYR_LSM9DS1  = 0x26,
         DEVTYPE_INS_ICM20789 = 0x27,
         DEVTYPE_INS_ICM20689 = 0x28,
+        DEVTYPE_INS_BMI055   = 0x29,
     };
 
 protected:

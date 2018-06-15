@@ -28,6 +28,9 @@ public:
     // initialise motors
     void init();
 
+    // return true if motors are active
+    bool active() const;
+
     // setup output in case of main CPU failure
     void setup_safety_output();
 
@@ -44,6 +47,9 @@ public:
     float get_throttle() const { return _throttle; }
     void set_throttle(float throttle);
 
+    // set lateral input as a value from -100 to +100
+    void set_lateral(float lateral);
+
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
     // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -52,8 +58,8 @@ public:
     // true if vehicle is capable of skid steering
     bool have_skid_steering() const;
 
-    //true if vehicle is an omni rover
-    bool is_omni_rover() const;
+    //true if vehicle is capable of lateral movement
+    bool has_lateral_control() const;
 
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
@@ -96,7 +102,7 @@ protected:
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
     // output for omni style frames
-    void output_omni(bool armed, float steering, float throttle);
+    void output_omni(bool armed, float steering, float throttle, float lateral);
 
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle);
@@ -125,10 +131,12 @@ protected:
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
     AP_Float _vector_throttle_base;  // throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
+    AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
+    float   _lateral;  // requested lateral input as a value from -4500 to +4500
 };

@@ -71,14 +71,17 @@ static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #endif
 
-// air density at 15C at sea level in kg/m^3
-#define AIR_DENSITY_SEA_LEVEL    1.225f
-
 #define C_TO_KELVIN 273.15f
 
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
 #define ISA_LAPSE_RATE 0.0065f
+
+// Standard Sea Level values
+// Ref: https://en.wikipedia.org/wiki/Standard_sea_level
+#define SSL_AIR_DENSITY         1.225f // kg/m^3
+#define SSL_AIR_PRESSURE 101325.01576f // Pascal
+#define SSL_AIR_TEMPERATURE    288.15f // K
 
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX

@@ -34,7 +34,7 @@
 /// please keep each MSG_ to a single MAVLink message. If need be
 /// create new MSG_ IDs for additional messages on the same
 /// stream
-enum ap_message {
+enum ap_message : uint8_t {
     MSG_HEARTBEAT,
     MSG_ATTITUDE,
     MSG_LOCATION,
@@ -56,7 +56,6 @@ enum ap_message {
     MSG_SERVO_OUT,
     MSG_NEXT_WAYPOINT,
     MSG_NEXT_PARAM,
-    MSG_LIMITS_STATUS,
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
@@ -93,7 +92,7 @@ enum ap_message {
         stream_name ## _msgs,                   \
         ARRAY_SIZE(stream_name ## _msgs)        \
     }
-#define MAV_STREAM_TERMINATOR { 0, nullptr, 0 }
+#define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
 
 ///
 /// @class	GCS_MAVLINK
@@ -129,17 +128,19 @@ public:
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
     // kept in the same order
-    enum streams {STREAM_RAW_SENSORS,
-                  STREAM_EXTENDED_STATUS,
-                  STREAM_RC_CHANNELS,
-                  STREAM_RAW_CONTROLLER,
-                  STREAM_POSITION,
-                  STREAM_EXTRA1,
-                  STREAM_EXTRA2,
-                  STREAM_EXTRA3,
-                  STREAM_PARAMS,
-                  STREAM_ADSB,
-                  NUM_STREAMS};
+    enum streams : uint8_t {
+        STREAM_RAW_SENSORS,
+        STREAM_EXTENDED_STATUS,
+        STREAM_RC_CHANNELS,
+        STREAM_RAW_CONTROLLER,
+        STREAM_POSITION,
+        STREAM_EXTRA1,
+        STREAM_EXTRA2,
+        STREAM_EXTRA3,
+        STREAM_PARAMS,
+        STREAM_ADSB,
+        NUM_STREAMS
+    };
 
     // see if we should send a stream now. Called at 50Hz
     bool        stream_trigger(enum streams stream_num);
@@ -176,6 +177,7 @@ public:
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_scaled_pressure();
     void send_sensor_offsets();
+    virtual void send_simstate() const;
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -184,12 +186,13 @@ public:
     virtual void send_attitude() const;
     void send_autopilot_version() const;
     void send_local_position() const;
+    void send_vfr_hud();
     void send_vibration() const;
     void send_named_float(const char *name, float value) const;
     void send_home() const;
     void send_ekf_origin() const;
     virtual void send_position_target_global_int() { };
-    void send_servo_output_raw(bool hil);
+    void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
 
@@ -233,8 +236,8 @@ public:
     FUNCTOR_TYPEDEF(protocol_handler_fn_t, bool, uint8_t, AP_HAL::UARTDriver *);
 
     struct stream_entries {
-        const uint8_t stream_id; // narrowed from uint32_t (enumeration)
-        const uint8_t *ap_message_ids; // narrowed from uint32_t (enumeration)
+        const streams stream_id;
+        const ap_message *ap_message_ids;
         const uint8_t num_ap_message_ids;
     };
     // vehicle subclass cpp files should define this:
@@ -275,7 +278,8 @@ protected:
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
 
-    void handle_request_data_stream(mavlink_message_t *msg, bool save);
+    virtual bool persist_streamrates() const { return false; }
+    void handle_request_data_stream(mavlink_message_t *msg);
 
     virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
@@ -292,12 +296,10 @@ protected:
     void handle_param_request_list(mavlink_message_t *msg);
     void handle_param_request_read(mavlink_message_t *msg);
     virtual bool params_ready() const { return true; }
-
-    void handle_common_gps_message(mavlink_message_t *msg);
+    void handle_system_time_message(const mavlink_message_t *msg);
     void handle_common_rally_message(mavlink_message_t *msg);
     void handle_rally_fetch_point(mavlink_message_t *msg);
     void handle_rally_point(mavlink_message_t *msg);
-    void handle_common_camera_message(const mavlink_message_t *msg);
     void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
@@ -318,7 +320,18 @@ protected:
     void handle_device_op_read(mavlink_message_t *msg);
     void handle_device_op_write(mavlink_message_t *msg);
 
+    void send_timesync();
+    // returns the time a timesync message was most likely received:
+    uint64_t timesync_receive_timestamp_ns() const;
+    // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
+    uint64_t timesync_timestamp_ns() const;
     void handle_timesync(mavlink_message_t *msg);
+    struct {
+        int64_t sent_ts1;
+        uint32_t last_sent_ms;
+        const uint16_t interval_ms = 10000;
+    }  _timesync_request;
+
     void handle_statustext(mavlink_message_t *msg);
 
     bool telemetry_delayed() const;
@@ -337,6 +350,7 @@ protected:
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_send_banner(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gripper(mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
 
@@ -346,14 +360,18 @@ protected:
     // message sending functions:
     bool try_send_compass_message(enum ap_message id);
     bool try_send_mission_message(enum ap_message id);
-    bool try_send_camera_message(enum ap_message id);
-    bool try_send_gps_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
     virtual int32_t global_position_int_relative_alt() const;
+
+    // these methods are called after vfr_hud_velned is updated
+    virtual float vfr_hud_climbrate() const;
+    virtual float vfr_hud_airspeed() const;
+    virtual int16_t vfr_hud_throttle() const { return 0; }
+    Vector3f vfr_hud_velned;
 
 private:
 

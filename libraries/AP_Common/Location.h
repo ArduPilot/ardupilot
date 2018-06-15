@@ -32,8 +32,6 @@ public:
     Location_Class(const Location& loc);
     Location_Class(const Vector3f &ekf_offset_neu);
 
-    /// accept reference to ahrs and (indirectly) EKF
-    static void set_ahrs(const AP_AHRS_NavEKF* ahrs) { _ahrs = ahrs; }
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     // operators
@@ -73,7 +71,6 @@ public:
     void zero(void) { lat = lng = alt = 0; options = 0; }
 
 private:
-    static const AP_AHRS_NavEKF *_ahrs;
     static AP_Terrain *_terrain;
 };
 

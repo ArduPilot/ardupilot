@@ -22,6 +22,11 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "SRV_Channel.h"
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
@@ -210,7 +215,7 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
  */
 void SRV_Channels::cork()
 {
-	hal.rcout->cork();
+    hal.rcout->cork();
 }
 
 /*
@@ -219,7 +224,7 @@ void SRV_Channels::cork()
 void SRV_Channels::push()
 {
     hal.rcout->push();
-
+    
     // give volz library a chance to update
     volz_ptr->update();
 
@@ -230,4 +235,16 @@ void SRV_Channels::push()
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
+
+#if HAL_WITH_UAVCAN
+    // push outputs to UAVCAN
+    uint8_t can_num_ifaces = AP_BoardConfig_CAN::get_can_num_ifaces();
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS && i < can_num_ifaces; i++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            continue;
+        }
+        ap_uavcan->SRV_push_servos();
+    }
+#endif // HAL_WITH_UAVCAN
 }

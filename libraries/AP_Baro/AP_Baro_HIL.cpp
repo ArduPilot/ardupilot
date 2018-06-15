@@ -29,12 +29,12 @@ void AP_Baro::SimpleAtmosphere(
 
     if (h < 11.0f) {
         // Troposphere
-        theta=(288.15f-6.5f*h)/288.15f;
-        delta=powf(theta, GMR/6.5f);
+        theta = (SSL_AIR_TEMPERATURE - 6.5f * h) / SSL_AIR_TEMPERATURE;
+        delta = powf(theta, GMR / 6.5f);
     } else {
         // Stratosphere
-        theta=216.65f/288.15f;
-        delta=0.2233611f*expf(-GMR*(h-11.0f)/216.65f);
+        theta = 216.65f / SSL_AIR_TEMPERATURE;
+        delta = 0.2233611f * expf(-GMR * (h - 11.0f) / 216.65f);
     }
 
     sigma = delta/theta;
@@ -66,8 +66,7 @@ void AP_Baro::SimpleUnderWaterAtmosphere(
     // \f$P = \rho (kg) \cdot gravity (m/s2) \cdot depth (m)\f$
     // \f$P_{atmosphere} = 101.325 kPa\f$
     // \f$P_{total} = P_{atmosphere} + P_{fluid}\f$
-    const float pAtm = 101325; // Pa
-    delta = (pAtm + (seaDensity * 1e3) * GRAVITY_MSS * (alt * 1e3)) / pAtm;
+    delta = (SSL_AIR_PRESSURE + (seaDensity * 1e3) * GRAVITY_MSS * (alt * 1e3)) / SSL_AIR_PRESSURE;
 
     // From: http://residualanalysis.blogspot.com.br/2010/02/temperature-of-ocean-water-at-given.html
     // \f$T(D)\f$ Temperature underwater at given temperature
@@ -84,10 +83,9 @@ void AP_Baro::SimpleUnderWaterAtmosphere(
 void AP_Baro::setHIL(float altitude_msl)
 {
     float sigma, delta, theta;
-    const float p0 = 101325;
 
     SimpleAtmosphere(altitude_msl*0.001f, sigma, delta, theta);
-    float p = p0 * delta;
+    float p = SSL_AIR_PRESSURE * delta;
     float T = 303.16f * theta - C_TO_KELVIN; // Assume 30 degrees at sea level - converted to degrees Kelvin
 
     _hil.pressure = p;

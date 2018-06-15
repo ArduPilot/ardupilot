@@ -57,7 +57,7 @@ public:
 
       A return value of zero means the HAL does not support this API
      */
-    uint64_t receive_time_constraint_us(uint16_t nbytes) const override;
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override;
     
 private:
     const char *_devpath;

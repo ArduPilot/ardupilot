@@ -23,6 +23,7 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
+#include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
 
 #include <hwdef.h>
@@ -69,9 +70,7 @@ static Empty::RCOutput rcoutDriver;
 static ChibiOS::Scheduler schedulerInstance;
 static ChibiOS::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
-#ifdef USE_POSIX
-static FATFS SDC_FS; // FATFS object
-#endif
+
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -147,8 +146,11 @@ static THD_FUNCTION(main_loop,arg)
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
-#endif
-    
+#endif 
+
+    //Setup SD Card and Initialise FATFS bindings
+    sdcard_init();
+
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
@@ -217,28 +219,6 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     sdStart((SerialDriver*)&HAL_STDOUT_SERIAL, &stdoutcfg);
 #endif
 
-    //Setup SD Card and Initialise FATFS bindings
-    /*
-     * Start SD Driver
-     */
-#ifdef USE_POSIX
-    FRESULT err;
-    sdcStart(&SDCD1, NULL);
-
-    if(sdcConnect(&SDCD1) == HAL_FAILED) {
-        printf("Err: Failed to initialize SDIO!\n");
-    } else {
-        err = f_mount(&SDC_FS, "/", 1);
-        if (err != FR_OK) {
-            printf("Err: Failed to mount SD Card!\n");
-            sdcDisconnect(&SDCD1);
-        } else {
-            printf("Successfully mounted SDCard..\n");
-        }
-        //Create APM Directory
-        mkdir("/APM", 0777);
-    }
-#endif
     assert(callbacks);
     g_callbacks = callbacks;
 

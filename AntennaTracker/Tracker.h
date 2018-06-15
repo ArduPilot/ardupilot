@@ -201,7 +201,6 @@ private:
     void ten_hz_logging_loop();
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
-    void send_simstate(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
     void gcs_retry_deferred(void);

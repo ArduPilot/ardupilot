@@ -30,8 +30,6 @@ public:
 
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
-    void     suspend_timer_procs();
-    void     resume_timer_procs();
 
     bool     in_main_thread() const override;
 
@@ -98,7 +96,6 @@ private:
     uint64_t _last_stack_debug_msec;
     pthread_t _main_ctx;
 
-    Semaphore _timer_semaphore;
     Semaphore _io_semaphore;
 };
 

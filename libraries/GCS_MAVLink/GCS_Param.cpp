@@ -124,7 +124,7 @@ bool GCS_MAVLINK::have_flow_control(void)
   save==false so we don't want the save to happen when the user connects the
   ground station.
  */
-void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
+void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
 {
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(msg, &packet);
@@ -143,7 +143,7 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     case MAV_DATA_STREAM_ALL:
         // note that we don't set STREAM_PARAMS - that is internal only
         for (uint8_t i=0; i<STREAM_PARAMS; i++) {
-            if (save) {
+            if (persist_streamrates()) {
                 streamRates[i].set_and_save_ifchanged(freq);
             } else {
                 streamRates[i].set(freq);
@@ -177,7 +177,7 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     }
 
     if (rate != nullptr) {
-        if (save) {
+        if (persist_streamrates()) {
             rate->set_and_save_ifchanged(freq);
         } else {
             rate->set(freq);

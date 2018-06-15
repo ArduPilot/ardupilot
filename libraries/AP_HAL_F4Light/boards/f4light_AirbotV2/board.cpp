@@ -16,7 +16,7 @@ extern const stm32_pin_info PIN_MAP[BOARD_NR_GPIO_PINS] __FLASH__ = {
     const adc_dev   * const adc_device;       < ADC device, if any. 
     uint8_t gpio_bit;             < Pin's GPIO port bit. 
     uint8_t timer_channel;        < Timer channel, or 0 if none. 
-    uint8_t adc_channel;          < Pin ADC channel, or ADCx if none. 
+    uint8_t adc_channel;          < Pin ADC channel, or nADC if none. 
 */
 
     {&gpiob,   NULL, NULL, 10, NO_CH,     nADC}, /* D0/PB10  0 USART3_TX/I2C2-SCL */

@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
 #include <stdio.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -88,20 +89,22 @@
 #endif
 #endif
 
+#ifndef BOARD_PWM_COUNT_DEFAULT
+#define BOARD_PWM_COUNT_DEFAULT 8
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, state.pwm_count, BOARD_PWM_COUNT_DEFAULT),
-#endif
+    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if AP_FEATURE_RTSCTS
     // @Param: SER1_RTSCTS
@@ -191,7 +194,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     // @Group: RADIO
     // @Path: ../AP_Radio/AP_Radio.cpp
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
@@ -211,7 +214,11 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 #endif
-    
+
+    // @Group: RTC
+    // @Path: ../AP_RTC/AP_RTC.cpp
+    AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+
     AP_GROUPEND
 };
 
@@ -225,6 +232,8 @@ void AP_BoardConfig::init()
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
+
+    AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 }
 
 // set default value for BRD_SAFETY_MASK

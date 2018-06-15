@@ -25,6 +25,8 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#include <AP_Math/AP_Math.h>
+
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
@@ -54,15 +56,10 @@ bool RCInput::new_input()
     }
     bool valid = _rcin_timestamp_last_signal != _last_read;
 
-    if (_override_valid) {
-        // if we have RC overrides active, then always consider it valid
-        valid = true;
-    }
     _last_read = _rcin_timestamp_last_signal;
-    _override_valid = false;
     rcin_mutex.give();
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
         _radio_init = true;
         radio = AP_Radio::instance();
@@ -84,25 +81,13 @@ uint8_t RCInput::num_channels()
 
 uint16_t RCInput::read(uint8_t channel)
 {
-    if (!_init) {
-        return 0;
-    }
-    if (channel >= RC_INPUT_MAX_CHANNELS) {
+    if (!_init || (channel >= MIN(RC_INPUT_MAX_CHANNELS, _num_channels))) {
         return 0;
     }
     rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
-    if (_override[channel]) {
-        uint16_t v = _override[channel];
-        rcin_mutex.give();
-        return v;
-    }
-    if (channel >=  _num_channels) {
-        rcin_mutex.give();
-        return 0;
-    }
     uint16_t v = _rc_values[channel];
     rcin_mutex.give();
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && channel == 0) {
         // hook to allow for update of radio on main thread, for mavlink sends
         radio->update();
@@ -125,34 +110,6 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     }
     return len;
 }
-
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (!_init) {
-        return false;
-    }
-
-    if (override < 0) {
-        return false; /* -1: no change. */
-    }
-    if (channel >= RC_INPUT_MAX_CHANNELS) {
-        return false;
-    }
-    _override[channel] = override;
-    if (override != 0) {
-        _override_valid = true;
-        return true;
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
-        set_override(i, 0);
-    }
-}
-
 
 void RCInput::_timer_tick(void)
 {
@@ -177,7 +134,7 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
         last_radio_us = radio->last_recv_us();
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
@@ -214,7 +171,7 @@ bool RCInput::rc_bind(int dsmMode)
     rcin_prot.start_bind();
 #endif
     
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
     }

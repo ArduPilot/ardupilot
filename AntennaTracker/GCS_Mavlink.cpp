@@ -115,14 +115,6 @@ void Tracker::send_nav_controller_output(mavlink_channel_t chan)
 }
 
 
-// report simulator state
-void Tracker::send_simstate(mavlink_channel_t chan)
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
 bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
 {
     // do nothing
@@ -142,16 +134,6 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
     case MSG_NAV_CONTROLLER_OUTPUT:
         CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         tracker.send_nav_controller_output(chan);
-        break;
-
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        send_servo_output_raw(false);
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        tracker.send_simstate(chan);
         break;
 
     case MSG_EXTENDED_STATUS1:
@@ -253,12 +235,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_NAV_CONTROLLER_OUTPUT,
@@ -267,20 +249,20 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_RADIO_IN
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
@@ -391,15 +373,6 @@ MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
-
-    // If we are currently operating as a proxy for a remote, 
-    // alas we have to look inside each packet to see if it's for us or for the remote
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-    {
-        handle_request_data_stream(msg, false);
-        break;
-    }
-
 
     case MAVLINK_MSG_ID_HEARTBEAT:
         break;

@@ -50,6 +50,7 @@ private:
     float _sum_ratiometric;
     void _add_value(float v, float vcc5V);
     float _pin_scaler();
+    AP_HAL::Semaphore *_semaphore;
 };
 
 class ChibiOS::AnalogIn : public AP_HAL::AnalogIn {
@@ -88,7 +89,7 @@ private:
     }; 
     static const pin_info pin_config[];
     
-    static adcsample_t samples[];
+    static adcsample_t *samples;
     static uint32_t sample_sum[];
     static uint32_t sample_count;
 };

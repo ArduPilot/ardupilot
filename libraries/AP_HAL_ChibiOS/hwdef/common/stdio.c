@@ -107,13 +107,16 @@ int vprintf(const char *fmt, va_list arg)
 #endif
 }
 
+// hook to allow for printf() on systems without HAL_STDOUT_SERIAL
+int (*vprintf_console_hook)(const char *fmt, va_list arg) = vprintf;
+
 int printf(const char *fmt, ...)
 {
    va_list arg;
    int done;
  
    va_start (arg, fmt);
-   done =  vprintf(fmt, arg);
+   done =  vprintf_console_hook(fmt, arg);
    va_end (arg);
  
    return done;

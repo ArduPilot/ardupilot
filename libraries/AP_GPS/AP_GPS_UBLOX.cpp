@@ -1013,6 +1013,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.time_week_ms = AP_HAL::millis() + 3*60*60*1000 + 37000;
         state.last_gps_time_ms = AP_HAL::millis();
         state.hdop = 130;
+        state.speed_accuracy = 0;
         next_fix = state.status;
 #endif
         break;

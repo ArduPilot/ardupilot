@@ -201,6 +201,7 @@ T constrain_value(const T amt, const T low, const T high)
 
 template int constrain_value<int>(const int amt, const int low, const int high);
 template long constrain_value<long>(const long amt, const long low, const long high);
+template long long constrain_value<long long>(const long long amt, const long long low, const long long high);
 template short constrain_value<short>(const short amt, const short low, const short high);
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
@@ -237,3 +238,20 @@ Vector3f rand_vec3f(void)
     return v;
 }
 #endif
+
+bool is_valid_octal(uint16_t octal)
+{
+    // treat "octal" as decimal and test if any decimal digit is > 7
+    if (octal > 7777) {
+        return false;
+    } else if (octal % 10 > 7) {
+        return false;
+    } else if ((octal % 100)/10 > 7) {
+        return false;
+    } else if ((octal % 1000)/100 > 7) {
+        return false;
+    } else if ((octal % 10000)/1000 > 7) {
+        return false;
+    }
+    return true;
+}

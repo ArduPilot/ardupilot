@@ -30,6 +30,8 @@ protected:
 
     virtual bool in_hil_mode() const override;
 
+    bool persist_streamrates() const override { return true; }
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
@@ -41,4 +43,7 @@ private:
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
     MAV_STATE system_status() const override;
+
+    int16_t vfr_hud_throttle() const override;
+
 };

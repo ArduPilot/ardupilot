@@ -187,12 +187,15 @@ void I2CDevice::init(){
     if(_dev) {
         i2c_init(_dev, _offs, _slow?I2C_250KHz_SPEED:I2C_400KHz_SPEED);
 
-    }else {
+    }else if (s_i2c){
         s_i2c->init( );
 
         if(_slow) {
             s_i2c->set_low_speed(true);
         }
+    }
+    else { // neither hardware nor software initalization was successful
+        return;
     }
     _initialized=true;
 }

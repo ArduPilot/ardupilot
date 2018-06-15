@@ -36,7 +36,6 @@
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
 #define CAN_STM32_RX_QUEUE_SIZE         64
 class AP_UAVCAN;
-using namespace uavcan_stm32;
 
 namespace ChibiOS {
 /**
@@ -76,7 +75,7 @@ private:
     AP_UAVCAN *p_uavcan;
     bool initialized_;
     uint32_t bitrate_;
-    CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
+    uavcan_stm32::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
 };
 
 }

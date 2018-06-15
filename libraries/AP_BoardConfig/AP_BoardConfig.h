@@ -3,18 +3,19 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if defined(HAL_NEEDS_PARAM_HELPER)
 #include <AP_Param_Helper/AP_Param_Helper.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_MINDPXV2)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2)
 #define AP_FEATURE_BOARD_DETECT 1
 #else
 #define AP_FEATURE_BOARD_DETECT 0
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_GPIO_PIN_SAFETY_IN)
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_GPIO_PIN_SAFETY_IN)
 #define AP_FEATURE_SAFETY_BUTTON 1
 #else
 #define AP_FEATURE_SAFETY_BUTTON 0
@@ -32,7 +33,7 @@
 #define AP_FEATURE_SBUS_OUT 0
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #endif
 
@@ -90,6 +91,7 @@ public:
         PX4_BOARD_PCNC1    = 21,
         PX4_BOARD_MINDPXV2 = 22,
         PX4_BOARD_SP01     = 23,
+        PX4_BOARD_FMUV5    = 24,
         VRX_BOARD_BRAIN51  = 30,
         VRX_BOARD_BRAIN52  = 32,
         VRX_BOARD_BRAIN52E = 33,
@@ -111,23 +113,20 @@ public:
     }
 #endif
 
-    // ask if IOMCU is enabled
-    static bool io_enabled(void) {
+    // ask if IOMCU is enabled. This is a uint8_t to allow
+    // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
+    // crc check of IO firmware on startup
+    static uint8_t io_enabled(void) {
 #if AP_FEATURE_BOARD_DETECT
-        return instance?instance->state.io_enable.get():false;
+        return instance?uint8_t(instance->state.io_enable.get()):0;
 #else
-        return false;
+        return 0;
 #endif
     }
 
     // get number of PWM outputs enabled on FMU
     static uint8_t get_pwm_count(void) {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
-        return instance?instance->state.pwm_count.get():4;
-#else
-        // default to 16, which means all PWM channels available
-        return 16;
-#endif
+        return instance?instance->pwm_count.get():4;
     }
 
 #if AP_FEATURE_SAFETY_BUTTON
@@ -157,10 +156,10 @@ private:
     static AP_BoardConfig *instance;
     
     AP_Int16 vehicleSerialNumber;
-
+    AP_Int8 pwm_count;
+    
 #if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || AP_FEATURE_SAFETY_BUTTON
     struct {
-        AP_Int8 pwm_count;
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
@@ -207,7 +206,7 @@ private:
     // target temperarure for IMU in Celsius, or -1 to disable
     AP_Int8 _imu_target_temperature;
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     // direct attached radio
     AP_Radio _radio;
 #endif
@@ -216,4 +215,7 @@ private:
     // HAL specific parameters
     AP_Param_Helper param_helper{false};
 #endif
+
+    // real-time-clock; private because access is via the singleton
+    AP_RTC rtc;
 };

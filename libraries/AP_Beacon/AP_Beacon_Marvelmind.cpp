@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
- Original C Code by Marvelmind (https://bitbucket.org/marvelmind_robotics/)
+ Original C Code by Marvelmind (https://github.com/MarvelmindRobotics/marvelmind.c)
  Adapted into Ardupilot by Karthik Desai, Amilcar Lucas
  April 2017
  */
@@ -28,9 +28,16 @@
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID 0x0011
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_HIGHRES_ID 0x0012
 
-#define MAX_BUFFERED_POSITIONS 3
-
 extern const AP_HAL::HAL& hal;
+
+#define MM_DEBUG_LEVEL 0
+
+#if MM_DEBUG_LEVEL
+  #include <GCS_MAVLink/GCS.h>
+  #define Debug(level, fmt, args ...)  do { if (level <= MM_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+#else
+  #define Debug(level, fmt, args ...)
+#endif
 
 AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
     AP_Beacon_Backend(frontend)
@@ -38,15 +45,14 @@ AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
     if (uart != nullptr) {
         uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
-        hedge = new MarvelmindHedge();
         last_update_ms = 0;
-        if (hedge && hedge->position_buffer != nullptr) {
-            parse_state = RECV_HDR; // current state of receive data
-            num_bytes_in_block_received = 0; // bytes received
-            data_id = 0;
-        } else {
-            hal.console->printf("MarvelMind: MarvelmindHedge failed\n");
-        }
+        parse_state = RECV_HDR; // current state of receive data
+        num_bytes_in_block_received = 0; // bytes received
+        data_id = 0;
+        hedge._have_new_values = false;
+        hedge.positions_beacons.num_beacons = 0;
+        hedge.positions_beacons.updated = false;
+
     }
 }
 
@@ -74,83 +80,56 @@ uint16_t AP_Beacon_Marvelmind::calc_crc_modbus(uint8_t *buf, uint16_t len)
     return crc;
 }
 
-uint8_t AP_Beacon_Marvelmind::mark_position_ready()
+void AP_Beacon_Marvelmind::process_position_datagram()
 {
-    uint8_t ind = hedge->_last_values_next;
-    const uint8_t ind_cur = ind;
-    hedge->position_buffer[ind].ready = true;
-    hedge->position_buffer[ind].processed = false;
-    ind++;
-    if (ind >= MAX_BUFFERED_POSITIONS) {
-        ind = 0;
-    }
-    if (hedge->_last_values_count < MAX_BUFFERED_POSITIONS) {
-        hedge->_last_values_count++;
-    }
-    hedge->_have_new_values = true;
-    hedge->_last_values_next = ind;
-    return ind_cur;
-}
-
-void AP_Beacon_Marvelmind::process_position_datagram(AP_Beacon_Marvelmind::PositionValue &p)
-{
-    uint8_t ind = hedge->_last_values_next;
-    hedge->position_buffer[ind].address = input_buffer[16];
-    hedge->position_buffer[ind].timestamp = input_buffer[5]
-            | (((uint32_t) input_buffer[6]) << 8)
-            | (((uint32_t) input_buffer[7]) << 16)
-            | (((uint32_t) input_buffer[8]) << 24);
+    hedge.cur_position.address = input_buffer[16];
+    hedge.cur_position.timestamp = input_buffer[5]
+                  | (((uint32_t) input_buffer[6]) << 8)
+                  | (((uint32_t) input_buffer[7]) << 16)
+                  | (((uint32_t) input_buffer[8]) << 24);
     const int16_t vx = input_buffer[9] | (((uint16_t) input_buffer[10]) << 8);
-    hedge->position_buffer[ind].x = vx * 10; // centimeters -> millimeters
+    hedge.cur_position.x__mm = vx * 10; // centimeters -> millimeters
     const int16_t vy = input_buffer[11] | (((uint16_t) input_buffer[12]) << 8);
-    hedge->position_buffer[ind].y = vy * 10; // centimeters -> millimeters
+    hedge.cur_position.y__mm = vy * 10; // centimeters -> millimeters
     const int16_t vz = input_buffer[13] | (((uint16_t) input_buffer[14]) << 8);
-    hedge->position_buffer[ind].z = vz * 10; // centimeters -> millimeters
-    hedge->position_buffer[ind].high_resolution = false;
-    ind = mark_position_ready();
-    p = hedge->position_buffer[ind];
+    hedge.cur_position.z__mm = vz * 10; // centimeters -> millimeters
+    hedge.cur_position.high_resolution = false;
+    hedge._have_new_values = true;
 }
 
-void AP_Beacon_Marvelmind::process_position_highres_datagram(AP_Beacon_Marvelmind::PositionValue &p)
+void AP_Beacon_Marvelmind::process_position_highres_datagram()
 {
-    uint8_t ind = hedge->_last_values_next;
-    hedge->position_buffer[ind].address = input_buffer[22];
-    hedge->position_buffer[ind].timestamp = input_buffer[5]
-            | (((uint32_t) input_buffer[6]) << 8)
-            | (((uint32_t) input_buffer[7]) << 16)
-            | (((uint32_t) input_buffer[8]) << 24);
-    const int32_t vx = input_buffer[9] | (((uint32_t) input_buffer[10]) << 8)
-            | (((uint32_t) input_buffer[11]) << 16)
-            | (((uint32_t) input_buffer[12]) << 24);
-    hedge->position_buffer[ind].x = vx;
-    const int32_t vy = input_buffer[13] | (((uint32_t) input_buffer[14]) << 8)
-            | (((uint32_t) input_buffer[15]) << 16)
-            | (((uint32_t) input_buffer[16]) << 24);
-    hedge->position_buffer[ind].y = vy;
-    const int32_t vz = input_buffer[17] | (((uint32_t) input_buffer[18]) << 8)
-            | (((uint32_t) input_buffer[19]) << 16)
-            | (((uint32_t) input_buffer[20]) << 24);
-    hedge->position_buffer[ind].z = vz;
-    hedge->position_buffer[ind].high_resolution = true;
-    ind = mark_position_ready();
-    p = hedge->position_buffer[ind];
+    hedge.cur_position.address = input_buffer[22];
+    hedge.cur_position.timestamp = input_buffer[5]
+                  | (((uint32_t) input_buffer[6]) << 8)
+                  | (((uint32_t) input_buffer[7]) << 16)
+                  | (((uint32_t) input_buffer[8]) << 24);
+    hedge.cur_position.x__mm = input_buffer[9] | (((uint32_t) input_buffer[10]) << 8)
+                  | (((uint32_t) input_buffer[11]) << 16)
+                  | (((uint32_t) input_buffer[12]) << 24);
+    hedge.cur_position.y__mm = input_buffer[13] | (((uint32_t) input_buffer[14]) << 8)
+                  | (((uint32_t) input_buffer[15]) << 16)
+                  | (((uint32_t) input_buffer[16]) << 24);
+    hedge.cur_position.z__mm = input_buffer[17] | (((uint32_t) input_buffer[18]) << 8)
+                  | (((uint32_t) input_buffer[19]) << 16)
+                  | (((uint32_t) input_buffer[20]) << 24);
+    hedge.cur_position.high_resolution = true;
+    hedge._have_new_values = true;
 }
 
 AP_Beacon_Marvelmind::StationaryBeaconPosition* AP_Beacon_Marvelmind::get_or_alloc_beacon(uint8_t address)
 {
-    const uint8_t n_used = hedge->positions_beacons.num_beacons;
-    if (n_used != 0) {
-        for (uint8_t i = 0; i < n_used; i++) {
-            if (hedge->positions_beacons.beacons[i].address == address) {
-                return &hedge->positions_beacons.beacons[i];
-            }
+    const uint8_t n_used = hedge.positions_beacons.num_beacons;
+    for (uint8_t i = 0; i < n_used; i++) {
+        if (hedge.positions_beacons.beacons[i].address == address) {
+            return &hedge.positions_beacons.beacons[i];
         }
     }
     if (n_used >= AP_BEACON_MAX_BEACONS) {
         return nullptr;
     }
-    hedge->positions_beacons.num_beacons = (n_used + 1);
-    return &hedge->positions_beacons.beacons[n_used];
+    hedge.positions_beacons.num_beacons = (n_used + 1);
+    return &hedge.positions_beacons.beacons[n_used];
 }
 
 void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
@@ -158,6 +137,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
     const uint8_t n = input_buffer[5]; // number of beacons in packet
     StationaryBeaconPosition *stationary_beacon;
     if ((1 + n * 8) != input_buffer[4]) {
+        Debug(1, "beacon pos lo pkt size %d != %d", input_buffer[4], (1 + n * 8));
         return; // incorrect size
     }
     for (uint8_t i = 0; i < n; i++) {
@@ -172,11 +152,11 @@ void AP_Beacon_Marvelmind::process_beacons_positions_datagram()
         stationary_beacon = get_or_alloc_beacon(address);
         if (stationary_beacon != nullptr) {
             stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x * 10; // centimeters -> millimeters
-            stationary_beacon->y = y * 10; // centimeters -> millimeters
-            stationary_beacon->z = z * 10; // centimeters -> millimeters
+            stationary_beacon->x__mm = x * 10; // centimeters -> millimeters
+            stationary_beacon->y__mm = y * 10; // centimeters -> millimeters
+            stationary_beacon->z__mm = z * 10; // centimeters -> millimeters
             stationary_beacon->high_resolution = false;
-            hedge->positions_beacons.updated = true;
+            hedge.positions_beacons.updated = true;
         }
     }
     order_stationary_beacons();
@@ -187,6 +167,7 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
     const uint8_t n = input_buffer[5]; // number of beacons in packet
     StationaryBeaconPosition *stationary_beacon;
     if ((1 + n * 14) != input_buffer[4]) {
+        Debug(1, "beacon pos hi pkt size %d != %d", input_buffer[4], (1 + n * 14));
         return; // incorrect size
     }
     for (uint8_t i = 0; i < n; i++) {
@@ -207,11 +188,11 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
         stationary_beacon = get_or_alloc_beacon(address);
         if (stationary_beacon != nullptr) {
             stationary_beacon->address = address; //The instance and the address are the same
-            stationary_beacon->x = x; // millimeters
-            stationary_beacon->y = y; // millimeters
-            stationary_beacon->z = z; // millimeters
+            stationary_beacon->x__mm = x; // millimeters
+            stationary_beacon->y__mm = y; // millimeters
+            stationary_beacon->z__mm = z; // millimeters
             stationary_beacon->high_resolution = true;
-            hedge->positions_beacons.updated = true;
+            hedge.positions_beacons.updated = true;
         }
     }
     order_stationary_beacons();
@@ -220,23 +201,43 @@ void AP_Beacon_Marvelmind::process_beacons_positions_highres_datagram()
 void AP_Beacon_Marvelmind::process_beacons_distances_datagram()
 {
     if (32 != input_buffer[4]) {
+        Debug(1, "beacon dist pkt size %d != 32", input_buffer[4]);
         return; // incorrect size
     }
-    raw_beacon_distances.address = input_buffer[5]; // Address of hedgehog
-    for (uint8_t i = 0; i < 4; i++) {
+    bool set = false;
+    for (uint8_t i = 0; i < hedge.positions_beacons.num_beacons; i++) {
         const uint8_t ofs = 6 + i * 6;
-        raw_beacon_distances.beacon[i].address = input_buffer[ofs];
-        raw_beacon_distances.beacon[i].distance = input_buffer[ofs + 1]
-                | (((uint32_t) input_buffer[ofs + 2]) << 8)
-                | (((uint32_t) input_buffer[ofs + 3]) << 16)
-                | (((uint32_t) input_buffer[ofs + 4]) << 24);
-        set_beacon_distance(i, raw_beacon_distances.beacon[i].distance * 0.001f);  // millimeters -> meters
+        const uint8_t address = input_buffer[ofs];
+        const int8_t instance = find_beacon_instance(address);
+        if (instance != -1) {
+            const uint32_t distance = input_buffer[ofs + 1]
+                                      | (((uint32_t) input_buffer[ofs + 2]) << 8)
+                                      | (((uint32_t) input_buffer[ofs + 3]) << 16)
+                                      | (((uint32_t) input_buffer[ofs + 4]) << 24);
+            hedge.positions_beacons.beacons[instance].distance__m = distance * 0.001f; // millimeters -> meters
+            set_beacon_distance(instance, hedge.positions_beacons.beacons[instance].distance__m);
+            set = true;
+            Debug(2, "Beacon %d is %.2fm", instance, hedge.positions_beacons.beacons[instance].distance__m);
+        }
     }
+    if (set) {
+        last_update_ms = AP_HAL::millis();
+    }
+}
+
+int8_t AP_Beacon_Marvelmind::find_beacon_instance(uint8_t address) const
+{
+    for (uint8_t i = 0; i < hedge.positions_beacons.num_beacons; i++) {
+        if (hedge.positions_beacons.beacons[i].address == address) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void AP_Beacon_Marvelmind::update(void)
 {
-    if (uart == nullptr || hedge == nullptr || hedge->position_buffer == nullptr) {
+    if (uart == nullptr) {
         return;
     }
     // read any available characters
@@ -311,7 +312,7 @@ void AP_Beacon_Marvelmind::update(void)
                         case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID:
                         {
                             // add to position_buffer
-                            process_position_datagram(cur_position);
+                            process_position_datagram();
                             vehicle_position_initialized = true;
                             set_stationary_beacons_positions();
                             break;
@@ -333,7 +334,7 @@ void AP_Beacon_Marvelmind::update(void)
 
                         case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_HIGHRES_ID:
                         {
-                            process_position_highres_datagram(cur_position);
+                            process_position_highres_datagram();
                             vehicle_position_initialized = true;
                             set_stationary_beacons_positions();
                             break;
@@ -357,36 +358,6 @@ void AP_Beacon_Marvelmind::update(void)
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// Create and initialize MarvelmindHedge structure
-//////////////////////////////////////////////////////////////////////////////
-AP_Beacon_Marvelmind::MarvelmindHedge::MarvelmindHedge() :
-    position_buffer{nullptr},
-    positions_beacons{},
-    pause{false},
-    receive_data_callback{nullptr},
-    _last_values_count{0},
-    _last_values_next{0},
-    _have_new_values{false}
-{
-    position_buffer = new PositionValue[MAX_BUFFERED_POSITIONS];
-    if (position_buffer == nullptr) {
-        hal.console->printf("MarvelMind: Not enough memory\n");
-        return;
-    }
-    for (uint8_t i = 0; i < MAX_BUFFERED_POSITIONS; i++) {
-        position_buffer[i].ready = false;
-        position_buffer[i].processed = false;
-    }
-    positions_beacons.num_beacons = 0;
-    positions_beacons.updated = false;
-}
-
-AP_Beacon_Marvelmind::MarvelmindHedge::~MarvelmindHedge() {
-    if (position_buffer != nullptr)
-        delete[] position_buffer;
-}
-
 bool AP_Beacon_Marvelmind::healthy()
 {
     // healthy if we have parsed a message within the past 300ms
@@ -395,42 +366,60 @@ bool AP_Beacon_Marvelmind::healthy()
 
 void AP_Beacon_Marvelmind::set_stationary_beacons_positions()
 {
+    bool set = false;
     if (vehicle_position_initialized && beacon_position_initialized) {
-        if (hedge->_have_new_values) {
-            vehicle_position_NED__m = Vector3f(cur_position.y * 0.001f,
-                                               cur_position.x * 0.001f,
-                                              -cur_position.z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
+        if (hedge._have_new_values) {
+            vehicle_position_NED__m = Vector3f(hedge.cur_position.y__mm * 0.001f,
+                                               hedge.cur_position.x__mm * 0.001f,
+                                              -hedge.cur_position.z__mm * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
             //TODO: Calculate Accuracy of the received signal. Marvelmind *advertises* +/- 2cms
-            set_vehicle_position(vehicle_position_NED__m, 0.02f);
-            last_update_ms = AP_HAL::millis();
+            // But we are conservative here and use 20cm instead (until MM provides us with a proper accuracy value)
+            set_vehicle_position(vehicle_position_NED__m, 0.2f);
+            set = true;
+            Debug(2,
+                  "Hedge is at N%.2f, E%.2f, D%.2f",
+                  vehicle_position_NED__m[0],
+                  vehicle_position_NED__m[1],
+                  vehicle_position_NED__m[2]);
         }
-        for (uint8_t i=0; i < hedge->positions_beacons.num_beacons; ++i) {
-            if (hedge->positions_beacons.updated) {
-                beacon_position_NED__m[i] = Vector3f(hedge->positions_beacons.beacons[i].y * 0.001f,
-                                                     hedge->positions_beacons.beacons[i].x * 0.001f,
-                                                    -hedge->positions_beacons.beacons[i].z * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
+        hedge._have_new_values = false;
+        for (uint8_t i = 0; i < hedge.positions_beacons.num_beacons; ++i) {
+            if (hedge.positions_beacons.updated) {
+                beacon_position_NED__m[i] = Vector3f(hedge.positions_beacons.beacons[i].y__mm * 0.001f,
+                                                     hedge.positions_beacons.beacons[i].x__mm * 0.001f,
+                                                    -hedge.positions_beacons.beacons[i].z__mm * 0.001f); //Transform Marvelmind ENU to Ardupilot NED
                 set_beacon_position(i, beacon_position_NED__m[i]);
+                set = true;
+                Debug(2,
+                      "Beacon %d is at N%.2f, E%.2f, D%.2f",
+                      i,
+                      beacon_position_NED__m[i][0],
+                      beacon_position_NED__m[i][1],
+                      beacon_position_NED__m[i][2]);
             }
         }
-        hedge->positions_beacons.updated = false;
-        hedge->_have_new_values = false;
+        hedge.positions_beacons.updated = false;
+
+    }
+    if (set) {
+        last_update_ms = AP_HAL::millis();
     }
 }
 
 void AP_Beacon_Marvelmind::order_stationary_beacons()
 {
-    if (hedge->positions_beacons.updated) {
+    if (hedge.positions_beacons.updated) {
         bool swapped = false;
-        uint8_t j = hedge->positions_beacons.num_beacons;
+        uint8_t j = hedge.positions_beacons.num_beacons;
         do
         {
             swapped = false;
             StationaryBeaconPosition beacon_to_swap;
-            for(uint8_t i = 1; i < j; i++) {
-                if (hedge->positions_beacons.beacons[i-1].address > hedge->positions_beacons.beacons[i].address) {
-                    beacon_to_swap = hedge->positions_beacons.beacons[i];
-                    hedge->positions_beacons.beacons[i] = hedge->positions_beacons.beacons[i-1];
-                    hedge->positions_beacons.beacons[i-1] = beacon_to_swap;
+            for (uint8_t i = 1; i < j; i++) {
+                if (hedge.positions_beacons.beacons[i-1].address > hedge.positions_beacons.beacons[i].address) {
+                    beacon_to_swap = hedge.positions_beacons.beacons[i];
+                    hedge.positions_beacons.beacons[i] = hedge.positions_beacons.beacons[i-1];
+                    hedge.positions_beacons.beacons[i-1] = beacon_to_swap;
                     swapped = true;
                 }
             }

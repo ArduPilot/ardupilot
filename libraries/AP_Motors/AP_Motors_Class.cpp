@@ -91,6 +91,15 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 }
 
 /*
+  write to an output channel for an angle actuator
+ */
+void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
+{
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_scaled(function, angle_cd);
+}
+
+/*
   set frequency of a set of channels
  */
 void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)

@@ -163,7 +163,6 @@ void Tracker::set_home(struct Location temp)
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
         ahrs.set_home(temp);
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
     }
 
     gcs().send_home();

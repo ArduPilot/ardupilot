@@ -1,7 +1,10 @@
 #pragma once
 
 #include <stdint.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+
 #include "defines.h"
 
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
@@ -12,6 +15,21 @@ class ModeRTL;
 class Mode
 {
 public:
+
+    // Auto Pilot modes
+    // ----------------
+    enum Number {
+        MANUAL       = 0,
+        ACRO         = 1,
+        STEERING     = 3,
+        HOLD         = 4,
+        LOITER       = 5,
+        AUTO         = 10,
+        RTL          = 11,
+        SMART_RTL    = 12,
+        GUIDED       = 15,
+        INITIALISING = 16
+    };
 
     // Constructor
     Mode();
@@ -86,8 +104,8 @@ public:
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     float get_speed_default(bool rtl = false) const;
 
-    // set desired speed
-    void set_desired_speed(float speed) { _desired_speed = speed; }
+    // set desired speed in m/s
+    bool set_desired_speed(float speed);
 
     // restore desired speed to default from parameter values (CRUISE_SPEED or WP_SPEED)
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
@@ -109,6 +127,9 @@ protected:
     // decode pilot input steering and return steering_out and speed_out (in m/s)
     void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
 
+    // decode pilot lateral movement input and return in lateral_out argument
+    void get_pilot_desired_lateral(float &lateral_out);
+
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
 
@@ -116,7 +137,7 @@ protected:
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
-    void calc_steering_to_heading(float desired_heading_cd, bool reversed = false);
+    void calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
@@ -156,6 +177,7 @@ protected:
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
+    class RC_Channel *&channel_lateral;
     class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 
@@ -349,6 +371,10 @@ public:
     // manual mode does not require position or velocity estimate
     bool requires_position() const override { return false; }
     bool requires_velocity() const override { return false; }
+
+protected:
+
+    void _exit() override;
 };
 
 

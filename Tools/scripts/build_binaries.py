@@ -494,6 +494,7 @@ is bob we will attempt to checkout bob-AVR'''
         return ["fmuv2",
                 "fmuv3",
                 "fmuv4",
+                "fmuv5",
                 "mindpx-v2",
                 "erlebrain2",
                 "navio",

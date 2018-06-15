@@ -229,10 +229,4 @@ private:
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };
 
-
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
-
 #endif // HAL_SUPPORT_RCOUT_SERIAL

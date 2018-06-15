@@ -76,8 +76,6 @@ void CANManager::_timer_tick()
 
     if (p_uavcan != nullptr) {
         p_uavcan->do_cyclic();
-    } else {
-        hal.console->printf("p_uavcan is nullptr");
     }
 }
 

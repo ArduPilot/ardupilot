@@ -375,8 +375,7 @@ bool Rover::verify_within_distance()
 void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     // set speed for active mode
-    if ((cmd.content.speed.target_ms >= 0.0f) && (cmd.content.speed.target_ms <= rover.control_mode->get_speed_default())) {
-        control_mode->set_desired_speed(cmd.content.speed.target_ms);
+    if (control_mode->set_desired_speed(cmd.content.speed.target_ms)) {
         gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
@@ -420,5 +419,4 @@ void Rover::do_digicam_control(const AP_Mission::Mission_Command& cmd)
 void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
     mode_auto.set_reversed(cmd.p1 == 1);
-    set_reverse(cmd.p1 == 1);
 }

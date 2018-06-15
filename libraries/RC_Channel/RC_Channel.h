@@ -26,11 +26,6 @@ public:
         RC_CHANNEL_LIMIT_MAX
     };
 
-    // startup
-    void        load_eeprom(void);
-    void        save_eeprom(void);
-    void        save_trim(void);
-
     // setup the control preferences
     void        set_range(uint16_t high);
     void        set_angle(uint16_t angle);
@@ -68,9 +63,6 @@ public:
     // read the input value from hal.rcin for this channel
     uint16_t    read() const;
 
-    // read input from hal.rcin and set as pwm input for channel
-    void        input();
-
     static const struct AP_Param::GroupInfo var_info[];
 
     // return true if input is within deadzone of trim
@@ -81,6 +73,10 @@ public:
 
     int16_t    get_control_in() const { return control_in;}
     void       set_control_in(int16_t val) { control_in = val;}
+
+    void       clear_override();
+    void       set_override(const uint16_t v, const uint32_t timestamp_us=0);
+    bool       has_override() const;
 
     // get control input with zero deadzone
     int16_t     get_control_in_zero_dz(void);
@@ -123,6 +119,10 @@ private:
     // the input channel this corresponds to
     uint8_t     ch_in;
 
+    // overrides
+    uint16_t override_value;
+    uint32_t last_override_time;
+
     // bits set when channel has been identified as configured
     static uint32_t configured_mask;
 
@@ -137,6 +137,7 @@ private:
 class RC_Channels {
 public:
     friend class SRV_Channels;
+    friend class RC_Channel;
     // constructor
     RC_Channels(void);
 
@@ -155,10 +156,14 @@ public:
     static bool read_input(void);                                      // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
     static bool receiver_bind(const int dsmMode);                      // puts the reciever in bind mode if present, returns true if success
-    static bool set_override(const uint8_t chan, const int16_t value); // set a channels override value
+    static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
+    static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
 private:
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
+    static bool has_new_overrides;
+    static AP_Float *override_timeout;
     RC_Channel obj_channels[NUM_RC_CHANNELS];
+    AP_Float _override_timeout;
 };

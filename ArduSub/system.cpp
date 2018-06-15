@@ -116,7 +116,6 @@ void Sub::init_ardupilot()
 #endif
 
     // init Location class
-    Location_Class::set_ahrs(&ahrs);
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location_Class::set_terrain(&terrain);
     wp_nav.set_terrain(&terrain);

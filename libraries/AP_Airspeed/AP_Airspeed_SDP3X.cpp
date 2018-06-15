@@ -255,7 +255,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     float dp_pitot = 28557670.0f - 28557670.0f / (1 + (float)powf((flow_SDP3X / 5027611.0f), 1.227924f));
 
     // uncorrected pressure
-    float press_uncorrected = (press + dp_pitot) / AIR_DENSITY_SEA_LEVEL;
+    float press_uncorrected = (press + dp_pitot) / SSL_AIR_DENSITY;
 
     // correction for speed at pitot-tube tip due to flow through sensor
     float dv = 0.0331582 * flow_SDP3X;

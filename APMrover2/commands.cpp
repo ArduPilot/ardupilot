@@ -46,14 +46,12 @@ bool Rover::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    const bool home_was_set = ahrs.home_is_set();
+
     // set ahrs home
     ahrs.set_home(loc);
 
-    // init compass declination
-    if (!ahrs.home_is_set()) {
-        // record home is set
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-
+    if (!home_was_set) {
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {
             AP_Mission::Mission_Command temp_cmd;
@@ -65,7 +63,7 @@ bool Rover::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        ahrs.set_home_status(HOME_SET_AND_LOCKED);
+        ahrs.lock_home();
     }
 
     // Save Home to EEPROM
@@ -88,28 +86,6 @@ bool Rover::set_home(const Location& loc, bool lock)
     return true;
 }
 
-// checks if we should update ahrs/RTL home position from GPS
-void Rover::set_system_time_from_GPS()
-{
-    // exit immediately if system time already set
-    if (system_time_set) {
-        return;
-    }
-
-    // if we have a 3d lock and valid location
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // set system clock for log timestamps
-        const uint64_t gps_timestamp = gps.time_epoch_usec();
-
-        hal.util->set_system_clock(gps_timestamp);
-
-        // update signing timestamp
-        GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-        system_time_set = true;
-    }
-}
-
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
@@ -117,7 +93,7 @@ void Rover::set_system_time_from_GPS()
 */
 void Rover::update_home()
 {
-    if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    if (!ahrs.home_is_locked()) {
         Location loc;
         if (ahrs.get_position(loc)) {
             if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {

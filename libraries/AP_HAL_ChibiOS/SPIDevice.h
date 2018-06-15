@@ -34,6 +34,12 @@ public:
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
     bool spi_started;
+    
+    // we need an additional lock in the dma_allocate and
+    // dma_deallocate functions to cope with 3-way contention as we
+    // have two DMA channels that we are handling with the shared_dma
+    // code
+    mutex_t dma_lock;
 };
 
 struct SPIDesc {
@@ -76,6 +82,12 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
+    /* 
+     *  send N bytes of clock pulses without taking CS. This is used
+     *  when initialising microSD interfaces over SPI
+    */
+    bool clock_pulse(uint32_t len) override;
+    
     /* See AP_HAL::Device::get_semaphore() */
     AP_HAL::Semaphore *get_semaphore() override;
 
@@ -87,6 +99,10 @@ public:
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
     bool set_chip_select(bool set) override;
+
+    bool acquire_bus(bool acquire, bool skip_cs);
+
+    SPIDriver * get_driver();
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // used to measure clock frequencies
@@ -103,6 +119,7 @@ private:
     char *pname;
     bool cs_forced;
     static void *spi_thread(void *arg);
+    static uint16_t derive_freq_flag_bus(uint8_t busid, uint32_t _frequency);
     uint16_t derive_freq_flag(uint32_t _frequency);
 };
 

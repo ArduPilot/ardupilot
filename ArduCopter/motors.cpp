@@ -180,7 +180,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
         // we have reset height, so arming height is zero
         arming_altitude_m = 0;        
-    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
 
@@ -198,7 +198,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
 #endif
@@ -230,6 +230,9 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // Start the arming delay
     ap.in_arming_delay = true;
 
+    // assumed armed without a arming, switch. Overridden in switches.cpp
+    ap.armed_with_switch = false;
+    
     // return success
     return true;
 }

@@ -15,9 +15,6 @@ bool ModeLoiter::_enter()
     _desired_yaw_cd = ahrs.yaw_sensor;
     _yaw_error_cd = 0.0f;
 
-    // set reversed based on speed
-    rover.set_reverse(is_negative(_desired_speed));
-
     return true;
 }
 
@@ -28,11 +25,7 @@ void ModeLoiter::update()
 
     // if within waypoint radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g.waypoint_radius) {
-        if (is_negative(_desired_speed)) {
-            _desired_speed = MIN(_desired_speed + attitude_control.get_accel_max() * rover.G_Dt, 0.0f);
-        } else {
-            _desired_speed = MAX(_desired_speed - attitude_control.get_accel_max() * rover.G_Dt, 0.0f);
-        }
+        _desired_speed = attitude_control.get_desired_speed_accel_limited(0.0f, rover.G_Dt);
         _yaw_error_cd = 0.0f;
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
@@ -50,16 +43,12 @@ void ModeLoiter::update()
         }
 
         // reduce desired speed if yaw_error is large
-        // note: copied from calc_reduced_speed_for_turn_or_distance
-        float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * ((100.0f - g.speed_turn_gain) * 0.01f);
+        // 45deg of error reduces speed to 75%, 90deg of error reduces speed to 50%
+        float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
         _desired_speed *= yaw_error_ratio;
     }
 
     // run steering and throttle controllers
     calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
     calc_throttle(_desired_speed, false, true);
-
-    // mark us as in_reverse when using a negative throttle
-    // To-Do: only in reverse if vehicle is actually travelling backwards?
-    rover.set_reverse(_desired_speed < 0);
 }

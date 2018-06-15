@@ -53,7 +53,7 @@ public:
 
     inline void disable(){ _usart_device = NULL; } // pins used for another needs
 
-    uint64_t receive_time_constraint_us(uint16_t nbytes) const override;
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
     void update_timestamp(); 
 

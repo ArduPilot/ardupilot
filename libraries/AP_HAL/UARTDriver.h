@@ -84,5 +84,5 @@ public:
 
       A return value of zero means the HAL does not support this API
      */
-    virtual uint64_t receive_time_constraint_us(uint16_t nbytes) const { return 0; }
+    virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
 };

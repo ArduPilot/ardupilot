@@ -155,6 +155,7 @@ private:
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_aux;
+    RC_Channel *channel_lateral;
 
     DataFlash_Class DataFlash;
 
@@ -316,9 +317,6 @@ private:
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
 
-    // true if the system time has been set from the GPS
-    bool system_time_set;
-
     // true if the compass's initial location has been set
     bool compass_init_location;
 
@@ -327,8 +325,8 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt;
 
-    // set if we are driving backwards
-    bool in_reverse;
+    // flyforward timer
+    uint32_t flyforward_start_ms;
 
     // true if pivoting (set by use_pivot_steering)
     bool pivot_steering_active;
@@ -390,8 +388,7 @@ private:
     void update_logging2(void);
     void update_aux(void);
     void one_second_loop(void);
-    void update_GPS_50Hz(void);
-    void update_GPS_10Hz(void);
+    void update_GPS(void);
     void update_current_mode(void);
 
     // capabilities.cpp
@@ -427,21 +424,21 @@ private:
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
-    void set_system_time_from_GPS();
     void update_home();
 
     // compat.cpp
     void delay(uint32_t ms);
 
     // control_modes.cpp
-    Mode *mode_from_mode_num(enum mode num);
+    Mode *mode_from_mode_num(enum Mode::Number num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
     aux_switch_pos read_aux_switch_pos();
     void init_aux_switch();
+    void do_aux_function_change_mode(Mode &mode,
+                                     const aux_switch_pos ch_flag);
     void read_aux_switch();
-    bool motor_active();
 
     // crash_check.cpp
     void crash_check();
@@ -466,8 +463,6 @@ private:
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_vfr_hud(mavlink_channel_t chan);
-    void send_simstate(mavlink_channel_t chan);
     void send_rangefinder(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
@@ -477,22 +472,22 @@ private:
     void gcs_retry_deferred(void);
 
     // Log.cpp
-    void Log_Write_Performance();
-    void Log_Write_Steering();
-    void Log_Write_Startup(uint8_t type);
-    void Log_Write_Throttle();
-    void Log_Write_Nav_Tuning();
+    void Log_Write_Arm_Disarm();
     void Log_Write_Attitude();
-    void Log_Write_Rangefinder();
-    void Log_Arm_Disarm();
-    void Log_Write_RC(void);
+    void Log_Write_Depth();
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
-    void Log_Write_WheelEncoder();
+    void Log_Write_Nav_Tuning();
     void Log_Write_Proximity();
+    void Log_Write_Startup(uint8_t type);
+    void Log_Write_Steering();
+    void Log_Write_Throttle();
+    void Log_Write_Rangefinder();
+    void Log_Write_RC(void);
+    void Log_Write_WheelEncoder();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void Log_Write_Vehicle_Startup_Messages();
 
     // Parameters.cpp
     void load_parameters(void);
@@ -504,8 +499,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
 
     // sensors.cpp
     void init_compass(void);
@@ -528,7 +522,7 @@ private:
     // system.cpp
     void init_ardupilot();
     void startup_ground(void);
-    void set_reverse(bool reverse);
+    void update_ahrs_flyforward();
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);

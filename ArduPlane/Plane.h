@@ -773,8 +773,6 @@ private:
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
-    void send_vfr_hud(mavlink_channel_t chan);
-    void send_simstate(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
     void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
     void send_pid_tuning(mavlink_channel_t chan);
@@ -830,8 +828,11 @@ private:
     void rangefinder_height_update(void);
     void set_next_WP(const struct Location &loc);
     void set_guided_WP(void);
-    void init_home();
     void update_home();
+    // set home location and store it persistently:
+    void set_home_persistently(const Location &loc);
+    // set home location:
+    void set_home(const Location &loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim();
@@ -905,8 +906,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe();
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
     bool rc_failsafe_active(void);
     void init_rangefinder(void);
     void read_rangefinder(void);

@@ -237,22 +237,37 @@ void Plane::send_servo_out(mavlink_channel_t chan)
         rssi.read_receiver_rssi_uint8());
 }
 
-void Plane::send_vfr_hud(mavlink_channel_t chan)
+float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 {
-    float aspeed;
-    if (airspeed.enabled()) {
-        aspeed = airspeed.get_airspeed();
-    } else if (!ahrs.airspeed_estimate(&aspeed)) {
-        aspeed = 0;
+    // airspeed sensors are best.  While the AHRS airspeed_estimate
+    // will use an airspeed sensor, that value is constrained by the
+    // ground speed.  When reporting we should send the true airspeed
+    // value if possible:
+    if (plane.airspeed.enabled() && plane.airspeed.healthy()) {
+        return plane.airspeed.get_airspeed();
     }
-    mavlink_msg_vfr_hud_send(
-        chan,
-        aspeed,
-        ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
-        abs(throttle_percentage()),
-        current_loc.alt / 100.0f,
-        (g2.soaring_controller.is_active() ? g2.soaring_controller.get_vario_reading() : barometer.get_climb_rate()));
+
+    // airspeed estimates are OK:
+    float aspeed;
+    if (AP::ahrs().airspeed_estimate(&aspeed)) {
+        return aspeed;
+    }
+
+    // lying is worst:
+    return 0;
+}
+
+int16_t GCS_MAVLINK_Plane::vfr_hud_throttle() const
+{
+    return abs(plane.throttle_percentage());
+}
+
+float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
+{
+    if (plane.g2.soaring_controller.is_active()) {
+        return plane.g2.soaring_controller.get_vario_reading();
+    }
+    return AP::baro().get_climb_rate();
 }
 
 /*
@@ -263,12 +278,12 @@ static mavlink_hil_state_t last_hil_state;
 #endif
 
 // report simulator state
-void Plane::send_simstate(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::send_simstate() const
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
+    GCS_MAVLINK::send_simstate();
 #elif HIL_SUPPORT
-    if (g.hil_mode == 1) {
+    if (plane.g.hil_mode == 1) {
         mavlink_msg_simstate_send(chan,
                                   last_hil_state.roll,
                                   last_hil_state.pitch,
@@ -418,32 +433,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-#if HIL_SUPPORT
-        send_servo_output_raw(plane.g.hil_mode);
-#else
-        send_servo_output_raw(false);
-#endif
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        plane.send_vfr_hud(chan);
-        break;
-
     case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         plane.send_fence_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        plane.send_simstate(chan);
-        CHECK_PAYLOAD_SIZE2(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_TERRAIN:
@@ -471,13 +465,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
             CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
             send_opticalflow(plane.optflow);
         }
-#endif
-        break;
-
-    case MSG_EKF_STATUS_REPORT:
-#if AP_AHRS_NAVEKF_AVAILABLE
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        plane.ahrs.send_ekf_status_report(chan);
 #endif
         break;
 
@@ -615,12 +602,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_CURRENT_WAYPOINT,
@@ -632,18 +619,18 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_FENCE_STATUS,
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
     MSG_SERVO_OUT,
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
     MSG_RPM,
@@ -651,10 +638,10 @@ static const uint8_t STREAM_EXTRA1_msgs[] = {
     MSG_PID_TUNING,
     MSG_LANDING
 };
-static const uint8_t STREAM_EXTRA2_msgs[] = {
+static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_WIND,
@@ -673,7 +660,7 @@ static const uint8_t STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 };
-static const uint8_t STREAM_ADSB_msgs[] = {
+static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE
 };
 
@@ -748,11 +735,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     if (is_equal(packet.param4,1.0f)) {
-        /*
-          radio trim
-        */
-        plane.trim_radio();
-        return MAV_RESULT_ACCEPTED;
+        if (plane.trim_radio()) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -769,12 +756,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
 
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-    {
-        handle_request_data_stream(msg, true);
-        break;
-    }
-
     case MAVLINK_MSG_ID_COMMAND_INT:
     {
         // decode
@@ -788,7 +769,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_SET_HOME: {
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1, 1.0f)) {
-                plane.init_home();
+                plane.set_home_persistently(AP::gps().location());
+                AP::ahrs().lock_home();
+                result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
@@ -821,15 +804,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                     }
                     new_home_loc.alt += plane.ahrs.get_home().alt;
                 }
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                AP::ahrs().Log_Write_Home_And_Origin();
-                gcs().send_home();
+                plane.set_home(new_home_loc);
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
-                gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat*1.0e-7f),
-                                        (double)(new_home_loc.lng*1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }
@@ -1089,7 +1066,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // param7 : altitude (absolute)
             result = MAV_RESULT_FAILED; // assume failure
             if (is_equal(packet.param1,1.0f)) {
-                plane.init_home();
+                plane.set_home_persistently(AP::gps().location());
+                AP::ahrs().lock_home();
+                result = MAV_RESULT_ACCEPTED;
             } else {
                 // ensure param1 is zero
                 if (!is_zero(packet.param1)) {
@@ -1107,15 +1086,9 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
                 new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
                 new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                plane.ahrs.set_home(new_home_loc);
-                AP::ahrs().set_home_status(HOME_SET_NOT_LOCKED);
-                AP::ahrs().Log_Write_Home_And_Origin();
-                gcs().send_home();
+                plane.set_home(new_home_loc);
+                AP::ahrs().lock_home();
                 result = MAV_RESULT_ACCEPTED;
-                gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                        (double)(new_home_loc.lat*1.0e-7f),
-                                        (double)(new_home_loc.lng*1.0e-7f),
-                                        (uint32_t)(new_home_loc.alt*0.01f));
             }
             break;
         }
@@ -1189,31 +1162,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
-            
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!plane.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                    case GRIPPER_ACTION_RELEASE:
-                        plane.g2.gripper.release();
-                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
-                        break;
-                    case GRIPPER_ACTION_GRAB:
-                        plane.g2.gripper.grab();
-                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
-                        break;
-                    default:
-                        result = MAV_RESULT_FAILED;
-                        break;
-                }
-            }
-            break;
-#endif
 
         default:
             result = handle_command_long_message(packet);
@@ -1274,28 +1222,27 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // allow override of RC channel values for HIL
         // or for complete GCS control of switch position
         // and RC PWM values.
-        if(msg->sysid != plane.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        if(msg->sysid != plane.g.sysid_my_gcs) {
+            break; // Only accept control from our gcs
+        }
+
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
-        bool override_active = false;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        override_active |= RC_Channels::set_override(0, packet.chan1_raw);
-        override_active |= RC_Channels::set_override(1, packet.chan2_raw);
-        override_active |= RC_Channels::set_override(2, packet.chan3_raw);
-        override_active |= RC_Channels::set_override(3, packet.chan4_raw);
-        override_active |= RC_Channels::set_override(4, packet.chan5_raw);
-        override_active |= RC_Channels::set_override(5, packet.chan6_raw);
-        override_active |= RC_Channels::set_override(6, packet.chan7_raw);
-        override_active |= RC_Channels::set_override(7, packet.chan8_raw);
-
-        if (override_active) {
-            plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
-            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
-        }
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        plane.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -1312,24 +1259,20 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break; // only accept messages aimed at us
         }
 
-        bool override_active = false;
+        uint32_t tnow = AP_HAL::millis();
+
         int16_t roll = (packet.y == INT16_MAX) ? 0 : plane.channel_roll->get_radio_min() + (plane.channel_roll->get_radio_max() - plane.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         int16_t pitch = (packet.x == INT16_MAX) ? 0 : plane.channel_pitch->get_radio_min() + (plane.channel_pitch->get_radio_max() - plane.channel_pitch->get_radio_min()) * (-packet.x + 1000) / 2000.0f;
         int16_t throttle = (packet.z == INT16_MAX) ? 0 : plane.channel_throttle->get_radio_min() + (plane.channel_throttle->get_radio_max() - plane.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
         int16_t yaw = (packet.r == INT16_MAX) ? 0 : plane.channel_rudder->get_radio_min() + (plane.channel_rudder->get_radio_max() - plane.channel_rudder->get_radio_min()) * (packet.r + 1000) / 2000.0f;
 
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw);
+        RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw, tnow);
 
-        if (override_active) {
-            plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
-            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
-        }
-        
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        plane.failsafe.last_heartbeat_ms = tnow;
         break;
     }
     
@@ -1525,14 +1468,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
         new_home_loc.alt = packet.altitude / 10;
-        plane.ahrs.set_home(new_home_loc);
-        plane.ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-        plane.ahrs.Log_Write_Home_And_Origin();
-        gcs().send_home();
-        gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %um",
-                                (double)(new_home_loc.lat*1.0e-7f),
-                                (double)(new_home_loc.lng*1.0e-7f),
-                                (uint32_t)(new_home_loc.alt*0.01f));
+        plane.set_home(new_home_loc);
         break;
     }
 

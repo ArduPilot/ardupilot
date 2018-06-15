@@ -178,12 +178,6 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
-
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
-
 /*
   handle substitution of variables in strings for USB descriptors
  */

@@ -437,7 +437,10 @@ class linux(Board):
 
         if self.with_uavcan:
             cfg.define('UAVCAN_EXCEPTIONS', 0)
-    
+
+        if cfg.options.apstatedir:
+            cfg.define('AP_STATEDIR', cfg.options.apstatedir)
+
     def build(self, bld):
         super(linux, self).build(bld)
         if bld.options.upload:
@@ -618,6 +621,9 @@ class pxfmini(linux):
         )
 
 class aero(linux):
+    def __init__(self):
+        self.with_uavcan = True
+
     def configure_env(self, cfg, env):
         super(aero, self).configure_env(cfg, env)
 
@@ -770,7 +776,10 @@ class skyviper_v2450_px4(px4_v3):
             ARMING_DELAY_SEC = 0,
             LAND_START_ALT = 700,
             HAL_RCINPUT_WITH_AP_RADIO = 1,
-            LAND_DETECTOR_ACCEL_MAX = 2
+            LAND_DETECTOR_ACCEL_MAX = 2,
+            CYRF_SPI_PX4_SPI_BUS = 2,
+            CYRF_SPI_PX4_SPIDEV_EXT = '(spi_dev_e)1',
+            CYRF_IRQ_INPUT = '(GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)',
         )
         env.PX4_RC_S_SCRIPT = 'init.d/rcS_no_microSD'
         env.BUILD_ABIN = True

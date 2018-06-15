@@ -1012,6 +1012,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 {
     _home = loc;
     _home.options = 0;
+    _home_is_set = true;
 }
 
 //  a relative ground position to home in meters, Down

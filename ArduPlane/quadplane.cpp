@@ -371,6 +371,11 @@ static const struct defaults_struct defaults_table[] = {
     { "Q_A_RAT_PIT_I",    0.25 },
     { "Q_A_RAT_PIT_FILT", 10.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
+    { "Q_LOIT_ANG_MAX",   15.0 },
+    { "Q_LOIT_ACC_MAX",   250.0 },
+    { "Q_LOIT_BRK_ACCEL", 50.0 },
+    { "Q_LOIT_BRK_JERK",  250 },
+    { "Q_LOIT_SPEED",     500 },
 };
 
 /*
@@ -821,20 +826,8 @@ void QuadPlane::control_hover(void)
 
 void QuadPlane::init_loiter(void)
 {
-    /*
-      calculate stopping point based on Q_TRANS_DECEL. This allows the
-      user to setup for a more or less agressive stop when entering
-      QLOITER
-     */
-    Vector3f stopping_point = inertial_nav.get_position();
-    Vector3f vel = inertial_nav.get_velocity();
-    if (!vel.is_zero()) {
-        vel.z = 0;
-        stopping_point += vel.normalized() * stopping_distance() * 100;
-    }
-
     // initialise loiter
-    loiter_nav->init_target(stopping_point);
+    loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);

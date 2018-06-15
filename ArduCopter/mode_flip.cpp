@@ -75,11 +75,11 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     // choose direction based on pilot's roll and pitch sticks
     if (channel_pitch->get_control_in() > 300) {
         flip_pitch_dir = FLIP_PITCH_BACK;
-    }else if(channel_pitch->get_control_in() < -300) {
+    } else if (channel_pitch->get_control_in() < -300) {
         flip_pitch_dir = FLIP_PITCH_FORWARD;
-    }else if (channel_roll->get_control_in() >= 0) {
+    } else if (channel_roll->get_control_in() >= 0) {
         flip_roll_dir = FLIP_ROLL_RIGHT;
-    }else{
+    } else {
         flip_roll_dir = FLIP_ROLL_LEFT;
     }
 

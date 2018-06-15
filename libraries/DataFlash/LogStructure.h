@@ -17,12 +17,19 @@
 struct LogStructure {
     uint8_t msg_type;
     uint8_t msg_len;
-    const char name[5];
-    const char format[16];
-    const char labels[64];
-    const char units[16];
-    const char multipliers[16];
+    const char *name;
+    const char *format;
+    const char *labels;
+    const char *units;
+    const char *multipliers;
 };
+
+// maximum lengths of fields in LogStructure, including trailing nulls
+static const uint8_t LS_NAME_SIZE = 5;
+static const uint8_t LS_FORMAT_SIZE = 17;
+static const uint8_t LS_LABELS_SIZE = 65;
+static const uint8_t LS_UNITS_SIZE = 17;
+static const uint8_t LS_MULTIPLIERS_SIZE = 17;
 
 /*
   log structures common to all vehicle types
@@ -1204,7 +1211,7 @@ Format characters in the format string for binary log messages
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "FBB--" },  \
+      "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "F00--" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHfffffffB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \

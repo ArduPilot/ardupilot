@@ -309,9 +309,6 @@ void Sub::update_GPS(void)
     }
 
     if (gps_updated) {
-        // set system time if necessary
-        set_system_time_from_GPS();
-
 #if CAMERA == ENABLED
         camera.update();
 #endif

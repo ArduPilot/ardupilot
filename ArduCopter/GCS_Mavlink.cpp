@@ -171,24 +171,9 @@ void NOINLINE Copter::send_nav_controller_output(mavlink_channel_t chan)
         0);
 }
 
-// report simulator state
-void NOINLINE Copter::send_simstate(mavlink_channel_t chan)
+int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.simstate_send(chan);
-#endif
-}
-
-void NOINLINE Copter::send_vfr_hud(mavlink_channel_t chan)
-{
-    mavlink_msg_vfr_hud_send(
-        chan,
-        gps.ground_speed(),
-        ahrs.groundspeed(),
-        (ahrs.yaw_sensor / 100) % 360,
-        (int16_t)(motors->get_throttle() * 100),
-        current_loc.alt / 100.0f,
-        climb_rate / 100.0f);
+    return (int16_t)(copter.motors->get_throttle() * 100);
 }
 
 /*
@@ -316,16 +301,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         copter.send_nav_controller_output(chan);
         break;
 
-    case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
-        send_servo_output_raw(false);
-        break;
-
-    case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
-        copter.send_vfr_hud(chan);
-        break;
-
     case MSG_RPM:
 #if RPM_ENABLED == ENABLED
         CHECK_PAYLOAD_SIZE(RPM);
@@ -345,15 +320,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         copter.send_fence_status(chan);
 #endif
-        break;
-
-    case MSG_SIMSTATE:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
-        copter.send_simstate(chan);
-#endif
-        CHECK_PAYLOAD_SIZE(AHRS2);
-        send_ahrs2();
         break;
 
     case MSG_MOUNT_STATUS:
@@ -377,12 +343,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_EKF_STATUS_REPORT:
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        copter.ahrs.send_ekf_status_report(chan);
-        break;
-
-    case MSG_LIMITS_STATUS:
     case MSG_WIND:
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
@@ -502,12 +462,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 AP_GROUPEND
 };
 
-static const uint8_t STREAM_RAW_SENSORS_msgs[] = {
+static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
     MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_RAW_IMU3  // SENSOR_OFFSETS
 };
-static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
+static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
     MSG_EXTENDED_STATUS2, // MEMINFO
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
@@ -519,25 +479,25 @@ static const uint8_t STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_FENCE_STATUS,
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
-static const uint8_t STREAM_POSITION_msgs[] = {
+static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 };
-static const uint8_t STREAM_RAW_CONTROLLER_msgs[] = {
+static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 };
-static const uint8_t STREAM_RC_CHANNELS_msgs[] = {
+static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN // RC_CHANNELS_RAW, RC_CHANNELS
 };
-static const uint8_t STREAM_EXTRA1_msgs[] = {
+static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE, // SIMSTATE, AHRS2
     MSG_PID_TUNING // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
 };
-static const uint8_t STREAM_EXTRA2_msgs[] = {
+static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
 };
-static const uint8_t STREAM_EXTRA3_msgs[] = {
+static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_SYSTEM_TIME,
@@ -556,7 +516,7 @@ static const uint8_t STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
     MSG_RPM
 };
-static const uint8_t STREAM_ADSB_msgs[] = {
+static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE
 };
 
@@ -665,12 +625,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:    // MAV ID: 66
-    {
-        handle_request_data_stream(msg, false);
-        break;
-    }
-
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     {
 #if MOUNT == ENABLED
@@ -684,7 +638,9 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         // allow override of RC channel values for HIL
         // or for complete GCS control of switch position
         // and RC PWM values.
-        if(msg->sysid != copter.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        if(msg->sysid != copter.g.sysid_my_gcs) {
+            break; // Only accept control from our gcs
+        }
         if (!copter.ap.rc_override_enable) {
             if (copter.failsafe.rc_override_active) {  // if overrides were active previously, disable them
                 copter.failsafe.rc_override_active = false;
@@ -692,24 +648,25 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
         }
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
-        bool override_active = false;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        override_active |= RC_Channels::set_override(0, packet.chan1_raw);
-        override_active |= RC_Channels::set_override(1, packet.chan2_raw);
-        override_active |= RC_Channels::set_override(2, packet.chan3_raw);
-        override_active |= RC_Channels::set_override(3, packet.chan4_raw);
-        override_active |= RC_Channels::set_override(4, packet.chan5_raw);
-        override_active |= RC_Channels::set_override(5, packet.chan6_raw);
-        override_active |= RC_Channels::set_override(6, packet.chan7_raw);
-        override_active |= RC_Channels::set_override(7, packet.chan8_raw);
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = override_active;
+        copter.failsafe.rc_override_active = RC_Channels::has_active_overrides();
 
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        copter.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -730,22 +687,23 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-        bool override_active = false;
+        uint32_t tnow = AP_HAL::millis();
+
         int16_t roll = (packet.y == INT16_MAX) ? 0 : copter.channel_roll->get_radio_min() + (copter.channel_roll->get_radio_max() - copter.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         int16_t pitch = (packet.x == INT16_MAX) ? 0 : copter.channel_pitch->get_radio_min() + (copter.channel_pitch->get_radio_max() - copter.channel_pitch->get_radio_min()) * (-packet.x + 1000) / 2000.0f;
         int16_t throttle = (packet.z == INT16_MAX) ? 0 : copter.channel_throttle->get_radio_min() + (copter.channel_throttle->get_radio_max() - copter.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
         int16_t yaw = (packet.r == INT16_MAX) ? 0 : copter.channel_yaw->get_radio_min() + (copter.channel_yaw->get_radio_max() - copter.channel_yaw->get_radio_min()) * (packet.r + 1000) / 2000.0f;
 
-        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.roll() - 1), roll);
-        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.pitch() - 1), pitch);
-        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.throttle() - 1), throttle);
-        override_active |= RC_Channels::set_override(uint8_t(copter.rcmap.yaw() - 1), yaw);
+        RC_Channels::set_override(uint8_t(copter.rcmap.roll() - 1), roll, tnow);
+        RC_Channels::set_override(uint8_t(copter.rcmap.pitch() - 1), pitch, tnow);
+        RC_Channels::set_override(uint8_t(copter.rcmap.throttle() - 1), throttle, tnow);
+        RC_Channels::set_override(uint8_t(copter.rcmap.yaw() - 1), yaw, tnow);
 
         // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = override_active;
+        copter.failsafe.rc_override_active = RC_Channels::has_active_overrides();
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        copter.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -1080,29 +1038,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             result = copter.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3,
                                                      packet.param4, (uint8_t)packet.param5);
             break;
-
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!copter.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                    case GRIPPER_ACTION_RELEASE:
-                        copter.g2.gripper.release();
-                        break;
-                    case GRIPPER_ACTION_GRAB:
-                        copter.g2.gripper.grab();
-                        break;
-                    default:
-                        result = MAV_RESULT_FAILED;
-                        break;
-                }
-            }
-            break;
-#endif
 
 #if WINCH_ENABLED == ENABLED
         case MAV_CMD_DO_WINCH:

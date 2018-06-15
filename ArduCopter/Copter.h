@@ -101,7 +101,7 @@
 #if AC_AVOID_ENABLED == ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
  # include <AC_Sprayer/AC_Sprayer.h>
 #endif
 #if GRIPPER_ENABLED == ENABLED
@@ -323,7 +323,7 @@ private:
             uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
             uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
-            uint8_t system_time_set         : 1; // 16      // true if the system time has been set from the GPS
+            uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
@@ -333,11 +333,14 @@ private:
             uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
             uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
             uint8_t rc_override_enable      : 1; // 27      // aux switch rc_override is allowed
+            uint8_t armed_with_switch       : 1; // 28      // we armed using a arming switch
         };
         uint32_t value;
     } ap_t;
 
     ap_t ap;
+
+    static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
@@ -354,6 +357,12 @@ private:
         uint32_t last_edge_time_ms;         // system time that switch position was last changed
     } control_switch_state;
 
+    // de-bounce counters for switches.cpp
+    struct debounce {
+        uint8_t count;
+        uint8_t ch_flag;
+    } aux_debounce[(CH_12 - CH_7)+1];
+
     typedef struct {
         bool running;
         float max_speed;
@@ -369,7 +378,7 @@ private:
 
     // intertial nav alt when we armed
     float arming_altitude_m;
-    
+
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -456,6 +465,7 @@ private:
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
     float target_rangefinder_alt;   // desired altitude in cm above the ground
+    bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
@@ -537,7 +547,7 @@ private:
     AP_RSSI rssi;
 
     // Crop Sprayer
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     AC_Sprayer sprayer;
 #endif
 
@@ -614,7 +624,7 @@ private:
 
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
-    
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -701,7 +711,6 @@ private:
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     bool far_from_EKF_origin(const Location& loc);
-    void set_system_time_from_GPS();
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
@@ -761,8 +770,6 @@ private:
     void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
-    void send_simstate(mavlink_channel_t chan);
-    void send_vfr_hud(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
@@ -902,6 +909,7 @@ private:
     void init_aux_switches();
     void init_aux_switch_function(int8_t ch_option, uint8_t ch_flag);
     void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag);
+    bool debounce_aux_switch(uint8_t chan, uint8_t ch_flag);
     void save_trim();
     void auto_trim();
 

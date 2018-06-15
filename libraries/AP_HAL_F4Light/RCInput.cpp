@@ -58,9 +58,6 @@ uint8_t   RCInput::_valid_channels IN_CCM; //  = 0;
 uint64_t  RCInput::_last_read IN_CCM; // = 0;
 
 
-uint16_t RCInput::_override[F4Light_RC_INPUT_NUM_CHANNELS] IN_CCM;
-bool RCInput::_override_valid;
-
 bool RCInput::is_PPM IN_CCM;
 
 uint8_t RCInput::_last_read_from IN_CCM;
@@ -88,8 +85,6 @@ RCInput::RCInput()
 void RCInput::init() {
     caddr_t ptr;
 
-    memset((void *)&_override[0],   0, sizeof(_override));
-
 /* OPLINK AIR port pinout
 1       2       3       4       5       6       7
                PD2     PA15                
@@ -103,8 +98,6 @@ for RFM        int     cs
     is_PPM=true;
     _last_read_from=0;
     max_num_pulses=0;
-
-    clear_overrides();
 
     pwmInit(is_PPM); // PPM sum mode
 
@@ -150,8 +143,6 @@ void RCInput::late_init(uint8_t b) {
 // we can have 4 individual sources of data - internal DSM from UART5, SBUS from UART1 and 2 PPM parsers
 bool RCInput::new_input()
 {
-    if(_override_valid) return true;
-
     uint8_t inp=hal_param_helper->_rc_input;
     if(inp &&  inp < num_parsers+1){
         inp-=1;
@@ -258,10 +249,6 @@ uint16_t RCInput::read(uint8_t ch)
         }
     }
 
-    /* Check for override */
-    uint16_t over = _override[ch];
-    if(over) return over;
-
     if( ch == 4) {
         last_4 = data;
     }
@@ -312,27 +299,6 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     }
 
     return _valid_channels;
-}
-
-
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (override < 0) return false; /* -1: no change. */
-    if (channel < F4Light_RC_INPUT_NUM_CHANNELS) {
-        _override[channel] = override;
-        if (override != 0) {
-    	    _override_valid = true;
-            return true;
-        }
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    for (int i = 0; i < F4Light_RC_INPUT_NUM_CHANNELS; i++) {
-	set_override(i, 0);
-    }
 }
 
 bool RCInput::rc_bind(int dsmMode){

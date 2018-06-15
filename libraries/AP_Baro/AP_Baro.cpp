@@ -297,7 +297,7 @@ float AP_Baro::get_EAS2TAS(void)
     // provides a more consistent reading then trying to estimate a complete
     // ISA model atmosphere
     float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
-    _EAS2TAS = safe_sqrt(AIR_DENSITY_SEA_LEVEL / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK)));
+    _EAS2TAS = safe_sqrt(SSL_AIR_DENSITY / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK)));
     _last_altitude_EAS2TAS = altitude;
     return _EAS2TAS;
 }
@@ -493,6 +493,11 @@ void AP_Baro::init(void)
         ADD_BACKEND(AP_Baro_ICM20789::probe(*this,
                                             std::move(hal.i2c_mgr->get_device(1, 0x63)),
                                             std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
+        break;
+
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
         break;
         
     default:
