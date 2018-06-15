@@ -37,6 +37,9 @@ void *malloc_dma(size_t size);
 // UTC system clock handling    
 void stm32_set_utc_usec(uint64_t time_utc_usec);
 uint64_t stm32_get_utc_usec(void);
+
+// hook for FAT timestamps    
+uint32_t get_fattime(void);
     
 #ifdef __cplusplus
 }
