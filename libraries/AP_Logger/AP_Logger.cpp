@@ -273,14 +273,14 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     bool passed = true;
 
 #if DEBUG_LOG_STRUCTURES
-    Debug("offset=%d ID=%d NAME=%s\n", offset, logstructure->msg_type, logstructure->name);
+    Debug("offset=%d ID=%d NAME=%s", offset, logstructure->msg_type, logstructure->name);
 #endif
 
     // fields must be null-terminated
 #define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
     do {                                                                \
         if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
-            Debug("Message " fieldname_s " not NULL-terminated or too long"); \
+            Debug("  Message " fieldname_s " not NULL-terminated or too long"); \
             passed = false;                                             \
         }                                                               \
     } while (false)
@@ -293,7 +293,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 
     // ensure each message ID is only used once
     if (seen_ids[logstructure->msg_type]) {
-        Debug("ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, offset);
+        Debug("  ID %d used twice (LogStructure offset=%d)", logstructure->msg_type, offset);
         passed = false;
     }
     seen_ids[logstructure->msg_type] = true;
@@ -302,7 +302,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     uint8_t fieldcount = strlen(logstructure->format);
     uint8_t labelcount = count_commas(logstructure->labels)+1;
     if (fieldcount != labelcount) {
-        Debug("fieldcount=%u does not match labelcount=%u",
+        Debug("  fieldcount=%u does not match labelcount=%u",
               fieldcount, labelcount);
         passed = false;
     }
@@ -310,20 +310,20 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     // check that the structure is of an appropriate length to take fields
     const int16_t msg_len = Write_calc_msg_len(logstructure->format);
     if (msg_len != logstructure->msg_len) {
-        Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
+        Debug("  Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
         passed = false;
     }
 
     // ensure we have units for each field:
     if (strlen(logstructure->units) != fieldcount) {
-        Debug("fieldcount=%u does not match unitcount=%u",
+        Debug("  fieldcount=%u does not match unitcount=%u",
               (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
         passed = false;
     }
 
     // ensure we have multipliers for each field
     if (strlen(logstructure->multipliers) != fieldcount) {
-        Debug("fieldcount=%u does not match multipliercount=%u",
+        Debug("  fieldcount=%u does not match multipliercount=%u",
               (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
         passed = false;
     }
@@ -339,7 +339,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
             }
         }
         if (k == _num_units) {
-            Debug("invalid unit=%c", logunit);
+            Debug("  invalid unit=%c", logunit);
             passed = false;
         }
     }
@@ -355,10 +355,32 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
             }
         }
         if (k == _num_multipliers) {
-            Debug("invalid multiplier=%c", logmultiplier);
+            Debug("  invalid multiplier=%c", logmultiplier);
             passed = false;
         }
     }
+
+    // ensure any float has a multiplier of zero
+    if (passed) {
+        for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
+            const char fmt = logstructure->format[j];
+            if (fmt != 'f') {
+                continue;
+            }
+            const char logmultiplier = logstructure->multipliers[j];
+            if (logmultiplier == '0' ||
+                logmultiplier == '?' ||
+                logmultiplier == '-') {
+                continue;
+            }
+            Debug("  %s[%u] float with non-zero multiplier=%c",
+                  logstructure->name,
+                  j,
+                  logmultiplier);
+            passed = false;
+        }
+    }
+
     return passed;
 }
 
