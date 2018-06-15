@@ -2548,6 +2548,7 @@ fprintf(FILE *fp, const char *fmt, ...)
             fputc(buf[i], fp);
         }
     } else {
+        va_end(va);
         return -1;
     }
     va_end(va);
