@@ -78,7 +78,7 @@ void SITL_State::_sitl_setup(const char *home_str)
     _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
     _compass = (Compass *)AP_Param::find_object("COMPASS_");
 #if AP_TERRAIN_AVAILABLE
-    _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 #endif
 
     if (_sitl != nullptr) {
