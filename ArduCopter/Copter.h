@@ -715,9 +715,6 @@ private:
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
 
-    // compat.cpp
-    void delay(uint32_t ms);
-
     // crash_check.cpp
     void crash_check();
     void parachute_check();
