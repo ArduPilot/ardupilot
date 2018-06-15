@@ -504,7 +504,7 @@ void Copter::Mode::land_run_horizontal_control()
             target_vel_rel.y = -inertial_nav.get_velocity().y;
         }
         pos_control->set_xy_target(target_pos.x, target_pos.y);
-        pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+        pos_control->set_desired_velocity_xy(-target_vel_rel.x, -target_vel_rel.y);
     }
 #endif
 
