@@ -38,7 +38,6 @@ Takanobu Minoshima
 Yuki Miyama
 Masahiro Saegusa
 Fumikatsu Murozaki
-harutsugu Sato
 Yuta Yoshinuma
 Yasuyuki Suzuki
 Koji Hosaka
@@ -97,3 +96,4 @@ Reginald Steven Rivera
 Dimitri Vasilkov
 Daisuke "hine" IMAI
 Tomoshi Wagata(wagatan
+Harutsugu Sato
