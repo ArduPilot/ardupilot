@@ -425,6 +425,9 @@ def write_mcu_config(f):
     f.write('\n// CPU serial number (12 bytes)\n')
     f.write('#define UDID_START 0x%08x\n\n' % get_mcu_config('UDID_START', True))
 
+    f.write('\n// APJ board ID (for bootloaders)\n')
+    f.write('#define APJ_BOARD_ID %s\n' % get_config('APJ_BOARD_ID'))
+
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
     # setup build variables
