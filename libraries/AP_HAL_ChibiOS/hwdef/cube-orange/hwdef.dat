@@ -29,7 +29,7 @@ define STM32_PLLP_VALUE 2
 define STM32_PLLQ_VALUE 9
 
 # board ID for firmware load
-APJ_BOARD_ID 78
+APJ_BOARD_ID 120
 
 # on some boards you will need to also set the various PLL values. See
 # the defaults in common/mcuconf.h, and use the define mechanism
@@ -440,8 +440,11 @@ define HAL_I2C_MAX_CLOCK 100000
 DMA_NOSHARE USART6_TX USART6_RX ADC1
 DMA_PRIORITY USART6*
 
-# start on 2nd sector (1st sector for bootloader)
-FLASH_RESERVE_START_KB 32
+# start on 4th sector (1st sector for bootloader, 2 for extra storage)
+FLASH_RESERVE_START_KB 96
+
+# fallback storage in case FRAM is not populated
+define STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

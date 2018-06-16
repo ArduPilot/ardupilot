@@ -7,7 +7,7 @@ MCU STM32F4xx STM32F405xx
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_REVOMINI
 
 # board ID for firmware load
-APJ_BOARD_ID 70
+APJ_BOARD_ID 124
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -110,9 +110,9 @@ PC9 TIM8_CH4 TIM2 PWM(8) GPIO(57)
 PB7 DRDY_HMC5883 INPUT PULLUP
 
 define HAL_STORAGE_SIZE 8192
-define STORAGE_FLASH_PAGE 1
+define STORAGE_FLASH_PAGE 2
 
-# reserve 16k for bootloader, 16k for OSD and 32k for flash storage
+# reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
 
 define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
