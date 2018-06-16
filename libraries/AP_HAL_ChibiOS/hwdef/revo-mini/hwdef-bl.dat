@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 3
+APJ_BOARD_ID 124
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -13,14 +13,14 @@ STM32_PLLM_VALUE 8
 
 FLASH_SIZE_KB 1024
 
-USB_STRING_PRODUCT "f405-BL"
+USB_STRING_PRODUCT "ArduPilot-revo-BL"
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
 # LEDs
-PB9 LED_BOOTLOADER OUTPUT LOW
-PA14 LED_ACTIVITY  OUTPUT LOW
+PB5 LED_BOOTLOADER OUTPUT LOW
+PB4 LED_ACTIVITY  OUTPUT LOW
 define HAL_LED_ON 0
 
 # the location where the bootloader will put the firmware
