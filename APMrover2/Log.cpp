@@ -114,10 +114,10 @@ void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_targ
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint16_t yaw;
-    float    wp_distance;
-    uint16_t target_bearing_cd;
+    float wp_distance;
+    uint16_t wp_bearing_cd;
     uint16_t nav_bearing_cd;
+    uint16_t yaw;
     float xtrack_error;
 };
 
@@ -127,10 +127,10 @@ void Rover::Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
-        yaw                 : static_cast<uint16_t>(ahrs.yaw_sensor),
         wp_distance         : control_mode->get_distance_to_destination(),
-        target_bearing_cd   : static_cast<uint16_t>(abs(nav_controller->target_bearing_cd())),
-        nav_bearing_cd      : static_cast<uint16_t>(abs(nav_controller->nav_bearing_cd())),
+        wp_bearing_cd       : (uint16_t)wrap_360_cd(nav_controller->target_bearing_cd()),
+        nav_bearing_cd      : (uint16_t)wrap_360_cd(nav_controller->nav_bearing_cd()),
+        yaw                 : (uint16_t)ahrs.yaw_sensor,
         xtrack_error        : nav_controller->crosstrack_error()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -313,7 +313,7 @@ const LogStructure Rover::log_structure[] = {
     { LOG_THR_MSG, sizeof(log_Throttle),
       "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
-      "NTUN", "QHfHHf", "TimeUS,Yaw,WpDist,TargBrg,NavBrg,XT", "sdmddm", "FB0BB0" },
+      "NTUN", "QfHHHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smdddm", "F0BBB0" },
     { LOG_RANGEFINDER_MSG, sizeof(log_Rangefinder),
       "RGFD", "QfHHHbHCb",  "TimeUS,LatAcc,R1Dist,R2Dist,DCnt,TAng,TTim,Spd,Thr", "somm-hsm-", "F0BB-0CB-" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
