@@ -83,6 +83,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_LandingGear',
     'AP_RobotisServo',
     'AP_ToshibaCAN',
+    'AP_POSIX',
 ]
 
 def get_legacy_defines(sketch_name):
