@@ -1,0 +1,51 @@
+# hwdef for bootloader for cube-orange
+
+# MCU class and specific type
+MCU STM32F7xx STM32F777xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+define STM32_LSECLK 32768U
+define STM32_LSEDRV (3U << 3U)
+define STM32_PLLSRC STM32_PLLSRC_HSE
+define STM32_PLLM_VALUE 24
+define STM32_PLLN_VALUE 432
+define STM32_PLLP_VALUE 2
+define STM32_PLLQ_VALUE 9
+
+# board ID for firmware load
+APJ_BOARD_ID 78
+
+# board voltage
+STM32_VDD 330U
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY ProfiCNC / HEX! NOBODY ELSE
+USB_PRODUCT 0x1001
+USB_STRING_MANUFACTURER "Hex Technology Limited"
+USB_STRING_PRODUCT "ProfiCNC CUBE Orange BL"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# order of UARTs (and USB)
+UART_ORDER OTG1
+
+# now we define the pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# these are the pins for SWD debugging with a STlinkv2 or black-magic probe
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# no reserved flash for bootloader
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+define FLASH_BOOTLOADER_LOAD_KB 32
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
