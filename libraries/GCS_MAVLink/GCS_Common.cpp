@@ -1781,6 +1781,25 @@ void GCS_MAVLINK::zero_rc_outputs()
     SRV_Channels::push();
 }
 
+void GCS_MAVLINK::disable_overrides()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    int px4io_fd = open("/dev/px4io", 0);
+    if (px4io_fd < 0) {
+        return;
+    }
+    // disable OVERRIDES so we don't run the mixer while
+    // rebooting
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
+        hal.console->printf("SET_OVERRIDE_OK failed\n");
+    }
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
+        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+    }
+    close(px4io_fd);
+#endif
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -1791,46 +1810,37 @@ void GCS_MAVLINK::zero_rc_outputs()
  */
 MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-        if (should_disable_overrides_on_reboot()) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-            // disable overrides while rebooting
-            int px4io_fd = open("/dev/px4io", 0);
-            if (px4io_fd >= 0) {
-                // disable OVERRIDES so we don't run the mixer while
-                // rebooting
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_OK failed\n");
-                }
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
-                }
-                close(px4io_fd);
-            }
-#endif
-        }
-        if (should_zero_rc_outputs_on_reboot()) {
-            reboot_zero_rc_outputs();
-        }
-        // send ack before we reboot
-        mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
-        // Notify might want to blink some LEDs:
-        AP_Notify *notify = AP_Notify::instance();
-        if (notify) {
-            AP_Notify::flags.firmware_update = 1;
-            notify->update();
-        }
-        // force safety on 
-        hal.rcout->force_safety_on();
-        hal.rcout->force_safety_no_wait();
-        hal.scheduler->delay(200);
-
-        // when packet.param1 == 3 we reboot to hold in bootloader
-        bool hold_in_bootloader = is_equal(packet.param1,3.0f);
-        hal.scheduler->reboot(hold_in_bootloader);
-        return MAV_RESULT_FAILED;
+    if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
+        // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
+        return MAV_RESULT_UNSUPPORTED;
     }
-    return MAV_RESULT_UNSUPPORTED;
+
+    if (should_disable_overrides_on_reboot()) {
+        // disable overrides while rebooting
+        disable_overrides();
+    }
+    if (should_zero_rc_outputs_on_reboot()) {
+        zero_rc_outputs();
+    }
+
+    // send ack before we reboot
+    mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
+    // Notify might want to blink some LEDs:
+    AP_Notify *notify = AP_Notify::instance();
+    if (notify) {
+        AP_Notify::flags.firmware_update = 1;
+        notify->update();
+    }
+    // force safety on
+    hal.rcout->force_safety_on();
+    hal.rcout->force_safety_no_wait();
+    hal.scheduler->delay(200);
+
+    // when packet.param1 == 3 we reboot to hold in bootloader
+    const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
+    hal.scheduler->reboot(hold_in_bootloader);
+
+    return MAV_RESULT_FAILED;
 }
 
 /*

@@ -312,6 +312,7 @@ protected:
     virtual bool should_disable_overrides_on_reboot() const { return true; }
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
+    void disable_overrides();
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
