@@ -1775,8 +1775,7 @@ void GCS_MAVLINK::zero_rc_outputs()
     // For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
     SRV_Channels::cork();
     for (int i=0; i<NUM_RC_CHANNELS; i++) {
-        // Set to 1 because 0 is interpreted as flag to ignore update
-        hal.rcout->write(i, 1);
+        hal.rcout->write(i, 0);
     }
     SRV_Channels::push();
 }
