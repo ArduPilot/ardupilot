@@ -67,6 +67,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--bootloader',
+        action='store_true',
+        default=False,
+        help='Configure for building a bootloader.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
@@ -161,12 +166,15 @@ def configure(cfg):
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
     cfg.env.VARIANT = cfg.env.BOARD
+    if cfg.options.bootloader:
+        cfg.env.VARIANT += '-bootloader'
 
     _set_build_context_variant(cfg.env.VARIANT)
     cfg.setenv(cfg.env.VARIANT)
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.BOOTLOADER = cfg.options.bootloader
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
