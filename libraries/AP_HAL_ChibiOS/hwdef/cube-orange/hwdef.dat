@@ -440,8 +440,8 @@ define HAL_I2C_MAX_CLOCK 100000
 DMA_NOSHARE USART6_TX USART6_RX ADC1
 DMA_PRIORITY USART6*
 
-# run without a bootloader for now, use DFU upload
-FLASH_RESERVE_START_KB 0
+# start on 2nd sector (1st sector for bootloader)
+FLASH_RESERVE_START_KB 32
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format
