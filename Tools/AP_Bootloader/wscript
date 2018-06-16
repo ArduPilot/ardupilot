@@ -2,7 +2,8 @@
 # encoding: utf-8
 
 def build(bld):
-    bld.ap_program(
-        use='ap',
-        program_groups='bootloader'
-    )
+    if bld.env.BOOTLOADER:
+        bld.ap_program(
+            use='ap',
+            program_groups='bootloader'
+            )
