@@ -27,7 +27,7 @@ void Copter::esc_calibration_startup_check()
     // delay up to 2 second for first radio input
     uint8_t i = 0;
     while ((i++ < 100) && (last_radio_update_ms == 0)) {
-        delay(20);
+        hal.scheduler->delay(20);
         read_radio();
     }
 
@@ -52,7 +52,7 @@ void Copter::esc_calibration_startup_check()
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
-                while(1) { delay(5); }
+                while(1) { hal.scheduler->delay(5); }
             }
             break;
         case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
@@ -112,7 +112,7 @@ void Copter::esc_calibration_passthrough()
             printed_msg = true;
         }
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
 
     // arm motors
@@ -129,7 +129,7 @@ void Copter::esc_calibration_passthrough()
 
         // we run at high rate to make oneshot ESCs happy. Normal ESCs
         // will only see pulses at the RC_SPEED
-        delay(3);
+        hal.scheduler->delay(3);
 
         // pass through to motors
         SRV_Channels::cork();
@@ -168,7 +168,7 @@ void Copter::esc_calibration_auto()
             printed_msg = true;
         }
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
 
     // arm and enable motors
@@ -188,7 +188,7 @@ void Copter::esc_calibration_auto()
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
         SRV_Channels::push();
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
 
     // block until we restart
@@ -197,7 +197,7 @@ void Copter::esc_calibration_auto()
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
         SRV_Channels::push();
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
 #endif // FRAME_CONFIG != HELI_FRAME
 }
