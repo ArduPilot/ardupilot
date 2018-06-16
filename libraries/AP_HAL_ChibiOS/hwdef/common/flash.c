@@ -307,6 +307,8 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     // clear previous errors
     FLASH->SR = 0xF3;
 
+    stm32_flash_wait_idle();
+        
     /* TODO: implement up_progmem_write() to support other sizes than 16-bits */
     FLASH->CR &= ~(FLASH_CR_PSIZE);
     FLASH->CR |= FLASH_CR_PSIZE_0 | FLASH_CR_PG;
@@ -316,6 +318,9 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 
         putreg16(*hword, addr);
 
+        // ensure write ordering with cache
+        __DSB();
+        
         stm32_flash_wait_idle();
 
         if (FLASH->SR) {
