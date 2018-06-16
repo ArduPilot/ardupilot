@@ -27,4 +27,5 @@ namespace ChibiOS {
     class SoftSigReaderInt;
     class CANManager;
     class Flash;
+    class FS;
 }

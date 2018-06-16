@@ -10,6 +10,7 @@
 #include "Util.h"
 #include "UARTDriver.h"
 #include "SPIDevice.h"
+#include "FS.h"
 #include "Storage.h"
 #include "RCInput.h"
 #include "RCOutput.h"
