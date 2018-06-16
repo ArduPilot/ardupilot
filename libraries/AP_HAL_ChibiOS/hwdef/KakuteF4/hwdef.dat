@@ -2,7 +2,7 @@
 
 # STATUS:
 # This port is mostly complete. Main missing feature are OSD,
-# dataflash and RCIN
+# dataflash
 
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
@@ -10,7 +10,7 @@ MCU STM32F4xx STM32F405xx
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_KAKUTEF4
 
 # board ID for firmware load
-APJ_BOARD_ID 70
+APJ_BOARD_ID 122
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -114,9 +114,9 @@ PB0 TIM3_CH3 TIM3 PWM(4) GPIO(53)
 # PC8 TIM8_CH3 TIM2 GPIO(54) # LED strip
 
 define HAL_STORAGE_SIZE 8192
-define STORAGE_FLASH_PAGE 1
+define STORAGE_FLASH_PAGE 2
 
-# reserve 16k for bootloader, 16k for OSD and 32k for flash storage
+# reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
 
 define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
