@@ -248,3 +248,24 @@ void SRV_Channels::push()
     }
 #endif // HAL_WITH_UAVCAN
 }
+
+// return a bitmask of each channel that is a motor or a throttle
+uint16_t SRV_Channels::get_motor_mask()
+{
+    static_assert(NUM_SERVO_CHANNELS <= 16, "NUM_SERVO_CHANNELS must be <= 16 for uint16_t bitmask");
+
+    uint16_t motor_bitmask = 0;
+
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        const SRV_Channel::Aux_servo_function_t func = channels[i].get_function();
+        if (func == SRV_Channel::k_none) { // check for a common one to save time
+            continue;
+        }
+
+        // check if channel (i) is of type motor or throttle, and set bit i
+        if (SRV_Channel::is_motor(func) || SRV_Channel::is_throttle(func)) {
+            motor_bitmask |= 1U << i;
+        }
+    }
+    return motor_bitmask;
+}

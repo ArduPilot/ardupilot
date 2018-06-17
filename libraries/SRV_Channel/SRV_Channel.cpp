@@ -187,3 +187,18 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
 }
+
+// return true if function is any throttle type
+bool SRV_Channel::is_throttle(const SRV_Channel::Aux_servo_function_t function)
+{
+    switch (function) {
+    case SRV_Channel::k_throttle:
+    case SRV_Channel::k_throttleLeft:
+    case SRV_Channel::k_throttleRight:
+    case SRV_Channel::k_boost_throttle:
+        return true;
+
+    default:
+        return false;
+    }
+}
