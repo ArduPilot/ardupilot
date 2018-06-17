@@ -324,22 +324,20 @@ void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
+    chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
         // reset timeout 
-        chSysLockFromISR();
         chVTResetI(&uart_drv->tx_timeout);
-        chSysUnlockFromISR();
         
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
         if (uart_drv->unbuffered_writes && uart_drv->_writebuf.available()) {
             // trigger a rapid send of next bytes
-            chSysLockFromISR();
             chEvtSignalI(uart_thread_ctx, EVENT_MASK(uart_drv->serial_num));
-            chSysUnlockFromISR();
         }
         uart_drv->dma_handle->unlock_from_IRQ();
     }
+    chSysUnlockFromISR();
 }
 
 
@@ -375,7 +373,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
-    uint8_t len = RX_BOUNCE_BUFSIZE - uart_drv->rxdma->stream->NDTR;
+    uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
     if (len == 0) {
         return;
     }
@@ -605,7 +603,7 @@ void UARTDriver::check_dma_tx_completion(void)
     chSysLock();
     if (!tx_bounce_buf_ready) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
-            if (txdma->stream->NDTR == 0) {
+            if (dmaStreamGetTransactionSize(txdma) == 0) {
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
                 chVTResetI(&tx_timeout);
@@ -623,12 +621,14 @@ void UARTDriver::check_dma_tx_completion(void)
 void UARTDriver::handle_tx_timeout(void *arg)
 {
     UARTDriver* uart_drv = (UARTDriver*)arg;
+    chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
-        uart_drv->tx_len = 0; // fix for n sent
         dmaStreamDisable(uart_drv->txdma);
+        uart_drv->tx_len -= dmaStreamGetTransactionSize(uart_drv->txdma);
         uart_drv->tx_bounce_buf_ready = true;
         uart_drv->dma_handle->unlock_from_IRQ();
     }
+    chSysUnlockFromISR();
 }
 
 /*
@@ -767,7 +767,7 @@ void UARTDriver::_timer_tick(void)
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
         if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
-            uint8_t len = RX_BOUNCE_BUFSIZE - rxdma->stream->NDTR;
+            uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
                 _readbuf.write(rx_bounce_buf, len);
 

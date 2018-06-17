@@ -164,7 +164,6 @@ void Shared_DMA::unlock_from_lockzone(void)
 void Shared_DMA::unlock_from_IRQ(void)
 {
     osalDbgAssert(have_lock, "must have lock");
-    chSysLockFromISR();
     if (stream_id2 != SHARED_DMA_NONE) {
         chBSemSignalI(&locks[stream_id2].semaphore);        
     }
@@ -172,7 +171,6 @@ void Shared_DMA::unlock_from_IRQ(void)
         chBSemSignalI(&locks[stream_id1].semaphore);
     }
     have_lock = false;
-    chSysUnlockFromISR();
 }
 
 /*

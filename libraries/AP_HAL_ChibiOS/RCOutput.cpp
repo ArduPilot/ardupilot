@@ -955,15 +955,15 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 void RCOutput::dma_irq_callback(void *p, uint32_t flags)
 {
     pwm_group *group = (pwm_group *)p;
+    chSysLockFromISR();
     dmaStreamDisable(group->dma);
     if (group->in_serial_dma && irq.waiter) {
         // tell the waiting process we've done the DMA
-        chSysLockFromISR();
         chEvtSignalI(irq.waiter, serial_event_mask);
-        chSysUnlockFromISR();
     } else {
         group->dma_handle->unlock_from_IRQ();
     }
+    chSysUnlockFromISR();
 }
 
 /*
