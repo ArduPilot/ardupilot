@@ -55,7 +55,6 @@ void SITL_State::_usage(void)
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--fdm|-F ADDRESS         set FDM address, defaults to 127.0.0.1\n"
-           // "\t--client ADDRESS        TCP address to connect uartC to\n"  NOT USED
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--disable-fgview         disable Flight Gear view\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
@@ -69,7 +68,6 @@ void SITL_State::_usage(void)
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
-           "\t--rc-out-port PORT       set port num for rc out\n"
            "\t--sim-address ADDR       set address string for simulator\n"
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
@@ -135,18 +133,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // default to CMAC
     const char *home_str = "-35.363261,149.165230,584,353";
     const char *model_str = nullptr;
-    _client_address = nullptr;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fdm_address = "127.0.0.1";
 
     const int BASE_PORT = 5760;
     const int RCIN_PORT = 5501;
-    const int RCOUT_PORT = 5502;
     const int FG_VIEW_PORT = 5503;
     _base_port = BASE_PORT;
     _rcin_port = RCIN_PORT;
-    _rcout_port = RCOUT_PORT;
     _fg_view_port = FG_VIEW_PORT;
 
     const int SIM_IN_PORT = 9003;
@@ -158,8 +153,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _irlock_port = IRLOCK_PORT;
 
     enum long_options {
-        CMDLINE_CLIENT = 0,
-        CMDLINE_GIMBAL,
+        CMDLINE_GIMBAL = 1,
         CMDLINE_FGVIEW,
         CMDLINE_AUTOTESTDIR,
         CMDLINE_DEFAULTS,
@@ -172,8 +166,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
-        CMDLINE_RCOUT_PORT,
-        CMDLINE_SIM_ADDRESS,
+        CMDLINE_SIM_ADDRESS = 15,
         CMDLINE_SIM_PORT_IN,
         CMDLINE_SIM_PORT_OUT,
         CMDLINE_IRLOCK_PORT,
@@ -192,7 +185,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"fdm",             false,  0, 'F'},
-        {"client",          true,   0, CMDLINE_CLIENT},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
@@ -206,7 +198,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
-        {"rc-out-port",     true,   0, CMDLINE_RCOUT_PORT},
         {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
         {"sim-port-in",     true,   0, CMDLINE_SIM_PORT_IN},
         {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
@@ -248,9 +239,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
-            if (_rcout_port == RCOUT_PORT) {
-                _rcout_port += _instance * 10;
-            }
             if (_rcin_port == RCIN_PORT) {
                 _rcin_port += _instance * 10;
             }
@@ -283,9 +271,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'F':
             _fdm_address = gopt.optarg;
             break;
-        case CMDLINE_CLIENT:
-            _client_address = gopt.optarg;
-            break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
             break;
@@ -314,9 +299,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_RCIN_PORT:
             _rcin_port = atoi(gopt.optarg);
-            break;
-        case CMDLINE_RCOUT_PORT:
-            _rcout_port = atoi(gopt.optarg);
             break;
         case CMDLINE_SIM_ADDRESS:
             _simulator_address = gopt.optarg;

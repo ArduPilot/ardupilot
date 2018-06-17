@@ -70,9 +70,6 @@ public:
     uint16_t voltage2_pin_value;  // pin 15
     uint16_t current2_pin_value;  // pin 14
 
-    // return TCP client address for uartC
-    const char *get_client_address(void) const { return _client_address; }
-
     // paths for UART devices
     const char *_uart_path[6] {
         "tcp:0:wait",
@@ -149,7 +146,6 @@ private:
     uint16_t _framerate;
     uint8_t _instance;
     uint16_t _base_port;
-    struct sockaddr_in _rcout_addr;
     pid_t _parent_pid;
     uint32_t _update_count;
 
@@ -163,7 +159,6 @@ private:
 
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;
-    uint16_t _rcout_port;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
@@ -220,9 +215,6 @@ private:
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     
-    // TCP address to connect uartC to
-    const char *_client_address;
-
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     const char *_home_str;
