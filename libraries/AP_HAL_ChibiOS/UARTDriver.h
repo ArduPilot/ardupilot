@@ -138,6 +138,7 @@ private:
     Semaphore _write_mutex;
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
+    virtual_timer_t tx_timeout;    
     bool _in_timer;
     bool _blocking_writes;
     bool _initialised;
@@ -162,6 +163,7 @@ private:
     static void rx_irq_cb(void* sd);
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
+    static void handle_tx_timeout(void *arg);
 
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);

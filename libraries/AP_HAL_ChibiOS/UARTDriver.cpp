@@ -169,6 +169,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
     if (tx_bounce_buf == nullptr) {
         tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        chVTObjectInit(&tx_timeout);
         tx_bounce_buf_ready = true;
     }
     
@@ -324,6 +325,11 @@ void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     if (!uart_drv->tx_bounce_buf_ready) {
+        // reset timeout 
+        chSysLockFromISR();
+        chVTResetI(&uart_drv->tx_timeout);
+        chSysUnlockFromISR();
+        
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
         if (uart_drv->unbuffered_writes && uart_drv->_writebuf.available()) {
@@ -602,11 +608,27 @@ void UARTDriver::check_dma_tx_completion(void)
             if (txdma->stream->NDTR == 0) {
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
+                chVTResetI(&tx_timeout);
                 dma_handle->unlock_from_lockzone();
             }
         }
     }
     chSysUnlock();
+}
+
+/*
+  handle a TX timeout. This can happen with using hardware flow
+  control if CTS pin blocks transmit
+ */
+void UARTDriver::handle_tx_timeout(void *arg)
+{
+    UARTDriver* uart_drv = (UARTDriver*)arg;
+    if (!uart_drv->tx_bounce_buf_ready) {
+        uart_drv->tx_len = 0; // fix for n sent
+        dmaStreamDisable(uart_drv->txdma);
+        uart_drv->tx_bounce_buf_ready = true;
+        uart_drv->dma_handle->unlock_from_IRQ();
+    }
 }
 
 /*
@@ -653,6 +675,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
+    uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
+    chVTSet(&tx_timeout, US2ST(timeout_us), handle_tx_timeout, this);
 }
 
 /*
