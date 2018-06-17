@@ -54,9 +54,9 @@ void SITL_State::_usage(void)
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set home location (lat,lng,alt,yaw)\n"
            "\t--model|-M MODEL         set simulation model\n"
-           "\t--fdm|-F ADDRESS         set FDM address, defaults to 127.0.0.1\n"
-           "\t--gimbal                 enable simulated MAVLink gimbal\n"
+           "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
            "\t--disable-fgview         disable Flight Gear view\n"
+           "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
            "\t--uartA device           set device string for UARTA\n"
@@ -135,7 +135,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const char *model_str = nullptr;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
-    _fdm_address = "127.0.0.1";
+    _fg_address = "127.0.0.1";
 
     const int BASE_PORT = 5760;
     const int RCIN_PORT = 5501;
@@ -184,7 +184,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
-        {"fdm",             false,  0, 'F'},
+        {"fg",              true,   0, 'F'},
         {"gimbal",          false,  0, CMDLINE_GIMBAL},
         {"disable-fgview",  false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
@@ -269,7 +269,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             model_str = gopt.optarg;
             break;
         case 'F':
-            _fdm_address = gopt.optarg;
+            _fg_address = gopt.optarg;
             break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
