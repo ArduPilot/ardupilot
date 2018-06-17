@@ -147,9 +147,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const int SIM_IN_PORT = 9003;
     const int SIM_OUT_PORT = 9002;
     const int IRLOCK_PORT = 9005;
-    const char * _simulator_address = "127.0.0.1";
-    uint16_t _simulator_port_in = SIM_IN_PORT;
-    uint16_t _simulator_port_out = SIM_OUT_PORT;
+    const char * simulator_address = "127.0.0.1";
+    uint16_t simulator_port_in = SIM_IN_PORT;
+    uint16_t simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
 
     enum long_options {
@@ -245,11 +245,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_fg_view_port == FG_VIEW_PORT) {
                 _fg_view_port += _instance * 10;
             }
-            if (_simulator_port_in == SIM_IN_PORT) {
-                _simulator_port_in += _instance * 10;
+            if (simulator_port_in == SIM_IN_PORT) {
+                simulator_port_in += _instance * 10;
             }
-            if (_simulator_port_out == SIM_OUT_PORT) {
-                _simulator_port_out += _instance * 10;
+            if (simulator_port_out == SIM_OUT_PORT) {
+                simulator_port_out += _instance * 10;
             }
             if (_irlock_port == IRLOCK_PORT) {
                 _irlock_port += _instance * 10;
@@ -301,13 +301,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _rcin_port = atoi(gopt.optarg);
             break;
         case CMDLINE_SIM_ADDRESS:
-            _simulator_address = gopt.optarg;
+            simulator_address = gopt.optarg;
             break;
         case CMDLINE_SIM_PORT_IN:
-            _simulator_port_in = atoi(gopt.optarg);
+            simulator_port_in = atoi(gopt.optarg);
             break;
         case CMDLINE_SIM_PORT_OUT:
-            _simulator_port_out = atoi(gopt.optarg);
+            simulator_port_out = atoi(gopt.optarg);
             break;
         case CMDLINE_IRLOCK_PORT:
             _irlock_port = atoi(gopt.optarg);
@@ -327,7 +327,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         if (strncasecmp(model_constructors[i].name, model_str, strlen(model_constructors[i].name)) == 0) {
             printf("Creating model %s at speed %.1f\n", model_str, speedup);
             sitl_model = model_constructors[i].constructor(home_str, model_str);
-            sitl_model->set_interface_ports(_simulator_address, _simulator_port_in, _simulator_port_out);
+            sitl_model->set_interface_ports(simulator_address, simulator_port_in, simulator_port_out);
             sitl_model->set_speedup(speedup);
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
