@@ -81,11 +81,6 @@ private:
 
     uint16_t _cached_oldest_log;
 
-    /*
-      read a block
-    */
-    bool ReadBlock(void *pkt, uint16_t size) override;
-
     uint16_t _log_num_from_list_entry(const uint16_t list_entry);
 
     // possibly time-consuming preparations handling

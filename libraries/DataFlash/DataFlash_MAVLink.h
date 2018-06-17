@@ -173,9 +173,6 @@ private:
     uint16_t start_new_log(void) override {
         return 0;
     }
-    bool ReadBlock(void *pkt, uint16_t size) override {
-        return false;
-    }
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_errors;
     AP_HAL::Util::perf_counter_t  _perf_packing;
