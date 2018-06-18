@@ -151,6 +151,17 @@ void Rover::compass_cal_update() {
         compass.compass_cal_update();
     }
 }
+// Save compass offsets
+void Rover::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !arming.is_armed()) {
+        /*
+          only save offsets when disarmed
+         */
+        compass.save_offsets();
+    }
+}
 
 // Accel calibration
 
