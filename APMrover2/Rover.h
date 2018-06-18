@@ -506,6 +506,7 @@ private:
     void update_visual_odom();
     void update_wheel_encoder();
     void compass_cal_update(void);
+    void compass_save(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
