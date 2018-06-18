@@ -188,7 +188,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Rangefinder trigger angle
     // @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the rangefinder. A positive number means to turn right, and a negative angle means to turn left.
     // @Units: deg
-    // @Range: 0 450
+    // @Range: -450 450
     // @Increment: 1
     // @User: Standard
     GSCALAR(rangefinder_turn_angle,   "RNGFND_TURN_ANGL",    45),
