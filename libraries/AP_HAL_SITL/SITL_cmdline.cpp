@@ -17,6 +17,7 @@
 #include <SITL/SIM_Plane.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
+#include <SITL/SIM_BalanceBot.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
 #include <SITL/SIM_last_letter.h>
@@ -97,6 +98,7 @@ static const struct {
     { "singlecopter",       SingleCopter::create },
     { "coaxcopter",         SingleCopter::create },
     { "rover",              SimRover::create },
+    { "balancebot",         BalanceBot::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
     { "flightaxis",         FlightAxis::create },
