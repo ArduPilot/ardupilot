@@ -272,16 +272,16 @@ bool DataFlash_Class::handle_log_send_data()
     uint32_t len = _log_data_remaining;
 	mavlink_log_data_t packet;
 
-    if (len > 90) {
-        len = 90;
+    if (len > MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN) {
+        len = MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN;
     }
     ret = get_log_data(_log_num_data, _log_data_page, _log_data_offset, len, packet.data);
     if (ret < 0) {
         // report as EOF on error
         ret = 0;
     }
-    if (ret < 90) {
-        memset(&packet.data[ret], 0, 90-ret);
+    if (ret < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN) {
+        memset(&packet.data[ret], 0, MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN-ret);
     }
 
     packet.ofs = _log_data_offset;
@@ -296,7 +296,7 @@ bool DataFlash_Class::handle_log_send_data()
 
     _log_data_offset += len;
     _log_data_remaining -= len;
-    if (ret < 90 || _log_data_remaining == 0) {
+    if (ret < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN || _log_data_remaining == 0) {
         _log_sending = false;
         _log_sending_link = nullptr;
     }
