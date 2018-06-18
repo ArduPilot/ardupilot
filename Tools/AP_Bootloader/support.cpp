@@ -167,3 +167,24 @@ void led_pulses(uint8_t npulses)
         chThdSleepMilliseconds(2000);
     }
 }
+
+//simple variant of std c function to reduce used flash space
+void *memcpy(void *dest, const void *src, size_t n)
+{
+    uint8_t *tdest = (uint8_t *)dest;
+    uint8_t *tsrc = (uint8_t *)src;
+    for(int i=0; i<n; i++) {
+        tdest[i] = tsrc[i];
+    }
+    return dest;
+}
+
+//simple variant of std c function to reduce used flash space
+int strcmp(const char *s1, const char *s2)
+{
+    while( (*s1 != 0) && (*s1 == *s2) ) {
+        s1++;
+        s2++;
+    }
+    return (*s1 - *s2);
+}
