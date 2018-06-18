@@ -11,6 +11,7 @@
 
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -55,6 +56,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Description: UAVCAN node should be set implicitly
     // @Range: 1 250
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("NODE", 1, AP_UAVCAN, _uavcan_node, 10),
 
     // @Param: SRV_BM
@@ -79,6 +81,15 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
     
+    // @Param: VSER_P
+    // @DisplayName: Virtual serial port protocol
+    // @Description: Control the protocol for the virtual serial port over UAVCAN. Also known as protocol tunneling
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("VSER_P", 5, AP_UAVCAN, _tunnel.protocol, AP_SerialManager::SerialProtocol::SerialProtocol_None),
+
+
     AP_GROUPEND
 };
 
@@ -358,7 +369,39 @@ static void battery_info_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equi
 static void (*battery_info_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::power::BatteryInfo>& msg)
         = { battery_info_st_cb0, battery_info_st_cb1 };
 
+
+static void tunnel_broadcast_st_cb(const uavcan::ReceivedDataStructure<uavcan::tunnel::Broadcast>& msg, uint8_t mgr)
+{
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+    UAVCAN_UARTDriver* uart = ap_uavcan->get_tunnel_uart();
+    if (uart == nullptr) {
+        return;
+    }
+
+    uint32_t len = msg.buffer.size();
+    uint8_t loop_count = 0;
+    while (len > 0 && loop_count++ < 3) {
+        len -= uart->handle_inbound(&msg.buffer[msg.buffer.size() - len], len);
+        if (len > 0) {
+            // couldn't queue it all. We must wait here or else we lose it!
+            hal.scheduler->delay_microseconds(100);
+            ap_uavcan->_tunnel_stats.intake_failed++;
+        }
+    }
+}
+
+static void tunnel_broadcast_st_cb0(const uavcan::ReceivedDataStructure<uavcan::tunnel::Broadcast>& msg)
+{   tunnel_broadcast_st_cb(msg, 0); }
+static void tunnel_broadcast_st_cb1(const uavcan::ReceivedDataStructure<uavcan::tunnel::Broadcast>& msg)
+{   tunnel_broadcast_st_cb(msg, 1); }
+static void (*tunnel_broadcast_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::tunnel::Broadcast>& msg)
+        = { tunnel_broadcast_st_cb0, tunnel_broadcast_st_cb1 };
+
 // publisher interfaces
+static uavcan::Publisher<uavcan::tunnel::Broadcast>* tunnel_broadcast_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
@@ -411,6 +454,7 @@ AP_UAVCAN::AP_UAVCAN() :
 
     SRV_sem = hal.util->new_semaphore();
     _led_out_sem = hal.util->new_semaphore();
+    _tunnel_sem = hal.util->new_semaphore();
 
     debug_uavcan(2, "AP_UAVCAN constructed\n\r");
 }
@@ -512,6 +556,20 @@ bool AP_UAVCAN::try_init(void)
         debug_uavcan(1, "UAVCAN Compass for multiple mags subscriber start problem\n\r");
         return false;
     }
+
+    uavcan::Subscriber<uavcan::tunnel::Broadcast> *tunnel_broadcast_st;
+    tunnel_broadcast_st = new uavcan::Subscriber<uavcan::tunnel::Broadcast>(*node);
+    const int tunnel_broadcast_start_res = tunnel_broadcast_st->start(tunnel_broadcast_st_cb_arr[_uavcan_i]);
+    if (tunnel_broadcast_start_res < 0) {
+        debug_uavcan(1, "UAVCAN Tunnel Broadcast subscriber start problem\n\r");
+        return false;
+    }
+    tunnel_broadcast_array[_uavcan_i] = new uavcan::Publisher<uavcan::tunnel::Broadcast>(*node);
+    if (tunnel_broadcast_array[_uavcan_i]) {
+        tunnel_broadcast_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
+        tunnel_broadcast_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    }
+
 
     uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure> *air_data_sp;
     air_data_sp = new uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure>(*node);
@@ -719,6 +777,122 @@ void AP_UAVCAN::do_cyclic(void)
         led_out_sem_give();
     }
 
+    _tunnel_sem->take_blocking();
+    tunnel_send();
+    _tunnel_sem->give();
+}
+
+/*
+ *  Transmit all bytes that have been queued in the outbound tunnel object.
+ *  returns false if send fails, usually due to UAVCAN tx buffers being full.
+ */
+bool AP_UAVCAN::tunnel_flush()
+{
+    if (!tunnel_broadcast_array[_uavcan_i]) {
+        // woah, we're not even configured yet
+        return false;
+    } else if (_tunnel.bdcst_msg.buffer.size() == 0) {
+        _tunnel.resend = false;
+        return true;
+    }
+
+    int32_t result = tunnel_broadcast_array[_uavcan_i]->broadcast(_tunnel.bdcst_msg);
+
+    if (result >= 0) {
+        _tunnel.last_send_ms = AP_HAL::millis();
+        // we're re-using the same msg, so lets make sure to clear it
+        _tunnel.bdcst_msg.buffer.clear();
+        return true;
+    }
+
+    // send failed. Let's quit now and try again on the next cycle
+    _tunnel.resend = true;
+    _tunnel_stats.flush_failed++;
+    return false;
+}
+
+void AP_UAVCAN::tunnel_send()
+{
+    if (_tunnel.uart == nullptr) {
+        // the uart is null if the protocol is NONE at boot
+        return;
+    }
+
+    // check for re-send
+    if (_tunnel.resend && tunnel_flush()) {
+        // re-send was successful.
+        _tunnel.resend = false;
+
+        _tunnel_stats.retries++;
+
+        // that's probably enough work for now, if we needed to re-send then
+        // we seem to be on the edge of being able to send successfully so
+        // lets keep the workload light on this cycle.
+        return;
+    }
+
+    uint32_t avail = _tunnel.uart->tx_available();
+
+    // flush if:
+    // - there's something in the outbound Tx buffer waiting but the CAN frame is not full
+    // - there's no other data that can be queued
+    // - we've timed out
+    if (avail == 0) {
+        if (_tunnel.bdcst_msg.buffer.size() > 0 &&
+            AP_HAL::millis() - _tunnel.last_send_ms >= AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
+            // flush it
+            tunnel_flush();
+            _tunnel_stats.delayed_flushes++;
+        }
+        // we already know there's no tx_pending so there's nothing else to do
+        return;
+    }
+
+    const uint16_t max_buf_capacity = _tunnel.bdcst_msg.buffer.capacity();
+    uint8_t packet_send_count = 0;
+
+    while (avail && packet_send_count++ < AP_UAVCAN_TUNNEL_SENDS_PER_LOOP_MAX) {
+        // attempt to load as many bytes as can fit into bdcst_msg.buffer
+        // if buffer is full, send it. else, wait for timeout then send
+        while (avail && _tunnel.bdcst_msg.buffer.size() < max_buf_capacity) {
+
+            // but if there's no more data to send then we're done and can exit to transmit it
+            const int16_t data = _tunnel.uart->fetch_for_outbound();
+            if (data == -1) {
+                _tunnel_stats.fetch_error_1++;
+                // not initialized
+                break;
+            }
+            if (data == -2) {
+                _tunnel_stats.fetch_error_2++;
+                // mutex locked, try again
+                hal.scheduler->delay_microseconds(100);
+                break;
+            }
+            if (data == -3) {
+                _tunnel_stats.fetch_error_3++;
+                // buffer is empty, nothing else to read
+                break;
+            }
+
+            // make sure we're only sending pure uint8_t values to push_back
+            _tunnel_stats.push_back_count++;
+            avail--;
+            const uint8_t data_byte = data;
+            _tunnel.bdcst_msg.buffer.push_back(data_byte);
+        }
+
+        // transmit buffer is filled to the top, send it!
+        if (_tunnel.bdcst_msg.buffer.size() >= max_buf_capacity) {
+            // Tx packet is full, flush it
+            _tunnel_stats.buffer_at_max_cap++;
+            if (!tunnel_flush()) {
+                // send failed. Let's quit now and try again on the next cycle
+                _tunnel_stats.buffer_at_max_cap_send_fail++;
+                return;
+            }
+        }
+    }
 }
 
 bool AP_UAVCAN::led_out_sem_take()
@@ -1423,6 +1597,14 @@ AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t iface)
         return nullptr;
     }
     return hal.can_mgr[iface]->get_UAVCAN();
+}
+
+UAVCAN_UARTDriver *AP_UAVCAN::get_tunnel_uart()
+{
+    if (!_tunnel.uart) {
+        _tunnel.uart = new UAVCAN_UARTDriver();
+    }
+    return _tunnel.uart;
 }
 
 #endif // HAL_WITH_UAVCAN
