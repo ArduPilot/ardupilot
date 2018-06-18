@@ -110,7 +110,7 @@ submodules at specific revisions.
         action='store',
         default='',
         help='''Where to save data like parameters, log and terrain.
-This is the --localstatedir + ArduPilot's subdirectory [default:
+This is the --localstatedir + ArduPilots subdirectory [default:
 board-dependent, usually /var/lib/ardupilot]''')
 
     g.add_option('--rsync-dest',
