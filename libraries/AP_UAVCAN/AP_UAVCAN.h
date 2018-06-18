@@ -31,7 +31,7 @@
 #endif
 
 #ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 256
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
 #endif
 
 #ifndef UAVCAN_SRV_NUMBER
@@ -146,6 +146,7 @@ private:
     ///// LED /////
     void led_out_send();
 
+    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
     AP_Int8 _uavcan_node;
@@ -154,7 +155,7 @@ private:
     AP_Int16 _servo_rate_hz;
 
     uavcan::Node<0> *_node;
-    uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
+
     uint8_t _driver_index;
     char _thread_name[9];
     bool _initialized;
