@@ -25,6 +25,7 @@
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
+const AP_InertialSensor &ins = AP::ins();
 
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
 
@@ -582,7 +583,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     uint32_t param = 0;
 
     // cycle through paramIDs
-    if (_paramID >= 5) {
+    if (_paramID >= 6) {
         _paramID = 0;
     }
     _paramID++;
@@ -598,6 +599,9 @@ uint32_t AP_Frsky_Telem::calc_param(void)
         break;
     case 5:
         param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
+        break;
+    case 6:
+        param = (uint32_t)ins.get_temperature(0); // IMU temperature in degrees C
         break;
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
