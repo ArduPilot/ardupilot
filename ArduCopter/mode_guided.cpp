@@ -78,6 +78,26 @@ bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
     return true;
 }
 
+bool Copter::ModeGuided::takeoff_start_local(float z_pos_m)
+{
+    guided_mode = Guided_TakeOff;
+
+    const Vector3f& curr_pos = inertial_nav.get_position();
+    // no need to check return status because terrain data is not used
+    wp_nav->set_wp_destination(Vector3f(curr_pos.x, curr_pos.y, -z_pos_m * 100), false);
+
+    // initialise yaw
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+    // clear i term when we're taking off
+    set_throttle_takeoff();
+
+    // get initial alt for WP_NAVALT_MIN
+    copter.auto_takeoff_set_start_alt();
+
+    return true;
+}
+
 // initialise guided mode's position controller
 void Copter::ModeGuided::pos_control_start()
 {

@@ -767,6 +767,7 @@ public:
     bool limit_check();
 
     bool takeoff_start(float final_alt_above_home);
+    bool takeoff_start_local(float z_pos_m);
 
     GuidedMode mode() const { return guided_mode; }
 

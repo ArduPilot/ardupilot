@@ -824,6 +824,18 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        case MAV_CMD_NAV_TAKEOFF_LOCAL: {
+            // param1~6 : not supported
+            // param7 : Z Position in MAV_FRAME_LOCAL_NED in meters
+
+            if(copter.do_user_takeoff_local(packet.param7)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+        }
+
 
         case MAV_CMD_NAV_LOITER_UNLIM:
             if (copter.set_mode(LOITER, MODE_REASON_GCS_COMMAND)) {

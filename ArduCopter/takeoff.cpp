@@ -59,6 +59,41 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
     return false;
 }
 
+bool Copter::do_user_takeoff_local(float z_pos_m)
+{
+    if (motors->armed() && ap.land_complete && current_mode_has_user_takeoff(false)) {
+
+#if FRAME_CONFIG == HELI_FRAME
+        // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
+        if (!motors->rotor_runup_complete()) {
+            return false;
+        }
+#endif
+
+        switch(control_mode) {
+#if MODE_GUIDED_ENABLED == ENABLED
+            case GUIDED:
+                if (mode_guided.takeoff_start_local(z_pos_m)) {
+                    set_auto_armed(true);
+                    return true;
+                }
+                return false;
+#endif
+            case LOITER:
+            case POSHOLD:
+            case ALT_HOLD:
+            case SPORT:
+            case FLOWHOLD:
+                set_auto_armed(true);
+                takeoff_timer_start(-z_pos_m * 100);
+                return true;
+            default:
+                return false;
+        }
+    }
+    return false;
+}
+
 // start takeoff to specified altitude above home in centimeters
 void Copter::takeoff_timer_start(float alt_cm)
 {
