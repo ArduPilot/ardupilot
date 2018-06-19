@@ -93,4 +93,10 @@ protected:
       assuming the message started nbytes ago
      */
     void set_uart_timestamp(uint16_t nbytes);
+
+    void check_new_itow(uint32_t itow, uint32_t msg_length);
+    
+private:
+    // itow from previous message
+    uint32_t _last_itow;
 };

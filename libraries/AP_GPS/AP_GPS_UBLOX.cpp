@@ -1336,10 +1336,8 @@ void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
     }
 }
 
+// uBlox specific check_new_itow(), handling message length
 void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)
 {
-    if (itow != _last_itow) {
-        _last_itow = itow;
-        set_uart_timestamp(_payload_length + sizeof(ubx_header) + 2);
-    }
+    check_new_itow(itow, _payload_length + sizeof(ubx_header) + 2);
 }
