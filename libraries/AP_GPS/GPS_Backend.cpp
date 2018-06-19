@@ -227,3 +227,12 @@ void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
         state.uart_timestamp_ms = port->receive_time_constraint_us(nbytes) / 1000U;
     }
 }
+
+
+void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
+{
+    if (itow != _last_itow) {
+        _last_itow = itow;
+        set_uart_timestamp(msg_length);
+    }
+}
