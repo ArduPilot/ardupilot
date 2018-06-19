@@ -185,6 +185,8 @@ AP_GPS_NOVA::process_message(void)
     uint16_t messageid = nova_msg.header.nova_headeru.messageid;
 
     Debug("NOVA process_message messid=%u\n",messageid);
+
+    check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
     
     if (messageid == 42) // bestpos
     {
