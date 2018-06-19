@@ -219,7 +219,7 @@ bool NavEKF3_core::calcGpsGoodToAlign(void)
 
     // assume failed first time through and notify user checks have started
     if (lastGpsVelFail_ms == 0) {
-        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF starting GPS checks");
+        hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF waiting for GPS checks");
         lastGpsVelFail_ms = imuSampleTime_ms;
     }
 

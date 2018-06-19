@@ -119,7 +119,7 @@ bool AP_Arming_Plane::ins_checks(bool report)
                 if (reason) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s", reason);
                 } else {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not healthy");
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: AHRS not enabled");
                 }
             }
             return false;

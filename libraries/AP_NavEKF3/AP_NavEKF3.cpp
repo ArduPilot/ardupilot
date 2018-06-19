@@ -788,7 +788,7 @@ void NavEKF3::UpdateFilter(void)
 bool NavEKF3::healthy(void) const
 {
     if (!core) {
-        return false;
+        return "EKF3 not enabled";
     }
     return core[primary].healthy();
 }
