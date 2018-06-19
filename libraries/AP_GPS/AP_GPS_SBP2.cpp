@@ -184,22 +184,27 @@ AP_GPS_SBP2::_sbp_process_message() {
 
         case SBP_GPS_TIME_MSGTYPE:
             memcpy(&last_gps_time, parser_state.msg_buff, sizeof(struct sbp_gps_time_t));
+            check_new_itow(last_gps_time.tow, parser_state.msg_len);
             break;
 
         case SBP_VEL_NED_MSGTYPE:
             memcpy(&last_vel_ned, parser_state.msg_buff, sizeof(struct sbp_vel_ned_t));
+            check_new_itow(last_vel_ned.tow, parser_state.msg_len);
             break;
 
         case SBP_POS_LLH_MSGTYPE:
             memcpy(&last_pos_llh, parser_state.msg_buff, sizeof(struct sbp_pos_llh_t));
+            check_new_itow(last_pos_llh.tow, parser_state.msg_len);
             break;
 
         case SBP_DOPS_MSGTYPE:
             memcpy(&last_dops, parser_state.msg_buff, sizeof(struct sbp_dops_t));
+            check_new_itow(last_dops.tow, parser_state.msg_len);
             break;
 
         case SBP_EXT_EVENT_MSGTYPE:
             memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
+            check_new_itow(last_event.tow, parser_state.msg_len);
             logging_ext_event();
             break;
 
@@ -288,7 +293,6 @@ AP_GPS_SBP2::_attempt_state_update()
         state.time_week_ms      = last_vel_ned.tow;
         state.hdop              = last_dops.hdop;
         state.vdop              = last_dops.vdop;
-        set_uart_timestamp(parser_state.msg_len);
         state.last_gps_time_ms = now;
 
         //
