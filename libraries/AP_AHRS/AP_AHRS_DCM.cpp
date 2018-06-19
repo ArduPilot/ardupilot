@@ -376,7 +376,10 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (AP::gps().status() <= AP_GPS::NO_FIX || !_gps_use) {
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        return false;
+    }
+    if (!_gps_use) {
         return false;
     }
     return true;
@@ -631,7 +634,6 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const AP_GPS &_gps = AP::gps();
 
     if (!have_gps() ||
-            _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
             _gps.num_sats() < _gps_minsats) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
