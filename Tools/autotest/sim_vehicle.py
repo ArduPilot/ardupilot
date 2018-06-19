@@ -569,6 +569,10 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         if not isinstance(paths, list):
             paths = [paths]
         paths = [os.path.join(autotest, x) for x in paths]
+        for x in paths:
+            if not os.path.isfile(x):
+                print("The parameter file (%s) does not exist" % (x,))
+                sys.exit(1)
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.add_param_file:
