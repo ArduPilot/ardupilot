@@ -2971,7 +2971,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
-        ret = true;
         break;
 
     case MSG_HEARTBEAT:
@@ -2983,7 +2982,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_HWSTATUS:
         CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus();
-        ret = true;
         break;
 
     case MSG_LOCATION:
@@ -3021,7 +3019,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_EXTENDED_STATUS2:
         CHECK_PAYLOAD_SIZE(MEMINFO);
         send_meminfo();
-        ret = true;
         break;
 
     case MSG_RANGEFINDER:
@@ -3141,7 +3138,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Sending unknown ap_message %u", id);
 #endif
-        ret = true;
         break;
     }
 
