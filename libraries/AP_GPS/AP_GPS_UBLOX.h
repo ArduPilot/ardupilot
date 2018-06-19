@@ -549,9 +549,6 @@ private:
     
     bool havePvtMsg;
 
-    // itow from previous message
-    uint32_t _last_itow;
-
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
