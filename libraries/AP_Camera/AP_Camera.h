@@ -32,9 +32,7 @@ class AP_Camera {
 
 public:
     AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
-        : _trigger_counter(0) // count of number of cycles shutter has been held open
-        , _image_index(0)
-        , log_camera_bit(_log_camera_bit)
+        : log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
         , ahrs(_ahrs)
     {
@@ -122,8 +120,8 @@ private:
     // should be called at 50hz from main program
     void trigger_pic_cleanup();
 
-    // check if trigger pin has fired
-    bool check_trigger_pin(void);
+    // check if feedback pin has fired
+    bool check_feedback_pin(void);
 
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const { return _feedback_pin > 0; }

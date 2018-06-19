@@ -83,6 +83,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option. If using AUX4 pin on a Pixhawk then a fast capture method is used that allows for the trigger time to be as short as one microsecond.
     // @Values: -1:Disabled,50:PX4 AUX1,51:PX4 AUX2,52:PX4 AUX3,53:PX4 AUX4(fast capture),54:PX4 AUX5,55:PX4 AUX6
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("FEEDBACK_PIN",  8, AP_Camera, _feedback_pin, AP_CAMERA_FEEDBACK_DEFAULT_FEEDBACK_PIN),
 
     // @Param: FEEDBACK_POL
@@ -311,17 +312,7 @@ void AP_Camera::update()
  */
 void AP_Camera::feedback_pin_timer(void)
 {
-    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
-    if (dpin == -1) {
-        return;
-    }
-    // ensure we are in input mode
-    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
-
-    // enable pullup
-    hal.gpio->write(dpin, 1);
-
-    uint8_t pin_state = hal.gpio->read(dpin);
+    uint8_t pin_state = hal.gpio->read(_feedback_pin);
     uint8_t trigger_polarity = _feedback_polarity==0?0:1;
     if (pin_state == trigger_polarity &&
         _last_pin_state != trigger_polarity) {
@@ -333,7 +324,7 @@ void AP_Camera::feedback_pin_timer(void)
 /*
   check if camera has triggered
  */
-bool AP_Camera::check_trigger_pin(void)
+bool AP_Camera::check_feedback_pin(void)
 {
     if (_camera_triggered) {
         _camera_triggered = false;
@@ -389,10 +380,16 @@ void AP_Camera::setup_feedback_callback(void)
 failed:
 #endif // CONFIG_HAL_BOARD
 
-    if (!_timer_installed) {
-        // install a 1kHz timer to check feedback pin
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
+    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
+    if (dpin == -1) {
+        return;
     }
+    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT); // ensure we are in input mode
+    hal.gpio->write(dpin, 1);                // enable pullup
+
+    // install a 1kHz timer to check feedback pin
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
+
     _timer_installed = true;
 }
 
@@ -440,7 +437,7 @@ void AP_Camera::take_picture()
 void AP_Camera::update_trigger()
 {
     trigger_pic_cleanup();
-    if (check_trigger_pin()) {
+    if (check_feedback_pin()) {
         _feedback_events++;
         gcs().send_message(MSG_CAMERA_FEEDBACK);
         DataFlash_Class *df = DataFlash_Class::instance();
