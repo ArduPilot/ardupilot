@@ -15,7 +15,11 @@ public:
     };
 
     /// Constructor
-    AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params);
+    AP_BattMonitor_UAVCAN(AP_BattMonitor &mon,
+                          AP_BattMonitor::BattMonitor_State &mon_state,
+                          BattMonitor_UAVCAN_Type type,
+                          AP_BattMonitor_Params &params,
+                          uint8_t instance);
 
     /// Read the battery voltage and current.  Should be called at 10hz
     void read() override;

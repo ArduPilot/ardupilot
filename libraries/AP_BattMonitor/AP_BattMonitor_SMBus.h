@@ -32,6 +32,7 @@ public:
     AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
                     AP_BattMonitor_Params &params,
+                    uint8_t instance,
                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // virtual destructor to reduce compiler warnings
