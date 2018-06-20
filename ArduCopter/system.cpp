@@ -89,11 +89,6 @@ void Copter::init_ardupilot()
     
     barometer.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    ap.usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
@@ -415,17 +410,6 @@ void Copter::update_auto_armed()
         }
 #endif // HELI_FRAME
     }
-}
-
-void Copter::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == ap.usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    ap.usb_connected = usb_check;
 }
 
 /*
