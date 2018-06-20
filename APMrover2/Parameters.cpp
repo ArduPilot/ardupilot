@@ -547,6 +547,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PIVOT_TURN_RATE", 20, ParametersG2, pivot_turn_rate, 90),
 
+    // @Param: BAL_PITCH_MAX
+    // @DisplayName: BalanceBot Maximum Pitch
+    // @Description: Pitch angle in degrees at 100% throttle
+    // @Units: deg
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 5),
+
     AP_GROUPEND
 };
 
