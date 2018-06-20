@@ -281,7 +281,8 @@ def build(bld):
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
-                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
+                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs'),
+                  bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
