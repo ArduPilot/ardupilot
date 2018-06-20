@@ -46,9 +46,6 @@ thread_t *UARTDriver::uart_thread_ctx;
 // table to find UARTDrivers from serial number, used for event handling
 UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
-// last time we did a 1kHz run of uarts
-uint32_t UARTDriver::last_thread_run_us;
-
 // event used to wake up waiting thread. This event number is for
 // caller threads
 #define EVT_DATA EVENT_MASK(0)
@@ -56,9 +53,7 @@ uint32_t UARTDriver::last_thread_run_us;
 UARTDriver::UARTDriver(uint8_t _serial_num) :
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
-_baudrate(57600),
-_in_timer(false),
-_initialised(false)
+_baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
@@ -72,6 +67,8 @@ _initialised(false)
  */
 void UARTDriver::uart_thread(void* arg)
 {
+    uint32_t last_thread_run_us = 0; // last time we did a 1kHz run of uarts
+
     uart_thread_ctx = chThdGetSelfX();
     while (true) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
