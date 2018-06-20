@@ -13,6 +13,9 @@ public:
         , _inav(inav)
         , _ahrs_navekf(ahrs_ref)
     {
+        // default REQUIRE parameter to 1 (Copter does not have an
+        // actual ARMING_REQUIRE parameter)
+        require.set_default(YES_MIN_PWM);
     }
 
     /* Do not allow copies */
