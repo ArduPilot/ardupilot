@@ -89,19 +89,14 @@ void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
 
     if (_current_init_state == InitState_Printout) {
         set_mode(BINARY_MODE, 4);
-        _current_init_state = InitState_Sequence;
-    }
-    if (_current_init_state == InitState_Sequence) {
+    } else if (_current_init_state == InitState_Sequence) {
         //set tower mode - 4 sensors are triggered at once with 90 deg angle between each sensor
         set_mode(TOWER_MODE, 4);
-        _current_init_state = InitState_Rate;
     } else if (_current_init_state == InitState_Rate) {
         //set update rate of the sensor.
-        set_mode(REFRESH_50_HZ, 5);
-        _current_init_state = InitState_StreamStart;
+        set_mode(REFRESH_100_HZ, 5);
     } else if (_current_init_state == InitState_StreamStart) {
         set_mode(ACTIVATE_STREAM, 5);
-        _current_init_state = InitState_Finished;
     }
 }
 
@@ -121,6 +116,27 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
     uint16_t message_count = 0;
     int16_t nbytes = uart->available();
 
+    if(_current_init_state != InitState_Finished && nbytes == 4) {
+
+        //Increment _current_init_state only when we receive 4 ack bytes
+        switch (_current_init_state) {
+            case InitState_Printout:
+                _current_init_state = InitState_Sequence;
+                break;
+            case InitState_Sequence:
+                _current_init_state = InitState_Rate;
+                break;
+            case InitState_Rate:
+                _current_init_state = InitState_StreamStart;
+                break;
+            case InitState_StreamStart:
+                _current_init_state = InitState_Finished;
+                break;
+            case InitState_Finished:
+                break;
+        }
+    }
+    
     while (nbytes-- > 0) {
         char c = uart->read();
         if (c == 'T' ) {
@@ -134,6 +150,7 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
             
             //check if message has right CRC
             if (crc_crc8(buffer, 19) == buffer[19]){
+                
                 uint16_t d1 = process_distance(buffer[2], buffer[3]);
                 uint16_t d2 = process_distance(buffer[4], buffer[5]);
                 uint16_t d3 = process_distance(buffer[6], buffer[7]);

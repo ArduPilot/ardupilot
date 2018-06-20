@@ -46,7 +46,7 @@ private:
     // request related variables
     uint32_t _last_distance_received_ms;    // system time of last distance measurement received from sensor
     uint32_t _last_request_sent_ms;         // system time of last command set
-    const uint16_t _mode_request_delay = 400;
+    const uint16_t _mode_request_delay = 1000;
     enum InitState _current_init_state = InitState_Printout;
 
     // tower evo operating modes
