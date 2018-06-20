@@ -34,8 +34,8 @@ void Copter::ekf_check()
         return;
     }
 
-    // return immediately if motors are not armed, ekf check is disabled, not using ekf or usb is connected
-    if (!motors->armed() || ap.usb_connected || (g.fs_ekf_thresh <= 0.0f)) {
+    // return immediately if motors are not armed, or ekf check is disabled
+    if (!motors->armed() || (g.fs_ekf_thresh <= 0.0f)) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;

@@ -1591,7 +1591,6 @@ void Copter::mavlink_delay_cb()
         last_5s = tnow;
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    check_usb_mux();
 
     DataFlash.EnableWrites(true);
 }

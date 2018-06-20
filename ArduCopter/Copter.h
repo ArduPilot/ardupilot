@@ -316,7 +316,7 @@ private:
             uint8_t logging_started         : 1; // 6       // true if dataflash logging has started
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
             uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
-            uint8_t usb_connected           : 1; // 9       // true if APM is powered from USB connection
+            uint8_t usb_connected_unused    : 1; // 9       // UNUSED
             uint8_t rc_receiver_present     : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
             uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
             uint8_t motor_test              : 1; // 12      // true if we are currently performing the motors test
@@ -917,7 +917,6 @@ private:
     bool ekf_position_ok();
     bool optflow_position_ok();
     void update_auto_armed();
-    void check_usb_mux(void);
     bool should_log(uint32_t mask);
     void set_default_frame_class();
     MAV_TYPE get_frame_mav_type();
