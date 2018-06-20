@@ -603,8 +603,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if RPM_ENABLED == ENABLED
-    MSG_RPM
+    MSG_RPM,
 #endif
+    MSG_ESC_TELEMETRY,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
