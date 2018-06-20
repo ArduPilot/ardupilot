@@ -636,7 +636,8 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_RPM,
     MSG_AOA_SSA,
     MSG_PID_TUNING,
-    MSG_LANDING
+    MSG_LANDING,
+    MSG_ESC_TELEMETRY,
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
