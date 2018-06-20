@@ -70,11 +70,6 @@ void Rover::init_ardupilot()
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
@@ -286,17 +281,6 @@ void Rover::startup_INS_ground(void)
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
-}
-
-void Rover::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
 }
 
 // update notify with mode change
