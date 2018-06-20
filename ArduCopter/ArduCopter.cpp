@@ -439,8 +439,6 @@ void Copter::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
-    check_usb_mux();
-
     // log terrain data
     terrain_logging();
 
