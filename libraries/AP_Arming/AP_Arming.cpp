@@ -88,11 +88,6 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, Compass &compass,
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    // default REQUIRE parameter to 1 (needed for Copter which is missing the parameter declaration above)
-    require.set_default(YES_MIN_PWM);
-#endif
-
     memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
     memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
 }
