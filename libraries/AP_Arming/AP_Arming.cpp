@@ -95,7 +95,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return require == NONE || armed;
+    return (ArmingRequired)require.get() == NO || armed;
 }
 
 uint16_t AP_Arming::get_enabled_checks()
