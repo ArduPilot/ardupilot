@@ -108,6 +108,10 @@ void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
     if (_writebuf.set_size(txS) && _readbuf.set_size(rxS)) {
         _initialised = true;
     }
+    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
+        _readbuf.clear();
+        _writebuf.clear();
+    }
 }
 
 void UARTDriver::_deallocate_buffers()
