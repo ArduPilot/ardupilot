@@ -9,6 +9,7 @@
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
     UARTDriver() {}
+    // begin() implicitly clears rx/tx buffers, even if the port was already open (unless the UART is the console UART)
     virtual void begin(uint32_t baud) = 0;
 	/// Extended port open method
 	///
