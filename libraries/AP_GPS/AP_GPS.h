@@ -481,11 +481,9 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
-#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
