@@ -49,11 +49,6 @@ void Tracker::init_tracker()
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
 
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
-    usb_connected = true;
-    check_usb_mux();
-
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
@@ -217,17 +212,6 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
 
 	// log mode change
 	DataFlash.Log_Write_Mode(control_mode, reason);
-}
-
-void Tracker::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
 }
 
 /*
