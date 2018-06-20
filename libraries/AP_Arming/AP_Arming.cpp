@@ -83,13 +83,9 @@ AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, Compass &compass,
     ahrs(ahrs_ref),
     _compass(compass),
     _battery(battery),
-    armed(false),
     arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    memset(last_accel_pass_ms, 0, sizeof(last_accel_pass_ms));
-    memset(last_gyro_pass_ms, 0, sizeof(last_gyro_pass_ms));
 }
 
 uint16_t AP_Arming::compass_magfield_expected() const
