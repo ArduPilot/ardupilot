@@ -105,6 +105,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         free(s);
     }
 
+    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
+        _readbuffer.clear();
+        _writebuffer.clear();
+    }
+
     _set_nonblocking(_fd);
 }
 
