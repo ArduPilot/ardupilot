@@ -1,15 +1,16 @@
 #include<stdio.h>
 #include "Rover.h"
 
-
+// Function to set a desired pitch angle according to throttle
 void Rover::balance_pitch(float &throttle, bool armed)
 {
-    float balance_throttle = 0;
-    float throttle_new = 0;
-    float demanded_pitch = 0;
-    balance_throttle = g2.attitude_control.get_throttle_out_from_pitch(demanded_pitch, armed)*100;
-    throttle_new = constrain_float(throttle + balance_throttle, -100, 100);
-    throttle = throttle_new;
+    // calculate desired pitch angle
+    float demanded_pitch = radians(-(throttle/100) * g2.bal_pitch_max);
+
+    // calculate required throttle using PID controller
+    float balance_throttle = g2.attitude_control.get_throttle_out_from_pitch(demanded_pitch, armed)*100;
+
+    throttle = constrain_float(balance_throttle, -100, 100);
 }
 
 // returns true if vehicle is a balance bot

@@ -341,6 +341,9 @@ public:
 
     // pivot turn rate
     AP_Int16 pivot_turn_rate;
+
+    // pitch angle at 100% throttle
+    AP_Float bal_pitch_max;
 };
 
 extern const AP_Param::Info var_info[];
