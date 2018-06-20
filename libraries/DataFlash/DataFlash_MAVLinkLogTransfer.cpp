@@ -74,9 +74,6 @@ void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message
     mavlink_log_request_list_t packet;
     mavlink_msg_log_request_list_decode(msg, &packet);
 
-    _log_listing = false;
-    _log_sending = false;
-
     _log_num_logs = get_num_logs();
     if (_log_num_logs == 0) {
         _log_next_list_entry = 0;
@@ -93,8 +90,9 @@ void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message
         }
     }
 
-    _log_listing = true;
+    transfer_activity = LISTING;
     _log_sending_link = &link;
+
     handle_log_send_listing();
 }
 
@@ -118,14 +116,13 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
     mavlink_log_request_data_t packet;
     mavlink_msg_log_request_data_decode(msg, &packet);
 
-    _in_log_download = true;
-
-    _log_listing = false;
-    if (!_log_sending || _log_num_data != packet.id) {
-        _log_sending = false;
+    // consider opening or switching logs:
+    if (transfer_activity != SENDING || _log_num_data != packet.id) {
 
         uint16_t num_logs = get_num_logs();
         if (packet.id > num_logs || packet.id < 1) {
+            // request for an invalid log; cancel any current download
+            transfer_activity = IDLE;
             return;
         }
 
@@ -147,7 +144,8 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
     if (_log_data_remaining > packet.count) {
         _log_data_remaining = packet.count;
     }
-    _log_sending = true;
+
+    transfer_activity = SENDING;
     _log_sending_link = &link;
 
     handle_log_send();
@@ -171,8 +169,8 @@ void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_
 {
     mavlink_log_request_end_t packet;
     mavlink_msg_log_request_end_decode(msg, &packet);
-    _in_log_download = false;
-    _log_sending = false;
+
+    transfer_activity = IDLE;
     _log_sending_link = nullptr;
 }
 
@@ -188,13 +186,20 @@ void DataFlash_Class::handle_log_send()
         // might be flying
         return;
     }
-    if (_log_listing) {
+    switch (transfer_activity) {
+    case IDLE:
+        break;
+    case LISTING:
         handle_log_send_listing();
+        break;
+    case SENDING:
+        handle_log_sending();
+        break;
     }
-    if (!_log_sending) {
-        return;
-    }
+}
 
+void DataFlash_Class::handle_log_sending()
+{
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // assume USB speeds in SITL for the purposes of log download
     const uint8_t num_sends = 40;
@@ -213,8 +218,12 @@ void DataFlash_Class::handle_log_send()
 #endif
 
     for (uint8_t i=0; i<num_sends; i++) {
-        if (_log_sending) {
-            if (!handle_log_send_data()) break;
+        if (transfer_activity != SENDING) {
+            // may have completed sending data
+            break;
+        }
+        if (!handle_log_send_data()) {
+            break;
         }
     }
 }
@@ -247,7 +256,7 @@ void DataFlash_Class::handle_log_send_listing()
                                time_utc,
                                size);
     if (_log_next_list_entry == _log_last_list_entry) {
-        _log_listing = false;
+        transfer_activity = IDLE;
         _log_sending_link = nullptr;
     } else {
         _log_next_list_entry++;
@@ -297,8 +306,7 @@ bool DataFlash_Class::handle_log_send_data()
     _log_data_offset += len;
     _log_data_remaining -= len;
     if (ret < MAVLINK_MSG_LOG_DATA_FIELD_DATA_LEN || _log_data_remaining == 0) {
-        _log_sending = false;
-        _in_log_download = false;
+        transfer_activity = IDLE;
         _log_sending_link = nullptr;
     }
     return true;
