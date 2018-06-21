@@ -556,6 +556,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 5),
 
+    // @Param: BAL_PITCH_CRASH
+    // @DisplayName: BalanceBot Crash Pitch
+    // @Description: Pitch angle for crash check
+    // @Units: deg
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BAL_PITCH_CRASH", 22, ParametersG2, bal_pitch_crash, 30),
+
+
     AP_GROUPEND
 };
 

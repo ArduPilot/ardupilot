@@ -12,6 +12,17 @@ void Rover::crash_check()
 {
   static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
+  if (is_balancebot() && arming.is_armed()) {
+      // Crashed if pitch > bal_pitch_crash
+      if (fabsf(ahrs.pitch) > radians(g2.bal_pitch_crash)) {
+          // log an error in the dataflash
+          Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
+          // send message to gcs
+          gcs().send_text(MAV_SEVERITY_EMERGENCY, "Balance Bot crashed");
+          disarm_motors();
+      }
+  }
+
   // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode
   if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || (!control_mode->is_autopilot_mode())) {
     crash_counter = 0;
