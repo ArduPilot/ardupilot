@@ -2988,16 +2988,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_vibration();
         break;
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
     case MSG_ESC_TELEMETRY: {
+#ifdef HAVE_AP_BLHELI_SUPPORT
         CHECK_PAYLOAD_SIZE(ESC_TELEMETRY_1_TO_4);
         AP_BLHeli *blheli = AP_BLHeli::get_singleton();
         if (blheli) {
             blheli->send_esc_telemetry_mavlink(uint8_t(chan));
         }
+#endif
         break;
     }
-#endif
 
     default:
         // try_send_message must always at some stage return true for
