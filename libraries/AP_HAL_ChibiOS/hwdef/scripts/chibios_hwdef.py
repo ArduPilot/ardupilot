@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
     '-D', '--outdir', type=str, default=None, help='Output directory')
 parser.add_argument(
+    '--bootloader', action='store_true', default=False, help='configure for bootloader')
+parser.add_argument(
     'hwdef', type=str, default=None, help='hardware definition file')
 
 args = parser.parse_args()
@@ -433,6 +435,15 @@ def write_mcu_config(f):
     # setup build variables
     for v in build_info.keys():
         build_flags.append('%s=%s' % (v, build_info[v]))
+
+    # setup for bootloader build
+    if args.bootloader:
+        f.write('''
+#define HAL_BOOTLOADER_BUILD TRUE        
+#define HAL_USE_ADC FALSE
+#define HAL_USE_EXT FALSE
+#define CH_DBG_STATISTICS FALSE
+''')
 
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
