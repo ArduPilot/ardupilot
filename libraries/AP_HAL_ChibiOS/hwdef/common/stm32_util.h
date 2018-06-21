@@ -43,6 +43,15 @@ uint64_t stm32_get_utc_usec(void);
 
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
+
+// one-time programmable area
+#if defined(STM32F4)
+#define OTP_BASE 0x1fff7800
+#define OTP_SIZE 512
+#elif defined(STM32F7)
+#define OTP_BASE 0x1ff0f000
+#define OTP_SIZE 1024
+#endif
     
 #ifdef __cplusplus
 }
