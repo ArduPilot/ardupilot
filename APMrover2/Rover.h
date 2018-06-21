@@ -559,8 +559,8 @@ public:
     void failsafe_check();
 
     // BalanceBot.cpp
-    void balance_pitch(float &, bool);
-    bool is_BalanceBot() const;
+    void balancebot_pitch_control(float &, bool);
+    bool is_balancebot() const;
 
     void update_soft_armed();
     // Motor test
