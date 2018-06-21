@@ -1,12 +1,13 @@
+#pragma once
 
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2
 
 /* board info forwarded from board-specific code to booloader */
 struct boardinfo {
-	uint32_t	board_type;
-	uint32_t	board_rev;
-	uint32_t	fw_size;
+    uint32_t	board_type;
+    uint32_t	board_rev;
+    uint32_t	fw_size;
 } __attribute__((packed));
 
 extern struct boardinfo board_info;
@@ -37,3 +38,13 @@ void uprintf(const char *fmt, ...);
 // generate a LED sequence forever
 void led_pulses(uint8_t npulses);
 
+typedef struct mcu_des_t {
+    uint16_t mcuid;
+    const char *desc;
+    char  rev;
+} mcu_des_t;
+
+typedef struct mcu_rev_t {
+    uint16_t revid;
+    char  rev;
+} mcu_rev_t;

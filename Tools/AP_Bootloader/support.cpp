@@ -8,7 +8,10 @@
 #include "hwdef.h"
 #include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include "support.h"
+#include "mcu_f4.h"
+#include "mcu_f7.h"
 
 int16_t cin(unsigned timeout_ms)
 {
@@ -72,28 +75,74 @@ uint32_t flash_func_sector_size(uint32_t sector)
 
 void flash_func_erase_sector(uint32_t sector)
 {
-    stm32_flash_erasepage(flash_base_page+sector);    
+    stm32_flash_erasepage(flash_base_page+sector);
 }
 
+// read one-time programmable memory
 uint32_t flash_func_read_otp(uint32_t idx)
 {
-    return 0;
+    if (idx & 3) {
+        return 0;
+    }
+
+    if (idx > OTP_SIZE) {
+        return 0;
+    }
+
+    return *(uint32_t *)(idx + OTP_BASE);
 }
 
+// read chip serial number
 uint32_t flash_func_read_sn(uint32_t idx)
 {
-    return 0;
+    return *(uint32_t *)(UDID_START + idx);
 }
 
 uint32_t get_mcu_id(void)
 {
-    return 0;
+    return *(uint32_t *)DBGMCU_BASE;
 }
 
-uint32_t get_mcu_desc(uint32_t len, uint8_t *buf)
+#define REVID_MASK	0xFFFF0000
+#define DEVID_MASK	0xFFF
+
+uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 {
-    buf[0] = 'A';
-    return 1;
+    uint32_t idcode = (*(uint32_t *)DBGMCU_BASE);
+    int32_t mcuid = idcode & DEVID_MASK;
+    uint16_t revid = ((idcode & REVID_MASK) >> 16);
+
+    mcu_des_t des = mcu_descriptions[STM32_UNKNOWN];
+
+    for (int i = 0; i < ARRAY_SIZE_SIMPLE(mcu_descriptions); i++) {
+        if (mcuid == mcu_descriptions[i].mcuid) {
+            des = mcu_descriptions[i];
+            break;
+        }
+    }
+
+    for (int i = 0; i < ARRAY_SIZE_SIMPLE(silicon_revs); i++) {
+        if (silicon_revs[i].revid == revid) {
+            des.rev = silicon_revs[i].rev;
+        }
+    }
+
+    uint8_t *endp = &revstr[max - 1];
+    uint8_t *strp = revstr;
+
+    while (strp < endp && *des.desc) {
+        *strp++ = *des.desc++;
+    }
+
+    if (strp < endp) {
+        *strp++ = ',';
+    }
+
+    if (strp < endp) {
+        *strp++ = des.rev;
+    }
+
+    return  strp - revstr;
 }
 
 void led_on(unsigned led)
@@ -173,7 +222,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 {
     uint8_t *tdest = (uint8_t *)dest;
     uint8_t *tsrc = (uint8_t *)src;
-    for(int i=0; i<n; i++) {
+    for (int i=0; i<n; i++) {
         tdest[i] = tsrc[i];
     }
     return dest;
@@ -182,7 +231,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 //simple variant of std c function to reduce used flash space
 int strcmp(const char *s1, const char *s2)
 {
-    while( (*s1 != 0) && (*s1 == *s2) ) {
+    while ((*s1 != 0) && (*s1 == *s2)) {
         s1++;
         s2++;
     }
