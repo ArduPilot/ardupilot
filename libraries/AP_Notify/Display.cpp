@@ -315,7 +315,7 @@ static const uint8_t _font[] = {
 };
 
 // probe first 3 busses:
-static const uint8_t I2C_BUS_PROBE_MASK = 0x7;
+static const uint8_t I2C_BUS_PROBE_MASK = 0xf;
 
 bool Display::init(void)
 {
