@@ -238,14 +238,16 @@ def configure(cfg):
 
     if env.BOOTLOADER:
         env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION="--bootloader"
     else:
         env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION=""
     hwdef_script = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     try:
-        cmd = "python '{0}' -D '{1}' '{2}'".format(hwdef_script, hwdef_out, env.HWDEF)
+        cmd = "python '{0}' -D '{1}' '{2}' {3}".format(hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
@@ -266,7 +268,7 @@ def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' %s" % bld.env.HWDEF,
+        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' %s %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
         target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )
