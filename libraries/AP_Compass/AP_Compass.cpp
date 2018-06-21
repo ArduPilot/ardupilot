@@ -803,18 +803,6 @@ void Compass::_detect_backends(void)
                 AP_Compass_AK8963::name, false);
     ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 1),
                 AP_Compass_AK8963::name, true);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe_mpu6000(*this),
-                AP_Compass_HMC5843::name, false);
-    ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this,
-                     Linux::I2CDeviceManager::from(hal.i2c_mgr)->get_device(
-                         { /* UEFI with lpss set to ACPI */
-                           "platform/80860F41:05",
-                           /* UEFI with lpss set to PCI */
-                           "pci0000:00/0000:00:18.6" },
-                         HAL_COMPASS_HMC5843_I2C_ADDR),
-                     true),
-                 AP_Compass_HMC5843::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NAVIO2
     ADD_BACKEND(DRIVER_LSM9DS1, AP_Compass_LSM9DS1::probe(*this, hal.spi->get_device("lsm9ds1_m"), ROTATION_ROLL_180),
                 AP_Compass_LSM9DS1::name, false);
