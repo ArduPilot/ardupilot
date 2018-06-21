@@ -314,9 +314,6 @@ static const uint8_t _font[] = {
 #endif
 };
 
-// probe first 3 busses:
-static const uint8_t I2C_BUS_PROBE_MASK = 0xf;
-
 bool Display::init(void)
 {
     // exit immediately if already initialised
@@ -325,10 +322,7 @@ bool Display::init(void)
     }
 
     // initialise driver
-    for(uint8_t i=0; i<8 && _driver == nullptr; i++) {
-        if (! (I2C_BUS_PROBE_MASK & (1<<i))) {
-            continue;
-        }
+    FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
             _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
