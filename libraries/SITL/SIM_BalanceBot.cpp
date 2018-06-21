@@ -68,26 +68,24 @@ void BalanceBot::update(const struct sitl_input &input)
     // air resistance
     const float damping_constant = 0.7; // N-s/m
 
-    float steering,throttle;
-
     // balance bot uses skid steering
-    float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
-    steering = motor1 - motor2;
-    throttle = 0.5*(motor1 + motor2);
+    const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    const float steering = motor1 - motor2;
+    const float throttle = 0.5 * (motor1 + motor2);
 
     // how much time has passed?
-    float delta_time = frame_time_us * 1.0e-6f;
+    const float delta_time = frame_time_us * 1.0e-6f;
 
     // yaw rate in degrees/s
-    float yaw_rate = calc_yaw_rate(steering);
+    const float yaw_rate = calc_yaw_rate(steering);
 
     // target speed with current throttle
-    float target_speed = throttle * max_speed;
+    const float target_speed = throttle * max_speed;
 
     //input force to the cart
     // a very crude model! Needs remodeling!
-    float force_on_body = ((target_speed - velocity_vf_x) / max_speed) * max_force; //N
+    const float force_on_body = ((target_speed - velocity_vf_x) / max_speed) * max_force; //N
 
     // obtain roll, pitch, yaw from dcm
     float r, p, y;
@@ -97,11 +95,11 @@ void BalanceBot::update(const struct sitl_input &input)
     float ang_vel = gyro.y; //radians/s
     
     //vehicle frame x acceleration
-    float accel_vf_x = (force_on_body - (damping_constant*velocity_vf_x) - mass_rod*length*ang_vel*ang_vel*sin(theta)
+    const float accel_vf_x = (force_on_body - (damping_constant*velocity_vf_x) - mass_rod*length*ang_vel*ang_vel*sin(theta)
     + (3.0f/4.0f)*mass_rod*GRAVITY_MSS*sin(theta)*cos(theta))
             / (mass_cart + mass_rod - (3.0f/4.0f)*mass_rod*cos(theta)*cos(theta));
 
-    float angular_accel_bf_y = mass_rod*length*(GRAVITY_MSS*sin(theta) + accel_vf_x*cos(theta))
+    const float angular_accel_bf_y = mass_rod*length*(GRAVITY_MSS*sin(theta) + accel_vf_x*cos(theta))
         /(I_rod + mass_rod*length*length);
 
     // update theta and angular velocity
