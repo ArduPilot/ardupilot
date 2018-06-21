@@ -326,4 +326,30 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     return dev;
 }
 
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return (1U << ARRAY_SIZE_SIMPLE(I2CD)) - 1;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    // assume first bus is internal
+    return 1U;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    // assume first bus is internal
+    return get_bus_mask() & 0xFE;
+}
+
 #endif // HAL_USE_I2C
