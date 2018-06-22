@@ -72,6 +72,7 @@
 #define CONFIG_GNSS          (1<<11)
 #define CONFIG_SBAS          (1<<12)
 #define CONFIG_RATE_PVT      (1<<13)
+#define CONFIG_TP5           (1<<14)
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -181,6 +182,19 @@ private:
         uint32_t res2;
         uint32_t res3;
         uint32_t res4;
+    };
+    struct PACKED ubx_cfg_tp5 {
+        uint8_t tpIdx;
+        uint8_t version;
+        uint8_t reserved1[2];
+        int16_t antCableDelay;
+        int16_t rfGroupDelay;
+        uint32_t freqPeriod;
+        uint32_t freqPeriodLock;
+        uint32_t pulseLenRatio;
+        uint32_t pulseLenRatioLock;
+        int32_t userConfigDelay;
+        uint32_t flags;
     };
     struct PACKED ubx_cfg_prt {
         uint8_t portID;
@@ -409,6 +423,7 @@ private:
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
         ubx_mon_ver mon_ver;
+        ubx_cfg_tp5 nav_tp5;
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
 #endif
@@ -444,6 +459,7 @@ private:
         MSG_CFG_PRT = 0x00,
         MSG_CFG_SBAS = 0x16,
         MSG_CFG_GNSS = 0x3E,
+        MSG_CFG_TP5 = 0x31,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_MON_VER = 0x04,
@@ -494,6 +510,7 @@ private:
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS
+        STEP_POLL_TP5, // poll TP5
         STEP_DOP,
         STEP_MON_HW,
         STEP_MON_HW2,
