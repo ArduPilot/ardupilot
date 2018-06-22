@@ -323,15 +323,6 @@ is bob we will attempt to checkout bob-AVR'''
         '''build vehicle binaries'''
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
-        # if not self.checkout(vehicle, tag):
-        #     self.progress("Failed to check out (%s)" % tag)
-        #     return
-
-        # # begin pointless checkout
-        # if not self.checkout(vehicle, "latest"):
-        #     self.progress("Failed to check out (%s)" % "latest")
-        #     return
-        # # end pointless checkout
 
         for board in boards:
             self.progress("Building board: %s" % board)
@@ -362,6 +353,9 @@ is bob we will attempt to checkout bob-AVR'''
                     continue
                 if self.skip_frame(board, frame):
                     continue
+
+                if os.path.exists(self.buildroot):
+                    shutil.rmtree(self.buildroot)
 
                 self.remove_tmpdir();
 
@@ -430,6 +424,7 @@ is bob we will attempt to checkout bob-AVR'''
             try:
                 deadwood = "../Build.%s" % vehicle
                 if os.path.exists(deadwood):
+                    self.progress("#### Removing (%s)" % deadwood)
                     shutil.rmtree(os.path.join(deadwood))
             except Exception as e:
                 self.progress("FIXME: narrow exception (%s)" % repr(e))
@@ -449,6 +444,9 @@ is bob we will attempt to checkout bob-AVR'''
 
                 if self.skip_board_waf(px4_v):
                     continue
+
+                if os.path.exists(self.buildroot):
+                    shutil.rmtree(self.buildroot)
 
                 self.progress("Configuring for %s in %s" %
                               (px4_v, self.buildroot))
@@ -644,8 +642,6 @@ is bob we will attempt to checkout bob-AVR'''
             self.run_git_update_submodules()
         self.buildroot = os.path.join(os.environ.get("TMPDIR"),
                                       "binaries.build")
-        if os.path.exists(self.buildroot):
-            shutil.rmtree(self.buildroot)
 
         for tag in self.tags:
             self.build_arducopter(tag)
