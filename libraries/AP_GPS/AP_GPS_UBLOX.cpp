@@ -856,6 +856,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_STATUS fix_status=%u fix_type=%u",
               _buffer.status.fix_status,
               _buffer.status.fix_type);
+        _check_new_itow(_buffer.status.itow);
         if (havePvtMsg) {
             _unconfigured_messages |= CONFIG_RATE_STATUS;
             break;
