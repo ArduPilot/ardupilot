@@ -51,40 +51,26 @@ bool Copter::ModeGuided::init(bool ignore_checks)
 
 
 // guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
+bool Copter::ModeGuided::takeoff_start(float final_alt_above_home, bool local_frame)
 {
     guided_mode = Guided_TakeOff;
 
-    // initialise wpnav destination
-    Location_Class target_loc = copter.current_loc;
-    target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
+    if (local_frame) {
+        const Vector3f& curr_pos = inertial_nav.get_position();
+        // no need to check return status because terrain data is not used
+        wp_nav->set_wp_destination(Vector3f(curr_pos.x, curr_pos.y, final_alt_above_home), false);
+    } else {
+        // initialise wpnav destination
+        Location_Class target_loc = copter.current_loc;
+        target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
 
-    if (!wp_nav->set_wp_destination(target_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
-        // failure is propagated to GCS with NAK
-        return false;
+        if (!wp_nav->set_wp_destination(target_loc)) {
+            // failure to set destination can only be because of missing terrain data
+            copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_FAILED_TO_SET_DESTINATION);
+            // failure is propagated to GCS with NAK
+            return false;
+        }
     }
-
-    // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
-
-    // clear i term when we're taking off
-    set_throttle_takeoff();
-
-    // get initial alt for WP_NAVALT_MIN
-    copter.auto_takeoff_set_start_alt();
-
-    return true;
-}
-
-bool Copter::ModeGuided::takeoff_start_local(float z_pos_m)
-{
-    guided_mode = Guided_TakeOff;
-
-    const Vector3f& curr_pos = inertial_nav.get_position();
-    // no need to check return status because terrain data is not used
-    wp_nav->set_wp_destination(Vector3f(curr_pos.x, curr_pos.y, -z_pos_m * 100), false);
 
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
