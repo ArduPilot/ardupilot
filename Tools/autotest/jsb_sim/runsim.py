@@ -127,7 +127,7 @@ def process_sitl_input(buf):
     if throttle != sitl_state.throttle:
         buf += 'set fcs/throttle-cmd-norm %s\n' % throttle
         sitl_state.throttle = throttle
-    buf += 'step\n'
+    buf += 'iterate 1\n'
     global jsb_console
     jsb_console.send(buf)
 
@@ -275,7 +275,7 @@ jsb_console.send('info\n')
 jsb_console.send('resume\n')
 jsb.expect(["trim computation time", "Trim Results"])
 time.sleep(1.5)
-jsb_console.send('step\n')
+jsb_console.send('iterate 1\n')
 jsb_console.logfile = None
 
 print("Simulator ready to fly")

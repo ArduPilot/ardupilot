@@ -109,7 +109,10 @@ bool JSBSim::create_templates(void)
 "    <event name=\"Trim\">\n"
 "      <condition>simulation/sim-time-sec ge 0.01</condition>\n"
 "      <set name=\"simulation/do_simple_trim\" value=\"2\"/>\n"
-"      <notify/>\n"
+"      <notify>\n"
+"         <property>velocities/vc-kts</property>\n"
+"         <property>position/h-agl-ft</property>\n"
+"      </notify>\n"
 "    </event>\n"
 "  </run>\n"
 "\n"
@@ -291,7 +294,7 @@ bool JSBSim::open_control_socket(void)
     char startup[] =
         "info\n"
         "resume\n"
-        "step\n"
+        "iterate 1\n"
         "set atmosphere/turb-type 4\n";
     sock_control.send(startup, strlen(startup));
     return true;
@@ -351,7 +354,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set atmosphere/wind-mag-fps %f\n"
              "set atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps %f\n"
              "set atmosphere/turbulence/milspec/severity %f\n"
-             "step\n",
+             "iterate 1\n",
              aileron, elevator, rudder, throttle,
              radians(input.wind.direction),
              wind_speed_fps,
@@ -424,10 +427,10 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-    
+
     rpm1 = fdm.rpm[0];
     rpm2 = fdm.rpm[1];
-    
+
     // assume 1kHz for now
     time_now_us += 1000;
 }
