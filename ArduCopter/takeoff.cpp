@@ -24,7 +24,7 @@ bool Copter::current_mode_has_user_takeoff(bool must_navigate)
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
+bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate, bool local_frame)
 {
     if (motors->armed() && ap.land_complete && current_mode_has_user_takeoff(must_navigate) && takeoff_alt_cm > current_loc.alt) {
 
@@ -38,7 +38,7 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         switch(control_mode) {
 #if MODE_GUIDED_ENABLED == ENABLED
             case GUIDED:
-                if (mode_guided.takeoff_start(takeoff_alt_cm)) {
+                if (mode_guided.takeoff_start(takeoff_alt_cm, local_frame)) {
                     set_auto_armed(true);
                     return true;
                 }
@@ -51,41 +51,6 @@ bool Copter::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
             case FLOWHOLD:
                 set_auto_armed(true);
                 takeoff_timer_start(takeoff_alt_cm);
-                return true;
-            default:
-                return false;
-        }
-    }
-    return false;
-}
-
-bool Copter::do_user_takeoff_local(float z_pos_m)
-{
-    if (motors->armed() && ap.land_complete && current_mode_has_user_takeoff(false)) {
-
-#if FRAME_CONFIG == HELI_FRAME
-        // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-        if (!motors->rotor_runup_complete()) {
-            return false;
-        }
-#endif
-
-        switch(control_mode) {
-#if MODE_GUIDED_ENABLED == ENABLED
-            case GUIDED:
-                if (mode_guided.takeoff_start_local(z_pos_m)) {
-                    set_auto_armed(true);
-                    return true;
-                }
-                return false;
-#endif
-            case LOITER:
-            case POSHOLD:
-            case ALT_HOLD:
-            case SPORT:
-            case FLOWHOLD:
-                set_auto_armed(true);
-                takeoff_timer_start(-z_pos_m * 100);
                 return true;
             default:
                 return false;
