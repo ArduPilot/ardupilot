@@ -19,6 +19,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
 
 class AP_GPS_Backend
@@ -99,4 +100,11 @@ protected:
 private:
     // itow from previous message
     uint32_t _last_itow;
+    uint64_t _pseudo_itow;
+    uint32_t _last_ms;
+    uint32_t _rate_ms;
+    uint32_t _last_rate_ms;
+    uint16_t _rate_counter;
+
+    JitterCorrection jitter_correction;
 };
