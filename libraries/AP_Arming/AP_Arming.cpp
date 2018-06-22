@@ -314,7 +314,9 @@ bool AP_Arming::compass_checks(bool report)
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
 
-        if (!_compass.use_for_yaw()) {
+        // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
+        // incorrectly skip the remaining checks, pass the primary instance directly
+        if (!_compass.use_for_yaw(_compass.get_primary())) {
             // compass use is disabled
             return true;
         }
