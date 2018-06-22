@@ -44,7 +44,8 @@ void Copter::crash_check()
 #endif
 
     // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
-    if (land_accel_ef_filter.get().length() >= CRASH_CHECK_ACCEL_MAX) {
+    const float filtered_acc = land_accel_ef_filter.get().length();
+    if (filtered_acc >= CRASH_CHECK_ACCEL_MAX) {
         crash_counter = 0;
         return;
     }
@@ -65,7 +66,7 @@ void Copter::crash_check()
         // keep logging even if disarmed:
         AP::logger().set_force_log_disarmed(true);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
+        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
         // disarm motors
         copter.arming.disarm(AP_Arming::Method::CRASH);
     }
