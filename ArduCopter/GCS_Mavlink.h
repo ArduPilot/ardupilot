@@ -23,7 +23,6 @@ protected:
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
-    const AP_FWVersion &get_fwver() const override;
 
     uint8_t sysid_my_gcs() const override;
 
@@ -53,6 +52,5 @@ private:
     MAV_STATE system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
-    bool vfr_hud_make_alt_relative() const override { return true; }
 
 };

@@ -22,6 +22,8 @@
 #include "AP_Frsky_Telem.h"
 #include <GCS_MAVLink/GCS.h>
 
+#include <stdio.h>
+
 extern const AP_HAL::HAL& hal;
 
 ObjectArray<mavlink_statustext_t> AP_Frsky_Telem::_statustext_queue(FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY);
@@ -36,7 +38,9 @@ AP_Frsky_Telem::AP_Frsky_Telem(AP_AHRS &ahrs, const AP_BattMonitor &battery, con
 /*
  * init - perform required initialisation
  */
-void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *firmware_str, const uint8_t mav_type, const uint32_t *ap_valuep)
+void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager,
+                          const uint8_t mav_type,
+                          const uint32_t *ap_valuep)
 {
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
@@ -48,7 +52,13 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager, const char *fi
         // make frsky_telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
         gcs().register_frsky_telemetry_callback(this);
         // add firmware and frame info to message queue
-        queue_message(MAV_SEVERITY_INFO, firmware_str);
+        if (_frame_string == nullptr) {
+            queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
+        } else {
+            char firmware_buf[50];
+            snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
+            queue_message(MAV_SEVERITY_INFO, firmware_buf);
+        }
         // save main parameters locally
         _params.mav_type = mav_type; // frame type (see MAV_TYPE in Mavlink definition file common.h)
         if (ap_valuep == nullptr) { // ap bit-field

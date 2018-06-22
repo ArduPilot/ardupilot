@@ -3,8 +3,6 @@
 
 # MCU class and specific type
 MCU STM32F4xx STM32F407xx
-RAM_SIZE_KB 128
-CCM_RAM_SIZE_KB 64
 
 # board ID for firmware load
 APJ_BOARD_ID 20

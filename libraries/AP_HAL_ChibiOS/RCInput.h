@@ -50,20 +50,13 @@ public:
         return _rssi;
     }
         
-    
-    bool set_override(uint8_t channel, int16_t override) override;
-    void clear_overrides() override;
-
     void _timer_tick(void);
     bool rc_bind(int dsmMode) override;
 
 private:
-    /* override state */
-    uint16_t _override[RC_INPUT_MAX_CHANNELS];
     uint16_t _rc_values[RC_INPUT_MAX_CHANNELS] = {0};
 
     uint64_t _last_read;
-    bool _override_valid;
     uint8_t _num_channels;
     Semaphore rcin_mutex;
     int16_t _rssi = -1;

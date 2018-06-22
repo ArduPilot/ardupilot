@@ -78,21 +78,7 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     _inav(inav),
     _ahrs(ahrs),
     _pos_control(pos_control),
-    _attitude_control(attitude_control),
-    _wp_last_update(0),
-    _wp_step(0),
-    _track_length(0.0f),
-    _track_length_xy(0.0f),
-    _track_desired(0.0f),
-    _limited_speed_xy_cms(0.0f),
-    _track_accel(0.0f),
-    _track_speed(0.0f),
-    _track_leash_length(0.0f),
-    _slow_down_dist(0.0f),
-    _spline_time(0.0f),
-    _spline_time_scale(0.0f),
-    _spline_vel_scaler(0.0f),
-    _yaw(0.0f)
+    _attitude_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -973,17 +959,16 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
 bool AC_WPNav::get_terrain_offset(float& offset_cm)
 {
-#if AP_TERRAIN_AVAILABLE
     // use range finder if connected
     if (_rangefinder_available && _rangefinder_use) {
         if (_rangefinder_healthy) {
             offset_cm = _inav.get_altitude() - _rangefinder_alt_cm;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
+#if AP_TERRAIN_AVAILABLE
     // use terrain database
     float terr_alt = 0.0f;
     if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {

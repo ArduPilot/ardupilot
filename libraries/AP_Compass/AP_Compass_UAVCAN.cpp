@@ -39,94 +39,97 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(Compass &compass):
     AP_Compass_Backend(compass)
 {
-    _mag_baro = hal.util->new_semaphore();
+    _sem_mag = hal.util->new_semaphore();
 }
 
 AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
 {
-    if (_initialized)
-    {
-        if (hal.can_mgr[_manager] != nullptr) {
-            AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
-            if (ap_uavcan != nullptr) {
-                ap_uavcan->remove_mag_listener(this);
-
-                debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
-            }
-        }
+    if (!_initialized) {
+        return;
     }
+    
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+    
+    ap_uavcan->remove_mag_listener(this);
+    delete _sem_mag;
+    
+    debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
 }
 
 AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
 {
-    AP_Compass_UAVCAN *sensor = nullptr;
+    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
+        return nullptr;
+    }
 
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    uint8_t freemag = uavcan->find_smallest_free_mag_node();
-                    if (freemag != UINT8_MAX) {
-                        sensor = new AP_Compass_UAVCAN(compass);
-                        if (sensor->register_uavcan_compass(i, freemag)) {
-                            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
-                            return sensor;
-                        } else {
-                            delete sensor;
-                            sensor = nullptr;
-                        }
-                    }
-                }
-            }
+    AP_Compass_UAVCAN *sensor;
+
+    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            continue;
+        }
+        uint8_t freemag = ap_uavcan->find_smallest_free_mag_node();
+        if (freemag == UINT8_MAX) {
+            continue;
+        }
+        sensor = new AP_Compass_UAVCAN(compass);
+        
+        if (sensor->register_uavcan_compass(i, freemag)) {
+            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
+            return sensor;
+        } else {
+            delete sensor;
         }
     }
 
-    return sensor;
+    return nullptr;
 }
 
 bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
 {
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            _manager = mgr;
-
-            if (ap_uavcan->register_mag_listener_to_node(this, node)) {
-                _instance = register_compass();
-
-                struct DeviceStructure {
-                    uint8_t bus_type : 3;
-                    uint8_t bus: 5;
-                    uint8_t address;
-                    uint8_t devtype;
-                };
-                union DeviceId {
-                    struct DeviceStructure devid_s;
-                    uint32_t devid;
-                };
-                union DeviceId d;
-
-                d.devid_s.bus_type = 3;
-                d.devid_s.bus = mgr;
-                d.devid_s.address = node;
-                d.devid_s.devtype = 1;
-
-                set_dev_id(_instance, d.devid);
-                set_external(_instance, true);
-
-                _sum.zero();
-                _count = 0;
-
-                accumulate();
-
-                debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
-
-                return true;
-            }
-        }
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
+    if (ap_uavcan == nullptr) {
+        return false;
     }
+    _manager = mgr;
 
+    if (ap_uavcan->register_mag_listener_to_node(this, node)) {
+        _instance = register_compass();
+
+        struct DeviceStructure {
+            uint8_t bus_type : 3;
+            uint8_t bus: 5;
+            uint8_t address;
+            uint8_t devtype;
+        };
+        union DeviceId {
+            struct DeviceStructure devid_s;
+            uint32_t devid;
+        };
+        union DeviceId d;
+
+        d.devid_s.bus_type = 3;
+        d.devid_s.bus = mgr;
+        d.devid_s.address = node;
+        d.devid_s.devtype = 1;
+
+        set_dev_id(_instance, d.devid);
+        set_external(_instance, true);
+
+        _sum.zero();
+        _count = 0;
+
+        accumulate();
+
+        debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
+
+        return true;
+    }
+    
     return false;
 }
 
@@ -137,14 +140,14 @@ void AP_Compass_UAVCAN::read(void)
         return;
     }
 
-    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (_sem_mag->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _sum /= _count;
 
         publish_filtered_field(_sum, _instance);
 
         _sum.zero();
         _count = 0;
-        _mag_baro->give();
+        _sem_mag->give();
     }
 }
 
@@ -161,11 +164,11 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     // correct raw_field for known errors
     correct_field(raw_field, _instance);
 
-    if (_mag_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (_sem_mag->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         // accumulate into averaging filter
         _sum += raw_field;
         _count++;
-        _mag_baro->give();
+        _sem_mag->give();
     }
 }
 

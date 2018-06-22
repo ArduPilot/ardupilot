@@ -222,9 +222,14 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
         sockaddr.sin_family = AF_INET;
 
-        _listen_fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
+        _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (_listen_fd == -1) {
             fprintf(stderr, "socket failed - %s\n", strerror(errno));
+            exit(1);
+        }
+        ret = fcntl(_listen_fd, F_SETFD, FD_CLOEXEC);
+        if (ret == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
             exit(1);
         }
 
@@ -267,6 +272,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
         setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
     }
 }
@@ -300,9 +306,14 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = inet_addr(address);
 
-    _fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    _fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_fd == -1) {
         fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
 

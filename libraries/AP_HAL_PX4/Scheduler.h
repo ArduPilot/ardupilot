@@ -53,8 +53,6 @@ public:
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
-    void     suspend_timer_procs();
-    void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
 
     bool     in_main_thread() const override;
@@ -82,8 +80,6 @@ private:
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
 
-    volatile bool _timer_suspended;
-
     AP_HAL::MemberProc _timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
     volatile bool _in_timer_proc;
@@ -91,8 +87,6 @@ private:
     AP_HAL::MemberProc _io_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
-
-    volatile bool _timer_event_missed;
 
     pid_t _main_task_pid;
     pthread_t _timer_thread_ctx;
@@ -112,7 +106,7 @@ private:
     static void *_uart_thread(void *arg);
     static void *_uavcan_thread(void *arg);
 
-    void _run_timers(bool called_from_timer_thread);
+    void _run_timers();
     void _run_io(void);
 
     void delay_microseconds_semaphore(uint16_t us);

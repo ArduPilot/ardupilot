@@ -58,7 +58,10 @@ imu_types = {
     0x21 : "DEVTYPE_GYR_MPU6000",
     0x22 : "DEVTYPE_GYR_L3GD20",
     0x24 : "DEVTYPE_GYR_MPU9250",
-    0x25 : "DEVTYPE_GYR_I3G4250D"
+    0x25 : "DEVTYPE_GYR_I3G4250D",
+    0x26 : "DEVTYPE_GYR_LSM9DS1",
+    0x27 : "DEVTYPE_INS_ICM20789",
+    0x28 : "DEVTYPE_INS_ICM20689",
 }
 
 decoded_devname = ""

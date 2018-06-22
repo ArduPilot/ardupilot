@@ -603,8 +603,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if RPM_ENABLED == ENABLED
-    MSG_RPM
+    MSG_RPM,
 #endif
+    MSG_ESC_TELEMETRY,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -713,21 +714,24 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         if (msg->sysid != sub.g.sysid_my_gcs) {
             break;    // Only accept control from our gcs
         }
+
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        RC_Channels::set_override(0, packet.chan1_raw);
-        RC_Channels::set_override(1, packet.chan2_raw);
-        RC_Channels::set_override(2, packet.chan3_raw);
-        RC_Channels::set_override(3, packet.chan4_raw);
-        RC_Channels::set_override(4, packet.chan5_raw);
-        RC_Channels::set_override(5, packet.chan6_raw);
-        RC_Channels::set_override(6, packet.chan7_raw);
-        RC_Channels::set_override(7, packet.chan8_raw);
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
-        sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
+        sub.failsafe.last_pilot_input_ms = tnow;
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        sub.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -987,29 +991,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             // param4 : timeout (in seconds)
             break;
 
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if (!sub.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                case GRIPPER_ACTION_RELEASE:
-                    sub.g2.gripper.release();
-                    break;
-                case GRIPPER_ACTION_GRAB:
-                    sub.g2.gripper.grab();
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-            }
-            break;
-#endif
-
         default:
             result = handle_command_long_message(packet);
             break;
@@ -1026,6 +1007,12 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         mavlink_set_attitude_target_t packet;
         mavlink_msg_set_attitude_target_decode(msg, &packet);
 
+        // ensure type_mask specifies to use attitude
+        // the thrust can be used from the altitude hold
+        if (packet.type_mask & (1<<6)) {
+            sub.set_attitude_target_no_gps = {AP_HAL::millis(), packet};
+        }
+
         // ensure type_mask specifies to use attitude and thrust
         if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
             break;
@@ -1041,7 +1028,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_speed_up();
         } else {
             // descend at up to WPNAV_SPEED_DN
-            climb_rate_cms = (0.5f - packet.thrust) * 2.0f * -fabsf(sub.wp_nav.get_speed_down());
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * fabsf(sub.wp_nav.get_speed_down());
         }
         sub.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
         break;
@@ -1305,7 +1292,7 @@ void Sub::mavlink_delay_cb()
 
     DataFlash.EnableWrites(false);
 
-    uint32_t tnow = millis();
+    uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_heartbeat();
@@ -1381,11 +1368,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long
 bool GCS_MAVLINK_Sub::set_mode(uint8_t mode)
 {
     return sub.set_mode((control_mode_t)mode, MODE_REASON_GCS_COMMAND);
-}
-
-const AP_FWVersion &GCS_MAVLINK_Sub::get_fwver() const
-{
-    return sub.fwver;
 }
 
 int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {

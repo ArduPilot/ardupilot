@@ -17,6 +17,7 @@ rm -rf $BUILDROOT
 export GIT_VERSION="ci_test"
 export NUTTX_GIT_VERSION="ci_test"
 export PX4_GIT_VERSION="ci_test"
+export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
@@ -127,6 +128,12 @@ for t in $CI_BUILD_TARGET; do
         fi
     fi
 done
+
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle AntennaTracker
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduCopter
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduPlane
+python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduSub
 
 echo build OK
 exit 0

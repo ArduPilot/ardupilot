@@ -84,21 +84,20 @@ void Util::_toneAlarm_timer_tick() {
     } else if (state == 3) {
         state = 1;
     }
-    
+
     if (_toneAlarm.is_tune_comp()) {
         state = 0;
     }
-    
+
 }
 
-void Util::set_system_clock(uint64_t time_utc_usec)
+void Util::set_hw_rtc(uint64_t time_utc_usec)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-#endif    
+    // call superclass method to set time.  We've guarded this so we
+    // don't reset the HW clock time on people's laptops.
+    AP_HAL::Util::set_hw_rtc(time_utc_usec);
+#endif
 }
 
 bool Util::is_chardev_node(const char *path)

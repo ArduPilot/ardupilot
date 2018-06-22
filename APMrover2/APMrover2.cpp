@@ -66,7 +66,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_aux_switch,        10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
-    SCHED_TASK(check_usb_mux,           3,    200),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif
@@ -105,7 +104,7 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 */
 void Rover::stats_update(void)
 {
-    g2.stats.set_flying(motor_active());
+    g2.stats.set_flying(g2.motors.active());
     g2.stats.update();
 }
 #endif
@@ -306,8 +305,6 @@ void Rover::update_GPS(void)
     if (gps.last_message_time_ms() != last_gps_msg_ms) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
-        // set system time if necessary
-        set_system_time_from_GPS();
 #if CAMERA == ENABLED
         camera.update();
 #endif

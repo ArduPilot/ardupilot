@@ -13,8 +13,6 @@ extern const AP_HAL::HAL& hal;
 
 
 AP_HAL::Proc Scheduler::_failsafe = nullptr;
-volatile bool Scheduler::_timer_suspended = false;
-volatile bool Scheduler::_timer_event_missed = false;
 
 AP_HAL::MemberProc Scheduler::_timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_timer_procs = 0;
@@ -91,18 +89,6 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::suspend_timer_procs() {
-    _timer_suspended = true;
-}
-
-void Scheduler::resume_timer_procs() {
-    _timer_suspended = false;
-    if (_timer_event_missed) {
-        _timer_event_missed = false;
-        _run_timer_procs(false);
-    }
-}
-
 void Scheduler::system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
@@ -134,7 +120,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     _should_reboot = true;
 }
 
-void Scheduler::_run_timer_procs(bool called_from_isr)
+void Scheduler::_run_timer_procs()
 {
     if (_in_timer_proc) {
         // the timer calls took longer than the period of the
@@ -154,15 +140,11 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i]) {
-                _timer_proc[i]();
-            }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i]) {
+            _timer_proc[i]();
         }
-    } else if (called_from_isr) {
-        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup
@@ -173,22 +155,18 @@ void Scheduler::_run_timer_procs(bool called_from_isr)
     _in_timer_proc = false;
 }
 
-void Scheduler::_run_io_procs(bool called_from_isr)
+void Scheduler::_run_io_procs()
 {
     if (_in_io_proc) {
         return;
     }
     _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i]) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i]) {
+            _io_proc[i]();
         }
-    } else if (called_from_isr) {
-        _timer_event_missed = true;
     }
 
     _in_io_proc = false;
@@ -209,7 +187,7 @@ void Scheduler::stop_clock(uint64_t time_usec)
     _stopped_clock_usec = time_usec;
     if (time_usec - _last_io_run > 10000) {
         _last_io_run = time_usec;
-        _run_io_procs(false);
+        _run_io_procs();
     }
 }
 

@@ -16,6 +16,21 @@ class Mode
 {
 public:
 
+    // Auto Pilot modes
+    // ----------------
+    enum Number {
+        MANUAL       = 0,
+        ACRO         = 1,
+        STEERING     = 3,
+        HOLD         = 4,
+        LOITER       = 5,
+        AUTO         = 10,
+        RTL          = 11,
+        SMART_RTL    = 12,
+        GUIDED       = 15,
+        INITIALISING = 16
+    };
+
     // Constructor
     Mode();
 
@@ -89,8 +104,8 @@ public:
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     float get_speed_default(bool rtl = false) const;
 
-    // set desired speed
-    void set_desired_speed(float speed) { _desired_speed = speed; }
+    // set desired speed in m/s
+    bool set_desired_speed(float speed);
 
     // restore desired speed to default from parameter values (CRUISE_SPEED or WP_SPEED)
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)

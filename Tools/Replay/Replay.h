@@ -69,7 +69,7 @@ public:
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
-    DataFlash_Class dataflash{"Replay v0.1", unused};
+    DataFlash_Class dataflash{unused};
 
 private:
     Parameters g;

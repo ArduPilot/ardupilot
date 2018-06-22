@@ -592,6 +592,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
     case AP_BoardConfig::PX4_BOARD_PIXRACER: 
     case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:{
         bool both_i2c_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
         // external i2c bus
@@ -665,8 +666,10 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_IST8310_I2C_ADDR),
                                                               true, ROTATION_PITCH_180), AP_Compass_IST8310::name, true);
 
-        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                              both_i2c_external, ROTATION_PITCH_180), AP_Compass_IST8310::name, both_i2c_external);
+        if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5) {
+            ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                                  both_i2c_external, ROTATION_PITCH_180), AP_Compass_IST8310::name, both_i2c_external);
+        }
 #endif // HAL_MINIMIZE_FEATURES
         }
         break;
@@ -730,6 +733,13 @@ void Compass::_detect_backends(void)
                     AP_Compass_AK8963::name, false);
         break;
 
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                              false, ROTATION_ROLL_180_YAW_90), AP_Compass_IST8310::name, false);
+        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, hal.i2c_mgr->get_device(2, HAL_COMPASS_IST8310_I2C_ADDR),
+                                                              false, ROTATION_ROLL_180_YAW_90), AP_Compass_IST8310::name, false);
+        break;
+        
     case AP_BoardConfig::PX4_BOARD_SP01:
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(*this, 1, ROTATION_NONE),
                     AP_Compass_AK8963::name, false);

@@ -72,7 +72,9 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
 #define HAL_BOARD_SUBTYPE_CHIBIOS_F4BY          5010
 #define HAL_BOARD_SUBTYPE_CHIBIOS_OMNIBUSF4PRO  5011
-#define HAL_BOARD_SUBTYPE_CHIBIOS_AIRBOTF4  5012
+#define HAL_BOARD_SUBTYPE_CHIBIOS_AIRBOTF4      5012
+#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
+#define HAL_BOARD_SUBTYPE_CHIBIOS_MATEKF405WING 5014
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -213,6 +215,10 @@
 
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
+#endif
+
+#ifndef HAL_HAVE_GETTIME_SETTIME
+#define HAL_HAVE_GETTIME_SETTIME 0
 #endif
 
 // this is used as a general mechanism to make a 'small' build by

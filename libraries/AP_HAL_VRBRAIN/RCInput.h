@@ -22,21 +22,14 @@ public:
         return _rssi;
     }
         
-    
-    bool set_override(uint8_t channel, int16_t override) override;
-    void clear_overrides() override;
-
     void _timer_tick(void);
 
     bool rc_bind(int dsmMode) override;
 
 private:
-    /* override state */
-    uint16_t _override[RC_INPUT_MAX_CHANNELS];
     struct rc_input_values _rcin;
     int _rc_sub;
     uint64_t _last_read;
-    bool _override_valid;
     perf_counter_t _perf_rcin;
     pthread_mutex_t rcin_mutex;
     int16_t _rssi = -1;

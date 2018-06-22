@@ -28,9 +28,6 @@ FLASH_RESERVE_START_KB 16
 # space to reserve for storage at end of flash
 FLASH_RESERVE_END_KB 0
 
-# this board has 64k of CCM memory
-CCM_RAM_SIZE_KB 64
-
 # serial port for stdout
 STDOUT_SERIAL SD7
 STDOUT_BAUDRATE 57600

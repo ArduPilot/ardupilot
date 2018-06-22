@@ -45,11 +45,6 @@ before_install:
   - if [ "$TRAVIS_EVENT_TYPE" = "cron" ]; then export CI_CRON_JOB=1 ; fi
 
 script:
-  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
-  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle AntennaTracker
-  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduCopter
-  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduPlane
-  - python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle ArduSub
   - Tools/scripts/build_ci.sh
 
 before_cache:

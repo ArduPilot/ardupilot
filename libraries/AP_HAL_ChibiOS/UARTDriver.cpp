@@ -23,6 +23,7 @@
 #include "shared_dma.h"
 #include <AP_Math/AP_Math.h>
 #include "Scheduler.h"
+#include "hwdef/common/stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -53,7 +54,6 @@ uint32_t UARTDriver::last_thread_run_us;
 #define EVT_DATA EVENT_MASK(0)
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-tx_bounce_buf_ready(true),
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
 _baudrate(57600),
@@ -164,6 +164,15 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _baudrate = b;
     }
 
+    if (rx_bounce_buf == nullptr) {
+        rx_bounce_buf = (uint8_t *)hal.util->malloc_type(RX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    }
+    if (tx_bounce_buf == nullptr) {
+        tx_bounce_buf = (uint8_t *)hal.util->malloc_type(TX_BOUNCE_BUFSIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        chVTObjectInit(&tx_timeout);
+        tx_bounce_buf_ready = true;
+    }
+    
     /*
       allocate the write buffer
      */
@@ -315,17 +324,20 @@ void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
+    chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
+        // reset timeout 
+        chVTResetI(&uart_drv->tx_timeout);
+        
         uart_drv->_last_write_completed_us = AP_HAL::micros();
         uart_drv->tx_bounce_buf_ready = true;
         if (uart_drv->unbuffered_writes && uart_drv->_writebuf.available()) {
             // trigger a rapid send of next bytes
-            chSysLockFromISR();
             chEvtSignalI(uart_thread_ctx, EVENT_MASK(uart_drv->serial_num));
-            chSysUnlockFromISR();
         }
         uart_drv->dma_handle->unlock_from_IRQ();
     }
+    chSysUnlockFromISR();
 }
 
 
@@ -361,10 +373,11 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->sdef.dma_rx) {
         return;
     }
-    uint8_t len = RX_BOUNCE_BUFSIZE - uart_drv->rxdma->stream->NDTR;
+    uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
     if (len == 0) {
         return;
     }
+
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
     uart_drv->receive_timestamp_update();
@@ -590,14 +603,32 @@ void UARTDriver::check_dma_tx_completion(void)
     chSysLock();
     if (!tx_bounce_buf_ready) {
         if (!(txdma->stream->CR & STM32_DMA_CR_EN)) {
-            if (txdma->stream->NDTR == 0) {
+            if (dmaStreamGetTransactionSize(txdma) == 0) {
                 tx_bounce_buf_ready = true;
                 _last_write_completed_us = AP_HAL::micros();
+                chVTResetI(&tx_timeout);
                 dma_handle->unlock_from_lockzone();
             }
         }
     }
     chSysUnlock();
+}
+
+/*
+  handle a TX timeout. This can happen with using hardware flow
+  control if CTS pin blocks transmit
+ */
+void UARTDriver::handle_tx_timeout(void *arg)
+{
+    UARTDriver* uart_drv = (UARTDriver*)arg;
+    chSysLockFromISR();
+    if (!uart_drv->tx_bounce_buf_ready) {
+        dmaStreamDisable(uart_drv->txdma);
+        uart_drv->tx_len -= dmaStreamGetTransactionSize(uart_drv->txdma);
+        uart_drv->tx_bounce_buf_ready = true;
+        uart_drv->dma_handle->unlock_from_IRQ();
+    }
+    chSysUnlockFromISR();
 }
 
 /*
@@ -644,6 +675,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
+    uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
+    chVTSet(&tx_timeout, US2ST(timeout_us), handle_tx_timeout, this);
 }
 
 /*
@@ -734,7 +767,7 @@ void UARTDriver::_timer_tick(void)
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
         if (!(rxdma->stream->CR & STM32_DMA_CR_EN)) {
-            uint8_t len = RX_BOUNCE_BUFSIZE - rxdma->stream->NDTR;
+            uint8_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(rxdma);
             if (len != 0) {
                 _readbuf.write(rx_bounce_buf, len);
 

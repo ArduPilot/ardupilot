@@ -43,9 +43,6 @@ public:
     bool     new_input() override;
     uint8_t  num_channels() override;
 
-    bool set_override(uint8_t channel, int16_t override) override;
-    void clear_overrides() override;
-    
     bool rc_bind(int dsmMode) override;
 
     static uint16_t max_num_pulses; // for statistics
@@ -66,10 +63,6 @@ private:
     
     static uint16_t last_4;
     
-    /* override state */
-    static uint16_t _override[F4Light_RC_INPUT_NUM_CHANNELS];
-    static bool _override_valid;
-
     static bool rc_failsafe_enabled;    
 
     static bool fs_flag, aibao_fs_flag;

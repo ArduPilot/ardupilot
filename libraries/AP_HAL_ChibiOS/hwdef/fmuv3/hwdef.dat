@@ -480,8 +480,8 @@ define HAL_I2C_MAX_CLOCK 100000
 # define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # we can't share IO UART (USART6)
-DMA_NOSHARE USART6_TX USART6_RX
-DMA_PRIORITY USART6* TIM* SPI*
+DMA_NOSHARE USART6_TX USART6_RX ADC1
+DMA_PRIORITY USART6*
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

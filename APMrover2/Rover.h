@@ -126,7 +126,6 @@ public:
     void loop(void) override;
 
 private:
-    static const AP_FWVersion fwver;
 
     // must be the first AP_Param variable declared to ensure its
     // constructor runs before the constructors of the other AP_Param
@@ -232,9 +231,6 @@ private:
     // true if initialisation has completed
     bool initialised;
 
-    // if USB is connected
-    bool usb_connected;
-
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
     Mode *control_mode;
@@ -316,9 +312,6 @@ private:
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
     const struct Location &home;
-
-    // true if the system time has been set from the GPS
-    bool system_time_set;
 
     // true if the compass's initial location has been set
     bool compass_init_location;
@@ -427,21 +420,21 @@ private:
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
-    void set_system_time_from_GPS();
     void update_home();
 
     // compat.cpp
     void delay(uint32_t ms);
 
     // control_modes.cpp
-    Mode *mode_from_mode_num(enum mode num);
+    Mode *mode_from_mode_num(enum Mode::Number num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
     aux_switch_pos read_aux_switch_pos();
     void init_aux_switch();
+    void do_aux_function_change_mode(Mode &mode,
+                                     const aux_switch_pos ch_flag);
     void read_aux_switch();
-    bool motor_active();
 
     // crash_check.cpp
     void crash_check();
@@ -475,22 +468,22 @@ private:
     void gcs_retry_deferred(void);
 
     // Log.cpp
-    void Log_Write_Performance();
-    void Log_Write_Steering();
-    void Log_Write_Startup(uint8_t type);
-    void Log_Write_Throttle();
-    void Log_Write_Nav_Tuning();
+    void Log_Write_Arm_Disarm();
     void Log_Write_Attitude();
-    void Log_Write_Rangefinder();
-    void Log_Arm_Disarm();
-    void Log_Write_RC(void);
+    void Log_Write_Depth();
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
-    void Log_Write_WheelEncoder();
+    void Log_Write_Nav_Tuning();
     void Log_Write_Proximity();
+    void Log_Write_Startup(uint8_t type);
+    void Log_Write_Steering();
+    void Log_Write_Throttle();
+    void Log_Write_Rangefinder();
+    void Log_Write_RC(void);
+    void Log_Write_WheelEncoder();
+    void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
-    void Log_Write_Vehicle_Startup_Messages();
 
     // Parameters.cpp
     void load_parameters(void);
@@ -502,8 +495,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe(uint16_t pwm);
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
 
     // sensors.cpp
     void init_compass(void);
@@ -530,7 +522,6 @@ private:
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
-    void check_usb_mux(void);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);

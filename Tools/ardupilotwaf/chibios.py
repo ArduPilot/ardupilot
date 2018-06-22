@@ -236,13 +236,18 @@ def configure(cfg):
     # that is needed by the remaining configure checks
     import subprocess
 
-    hwdef = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+    if env.BOOTLOADER:
+        env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION="--bootloader"
+    else:
+        env.HWDEF = srcpath('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        env.BOOTLOADER_OPTION=""
     hwdef_script = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     try:
-        cmd = "python '{0}' -D '{1}' '{2}'".format(hwdef_script, hwdef_out, hwdef)
+        cmd = "python '{0}' -D '{1}' '{2}' {3}".format(hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
@@ -259,11 +264,11 @@ def pre_build(bld):
     if bld.env.HAL_WITH_UAVCAN:
         bld.get_board().with_uavcan = True
 
-def build(bld):    
+def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
-        source=bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % bld.env.get_flat('BOARD')),
-        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '${AP_HAL_ROOT}/hwdef/${BOARD}/hwdef.dat'",
+        source=bld.path.ant_glob(bld.env.HWDEF),
+        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' %s %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
         target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
     )
@@ -276,7 +281,8 @@ def build(bld):
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
-                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
+                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs'),
+                  bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')

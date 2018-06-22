@@ -88,6 +88,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VEC_THR_BASE", 10, AP_MotorsUGV, _vector_throttle_base, 0.0f),
 
+    // @Param: SPD_SCA_BASE
+    // @DisplayName: Motor speed scaling base speed
+    // @Description: Speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
+    // @Units: m/s
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("SPD_SCA_BASE", 11, AP_MotorsUGV, _speed_scale_base, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -161,7 +169,7 @@ void AP_MotorsUGV::setup_servo_output()
 //   no scaling by speed or angle should be performed
 void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 {
-    _steering = constrain_float(steering, -4500.0f, 4500.0f);
+    _steering = steering;
     _scale_steering = apply_scaling;
 }
 
@@ -229,9 +237,6 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // sanity check parameters
     sanity_check_parameters();
-
-    // clear and set limits based on input (limit flags may be set again by output_regular or output_skid_steering methods)
-    set_limits_from_input(armed, _steering, _throttle);
 
     // slew limit throttle
     slew_limit_throttle(dt);
@@ -434,9 +439,9 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                     steering *= constrain_float(_vector_throttle_base / fabsf(throttle), 0.0f, 1.0f);
                 }
             } else {
-                // scale steering down as speed increase above 1m/s
-                if (fabsf(ground_speed) > 1.0f) {
-                    steering *= (1.0f / fabsf(ground_speed));
+                // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
+                if (is_positive(_speed_scale_base) && (fabsf(ground_speed) > _speed_scale_base)) {
+                    steering *= (_speed_scale_base / fabsf(ground_speed));
                 } else {
                     // regular steering rover at low speed so set limits to stop I-term build-up in controllers
                     if (!have_skid_steering()) {
@@ -444,7 +449,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                         limit.steer_right = true;
                     }
                 }
-                // reverse steering output if backing up
+                // reverse steering direction when backing up
                 if (is_negative(ground_speed)) {
                     steering *= -1.0f;
                 }
@@ -465,6 +470,13 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
         }
     }
 
+    // clear and set limits based on input
+    // we do this here because vectored thrust or speed scaling may have reduced steering request
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
+
     // always allow steering to move
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering);
 }
@@ -475,6 +487,13 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
     if (!has_lateral_control()) {
         return;
     }
+
+    // clear and set limits based on input
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
+
     if (armed) {
         // scale throttle, steering and lateral to -1 ~ 1
         const float scaled_throttle = throttle / 100.0f;
@@ -526,6 +545,12 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     if (!have_skid_steering()) {
         return;
     }
+
+    // clear and set limits based on input
+    set_limits_from_input(armed, steering, throttle);
+
+    // constrain steering
+    steering = constrain_float(steering, -4500.0f, 4500.0f);
 
     // handle simpler disarmed case
     if (!armed) {
@@ -672,4 +697,25 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
+}
+
+// return true if motors are moving
+bool AP_MotorsUGV::active() const
+{
+    // if soft disarmed, motors not active
+    if (!hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    // check throttle is active
+    if (!is_zero(get_throttle())) {
+        return true;
+    }
+
+    // skid-steering vehicles active when steering
+    if (have_skid_steering() && !is_zero(get_steering())) {
+        return true;
+    }
+
+    return false;
 }

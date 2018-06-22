@@ -494,6 +494,11 @@ void AP_Baro::init(void)
                                             std::move(hal.i2c_mgr->get_device(1, 0x63)),
                                             std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
         break;
+
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        break;
         
     default:
         break;

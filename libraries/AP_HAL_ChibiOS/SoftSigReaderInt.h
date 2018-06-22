@@ -45,10 +45,13 @@ private:
     static SoftSigReaderInt *_instance;
 
     static void _irq_handler(EICUDriver *eicup, eicuchannel_t channel);
+    
+    static eicuchannel_t get_pair_channel(eicuchannel_t channel);
 
     ObjectBuffer<uint16_t> sigbuf{MAX_SIGNAL_TRANSITIONS};
     EICUConfig icucfg;
     EICUChannelConfig channel_config;
+    EICUChannelConfig aux_channel_config;
     EICUDriver* _icu_drv = nullptr;
     uint16_t last_value;
 };

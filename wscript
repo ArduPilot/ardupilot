@@ -67,6 +67,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--bootloader',
+        action='store_true',
+        default=False,
+        help='Configure for building a bootloader.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
@@ -105,7 +110,7 @@ submodules at specific revisions.
         action='store',
         default='',
         help='''Where to save data like parameters, log and terrain.
-This is the --localstatedir + ArduPilot's subdirectory [default:
+This is the --localstatedir + ArduPilots subdirectory [default:
 board-dependent, usually /var/lib/ardupilot]''')
 
     g.add_option('--rsync-dest',
@@ -167,6 +172,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.BOOTLOADER = cfg.options.bootloader
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
@@ -448,7 +454,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

@@ -158,7 +158,6 @@ public:
     void loop() override;
 
 private:
-    static const AP_FWVersion fwver;
 
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
@@ -906,8 +905,7 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void control_failsafe();
-    void trim_control_surfaces();
-    void trim_radio();
+    bool trim_radio();
     bool rc_failsafe_active(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
@@ -929,7 +927,7 @@ private:
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
-    bool arm_motors(AP_Arming::ArmingMethod method);
+    bool arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);

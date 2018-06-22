@@ -152,9 +152,12 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-        if m.alt < alt_min:
-            self.wait_altitude(alt_min, (alt_min + 5))
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        alt = m.relative_alt / 1000.0 # mm -> m
+        if alt < alt_min:
+            self.wait_altitude(alt_min,
+                               (alt_min + 5),
+                               relative=True)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
@@ -164,7 +167,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('switch 2\n')  # land mode
         self.wait_mode('LAND')
         self.progress("Entered Landing Mode")
-        self.wait_altitude(-5, 1)
+        self.wait_altitude(-5, 1, relative=True)
         self.progress("LANDING: ok!")
 
     def hover(self, hover_throttle=1500):
@@ -214,15 +217,16 @@ class AutoTestCopter(AutoTest):
 
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-        if m.alt < alt_min:
-            self.progress("Rise to alt:%u from %u" % (alt_min, m.alt))
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        alt = m.relative_alt / 1000.0 # mm -> m
+        if alt < alt_min:
+            self.progress("Rise to alt:%u from %u" % (alt_min, alt))
             self.set_rc(3, climb_throttle)
-            self.wait_altitude(alt_min, (alt_min + 5))
+            self.wait_altitude(alt_min, (alt_min + 5), relative=True)
         else:
-            self.progress("Lower to alt:%u from %u" % (alt_min, m.alt))
+            self.progress("Lower to alt:%u from %u" % (alt_min, alt))
             self.set_rc(3, descend_throttle)
-            self.wait_altitude((alt_min - 5), alt_min)
+            self.wait_altitude((alt_min - 5), alt_min, relative=True)
         self.hover()
 
     #################################################
@@ -310,7 +314,7 @@ class AutoTestCopter(AutoTest):
         self.progress("timeleft = %u" % time_left)
         if time_left < 20:
             time_left = 20
-        self.wait_altitude(-10, 10, time_left)
+        self.wait_altitude(-10, 10, time_left, relative=True)
         self.save_wp()
 
     # enter RTL mode and wait for the vehicle to disarm
@@ -321,14 +325,15 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1500)
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
             home = ""
-            if m.alt <= 1 and home_distance < 10:
+            if alt <= 1 and home_distance < 10:
                 home = "HOME"
             self.progress("Alt: %u  HomeDist: %.0f %s" %
-                          (m.alt, home_distance, home))
+                          (alt, home_distance, home))
             # our post-condition is that we are disarmed:
             if not self.armed():
                 return
@@ -367,12 +372,13 @@ class AutoTestCopter(AutoTest):
 
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            alt = m.alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
-            self.progress("Alt: %u  HomeDist: %.0f" % (m.alt, home_distance))
+            self.progress("Alt: %u  HomeDist: %.0f" % (alt, home_distance))
             # check if we've reached home
-            if m.alt <= 1 and home_distance < 10:
+            if alt <= 1 and home_distance < 10:
                 # reduce throttle
                 self.set_rc(3, 1100)
                 # switch back to stabilize
@@ -496,18 +502,19 @@ class AutoTestCopter(AutoTest):
         # start timer
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
             self.progress("Alt: %u  HomeDistance: %.0f" %
-                          (m.alt, home_distance))
+                          (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
             if pitching_forward and home_distance < 10:
                 pitching_forward = False
                 self.set_rc(2, 1500)
                 # disable fence
                 self.mavproxy.send('param set FENCE_ENABLE 0\n')
-            if m.alt <= 1 and home_distance < 10:
+            if alt <= 1 and home_distance < 10:
                 # reduce throttle
                 self.set_rc(3, 1000)
                 # switch mode to stabilize
@@ -667,10 +674,12 @@ class AutoTestCopter(AutoTest):
 
             # start displaying distance moved after all glitches applied
             if glitch_current == -1:
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                        blocking=True)
+                alt = m.alt/1000.0 # mm -> m
                 curr_pos = self.sim_location()
                 moved_distance = self.get_distance(curr_pos, start_pos)
-                self.progress("Alt: %u  Moved: %.0f" % (m.alt, moved_distance))
+                self.progress("Alt: %u  Moved: %.0f" % (alt, moved_distance))
                 if moved_distance > max_distance:
                     self.progress("Moved over %u meters, Failed!" %
                                   max_distance)

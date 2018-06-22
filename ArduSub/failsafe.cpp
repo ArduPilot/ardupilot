@@ -14,7 +14,7 @@ static bool in_failsafe;
 void Sub::mainloop_failsafe_enable()
 {
     failsafe_enabled = true;
-    failsafe_last_timestamp = micros();
+    failsafe_last_timestamp = AP_HAL::micros();
 }
 
 // Disable mainloop lockup failsafe
@@ -441,7 +441,7 @@ void Sub::failsafe_terrain_check()
 // set terrain data status (found or not found)
 void Sub::failsafe_terrain_set_status(bool data_ok)
 {
-    uint32_t now = millis();
+    uint32_t now = AP_HAL::millis();
 
     // record time of first and latest failures (i.e. duration of failures)
     if (!data_ok) {

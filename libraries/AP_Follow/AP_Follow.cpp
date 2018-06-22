@@ -28,6 +28,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  0   // offsets are relative to lead vehicle's heading
 
+#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
+
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
 // table of user settable parameters
@@ -106,6 +108,13 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P),
 
+    // @Param: _ALT_TYPE
+    // @DisplayName: Follow altitude type
+    // @Description: Follow altitude type
+    // @Values: 0:absolute, 1: relative
+    // @User: Standard
+    AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
+
     AP_GROUPEND
 };
 
@@ -159,13 +168,18 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
          return false;
-     }
+    }
 
     // get target location and velocity
     Location target_loc;
     Vector3f veh_vel;
     if (!get_target_location_and_velocity(target_loc, veh_vel)) {
         return false;
+    }
+
+    // change to altitude above home if relative altitude is being used
+    if (target_loc.flags.relative_alt == 1) {
+        current_loc.alt -= AP::ahrs().get_home().alt;
     }
 
     // calculate difference
@@ -255,7 +269,18 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
-        _target_location.alt = packet.alt / 10;     // convert millimeters to cm
+        
+        // select altitude source based on FOLL_ALT_TYPE param 
+        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
+            // relative altitude
+            _target_location.alt = packet.relative_alt / 10;        // convert millimeters to cm
+            _target_location.flags.relative_alt = 1;                // set relative_alt flag
+        } else {
+            // absolute altitude
+            _target_location.alt = packet.alt / 10;                 // convert millimeters to cm
+            _target_location.flags.relative_alt = 0;                // reset relative_alt flag
+        }
+
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down

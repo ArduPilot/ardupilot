@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
 #include <stdio.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -213,7 +214,11 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 #endif
-    
+
+    // @Group: RTC
+    // @Path: ../AP_RTC/AP_RTC.cpp
+    AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+
     AP_GROUPEND
 };
 
@@ -227,6 +232,8 @@ void AP_BoardConfig::init()
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
+
+    AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 }
 
 // set default value for BRD_SAFETY_MASK

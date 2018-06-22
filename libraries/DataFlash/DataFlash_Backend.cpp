@@ -359,3 +359,15 @@ bool DataFlash_Backend::ShouldLog(bool is_critical)
     
     return true;
 }
+
+bool DataFlash_Backend::Log_Write_MessageF(const char *fmt, ...)
+{
+    char msg[64] {};
+
+    va_list ap;
+    va_start(ap, fmt);
+    hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    return Log_Write_Message(msg);
+}

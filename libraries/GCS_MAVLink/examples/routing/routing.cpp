@@ -11,8 +11,7 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-
-const AP_FWVersion fwver
+const AP_FWVersion AP_FWVersion::fwver
 {
     major: 3,
     minor: 1,
@@ -35,7 +34,6 @@ protected:
     AP_Camera *get_camera() const override { return nullptr; };
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
-    const AP_FWVersion &get_fwver() const override { return fwver; }
 
     // dummy information:
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }

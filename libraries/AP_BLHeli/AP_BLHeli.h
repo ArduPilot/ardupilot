@@ -26,9 +26,13 @@
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 
+#define HAVE_AP_BLHELI_SUPPORT
+
 #include <AP_Param/AP_Param.h>
 #include "msp_protocol.h"
 #include "blheli_4way_protocol.h"
+
+#define AP_BLHELI_MAX_ESCS 8
 
 class AP_BLHeli {
 
@@ -40,9 +44,30 @@ public:
     bool process_input(uint8_t b);
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    struct telem_data {
+        uint8_t temperature; // degrees C
+        uint16_t voltage;    // volts * 100
+        uint16_t current;    // amps * 100
+        uint16_t consumption;// mAh
+        uint16_t rpm;        // eRPM
+        uint16_t count;
+        uint32_t timestamp_ms;
+    };
+
+    // get the most recent telemetry data packet for a motor
+    bool get_telem_data(uint8_t esc_index, struct telem_data &td);
+
+    static AP_BLHeli *get_singleton(void) {
+        return singleton;
+    }
+
+    // send ESC telemetry messages over MAVLink
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
 private:
-
+    static AP_BLHeli *singleton;
+    
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
     AP_Int8 channel_auto;
@@ -168,8 +193,10 @@ private:
     AP_HAL::UARTDriver *debug_uart;
     AP_HAL::UARTDriver *telem_uart;    
     
-    static const uint8_t max_motors = 8;
+    static const uint8_t max_motors = AP_BLHELI_MAX_ESCS;
     uint8_t num_motors;
+
+    struct telem_data last_telem[max_motors];
 
     // have we initialised the interface?
     bool initialised;
@@ -193,6 +220,8 @@ private:
     uint32_t last_telem_request_us;
     uint8_t last_telem_esc;
     static const uint8_t telem_packet_size = 10;
+    bool telem_uart_started;
+    uint32_t last_telem_byte_read_us;
 
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
@@ -228,11 +257,5 @@ private:
     // protocol handler hook
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };
-
-
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
 
 #endif // HAL_SUPPORT_RCOUT_SERIAL

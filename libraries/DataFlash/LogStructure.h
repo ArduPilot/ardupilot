@@ -1093,7 +1093,7 @@ struct PACKED log_DSTL {
 #define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U"
 #define GPS_FMT   "QBIHBcLLefffB"
 #define GPS_UNITS "s---SmDUmnhn-"
-#define GPS_MULTS "F---0BGGBBB0-"
+#define GPS_MULTS "F---0BGGB000-"
 
 #define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
 #define GYR_FMT    "QQfff"
@@ -1211,7 +1211,7 @@ Format characters in the format string for binary log messages
     { LOG_BARO_MSG, sizeof(log_BARO), \
       "BARO",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "FBB--" },  \
+      "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "F00--" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHfffffffB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \

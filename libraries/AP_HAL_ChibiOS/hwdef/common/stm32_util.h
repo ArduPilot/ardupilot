@@ -21,7 +21,38 @@ extern "C" {
 #endif
 
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
+void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source);
 
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+// print stack usage
+void show_stack_usage(void);
+#endif
+
+// allocation functions in malloc.c    
+size_t mem_available(void);
+void *malloc_ccm(size_t size);
+void *malloc_dtcm(size_t size);
+void *malloc_dma(size_t size);
+
+// flush all dcache
+void memory_flush_all(void);
+    
+// UTC system clock handling    
+void stm32_set_utc_usec(uint64_t time_utc_usec);
+uint64_t stm32_get_utc_usec(void);
+
+// hook for FAT timestamps    
+uint32_t get_fattime(void);
+
+// one-time programmable area
+#if defined(STM32F4)
+#define OTP_BASE 0x1fff7800
+#define OTP_SIZE 512
+#elif defined(STM32F7)
+#define OTP_BASE 0x1ff0f000
+#define OTP_SIZE 1024
+#endif
+    
 #ifdef __cplusplus
 }
 #endif

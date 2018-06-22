@@ -43,14 +43,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @ReadOnly: True
     GSCALAR(format_version, "SYSID_SW_MREV",   0),
 
-    // @Param: SYSID_SW_TYPE
-    // @DisplayName: Software Type
-    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
-    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
-    // @User: Advanced
-    // @ReadOnly: True
-    GSCALAR(software_type,  "SYSID_SW_TYPE",   Parameters::k_software_type),
-
     // @Param: SYSID_THISMAV
     // @DisplayName: MAVLink system ID of this vehicle
     // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
@@ -685,10 +677,10 @@ void Sub::load_parameters(void)
         hal.console->println("done.");
     }
 
-    uint32_t before = micros();
+    uint32_t before = AP_HAL::micros();
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
-    hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
+    hal.console->printf("load_all took %uus\n", (unsigned)(AP_HAL::micros() - before));
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);

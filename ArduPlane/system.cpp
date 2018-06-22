@@ -24,7 +24,7 @@ void Plane::init_ardupilot()
 
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
-                        fwver.fw_string,
+                        AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
 
@@ -116,8 +116,7 @@ void Plane::init_ardupilot()
     // setup frsky
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
-    frsky_telemetry.init(serial_manager, fwver.fw_string,
-                         MAV_TYPE_FIXED_WING);
+    frsky_telemetry.init(serial_manager, MAV_TYPE_FIXED_WING);
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init(serial_manager);
@@ -271,8 +270,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         return;
     }
 
-    if(g.auto_trim > 0 && control_mode == MANUAL)
-        trim_control_surfaces();
+    if(g.auto_trim > 0 && control_mode == MANUAL) {
+        trim_radio();
+    }
 
     // perform any cleanup required for prev flight mode
     exit_mode(control_mode);
@@ -728,9 +728,9 @@ void Plane::change_arm_state(void)
 /*
   arm motors
  */
-bool Plane::arm_motors(AP_Arming::ArmingMethod method)
+bool Plane::arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
 {
-    if (!arming.arm(method)) {
+    if (!arming.arm(method, do_arming_checks)) {
         return false;
     }
 

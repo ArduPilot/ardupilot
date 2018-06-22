@@ -58,7 +58,6 @@ LIBRARIES += AC_InputManager
 LIBRARIES += AP_ADSB
 LIBRARIES += AP_Avoidance
 LIBRARIES += AP_Stats
-LIBRARIES += AP_Gripper
 LIBRARIES += AP_Beacon
 LIBRARIES += AP_Arming
 LIBRARIES += AP_SmartRTL

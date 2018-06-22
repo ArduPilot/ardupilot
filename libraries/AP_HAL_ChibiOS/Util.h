@@ -21,9 +21,6 @@
 #include "Semaphores.h"
 #include "ToneAlarm.h"
 
-// this checks an address is in main memory and 16 bit aligned
-#define IS_DMA_SAFE(addr) ((uint32_t(addr) & 0xF0000001) == 0x20000000)
-
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
@@ -71,4 +68,14 @@ private:
         uint32_t last_update_ms;
     } heater;
 #endif
+
+    /*
+      set HW RTC in UTC microseconds
+     */
+    void set_hw_rtc(uint64_t time_utc_usec) override;
+
+    /*
+      get system clock in UTC microseconds
+     */
+    uint64_t get_hw_rtc() const override;
 };

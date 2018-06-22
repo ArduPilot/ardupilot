@@ -448,7 +448,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
-    MSG_RPM
+    MSG_RPM,
+    MSG_ESC_TELEMETRY,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -491,8 +492,11 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     if (is_equal(packet.param4, 1.0f)) {
-        rover.trim_radio();
-        return MAV_RESULT_ACCEPTED;
+        if (rover.trim_radio()) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -509,6 +513,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
 
         switch (packet.command) {
+
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            if (rover.control_mode->set_desired_speed(packet.param2)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
 
         case MAV_CMD_DO_SET_HOME: {
             // assume failure
@@ -689,6 +703,16 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+        case MAV_CMD_DO_CHANGE_SPEED:
+            // param1 : unused
+            // param2 : new speed in m/s
+            if (rover.control_mode->set_desired_speed(packet.param2)) {
+                result = MAV_RESULT_ACCEPTED;
+            } else {
+                result = MAV_RESULT_FAILED;
+            }
+            break;
+
         case MAV_CMD_DO_SET_HOME:
         {
             // param1 : use current (1=use current location, 0=use specified location)
@@ -776,19 +800,21 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        RC_Channels::set_override(0, packet.chan1_raw);
-        RC_Channels::set_override(1, packet.chan2_raw);
-        RC_Channels::set_override(2, packet.chan3_raw);
-        RC_Channels::set_override(3, packet.chan4_raw);
-        RC_Channels::set_override(4, packet.chan5_raw);
-        RC_Channels::set_override(5, packet.chan6_raw);
-        RC_Channels::set_override(6, packet.chan7_raw);
-        RC_Channels::set_override(7, packet.chan8_raw);
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
-        rover.failsafe.rc_override_timer = AP_HAL::millis();
+        rover.failsafe.rc_override_timer = tnow;
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
@@ -805,13 +831,15 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         if (packet.target != rover.g.sysid_this_mav) {
             break; // only accept control aimed at us
         }
+
+        uint32_t tnow = AP_HAL::millis();
         
         const int16_t roll = (packet.y == INT16_MAX) ? 0 : rover.channel_steer->get_radio_min() + (rover.channel_steer->get_radio_max() - rover.channel_steer->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         const int16_t throttle = (packet.z == INT16_MAX) ? 0 : rover.channel_throttle->get_radio_min() + (rover.channel_throttle->get_radio_max() - rover.channel_throttle->get_radio_min()) * (packet.z + 1000) / 2000.0f;
-        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll);
-        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle);
+        RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
+        RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
 
-        rover.failsafe.rc_override_timer = AP_HAL::millis();
+        rover.failsafe.rc_override_timer = tnow;
         rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
@@ -1195,7 +1223,6 @@ void Rover::mavlink_delay_cb()
         last_5s = tnow;
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    check_usb_mux();
 
     DataFlash.EnableWrites(true);
 }
@@ -1277,14 +1304,9 @@ AP_Mission *GCS_MAVLINK_Rover::get_mission()
 
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
-    Mode *new_mode = rover.mode_from_mode_num((enum mode)mode);
+    Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
     if (new_mode == nullptr) {
         return false;
     }
     return rover.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
-}
-
-const AP_FWVersion &GCS_MAVLINK_Rover::get_fwver() const
-{
-    return rover.fwver;
 }

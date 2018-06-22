@@ -243,7 +243,7 @@ float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
     // will use an airspeed sensor, that value is constrained by the
     // ground speed.  When reporting we should send the true airspeed
     // value if possible:
-    if (plane.airspeed.enabled()) {
+    if (plane.airspeed.enabled() && plane.airspeed.healthy()) {
         return plane.airspeed.get_airspeed();
     }
 
@@ -636,7 +636,8 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_RPM,
     MSG_AOA_SSA,
     MSG_PID_TUNING,
-    MSG_LANDING
+    MSG_LANDING,
+    MSG_ESC_TELEMETRY,
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
@@ -735,11 +736,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink
 MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     if (is_equal(packet.param4,1.0f)) {
-        /*
-          radio trim
-        */
-        plane.trim_radio();
-        return MAV_RESULT_ACCEPTED;
+        if (plane.trim_radio()) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -975,7 +976,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
                 // run pre_arm_checks and arm_checks and display failures
-                if (plane.arm_motors(AP_Arming::MAVLINK)) {
+                const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
+                if (plane.arm_motors(AP_Arming::MAVLINK, do_arming_checks)) {
                     result = MAV_RESULT_ACCEPTED;
                 } else {
                     result = MAV_RESULT_FAILED;
@@ -1162,31 +1164,6 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 result = MAV_RESULT_ACCEPTED;
             }
             break;
-            
-#if GRIPPER_ENABLED == ENABLED
-        case MAV_CMD_DO_GRIPPER:
-            // param1 : gripper number (ignored)
-            // param2 : action (0=release, 1=grab). See GRIPPER_ACTIONS enum.
-            if(!plane.g2.gripper.enabled()) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-                switch ((uint8_t)packet.param2) {
-                    case GRIPPER_ACTION_RELEASE:
-                        plane.g2.gripper.release();
-                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
-                        break;
-                    case GRIPPER_ACTION_GRAB:
-                        plane.g2.gripper.grab();
-                        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
-                        break;
-                    default:
-                        result = MAV_RESULT_FAILED;
-                        break;
-                }
-            }
-            break;
-#endif
 
         default:
             result = handle_command_long_message(packet);
@@ -1247,28 +1224,27 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // allow override of RC channel values for HIL
         // or for complete GCS control of switch position
         // and RC PWM values.
-        if(msg->sysid != plane.g.sysid_my_gcs) break;                         // Only accept control from our gcs
+        if(msg->sysid != plane.g.sysid_my_gcs) {
+            break; // Only accept control from our gcs
+        }
+
+        uint32_t tnow = AP_HAL::millis();
+
         mavlink_rc_channels_override_t packet;
-        bool override_active = false;
         mavlink_msg_rc_channels_override_decode(msg, &packet);
 
-        override_active |= RC_Channels::set_override(0, packet.chan1_raw);
-        override_active |= RC_Channels::set_override(1, packet.chan2_raw);
-        override_active |= RC_Channels::set_override(2, packet.chan3_raw);
-        override_active |= RC_Channels::set_override(3, packet.chan4_raw);
-        override_active |= RC_Channels::set_override(4, packet.chan5_raw);
-        override_active |= RC_Channels::set_override(5, packet.chan6_raw);
-        override_active |= RC_Channels::set_override(6, packet.chan7_raw);
-        override_active |= RC_Channels::set_override(7, packet.chan8_raw);
-
-        if (override_active) {
-            plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
-            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
-        }
+        RC_Channels::set_override(0, packet.chan1_raw, tnow);
+        RC_Channels::set_override(1, packet.chan2_raw, tnow);
+        RC_Channels::set_override(2, packet.chan3_raw, tnow);
+        RC_Channels::set_override(3, packet.chan4_raw, tnow);
+        RC_Channels::set_override(4, packet.chan5_raw, tnow);
+        RC_Channels::set_override(5, packet.chan6_raw, tnow);
+        RC_Channels::set_override(6, packet.chan7_raw, tnow);
+        RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
         // a RC override message is consiered to be a 'heartbeat' from
         // the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        plane.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -1285,24 +1261,20 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break; // only accept messages aimed at us
         }
 
-        bool override_active = false;
+        uint32_t tnow = AP_HAL::millis();
+
         int16_t roll = (packet.y == INT16_MAX) ? 0 : plane.channel_roll->get_radio_min() + (plane.channel_roll->get_radio_max() - plane.channel_roll->get_radio_min()) * (packet.y + 1000) / 2000.0f;
         int16_t pitch = (packet.x == INT16_MAX) ? 0 : plane.channel_pitch->get_radio_min() + (plane.channel_pitch->get_radio_max() - plane.channel_pitch->get_radio_min()) * (-packet.x + 1000) / 2000.0f;
         int16_t throttle = (packet.z == INT16_MAX) ? 0 : plane.channel_throttle->get_radio_min() + (plane.channel_throttle->get_radio_max() - plane.channel_throttle->get_radio_min()) * (packet.z) / 1000.0f;
         int16_t yaw = (packet.r == INT16_MAX) ? 0 : plane.channel_rudder->get_radio_min() + (plane.channel_rudder->get_radio_max() - plane.channel_rudder->get_radio_min()) * (packet.r + 1000) / 2000.0f;
 
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle);
-        override_active |= RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw);
+        RC_Channels::set_override(uint8_t(plane.rcmap.roll() - 1), roll, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.pitch() - 1), pitch, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.throttle() - 1), throttle, tnow);
+        RC_Channels::set_override(uint8_t(plane.rcmap.yaw() - 1), yaw, tnow);
 
-        if (override_active) {
-            plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
-            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
-        }
-        
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        plane.failsafe.last_heartbeat_ms = tnow;
         break;
     }
     
@@ -1738,9 +1710,4 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
         return true;
     }
     return false;
-}
-
-const AP_FWVersion &GCS_MAVLINK_Plane::get_fwver() const
-{
-    return plane.fwver;
 }

@@ -178,11 +178,20 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
-
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
+/*
+  check if one string contains another
+ */
+static bool string_contains(const char *haystack, const char *needle)
+{
+    uint8_t needle_len = strlen(needle);
+    while (*haystack) {
+        if (strncmp(haystack, needle, needle_len) == 0) {
+            return true;
+        }
+        haystack++;
+    }
+    return false;
+}
 
 /*
   handle substitution of variables in strings for USB descriptors
@@ -190,10 +199,10 @@ static USBDescriptor vcom_strings[] = {
 static char *string_substitute(const char *str)
 {
     uint8_t new_len = strlen(str);
-    if (strstr(str, "%BOARD%")) {
+    if (string_contains(str, "%BOARD%")) {
         new_len += strlen(HAL_BOARD_NAME) - 7;
     }
-    if (strstr(str, "%SERIAL%")) {
+    if (string_contains(str, "%SERIAL%")) {
         new_len += 24 - 8;
     }
     char *str2 = malloc(new_len+1);

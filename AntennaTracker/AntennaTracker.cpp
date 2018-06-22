@@ -49,7 +49,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50),
     SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
-    SCHED_TASK(check_usb_mux,          10,    300),
     SCHED_TASK(gcs_retry_deferred,     50,   1000),
     SCHED_TASK(one_second_loop,         1,   3900),
     SCHED_TASK(compass_cal_update,     50,    100),
@@ -136,7 +135,7 @@ void Tracker::ten_hz_logging_loop()
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 Tracker::Tracker(void)
-    : DataFlash(fwver.fw_string, g.log_bitmask)
+    : DataFlash(g.log_bitmask)
 {
     memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));

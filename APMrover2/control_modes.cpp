@@ -2,38 +2,38 @@
 
 static const int16_t CH_7_PWM_TRIGGER = 1800;
 
-Mode *Rover::mode_from_mode_num(const enum mode num)
+Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
 {
     Mode *ret = nullptr;
     switch (num) {
-    case MANUAL:
+    case Mode::Number::MANUAL:
         ret = &mode_manual;
         break;
-    case ACRO:
+    case Mode::Number::ACRO:
         ret = &mode_acro;
         break;
-    case STEERING:
+    case Mode::Number::STEERING:
         ret = &mode_steering;
         break;
-    case HOLD:
+    case Mode::Number::HOLD:
         ret = &mode_hold;
         break;
-    case LOITER:
+    case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
-    case AUTO:
+    case Mode::Number::AUTO:
         ret = &mode_auto;
         break;
-    case RTL:
+    case Mode::Number::RTL:
         ret = &mode_rtl;
         break;
-    case SMART_RTL:
+    case Mode::Number::SMART_RTL:
         ret = &mode_smartrtl;
         break;
-    case GUIDED:
+    case Mode::Number::GUIDED:
        ret = &mode_guided;
         break;
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
     default:
@@ -76,7 +76,7 @@ void Rover::read_control_switch()
             return;
         }
 
-        Mode *new_mode = mode_from_mode_num((enum mode)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum Mode::Number)modes[switchPosition].get());
         if (new_mode != nullptr) {
             set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }
@@ -129,6 +129,23 @@ aux_switch_pos Rover::read_aux_switch_pos()
 void Rover::init_aux_switch()
 {
     aux_ch7 = read_aux_switch_pos();
+}
+
+void Rover::do_aux_function_change_mode(Mode &mode,
+                                        const aux_switch_pos ch_flag)
+{
+    switch(ch_flag) {
+    case AUX_SWITCH_HIGH:
+        set_mode(mode, MODE_REASON_TX_COMMAND);
+        break;
+    case AUX_SWITCH_MIDDLE:
+        // do nothing
+        break;
+    case AUX_SWITCH_LOW:
+        if (control_mode == &mode) {
+            reset_control_switch();
+        }
+    }
 }
 
 // read ch7 aux switch
@@ -204,104 +221,47 @@ void Rover::read_aux_switch()
 
     // set mode to Manual
     case CH7_MANUAL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_manual, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_manual)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_manual, aux_ch7);
         break;
 
     // set mode to Acro
     case CH7_ACRO:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_acro, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_acro)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_acro, aux_ch7);
         break;
 
     // set mode to Steering
     case CH7_STEERING:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_steering, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_steering)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_steering, aux_ch7);
         break;
 
     // set mode to Hold
     case CH7_HOLD:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_hold, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_hold)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_hold, aux_ch7);
         break;
 
     // set mode to Auto
     case CH7_AUTO:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_auto, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_auto)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_auto, aux_ch7);
         break;
 
     // set mode to RTL
     case CH7_RTL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_rtl, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_rtl)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_rtl, aux_ch7);
         break;
 
     // set mode to SmartRTL
     case CH7_SMART_RTL:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_smartrtl, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_smartrtl)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_smartrtl, aux_ch7);
         break;
 
     // set mode to Guided
     case CH7_GUIDED:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_guided, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_guided)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_guided, aux_ch7);
         break;
 
     // Set mode to LOITER
     case CH7_LOITER:
-        if (aux_ch7 == AUX_SWITCH_HIGH) {
-            set_mode(mode_loiter, MODE_REASON_TX_COMMAND);
-        } else if ((aux_ch7 == AUX_SWITCH_LOW) && (control_mode == &mode_loiter)) {
-            reset_control_switch();
-        }
+        do_aux_function_change_mode(rover.mode_loiter, aux_ch7);
         break;
     }
-}
-
-// return true if motors are moving
-bool Rover::motor_active()
-{
-    // if soft disarmed, motors not active
-    if (!hal.util->get_soft_armed()) {
-        return false;
-    }
-
-    // check throttle is active
-    if (!is_zero(g2.motors.get_throttle())) {
-        return true;
-    }
-
-    // skid-steering vehicles active when steering
-    if (g2.motors.have_skid_steering() && !is_zero(g2.motors.get_steering())) {
-        return true;
-    }
-
-    return false;
 }

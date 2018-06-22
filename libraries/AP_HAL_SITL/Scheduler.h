@@ -23,8 +23,6 @@ public:
 
     void register_timer_process(AP_HAL::MemberProc);
     void register_io_process(AP_HAL::MemberProc);
-    void suspend_timer_procs();
-    void resume_timer_procs();
 
     void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
 
@@ -43,13 +41,13 @@ public:
     void sitl_end_atomic();
 
     static void timer_event() {
-        _run_timer_procs(true);
-        _run_io_procs(true);
+        _run_timer_procs();
+        _run_io_procs();
     }
 
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
-    static void _run_io_procs(bool called_from_isr);
+    static void _run_io_procs();
     static bool _should_reboot;
     
 private:
@@ -57,9 +55,8 @@ private:
     uint8_t _nested_atomic_ctr;
     static AP_HAL::Proc _failsafe;
 
-    static void _run_timer_procs(bool called_from_isr);
+    static void _run_timer_procs();
 
-    static volatile bool _timer_suspended;
     static volatile bool _timer_event_missed;
     static AP_HAL::MemberProc _timer_proc[SITL_SCHEDULER_MAX_TIMER_PROCS];
     static AP_HAL::MemberProc _io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS];

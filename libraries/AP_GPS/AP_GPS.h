@@ -22,6 +22,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RTC/AP_RTC.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -480,11 +481,9 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
-#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
@@ -556,7 +555,6 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
-
 };
 
 namespace AP {

@@ -47,10 +47,6 @@
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// when the wind estimation first starts with no airspeed sensor,
-// assume 3m/s to start
-#define STARTUP_WIND_SPEED 3.0f
-
 // maximum allowed gyro bias (rad/sec)
 #define GYRO_BIAS_LIMIT 0.5f
 

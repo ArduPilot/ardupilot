@@ -323,7 +323,7 @@ private:
             uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
             uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
-            uint8_t system_time_set         : 1; // 16      // true if the system time has been set from the GPS
+            uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
@@ -339,6 +339,8 @@ private:
     } ap_t;
 
     ap_t ap;
+
+    static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
@@ -376,7 +378,7 @@ private:
 
     // intertial nav alt when we armed
     float arming_altitude_m;
-    
+
     // board specific config
     AP_BoardConfig BoardConfig;
 
@@ -463,6 +465,7 @@ private:
     // The cm/s we are moving up or down based on filtered data - Positive = UP
     int16_t climb_rate;
     float target_rangefinder_alt;   // desired altitude in cm above the ground
+    bool target_rangefinder_alt_used; // true if mode is using target_rangefinder_alt
     int32_t baro_alt;            // barometer altitude in cm above home
     float baro_climbrate;        // barometer climbrate in cm/s
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
@@ -621,7 +624,7 @@ private:
 
     // set when we are upgrading parameters from 3.4
     bool upgrading_frame_params;
-    
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -708,13 +711,9 @@ private:
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     bool far_from_EKF_origin(const Location& loc);
-    void set_system_time_from_GPS();
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(mavlink_channel_t chan);
-
-    // compat.cpp
-    void delay(uint32_t ms);
 
     // crash_check.cpp
     void crash_check();
@@ -835,7 +834,7 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
-    bool init_arm_motors(bool arming_from_gcs);
+    bool init_arm_motors(bool arming_from_gcs, bool do_arming_checks=true);
     void init_disarm_motors();
     void motors_output();
     void lost_vehicle_check();

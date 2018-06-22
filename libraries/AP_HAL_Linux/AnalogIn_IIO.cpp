@@ -23,6 +23,7 @@ AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value, float volta
     _sum_count(0),
     _pin_fd(-1)
 {
+    _semaphore = hal.util->new_semaphore();
     init_pins();
     select_pin();
 }
@@ -50,14 +51,16 @@ void AnalogSource_IIO::select_pin(void)
 float AnalogSource_IIO::read_average()
 {
     read_latest();
-    if (_sum_count == 0) {
-        return _value;
+    if (_semaphore->take(1)) {
+        if (_sum_count == 0) {
+            _semaphore->give();
+            return _value;
+        }
+        _value = _sum_value / _sum_count;
+        _sum_value = 0;
+        _sum_count = 0;
+        _semaphore->give();
     }
-    hal.scheduler->suspend_timer_procs();
-    _value = _sum_value / _sum_count;
-    _sum_value = 0;
-    _sum_count = 0;
-    hal.scheduler->resume_timer_procs();
     return _value;
 }
 
@@ -75,9 +78,12 @@ float AnalogSource_IIO::read_latest()
         _latest = 0;
         return 0;
     }
-    _latest = atoi(sbuf) * _voltage_scaling;
-    _sum_value += _latest;
-    _sum_count++;
+    if (_semaphore->take(1)) {
+        _latest = atoi(sbuf) * _voltage_scaling;
+        _sum_value += _latest;
+        _sum_count++;
+        _semaphore->give();
+    }
 
     return _latest;
 }
@@ -100,14 +106,15 @@ void AnalogSource_IIO::set_pin(uint8_t pin)
         return;
     }
 
-    hal.scheduler->suspend_timer_procs();
-    _pin = pin;
-    _sum_value = 0;
-    _sum_count = 0;
-    _latest = 0;
-    _value = 0;
-    select_pin();
-    hal.scheduler->resume_timer_procs();
+    if (_semaphore->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _pin = pin;
+        _sum_value = 0;
+        _sum_count = 0;
+        _latest = 0;
+        _value = 0;
+        select_pin();
+        _semaphore->give();
+    }
 }
 
 void AnalogSource_IIO::set_stop_pin(uint8_t p)

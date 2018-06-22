@@ -128,14 +128,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(250, constrain_float(i, 250, 500));
             EXPECT_EQ(250, constrain_int16(i, 250, 500));
             EXPECT_EQ(250, constrain_int32(i, 250, 500));
+            EXPECT_EQ(250, constrain_int64(i, 250, 500));
         } else if (i > 500) {
             EXPECT_EQ(500, constrain_float(i, 250, 500));
             EXPECT_EQ(500, constrain_int16(i, 250, 500));
             EXPECT_EQ(500, constrain_int32(i, 250, 500));
+            EXPECT_EQ(500, constrain_int64(i, 250, 500));
         } else {
             EXPECT_EQ(i, constrain_float(i, 250, 500));
             EXPECT_EQ(i, constrain_int16(i, 250, 500));
             EXPECT_EQ(i, constrain_int32(i, 250, 500));
+            EXPECT_EQ(i, constrain_int64(i, 250, 500));
         }
     }
 
@@ -145,14 +148,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, -50));
             EXPECT_EQ(-250, constrain_int16(c, -250, -50));
             EXPECT_EQ(-250, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, -50));
         } else if(c > -50) {
             EXPECT_EQ(-50, constrain_float(c, -250, -50));
             EXPECT_EQ(-50, constrain_int16(c, -250, -50));
             EXPECT_EQ(-50, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-50, constrain_int64(c, -250, -50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, -50));
             EXPECT_EQ(c, constrain_int16(c, -250, -50));
             EXPECT_EQ(c, constrain_int32(c, -250, -50));
+            EXPECT_EQ(c, constrain_int64(c, -250, -50));
         }
     }
 
@@ -162,14 +168,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, 50));
             EXPECT_EQ(-250, constrain_int16(c, -250, 50));
             EXPECT_EQ(-250, constrain_int32(c, -250, 50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, 50));
         } else if(c > 50) {
             EXPECT_EQ(50, constrain_float(c, -250, 50));
             EXPECT_EQ(50, constrain_int16(c, -250, 50));
             EXPECT_EQ(50, constrain_int32(c, -250, 50));
+            EXPECT_EQ(50, constrain_int64(c, -250, 50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, 50));
             EXPECT_EQ(c, constrain_int16(c, -250, 50));
             EXPECT_EQ(c, constrain_int32(c, -250, 50));
+            EXPECT_EQ(c, constrain_int64(c, -250, 50));
         }
     }
 

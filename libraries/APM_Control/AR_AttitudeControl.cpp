@@ -161,7 +161,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _DECEL_MAX
     // @DisplayName: Speed control deceleration maximum in m/s/s
-    // @Description: Speed control and deceleration maximum in m/s/s.  0 to disable deceleration limiting
+    // @Description: Speed control and deceleration maximum in m/s/s.  0 to use ATC_ACCEL_MAX for deceleration
     // @Range: 0.0 10.0
     // @Increment: 0.1
     // @Units: m/s/s
@@ -285,7 +285,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     const float d = _steer_rate_pid.get_d();
 
     // constrain and return final output
-    return constrain_float(ff + p + i + d, -1.0f, 1.0f);
+    return (ff + p + i + d);
 }
 
 // get latest desired turn rate in rad/sec (recorded during calls to get_steering_out_rate)
@@ -495,6 +495,13 @@ float AR_AttitudeControl::get_desired_speed() const
 // get acceleration limited desired speed
 float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, float dt) const
 {
+    // return input value if no recent calls to speed controller
+	// apply no limiting when ATC_ACCEL_MAX is set to zero
+    const uint32_t now = AP_HAL::millis();
+    if ((_speed_last_ms == 0) || ((now - _speed_last_ms) > AR_ATTCONTROL_TIMEOUT_MS) || !is_positive(_throttle_accel_max)) {
+        return desired_speed;
+    }
+
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
 

@@ -21,6 +21,7 @@
 #include <chheap.h>
 #include "ToneAlarm.h"
 #include "RCOutput.h"
+#include "hwdef/common/stm32_util.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -33,11 +34,6 @@ extern const AP_HAL::HAL& hal;
 using namespace ChibiOS;
 
 #if CH_CFG_USE_HEAP == TRUE
-
-extern "C" {
-    size_t mem_available(void);
-    void *malloc_ccm(size_t size);
-};
 
 /**
    how much free memory do we have in bytes.
@@ -54,7 +50,9 @@ uint32_t Util::available_memory(void)
 
 void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
-    if (mem_type == AP_HAL::Util::MEM_FAST) {
+    if (mem_type == AP_HAL::Util::MEM_DMA_SAFE) {
+        return malloc_dma(size);
+    } else if (mem_type == AP_HAL::Util::MEM_FAST) {
         return try_alloc_from_ccm_ram(size);
     } else {
         return calloc(1, size);
@@ -181,3 +179,18 @@ void Util::_toneAlarm_timer_tick() {
 }
 #endif // HAL_PWM_ALARM
 
+/*
+  set HW RTC in UTC microseconds
+*/
+void Util::set_hw_rtc(uint64_t time_utc_usec)
+{
+    stm32_set_utc_usec(time_utc_usec);
+}
+
+/*
+  get system clock in UTC microseconds
+*/
+uint64_t Util::get_hw_rtc() const
+{
+    return stm32_get_utc_usec();
+}

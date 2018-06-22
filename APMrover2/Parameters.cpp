@@ -16,14 +16,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(format_version,         "FORMAT_VERSION",   1),
 
-    // @Param: SYSID_SW_TYPE
-    // @DisplayName: Software Type
-    // @Description: This is used by the ground station to recognise the software type (eg ArduPlane vs ArduCopter)
-    // @Values: 0:ArduPlane,4:AntennaTracker,10:Copter,20:Rover,40:ArduSub
-    // @User: Advanced
-    // @ReadOnly: True
-    GSCALAR(software_type,          "SYSID_SW_TYPE",    Parameters::k_software_type),
-
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what log types to enable in dataflash. This values is made up of the sum of each of the log types you want to be saved on dataflash. On a PX4 or Pixhawk the large storage size of a microSD card means it is usually best just to enable all log types by setting this to 65535. On APM2 the smaller 4 MByte dataflash means you need to be more selective in your logging or you may run out of log space while flying (in which case it will wrap and overwrite the start of the log). The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Rangefinder=16384, Arming=32768, FullLogs=65535
@@ -43,7 +35,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
     // @Values: 0:MANUAL,1:ACRO,3:STEERING,4:HOLD,5:LOITER,10:AUTO,11:RTL,15:GUIDED
     // @User: Advanced
-    GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
+    GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
     // @Param: SYSID_THIS_MAV
     // @DisplayName: MAVLink system ID of this vehicle
@@ -107,15 +99,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     GSCALAR(speed_cruise,        "CRUISE_SPEED",    CRUISE_SPEED),
-
-    // @Param: SPEED_TURN_GAIN
-    // @DisplayName: Target speed reduction while turning
-    // @Description: The percentage to reduce the throttle to while turning. If this is 100% then the target speed is not reduced while turning. If this is 50% then the target speed is reduced in proportion to the turn rate, with a reduction of 50% when the steering is maximally deflected.
-    // @Units: %
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(speed_turn_gain,    "SPEED_TURN_GAIN",  50),
 
     // @Param: PIVOT_TURN_ANGLE
     // @DisplayName: Pivot turn angle
@@ -205,7 +188,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: Rangefinder trigger angle
     // @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the rangefinder. A positive number means to turn right, and a negative angle means to turn left.
     // @Units: deg
-    // @Range: -45 45
+    // @Range: -450 450
     // @Increment: 1
     // @User: Standard
     GSCALAR(rangefinder_turn_angle,   "RNGFND_TURN_ANGL",    45),
@@ -244,42 +227,42 @@ const AP_Param::Info Rover::var_info[] = {
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
-    GSCALAR(mode1,           "MODE1",         MANUAL),
+    GSCALAR(mode1,           "MODE1",         Mode::Number::MANUAL),
 
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
-    GSCALAR(mode2,           "MODE2",         MANUAL),
+    GSCALAR(mode2,           "MODE2",         Mode::Number::MANUAL),
 
     // @Param: MODE3
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
-    GSCALAR(mode3,           "MODE3",         MANUAL),
+    GSCALAR(mode3,           "MODE3",         Mode::Number::MANUAL),
 
     // @Param: MODE4
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
-    GSCALAR(mode4,           "MODE4",         MANUAL),
+    GSCALAR(mode4,           "MODE4",         Mode::Number::MANUAL),
 
     // @Param: MODE5
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
-    GSCALAR(mode5,           "MODE5",         MANUAL),
+    GSCALAR(mode5,           "MODE5",         Mode::Number::MANUAL),
 
     // @Param: MODE6
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
-    GSCALAR(mode6,           "MODE6",         MANUAL),
+    GSCALAR(mode6,           "MODE6",         Mode::Number::MANUAL),
 
     // @Param: WP_RADIUS
     // @DisplayName: Waypoint radius
