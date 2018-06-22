@@ -34,6 +34,7 @@
 
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
+#define CONFIGURE_PPS_PIN 0
 
 extern const AP_HAL::HAL& hal;
 
@@ -57,6 +58,10 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
 
     // start the process of updating the GPS rates
     _request_next_config();
+
+#if CONFIGURE_PPS_PIN
+    _unconfigured_messages |= CONFIG_TP5;
+#endif
 }
 
 void
@@ -73,7 +78,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         return;
     }
 
-   Debug("Unconfigured messages: %d Current message: %d\n", _unconfigured_messages, _next_message);
+    Debug("Unconfigured messages: %u Current message: %u\n", (unsigned)_unconfigured_messages, (unsigned)_next_message);
 
    // check AP_GPS_UBLOX.h for the enum that controls the order.
    // This switch statement isn't maintained against the enum in order to reduce code churn
@@ -110,6 +115,13 @@ AP_GPS_UBLOX::_request_next_config(void)
         if (!_send_message(CLASS_CFG, MSG_CFG_GNSS, nullptr, 0)) {
             _next_message--;
         }
+        break;
+    case STEP_POLL_TP5:
+#if CONFIGURE_PPS_PIN
+        if (!_send_message(CLASS_CFG, MSG_CFG_TP5, nullptr, 0)) {
+            _next_message--;
+        }
+#endif
         break;
     case STEP_NAV_RATE:
         if (!_send_message(CLASS_CFG, MSG_CFG_RATE, nullptr, 0)) {
@@ -622,6 +634,9 @@ AP_GPS_UBLOX::_parse_gps(void)
                 case MSG_CFG_SBAS:
                     _unconfigured_messages &= ~CONFIG_SBAS;
                     break;
+                case MSG_CFG_TP5:
+                    _unconfigured_messages &= ~CONFIG_TP5;
+                    break;
                 }
                 break;
             case CLASS_MON:
@@ -779,6 +794,40 @@ AP_GPS_UBLOX::_parse_gps(void)
                 _unconfigured_messages &= ~CONFIG_RATE_NAV;
             }
             return false;
+            
+#if CONFIGURE_PPS_PIN
+        case MSG_CFG_TP5: {
+            // configure the PPS pin for 1Hz, zero delay
+            Debug("Got TP5 ver=%u 0x%04x %u\n", 
+                  (unsigned)_buffer.nav_tp5.version,
+                  (unsigned)_buffer.nav_tp5.flags,
+                  (unsigned)_buffer.nav_tp5.freqPeriod);
+            const uint16_t desired_flags = 0x003f;
+            const uint16_t desired_period_hz = 1;
+            if (_buffer.nav_tp5.flags != desired_flags ||
+                _buffer.nav_tp5.freqPeriod != desired_period_hz) {
+                _buffer.nav_tp5.tpIdx = 0;
+                _buffer.nav_tp5.reserved1[0] = 0;
+                _buffer.nav_tp5.reserved1[1] = 0;
+                _buffer.nav_tp5.antCableDelay = 0;
+                _buffer.nav_tp5.rfGroupDelay = 0;
+                _buffer.nav_tp5.freqPeriod = desired_period_hz;
+                _buffer.nav_tp5.freqPeriodLock = desired_period_hz;
+                _buffer.nav_tp5.pulseLenRatio = 1;
+                _buffer.nav_tp5.pulseLenRatioLock = 2;
+                _buffer.nav_tp5.userConfigDelay = 0;
+                _buffer.nav_tp5.flags = desired_flags;
+                _send_message(CLASS_CFG, MSG_CFG_TP5,
+                              &_buffer.nav_tp5,
+                              sizeof(_buffer.nav_tp5));
+                _unconfigured_messages |= CONFIG_TP5;
+                _cfg_needs_save = true;
+            } else {
+                _unconfigured_messages &= ~CONFIG_TP5;
+            }
+            return false;
+        }
+#endif // CONFIGURE_PPS_PIN
         }
            
     }
