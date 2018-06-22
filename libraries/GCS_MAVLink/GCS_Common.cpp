@@ -3351,20 +3351,12 @@ void GCS_MAVLINK::data_stream_send(void)
 
 /*
   correct an offboard timestamp in microseconds into a local timestamp
-  since boot in milliseconds. This is a transport lag correction function, and works by assuming two key things:
-
-   1) the data did not come from the future in our time-domain
-   2) the data is not older than max_lag_ms in our time-domain
-
-  It works by estimating the transport lag by looking for the incoming
-  packet that had the least lag, and converging on the offset that is
-  associated with that lag
+  since boot in milliseconds. See the JitterCorrection code for details
 
   Return a value in milliseconds since boot (for use by the EKF)
  */
 uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size)
 {
-    const uint32_t max_lag_us = 500*1000UL;
     uint64_t local_us;
     // if the HAL supports it then constrain the latest possible time
     // the packet could have been sent by the uart receive time and
@@ -3375,58 +3367,9 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
     } else {
         local_us = AP_HAL::micros64();
     }
-    int64_t diff_us = int64_t(local_us) - int64_t(offboard_usec);
+    uint64_t corrected_us = lag_correction.correct_offboard_timestamp_usec(offboard_usec, local_us);
 
-    if (!lag_correction.initialised ||
-        diff_us < lag_correction.link_offset_usec) {
-        // this message arrived from the remote system with a
-        // timestamp that would imply the message was from the
-        // future. We know that isn't possible, so we adjust down the
-        // correction value
-        lag_correction.link_offset_usec = diff_us;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("link_offset_usec=%lld\n", (long long int)diff_us);
-#endif
-        lag_correction.initialised = true;
-    }
-
-    int64_t estimate_us = offboard_usec + lag_correction.link_offset_usec;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (estimate_us > (int64_t)local_us) {
-        // this should be impossible, just check it under SITL
-        printf("msg from future %lld\n", (long long int)(estimate_us - local_us));
-    }
-#endif
-
-    if (estimate_us + max_lag_us < int64_t(local_us)) {
-        // this implies the message came from too far in the past. Clamp the lag estimate
-        // to assume the message had maximum lag
-        estimate_us = local_us - max_lag_us;
-        lag_correction.link_offset_usec = estimate_us - offboard_usec;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("offboard timestammp too old %lld\n", (long long int)(local_us - estimate_us));
-#endif
-    }
-
-    if (lag_correction.min_sample_counter == 0) {
-        lag_correction.min_sample_us = diff_us;
-    }
-    lag_correction.min_sample_counter++;
-    if (diff_us < lag_correction.min_sample_us) {
-        lag_correction.min_sample_us = diff_us;
-    }
-    if (lag_correction.min_sample_counter == 200) {
-        // we have 200 samples of the transport lag. To
-        // account for long term clock drift we set the diff we will
-        // use in future to this value
-        lag_correction.link_offset_usec = lag_correction.min_sample_us;
-        lag_correction.min_sample_counter = 0;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("new link_offset_usec=%lld\n", (long long int)(lag_correction.min_sample_us));
-#endif
-    }
-    
-    return estimate_us / 1000U;
+    return corrected_us / 1000U;
 }
 
 GCS &gcs()
