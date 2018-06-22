@@ -978,8 +978,8 @@ frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
 
-if frame_infos["model"] == "jsbsim":
-    check_jsbsim_version()
+# if frame_infos["model"] == "jsbsim":
+#     check_jsbsim_version()
 
 vehicle_dir = os.path.realpath(os.path.join(find_root_dir(), cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):
