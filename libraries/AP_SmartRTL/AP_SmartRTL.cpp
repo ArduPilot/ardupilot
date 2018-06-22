@@ -32,6 +32,14 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SMARTRTL_POINTS_DEFAULT),
 
+    // @Param: WP_ONLY
+    // @DisplayName: SmartRTL records WPs only
+    // @Description: SmartRTL only records mission waypoints in auto mode, default is no
+    // @Range: 0 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("WP_ONLY", 2, AP_SmartRTL, _wp_only, 0),
+
     AP_GROUPEND
 };
 

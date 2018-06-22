@@ -81,6 +81,8 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    bool rec_wp_only() { return _wp_only; }
+
 private:
 
     // enums for logging latest actions
@@ -168,6 +170,7 @@ private:
     // parameters
     AP_Float _accuracy;
     AP_Int16 _points_max;
+    AP_Int8 _wp_only;
 
     // SmartRTL State Variables
     bool _active;       // true if SmartRTL is usable.  may become unusable if the path becomes too long to keep in memory, and too convoluted to be cleaned up, SmartRTL will be permanently deactivated (for the remainder of the flight)
