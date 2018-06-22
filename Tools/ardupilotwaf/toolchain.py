@@ -132,9 +132,6 @@ def configure(cfg):
 
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c gccdeps')
-        if cfg.env.COMPILER_CC == 'clang' or cfg.env.COMPILER_CXX == 'clang++':
-            Logs.warn("Warning! Native clang builds can be unstable, please use gcc/g++. \
-\nRefer ardupilot.org docs for more details.")
         return
 
     cfg.find_toolchain_program('ar')
