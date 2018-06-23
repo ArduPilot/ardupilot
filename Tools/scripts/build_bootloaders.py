@@ -33,5 +33,6 @@ for board in get_board_list():
     run_program(["./waf", "configure", "--board", board, "--bootloader"])
     run_program(["./waf", "clean"])
     run_program(["./waf", "bootloader"])
-    shutil.copy('build/%s/bootloader/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
+    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
+    run_program(["Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board])
     shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_bl.elf' % board)
