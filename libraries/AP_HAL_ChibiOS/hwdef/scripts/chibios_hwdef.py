@@ -447,7 +447,9 @@ def write_mcu_config(f):
 
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
-    flash_size = get_config('FLASH_SIZE_KB', type=int)
+    flash_size = get_config('FLASH_USE_MAX_KB', type=int, default=0)
+    if flash_size == 0:
+        flash_size = get_config('FLASH_SIZE_KB', type=int)
 
     # space to reserve for bootloader and storage at start of flash
     flash_reserve_start = get_config(
