@@ -99,6 +99,15 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         continue
     fi
+
+    if [ $t == "revo-mini" ]; then
+        # save some time by only building one target for revo-mini
+        echo "Building revo-mini"
+        $waf configure --board revo-mini
+        $waf clean
+        $waf plane
+        continue
+    fi
     
     # only do make-based builds for GCC, when target is PX4-v3 or build is launched by a scheduled job and target is a PX4 board or SITL
     if [[ "$cxx_compiler" != "clang++" && ($t == "px4-v3" || (-n ${CI_CRON_JOB+1} && ($t == "px4"* || $t == "sitl"))) ]]; then
