@@ -76,10 +76,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPEND
 };
 
-//The function point is particularly hacky, hacky, tacky
-//but I don't want to reimplement messaging to GCS at the moment:
-AP_Arming::AP_Arming() :
-    arming_method(NONE)
+AP_Arming::AP_Arming()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -601,14 +598,12 @@ bool AP_Arming::arm(uint8_t method, const bool do_arming_checks)
     //are arming checks disabled?
     if (!do_arming_checks || checks_to_perform == ARMING_CHECK_NONE) {
         armed = true;
-        arming_method = NONE;
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
         return true;
     }
 
     if (pre_arm_checks(true) && arm_checks(method)) {
         armed = true;
-        arming_method = method;
 
         gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
@@ -617,7 +612,6 @@ bool AP_Arming::arm(uint8_t method, const bool do_arming_checks)
 
     } else {
         armed = false;
-        arming_method = NONE;
     }
 
     return armed;
