@@ -385,7 +385,7 @@
 
 // if bus masks are not setup above then use these defaults
 #ifndef HAL_LINUX_I2C_BUS_MASK
-#define HAL_LINUX_I2C_BUS_MASK 0x1f
+#define HAL_LINUX_I2C_BUS_MASK 0xFFFF
 #endif
 
 #ifndef HAL_LINUX_I2C_INTERNAL_BUS_MASK
@@ -393,5 +393,5 @@
 #endif
 
 #ifndef HAL_LINUX_I2C_EXTERNAL_BUS_MASK
-#define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 0x1E
+#define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 0xFFFF
 #endif
