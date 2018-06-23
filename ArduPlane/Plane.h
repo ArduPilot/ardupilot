@@ -290,6 +290,10 @@ private:
     // RSSI
     AP_RSSI rssi;
 
+#if OSD_ENABLED == ENABLED
+    AP_OSD osd;
+#endif
+    
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;

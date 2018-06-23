@@ -123,7 +123,7 @@ void Plane::init_ardupilot()
 #endif
 
 #if OSD_ENABLED == ENABLED
-    g2.osd.init();
+    osd.init();
 #endif
 
 #if LOGGING_ENABLED == ENABLED

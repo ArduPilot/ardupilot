@@ -1096,6 +1096,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Landing/AP_Landing.cpp
     GOBJECT(landing, "LAND_", AP_Landing),
 
+#if OSD_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+    
     AP_VAREND
 };
 
@@ -1167,12 +1173,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: GRIP_
     // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
-#endif
-
-#if OSD_ENABLED
-    // @Group: OSD
-    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
-    AP_SUBGROUPINFO(osd, "OSD_", 13, ParametersG2, AP_OSD),
 #endif
 
     AP_GROUPEND
