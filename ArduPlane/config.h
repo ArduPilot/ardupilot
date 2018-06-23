@@ -373,3 +373,8 @@
  #define DEVO_TELEM_ENABLED ENABLED
 #endif
 #endif
+
+#ifndef OSD_ENABLED
+ #define OSD_ENABLED DISABLED
+#endif
+

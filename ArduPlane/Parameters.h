@@ -542,6 +542,10 @@ public:
     AP_Gripper gripper;
 #endif
 
+#if OSD_ENABLED == ENABLED
+    AP_OSD osd;
+#endif
+
 };
 
 extern const AP_Param::Info var_info[];
