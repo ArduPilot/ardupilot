@@ -65,3 +65,4 @@ LIBRARIES += AP_Winch
 LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_Follow
 LIBRARIES += AP_Devo_Telem
+LIBRARIES += AP_OSD

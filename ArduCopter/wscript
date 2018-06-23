@@ -34,6 +34,7 @@ def build(bld):
             'AP_Winch',
             'AP_Follow',
             'AP_Devo_Telem',
+            'AP_OSD',
         ],
     )
 
