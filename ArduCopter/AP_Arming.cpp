@@ -340,6 +340,8 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
+    AP_Notify::flags.pre_arm_gps_check = false;
+
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
@@ -374,7 +376,6 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
             }
         }
         check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
-        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
@@ -400,7 +401,6 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     // check home and EKF origin are not too far
     if (copter.far_from_EKF_origin(ahrs.get_home())) {
         check_failed(ARMING_CHECK_NONE, display_failure, "EKF-home variance");
-        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
@@ -413,13 +413,11 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
         check_failed(ARMING_CHECK_GPS, display_failure, "PreArm: High GPS HDOP");
-        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
     // call parent gps checks
     if (!AP_Arming::gps_checks(display_failure)) {
-        AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
 
