@@ -498,7 +498,16 @@ is bob we will attempt to checkout bob-AVR'''
                 "navio",
                 "navio2",
                 "pxf",
-                "pxfmini"]
+                "pxfmini",
+                "KakuteF4",
+                "MatekF405",
+                "MatekF405-Wing",
+                "OMNIBUSF7V2",
+                "sparky2",
+                "omnibusf4pro",
+                "mini-pix",
+                "airbotf4",
+                "revo-mini"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
