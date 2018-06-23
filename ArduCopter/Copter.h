@@ -152,6 +152,10 @@
  #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #endif
 
+#if OSD_ENABLED == ENABLED
+ #include <AP_OSD/AP_OSD.h>
+#endif
+
 #if ADVANCED_FAILSAFE == ENABLED
  # include "afs_copter.h"
 #endif

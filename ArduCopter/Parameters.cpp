@@ -980,6 +980,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
 
+#if OSD_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    AP_SUBGROUPINFO(osd, "OSD_", 28, ParametersG2, AP_OSD),
+#endif
+
     AP_GROUPEND
 };
 
