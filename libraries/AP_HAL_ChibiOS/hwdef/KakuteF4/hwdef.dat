@@ -113,7 +113,7 @@ PB0 TIM3_CH3 TIM3 PWM(4) GPIO(53)
 
 # PC8 TIM8_CH3 TIM2 GPIO(54) # LED strip
 
-define HAL_STORAGE_SIZE 8192
+define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
