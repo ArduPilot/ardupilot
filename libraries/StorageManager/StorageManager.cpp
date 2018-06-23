@@ -48,6 +48,10 @@ const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_ARE
     { StorageKeys,    8064,    64}, 
     { StorageBindInfo,8128,    56}, 
 #endif
+#if STORAGE_NUM_AREAS == 11
+    // optimised for lots of parameters for 15k boards with OSD
+    { StorageParam,    8192,  7168},
+#endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
@@ -74,6 +78,10 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageMission, 5932,  2132},
     { StorageKeys,    8064,    64}, 
     { StorageBindInfo,8128,    56},
+#endif
+#if STORAGE_NUM_AREAS == 11
+    // optimised for lots of parameters for 15k boards with OSD
+    { StorageParam,    8192,  7168},
 #endif
 #if STORAGE_NUM_AREAS >= 12
     { StorageParam,    8192,  1280},
