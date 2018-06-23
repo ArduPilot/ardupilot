@@ -795,6 +795,12 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 #endif
 
+#if OSD_ENABLED == ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+    
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -978,12 +984,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: FOLL
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
-#endif
-
-#if OSD_ENABLED
-    // @Group: OSD
-    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
-    AP_SUBGROUPINFO(osd, "OSD_", 28, ParametersG2, AP_OSD),
 #endif
 
     AP_GROUPEND
