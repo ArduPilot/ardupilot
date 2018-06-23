@@ -1169,6 +1169,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
 #endif
 
+#if OSD_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    AP_SUBGROUPINFO(osd, "OSD_", 13, ParametersG2, AP_OSD),
+#endif
+
     AP_GROUPEND
 };
 
