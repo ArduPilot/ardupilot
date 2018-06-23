@@ -82,10 +82,18 @@ class set_default_parameters(Task.Task):
         defaults.save()
 
 
-class generate_fw(Task.Task):
+class generate_bin(Task.Task):
     color='CYAN'
-    run_str="${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
-    python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}.bin' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
+    run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class generate_apj(Task.Task):
+    color='CYAN'
+    run_str="python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -102,34 +110,53 @@ class build_abin(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
+class build_intel_hex(Task.Task):
+    '''build an intel hex file for upload with DFU'''
+    color='CYAN'
+    run_str='${TOOLS_SCRIPTS}/make_intel_hex.sh ${SRC} ${FLASH_RESERVE_START_KB} ${TGT}'
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
     self.link_task.always_run = True
 
     link_output = self.link_task.outputs[0]
-    self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
-    generate_fw_task = self.create_task('generate_fw',
-                                        src=link_output,
-                                        tgt=self.objcopy_target)
-    generate_fw_task.set_run_after(self.link_task)
+    bin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
+    apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
+
+    generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
+    generate_bin_task.set_run_after(self.link_task)
+
+    generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
+    generate_apj_task.set_run_after(generate_bin_task)
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
         abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
-        abin_task.set_run_after(generate_fw_task)
+        abin_task.set_run_after(generate_apj_task)
+
+    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+    if os.path.exists(bootloader_bin.abspath()):
+        hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+        hex_task = self.create_task('build_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
+        hex_task.set_run_after(generate_apj_task)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
                                                src=link_output)
         default_params_task.set_run_after(self.link_task)
-        generate_fw_task.set_run_after(default_params_task)
+        generate_apj_task.set_run_after(default_params_task)
     
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw',
                                 src=self.objcopy_target)
-        _upload_task.set_run_after(generate_fw_task)
+        _upload_task.set_run_after(generate_apj_task)
 
 def setup_can_build(cfg):
     '''enable CAN build. By doing this here we can auto-enable CAN in
