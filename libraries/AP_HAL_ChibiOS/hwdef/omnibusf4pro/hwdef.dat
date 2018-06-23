@@ -7,7 +7,7 @@ MCU STM32F4xx STM32F405xx
 HAL_CHIBIOS_ARCH_F405 1
 
 # board ID for firmware load
-APJ_BOARD_ID 70
+APJ_BOARD_ID 131
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
