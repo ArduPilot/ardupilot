@@ -79,7 +79,6 @@ protected:
     // internal members
     bool                    armed:1;
     bool                    logging_available:1;
-    uint8_t                 arming_method;          // how the vehicle was armed
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
