@@ -122,6 +122,10 @@ void Plane::init_ardupilot()
     devo_telemetry.init(serial_manager);
 #endif
 
+#if OSD_ENABLED == ENABLED
+    g2.osd.init();
+#endif
+
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
