@@ -154,8 +154,7 @@ def chibios_firmware(self):
         generate_apj_task.set_run_after(default_params_task)
     
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw',
-                                src=self.objcopy_target)
+        _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
 
 def setup_can_build(cfg):
