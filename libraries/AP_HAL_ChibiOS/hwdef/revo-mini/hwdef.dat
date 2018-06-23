@@ -109,7 +109,7 @@ PC9 TIM8_CH4 TIM2 PWM(8) GPIO(57)
 
 PB7 DRDY_HMC5883 INPUT PULLUP
 
-define HAL_STORAGE_SIZE 8192
+define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 2
 
 # reserve 32k for bootloader and 32k for flash storage
