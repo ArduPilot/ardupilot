@@ -18,9 +18,9 @@ FLASH_SIZE_KB 1024
 # board voltage
 STM32_VDD 330U
 
-# serial port for stdout via flexi-port (conn3)
-STDOUT_SERIAL SD1
-STDOUT_BAUDRATE 115200
+# use USB for stdout, so no STDOUT_SERIAL
+# STDOUT_SERIAL SD1
+# STDOUT_BAUDRATE 115200
 
 # --------LEDs-----------
 PB5 LED_BLUE OUTPUT LOW GPIO(0)
