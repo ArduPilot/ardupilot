@@ -47,6 +47,7 @@ public:
         k_param_g2, // 2nd block of parameters
         k_param_NavEKF3,
         k_param_BoardConfig_CAN,
+        k_param_osd,
 
         // simulation
         k_param_sitl = 10,
@@ -584,10 +585,6 @@ public:
 #if MODE_FOLLOW_ENABLED == ENABLED
     // follow
     AP_Follow follow;
-#endif
-
-#if OSD_ENABLED == ENABLED
-    AP_OSD osd;
 #endif
 
 };
