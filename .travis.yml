@@ -72,7 +72,7 @@ matrix:
   fast_finish: true
   include:
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2"
+      env: CI_BUILD_TARGET="px4-v2 revo-bootloader"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v4 revo-mini"
     - compiler: "gcc"
