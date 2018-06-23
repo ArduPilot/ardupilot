@@ -451,6 +451,10 @@ private:
     AP_DEVO_Telem devo_telemetry{ahrs};
 #endif
 
+#if OSD_ENABLED == ENABLED
+    AP_OSD osd;
+#endif
+    
     // Variables for extended status MAVLink messages
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
