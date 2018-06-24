@@ -114,7 +114,7 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 // keep a cache of the page addresses
 static uint32_t flash_pageaddr[STM32_FLASH_NPAGES];
 static bool flash_pageaddr_initialised;
-
+static bool flash_keep_unlocked;
 
 #define FLASH_KEY1      0x45670123
 #define FLASH_KEY2      0xCDEF89AB
@@ -144,6 +144,9 @@ static void stm32_flash_wait_idle(void)
 
 static void stm32_flash_unlock(void)
 {
+    if (flash_keep_unlocked) {
+        return;
+    }
     stm32_flash_wait_idle();
 
     if (FLASH->CR & FLASH_CR_LOCK) {
@@ -160,6 +163,9 @@ static void stm32_flash_unlock(void)
 
 void stm32_flash_lock(void)
 {
+    if (flash_keep_unlocked) {
+        return;
+    }
     stm32_flash_wait_idle();
     FLASH->CR |= FLASH_CR_LOCK;
 
@@ -350,6 +356,17 @@ failed:
     chSysRestoreStatusX(sts);
 #endif
     return -1;
+}
+
+void stm32_flash_keep_unlocked(bool set)
+{
+    if (set && !flash_keep_unlocked) {
+        stm32_flash_unlock();
+        flash_keep_unlocked = true;
+    } else if (!set && flash_keep_unlocked) {
+        flash_keep_unlocked = false;
+        stm32_flash_lock();        
+    }
 }
 
 #endif // HAL_NO_FLASH_SUPPORT
