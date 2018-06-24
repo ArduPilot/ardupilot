@@ -20,6 +20,62 @@
 
 class AP_OSD_Backend;
 
+#define AP_OSD_NUM_SCREENS 4
+
+/*
+  class to hold one setting
+ */
+class AP_OSD_Setting {
+public:
+    AP_Int8 enabled;
+    AP_Int8 xpos;
+    AP_Int8 ypos;
+
+    AP_OSD_Setting(bool enabled, uint8_t x, uint8_t y);
+    
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+};
+
+
+/*
+  class to hold one screen of settings
+ */
+class AP_OSD_Screen {
+public:
+    // constructor
+    AP_OSD_Screen();
+    
+    void draw(void);
+
+    void set_backend(AP_OSD_Backend *_backend) { backend = _backend; };
+
+    // User settable parameters
+    static const struct AP_Param::GroupInfo var_info[];
+    
+private:
+    AP_Int8 enabled;
+    AP_OSD_Backend *backend;
+
+    AP_OSD_Setting altitude{true, 1, 1};
+    AP_OSD_Setting bat_volt{true, 9, 1};
+    AP_OSD_Setting rssi{false, 0, 0};
+    AP_OSD_Setting current{true, 1, 2};
+    AP_OSD_Setting batused{true, 1, 3};
+    AP_OSD_Setting sats{true, 1, 4};
+    AP_OSD_Setting fltmode{true, 12, 14};
+    AP_OSD_Setting message{false, 0, 0};
+    
+    void draw_altitude(uint8_t x, uint8_t y);
+    void draw_bat_volt(uint8_t x, uint8_t y);
+    void draw_rssi(uint8_t x, uint8_t y);
+    void draw_current(uint8_t x, uint8_t y);
+    void draw_batused(uint8_t x, uint8_t y);
+    void draw_sats(uint8_t x, uint8_t y);
+    void draw_fltmode(uint8_t x, uint8_t y);
+    void draw_message(uint8_t x, uint8_t y);
+};
+
 class AP_OSD {
 public:
     //constructor
@@ -35,17 +91,15 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
-    AP_Int8 osd_enabled;
+    enum osd_types {
+        OSD_NONE=0,
+        OSD_MAX7456=1,
+    };
+    
+    AP_Int8 osd_type;
     AP_Int8 update_font;
 
-    AP_Int16 pos_altitude;
-    AP_Int16 pos_batt_voltage;
-    AP_Int16 pos_rssi;
-    AP_Int16 pos_current_draw;
-    AP_Int16 pos_mah_drawn;
-    AP_Int16 pos_gps_sats;
-    AP_Int16 pos_flymode;
-    AP_Int16 pos_messages;
+    AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
 private:
     void timer();
@@ -53,15 +107,5 @@ private:
     AP_OSD_Backend *backend;
     uint32_t last_update_ms;
 
-    void draw_altitude();
-    void draw_batt_voltage();
-    void draw_rssi();
-    void draw_current_draw();
-    void draw_mah_drawn();
-    void draw_horizon();
-    void draw_ontime_flytime();
-    void draw_gps_sats();
-    void draw_flymode();
-    void draw_messages();
+    uint8_t current_screen;
 };
-
