@@ -136,7 +136,7 @@ AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
     AP_OSD_Backend(osd), _dev(std::move(dev))
 {
     video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
-    max_screen_size = video_buffer_chars_pal;
+    video_lines = video_lines_pal;
 }
 
 bool AP_OSD_MAX7456::init()
@@ -269,10 +269,10 @@ void AP_OSD_MAX7456::reinit()
     _dev->read_registers(MAX7456ADD_STAT, &sense, 1);
     if (VIN_IS_PAL(sense)) {
         video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
-        max_screen_size = video_buffer_chars_pal;
+        video_lines = video_lines_pal;
     } else {
         video_signal_reg = VIDEO_MODE_NTSC | OSD_ENABLE;
-        max_screen_size = video_buffer_chars_ntsc;
+        video_lines = video_lines_ntsc;
     }
 
     // set all rows to same character black/white level
@@ -286,8 +286,8 @@ void AP_OSD_MAX7456::reinit()
     _dev->write_register(MAX7456ADD_DMM, DMM_CLEAR_DISPLAY);
 
     // force redrawing all screen
-    memset(shadow_frame, 0xFF, video_buffer_chars_pal);
-    memset(shadow_attr, 0xFF, video_buffer_chars_pal);
+    memset(shadow_frame, 0xFF, sizeof(shadow_frame));
+    memset(shadow_attr, 0xFF, sizeof(shadow_attr));
 
     initialized = true;
 }
@@ -313,25 +313,29 @@ void AP_OSD_MAX7456::transfer_frame()
     }
 
     buffer_offset = 0;
-    for (uint16_t pos=0; pos<max_screen_size; pos++) {
-        if (frame[pos] == shadow_frame[pos] && attr[pos] == shadow_attr[pos]) {
-            continue;
-        }
-        if (++updated_chars > max_updated_chars) {
-            break;
-        }
-        shadow_frame[pos] = frame[pos];
-        shadow_attr[pos] = attr[pos];
-        uint8_t attribute = attr[pos] & (DMM_BLINK | DMM_INVERT_PIXEL_COLOR);
-        uint8_t chr = frame[pos];
+    for (uint8_t y=0; y<video_lines; y++) {
+        for (uint8_t x=0; x<video_columns; x++) {
+            
+            if (frame[y][x] == shadow_frame[y][x] && attr[y][x] == shadow_attr[y][x]) {
+                continue;
+            }
+            if (++updated_chars > max_updated_chars) {
+                break;
+            }
+            shadow_frame[y][x] = frame[y][x];
+            shadow_attr[y][x] = attr[y][x];
+            uint8_t attribute = attr[y][x] & (DMM_BLINK | DMM_INVERT_PIXEL_COLOR);
+            uint8_t chr = frame[y][x];
 
-        if (attribute != last_attribute) {
-            buffer_add_cmd(MAX7456ADD_DMM, attribute);
-            last_attribute = attribute;
+            if (attribute != last_attribute) {
+                buffer_add_cmd(MAX7456ADD_DMM, attribute);
+                last_attribute = attribute;
+            }
+            uint16_t pos = y * video_columns + x;
+            buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
+            buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
+            buffer_add_cmd(MAX7456ADD_DMDI, chr);
         }
-        buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
-        buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
-        buffer_add_cmd(MAX7456ADD_DMDI, chr);
     }
 
     if (buffer_offset > 0) {
@@ -343,10 +347,8 @@ void AP_OSD_MAX7456::transfer_frame()
 
 void AP_OSD_MAX7456::clear()
 {
-    for (uint16_t i=0; i<video_buffer_chars_pal; i++) {
-        frame[i] = ' ';
-        attr[i] = 0;
-    }
+    memset(frame, ' ', sizeof(frame));
+    memset(attr, 0, sizeof(attr));
 }
 
 void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr)
@@ -355,8 +357,8 @@ void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text, uint8_t char_
         return;
     }
     while ((x < VIDEO_COLUMNS) && (*text != 0)) {
-        frame[y * VIDEO_COLUMNS + x] = *text;
-        attr[y * VIDEO_COLUMNS + x] = char_attr;
+        frame[y][x] = *text;
+        attr[y][x] = char_attr;
         ++text;
         ++x;
     }
