@@ -40,9 +40,6 @@ private:
     //constructor
     AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
-    //destructor
-    virtual ~AP_OSD_MAX7456(void);
-
     void buffer_add_cmd(uint8_t reg, uint8_t arg);
 
     bool update_font();
@@ -58,17 +55,22 @@ private:
     uint8_t  video_signal_reg;
     bool initialized;
 
-    uint8_t *frame;
+    static const uint16_t video_buffer_chars_ntsc = 390;
+    static const uint16_t video_buffer_chars_pal = 480;
+    static const uint8_t max_updated_chars = 64;
+    static const uint16_t spi_buffer_size = ((max_updated_chars + 1) * 8);
+    
+    uint8_t frame[video_buffer_chars_pal];
 
     //frame already transfered to max
     //used to optimize number of characters updated
-    uint8_t *shadow_frame;
+    uint8_t shadow_frame[video_buffer_chars_pal];
 
-    uint8_t *attr;
+    uint8_t attr[video_buffer_chars_pal];
 
-    uint8_t *shadow_attr;
+    uint8_t shadow_attr[video_buffer_chars_pal];
 
-    uint8_t *buffer;
+    uint8_t buffer[spi_buffer_size];
     int buffer_offset;
 
     uint32_t last_signal_check;
