@@ -113,7 +113,7 @@ class build_abin(Task.Task):
 class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
     color='CYAN'
-    run_str='${TOOLS_SCRIPTS}/make_intel_hex.sh ${SRC} ${FLASH_RESERVE_START_KB} ${TGT}'
+    run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
     always_run = True
     def keyword(self):
         return "Generating"
