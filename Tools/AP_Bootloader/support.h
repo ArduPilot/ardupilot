@@ -13,6 +13,7 @@ struct boardinfo {
 extern struct boardinfo board_info;
 
 int16_t cin(unsigned timeout_ms);
+int cin_word(uint32_t *wp, unsigned timeout_ms);
 void cout(uint8_t *data, uint32_t len);
 void cfini(void);
 
@@ -24,6 +25,7 @@ uint32_t flash_func_sector_size(uint32_t sector);
 void flash_func_erase_sector(uint32_t sector);
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
+void flash_set_keep_unlocked(bool);
 
 uint32_t get_mcu_id(void);
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf);

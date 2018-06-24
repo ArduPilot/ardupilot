@@ -17,11 +17,21 @@ int16_t cin(unsigned timeout_ms)
 {
     uint8_t b = 0;
     if (chnReadTimeout(&SDU1, &b, 1, MS2ST(timeout_ms)) != 1) {
-        chThdSleepMilliseconds(1);
+        chThdSleepMicroseconds(100);
         return -1;
     }
     return b;
 }
+
+int cin_word(uint32_t *wp, unsigned timeout_ms)
+{
+    if (chnReadTimeout(&SDU1, (uint8_t *)wp, 4, MS2ST(timeout_ms)) != 4) {
+        chThdSleepMicroseconds(100);
+        return -1;
+    }
+    return 0;
+}
+
 
 void cout(uint8_t *data, uint32_t len)
 {
@@ -51,6 +61,10 @@ void flash_init(void)
     }
 }
 
+void flash_set_keep_unlocked(bool set)
+{
+    stm32_flash_keep_unlocked(set);
+}
 
 /*
   read a word at offset relative to FLASH_BOOTLOADER_LOAD_KB
