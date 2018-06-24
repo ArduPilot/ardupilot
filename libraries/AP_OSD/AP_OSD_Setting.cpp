@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_OSD_Setting::var_info[] = {
     // @Param: _X
     // @DisplayName: X position
     // @Description: Horizontal position on screen
-    // @Range: 0 31
+    // @Range: 0 29
     // @User: Standard
     AP_GROUPINFO("_X", 2, AP_OSD_Setting, xpos, 0),
 
