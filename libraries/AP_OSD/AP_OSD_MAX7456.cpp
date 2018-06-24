@@ -25,13 +25,9 @@
 
 #include <utility>
 
-#define VIDEO_BUFFER_CHARS_NTSC   390
-#define VIDEO_BUFFER_CHARS_PAL    480
 #define VIDEO_LINES_NTSC          13
 #define VIDEO_LINES_PAL           16
 #define VIDEO_COLUMNS             30
-#define MAX_UPDATED_CHARS         64
-#define SPI_BUFFER_SIZE           ((MAX_UPDATED_CHARS + 1)* 8)
 #define NVM_RAM_SIZE              54
 
 //MAX7456 registers
@@ -140,44 +136,12 @@ AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
     AP_OSD_Backend(osd), _dev(std::move(dev))
 {
     video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
-    max_screen_size = VIDEO_BUFFER_CHARS_PAL;
-}
-
-AP_OSD_MAX7456::~AP_OSD_MAX7456()
-{
-    if (buffer != nullptr) {
-        hal.util->free_type(buffer, SPI_BUFFER_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
-    }
-    if (frame != nullptr) {
-        hal.util->free_type(frame, VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    }
-    if (shadow_frame != nullptr) {
-        hal.util->free_type(shadow_frame, VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    }
-    if (attr != nullptr) {
-        hal.util->free_type(attr, VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    }
-    if (shadow_attr != nullptr) {
-        hal.util->free_type(shadow_attr, VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    }
-
+    max_screen_size = video_buffer_chars_pal;
 }
 
 bool AP_OSD_MAX7456::init()
 {
     uint8_t status = 0xFF;
-    buffer = (uint8_t *)hal.util->malloc_type(SPI_BUFFER_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
-    frame = (uint8_t *)hal.util->malloc_type(VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    shadow_frame = (uint8_t *)hal.util->malloc_type(VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    attr = (uint8_t *)hal.util->malloc_type(VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-    shadow_attr = (uint8_t *)hal.util->malloc_type(VIDEO_BUFFER_CHARS_PAL, AP_HAL::Util::MEM_FAST);
-
-
-    if (buffer == nullptr || frame == nullptr || shadow_frame == nullptr || attr== nullptr ||shadow_attr == nullptr) {
-        return false;
-    }
-
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     _dev->get_semaphore()->take_blocking();
     _dev->write_register(MAX7456ADD_VM0, MAX7456_RESET);
@@ -236,17 +200,19 @@ AP_OSD_Backend *AP_OSD_MAX7456::probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device
     }
 
     AP_OSD_MAX7456 *backend = new AP_OSD_MAX7456(osd, std::move(dev));
-    if (!backend || !backend->init()) {
+    if (!backend) {
+        return nullptr;
+    }
+    if (!backend->init()) {
         delete backend;
         return nullptr;
     }
-
     return backend;
 }
 
 void AP_OSD_MAX7456::buffer_add_cmd(uint8_t reg, uint8_t arg)
 {
-    if (buffer_offset < SPI_BUFFER_SIZE - 1) {
+    if (buffer_offset < spi_buffer_size - 1) {
         buffer[buffer_offset++] = reg;
         buffer[buffer_offset++] = arg;
     }
@@ -303,10 +269,10 @@ void AP_OSD_MAX7456::reinit()
     _dev->read_registers(MAX7456ADD_STAT, &sense, 1);
     if (VIN_IS_PAL(sense)) {
         video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
-        max_screen_size = VIDEO_BUFFER_CHARS_PAL;
+        max_screen_size = video_buffer_chars_pal;
     } else {
         video_signal_reg = VIDEO_MODE_NTSC | OSD_ENABLE;
-        max_screen_size = VIDEO_BUFFER_CHARS_NTSC;
+        max_screen_size = video_buffer_chars_ntsc;
     }
 
     // set all rows to same character black/white level
@@ -320,8 +286,8 @@ void AP_OSD_MAX7456::reinit()
     _dev->write_register(MAX7456ADD_DMM, DMM_CLEAR_DISPLAY);
 
     // force redrawing all screen
-    memset(shadow_frame, 0xFF, VIDEO_BUFFER_CHARS_PAL);
-    memset(shadow_attr, 0xFF, VIDEO_BUFFER_CHARS_PAL);
+    memset(shadow_frame, 0xFF, video_buffer_chars_pal);
+    memset(shadow_attr, 0xFF, video_buffer_chars_pal);
 
     initialized = true;
 }
@@ -351,7 +317,7 @@ void AP_OSD_MAX7456::transfer_frame()
         if (frame[pos] == shadow_frame[pos] && attr[pos] == shadow_attr[pos]) {
             continue;
         }
-        if (++updated_chars > MAX_UPDATED_CHARS) {
+        if (++updated_chars > max_updated_chars) {
             break;
         }
         shadow_frame[pos] = frame[pos];
@@ -377,7 +343,7 @@ void AP_OSD_MAX7456::transfer_frame()
 
 void AP_OSD_MAX7456::clear()
 {
-    for (uint16_t i=0; i<VIDEO_BUFFER_CHARS_PAL; i++) {
+    for (uint16_t i=0; i<video_buffer_chars_pal; i++) {
         frame[i] = ' ';
         attr[i] = 0;
     }
