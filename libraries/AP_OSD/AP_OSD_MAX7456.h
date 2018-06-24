@@ -24,16 +24,16 @@ public:
     static AP_OSD_Backend *probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     //draw given text to framebuffer
-    virtual void write(int x, int y, const char* text, uint8_t char_attr);
+    void write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr) override;
 
     //initilize display port and underlying hardware
-    virtual bool init();
+    bool init() override;
 
     //flush framebuffer to screen
-    virtual void flush();
+    void flush() override;
 
     //clear framebuffer
-    virtual void clear();
+    void clear() override;
 
 private:
 

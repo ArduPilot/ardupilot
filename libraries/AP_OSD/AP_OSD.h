@@ -52,9 +52,10 @@ public:
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int8 enabled;
     
 private:
-    AP_Int8 enabled;
     AP_OSD_Backend *backend;
 
     AP_OSD_Setting altitude{true, 1, 1};

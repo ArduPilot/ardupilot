@@ -19,7 +19,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-void AP_OSD_Backend::write(int x, int y, bool blink, const char *fmt, ...)
+void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
 {
     char buff[32];
     va_list ap;
