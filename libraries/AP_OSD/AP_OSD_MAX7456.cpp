@@ -139,17 +139,8 @@ extern const AP_HAL::HAL &hal;
 AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
     AP_OSD_Backend(osd), _dev(std::move(dev))
 {
-    buffer = nullptr;
-    frame = nullptr;
-    shadow_frame = nullptr;
-    attr = nullptr;;
-    shadow_attr = nullptr;
     video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
     max_screen_size = VIDEO_BUFFER_CHARS_PAL;
-    buffer_offset = 0;
-    video_detect_time = 0;
-    last_signal_check = 0;
-    initialized = false;
 }
 
 AP_OSD_MAX7456::~AP_OSD_MAX7456()
@@ -204,14 +195,14 @@ bool AP_OSD_MAX7456::update_font()
         return false;
     }
 
-    for (int chr=0; chr < 256; chr++) {
+    for (uint16_t chr=0; chr < 256; chr++) {
         uint8_t status;
         const uint8_t* chr_font_data = font_data + chr*NVM_RAM_SIZE;
         int retry;
         buffer_offset = 0;
         buffer_add_cmd(MAX7456ADD_VM0, 0);
         buffer_add_cmd(MAX7456ADD_CMAH, chr);
-        for (int x = 0; x < NVM_RAM_SIZE; x++) {
+        for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
             buffer_add_cmd(MAX7456ADD_CMAL, x);
             buffer_add_cmd(MAX7456ADD_CMDI, chr_font_data[x]);
         }
@@ -319,7 +310,7 @@ void AP_OSD_MAX7456::reinit()
     }
 
     // set all rows to same character black/white level
-    for (int x = 0; x < VIDEO_LINES_PAL; x++) {
+    for (uint8_t x = 0; x < VIDEO_LINES_PAL; x++) {
         _dev->write_register(MAX7456ADD_RB0 + x, BWBRIGHTNESS);
     }
 
@@ -356,7 +347,7 @@ void AP_OSD_MAX7456::transfer_frame()
     }
 
     buffer_offset = 0;
-    for (int pos=0; pos<max_screen_size; pos++) {
+    for (uint16_t pos=0; pos<max_screen_size; pos++) {
         if (frame[pos] == shadow_frame[pos] && attr[pos] == shadow_attr[pos]) {
             continue;
         }
@@ -386,13 +377,13 @@ void AP_OSD_MAX7456::transfer_frame()
 
 void AP_OSD_MAX7456::clear()
 {
-    for (int i=0; i<VIDEO_BUFFER_CHARS_PAL; i++) {
+    for (uint16_t i=0; i<VIDEO_BUFFER_CHARS_PAL; i++) {
         frame[i] = ' ';
         attr[i] = 0;
     }
 }
 
-void AP_OSD_MAX7456::write(int x, int y, const char* text, uint8_t char_attr)
+void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr)
 {
     if (y >= VIDEO_LINES_PAL || text == nullptr) {
         return;

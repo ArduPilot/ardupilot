@@ -30,10 +30,10 @@ public:
     virtual ~AP_OSD_Backend(void) {}
 
     //draw given text to framebuffer
-    virtual void write(int x, int y, const char* text, uint8_t char_attr = 0) = 0;
+    virtual void write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr = 0) = 0;
 
     //draw formatted text to framebuffer
-    virtual void write(int x, int y, bool blink, const char *fmt, ...);
+    virtual void write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...);
 
     //initilize framebuffer and underlying hardware
     virtual bool init() = 0;

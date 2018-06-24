@@ -61,9 +61,11 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
-AP_OSD::AP_OSD() : backend(nullptr), last_update_ms(0)
+AP_OSD::AP_OSD()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    // default first screen enabled
+    screen[0].enabled = 1;
 }
 
 void AP_OSD::init()
