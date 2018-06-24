@@ -135,6 +135,11 @@ define HAL_BARO_BMP280_I2C_ADDR 0x76
 # SPI devices
 SPIDEV mpu6000   SPI1 DEVID1 ICM20689_CS MODE3 1*MHZ 8*MHZ 
 SPIDEV dataflash SPI3 DEVID1 M25P16_CS   MODE3 1*MHZ 8*MHZ
+SPIDEV osd       SPI3 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
+
+# setup for OSD
+define OSD_ENABLED ENABLED
+ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
