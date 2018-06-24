@@ -16,6 +16,7 @@
 #pragma once
 
 #include <AP_OSD/AP_OSD_Backend.h>
+#include <AP_Common/Bitmask.h>
 
 class AP_OSD_MAX7456 : public AP_OSD_Backend {
 
@@ -55,20 +56,21 @@ private:
     uint8_t  video_signal_reg;
     bool initialized;
 
-    static const uint16_t video_buffer_chars_ntsc = 390;
-    static const uint16_t video_buffer_chars_pal = 480;
+    static const uint8_t video_lines_ntsc = 13;
+    static const uint8_t video_lines_pal = 16;
+    static const uint8_t video_columns = 30;
     static const uint8_t max_updated_chars = 64;
     static const uint16_t spi_buffer_size = ((max_updated_chars + 1) * 8);
     
-    uint8_t frame[video_buffer_chars_pal];
+    uint8_t frame[video_lines_pal][video_columns];
 
     //frame already transfered to max
     //used to optimize number of characters updated
-    uint8_t shadow_frame[video_buffer_chars_pal];
+    uint8_t shadow_frame[video_lines_pal][video_columns];
 
-    uint8_t attr[video_buffer_chars_pal];
-
-    uint8_t shadow_attr[video_buffer_chars_pal];
+    // this assumes at most 32 columns
+    uint8_t attr[video_lines_pal][video_columns];
+    uint8_t shadow_attr[video_lines_pal][video_columns];
 
     uint8_t buffer[spi_buffer_size];
     int buffer_offset;
@@ -76,5 +78,5 @@ private:
     uint32_t last_signal_check;
     uint32_t video_detect_time;
 
-    uint16_t max_screen_size;
+    uint16_t video_lines;
 };
