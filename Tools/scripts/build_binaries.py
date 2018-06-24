@@ -387,7 +387,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                for extension in [".px4", ".apj", ".abin", ".hex"]:
+                for extension in [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
