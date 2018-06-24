@@ -212,6 +212,8 @@ jump_to_app()
         return;
     }
 
+    flash_set_keep_unlocked(false);
+    
     led_set(LED_OFF);
 
     /* kill the systick timer */
@@ -294,28 +296,6 @@ static void
 cout_word(uint32_t val)
 {
     cout((uint8_t *)&val, 4);
-}
-
-static int
-cin_word(uint32_t *wp, unsigned timeout)
-{
-    union {
-        uint32_t w;
-        uint8_t b[4];
-    } u;
-
-    for (unsigned i = 0; i < 4; i++) {
-        int c = cin(timeout);
-
-        if (c < 0) {
-            return c;
-        }
-
-        u.b[i] = c & 0xff;
-    }
-
-    *wp = u.w;
-    return 0;
 }
 
 static uint32_t
@@ -476,6 +456,8 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
+            flash_set_keep_unlocked(true);
+
             // clear the bootloader LED while erasing - it stops blinking at random
             // and that's confusing
             led_set(LED_OFF);
@@ -553,7 +535,6 @@ bootloader(unsigned timeout)
             }
 
             arg /= 4;
-
             for (int i = 0; i < arg; i++) {
                 // program the word
                 flash_func_write_word(address, flash_buffer.w[i]);
