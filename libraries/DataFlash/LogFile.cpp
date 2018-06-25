@@ -1452,8 +1452,10 @@ void DataFlash_Class::Log_Write_Current()
     }
 }
 
-void DataFlash_Class::Log_Write_Compass_instance(const Compass &compass, const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
+void DataFlash_Class::Log_Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
 {
+    const Compass &compass = AP::compass();
+
     const Vector3f &mag_field = compass.get_field(mag_instance);
     const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
@@ -1476,19 +1478,22 @@ void DataFlash_Class::Log_Write_Compass_instance(const Compass &compass, const u
 }
 
 // Write a Compass packet
-void DataFlash_Class::Log_Write_Compass(const Compass &compass, uint64_t time_us)
+void DataFlash_Class::Log_Write_Compass(uint64_t time_us)
 {
     if (time_us == 0) {
         time_us = AP_HAL::micros64();
     }
-    Log_Write_Compass_instance(compass, time_us, 0, LOG_COMPASS_MSG);
+    const Compass &compass = AP::compass();
+    if (compass.get_count() > 0) {
+        Log_Write_Compass_instance(time_us, 0, LOG_COMPASS_MSG);
+    }
 
     if (compass.get_count() > 1) {
-        Log_Write_Compass_instance(compass, time_us, 1, LOG_COMPASS2_MSG);
+        Log_Write_Compass_instance(time_us, 1, LOG_COMPASS2_MSG);
     }
 
     if (compass.get_count() > 2) {
-        Log_Write_Compass_instance(compass, time_us, 2, LOG_COMPASS3_MSG);
+        Log_Write_Compass_instance(time_us, 2, LOG_COMPASS3_MSG);
     }
 }
 
