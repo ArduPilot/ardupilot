@@ -218,7 +218,7 @@ uint32_t stm32_flash_getnumpages()
     return STM32_FLASH_NPAGES;
 }
 
-static bool stm32_flash_ispageerased(uint32_t page)
+bool stm32_flash_ispageerased(uint32_t page)
 {
     uint32_t addr;
     uint32_t count;
