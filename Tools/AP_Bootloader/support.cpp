@@ -29,7 +29,7 @@ int16_t cin(unsigned timeout_ms)
             }
         }
     }
-    chThdSleepMicroseconds(100);
+    chThdSleepMicroseconds(500);
     return -1;
 }
 
@@ -43,7 +43,7 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
             }
         }
     }
-    chThdSleepMicroseconds(100);
+    chThdSleepMicroseconds(500);
     return -1;
 }
 
@@ -346,14 +346,14 @@ void init_uarts(void)
  */
 void port_setbaud(uint32_t baudrate)
 {
-    sercfg.speed = baudrate;
 #ifdef HAL_USE_SERIAL_USB
     if (uarts[last_uart] == (BaseChannel *)&SDU1) {
         // can't set baudrate on USB
         return;
     }
 #endif
-    sdStop((SerialDriver *)uarts[last_uart]);
+    memset(&sercfg, 0, sizeof(sercfg));
+    sercfg.speed = baudrate;
     sdStart((SerialDriver *)uarts[last_uart], &sercfg);
 }
 
