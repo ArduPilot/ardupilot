@@ -29,7 +29,7 @@ if not os.path.exists(bootloaderfile):
 blimage = bytes(open(bootloaderfile, "rb").read())
 blimage += bytes(struct.pack('B',255) * (reserve_kb * 1024 - len(blimage)))
 
-if len(blimage) != reserve_kb * 1024:
+if reserve_kb > 0 and len(blimage) != reserve_kb * 1024:
    print("Bad blimage size %u" % len(blimage))
    sys.exit(1)
 
@@ -42,11 +42,12 @@ tmpfile = hexfile + ".tmp"
 open(tmpfile, "wb").write(appimage)
 
 intelhex.bin2hex(tmpfile, hexfile, offset=(0x08000000 + reserve_kb*1024))
-
-open(tmpfile, "wb").write(with_bl)
-
-intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
-
-os.unlink(tmpfile)
 print("Created %s" % hexfile)
-print("Created %s" % hex_with_bl)
+
+if reserve_kb > 0:
+   open(tmpfile, "wb").write(with_bl)
+   intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
+   print("Created %s" % hex_with_bl)
+   
+os.unlink(tmpfile)
+
