@@ -135,6 +135,12 @@ static inline void putreg16(uint16_t val, unsigned int addr)
     __asm__ __volatile__("\tstrh %0, [%1]\n\t": : "r"(val), "r"(addr));
 }
 
+/* define putreg32(v,a)       (*(volatile uint32_t *)(a) = (v)) */
+static inline void putreg32(uint32_t val, unsigned int addr)
+{
+    __asm__ __volatile__("\tstr %0, [%1]\n\t": : "r"(val), "r"(addr));
+}
+
 static void stm32_flash_wait_idle(void)
 {
 	while (FLASH->SR & FLASH_SR_BSY) {
@@ -259,7 +265,8 @@ bool stm32_flash_erasepage(uint32_t page)
 
     // the snb mask is not contiguous, calculate the mask for the page
     uint8_t snb = (((page % 12) << 3) | ((page / 12) << 7));
-    
+
+    // use 32 bit operations
 	FLASH->CR = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
 	FLASH->CR |= FLASH_CR_STRT;
 
@@ -286,7 +293,7 @@ bool stm32_flash_erasepage(uint32_t page)
 
 int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
-    uint16_t *hword = (uint16_t *)buf;
+    uint8_t *b = (uint8_t *)buf;
     uint32_t written = count;
 
     /* STM32 requires half-word access */
@@ -314,15 +321,13 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     FLASH->SR = 0xF3;
 
     stm32_flash_wait_idle();
-        
-    /* TODO: implement up_progmem_write() to support other sizes than 16-bits */
-    FLASH->CR &= ~(FLASH_CR_PSIZE);
-    FLASH->CR |= FLASH_CR_PSIZE_0 | FLASH_CR_PG;
 
-    for (;count; count -= 2, hword++, addr += 2) {
-        /* Write half-word and wait to complete */
+    // do as much as possible with 32 bit writes
+    while (count >= 4 && (addr & 3) == 0) {
+        FLASH->CR &= ~(FLASH_CR_PSIZE);
+        FLASH->CR |= FLASH_CR_PSIZE_1 | FLASH_CR_PG;
 
-        putreg16(*hword, addr);
+        putreg32(*(uint32_t *)b, addr);
 
         // ensure write ordering with cache
         __DSB();
@@ -336,10 +341,36 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
             goto failed;
         }
 
-        if (getreg16(addr) != *hword) {
+        if (getreg16(addr) != *(uint32_t *)b) {
             FLASH->CR &= ~(FLASH_CR_PG);
             goto failed;
         }
+
+        count -= 4;
+        b += 4;
+        addr += 4;
+    }
+
+    // the rest as 16 bit
+    while (count >= 2) {
+        FLASH->CR &= ~(FLASH_CR_PSIZE);
+        FLASH->CR |= FLASH_CR_PSIZE_0 | FLASH_CR_PG;
+
+        putreg16(*(uint16_t *)b, addr);
+
+        // ensure write ordering with cache
+        __DSB();
+        
+        stm32_flash_wait_idle();
+
+        if (getreg16(addr) != *(uint16_t *)b) {
+            FLASH->CR &= ~(FLASH_CR_PG);
+            goto failed;
+        }
+
+        count -= 2;
+        b += 2;
+        addr += 2;
     }
 
     FLASH->CR &= ~(FLASH_CR_PG);
