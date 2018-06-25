@@ -71,10 +71,10 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
-        nav_filter_status filt_status = _inav.get_filter_status();
+        nav_filter_status filt_status = copter.inertial_nav.get_filter_status();
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
-            if (fabsf(_inav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(copter.inertial_nav.get_altitude() - copter.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(ARMING_CHECK_BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -90,7 +90,7 @@ bool AP_Arming_Copter::compass_checks(bool display_failure)
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_COMPASS)) {
         // check compass offsets have been set.  AP_Arming only checks
         // this if learning is off; Copter *always* checks.
-        if (!_compass.configured()) {
+        if (!AP::compass().configured()) {
             check_failed(ARMING_CHECK_COMPASS, display_failure, "Compass not calibrated");
             ret = false;
         }
@@ -342,6 +342,8 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
     AP_Notify::flags.pre_arm_gps_check = false;
 
+    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
@@ -381,7 +383,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // check for GPS glitch (as reported by EKF)
     nav_filter_status filt_status;
-    if (_ahrs_navekf.get_filter_status(filt_status)) {
+    if (ahrs.get_filter_status(filt_status)) {
         if (filt_status.flags.gps_glitching) {
             check_failed(ARMING_CHECK_NONE, display_failure, "GPS glitching");
             return false;
@@ -392,7 +394,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
     Vector2f offset;
-    _ahrs_navekf.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
+    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
     if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
         check_failed(ARMING_CHECK_NONE, display_failure, "EKF compass variance");
         return false;
@@ -430,7 +432,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {
     // get ekf filter status
-    nav_filter_status filt_status = _inav.get_filter_status();
+    nav_filter_status filt_status = copter.inertial_nav.get_filter_status();
 
     return filt_status.flags.attitude;
 }
@@ -504,12 +506,15 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
 {
+    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
         return false;
     }
 
+    const Compass &_compass = AP::compass();
 #ifndef ALLOW_ARM_NO_COMPASS
     // check compass health
     if (!_compass.healthy()) {
