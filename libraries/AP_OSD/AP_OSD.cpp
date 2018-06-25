@@ -31,11 +31,12 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: OSD type
     // @Values: 0:None,1:MAX7456
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _UPDATE_FONT
     // @DisplayName: Update font
-    // @Description: Undate font inside osd chip
+    // @Description: Update font inside osd chip
     // @Values: 0:Do not update,1:Update
     // @User: Standard
     AP_GROUPINFO("_UPDATE_FONT", 2, AP_OSD, update_font, 1),
@@ -48,11 +49,11 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Path: AP_OSD_Screen.cpp
     AP_SUBGROUPINFO(screen[1], "2_", 4, AP_OSD, AP_OSD_Screen),
 
-    // @Group: 2_
+    // @Group: 3_
     // @Path: AP_OSD_Screen.cpp
     AP_SUBGROUPINFO(screen[2], "3_", 5, AP_OSD, AP_OSD_Screen),
 
-    // @Group: 2_
+    // @Group: 4_
     // @Path: AP_OSD_Screen.cpp
     AP_SUBGROUPINFO(screen[3], "4_", 6, AP_OSD, AP_OSD_Screen),
     
@@ -72,6 +73,7 @@ void AP_OSD::init()
 {
     switch ((enum osd_types)osd_type.get()) {
     case OSD_NONE:
+    default:
         break;
 
     case OSD_MAX7456:
@@ -93,7 +95,7 @@ void AP_OSD::timer()
 {
     uint32_t now = AP_HAL::millis();
 
-    if (now - last_update_ms > 100) {
+    if (now - last_update_ms >= 100) {
         last_update_ms = now;
         update_osd();
     }

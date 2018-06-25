@@ -25,8 +25,6 @@
 
 #include <utility>
 
-#define VIDEO_LINES_NTSC          13
-#define VIDEO_LINES_PAL           16
 #define VIDEO_COLUMNS             30
 #define NVM_RAM_SIZE              54
 
@@ -162,7 +160,7 @@ bool AP_OSD_MAX7456::update_font()
     for (uint16_t chr=0; chr < 256; chr++) {
         uint8_t status;
         const uint8_t* chr_font_data = font_data + chr*NVM_RAM_SIZE;
-        int retry;
+        uint16_t retry;
         buffer_offset = 0;
         buffer_add_cmd(MAX7456ADD_VM0, 0);
         buffer_add_cmd(MAX7456ADD_CMAH, chr);
