@@ -8,9 +8,8 @@
 class AP_Arming_Plane : public AP_Arming
 {
 public:
-    AP_Arming_Plane(const AP_AHRS &ahrs_ref, Compass &compass,
-                    const AP_BattMonitor &battery)
-        : AP_Arming(ahrs_ref, compass, battery)
+    AP_Arming_Plane()
+        : AP_Arming()
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
