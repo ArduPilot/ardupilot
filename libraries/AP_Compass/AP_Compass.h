@@ -140,7 +140,7 @@ public:
 
     void cancel_calibration_all();
 
-    bool compass_cal_requires_reboot() { return _cal_complete_requires_reboot; }
+    bool compass_cal_requires_reboot() const { return _cal_complete_requires_reboot; }
     bool is_calibrating() const;
 
     /*
