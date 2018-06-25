@@ -7,11 +7,8 @@ class AP_Arming_Copter : public AP_Arming
 public:
     friend class Copter;
     friend class ToyMode;
-    AP_Arming_Copter(const AP_AHRS_NavEKF &ahrs_ref, Compass &compass,
-                     const AP_BattMonitor &battery, const AP_InertialNav_NavEKF &inav)
-        : AP_Arming(ahrs_ref, compass, battery)
-        , _inav(inav)
-        , _ahrs_navekf(ahrs_ref)
+
+    AP_Arming_Copter() : AP_Arming()
     {
         // default REQUIRE parameter to 1 (Copter does not have an
         // actual ARMING_REQUIRE parameter)
@@ -51,9 +48,6 @@ protected:
     void set_pre_arm_check(bool b);
 
 private:
-
-    const AP_InertialNav_NavEKF &_inav;
-    const AP_AHRS_NavEKF &_ahrs_navekf;
 
     void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);
 };
