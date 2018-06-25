@@ -161,13 +161,13 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
                 uint16_t d8 = process_distance(buffer[16], buffer[17]);
 
                 update_sector_data(0, d1);
-                update_sector_data(45, d8);
-                update_sector_data(90, d7);
-                update_sector_data(135, d6);
+                update_sector_data(45, d2);
+                update_sector_data(90, d3);
+                update_sector_data(135, d4);
                 update_sector_data(180, d5);
-                update_sector_data(225, d4);
-                update_sector_data(270, d3);
-                update_sector_data(315, d2);
+                update_sector_data(225, d6);
+                update_sector_data(270, d7);
+                update_sector_data(315, d8);
 
                 message_count++;
             }
