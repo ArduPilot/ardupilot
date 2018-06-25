@@ -291,18 +291,19 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
-    bld(
-        features='mavgen',
-        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
-        output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
-        name='mavlink',
-        # this below is not ideal, mavgen tool should set this, but that's not
-        # currently possible
-        export_includes=[
+    if not bld.env.BOOTLOADER:
+        bld(
+            features='mavgen',
+            source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+            output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
+            name='mavlink',
+            # this below is not ideal, mavgen tool should set this, but that's not
+            # currently possible
+            export_includes=[
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
-        ],
-    )
+            ],
+            )
 
     if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
