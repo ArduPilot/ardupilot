@@ -117,8 +117,10 @@ private:
 #if HAL_WITH_UAVCAN
     thread_t* _uavcan_thread_ctx;
 #endif
+#if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;
     binary_semaphore_t _io_semaphore;
+#endif
     static void _timer_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
