@@ -32,7 +32,7 @@ public:
     AP_Int8 ypos;
 
     AP_OSD_Setting(bool enabled, uint8_t x, uint8_t y);
-    
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 };
@@ -45,10 +45,13 @@ class AP_OSD_Screen {
 public:
     // constructor
     AP_OSD_Screen();
-    
+
     void draw(void);
 
-    void set_backend(AP_OSD_Backend *_backend) { backend = _backend; };
+    void set_backend(AP_OSD_Backend *_backend)
+    {
+        backend = _backend;
+    };
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -68,7 +71,7 @@ private:
     AP_OSD_Setting sats{true, 1, 4};
     AP_OSD_Setting fltmode{true, 12, 14};
     AP_OSD_Setting message{false, 0, 0};
-    
+
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
@@ -98,7 +101,7 @@ public:
         OSD_NONE=0,
         OSD_MAX7456=1,
     };
-    
+
     AP_Int8 osd_type;
     AP_Int8 rc_channel;
 

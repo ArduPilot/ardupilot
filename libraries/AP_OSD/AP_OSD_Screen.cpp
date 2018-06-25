@@ -38,37 +38,51 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1, AP_OSD_Screen, enabled, 0, AP_PARAM_FLAG_ENABLE),
 
+    // @Param: CHAN_MIN
+    // @DisplayName: Transmitter switch screen minimum pwm
+    // @Description: This sets the PWM lower limit for this screen
+    // @Range: 900 2100
+    // @User: Standard
+    AP_GROUPINFO("CHAN_MIN", 2, AP_OSD_Screen, channel_min, 900),
+
+    // @Param: CHAN_MAX
+    // @DisplayName: Transmitter switch screen maximum pwm
+    // @Description: This sets the PWM upper limit for this screen
+    // @Range: 900 2100
+    // @User: Standard
+    AP_GROUPINFO("CHAN_MAX", 3, AP_OSD_Screen, channel_max, 2100),
+
     // @Group: ALTITUDE
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(altitude, "ALTITUDE", 2, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(altitude, "ALTITUDE", 4, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: BATVOLT
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(bat_volt, "BAT_VOLS", 3, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(bat_volt, "BAT_VOLS", 5, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: RSSI
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(rssi, "RSSI", 4, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(rssi, "RSSI", 6, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: CURRENT
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(current, "CURRENT", 5, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(current, "CURRENT", 7, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: BATUSED
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(batused, "BATUSED", 6, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(batused, "BATUSED", 8, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: SATS
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(sats, "SATS", 7, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(sats, "SATS", 9, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: FLTMODE
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(fltmode, "FLTMODE", 8, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(fltmode, "FLTMODE", 10, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: MESSAGE
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(message, "MESSAGE", 9, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(message, "MESSAGE", 11, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -135,8 +149,7 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    bool has_3dfix = gps.status() <= AP_GPS::GPS_OK_FIX_2D;
-    backend->write(x, y, !has_3dfix, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, gps.num_sats());
+    backend->write(x, y, false, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, gps.num_sats());
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
@@ -145,13 +158,28 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
     backend->write(x,y, battery.has_failsafed(), "%c%4.0f", SYM_MAH, battery.consumed_mah());
 }
 
+char to_uppercase(char c)
+{
+    if (c >= 'a' && c<= 'z') {
+        return c + 'A' - 'a';
+    }
+    return c;
+}
+
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::instance();
     if (notify) {
         bool text_is_valid = AP_HAL::millis() - notify->get_text_updated_millis() < 20000;
         if (text_is_valid) {
-            backend->write(x, y, notify->get_text());
+            char buffer[NOTIFY_TEXT_BUFFER_SIZE];
+            //converted to uppercase,
+            //because we do not have small letter chars inside used font
+            strncpy(buffer, notify->get_text(), sizeof(buffer));
+            for (int i=0; i<sizeof(buffer); i++) {
+                buffer[i] = to_uppercase(buffer[i]);
+            }
+            backend->write(x, y, buffer);
         }
     }
 }
