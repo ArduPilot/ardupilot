@@ -20,7 +20,7 @@ public:
     AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
     void update(void);
-    bool all_checks_passing(bool arming_from_gcs);
+    bool all_checks_passing(ArmingMethod method);
 
     bool rc_calibration_checks(bool display_failure) override;
 
@@ -30,7 +30,7 @@ protected:
     bool pre_arm_ekf_attitude_check();
     bool pre_arm_terrain_check(bool display_failure);
     bool pre_arm_proximity_check(bool display_failure);
-    bool arm_checks(bool display_failure, bool arming_from_gcs);
+    bool arm_checks(bool display_failure, AP_Arming::ArmingMethod method);
 
     // NOTE! the following check functions *DO* call into AP_Arming:
     bool ins_checks(bool display_failure) override;

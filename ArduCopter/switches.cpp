@@ -637,7 +637,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // arm or disarm the vehicle
             switch (ch_flag) {
             case AUX_SWITCH_HIGH:
-                init_arm_motors(false);
+                init_arm_motors(AP_Arming::ArmingMethod::AUXSWITCH);
                 // remember that we are using an arming switch, for use by set_throttle_zero_flag
                 ap.armed_with_switch = true;
                 break;
