@@ -274,7 +274,7 @@ void AP_OSD_MAX7456::reinit()
     }
 
     // set all rows to same character black/white level
-    for (uint8_t x = 0; x < VIDEO_LINES_PAL; x++) {
+    for (uint8_t x = 0; x < video_lines_pal; x++) {
         _dev->write_register(MAX7456ADD_RB0 + x, BWBRIGHTNESS);
     }
 
@@ -351,7 +351,7 @@ void AP_OSD_MAX7456::clear()
 
 void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr)
 {
-    if (y >= VIDEO_LINES_PAL || text == nullptr) {
+    if (y >= video_lines_pal || text == nullptr) {
         return;
     }
     while ((x < VIDEO_COLUMNS) && (*text != 0)) {
