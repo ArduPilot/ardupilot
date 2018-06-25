@@ -27,13 +27,13 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CAN.h>
 
+#if CH_CFG_USE_DYNAMIC == TRUE
+
 #include <DataFlash/DataFlash.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "shared_dma.h"
 #include "sdcard.h"
-
-#if CH_CFG_USE_DYNAMIC == TRUE
 
 using namespace ChibiOS;
 
