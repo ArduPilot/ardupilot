@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Group: 4_
     // @Path: AP_OSD_Screen.cpp
     AP_SUBGROUPINFO(screen[3], "4_", 6, AP_OSD, AP_OSD_Screen),
-    
+
     AP_GROUPEND
 };
 
@@ -116,21 +116,21 @@ void AP_OSD::update_osd()
 
 void AP_OSD::update_current_screen()
 {
-    if(rc_channel == 0) {
-    	return;
+    if (rc_channel == 0) {
+        return;
     }
 
     RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
-   	if(channel == nullptr) {
-   		return;
+    if (channel == nullptr) {
+        return;
     }
 
-	int16_t channel_value = channel->get_radio_in();
-	for(int i=0; i<AP_OSD_NUM_SCREENS; i++){
-    	if(screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
-    		current_screen = i;
-    		break;
-    	}
+    int16_t channel_value = channel->get_radio_in();
+    for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
+        if (screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
+            current_screen = i;
+            break;
+        }
     }
 }
 

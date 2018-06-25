@@ -66,7 +66,7 @@ private:
     static const uint8_t video_columns = 30;
     static const uint8_t max_updated_chars = 64;
     static const uint16_t spi_buffer_size = ((max_updated_chars + 1) * 8);
-    
+
     uint8_t frame[video_lines_pal][video_columns];
 
     //frame already transfered to max

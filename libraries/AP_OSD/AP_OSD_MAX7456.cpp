@@ -162,12 +162,12 @@ bool AP_OSD_MAX7456::update_font()
     for (uint16_t chr=0; chr < 256; chr++) {
         const uint8_t* chr_font_data = font_data + chr*NVM_RAM_SIZE;
         //check if char already up to date
-        if(!check_font_char(chr, chr_font_data)) {
-        	//update char inside max7456 NVM
-        	if(!update_font_char(chr, chr_font_data)) {
-        		hal.console->printf("AP_OSD: error during font char update\n");
-        		return false;
-        	}
+        if (!check_font_char(chr, chr_font_data)) {
+            //update char inside max7456 NVM
+            if (!update_font_char(chr, chr_font_data)) {
+                hal.console->printf("AP_OSD: error during font char update\n");
+                return false;
+            }
         }
     }
     hal.console->printf("AP_OSD: osd font is up to date\n");
@@ -177,8 +177,8 @@ bool AP_OSD_MAX7456::update_font()
 //compare char chr inside MAX7456 NVM with font_data
 bool AP_OSD_MAX7456::check_font_char(uint8_t chr, const uint8_t* font_data)
 {
-	buffer_offset = 0;
-	//send request to read data from NVM
+    buffer_offset = 0;
+    //send request to read data from NVM
     buffer_add_cmd(MAX7456ADD_VM0, 0);
     buffer_add_cmd(MAX7456ADD_CMAH, chr);
     buffer_add_cmd(MAX7456ADD_CMM, READ_NVR);
@@ -186,20 +186,20 @@ bool AP_OSD_MAX7456::check_font_char(uint8_t chr, const uint8_t* font_data)
         buffer_add_cmd(MAX7456ADD_CMAL, x);
         buffer_add_cmd(MAX7456ADD_CMDO, 0xFF);
     }
-	_dev->get_semaphore()->take_blocking();
-	_dev->transfer(buffer, buffer_offset, buffer, buffer_offset);
-	_dev->get_semaphore()->give();
+    _dev->get_semaphore()->take_blocking();
+    _dev->transfer(buffer, buffer_offset, buffer, buffer_offset);
+    _dev->get_semaphore()->give();
 
-	//skip response from MAX7456ADD_VM0/MAX7456ADD_CMAH...
-	buffer_offset = 9;
-	for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
-		if(buffer[buffer_offset] != font_data[x]) {
-			return false;
-		}
-		//one byte per MAX7456ADD_CMAL/MAX7456ADD_CMDO pair
-		buffer_offset += 4;
-	}
-	return true;
+    //skip response from MAX7456ADD_VM0/MAX7456ADD_CMAH...
+    buffer_offset = 9;
+    for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
+        if (buffer[buffer_offset] != font_data[x]) {
+            return false;
+        }
+        //one byte per MAX7456ADD_CMAL/MAX7456ADD_CMDO pair
+        buffer_offset += 4;
+    }
+    return true;
 }
 
 bool AP_OSD_MAX7456::update_font_char(uint8_t chr, const uint8_t* font_data)
@@ -351,7 +351,7 @@ void AP_OSD_MAX7456::transfer_frame()
     buffer_offset = 0;
     for (uint8_t y=0; y<video_lines; y++) {
         for (uint8_t x=0; x<video_columns; x++) {
-            
+
             if (frame[y][x] == shadow_frame[y][x] && attr[y][x] == shadow_attr[y][x]) {
                 continue;
             }
