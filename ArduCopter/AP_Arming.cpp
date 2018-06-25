@@ -16,11 +16,11 @@ void AP_Arming_Copter::update(void)
 }
 
 // performs pre-arm checks and arming checks
-bool AP_Arming_Copter::all_checks_passing(bool arming_from_gcs)
+bool AP_Arming_Copter::all_checks_passing(ArmingMethod method)
 {
     set_pre_arm_check(pre_arm_checks(true));
 
-    return copter.ap.pre_arm_check && arm_checks(true, arming_from_gcs);
+    return copter.ap.pre_arm_check && arm_checks(true, method);
 }
 
 // perform pre-arm checks
@@ -504,7 +504,7 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
 // arm_checks - perform final checks before arming
 //  always called just before arming.  Return true if ok to arm
 //  has side-effect that logging is started
-bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
+bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod method)
 {
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
 
@@ -537,7 +537,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     control_mode_t control_mode = copter.control_mode;
 
     // always check if the current mode allows arming
-    if (!copter.flightmode->allows_arming(arming_from_gcs)) {
+    if (!copter.flightmode->allows_arming(method == AP_Arming::ArmingMethod::MAVLINK)) {
         check_failed(ARMING_CHECK_NONE, display_failure, "Mode not armable");
         return false;
     }
@@ -601,7 +601,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
         }
 
         // check throttle is not too high - skips checks if arming from GCS in Guided
-        if (!(arming_from_gcs && (control_mode == GUIDED || control_mode == GUIDED_NOGPS))) {
+        if (!(method == AP_Arming::ArmingMethod::MAVLINK && (control_mode == GUIDED || control_mode == GUIDED_NOGPS))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
                 check_failed(ARMING_CHECK_RC, display_failure, "%s too high", rc_item);
@@ -624,7 +624,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, bool arming_from_gcs)
     // superclass method should always be the last thing called; it
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
-    return AP_Arming::arm_checks(arming_from_gcs);
+    return AP_Arming::arm_checks(method);
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)
