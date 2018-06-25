@@ -442,7 +442,26 @@ def write_mcu_config(f):
 #define HAL_BOOTLOADER_BUILD TRUE        
 #define HAL_USE_ADC FALSE
 #define HAL_USE_EXT FALSE
+#define HAL_NO_UARTDRIVER
+#define HAL_NO_PRINTF
+#define HAL_NO_CCM
 #define CH_DBG_STATISTICS FALSE
+#define SERIAL_ADVANCED_BUFFERING_SUPPORT FALSE
+#define CH_CFG_USE_TM FALSE
+#define CH_CFG_USE_REGISTRY FALSE
+#define CH_CFG_USE_WAITEXIT FALSE
+#define CH_CFG_USE_DYNAMIC FALSE
+#define CH_CFG_USE_MEMPOOLS FALSE
+#define CH_DBG_FILL_THREADS FALSE
+#define CH_CFG_USE_SEMAPHORES TRUE
+#define CH_CFG_USE_MUTEXES FALSE
+#define CH_CFG_USE_CONDVARS FALSE
+#define CH_CFG_USE_CONDVARS_TIMEOUT FALSE
+#define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+#define CH_CFG_USE_MESSAGES FALSE
+#define CH_CFG_USE_MAILBOXES FALSE
+#define HAL_USE_I2C FALSE
+#define HAL_USE_PWM FALSE
 ''')
 
 def write_ldscript(fname):
@@ -626,9 +645,22 @@ def write_UART_config(f):
             f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" %
                     (dev, dev, rts_line))
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
-    if not need_uart_driver:
+    if not need_uart_driver and not args.bootloader:
         f.write('#define HAL_USE_SERIAL FALSE\n')
 
+def write_UART_config_bootloader(f):
+    '''write UART config defines'''
+    get_config('UART_ORDER')
+    uart_list = config['UART_ORDER']
+    f.write('\n// UART configuration\n')
+    devlist = []
+    for u in uart_list:
+        if u.startswith('OTG'):
+            devlist.append('(BaseChannel *)&SDU1')
+        else:
+            unum = int(u[-1])
+            devlist.append('(BaseChannel *)&SD%u' % unum)
+    f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
 
 def write_I2C_config(f):
     '''write I2C config defines'''
@@ -978,10 +1010,12 @@ def write_hwdef_header(outfilename):
                                   dma_priority=get_config('DMA_PRIORITY',default='TIM* SPI*', spaces=True),
                                   dma_noshare=get_config('DMA_NOSHARE',default='', spaces=True))
 
-    write_PWM_config(f)
-    
-    write_I2C_config(f)
-    write_UART_config(f)
+    if not args.bootloader:
+        write_PWM_config(f)
+        write_I2C_config(f)
+        write_UART_config(f)
+    else:
+        write_UART_config_bootloader(f)
 
     if len(romfs) > 0:
         f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
