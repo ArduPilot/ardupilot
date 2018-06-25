@@ -733,9 +733,14 @@ bootloader(unsigned timeout)
             // send the sync response for this command
             sync_response();
 
+            delay(5);
+
             // set the baudrate
             port_setbaud(baud);
 
+            lock_bl_port();
+            timeout = 0;
+            
             // this is different to what every other case in this
             // switch does!  Most go through sync_response down the
             // bottom, but we need to undertake an action after
