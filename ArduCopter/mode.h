@@ -766,7 +766,7 @@ public:
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     bool limit_check();
 
-    bool takeoff_start(float final_alt_above_home);
+    bool takeoff_start(float final_alt_above_home, bool local_frame = false);
 
     GuidedMode mode() const { return guided_mode; }
 
