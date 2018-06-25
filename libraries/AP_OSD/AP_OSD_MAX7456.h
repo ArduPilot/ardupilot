@@ -45,6 +45,10 @@ private:
 
     bool update_font();
 
+    bool check_font_char(uint8_t chr, const uint8_t* font_data);
+
+    bool update_font_char(uint8_t chr, const uint8_t* font_data);
+
     void check_reinit();
 
     void reinit();
@@ -55,6 +59,7 @@ private:
 
     uint8_t  video_signal_reg;
     bool initialized;
+    bool font_updated;
 
     static const uint8_t video_lines_ntsc = 13;
     static const uint8_t video_lines_pal = 16;
