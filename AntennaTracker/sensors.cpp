@@ -14,7 +14,6 @@ void Tracker::update_ahrs()
 void Tracker::update_compass(void)
 {
     if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
     }
 }
 
