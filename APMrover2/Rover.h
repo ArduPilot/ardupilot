@@ -179,7 +179,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming{ahrs, compass, battery, g2.fence};
+    AP_Arming_Rover arming;
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
