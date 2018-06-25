@@ -28,12 +28,21 @@
 
 #include <hwdef.h>
 
+#ifndef HAL_NO_UARTDRIVER
 static HAL_UARTA_DRIVER;
 static HAL_UARTB_DRIVER;
 static HAL_UARTC_DRIVER;
 static HAL_UARTD_DRIVER;
 static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
+#else
+static Empty::UARTDriver uartADriver;
+static Empty::UARTDriver uartBDriver;
+static Empty::UARTDriver uartCDriver;
+static Empty::UARTDriver uartDDriver;
+static Empty::UARTDriver uartEDriver;
+static Empty::UARTDriver uartFDriver;
+#endif
 
 #if HAL_USE_I2C == TRUE
 static ChibiOS::I2CDeviceManager i2cDeviceManager;
