@@ -257,8 +257,8 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 #if PROXIMITY_ENABLED == ENABLED
-    if (copter.g2.proximity.get_status() > AP_Proximity::Proximity_NotConnected) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    if (copter.g2.proximity.sensor_present()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
 #endif
 #if AC_FENCE == ENABLED
@@ -266,14 +266,21 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
 #endif
+#if RANGEFINDER_ENABLED == ENABLED
+    if (rangefinder.has_orientation(ROTATION_PITCH_270)) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    }
+#endif
 
-    // all present sensors enabled by default except altitude and position control and motors which we will set individually
+    // all sensors are present except these, which may be set as enabled below:
     control_sensors_enabled = control_sensors_present & (~MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
                                                          ~MAV_SYS_STATUS_LOGGING &
                                                          ~MAV_SYS_STATUS_SENSOR_BATTERY &
-                                                         ~MAV_SYS_STATUS_GEOFENCE);
+                                                         ~MAV_SYS_STATUS_GEOFENCE &
+                                                         ~MAV_SYS_STATUS_SENSOR_LASER_POSITION &
+                                                         ~MAV_SYS_STATUS_SENSOR_PROXIMITY);
 
     switch (control_mode) {
     case AUTO:
@@ -317,6 +324,11 @@ void Copter::update_sensor_status_flags(void)
 #if AC_FENCE == ENABLED
     if (copter.fence.sys_status_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
+    }
+#endif
+#if PROXIMITY_ENABLED == ENABLED
+    if (copter.g2.proximity.sensor_enabled()) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
 #endif
 
@@ -368,8 +380,8 @@ void Copter::update_sensor_status_flags(void)
     }
 
 #if PROXIMITY_ENABLED == ENABLED
-    if (copter.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
-        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    if (copter.g2.proximity.sensor_failed()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
 #endif
 
@@ -392,10 +404,9 @@ void Copter::update_sensor_status_flags(void)
 
 #if RANGEFINDER_ENABLED == ENABLED
     if (rangefinder_state.enabled) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (rangefinder.has_data_orient(ROTATION_PITCH_270)) {
-            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        if (!rangefinder_state.alt_healthy) {
+            control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
 #endif
