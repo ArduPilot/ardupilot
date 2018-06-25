@@ -14,9 +14,15 @@
 #include "mcu_f7.h"
 
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
+#if HAL_USE_SERIAL == TRUE
 static SerialConfig sercfg;
+#endif
 static int8_t locked_uart = -1;
 static uint8_t last_uart;
+
+#ifndef BOOTLOADER_BAUDRATE
+#define BOOTLOADER_BAUDRATE 115200
+#endif
 
 int16_t cin(unsigned timeout_ms)
 {
@@ -328,6 +334,7 @@ void init_uarts(void)
     usbConnectBus(serusbcfg.usbp);
 #endif
 
+#if HAL_USE_SERIAL == TRUE
     sercfg.speed = BOOTLOADER_BAUDRATE;
     
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
@@ -338,6 +345,7 @@ void init_uarts(void)
 #endif
         sdStart((SerialDriver *)uarts[i], &sercfg);
     }
+#endif
 }
 
 
@@ -352,8 +360,10 @@ void port_setbaud(uint32_t baudrate)
         return;
     }
 #endif
+#if HAL_USE_SERIAL == TRUE
     memset(&sercfg, 0, sizeof(sercfg));
     sercfg.speed = baudrate;
     sdStart((SerialDriver *)uarts[last_uart], &sercfg);
+#endif
 }
 
