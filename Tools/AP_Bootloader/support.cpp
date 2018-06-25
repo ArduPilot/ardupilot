@@ -13,34 +13,44 @@
 #include "mcu_f4.h"
 #include "mcu_f7.h"
 
+static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
+static SerialConfig sercfg;
+static int8_t locked_uart = -1;
+static uint8_t last_uart;
+
 int16_t cin(unsigned timeout_ms)
 {
     uint8_t b = 0;
-    if (chnReadTimeout(&SDU1, &b, 1, MS2ST(timeout_ms)) != 1) {
-        chThdSleepMicroseconds(100);
-        return -1;
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+        if (locked_uart == -1 || locked_uart == i) {
+            if (chnReadTimeout(uarts[i], &b, 1, MS2ST(timeout_ms)) == 1) {
+                last_uart = i;
+                return b;
+            }
+        }
     }
-    return b;
+    chThdSleepMicroseconds(100);
+    return -1;
 }
 
 int cin_word(uint32_t *wp, unsigned timeout_ms)
 {
-    if (chnReadTimeout(&SDU1, (uint8_t *)wp, 4, MS2ST(timeout_ms)) != 4) {
-        chThdSleepMicroseconds(100);
-        return -1;
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+        if (locked_uart == -1 || locked_uart == i) {
+            if (chnReadTimeout(uarts[i], (uint8_t *)wp, 4, MS2ST(timeout_ms)) == 4) {
+                last_uart = i;
+                return 0;
+            }
+        }
     }
-    return 0;
+    chThdSleepMicroseconds(100);
+    return -1;
 }
 
 
 void cout(uint8_t *data, uint32_t len)
 {
-    chnWriteTimeout(&SDU1, data, len, MS2ST(100));
-}
-
-void cfini(void)
-{
-    sduStop(&SDU1);
+    chnWriteTimeout(uarts[last_uart], data, len, MS2ST(100));
 }
 
 static uint32_t flash_base_page;
@@ -261,6 +271,16 @@ void *memcpy(void *dest, const void *src, size_t n)
 }
 
 //simple variant of std c function to reduce used flash space
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+    while ((*s1 != 0) && (*s1 == *s2) && n--) {
+        s1++;
+        s2++;
+    }
+    return (*s1 - *s2);
+}
+
+//simple variant of std c function to reduce used flash space
 int strcmp(const char *s1, const char *s2)
 {
     while ((*s1 != 0) && (*s1 == *s2)) {
@@ -270,6 +290,70 @@ int strcmp(const char *s1, const char *s2)
     return (*s1 - *s2);
 }
 
+//simple variant of std c function to reduce used flash space
+size_t strlen(const char *s1)
+{
+    size_t ret = 0;
+    while (*s1++) ret++;
+    return ret;
+}
+
+//simple variant of std c function to reduce used flash space
+void *memset(void *s, int c, size_t n)
+{
+    uint8_t *b = (uint8_t *)s;
+    while (n--) {
+        *b++ = c;
+    }
+    return s;
+}
+
 void lock_bl_port(void)
 {
+    locked_uart = last_uart;
 }
+
+/*
+  initialise serial ports
+ */
+void init_uarts(void)
+{
+#ifdef HAL_USE_SERIAL_USB
+    sduObjectInit(&SDU1);
+    sduStart(&SDU1, &serusbcfg);
+    
+    usbDisconnectBus(serusbcfg.usbp);
+    chThdSleepMilliseconds(1000);
+    usbStart(serusbcfg.usbp, &usbcfg);
+    usbConnectBus(serusbcfg.usbp);
+#endif
+
+    sercfg.speed = BOOTLOADER_BAUDRATE;
+    
+    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+#ifdef HAL_USE_SERIAL_USB
+        if (uarts[i] == (BaseChannel *)&SDU1) {
+            continue;
+        }
+#endif
+        sdStart((SerialDriver *)uarts[i], &sercfg);
+    }
+}
+
+
+/*
+  set baudrate on the current port
+ */
+void port_setbaud(uint32_t baudrate)
+{
+    sercfg.speed = baudrate;
+#ifdef HAL_USE_SERIAL_USB
+    if (uarts[last_uart] == (BaseChannel *)&SDU1) {
+        // can't set baudrate on USB
+        return;
+    }
+#endif
+    sdStop((SerialDriver *)uarts[last_uart]);
+    sdStart((SerialDriver *)uarts[last_uart], &sercfg);
+}
+

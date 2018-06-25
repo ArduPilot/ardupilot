@@ -35,15 +35,13 @@ extern "C" {
 
 struct boardinfo board_info;
 
+#ifndef BOOTLOADER_BAUDRATE
+#define BOOTLOADER_BAUDRATE 115200
+#endif
+
 int main(void)
 {
-    sduObjectInit(&SDU1);
-    sduStart(&SDU1, &serusbcfg);
-
-    usbDisconnectBus(serusbcfg.usbp);
-    chThdSleepMilliseconds(1000);
-    usbStart(serusbcfg.usbp, &usbcfg);
-    usbConnectBus(serusbcfg.usbp);
+    init_uarts();
 
     board_info.board_type = APJ_BOARD_ID;
     board_info.board_rev = 0;

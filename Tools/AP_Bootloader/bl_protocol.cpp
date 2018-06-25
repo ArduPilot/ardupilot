@@ -97,6 +97,7 @@
 #define PROTO_GET_CHIP_DES			0x2e    // read chip version In ASCII
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
+#define PROTO_SET_BAUD				0x33    // baud rate on uart
 
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
@@ -216,14 +217,8 @@ jump_to_app()
     
     led_set(LED_OFF);
 
-    /* kill the systick timer */
-    chVTReset(&systick_vt);
-
-    // stop USB driver
-    //cfini();
-
     // disable all interrupt sources
-    //port_disable();
+    port_disable();
 
     /* switch exception handlers to the application */
     *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
@@ -242,19 +237,6 @@ sync_response(void)
 
     cout(data, sizeof(data));
 }
-
-#if defined(TARGET_HW_PX4_FMU_V4)
-static void
-bad_silicon_response(void)
-{
-    uint8_t data[] = {
-        PROTO_INSYNC,			// "in sync"
-        PROTO_BAD_SILICON_REV	// "issue with < Rev 3 silicon"
-    };
-
-    cout(data, sizeof(data));
-}
-#endif
 
 static void
 invalid_response(void)
@@ -736,6 +718,31 @@ bootloader(unsigned timeout)
             // XXX reserved for ad-hoc debugging as required
             break;
 
+		case PROTO_SET_BAUD: {
+			/* expect arg then EOC */
+            uint32_t baud = 0;
+
+            if (cin_word(&baud, 100)) {
+                goto cmd_bad;
+            }
+
+			if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+			}
+
+            // send the sync response for this command
+            sync_response();
+
+            // set the baudrate
+            port_setbaud(baud);
+
+            // this is different to what every other case in this
+            // switch does!  Most go through sync_response down the
+            // bottom, but we need to undertake an action after
+            // returning the response...
+            continue;
+        }
+            
         default:
             continue;
         }
@@ -759,12 +766,5 @@ cmd_fail:
         // send a 'command failed' response but don't kill the timeout - could be garbage
         failure_response();
         continue;
-
-#if defined(TARGET_HW_PX4_FMU_V4)
-bad_silicon:
-        // send the bad silicon response but don't kill the timeout - could be garbage
-        bad_silicon_response();
-        continue;
-#endif
     }
 }
