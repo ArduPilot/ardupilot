@@ -89,7 +89,9 @@ uint32_t flash_func_sector_size(uint32_t sector)
 
 void flash_func_erase_sector(uint32_t sector)
 {
-    stm32_flash_erasepage(flash_base_page+sector);
+    if (!stm32_flash_ispageerased(flash_base_page+sector)) {
+        stm32_flash_erasepage(flash_base_page+sector);
+    }
 }
 
 // read one-time programmable memory
