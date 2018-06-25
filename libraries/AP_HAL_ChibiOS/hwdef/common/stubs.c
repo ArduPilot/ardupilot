@@ -152,7 +152,7 @@ int _close(struct _reent *r, int file)
 __attribute__((used))
 caddr_t _sbrk(struct _reent *r, int incr)
 {
-#if CH_CFG_USE_MEMCORE
+#if CH_CFG_USE_MEMCORE && CH_CFG_USE_HEAP == TRUE
   void *p;
 
   chDbgCheck(incr >= 0);

@@ -59,6 +59,11 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
       str[ms.eos] = 0;
 
   /* Return number of bytes that would have been written.*/
+#else
+  (void)str;
+  (void)size;
+  (void)fmt;
+  (void)ap;
 #endif
   return retval;
 }
@@ -75,6 +80,9 @@ int snprintf(char *str, size_t size, const char *fmt, ...)
  
    return done;
 #else
+   (void)str;
+   (void)size;
+   (void)fmt;
    return 0;
 #endif
 }
@@ -94,6 +102,9 @@ int vasprintf(char **strp, const char *fmt, va_list ap)
     (*strp) = buf;
     return len;
 #else
+    (void)strp;
+    (void)fmt;
+    (void)ap;
     return 0;
 #endif
 }
@@ -107,6 +118,8 @@ int asprintf(char **strp, const char *fmt, ...)
     va_end(ap);
     return ret;
 #else
+    (void)strp;
+    (void)fmt;
     return 0;
 #endif
 }
@@ -136,6 +149,7 @@ int printf(const char *fmt, ...)
  
    return done;
 #else
+   (void)fmt;
    return 0;
 #endif
 }
