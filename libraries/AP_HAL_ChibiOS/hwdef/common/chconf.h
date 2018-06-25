@@ -119,7 +119,9 @@
  *          function becomes the idle thread and must implement an
  *          infinite loop.
  */
+#ifndef CH_CFG_NO_IDLE_THREAD
 #define CH_CFG_NO_IDLE_THREAD               FALSE
+#endif
 
 /** @} */
 
@@ -166,7 +168,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_REGISTRY
 #define CH_CFG_USE_REGISTRY                 TRUE
+#endif
 
 /**
  * @brief   Threads synchronization APIs.
@@ -250,7 +254,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_EVENTS
 #define CH_CFG_USE_EVENTS                   TRUE
+#endif
 
 /**
  * @brief   Events Flags APIs with timeout.
@@ -260,7 +266,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_EVENTS.
  */
+#ifndef CH_CFG_USE_EVENTS_TIMEOUT
 #define CH_CFG_USE_EVENTS_TIMEOUT           TRUE
+#endif
 
 /**
  * @brief   Synchronous Messages APIs.

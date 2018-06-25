@@ -35,6 +35,10 @@
 
 #define MIN_ALIGNMENT 8
 
+#ifdef HAL_NO_CCM
+#undef CCM_RAM_SIZE_KB
+#endif
+
 #if defined(CCM_RAM_SIZE_KB)
 static memory_heap_t ccm_heap;
 static bool ccm_heap_initialised = false;
