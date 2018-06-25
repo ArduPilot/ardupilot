@@ -78,11 +78,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
 //The function point is particularly hacky, hacky, tacky
 //but I don't want to reimplement messaging to GCS at the moment:
-AP_Arming::AP_Arming(const AP_AHRS &ahrs_ref, Compass &compass,
-                     const AP_BattMonitor &battery) :
-    ahrs(ahrs_ref),
-    _compass(compass),
-    _battery(battery),
+AP_Arming::AP_Arming() :
     arming_method(NONE)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -154,7 +150,7 @@ bool AP_Arming::airspeed_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
-        const AP_Airspeed *airspeed = ahrs.get_airspeed();
+        const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
         if (airspeed == nullptr) {
             // not an airspeed capable vehicle
             return true;
@@ -305,6 +301,8 @@ bool AP_Arming::compass_checks(bool report)
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
 
+        Compass &_compass = AP::compass();
+
         // avoid Compass::use_for_yaw(void) as it implicitly calls healthy() which can
         // incorrectly skip the remaining checks, pass the primary instance directly
         if (!_compass.use_for_yaw(_compass.get_primary())) {
@@ -391,7 +389,7 @@ bool AP_Arming::gps_checks(bool report)
         // check AHRS and GPS are within 10m of each other
         Location gps_loc = gps.location();
         Location ahrs_loc;
-        if (ahrs.get_position(ahrs_loc)) {
+        if (AP::ahrs().get_position(ahrs_loc)) {
             const float distance = location_diff(gps_loc, ahrs_loc).length();
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 if (report) {
@@ -422,6 +420,8 @@ bool AP_Arming::battery_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BATTERY)) {
+
+        const AP_BattMonitor &_battery = AP::battery();
 
         if (AP_Notify::flags.failsafe_battery) {
             check_failed(ARMING_CHECK_BATTERY, report, "Battery failsafe on");
