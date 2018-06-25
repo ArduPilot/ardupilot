@@ -46,6 +46,7 @@
 #define MAX7456ADD_RB0          0x10
 #define MAX7456ADD_OSDBL        0x6c
 #define MAX7456ADD_STAT         0xA0
+#define MAX7456ADD_CMDO         0xC0
 
 // VM0 register bits
 #define VIDEO_BUFFER_DISABLE        0x01
@@ -103,6 +104,7 @@
 
 //CMM register bits
 #define WRITE_NVR               0xA0
+#define READ_NVR                0x50
 
 // DMM special bits
 #define DMM_BLINK (1 << 4)
@@ -158,37 +160,75 @@ bool AP_OSD_MAX7456::update_font()
     }
 
     for (uint16_t chr=0; chr < 256; chr++) {
-        uint8_t status;
         const uint8_t* chr_font_data = font_data + chr*NVM_RAM_SIZE;
-        uint16_t retry;
-        buffer_offset = 0;
-        buffer_add_cmd(MAX7456ADD_VM0, 0);
-        buffer_add_cmd(MAX7456ADD_CMAH, chr);
-        for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
-            buffer_add_cmd(MAX7456ADD_CMAL, x);
-            buffer_add_cmd(MAX7456ADD_CMDI, chr_font_data[x]);
-        }
-        buffer_add_cmd(MAX7456ADD_CMM, WRITE_NVR);
-
-        _dev->get_semaphore()->take_blocking();
-        _dev->transfer(buffer, buffer_offset, nullptr, 0);
-        _dev->get_semaphore()->give();
-
-        for (retry = 0; retry < MAX_NVM_WAIT; retry++) {
-            hal.scheduler->delay(15);
-            _dev->get_semaphore()->take_blocking();
-            _dev->read_registers(MAX7456ADD_STAT, &status, 1);
-            _dev->get_semaphore()->give();
-            if ((status & STAT_NVR_BUSY) == 0x00) {
-                break;
-            }
-        }
-        if (retry == MAX_NVM_WAIT) {
-            return false;
+        //check if char already up to date
+        if(!check_font_char(chr, chr_font_data)) {
+        	//update char inside max7456 NVM
+        	if(!update_font_char(chr, chr_font_data)) {
+        		hal.console->printf("AP_OSD: error during font char update\n");
+        		return false;
+        	}
         }
     }
-
+    hal.console->printf("AP_OSD: osd font is up to date\n");
     return true;
+}
+
+//compare char chr inside MAX7456 NVM with font_data
+bool AP_OSD_MAX7456::check_font_char(uint8_t chr, const uint8_t* font_data)
+{
+	buffer_offset = 0;
+	//send request to read data from NVM
+    buffer_add_cmd(MAX7456ADD_VM0, 0);
+    buffer_add_cmd(MAX7456ADD_CMAH, chr);
+    buffer_add_cmd(MAX7456ADD_CMM, READ_NVR);
+    for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
+        buffer_add_cmd(MAX7456ADD_CMAL, x);
+        buffer_add_cmd(MAX7456ADD_CMDO, 0xFF);
+    }
+	_dev->get_semaphore()->take_blocking();
+	_dev->transfer(buffer, buffer_offset, buffer, buffer_offset);
+	_dev->get_semaphore()->give();
+
+	//skip response from MAX7456ADD_VM0/MAX7456ADD_CMAH...
+	buffer_offset = 9;
+	for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
+		if(buffer[buffer_offset] != font_data[x]) {
+			return false;
+		}
+		//one byte per MAX7456ADD_CMAL/MAX7456ADD_CMDO pair
+		buffer_offset += 4;
+	}
+	return true;
+}
+
+bool AP_OSD_MAX7456::update_font_char(uint8_t chr, const uint8_t* font_data)
+{
+    uint16_t retry;
+    buffer_offset = 0;
+    buffer_add_cmd(MAX7456ADD_VM0, 0);
+    buffer_add_cmd(MAX7456ADD_CMAH, chr);
+    for (uint16_t x = 0; x < NVM_RAM_SIZE; x++) {
+        buffer_add_cmd(MAX7456ADD_CMAL, x);
+        buffer_add_cmd(MAX7456ADD_CMDI, font_data[x]);
+    }
+    buffer_add_cmd(MAX7456ADD_CMM, WRITE_NVR);
+
+    _dev->get_semaphore()->take_blocking();
+    _dev->transfer(buffer, buffer_offset, nullptr, 0);
+    _dev->get_semaphore()->give();
+
+    for (retry = 0; retry < MAX_NVM_WAIT; retry++) {
+        uint8_t status = 0xFF;
+        hal.scheduler->delay(15);
+        _dev->get_semaphore()->take_blocking();
+        _dev->read_registers(MAX7456ADD_STAT, &status, 1);
+        _dev->get_semaphore()->give();
+        if ((status & STAT_NVR_BUSY) == 0x00) {
+            break;
+        }
+    }
+    return retry != MAX_NVM_WAIT;
 }
 
 AP_OSD_Backend *AP_OSD_MAX7456::probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev)
@@ -292,11 +332,9 @@ void AP_OSD_MAX7456::reinit()
 
 void AP_OSD_MAX7456::flush()
 {
-    if (_osd.update_font) {
-        if (!update_font()) {
-            hal.console->printf("AP_OSD: error during font update\n");
-        }
-        _osd.update_font.set_and_save(0);
+    if (!font_updated) {
+        update_font();
+        font_updated = true;
     }
     check_reinit();
     transfer_frame();
@@ -317,7 +355,7 @@ void AP_OSD_MAX7456::transfer_frame()
             if (frame[y][x] == shadow_frame[y][x] && attr[y][x] == shadow_attr[y][x]) {
                 continue;
             }
-            if (++updated_chars > max_updated_chars) {
+            if (updated_chars > max_updated_chars) {
                 break;
             }
             shadow_frame[y][x] = frame[y][x];
@@ -333,6 +371,7 @@ void AP_OSD_MAX7456::transfer_frame()
             buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
             buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
             buffer_add_cmd(MAX7456ADD_DMDI, chr);
+            updated_chars++;
         }
     }
 
