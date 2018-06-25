@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, shutil
+import sys, os, shutil, struct
 import intelhex
 
 # make two intel hex files, one including bootloader and one without
@@ -27,7 +27,11 @@ if not os.path.exists(bootloaderfile):
     sys.exit(1)
 
 blimage = bytes(open(bootloaderfile, "rb").read())
-blimage += bytes(chr(255) * (reserve_kb * 1024 - len(blimage)))
+blimage += bytes(struct.pack('B',255) * (reserve_kb * 1024 - len(blimage)))
+
+if len(blimage) != reserve_kb * 1024:
+   print("Bad blimage size %u" % len(blimage))
+   sys.exit(1)
 
 appimage = bytes(open(binfile,"rb").read())
 
