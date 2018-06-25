@@ -54,7 +54,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     AP_Int8 enabled;
-    
+    AP_Int16 channel_min;
+    AP_Int16 channel_max;
+
 private:
     AP_OSD_Backend *backend;
 
@@ -98,13 +100,14 @@ public:
     };
     
     AP_Int8 osd_type;
-    AP_Int8 update_font;
+    AP_Int8 rc_channel;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
 private:
     void timer();
     void update_osd();
+    void update_current_screen();
     AP_OSD_Backend *backend;
     uint32_t last_update_ms;
 

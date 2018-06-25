@@ -21,6 +21,7 @@
 #include "AP_OSD_MAX7456.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
+#include <RC_Channel/RC_Channel.h>
 
 #include <utility>
 
@@ -34,12 +35,12 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
 
-    // @Param: _UPDATE_FONT
-    // @DisplayName: Update font
-    // @Description: Update font inside osd chip
-    // @Values: 0:Do not update,1:Update
+    // @Param: _CHAN
+    // @DisplayName: Screen switch transmitter channel
+    // @Description: This sets the channel used to switch different OSD screens.
+    // @Values: 0:Disable,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
     // @User: Standard
-    AP_GROUPINFO("_UPDATE_FONT", 2, AP_OSD, update_font, 1),
+    AP_GROUPINFO("_CHAN", 2, AP_OSD, rc_channel, 0),
 
     // @Group: 1_
     // @Path: AP_OSD_Screen.cpp
@@ -105,9 +106,31 @@ void AP_OSD::update_osd()
 {
     backend->clear();
 
+    update_current_screen();
+
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();
 
     backend->flush();
+}
+
+void AP_OSD::update_current_screen()
+{
+    if(rc_channel == 0) {
+    	return;
+    }
+
+    RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
+   	if(channel == nullptr) {
+   		return;
+    }
+
+	int16_t channel_value = channel->get_radio_in();
+	for(int i=0; i<AP_OSD_NUM_SCREENS; i++){
+    	if(screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
+    		current_screen = i;
+    		break;
+    	}
+    }
 }
 
