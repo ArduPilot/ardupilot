@@ -111,7 +111,6 @@ void ReplayVehicle::init_ardupilot(void)
     // places in the EKF, for example)
     logger.Init(log_structure, 0);
 
-    ahrs.set_compass(&compass);
     ahrs.set_fly_forward(true);
     ahrs.set_wind_estimation(true);
     ahrs.set_correct_centrifugal(true);
