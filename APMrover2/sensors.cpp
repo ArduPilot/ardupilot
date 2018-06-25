@@ -7,7 +7,6 @@
 void Rover::update_compass(void)
 {
     if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
     }
 }
 
