@@ -928,7 +928,7 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_COMPONENT_ARM_DISARM:
             if (is_equal(packet.param1,1.0f)) {
                 // attempt to arm and return success or failure
-                if (sub.init_arm_motors(true)) {
+                if (sub.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
                     result = MAV_RESULT_ACCEPTED;
                 }
             } else if (is_zero(packet.param1))  {

@@ -601,7 +601,7 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    bool init_arm_motors(bool arming_from_gcs);
+    bool init_arm_motors(AP_Arming::ArmingMethod method);
     void init_disarm_motors();
     void motors_output();
     Vector3f pv_location_to_vector(const Location& loc);
