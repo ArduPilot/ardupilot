@@ -281,7 +281,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Copter arming{ahrs, compass, battery, inertial_nav};
+    AP_Arming_Copter arming;
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
