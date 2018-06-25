@@ -35,10 +35,6 @@ extern "C" {
 
 struct boardinfo board_info;
 
-#ifndef BOOTLOADER_BAUDRATE
-#define BOOTLOADER_BAUDRATE 115200
-#endif
-
 int main(void)
 {
     init_uarts();
