@@ -541,7 +541,7 @@ bool AP_Arming::board_voltage_checks(bool report)
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    if (armed || require == NONE) {
+    if (armed || require == NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
@@ -560,7 +560,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  board_voltage_checks(report);
 }
 
-bool AP_Arming::arm_checks(uint8_t method)
+bool AP_Arming::arm_checks(ArmingMethod method)
 {
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -585,7 +585,7 @@ bool AP_Arming::arm_checks(uint8_t method)
 }
 
 //returns true if arming occurred successfully
-bool AP_Arming::arm(uint8_t method, const bool do_arming_checks)
+bool AP_Arming::arm(AP_Arming::ArmingMethod method, const bool do_arming_checks)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
     // Copter should never use this function

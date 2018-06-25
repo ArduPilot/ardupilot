@@ -34,9 +34,10 @@ public:
     };
 
     enum ArmingMethod {
-        NONE = 0,
         RUDDER,
-        MAVLINK
+        MAVLINK,
+        AUXSWITCH,
+        MOTORTEST,
     };
 
     enum ArmingRequired {
@@ -47,7 +48,7 @@ public:
 
     // these functions should not be used by Copter which holds the armed state in the motors library
     ArmingRequired arming_required();
-    virtual bool arm(uint8_t method, bool do_arming_checks=true);
+    virtual bool arm(ArmingMethod method, bool do_arming_checks=true);
     bool disarm();
     bool is_armed();
 
@@ -61,7 +62,7 @@ public:
     // some arming checks have side-effects, or require some form of state
     // change to have occurred, and thus should not be done as pre-arm
     // checks.  Those go here:
-    bool arm_checks(uint8_t method);
+    bool arm_checks(ArmingMethod method);
 
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
