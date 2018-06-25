@@ -446,7 +446,6 @@ def write_mcu_config(f):
 #define HAL_NO_PRINTF
 #define HAL_NO_CCM
 #define CH_DBG_STATISTICS FALSE
-#define SERIAL_ADVANCED_BUFFERING_SUPPORT FALSE
 #define CH_CFG_USE_TM FALSE
 #define CH_CFG_USE_REGISTRY FALSE
 #define CH_CFG_USE_WAITEXIT FALSE
@@ -655,13 +654,17 @@ def write_UART_config_bootloader(f):
     uart_list = config['UART_ORDER']
     f.write('\n// UART configuration\n')
     devlist = []
+    have_uart = False
     for u in uart_list:
         if u.startswith('OTG'):
             devlist.append('(BaseChannel *)&SDU1')
         else:
             unum = int(u[-1])
             devlist.append('(BaseChannel *)&SD%u' % unum)
+            have_uart = True
     f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
+    if not have_uart:
+        f.write('#define HAL_USE_SERIAL FALSE\n')
 
 def write_I2C_config(f):
     '''write I2C config defines'''
