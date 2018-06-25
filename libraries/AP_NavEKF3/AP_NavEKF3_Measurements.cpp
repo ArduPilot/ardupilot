@@ -243,16 +243,15 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
 // check for new magnetometer data and update store measurements if available
 void NavEKF3_core::readMagData()
 {
-    if (!_ahrs->get_compass()) {
-        allMagSensorsFailed = true;
-        return;        
-    }
-
     const Compass &compass = AP::compass();
+    const uint8_t maxCount = compass.get_count();
+    if (maxCount == 0) {
+        allMagSensorsFailed = true;
+        return;
+    }
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
-    uint8_t maxCount = compass.get_count();
     if (allMagSensorsFailed || (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight)) {
         allMagSensorsFailed = true;
         return;
@@ -617,8 +616,7 @@ void NavEKF3_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                const Compass *compass = _ahrs->get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex)) {
+                if (AP::compass().have_scale_factor(magSelectIndex)) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                             gpsloc.lng*1.0e-7));
@@ -1046,5 +1044,5 @@ float NavEKF3_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return _ahrs->get_compass()->get_declination();
+    return AP::compass().get_declination();
 }
