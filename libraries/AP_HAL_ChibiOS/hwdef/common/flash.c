@@ -135,6 +135,14 @@ static inline void putreg16(uint16_t val, unsigned int addr)
     __asm__ __volatile__("\tstrh %0, [%1]\n\t": : "r"(val), "r"(addr));
 }
 
+/* # define getreg32(a)       (*(volatile uint32_t *)(a)) */
+static inline uint32_t getreg32(unsigned int addr)
+{
+    uint32_t retval;
+    __asm__ __volatile__("\tldr %0, [%1]\n\t" : "=r"(retval) : "r"(addr));
+    return retval;
+}
+
 /* define putreg32(v,a)       (*(volatile uint32_t *)(a) = (v)) */
 static inline void putreg32(uint32_t val, unsigned int addr)
 {
@@ -341,7 +349,7 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
             goto failed;
         }
 
-        if (getreg16(addr) != *(uint32_t *)b) {
+        if (getreg32(addr) != *(uint32_t *)b) {
             FLASH->CR &= ~(FLASH_CR_PG);
             goto failed;
         }
