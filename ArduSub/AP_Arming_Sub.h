@@ -4,11 +4,8 @@
 
 class AP_Arming_Sub : public AP_Arming {
 public:
-    AP_Arming_Sub(const AP_AHRS &ahrs_ref, Compass &compass,
-                  const AP_BattMonitor &battery)
-        : AP_Arming(ahrs_ref, compass, battery)
-    {
-    }
+
+    AP_Arming_Sub() : AP_Arming() { }
 
     /* Do not allow copies */
     AP_Arming_Sub(const AP_Arming_Sub &other) = delete;
