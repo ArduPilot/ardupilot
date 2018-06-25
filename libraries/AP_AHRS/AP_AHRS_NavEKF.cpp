@@ -1204,7 +1204,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         }
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
-            if ((!_compass || !_compass->use_for_yaw()) &&
+            if ((!AP::compass().use_for_yaw()) &&
                 AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
                 AP::gps().ground_speed() < 2) {
                 /*
@@ -1560,7 +1560,7 @@ bool AP_AHRS_NavEKF::attitudes_consistent(char *failure_msg, const uint8_t failu
     Quaternion primary_quat;
     get_quat_body_to_ned(primary_quat);
     // only check yaw if compasses are being used
-    bool check_yaw = _compass && _compass->use_for_yaw();
+    bool check_yaw = AP::compass().use_for_yaw();
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2

@@ -108,15 +108,6 @@ public:
         _flags.wind_estimation = b;
     }
 
-    void set_compass(Compass *compass) {
-        _compass = compass;
-        update_orientation();
-    }
-
-    const Compass* get_compass() const {
-        return _compass;
-    }
-
     void set_optflow(const OpticalFlow *optflow) {
         _optflow = optflow;
     }
@@ -339,7 +330,7 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) {
-        return _compass && _compass->use_for_yaw();
+        return AP::compass().use_for_yaw();
     }
 
     // return true if yaw has been initialised
@@ -604,9 +595,6 @@ protected:
 
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
-
-    // pointer to compass object, if available
-    Compass         * _compass;
 
     // pointer to OpticalFlow object, if available
     const OpticalFlow *_optflow;
