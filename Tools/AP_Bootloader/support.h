@@ -12,10 +12,11 @@ struct boardinfo {
 
 extern struct boardinfo board_info;
 
+void init_uarts(void);
 int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
 void cout(uint8_t *data, uint32_t len);
-void cfini(void);
+void port_setbaud(uint32_t baudrate);
 
 void flash_init();
 
