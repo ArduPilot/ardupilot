@@ -188,7 +188,6 @@ void Plane::update_speed_height(void)
 void Plane::update_compass(void)
 {
     if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
     }
 }
 
