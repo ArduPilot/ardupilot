@@ -26,9 +26,11 @@ void flash_func_erase_sector(uint32_t sector);
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
 void flash_set_keep_unlocked(bool);
+void lock_bl_port(void);
 
 uint32_t get_mcu_id(void);
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf);
+bool check_limit_flash_1M(void);
 
 void led_on(unsigned led);
 void led_off(unsigned led);
@@ -49,4 +51,5 @@ typedef struct mcu_des_t {
 typedef struct mcu_rev_t {
     uint16_t revid;
     char  rev;
+    bool limit_flash_size_1M;
 } mcu_rev_t;

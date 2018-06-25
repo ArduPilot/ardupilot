@@ -740,6 +740,9 @@ bootloader(unsigned timeout)
             continue;
         }
 
+        // we got a good command on this port, lock to the port
+        lock_bl_port();
+        
         // we got a command worth syncing, so kill the timeout because
         // we are probably talking to the uploader
         timeout = 0;
