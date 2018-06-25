@@ -333,7 +333,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Sub::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-    AP_Arming_Sub arming{ahrs, compass, battery};
+    AP_Arming_Sub arming;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
