@@ -31,6 +31,8 @@ Copter::Mode::Mode(void) :
     ekfNavVelGainScaler(copter.ekfNavVelGainScaler)
 { };
 
+float Copter::Mode::auto_takeoff_no_nav_alt_cm = 0;
+
 // return the static controller object corresponding to supplied mode
 Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 {

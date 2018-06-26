@@ -176,7 +176,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
     set_throttle_takeoff();
 
     // get initial alt for WP_NAVALT_MIN
-    copter.auto_takeoff_set_start_alt();
+    auto_takeoff_set_start_alt();
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
