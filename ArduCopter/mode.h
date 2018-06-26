@@ -160,6 +160,10 @@ protected:
     // method shared by both Guided and Auto for takeoff.  This is
     // waypoint navigation but the user can control the yaw.
     void auto_takeoff_run();
+    void auto_takeoff_set_start_alt(void);
+    void auto_takeoff_attitude_run(float target_yaw_rate);
+    // altitude below which we do no navigation in auto takeoff
+    static float auto_takeoff_no_nav_alt_cm;
 
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
