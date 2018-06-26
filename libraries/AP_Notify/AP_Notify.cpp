@@ -26,7 +26,6 @@
 #include "ToneAlarm_Linux.h"
 #include "ToneAlarm_ChibiOS.h"
 #include "ToneAlarm_PX4.h"
-#include "ToshibaLED.h"
 #include "ToshibaLED_I2C.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
@@ -77,12 +76,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
     // @Param: OREO_THEME
     // @DisplayName: OreoLED Theme
     // @Description: Enable/Disable Solo Oreo LED driver, 0 to disable, 1 for Aircraft theme, 2 for Rover theme
     // @Values: 0:Disabled,1:Aircraft,2:Rover
     // @User: Advanced
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
 
 #if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_PIN
@@ -264,11 +265,6 @@ void AP_Notify::init(bool enable_external_leds)
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
-
-    // clear flight mode string and text buffer
-    memset(_flight_mode_str, 0, sizeof(_flight_mode_str));
-    memset(_send_text, 0, sizeof(_send_text));
-    _send_text_updated_millis = 0;
 
     AP_Notify::flags.external_leds = enable_external_leds;
 

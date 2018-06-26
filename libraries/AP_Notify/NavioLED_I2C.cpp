@@ -19,10 +19,20 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#define NAVIO_LED_BRIGHT 0x0    // full brightness
+#define NAVIO_LED_MEDIUM 0x7F    // medium brightness
+#define NAVIO_LED_DIM    0x4F    // dim brightness
+#define NAVIO_LED_OFF    0xFF    // off
+
 #define PCA9685_ADDRESS 0x40
 #define PCA9685_PWM 0x6
 
 extern const AP_HAL::HAL& hal;
+
+NavioLED_I2C::NavioLED_I2C() : 
+    RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
+{
+}
 
 bool NavioLED_I2C::hw_init()
 {
