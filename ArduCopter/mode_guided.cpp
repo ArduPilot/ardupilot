@@ -365,6 +365,11 @@ void Copter::ModeGuided::run()
 //      called by guided_run at 100hz or more
 void Copter::ModeGuided::takeoff_run()
 {
+    auto_takeoff_run();
+}
+
+void Copter::Mode::auto_takeoff_run()
+{
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         // initialise wpnav targets
