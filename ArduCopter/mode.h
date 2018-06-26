@@ -157,6 +157,10 @@ protected:
     // takeoff support
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
+    // method shared by both Guided and Auto for takeoff.  This is
+    // waypoint navigation but the user can control the yaw.
+    void auto_takeoff_run();
+
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
 
