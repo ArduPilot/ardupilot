@@ -135,7 +135,7 @@ void Copter::Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
     }
 }
 
-void Copter::auto_takeoff_set_start_alt(void)
+void Copter::Mode::auto_takeoff_set_start_alt(void)
 {
     // start with our current altitude
     auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
@@ -151,7 +151,7 @@ void Copter::auto_takeoff_set_start_alt(void)
   call attitude controller for automatic takeoff, limiting roll/pitch
   if below wp_navalt_min
  */
-void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
+void Copter::Mode::auto_takeoff_attitude_run(float target_yaw_rate)
 {
     float nav_roll, nav_pitch;
     
@@ -161,7 +161,7 @@ void Copter::auto_takeoff_attitude_run(float target_yaw_rate)
         nav_pitch = 0;
 #if FRAME_CONFIG == HELI_FRAME
         // prevent hover roll starting till past specified altitude
-        hover_roll_trim_scalar_slew = 0;        
+        copter.hover_roll_trim_scalar_slew = 0;        
 #endif
         // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
         pos_control->set_limit_accel_xy();
