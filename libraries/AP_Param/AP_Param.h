@@ -327,7 +327,7 @@ public:
 
     /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
     ///
-    static void reload_defaults_file();
+    static void reload_defaults_file(bool last_pass);
     
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
     
@@ -574,15 +574,15 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
-    static bool read_param_defaults_file(const char *filename);
-    static bool load_defaults_file(const char *filename);
+    static bool read_param_defaults_file(const char *filename, bool last_pass);
+    static bool load_defaults_file(const char *filename, bool last_pass);
 #endif
 
     /*
       load defaults from embedded parameters
      */
     static bool count_embedded_param_defaults(uint16_t &count);
-    static void load_embedded_param_defaults();
+    static void load_embedded_param_defaults(bool last_pass);
     
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
