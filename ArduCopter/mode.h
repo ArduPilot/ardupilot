@@ -133,7 +133,16 @@ protected:
     float &G_Dt;
     ap_t &ap;
 
-    // auto-takeoff support; takeoff state is shared across all mode instances
+    // note that we support two entirely different automatic takeoffs:
+
+    // "user-takeoff", which is available in modes such as ALT_HOLD
+    // (see has_user_takeoff method).  "user-takeoff" is a simple
+    // reach-altitude-based-on-pilot-input-or-parameter routine.
+
+    // "auto-takeoff" is used by both Guided and Auto, and is
+    // basically waypoint navigation with pilot yaw permitted.
+
+    // user-takeoff support; takeoff state is shared across all mode instances
     class _TakeOff {
     public:
         void start(float alt_cm);
@@ -154,7 +163,6 @@ protected:
 
     static void takeoff_stop() { takeoff.stop(); }
 
-    // takeoff support
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
     // method shared by both Guided and Auto for takeoff.  This is
