@@ -114,7 +114,19 @@ struct AP_Notify::notify_events_type AP_Notify::events;
 NotifyDevice *AP_Notify::_devices[CONFIG_NOTIFY_DEVICES_MAX];
 uint8_t AP_Notify::_num_devices;
 
-#define ADD_BACKEND(backend) do { _devices[_num_devices++] = backend; if (_num_devices >= CONFIG_NOTIFY_DEVICES_MAX) return;} while(0)
+void AP_Notify::add_backend_helper(NotifyDevice *backend)
+{
+    _devices[_num_devices] = backend;
+    _devices[_num_devices]->pNotify = this;
+    if(!_devices[_num_devices]->init()) {
+        delete _devices[_num_devices];
+        _devices[_num_devices] = nullptr;
+    } else {
+      _num_devices++;
+    }
+}
+
+#define ADD_BACKEND(backend) do { add_backend_helper(backend); if (_num_devices >= CONFIG_NOTIFY_DEVICES_MAX) return;} while(0)
 
 // add notify backends to _devices array
 void AP_Notify::add_backends(void)
@@ -267,16 +279,6 @@ void AP_Notify::init(bool enable_external_leds)
 
     // add all the backends
     add_backends();
-
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->pNotify = this;
-            if(!_devices[i]->init()) {
-                delete _devices[i];
-                _devices[i] = nullptr;
-            }
-        }
-    }
 }
 
 // main update function, called at 50Hz
