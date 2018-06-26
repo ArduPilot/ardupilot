@@ -34,8 +34,7 @@ RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t 
 
 bool RGBLed::init()
 {
-    _healthy = hw_init();
-    return _healthy;
+    return hw_init();
 }
 
 // set_rgb - set color as a combination of red, green and blue values
@@ -56,10 +55,6 @@ void RGBLed::_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 // set_rgb - set color as a combination of red, green and blue values
 void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    // return immediately if not enabled
-    if (!_healthy) {
-        return;
-    }
     if (pNotify->_rgb_led_override) {
         // don't set if in override mode
         return;
@@ -329,10 +324,6 @@ void RGBLed::update_colours(void)
 // at 50Hz
 void RGBLed::update()
 {
-    // return immediately if not enabled
-    if (!_healthy) {
-        return;
-    }
     if (!pNotify->_rgb_led_override) {
         update_colours();
         set_rgb(_red_des, _green_des, _blue_des);
