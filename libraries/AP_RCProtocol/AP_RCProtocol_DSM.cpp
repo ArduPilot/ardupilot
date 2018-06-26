@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to 1usec error, assuming 115200 bps
+    // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
     uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
     uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
     uint8_t bit_ofs, byte_ofs;
