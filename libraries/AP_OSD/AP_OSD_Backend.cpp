@@ -25,7 +25,7 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
     va_list ap;
     va_start(ap, fmt);
     int res = hal.util->vsnprintf(buff, sizeof(buff), fmt, ap);
-    if (res < sizeof(buff)) {
+    if (res < int(sizeof(buff))) {
         write(x, y, buff, blink? AP_OSD_Backend::BLINK : 0);
     }
     va_end(ap);
