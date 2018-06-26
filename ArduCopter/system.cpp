@@ -611,7 +611,7 @@ void Copter::allocate_motors(void)
 #endif
 
     // reload lines from the defaults file that may now be accessible
-    AP_Param::reload_defaults_file();
+    AP_Param::reload_defaults_file(true);
     
     // now setup some frame-class specific defaults
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
