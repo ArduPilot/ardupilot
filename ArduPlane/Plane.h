@@ -912,7 +912,6 @@ private:
     void read_airspeed(void);
     void rpm_update(void);
     void button_update(void);
-    void stats_update();
     void ice_update(void);
     void init_ardupilot();
     void startup_ground(void);
@@ -943,16 +942,12 @@ private:
     void afs_fs_check(void);
     void compass_accumulate(void);
     void compass_cal_update();
-    void barometer_accumulate(void);
     void update_optical_flow(void);
     void one_second_loop(void);
     void airspeed_ratio_update(void);
-    void update_mount(void);
-    void update_trigger(void);    
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
-    void terrain_update(void);
     void avoidance_adsb_update(void);
     void update_flight_mode(void);
     void stabilize();
@@ -1025,8 +1020,6 @@ private:
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
     void init_capabilities(void);
-    void ins_periodic();
-    void dataflash_periodic(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
