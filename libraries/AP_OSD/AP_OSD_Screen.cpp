@@ -83,6 +83,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: MESSAGE
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(message, "MESSAGE", 11, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: GSPEED
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -106,6 +110,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_VOLT  0x06
 #define SYM_AMP   0x9A
 #define SYM_MAH   0x07
+#define SYM_KMH   0xA1
 
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
@@ -184,6 +189,13 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    float v = gps.ground_speed() * 3.6;
+    backend->write(x, y, false, "%3.0f%c", v, SYM_KMH);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -200,4 +212,5 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
     DRAW_SETTING(message);
+    DRAW_SETTING(gspeed);
 }
