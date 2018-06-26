@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
+#include <ctype.h>
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
@@ -83,7 +84,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: MESSAGE
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(message, "MESSAGE", 11, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Group: GSPEED
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
@@ -163,14 +164,6 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
     backend->write(x,y, battery.has_failsafed(), "%c%4.0f", SYM_MAH, battery.consumed_mah());
 }
 
-char to_uppercase(char c)
-{
-    if (c >= 'a' && c<= 'z') {
-        return c + 'A' - 'a';
-    }
-    return c;
-}
-
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::instance();
@@ -181,8 +174,8 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
             //converted to uppercase,
             //because we do not have small letter chars inside used font
             strncpy(buffer, notify->get_text(), sizeof(buffer));
-            for (int i=0; i<sizeof(buffer); i++) {
-                buffer[i] = to_uppercase(buffer[i]);
+            for (uint8_t i=0; i<sizeof(buffer); i++) {
+                buffer[i] = toupper(buffer[i]);
             }
             backend->write(x, y, buffer);
         }
