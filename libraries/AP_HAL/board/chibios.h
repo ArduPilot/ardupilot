@@ -5,15 +5,6 @@
 #define HAL_BOARD_NAME "ChibiOS"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 
-#ifndef HAL_GPIO_A_LED_PIN
-#define HAL_GPIO_A_LED_PIN        0
-#endif
-#ifndef HAL_GPIO_B_LED_PIN
-#define HAL_GPIO_B_LED_PIN        0
-#endif
-#ifndef HAL_GPIO_C_LED_PIN
-#define HAL_GPIO_C_LED_PIN        0
-#endif
 #ifndef HAL_GPIO_LED_ON
 #define HAL_GPIO_LED_ON           0
 #endif
