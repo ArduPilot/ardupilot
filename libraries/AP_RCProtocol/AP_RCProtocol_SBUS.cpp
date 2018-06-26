@@ -204,9 +204,9 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
  */
 void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to 1usec error, assuming 100000 bps
-    uint16_t bits_s0 = (width_s0+1) / 10;
-    uint16_t bits_s1 = (width_s1+1) / 10;
+    // convert to bit widths, allowing for up to 4usec error, assuming 100000 bps
+    uint16_t bits_s0 = (width_s0+4) / 10;
+    uint16_t bits_s1 = (width_s1+4) / 10;
     uint16_t nlow;
 
     uint8_t byte_ofs = sbus_state.bit_ofs/12;
