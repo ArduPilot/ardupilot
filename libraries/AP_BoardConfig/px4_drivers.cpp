@@ -46,6 +46,7 @@ extern "C" {
  */
 void AP_BoardConfig::px4_setup_pwm()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
     /* configure the FMU driver for the right number of PWMs */
     static const struct {
         uint8_t mode_parm;
@@ -88,6 +89,7 @@ void AP_BoardConfig::px4_setup_pwm()
         }
 #endif
     }
+#endif
 }
 
 /*
