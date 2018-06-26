@@ -168,8 +168,10 @@ void AP_Notify::add_backends(void)
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 # ifdef HAL_HAVE_PIXRACER_LED
     ADD_BACKEND(new PixRacerLED());
-# else
+# elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
     ADD_BACKEND(new AP_BoardLED());
+#else
+    ADD_BACKEND(new AP_BoardLED2());
 # endif
 #ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
