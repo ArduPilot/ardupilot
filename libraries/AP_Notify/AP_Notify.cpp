@@ -259,19 +259,22 @@ void AP_Notify::add_backends(void)
 // initialisation
 void AP_Notify::init(bool enable_external_leds)
 {
-    // add all the backends
-    add_backends();
-
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 
     AP_Notify::flags.external_leds = enable_external_leds;
 
+    // add all the backends
+    add_backends();
+
     for (uint8_t i = 0; i < _num_devices; i++) {
         if (_devices[i] != nullptr) {
             _devices[i]->pNotify = this;
-            _devices[i]->init();
+            if(!_devices[i]->init()) {
+                delete _devices[i];
+                _devices[i] = nullptr;
+            }
         }
     }
 }
