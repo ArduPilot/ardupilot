@@ -149,6 +149,8 @@ private:
 
     static AP_Notify *_instance;
 
+    void add_backend_helper(NotifyDevice *backend);
+
     // parameters
     AP_Int8 _rgb_led_brightness;
     AP_Int8 _rgb_led_override;
