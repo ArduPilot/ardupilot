@@ -126,7 +126,7 @@ void AP_OSD::update_current_screen()
     }
 
     int16_t channel_value = channel->get_radio_in();
-    for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
+    for (uint8_t i=0; i<AP_OSD_NUM_SCREENS; i++) {
         if (screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
             current_screen = i;
             break;
