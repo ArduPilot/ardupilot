@@ -32,8 +32,6 @@ private:
     /// play_tune - play one of the pre-defined tunes
     bool play_tune(uint8_t tune_number);
 
-    bool _initialized = false;
-
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
         bool armed              : 1;    // false = disarmed, true = armed

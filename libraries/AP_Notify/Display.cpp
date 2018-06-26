@@ -345,10 +345,8 @@ bool Display::init(void)
     }
 
     if (_driver == nullptr) {
-        _healthy = false;
         return false;
     }
-    _healthy = true;
 
     // update all on display
     update_all();
@@ -359,11 +357,6 @@ bool Display::init(void)
 
 void Display::update()
 {
-    // return immediately if not enabled
-    if (!_healthy) {
-        return;
-    }
-
     // max update frequency 2Hz
     static uint8_t timer = 0;
     if (timer++ < 25) {

@@ -29,9 +29,6 @@ public:
     // init - initialised the LED
     virtual bool init(void);
 
-    // healthy - returns true if the LED is operating properly
-    virtual bool healthy() { return _healthy; }
-
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
     virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
@@ -55,7 +52,6 @@ protected:
     // meta-data common to all hw devices
     uint8_t counter;
     uint8_t step;
-    bool _healthy;                               // true if the LED is operating properly
     uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
     uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
     uint8_t _led_off;
