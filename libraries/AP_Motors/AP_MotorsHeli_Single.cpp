@@ -130,6 +130,9 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_GROUPEND
 };
 
+#define YAW_SERVO_MAX_ANGLE 4500
+#define AUX_SERVO_MAX_RANGE 1000
+
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 {
@@ -149,29 +152,32 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 bool AP_MotorsHeli_Single::init_outputs()
 {
     if (!_flags.initialised_ok) {
-        _swash_servo_1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
-        _swash_servo_2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
-        _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
-        _yaw_servo = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
+        // map primary swash servos
+        for (uint8_t i=0; i<AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS; i++) {
+            add_motor_num(CH_1+i);
+        }
+        // yaw servo
+        add_motor_num(CH_4);
+
         if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
             _tail_rotor.init_servo();
-            if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo) {
-                return false;
-            }
         } else {
-            _servo_aux = SRV_Channels::get_channel_for(SRV_Channel::k_motor7, CH_7);
-            if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 || !_yaw_servo || !_servo_aux) {
-                return false;
-            }
+            // aux servo
+            _have_servo_aux = true;
+            add_motor_num(AP_MOTORS_HELI_SINGLE_AUX);
+            
+            // aux servo is in range from 0 to 1000
+            SRV_Channels::set_range(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_AUX), AUX_SERVO_MAX_RANGE);
         }
     }
 
     // reset swash servo range and endpoints
-    reset_swash_servo (_swash_servo_1);
-    reset_swash_servo (_swash_servo_2);
-    reset_swash_servo (_swash_servo_3);
+    for (uint8_t i=0; i<AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS; i++) {
+        reset_swash_servo(SRV_Channels::get_motor_function(i));
+    }
 
-    _yaw_servo->set_angle(4500);
+    // yaw servo is an angle from -4500 to 4500
+    SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
 
     // set main rotor servo range
     // tail rotor servo use range as set in vehicle code for rc7
@@ -457,9 +463,9 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     servo3_out = 2*servo3_out - 1;
 
     // actually move the servos
-    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1_swash_servo(servo1_out, _swash_servo_1));
-    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1_swash_servo(servo2_out, _swash_servo_2));
-    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1_swash_servo(servo3_out, _swash_servo_3));
+    rc_write_swash(AP_MOTORS_MOT_1, servo1_out);
+    rc_write_swash(AP_MOTORS_MOT_2, servo2_out);
+    rc_write_swash(AP_MOTORS_MOT_3, servo3_out);
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -483,13 +489,13 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
             // constrain output so that motor never fully stops
             yaw_out = constrain_float(yaw_out, -0.9f, 1.0f);
             // output yaw servo to tail rsc
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
+            rc_write_angle(AP_MOTORS_MOT_4, yaw_out * YAW_SERVO_MAX_ANGLE);
         } else {
             // output zero speed to tail rsc
-            rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(-1.0f, _yaw_servo));
+            rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
         }
     } else {
-        rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1(yaw_out, _yaw_servo));
+        rc_write_angle(AP_MOTORS_MOT_4, yaw_out * YAW_SERVO_MAX_ANGLE);
     }
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // output gain to exernal gyro
@@ -504,8 +510,8 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
 // write_aux - converts servo_out parameter value (0 to 1 range) to pwm and outputs to aux channel (ch7)
 void AP_MotorsHeli_Single::write_aux(float servo_out)
 {
-    if (_servo_aux) {
-        rc_write(AP_MOTORS_HELI_SINGLE_AUX, calc_pwm_output_0to1(servo_out, _servo_aux));
+    if (_have_servo_aux) {
+        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_AUX), servo_out * AUX_SERVO_MAX_RANGE);
     }
 }
 

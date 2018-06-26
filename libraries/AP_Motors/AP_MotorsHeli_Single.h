@@ -153,12 +153,7 @@ protected:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
 
-    SRV_Channel    *_swash_servo_1;
-    SRV_Channel    *_swash_servo_2;
-    SRV_Channel    *_swash_servo_3;
-    SRV_Channel    *_yaw_servo;
-    SRV_Channel    *_servo_aux;
-
+    bool            _have_servo_aux;            // true if we are using an aux servo
     bool            _acro_tail = false;
     float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
