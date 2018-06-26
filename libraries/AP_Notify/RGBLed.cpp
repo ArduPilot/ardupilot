@@ -24,15 +24,6 @@
 extern const AP_HAL::HAL& hal;
 
 RGBLed::RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim):
-    counter(0),
-    step(0),
-    _healthy(false),
-    _red_des(0),
-    _green_des(0),
-    _blue_des(0),
-    _red_curr(0),
-    _green_curr(0),
-    _blue_curr(0),
     _led_off(led_off),
     _led_bright(led_bright),
     _led_medium(led_medium),

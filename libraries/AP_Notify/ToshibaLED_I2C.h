@@ -17,9 +17,9 @@
 #pragma once
 
 #include <AP_HAL/I2CDevice.h>
-#include "ToshibaLED.h"
+#include "RGBLed.h"
 
-class ToshibaLED_I2C : public ToshibaLED
+class ToshibaLED_I2C : public RGBLed
 {
 public:
     ToshibaLED_I2C(uint8_t bus);
