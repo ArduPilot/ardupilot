@@ -1159,13 +1159,13 @@ void Copter::ModeAutoTune::update_gcs(uint8_t message_id)
             gcs().send_text(MAV_SEVERITY_INFO,"AutoTune: Stopped");
             break;
         case AUTOTUNE_MESSAGE_SUCCESS:
-            gcs().send_text(MAV_SEVERITY_INFO,"AutoTune: Success");
+            gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: Success");
             break;
         case AUTOTUNE_MESSAGE_FAILED:
             gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: Failed");
             break;
         case AUTOTUNE_MESSAGE_SAVED_GAINS:
-            gcs().send_text(MAV_SEVERITY_INFO,"AutoTune: Saved gains");
+            gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: Saved gains");
             break;
     }
 }
