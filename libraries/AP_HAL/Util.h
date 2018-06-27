@@ -51,6 +51,9 @@ public:
      */
     virtual uint64_t get_hw_rtc() const;
 
+    // overwrite bootloader (probably with one from ROMFS)
+    virtual bool flash_bootloader() { return false; }
+
     /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
