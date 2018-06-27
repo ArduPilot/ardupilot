@@ -111,7 +111,7 @@ public:
         return mag_bf;
     }
 
-    virtual float gross_mass() const { return mass; }
+    float gross_mass() const { return mass + external_payload_mass; }
 
     const Location &get_location() const { return location; }
 
@@ -129,26 +129,27 @@ protected:
     float ground_level;
     float home_yaw;
     float frame_height;
-    Matrix3f dcm;                   // rotation matrix, APM conventions, from body to earth
-    Vector3f gyro;                  // rad/s
-    Vector3f gyro_prev;             // rad/s
-    Vector3f ang_accel;             // rad/s/s
-    Vector3f velocity_ef;           // m/s, earth frame
-    Vector3f wind_ef;               // m/s, earth frame
-    Vector3f velocity_air_ef;       // velocity relative to airmass, earth frame
-    Vector3f velocity_air_bf;       // velocity relative to airmass, body frame
-    Vector3f position;              // meters, NED from origin
-    float mass;                     // kg
-    Vector3f accel_body;            // m/s/s NED, body frame
-    float airspeed;                 // m/s, apparent airspeed
-    float airspeed_pitot;           // m/s, apparent airspeed, as seen by fwd pitot tube
+    Matrix3f dcm;                        // rotation matrix, APM conventions, from body to earth
+    Vector3f gyro;                       // rad/s
+    Vector3f gyro_prev;                  // rad/s
+    Vector3f ang_accel;                  // rad/s/s
+    Vector3f velocity_ef;                // m/s, earth frame
+    Vector3f wind_ef;                    // m/s, earth frame
+    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
+    Vector3f position;                   // meters, NED from origin
+    float mass;                          // kg
+    float external_payload_mass = 0.0f;  // kg
+    Vector3f accel_body;                 // m/s/s NED, body frame
+    float airspeed;                      // m/s, apparent airspeed
+    float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
     float battery_current = 0.0f;
     float rpm1 = 0;
     float rpm2 = 0;
     uint8_t rcin_chan_count = 0;
     float rcin[8];
-    float range = -1.0f;            // rangefinder detection in m
+    float range = -1.0f;                 // rangefinder detection in m
 
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
@@ -234,6 +235,9 @@ protected:
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
+
+    // update external payload/sensor dynamic
+    void update_external_payload(const struct sitl_input &input);
     
 private:
     uint64_t last_time_us = 0;
