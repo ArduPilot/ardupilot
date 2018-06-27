@@ -130,6 +130,7 @@ class Board:
             '-Werror=uninitialized',
             '-Werror=init-self',
             '-Werror=switch',
+            '-Werror=sign-compare',
             '-Wfatal-errors',
             '-Wno-trigraphs',
         ]
