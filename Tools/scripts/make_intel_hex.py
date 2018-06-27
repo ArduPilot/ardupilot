@@ -42,12 +42,10 @@ tmpfile = hexfile + ".tmp"
 open(tmpfile, "wb").write(appimage)
 
 intelhex.bin2hex(tmpfile, hexfile, offset=(0x08000000 + reserve_kb*1024))
-print("Created %s" % hexfile)
 
 if reserve_kb > 0:
    open(tmpfile, "wb").write(with_bl)
    intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
-   print("Created %s" % hex_with_bl)
    
 os.unlink(tmpfile)
 
