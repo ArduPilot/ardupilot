@@ -13,8 +13,6 @@ STM32_PLLM_VALUE 8
 
 FLASH_SIZE_KB 1024
 
-USB_STRING_PRODUCT "MatekF405-BL"
-
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
