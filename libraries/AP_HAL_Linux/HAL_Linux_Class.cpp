@@ -66,6 +66,7 @@ static UARTDriver uartCDriver(false);
 static UARTDriver uartDDriver(false);
 static UARTDriver uartEDriver(false);
 static UARTDriver uartFDriver(false);
+static UARTDriver uartGDriver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
@@ -217,6 +218,7 @@ HAL_Linux::HAL_Linux() :
         &uartDDriver,
         &uartEDriver,
         &uartFDriver,
+        &uartGDriver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
         &analogIn,
@@ -233,7 +235,7 @@ HAL_Linux::HAL_Linux() :
 
 void _usage(void)
 {
-    printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath\n");
+    printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath -G uartGpath\n");
     printf("Options:\n");
     printf("\tserial:\n");
     printf("                    -A /dev/ttyO4\n");
@@ -274,6 +276,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"uartD",         true,  0, 'D'},
         {"uartE",         true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
+        {"uartG",         true,  0, 'G'},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
@@ -308,6 +311,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'F':
             uartFDriver.set_device_path(gopt.optarg);
             break;
+        case 'G':
+            uartGDriver.set_device_path(gopt.optarg);
+            break;
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
             break;
@@ -340,6 +346,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     uartA->begin(115200);
     uartE->begin(115200);
     uartF->begin(115200);
+    uartG->begin(115200);
     analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
