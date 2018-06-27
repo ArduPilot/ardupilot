@@ -939,9 +939,29 @@ def write_GPIO_config(f):
                 (label, p.port, p.pin))
     f.write('\n')
 
+def bootloader_path():
+    # always embed a bootloader if it is available
+    this_dir = os.path.realpath(__file__)
+    rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
+    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+    bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
+    bootloader_path = os.path.join(rootdir,
+                                   "Tools",
+                                   "bootloaders",
+                                   bootloader_filename)
+    if os.path.exists(bootloader_path):
+        return os.path.realpath(bootloader_path)
+
+    return None
+
 def write_ROMFS(outdir):
     '''create ROMFS embedded header'''
     from embed import create_embedded_h
+
+    bp = bootloader_path()
+    if bp is not None:
+        romfs.append( ("bootloader.bin", bp) )
+
     create_embedded_h(os.path.join(outdir, 'ap_romfs_embedded.h'), romfs)
 
 def write_prototype_file():
