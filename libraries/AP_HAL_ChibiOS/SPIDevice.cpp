@@ -183,7 +183,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
 uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
     uint32_t spi_clock_freq = SPI1_CLOCK;
-    if (busid > 0 && busid-1 < ARRAY_SIZE_SIMPLE(bus_clocks)) {
+    if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE_SIMPLE(bus_clocks)) {
         spi_clock_freq = bus_clocks[busid-1] / 2;
     }
 
