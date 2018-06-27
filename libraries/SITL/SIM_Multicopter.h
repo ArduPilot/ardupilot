@@ -22,7 +22,6 @@
 #include "SIM_Motor.h"
 #include "SIM_Frame.h"
 
-#include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
 
 namespace SITL {
@@ -48,7 +47,6 @@ protected:
     Frame *frame;
 
     // The numbers below are the pwm output channels with "0" meaning the first output (aka RC1)
-    Gripper_Servo gripper{8};
     Gripper_EPM gripper_epm{9};
 };
 
