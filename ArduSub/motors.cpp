@@ -122,7 +122,7 @@ void Sub::init_disarm_motors()
     hal.util->set_soft_armed(false);
 
     // clear input holds
-    clear_input_hold();
+    joystick.clear_input_hold();
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos

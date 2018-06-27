@@ -8,7 +8,7 @@ bool Sub::manual_init()
 
     // attitude hold inputs become thrust inputs in manual mode
     // set to neutral to prevent chaotic behavior (esp. roll/pitch)
-    set_neutral_controls();
+    joystick.set_neutral_controls();
 
     return true;
 }

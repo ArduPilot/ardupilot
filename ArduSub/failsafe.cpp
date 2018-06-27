@@ -189,7 +189,7 @@ void Sub::failsafe_pilot_input_check()
     Log_Write_Error(ERROR_SUBSYSTEM_INPUT, ERROR_CODE_FAILSAFE_OCCURRED);
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost manual control");
 
-    set_neutral_controls();
+    joystick.set_neutral_controls();
 
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
         init_disarm_motors();
