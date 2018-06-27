@@ -5,6 +5,7 @@
 
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
 
 class DataFlash_Class;
 
@@ -143,7 +144,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
@@ -209,6 +210,7 @@ public:
     Sprayer sprayer_sim;
 
     Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
 };
 
 } // namespace SITL

@@ -124,6 +124,10 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Group: GRPS_
     // @Path: ./SIM_Gripper_Servo.cpp
     AP_SUBGROUPINFO(gripper_sim, "GRPS_", 19, SITL, Gripper_Servo),
+    // @Group: GRPE_
+    // @Path: ./SIM_Gripper_EPM.cpp
+    AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 20, SITL, Gripper_EPM),
+
     AP_GROUPEND
 };
     
