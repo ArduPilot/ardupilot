@@ -146,17 +146,8 @@ class AutoTest(ABC):
     def vehicleinfo_key(self):
         return self.log_name
 
-    def apply_parameters_using_sitl(self):
-        '''start SITL, apply parameter file, stop SITL'''
-        sitl = util.start_SITL(self.binary,
-                               wipe=True,
-                               model=self.frame,
-                               home=self.home,
-                               speedup=self.speedup_default)
-        self.mavproxy = util.start_MAVProxy_SITL(self.log_name)
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
+    def apply_defaultfile_parameters(self):
+        '''apply parameter file'''
 
         # setup test parameters
         vinfo = vehicleinfo.VehicleInfo()
@@ -170,11 +161,11 @@ class AutoTest(ABC):
             self.mavproxy.expect('Loaded [0-9]+ parameters')
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
+        self.reboot_sitl()
 
-        # kill this SITL instance off:
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(sitl)
-        self.mavproxy = None
+    def reboot_sitl(self):
+        self.mavproxy.send("reboot\n")
+        self.mavproxy.expect("tilt alignment complete")
 
     def close(self):
         '''tidy up after running all tests'''

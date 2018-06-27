@@ -62,15 +62,14 @@ class AutoTestRover(AutoTest):
         if self.frame is None:
             self.frame = 'rover'
 
-        self.apply_parameters_using_sitl()
-
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
                                     home=self.home,
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'APMrover2', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
@@ -86,6 +85,7 @@ class AutoTestRover(AutoTest):
         except Exception:
             pass
 
+        self.progress("WAITING FOR PARAMETERS")
         self.mavproxy.expect('Received [0-9]+ parameters')
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
@@ -107,6 +107,9 @@ class AutoTestRover(AutoTest):
         self.mav.message_hooks.append(self.message_hook)
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
+
+        self.apply_defaultfile_parameters()
+
         self.progress("Ready to start testing!")
 
     # def reset_and_arm(self):
