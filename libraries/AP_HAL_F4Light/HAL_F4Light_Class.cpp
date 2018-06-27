@@ -198,7 +198,8 @@ HAL_F4Light::HAL_F4Light() :
 #else
  #error no BOARD_UARTS_LAYOUT!
 #endif
-
+        nullptr,            // no uartG
+        
         &i2c_mgr_instance,  // I2C
         &spiDeviceManager,  // spi 
         &analogIn,          // analogin 
