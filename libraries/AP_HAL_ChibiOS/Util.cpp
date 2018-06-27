@@ -22,6 +22,8 @@
 #include "ToneAlarm.h"
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/flash.h"
+#include <AP_ROMFS/AP_ROMFS.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -194,3 +196,47 @@ uint64_t Util::get_hw_rtc() const
 {
     return stm32_get_utc_usec();
 }
+
+bool Util::flash_bootloader()
+{
+    uint32_t fw_size;
+    const char *fw_name = "bootloader.bin";
+
+    const uint8_t *fw = AP_ROMFS::find_file(fw_name, fw_size);
+    if (!fw) {
+        hal.console->printf("failed to find %s\n", fw_name);
+        return false;
+    }
+
+    const uint32_t addr = stm32_flash_getpageaddr(0);
+    if (!memcmp(fw, (const void*)addr, fw_size)) {
+        hal.console->printf("Bootloader up-to-date\n");
+        return true;
+    }
+
+    hal.console->printf("Erasing\n");
+    if (!stm32_flash_erasepage(0)) {
+        hal.console->printf("Erase failed\n");
+        return false;
+    }
+    hal.console->printf("Flashing %s @%08x\n", fw_name, (unsigned int)addr);
+    const uint8_t max_attempts = 10;
+    for (uint8_t i=0; i<max_attempts; i++) {
+        void *context = hal.scheduler->disable_interrupts_save();
+        const int32_t written = stm32_flash_write(addr, fw, fw_size);
+        hal.scheduler->restore_interrupts(context);
+        if (written == -1 || written < fw_size) {
+            hal.console->printf("Flash failed! (attempt=%u/%u)\n",
+                                i+1,
+                                max_attempts);
+            hal.scheduler->delay(1000);
+            continue;
+        }
+        hal.console->printf("Flash OK\n");
+        return true;
+    }
+
+    hal.console->printf("Flash failed after %u attempts\n", max_attempts);
+    return false;
+}
+

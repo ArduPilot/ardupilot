@@ -78,4 +78,6 @@ private:
       get system clock in UTC microseconds
      */
     uint64_t get_hw_rtc() const override;
+
+    bool flash_bootloader() override;
 };
