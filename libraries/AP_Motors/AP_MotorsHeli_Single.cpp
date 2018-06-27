@@ -120,8 +120,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: COL_CTRL_DIR
     // @DisplayName: Collective Control Direction
-    // @Description: Collective Control Direction - 0 for Normal. 1 for Reversed
-    // @Values: 0: Normal, 1: Reversed
+    // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
+    // @Values: 0:Normal,1:Reversed
     // @User: Standard
     AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _collective_direction, AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL),
 
