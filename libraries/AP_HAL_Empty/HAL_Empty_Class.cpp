@@ -30,6 +30,7 @@ HAL_Empty::HAL_Empty() :
         nullptr,            /* no uartD */
         nullptr,            /* no uartE */
         nullptr,            /* no uartF */
+        nullptr,            /* no uartG */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
