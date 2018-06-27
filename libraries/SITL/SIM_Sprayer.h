@@ -42,12 +42,12 @@ private:
     const uint32_t report_interval = 1000000; // microseconds
     uint64_t last_report_us;
 
-    const float pump_max_rate = 0.01; // litres/second
-    const float pump_slew_rate = 20; // percent/scond
+    const float pump_max_rate = 0.01f; // litres/second
+    const float pump_slew_rate = 20.0f; // percent/second
     float last_pump_output; // percentage
 
-    const float spinner_max_rate = 3600; // degrees/second
-    const float spinner_slew_rate = 20; // percent/second
+    const float spinner_max_rate = 3600.0f; // degrees/second
+    const float spinner_slew_rate = 20.0f; // percent/second
     float last_spinner_output; // percentage
 
     double capacity = 0.25; // litres

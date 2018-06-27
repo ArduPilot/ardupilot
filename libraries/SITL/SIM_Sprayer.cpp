@@ -66,7 +66,6 @@ void Sprayer::update(const Aircraft::sitl_input &input)
     }
 
     last_update_us = now;
-    return;
 }
 
 bool Sprayer::should_report()

@@ -32,8 +32,8 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     // update gripper position
 
     float position_demand = (input.servos[gripper_servo]-1000) * 0.001f;
-    if (position_demand < 0) { // never updated
-        position_demand = 0;
+    if (is_negative(position_demand)) { // never updated
+        position_demand = 0.0f;
     }
 
     const float position_max_change = position_slew_rate/100.0f * dt;
@@ -55,7 +55,6 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     }
 
     last_update_us = now;
-    return;
 }
 
 bool Gripper_Servo::should_report()
