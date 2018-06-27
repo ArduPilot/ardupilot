@@ -35,6 +35,7 @@ static HAL_UARTC_DRIVER;
 static HAL_UARTD_DRIVER;
 static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
+static HAL_UARTG_DRIVER;
 #else
 static Empty::UARTDriver uartADriver;
 static Empty::UARTDriver uartBDriver;
@@ -42,6 +43,7 @@ static Empty::UARTDriver uartCDriver;
 static Empty::UARTDriver uartDDriver;
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
+static Empty::UARTDriver uartGDriver;
 #endif
 
 #if HAL_USE_I2C == TRUE
@@ -95,6 +97,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartDDriver,
         &uartEDriver,
         &uartFDriver,
+        &uartGDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,
