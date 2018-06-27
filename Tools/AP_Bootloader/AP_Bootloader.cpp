@@ -42,16 +42,12 @@ struct boardinfo board_info;
 
 int main(void)
 {
-    init_uarts();
-
     board_info.board_type = APJ_BOARD_ID;
     board_info.board_rev = 0;
     board_info.fw_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
     if (BOARD_FLASH_SIZE > 1024 && check_limit_flash_1M()) {
         board_info.fw_size = (1024 - FLASH_BOOTLOADER_LOAD_KB)*1024;        
     }
-
-    flash_init();
 
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
@@ -71,6 +67,9 @@ int main(void)
     if (try_boot) {
         jump_to_app();
     }
+
+    init_uarts();
+    flash_init();
     
     while (true) {
         bootloader(timeout);
