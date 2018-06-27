@@ -151,6 +151,7 @@ static inline void putreg32(uint32_t val, unsigned int addr)
 
 static void stm32_flash_wait_idle(void)
 {
+    __DSB();
 	while (FLASH->SR & FLASH_SR_BSY) {
         // nop
     }
@@ -242,8 +243,9 @@ bool stm32_flash_ispageerased(uint32_t page)
     }
 
     for (addr = stm32_flash_getpageaddr(page), count = stm32_flash_getpagesize(page);
-        count; count--, addr++) {
-        if ((*(volatile uint8_t *)(addr)) != 0xff) {
+        count; count -= 4, addr += 4) {
+        uint32_t v = getreg32(addr);
+        if (v != 0xffffffff) {
             return false;
         }
     }
@@ -265,7 +267,7 @@ bool stm32_flash_erasepage(uint32_t page)
 #endif
     stm32_flash_wait_idle();
     stm32_flash_unlock();
-    
+
     // clear any previous errors
     FLASH->SR = 0xF3;
 
@@ -275,26 +277,19 @@ bool stm32_flash_erasepage(uint32_t page)
     uint8_t snb = (((page % 12) << 3) | ((page / 12) << 7));
 
     // use 32 bit operations
-	FLASH->CR = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
-	FLASH->CR |= FLASH_CR_STRT;
+    FLASH->CR = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
+    FLASH->CR |= FLASH_CR_STRT;
 
     stm32_flash_wait_idle();
 
-    if (FLASH->SR) {
-        // an error occurred
-        FLASH->SR = 0xF3;
-        stm32_flash_lock();
-#if STM32_FLASH_DISABLE_ISR
-        chSysRestoreStatusX(sts);
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+    dmaBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
 #endif
-        return false;
-    }
-    
+        
     stm32_flash_lock();
 #if STM32_FLASH_DISABLE_ISR
     chSysRestoreStatusX(sts);
 #endif
-
     return stm32_flash_ispageerased(page);
 }
 
