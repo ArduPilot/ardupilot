@@ -118,6 +118,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("WIND_T"      ,15, SITL,  wind_type, SITL::WIND_TYPE_SQRT),
     AP_GROUPINFO("WIND_T_ALT"  ,16, SITL,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SITL,  wind_type_coef, 0.01f),
+    // @Group: SPR_
+    // @Path: ./SIM_Sprayer.cpp
+    AP_SUBGROUPINFO(sprayer_sim, "SPR_", 18, SITL, Sprayer),
     AP_GROUPEND
 };
     

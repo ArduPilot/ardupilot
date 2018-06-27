@@ -3,6 +3,8 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include "SIM_Sprayer.h"
+
 class DataFlash_Class;
 
 namespace SITL {
@@ -218,6 +220,8 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
 };
 
 } // namespace SITL
