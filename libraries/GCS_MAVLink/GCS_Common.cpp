@@ -2458,7 +2458,7 @@ void GCS_MAVLINK::send_simstate() const
 
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
 {
-    if (int(packet.param5) != 290876) {
+    if (uint32_t(packet.param5) != 290876) {
         gcs().send_text(MAV_SEVERITY_INFO, "Magic not set");
         return MAV_RESULT_FAILED;
     }
