@@ -3,6 +3,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <assert.h>
+#include <errno.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -69,6 +70,8 @@ HAL_SITL::HAL_SITL() :
     _sitl_state(&sitlState)
 {}
 
+static char *new_argv[100];
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
@@ -90,8 +93,18 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
     }
-    execv(argv[0], argv);
-    AP_HAL::panic("PANIC: REBOOT FAILED");
+
+    // form a new argv, removing problem parameters
+    uint8_t new_argv_offset = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(new_argv) && i<argc; i++) {
+        if (!strcmp(argv[i], "-w")) {
+            // don't wipe params on reboot
+            continue;
+        }
+        new_argv[new_argv_offset++] = argv[i];
+    }
+    execv(new_argv[0], new_argv);
+    AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
