@@ -61,8 +61,9 @@ public:
         DEVTYPE_IST8310 = 0x0A,
         DEVTYPE_ICM20948 = 0x0B,
         DEVTYPE_MMC3416 = 0x0C,
-	DEVTYPE_QMC5883L = 0x0D,
-	DEVTYPE_MAG3110  = 0x0E,
+        DEVTYPE_QMC5883L = 0x0D,
+        DEVTYPE_MAG3110  = 0x0E,
+        DEVTYPE_SITL  = 0x0F,
     };
 
 
