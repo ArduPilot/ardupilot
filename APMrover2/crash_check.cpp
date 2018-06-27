@@ -11,30 +11,25 @@ static const float CRASH_CHECK_VEL_MIN = 0.08f;      // vehicle must have a velo
 void Rover::crash_check()
 {
   static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
+  bool crashed = false; //stores crash state
 
-  if (is_balancebot() && arming.is_armed()) {
-      // Crashed if pitch > bal_pitch_crash
-      if (fabsf(ahrs.pitch) > radians(g2.bal_pitch_crash)) {
-          // log an error in the dataflash
-          Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
-          // send message to gcs
-          gcs().send_text(MAV_SEVERITY_EMERGENCY, "Balance Bot crashed");
-          disarm_motors();
-      }
-  }
-
-  // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode
-  if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || (!control_mode->is_autopilot_mode())) {
+  // return immediately if disarmed, crash checking is disabled or vehicle is Hold, Manual or Acro mode(if it is not a balance bot)
+  if (!arming.is_armed() || g.fs_crash_check == FS_CRASH_DISABLE || ((!control_mode->is_autopilot_mode()) && (!is_balancebot()))) {
     crash_counter = 0;
     return;
+  }
+
+  // Crashed if pitch/roll > crash_angle
+  if ((g2.crash_angle != 0) && ((fabsf(ahrs.pitch) > radians(g2.crash_angle)) || (fabsf(ahrs.roll) > radians(g2.crash_angle)))) {
+    crashed = true;
   }
 
   // TODO : Check if min vel can be calculated
   // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-  if ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
+  if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
       (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
-      (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN)) {
+      (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
     crash_counter = 0;
     return;
   }
@@ -44,14 +39,26 @@ void Rover::crash_check()
 
   // check if crashing for 2 seconds
   if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * 10)) {
+    crashed = true;
+  }
+
+  if (crashed){
     // log an error in the dataflash
     Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
-    // send message to gcs
-    gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
-    // change mode to hold and disarm
-    set_mode(mode_hold, MODE_REASON_CRASH_FAILSAFE);
-    if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {
-      disarm_motors();
+
+    if (is_balancebot()) {
+        // send message to gcs
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Disarming");
+        disarm_motors();
+    } else {
+        // send message to gcs
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Going to HOLD");
+        // change mode to hold and disarm
+        set_mode(mode_hold, MODE_REASON_CRASH_FAILSAFE);
+        if (g.fs_crash_check == FS_CRASH_HOLD_AND_DISARM) {
+            disarm_motors();
+        }
     }
+
   }
 }

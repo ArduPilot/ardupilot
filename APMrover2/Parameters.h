@@ -345,8 +345,8 @@ public:
     // pitch angle at 100% throttle
     AP_Float bal_pitch_max;
 
-    // balance bot pitch for crash check
-    AP_Float bal_pitch_crash;
+    // pitch/roll angle for crash check
+    AP_Int8 crash_angle;
 };
 
 extern const AP_Param::Info var_info[];
