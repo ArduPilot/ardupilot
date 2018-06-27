@@ -2456,6 +2456,20 @@ void GCS_MAVLINK::send_simstate() const
 #endif
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
+{
+    if (int(packet.param5) != 290876) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Magic not set");
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!hal.util->flash_bootloader()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -2678,6 +2692,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
+        break;
+
+    case MAV_CMD_FLASH_BOOTLOADER:
+        result = handle_command_flash_bootloader(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
