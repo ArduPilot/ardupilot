@@ -16,8 +16,6 @@ FLASH_SIZE_KB 1024
 # don't allow bootloader to use more than 16k
 FLASH_USE_MAX_KB 16
 
-USB_STRING_PRODUCT "ArduPilot-airbotf4-BL"
-
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 

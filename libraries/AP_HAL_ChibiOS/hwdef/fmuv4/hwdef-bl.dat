@@ -7,9 +7,6 @@ MCU STM32F4xx STM32F427xx
 # board ID for firmware load
 APJ_BOARD_ID 11
 
-# USB setup
-USB_STRING_PRODUCT "fmuv4-BL"
-
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
