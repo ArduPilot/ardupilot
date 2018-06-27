@@ -33,6 +33,9 @@ uint32_t get_mcu_id(void);
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf);
 bool check_limit_flash_1M(void);
 
+uint32_t board_get_rtc_signature(void);
+void board_set_rtc_signature(uint32_t sig);
+
 void led_on(unsigned led);
 void led_off(unsigned led);
 void led_toggle(unsigned led);
