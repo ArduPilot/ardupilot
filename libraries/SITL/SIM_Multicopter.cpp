@@ -72,5 +72,4 @@ void MultiCopter::update(const struct SITL::sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-    gripper_epm.update(input);
 }
