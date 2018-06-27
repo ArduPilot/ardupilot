@@ -52,9 +52,6 @@ protected:
     Sprayer sprayer{6, 7};
     Gripper_Servo gripper{8};
     Gripper_EPM gripper_epm{9};
-
-    float gross_mass() const override;
-
 };
 
 }
