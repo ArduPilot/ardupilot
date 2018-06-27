@@ -130,6 +130,7 @@ HAL_VRBRAIN::HAL_VRBRAIN() :
         &uartDDriver,  /* uartD */
         &uartEDriver,  /* uartE */
         &uartFDriver,  /* uartF */
+        nullptr,       /* no uartG */
         &i2c_mgr_instance,
         &spi_mgr_instance,
         &analogIn, /* analogin */
