@@ -29,7 +29,8 @@ devtype=(devid>>16)
 bustypes = {
     1: "I2C",
     2: "SPI",
-    3: "UAVCAN"
+    3: "UAVCAN",
+    4: "SITL"
 }
 
 compass_types = {
@@ -44,7 +45,9 @@ compass_types = {
     0x0A : "DEVTYPE_IST8310",
     0x0B : "DEVTYPE_ICM20948",
     0x0C : "DEVTYPE_MMC3416",
-    0x0D : "DEVTYPE_QMC5883L"
+    0x0D : "DEVTYPE_QMC5883L",
+    0x0E : "DEVTYPE_MAG3110",
+    0x0F : "DEVTYPE_SITL"
 }
 
 imu_types = {
@@ -62,6 +65,8 @@ imu_types = {
     0x26 : "DEVTYPE_GYR_LSM9DS1",
     0x27 : "DEVTYPE_INS_ICM20789",
     0x28 : "DEVTYPE_INS_ICM20689",
+    0x29 : "DEVTYPE_INS_BMI055",
+    0x2A : "DEVTYPE_SITL",
 }
 
 decoded_devname = ""
