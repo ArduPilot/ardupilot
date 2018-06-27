@@ -52,6 +52,18 @@ uint32_t get_fattime(void);
 #define OTP_BASE 0x1ff0f000
 #define OTP_SIZE 1024
 #endif
+
+enum rtc_boot_magic {
+    RTC_BOOT_OFF  = 0,
+    RTC_BOOT_HOLD = 0xb0070001,
+    RTC_BOOT_FAST = 0xb0070002
+};
+    
+// see if RTC registers is setup for a fast reboot
+enum rtc_boot_magic check_fast_reboot(void);
+
+// set RTC register for a fast reboot
+void set_fast_reboot(enum rtc_boot_magic v);
     
 #ifdef __cplusplus
 }
