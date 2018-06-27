@@ -296,14 +296,16 @@ def build(bld):
         source=bld.path.ant_glob(bld.env.HWDEF),
         rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' %s %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
-        target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
+        target=[bld.bldnode.find_or_declare('hwdef.h'),
+                bld.bldnode.find_or_declare('apj.prototype'),
+                bld.bldnode.find_or_declare('ldscript.ld')]
     )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
-        target='modules/ChibiOS/include_dirs'
+        target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
@@ -318,7 +320,7 @@ def build(bld):
         rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f '${BOARD_MK}'",
         group='dynamic_sources',
         source=common_src,
-        target='modules/ChibiOS/libch.a'
+        target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
     )
     ch_task.name = "ChibiOS_lib"
 
