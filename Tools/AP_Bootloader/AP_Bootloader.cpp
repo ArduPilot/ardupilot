@@ -26,6 +26,7 @@
 #include "hal.h"
 #include "hwdef.h"
 #include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include "support.h"
 #include "bl_protocol.h"
 
@@ -34,6 +35,10 @@ extern "C" {
 }
 
 struct boardinfo board_info;
+
+#ifndef HAL_BOOTLOADER_TIMEOUT
+#define HAL_BOOTLOADER_TIMEOUT 5000
+#endif
 
 int main(void)
 {
@@ -48,8 +53,27 @@ int main(void)
 
     flash_init();
 
+    bool try_boot = false;
+    uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
+
+    enum rtc_boot_magic m = check_fast_reboot();
+    if (m == RTC_BOOT_HOLD) {
+        timeout = 0;
+    } else if (m == RTC_BOOT_FAST) {
+        try_boot = true;
+        timeout = 0;
+    }
+    
+    // if we fail to boot properly we want to pause in bootloader to give
+    // a chance to load new app code
+    set_fast_reboot(RTC_BOOT_OFF);
+
+    if (try_boot) {
+        jump_to_app();
+    }
+    
     while (true) {
-        bootloader(5000);
+        bootloader(timeout);
         jump_to_app();
     }
 }
