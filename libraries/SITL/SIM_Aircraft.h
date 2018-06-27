@@ -29,8 +29,6 @@ namespace SITL {
   parent class for all simulator types
  */
 class Aircraft {
-    friend class Gripper_Servo;
-
 public:
     Aircraft(const char *home_str, const char *frame_str);
 

@@ -121,6 +121,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Group: SPR_
     // @Path: ./SIM_Sprayer.cpp
     AP_SUBGROUPINFO(sprayer_sim, "SPR_", 18, SITL, Sprayer),
+    // @Group: GRPS_
+    // @Path: ./SIM_Gripper_Servo.cpp
+    AP_SUBGROUPINFO(gripper_sim, "GRPS_", 19, SITL, Gripper_Servo),
     AP_GROUPEND
 };
     

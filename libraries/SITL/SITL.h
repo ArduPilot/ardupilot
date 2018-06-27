@@ -4,6 +4,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 #include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
 
 class DataFlash_Class;
 
@@ -206,6 +207,8 @@ public:
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
 
     Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
 };
 
 } // namespace SITL

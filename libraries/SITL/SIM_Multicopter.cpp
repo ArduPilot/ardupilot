@@ -29,8 +29,6 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 {
     mass = 1.5f;
 
-    gripper.set_aircraft(this);
-
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
@@ -74,8 +72,5 @@ void MultiCopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-
-    // update gripper
-    gripper.update(input);
     gripper_epm.update(input);
 }
