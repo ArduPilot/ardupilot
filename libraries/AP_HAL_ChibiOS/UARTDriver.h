@@ -22,8 +22,8 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
-#define RX_BOUNCE_BUFSIZE 128
-#define TX_BOUNCE_BUFSIZE 64
+#define RX_BOUNCE_BUFSIZE 128U
+#define TX_BOUNCE_BUFSIZE 64U
 
 #define UART_MAX_DRIVERS 7
 
