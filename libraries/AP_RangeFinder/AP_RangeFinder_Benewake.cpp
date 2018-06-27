@@ -114,7 +114,7 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm, bool &signal_ok)
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
                     if (dist != 0xFFFF) {
                         // TFmini has short distance mode (mm)
-                        if ((model_type == BENEWAKE_TFmini)) {
+                        if (model_type == BENEWAKE_TFmini) {
                             if (linebuf[6] == 0x02) {
                                 dist *= 0.1f;
                             }
