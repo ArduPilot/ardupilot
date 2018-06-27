@@ -23,7 +23,6 @@
 #include "SITL.h"
 #include <AP_Terrain/AP_Terrain.h>
 
-
 namespace SITL {
 
 /*
@@ -176,7 +175,7 @@ protected:
 
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
-    
+
     enum {
         GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,

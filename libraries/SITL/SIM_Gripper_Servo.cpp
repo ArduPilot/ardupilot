@@ -55,7 +55,6 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     }
 
     last_update_us = now;
-    return;
 }
 
 bool Gripper_Servo::should_report()
