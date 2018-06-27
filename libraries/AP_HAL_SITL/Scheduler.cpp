@@ -177,6 +177,7 @@ void Scheduler::_run_io_procs()
     hal.uartD->_timer_tick();
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
+    hal.uartG->_timer_tick();
 }
 
 /*

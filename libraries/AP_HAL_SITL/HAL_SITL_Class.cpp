@@ -41,6 +41,7 @@ static UARTDriver sitlUart2Driver(2, &sitlState);
 static UARTDriver sitlUart3Driver(3, &sitlState);
 static UARTDriver sitlUart4Driver(4, &sitlState);
 static UARTDriver sitlUart5Driver(5, &sitlState);
+static UARTDriver sitlUart6Driver(6, &sitlState);
 
 static Util utilInstance(&sitlState);
 
@@ -52,6 +53,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart3Driver,   /* uartD */
         &sitlUart4Driver,   /* uartE */
         &sitlUart5Driver,   /* uartF */
+        &sitlUart6Driver,   /* uartG */
         &i2c_mgr_instance,
         &emptySPI,          /* spi */
         &sitlAnalogIn,      /* analogin */
