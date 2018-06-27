@@ -18,26 +18,29 @@
 
 #pragma once
 
-#include "SIM_Aircraft.h"
+#include "stdint.h"
+#include <AP_Param/AP_Param.h>
 
 namespace SITL {
 
 class Sprayer {
 public:
-    const uint8_t pump_servo;
-    const int8_t spinner_servo;
-
-    Sprayer(const uint8_t _pump_servo, int8_t _spinner_servo) :
-        pump_servo(_pump_servo),
-        spinner_servo(_spinner_servo)
-    {}
+    Sprayer() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
 
     // update sprayer state
-    void update(const struct Aircraft::sitl_input &input);
+    void update(int16_t pump_servo, int16_t spinner_servo);
 
-    float payload_mass() const { return capacity; }; // kg; water, so kg=l
+    float payload_mass() const { return static_cast<float>(capacity); }; // kg; water, so kg=l
 
-private:
+    static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int8  sprayer_enable;  // enable sprayer sim
+    AP_Int8  sprayer_pump_pin;
+    AP_Int8  sprayer_spin_pin;
+
+ private:
 
     const uint32_t report_interval = 1000000; // microseconds
     uint64_t last_report_us;
