@@ -739,4 +739,20 @@ void Aircraft::extrapolate_sensors(float delta_time)
 void Aircraft::update_external_payload(const struct SITL::sitl_input &input)
 {
     external_payload_mass = 0;
+
+    // update sprayer
+    if (sitl->sprayer_sim.is_enable()) {
+        sitl->sprayer_sim.update(input);
+        external_payload_mass += sitl->sprayer_sim.payload_mass();
+    }
+
+    // update gripper
+    if (sitl->gripper_sim.is_enable()) {
+        sitl->gripper_sim.update(input);
+        external_payload_mass += sitl->gripper_sim.payload_mass(hagl());
+    }
+    if (sitl->gripper_epm_sim.is_enable()) {
+        sitl->gripper_epm_sim.update(input);
+        // external_payload_mass += gripper_epm.payload_mass();
+    }
 }
