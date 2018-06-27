@@ -94,6 +94,9 @@ protected:
     // set dev_id for an instance
     void set_dev_id(uint8_t instance, uint32_t dev_id);
 
+    // save dev_id, used by SITL
+    void save_dev_id(uint8_t instance);
+
     // set external state for an instance
     void set_external(uint8_t instance, bool external);
 
