@@ -954,13 +954,15 @@ def bootloader_path():
 
     return None
 
-def write_ROMFS(outdir):
-    '''create ROMFS embedded header'''
-    from embed import create_embedded_h
-
+def add_bootloader():
+    '''added bootloader to ROMFS'''
     bp = bootloader_path()
     if bp is not None:
         romfs.append( ("bootloader.bin", bp) )
+
+def write_ROMFS(outdir):
+    '''create ROMFS embedded header'''
+    from embed import create_embedded_h
 
     create_embedded_h(os.path.join(outdir, 'ap_romfs_embedded.h'), romfs)
 
@@ -1040,6 +1042,8 @@ def write_hwdef_header(outfilename):
         write_UART_config(f)
     else:
         write_UART_config_bootloader(f)
+
+    add_bootloader()
 
     if len(romfs) > 0:
         f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
