@@ -556,14 +556,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 5),
 
-    // @Param: BAL_PITCH_CRASH
-    // @DisplayName: BalanceBot Crash Pitch
-    // @Description: Pitch angle for crash check
+    // @Param: CRASH_ANGLE
+    // @DisplayName: Crash Angle
+    // @Description: Pitch/Roll angle limit in degrees for crash check. Zero disables check
     // @Units: deg
     // @Range: 0 60
-    // @Increment: 0.1
+    // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_CRASH", 22, ParametersG2, bal_pitch_crash, 30),
+    AP_GROUPINFO("CRASH_ANGLE", 22, ParametersG2, crash_angle, 0),
 
 
     AP_GROUPEND
@@ -641,6 +641,10 @@ void Rover::load_parameters(void)
 
     SRV_Channels::set_default_function(CH_1, SRV_Channel::k_steering);
     SRV_Channels::set_default_function(CH_3, SRV_Channel::k_throttle);
+
+    if (is_balancebot()) {
+        g2.crash_angle.set_default(30);
+    }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,
