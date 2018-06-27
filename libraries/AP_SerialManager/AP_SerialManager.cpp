@@ -36,6 +36,11 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
+#ifndef HAL_SERIAL6_PROTOCOL
+#define SERIAL6_PROTOCOL SerialProtocol_None
+#define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
@@ -128,6 +133,21 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
 
     // index 11 used by 0_PROTOCOL
+        
+    // @Param: 6_PROTOCOL
+    // @DisplayName: Serial6 protocol selection
+    // @Description: Control what protocol Serial6 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, SERIAL6_PROTOCOL),
+
+    // @Param: 6_BAUD
+    // @DisplayName: Serial 6 Baud Rate
+    // @Description: The baud rate used for Serial6. The APM2 can support all baudrates up to 115, and also can support 500. The PX4 can support rates of up to 1500. If you setup a rate you cannot support on APM2 and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
+    // @User: Standard
+    AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, SERIAL6_BAUD),
     
     AP_GROUPEND
 };
@@ -164,6 +184,7 @@ void AP_SerialManager::init()
     state[3].uart = hal.uartB;  // serial3, uartB, normally 1st GPS
     state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
     state[5].uart = hal.uartF;  // serial5
+    state[6].uart = hal.uartG;  // serial6
 
     if (state[0].uart == nullptr) {
         init_console();
