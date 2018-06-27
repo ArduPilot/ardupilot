@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Group: BATVOLT
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(bat_volt, "BAT_VOLS", 5, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(bat_volt, "BAT_VOLT", 5, AP_OSD_Screen, AP_OSD_Setting),
 
     // @Group: RSSI
     // @Path: AP_OSD_Setting.cpp
