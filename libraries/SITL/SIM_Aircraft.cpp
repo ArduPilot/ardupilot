@@ -740,4 +740,23 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
 
+    // update sprayer
+    if (sitl->sprayer_sim.sprayer_enable) {
+        const int16_t sprayer_pump_pwm = sitl->sprayer_sim.sprayer_pump_pin >= 0 ? input.servos[sitl->sprayer_sim.sprayer_pump_pin] : -1;
+        const int16_t sprayer_spinner_pwm = sitl->sprayer_sim.sprayer_spin_pin >= 0 ? input.servos[sitl->sprayer_sim.sprayer_spin_pin] : -1;
+        sitl->sprayer_sim.update(sprayer_pump_pwm, sprayer_spinner_pwm);
+        external_payload_mass += sitl->sprayer_sim.payload_mass();
+    }
+
+    // update gripper
+    if (sitl->gripper_sim.gripper_enable) {
+        const int16_t gripper_pwm= sitl->gripper_sim.gripper_servo_pin >= 0 ? input.servos[sitl->gripper_sim.gripper_servo_pin] : -1;
+        sitl->gripper_sim.update(gripper_pwm, on_ground());
+        external_payload_mass += sitl->gripper_sim.payload_mass(hagl());
+    }
+    if (sitl->gripper_epm_sim.gripper_emp_enable) {
+        const int16_t gripper_pwm = sitl->gripper_epm_sim.gripper_emp_servo_pin >= 0 ? input.servos[sitl->gripper_epm_sim.gripper_emp_servo_pin] : -1;
+        sitl->gripper_epm_sim.update(gripper_pwm);
+        // external_payload_mass += gripper_epm.payload_mass();
+    }
 }
