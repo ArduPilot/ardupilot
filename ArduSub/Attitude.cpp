@@ -199,7 +199,6 @@ uint16_t Sub::get_pilot_speed_dn()
 {
     if (g.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);
-    } else {
-        return abs(g.pilot_speed_dn);
     }
+    return abs(g.pilot_speed_dn);
 }
