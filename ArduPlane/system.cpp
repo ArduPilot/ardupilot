@@ -290,15 +290,12 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
         return true;
     }
 
+    Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
-
-    // perform any cleanup required for prev flight mode
-    exit_mode(control_mode); // TODO: move the contents of this into conorl_mode.exit
-    control_mode->exit();
 
     // set mode
     previous_mode = control_mode;
@@ -309,8 +306,6 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 
 
 //  MODE.ENTER() stuff below. Adding control_mode.enter() now but almost everything should get refactored into it later
-// ---------
-    control_mode->enter();
 // ---------
 
     // cancel inverted flight
@@ -527,6 +522,7 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 
 
 
+    old_mode.exit();
 
     DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 
@@ -534,31 +530,6 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
     return true;
 }
 
-// exit_mode - perform any cleanup required when leaving a flight mode
-void Plane::exit_mode(const Mode* mode)
-{
-    // stop mission when we leave auto
-    if (mode == &mode_auto) {
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
-
-            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
-                !quadplane.is_vtol_land(mission.get_current_nav_cmd().id))
-            {
-                landing.restart_landing_sequence();
-            }
-        }
-        auto_state.started_flying_in_auto_ms = 0;
-    }
-#if QAUTOTUNE_ENABLED
-    else if (mode == mode_qautotune) {
-        quadplane.qautotune.stop();
-    }
-#endif
-    else if (mode == mode_manual && g.auto_trim > 0) {
-        trim_radio();
-    }
-}
 
 void Plane::check_long_failsafe()
 {
