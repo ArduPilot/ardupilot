@@ -275,9 +275,6 @@ void Plane::startup_ground(void)
     gcs().send_text(MAV_SEVERITY_INFO,"Ground start complete");
 }
 
-enum FlightMode Plane::get_previous_mode() {
-    return previous_mode; 
-}
 
 bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 {
