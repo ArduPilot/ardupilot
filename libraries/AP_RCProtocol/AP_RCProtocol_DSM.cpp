@@ -60,7 +60,6 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
     dsm_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
     dsm_state.bit_ofs += nbits;
-    bit_ofs += nbits;
 
     if (bits_s0 - nbits > 10) {
         if (dsm_state.bit_ofs == 16*10) {
@@ -91,7 +90,6 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
         memset(&dsm_state, 0, sizeof(dsm_state));
     }
 
-    byte_ofs = dsm_state.bit_ofs/10;
     bit_ofs = dsm_state.bit_ofs%10;
 
     if (bits_s1+bit_ofs > 10) {
