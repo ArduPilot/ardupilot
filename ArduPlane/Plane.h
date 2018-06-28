@@ -1066,7 +1066,7 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void notify_flight_mode(enum FlightMode mode);
+    void notify_mode(const Mode *mode);
     void log_init();
     void init_capabilities(void);
     void parachute_check();
