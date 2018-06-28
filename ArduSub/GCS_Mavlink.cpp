@@ -5,12 +5,12 @@
 // default sensors are present and healthy: gyro, accelerometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
 #define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_BATTERY)
 
-void Sub::gcs_send_heartbeat(void)
+void Sub::gcs_send_heartbeat()
 {
     gcs().send_message(MSG_HEARTBEAT);
 }
 
-void Sub::gcs_send_deferred(void)
+void Sub::gcs_send_deferred()
 {
     gcs().retry_deferred();
 }
@@ -1316,7 +1316,7 @@ void Sub::mavlink_delay_cb()
 /*
  *  send data streams in the given rate range on both links
  */
-void Sub::gcs_data_stream_send(void)
+void Sub::gcs_data_stream_send()
 {
     gcs().data_stream_send();
 }
@@ -1324,7 +1324,7 @@ void Sub::gcs_data_stream_send(void)
 /*
  *  look for incoming commands on the GCS links
  */
-void Sub::gcs_check_input(void)
+void Sub::gcs_check_input()
 {
     gcs().update();
 }
