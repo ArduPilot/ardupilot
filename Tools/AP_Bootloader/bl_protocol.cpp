@@ -180,7 +180,11 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
     SCB_DisableICache();
 #endif
 
+    chSysLock();    
+
+    // we set sp as well as msp to avoid an issue with loading NuttX
     asm volatile(
+        "mov sp, %0	\n"
         "msr msp, %0	\n"
         "bx	%1	\n"
         : : "r"(stacktop), "r"(entrypoint) :);
@@ -217,6 +221,12 @@ jump_to_app()
     
     led_set(LED_OFF);
 
+    // resetting the clocks is needed for loading NuttX
+    rccDisableAPB1(~0, 0);
+    rccDisableAPB2(~0, 0);
+    rccResetOTG_FS();
+    rccResetOTG_HS();
+    
     // disable all interrupt sources
     port_disable();
 
