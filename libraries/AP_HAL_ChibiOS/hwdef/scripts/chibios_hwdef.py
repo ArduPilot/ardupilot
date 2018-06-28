@@ -601,7 +601,7 @@ def write_UART_config(f):
                 % (devnames[idx], devnames[idx], sdev))
             sdev += 1
         idx += 1
-    for idx in range(len(uart_list), 6):
+    for idx in range(len(uart_list), 7):
         f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                 (devnames[idx], devnames[idx]))
 
