@@ -14,6 +14,7 @@
 #include <systemlib/board_serial.h>
 #include <drivers/drv_gpio.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -260,5 +261,19 @@ void PX4Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_ty
     return free(ptr);
 #endif
 }
+
+extern "C" {
+    int bl_update_main(int argc, char *argv[]);
+};
+
+bool PX4Util::flash_bootloader()
+{
+    if (AP_BoardConfig::px4_start_driver(bl_update_main, "bl_update", "/etc/bootloader/fmu_bl.bin")) {
+        hal.console->printf("updated bootloader\n");
+        return true;
+    }
+    return false;
+}
+
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4
