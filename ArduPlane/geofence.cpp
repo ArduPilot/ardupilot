@@ -291,7 +291,7 @@ void Plane::geofence_check(bool altitude_check_only)
         // GUIDED to the return point
         if (geofence_state != nullptr &&
             (g.fence_action == FENCE_ACTION_GUIDED || g.fence_action == FENCE_ACTION_GUIDED_THR_PASS || g.fence_action == FENCE_ACTION_RTL) &&
-            (control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+            (control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
             geofence_present() &&
             geofence_state->boundary_uptodate &&
             geofence_state->old_switch_position == oldSwitchPosition &&
@@ -354,7 +354,7 @@ void Plane::geofence_check(bool altitude_check_only)
 
     // we are outside the fence
     if (geofence_state->fence_triggered &&
-        (control_mode == GUIDED || control_mode == AVOID_ADSB || control_mode == RTL || g.fence_action == FENCE_ACTION_REPORT)) {
+        (control_mode == &mode_guided || control_mode == &mode_avoidADSB || control_mode == &mode_rtl || g.fence_action == FENCE_ACTION_REPORT)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
@@ -438,7 +438,7 @@ bool Plane::geofence_stickmixing(void) {
     if (geofence_enabled() &&
         geofence_state != nullptr &&
         geofence_state->fence_triggered &&
-        (control_mode == GUIDED || control_mode == AVOID_ADSB)) {
+        (control_mode == &mode_guided || control_mode == &mode_avoidADSB)) {
         // don't mix in user input
         return false;
     }

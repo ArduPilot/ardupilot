@@ -125,7 +125,7 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
 
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
-    if (control_mode == CIRCLE && failsafe.saved_mode_set) {
+    if (control_mode == &mode_circle && failsafe.saved_mode_set) {
         failsafe.saved_mode_set = false;
         Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)failsafe.saved_mode);
         if (new_mode != nullptr) {

@@ -128,7 +128,7 @@ void Plane::read_control_switch()
     if (g.inverted_flight_ch != 0) {
         // if the user has configured an inverted flight channel, then
         // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
-        inverted_flight = (control_mode != MANUAL && RC_Channels::get_radio_in(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
+        inverted_flight = (control_mode != &mode_manual && RC_Channels::get_radio_in(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
     }
 
 #if PARACHUTE == ENABLED
@@ -228,7 +228,7 @@ bool Plane::fly_inverted(void)
         // controlled with INVERTED_FLIGHT_CH
         return true;
     }
-    if (control_mode == AUTO && auto_state.inverted_flight) {
+    if (control_mode == &mode_auto && auto_state.inverted_flight) {
         return true;
     }
     return false;
