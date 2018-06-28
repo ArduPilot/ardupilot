@@ -102,6 +102,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeAuto : public Mode
@@ -158,6 +162,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeCircle: public Mode
@@ -173,6 +181,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeLoiter : public Mode
@@ -188,6 +200,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeManual : public Mode
@@ -224,6 +240,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeStabilize : public Mode
@@ -239,6 +259,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeTraining : public Mode
@@ -254,6 +278,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeInitializing : public Mode
@@ -269,6 +297,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeFBWA : public Mode
@@ -284,6 +316,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeFBWB : public Mode
@@ -299,6 +335,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeCruise : public Mode
@@ -314,6 +354,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeAvoidADSB : public Mode
@@ -329,6 +373,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQStabilize : public Mode
@@ -344,6 +392,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQHover : public Mode
@@ -359,6 +411,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQLoiter : public Mode
@@ -374,6 +430,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQLand : public Mode
@@ -389,6 +449,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQRTL : public Mode
@@ -404,6 +468,10 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
 };
 
 class ModeQAutotune : public Mode
