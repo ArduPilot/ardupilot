@@ -19,7 +19,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
         plane.failsafe.adsb = true;
         failsafe_state_change = true;
         // record flight mode in case it's required for the recovery
-        prev_control_mode = plane.control_mode;
+        prev_control_mode = plane.control_mode->mode_number();
     }
 
     // take no action in some flight modes
@@ -112,8 +112,12 @@ void AP_Avoidance_Plane::handle_recovery(uint8_t recovery_action)
                 // do nothing, we'll stay in the AVOID_ADSB mode which is guided which will loiter
                 break;
 
-            case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE:
-                plane.set_mode(plane.prev_control_mode, MODE_REASON_AVOIDANCE_RECOVERY);
+            case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE: {
+                Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)prev_control_mode);
+                if (new_mode != nullptr) {
+                    plane.set_mode(*new_mode, MODE_REASON_AVOIDANCE_RECOVERY);
+                }
+                }
                 break;
 
             case AP_AVOIDANCE_RECOVERY_RTL:

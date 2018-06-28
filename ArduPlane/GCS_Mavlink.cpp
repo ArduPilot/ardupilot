@@ -1539,29 +1539,9 @@ AP_Rally *GCS_MAVLINK_Plane::get_rally() const
  */
 bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
 {
-    switch (mode) {
-    case MANUAL:
-    case CIRCLE:
-    case STABILIZE:
-    case TRAINING:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-    case AVOID_ADSB:
-    case GUIDED:
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case QRTL:
-    case QAUTOTUNE:
-        plane.set_mode((enum FlightMode)mode, MODE_REASON_GCS_COMMAND);
-        return true;
+    Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)mode);
+    if (new_mode == nullptr) {
+        return false;
     }
-    return false;
+    return plane.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }

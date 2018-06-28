@@ -199,7 +199,10 @@ void Plane::init_ardupilot()
     // choose the nav controller
     set_nav_controller();
 
-    set_mode((FlightMode)g.initial_mode.get(), MODE_REASON_UNKNOWN);
+    Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
+    if (new_mode != nullptr) {
+        set_mode(*new_mode, MODE_REASON_UNKNOWN);
+    }
 
     // set the correct flight mode
     // ---------------------------
