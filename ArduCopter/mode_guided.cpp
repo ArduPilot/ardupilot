@@ -39,8 +39,6 @@ struct Guided_Limit {
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
-        // initialise yaw
-        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
         // start in position control mode
         pos_control_start();
         return true;
