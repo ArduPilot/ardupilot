@@ -399,10 +399,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         // never allow negative wind velocity
         wind_speed = MAX(wind_speed, 0);
     }
-    
-    if (altitude < 0) {
-        altitude = 0;
-    }
 
     input.wind.speed = wind_speed;
     input.wind.direction = wind_direction;
