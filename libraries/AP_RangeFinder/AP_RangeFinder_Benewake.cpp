@@ -94,7 +94,6 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm, bool &signal_ok)
                 linebuf[linebuf_len++] = c;
             } else {
                 linebuf_len = 0;
-                dist_reliable = false;
             }
         } else {
             // add character to buffer
@@ -127,12 +126,12 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm, bool &signal_ok)
                         if (dist_reliable) {
                             sum_cm += dist;
                             count++;
+                            dist_reliable = false;
                         }
                     }
                 }
                 // clear buffer
                 linebuf_len = 0;
-                dist_reliable = false;
             }
         }
     }
