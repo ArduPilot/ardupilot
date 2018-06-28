@@ -24,6 +24,14 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
 
+    friend class ModeAuto;
+    friend class ModeQHover;
+    friend class ModeQLand;
+    friend class ModeQLoiter;
+    friend class ModeQRTL;
+    friend class ModeQStabilize;
+    friend class ModeQAutotune;
+    
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information
