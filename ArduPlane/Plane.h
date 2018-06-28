@@ -1005,8 +1005,8 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     enum FlightMode get_previous_mode();
-    bool set_mode(Mode &new_mode, mode_reason_t reason);
-    void exit_mode(const Mode& mode);
+    bool set_mode(Mode& new_mode, mode_reason_t reason);
+    void exit_mode(const Mode* mode);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);

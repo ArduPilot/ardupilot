@@ -293,7 +293,6 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
         return true;
     }
 
-    Mode &old_mode = *control_mode;
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
@@ -301,20 +300,20 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
     }
 
     // perform any cleanup required for prev flight mode
-    exit_mode(control_mode);
-    control_mode.exit();
+    exit_mode(control_mode); // TODO: move the contents of this into conorl_mode.exit
+    control_mode->exit();
 
     // set mode
     previous_mode = control_mode;
     previous_mode_reason = control_mode_reason;
-    control_mode = new_mode;
+    control_mode = &new_mode;
     control_mode_reason = reason;
 
 
 
 //  MODE.ENTER() stuff below. Adding control_mode.enter() now but almost everything should get refactored into it later
 // ---------
-    control_mode.enter();
+    control_mode->enter();
 // ---------
 
     // cancel inverted flight
@@ -539,10 +538,10 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode
-void Plane::exit_mode(const Mode& mode)
+void Plane::exit_mode(const Mode* mode)
 {
     // stop mission when we leave auto
-    if (mode == mode_auto) {
+    if (mode == &mode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
 
