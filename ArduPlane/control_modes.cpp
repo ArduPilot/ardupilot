@@ -112,7 +112,7 @@ void Plane::read_control_switch()
             return;
         }
 
-        Mode *new_mode = mode_from_mode_num((enum Mode::Number)modes[switchPosition].get());
+        Mode *new_mode = mode_from_mode_num((enum Mode::Number)flight_modes[switchPosition].get());
         if (new_mode != nullptr) {
             set_mode(*new_mode, MODE_REASON_TX_COMMAND);
         }

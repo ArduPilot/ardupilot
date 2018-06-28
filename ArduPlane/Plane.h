@@ -108,6 +108,7 @@
 
 // Local modules
 #include "defines.h"
+#include "mode.h"
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -138,7 +139,7 @@ protected:
     void setup_IO_failsafe(void);
 
     // return the AFS mapped control mode
-    enum control_mode afs_mode(void);
+    enum AP_AdvancedFailsafe::control_mode afs_mode(void);
 };
 
 /*

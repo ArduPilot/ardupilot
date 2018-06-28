@@ -90,7 +90,7 @@ void Plane::init_ardupilot()
 
     // initialise notify system
     notify.init();
-    notify_flight_mode(control_mode);
+    notify_mode(control_mode);
 
     init_rc_out_main();
     
