@@ -465,8 +465,8 @@ void Plane::handle_auto_mode(void)
  */
 void Plane::update_flight_mode(void)
 {
-    enum FlightMode effective_mode = control_mode;
-    if (control_mode == AUTO && g.auto_fbw_steer == 42) {
+    enum FlightMode effective_mode = (enum FlightMode)control_mode->mode_number();
+    if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
         effective_mode = FLY_BY_WIRE_A;
     }
 
@@ -696,7 +696,7 @@ void Plane::update_navigation()
         qrtl_radius = abs(aparm.loiter_radius);
     }
     
-    switch(control_mode) {
+    switch(control_mode->mode_number()) {
     case AUTO:
         if (ahrs.home_is_set()) {
             mission.update();
@@ -854,7 +854,7 @@ void Plane::update_flight_stage(void)
 {
     // Update the speed & height controller states
     if (auto_throttle_mode && !throttle_suppressed) {        
-        if (control_mode==AUTO) {
+        if (control_mode == &mode_auto) {
             if (quadplane.in_vtol_auto()) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
             } else if (auto_state.takeoff_complete == false) {

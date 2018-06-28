@@ -58,7 +58,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.control_mode == AUTO && plane.mission.num_commands() <= 1) {
+    if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
         check_failed(ARMING_CHECK_NONE, display_failure, "No mission loaded");
         ret = false;
     }

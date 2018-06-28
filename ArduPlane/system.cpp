@@ -577,7 +577,7 @@ void Plane::check_long_failsafe()
         if (failsafe.rc_failsafe &&
             (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == AUTO &&
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
                    failsafe.last_heartbeat_ms != 0 &&
                    (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
@@ -740,7 +740,7 @@ bool Plane::disarm_motors(void)
     if (!arming.disarm()) {
         return false;
     }
-    if (control_mode != AUTO) {
+    if (control_mode != &mode_auto) {
         // reset the mission on disarm if we are not in auto
         mission.reset();
     }

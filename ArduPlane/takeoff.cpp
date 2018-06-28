@@ -222,8 +222,8 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
  */
 int8_t Plane::takeoff_tail_hold(void)
 {
-    bool in_takeoff = ((control_mode == AUTO && !auto_state.takeoff_complete) ||
-                       (control_mode == FLY_BY_WIRE_A && auto_state.fbwa_tdrag_takeoff_mode));
+    bool in_takeoff = ((control_mode == &mode_auto && !auto_state.takeoff_complete) ||
+                       (control_mode == &mode_fbwa && auto_state.fbwa_tdrag_takeoff_mode));
     if (!in_takeoff) {
         // not in takeoff
         return 0;

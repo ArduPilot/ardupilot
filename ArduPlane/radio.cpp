@@ -128,7 +128,7 @@ void Plane::rudder_arm_disarm_check()
     // if not in a manual throttle mode and not in CRUISE or FBWB
     // modes then disallow rudder arming/disarming
     if (auto_throttle_mode &&
-        (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
+        (control_mode != &mode_cruise && control_mode != &mode_fbwb)) {
         rudder_arm_timer = 0;
         return;      
     }
@@ -189,7 +189,7 @@ void Plane::read_radio()
 
     failsafe.last_valid_rc_ms = millis();
 
-    if (control_mode == TRAINING) {
+    if (control_mode == &mode_training) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
         channel_roll->recompute_pwm_no_deadzone();

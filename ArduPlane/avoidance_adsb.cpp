@@ -23,11 +23,11 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
     }
 
     // take no action in some flight modes
-    if (plane.control_mode == MANUAL ||
-        (plane.control_mode == AUTO && !plane.auto_state.takeoff_complete) ||
+    if (plane.control_mode == &plane.mode_manual ||
+        (plane.control_mode == &plane.mode_auto && !plane.auto_state.takeoff_complete) ||
         (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) || // TODO: consider allowing action during approach
-        plane.control_mode == AUTOTUNE ||
-        plane.control_mode == QLAND) {
+        plane.control_mode == &plane.mode_autotune ||
+        plane.control_mode == &plane.mode_qland) {
         actual_action = MAV_COLLISION_ACTION_NONE;
     }
 
@@ -125,7 +125,7 @@ void AP_Avoidance_Plane::handle_recovery(uint8_t recovery_action)
                 break;
 
             case AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER:
-                if (prev_control_mode == AUTO) {
+                if (prev_control_mode == plane.mode_auto) {
                     plane.set_mode(plane.mode_auto, MODE_REASON_AVOIDANCE_RECOVERY);
                 }
                 // else do nothing, same as AP_AVOIDANCE_RECOVERY_LOITER
@@ -142,12 +142,12 @@ void AP_Avoidance_Plane::handle_recovery(uint8_t recovery_action)
 bool AP_Avoidance_Plane::check_flightmode(bool allow_mode_change)
 {
     // ensure plane is in avoid_adsb mode
-    if (allow_mode_change && plane.control_mode != AVOID_ADSB) {
+    if (allow_mode_change && plane.control_mode != &plane.mode_avoidADSB) {
         plane.set_mode(plane.mode_avoidADSB, MODE_REASON_AVOIDANCE);
     }
 
     // check flight mode
-    return (plane.control_mode == AVOID_ADSB);
+    return (plane.control_mode == &plane.mode_avoidADSB);
 }
 
 bool AP_Avoidance_Plane::handle_avoidance_vertical(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change)

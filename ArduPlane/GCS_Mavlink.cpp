@@ -58,12 +58,12 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != MANUAL && plane.control_mode != INITIALISING) {
+    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != INITIALISING) {
+    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != &plane.mode_initializing) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -76,7 +76,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 #endif
 
     // we are armed if we are not initialising
-    if (plane.control_mode != INITIALISING && plane.arming.is_armed()) {
+    if (plane.control_mode != &plane.mode_initializing && plane.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -88,12 +88,12 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 
 uint32_t GCS_MAVLINK_Plane::custom_mode() const
 {
-    return plane.control_mode;
+    return plane.control_mode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Plane::system_status() const
 {
-    if (plane.control_mode == INITIALISING) {
+    if (plane.control_mode == &plane.mode_initializing) {
         return MAV_STATE_CALIBRATING;
     }
     if (plane.any_failsafe_triggered()) {
@@ -211,7 +211,7 @@ void Plane::send_nav_controller_output(mavlink_channel_t chan)
 
 void GCS_MAVLINK_Plane::send_position_target_global_int()
 {
-    if (plane.control_mode == MANUAL) {
+    if (plane.control_mode == &plane.mode_manual) {
         return;
     }
     Location &next_WP_loc = plane.next_WP_loc;
@@ -440,7 +440,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
-        if (plane.control_mode != MANUAL) {
+        if (plane.control_mode != &plane.mode_manual) {
             CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
             plane.send_nav_controller_output(chan);
         }
@@ -475,7 +475,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_PID_TUNING:
-        if (plane.control_mode != MANUAL) {
+        if (plane.control_mode != &plane.mode_manual) {
             CHECK_PAYLOAD_SIZE(PID_TUNING);
             plane.send_pid_tuning(chan);
         }
@@ -703,7 +703,7 @@ bool GCS_MAVLINK_Plane::in_hil_mode() const
  */
 bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    if (plane.control_mode != GUIDED) {
+    if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
         return false;
     }
@@ -858,8 +858,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 
         // location is valid load and set
         if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-            (plane.control_mode == GUIDED)) {
-            plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
+            (plane.control_mode == &plane.mode_guided)) {
+            plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
             plane.guided_WP_loc = requested_position;
 
             // add home alt if needed
@@ -1301,7 +1301,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) { // don't screw up failsafes
+        if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_avoidADSB) { // don't screw up failsafes
             break; 
         }
 
@@ -1391,7 +1391,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode
-        if (plane.control_mode != GUIDED) {
+        if (plane.control_mode != &plane.mode_guided) {
             break;
         }
 
@@ -1416,7 +1416,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) {
+        if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_avoidADSB) {
             //don't screw up failsafes
             break;
         }
@@ -1519,7 +1519,7 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
 {
     plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
-    if (plane.control_mode == AUTO && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 }

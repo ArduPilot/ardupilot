@@ -86,7 +86,7 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
     if (plane.auto_throttle_mode) {
         return AP_AdvancedFailsafe::AFS_AUTO;
     }
-    if (plane.control_mode == MANUAL) {
+    if (plane.control_mode == &plane.mode_manual) {
         return AP_AdvancedFailsafe::AFS_MANUAL;
     }
     return AP_AdvancedFailsafe::AFS_STABILIZED;

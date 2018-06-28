@@ -25,7 +25,7 @@
 void Plane::throttle_slew_limit(void)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
-    if (control_mode==AUTO) {
+    if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
         } else if (landing.get_throttle_slewrate() != 0 && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
@@ -77,14 +77,14 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && g.auto_fbw_steer == 42) {
+    if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
         // user has throttle control
         return false;
     }
 
     bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
     
-    if (control_mode==AUTO && 
+    if (control_mode == &mode_auto &&
         auto_state.takeoff_complete == false) {
 
         uint32_t launch_duration_ms = ((int32_t)g.takeoff_throttle_delay)*100 + 2000;
@@ -389,16 +389,16 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
     } else if (g.throttle_passthru_stabilize && 
-               (control_mode == STABILIZE || 
-                control_mode == TRAINING ||
-                control_mode == ACRO ||
-                control_mode == FLY_BY_WIRE_A ||
-                control_mode == AUTOTUNE) &&
+               (control_mode == &mode_stabilize ||
+                control_mode == &mode_training ||
+                control_mode == &mode_acro ||
+                control_mode == &mode_fbwa ||
+                control_mode == &mode_autotune) &&
                !failsafe.throttle_counter) {
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
-    } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
+    } else if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
                guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
@@ -410,8 +410,8 @@ void Plane::set_servos_controlled(void)
 
 #if SOARING_ENABLED == ENABLED
     // suppress throttle when soaring is active
-    if ((control_mode == FLY_BY_WIRE_B || control_mode == CRUISE ||
-        control_mode == AUTO || control_mode == LOITER) &&
+    if ((control_mode == &mode_fbwb || control_mode == &mode_cruise ||
+        control_mode == &mode_auto || control_mode == &mode_loiter) &&
         g2.soaring_controller.is_active() &&
         g2.soaring_controller.get_throttle_suppressed()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
@@ -456,7 +456,7 @@ void Plane::set_servos_flaps(void)
           better than speed based flaps as it leads to less
           possibility of oscillation
          */
-        if (control_mode == AUTO) {
+        if (control_mode == &mode_auto) {
             switch (flight_stage) {
             case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
             case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
@@ -624,7 +624,7 @@ void Plane::set_servos(void)
     // do any transition updates for quadplane
     quadplane.update();    
 
-    if (control_mode == AUTO && auto_state.idle_mode) {
+    if (control_mode == &mode_auto && auto_state.idle_mode) {
         // special handling for balloon launch
         set_servos_idle();
         servos_output();
@@ -649,14 +649,14 @@ void Plane::set_servos(void)
     // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
     steering_control.ground_steering = false;
 
-    if (control_mode == TRAINING) {
+    if (control_mode == &mode_training) {
         steering_control.rudder = channel_rudder->get_control_in();
     }
     
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_control.rudder);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_control.steering);
 
-    if (control_mode == MANUAL) {
+    if (control_mode == &mode_manual) {
         set_servos_manual_passthrough();
     } else {
         set_servos_controlled();
@@ -716,7 +716,7 @@ void Plane::set_servos(void)
 #endif
 
     if (landing.get_then_servos_neutral() > 0 &&
-            control_mode == AUTO &&
+            control_mode == &mode_auto &&
             landing.get_disarm_delay() > 0 &&
             landing.is_complete() &&
             !arming.is_armed()) {
@@ -766,7 +766,7 @@ void Plane::servos_output(void)
     servo_output_mixers();
 
     // support MANUAL_RCMASK
-    if (g2.manual_rc_mask.get() != 0 && control_mode == MANUAL) {
+    if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
     
@@ -789,7 +789,7 @@ void Plane::servos_output(void)
 void Plane::servos_auto_trim(void)
 {
     // only in auto modes and FBWA
-    if (!auto_throttle_mode && control_mode != FLY_BY_WIRE_A) {
+    if (!auto_throttle_mode && control_mode != &mode_fbwa) {
         return;
     }
     if (!hal.util->get_soft_armed()) {

@@ -127,7 +127,7 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
 
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
-    if (control_mode == CIRCLE && failsafe.saved_mode_set) {
+    if (control_mode == &mode_circle && failsafe.saved_mode_set) {
         failsafe.saved_mode_set = false;
         Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)failsafe.saved_mode);
         if (new_mode != nullptr) {
@@ -153,7 +153,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_Land:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == &plane.mode_qland) {
                 // never stop a landing if we were already committed
                 if (plane.mission.jump_to_landing_sequence()) {
                     plane.set_mode(mode_auto, MODE_REASON_BATTERY_FAILSAFE);
@@ -162,7 +162,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND ) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == &plane.mode_qland ) {
                 // never stop a landing if we were already committed
                 set_mode(mode_rtl, MODE_REASON_BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();

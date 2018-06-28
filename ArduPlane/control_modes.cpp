@@ -221,14 +221,14 @@ void Plane::autotune_enable(bool enable)
  */
 bool Plane::fly_inverted(void)
 {
-    if (control_mode == MANUAL) {
+    if (control_mode == &plane.mode_manual) {
         return false;
     }
     if (inverted_flight) {
         // controlled with aux switch
         return true;
     }
-    if (control_mode == AUTO && auto_state.inverted_flight) {
+    if (control_mode == &mode_auto && auto_state.inverted_flight) {
         return true;
     }
     return false;

@@ -337,7 +337,7 @@ void Plane::do_RTL(int32_t rtl_altitude)
     setup_glide_slope();
     setup_turn_angle();
 
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 }
 
 /*
@@ -945,7 +945,7 @@ void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
 {
-    if (control_mode == AUTO) {
+    if (control_mode == &mode_auto) {
         return start_command(cmd);
     }
     return true;
@@ -955,7 +955,7 @@ bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
-    if (control_mode == AUTO) {
+    if (control_mode == &mode_auto) {
         bool cmd_complete = verify_command(cmd);
 
         // send message to GCS
@@ -972,7 +972,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Plane::exit_mission_callback()
 {
-    if (control_mode == AUTO) {
+    if (control_mode == &mode_auto) {
         set_mode(mode_rtl, MODE_REASON_MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
