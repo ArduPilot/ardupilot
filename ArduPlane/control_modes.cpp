@@ -49,6 +49,21 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
+    case Mode::Number::QSTABILIZE:
+        ret = &mode_qstabilize;
+        break;
+    case Mode::Number::QHOVER:
+        ret = &mode_qhover;
+        break;
+    case Mode::Number::QLOITER:
+        ret = &mode_qloiter;
+        break;
+    case Mode::Number::QLAND:
+        ret = &mode_qland;
+        break;
+    case Mode::Number::QRTL:
+        ret = &mode_qrtl;
+        break;
     default:
         break;
     }
