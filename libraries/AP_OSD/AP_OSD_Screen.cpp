@@ -29,6 +29,7 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
 #include <ctype.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
@@ -88,7 +89,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: GSPEED
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
-
+    
     // @Group: HORIZON
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
@@ -96,6 +97,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: HOME
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(home, "HOME", 14, AP_OSD_Screen, AP_OSD_Setting),
+
+    //@Group: HEADING
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(heading, "HEADING", 15, AP_OSD_Screen, AP_OSD_Setting),
+    
+    //@Group: THROTTLE
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(throttle, "THROTTLE", 16, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -121,6 +130,8 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AMP   0x9A
 #define SYM_MAH   0x07
 #define SYM_KMH   0xA1
+#define SYM_DEGR  0xA8
+#define SYM_PCNT  0x25
 
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
@@ -301,6 +312,18 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    uint16_t yaw = ahrs.yaw_sensor / 100;
+    backend->write(x, y, false, "%3d%c", yaw, SYM_DEGR);
+}
+
+void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
+{
+    backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYM_PCNT);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -322,5 +345,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
+    DRAW_SETTING(throttle);
+    DRAW_SETTING(heading);
     DRAW_SETTING(home);
 }
