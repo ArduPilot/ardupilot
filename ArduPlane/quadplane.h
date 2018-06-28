@@ -19,6 +19,12 @@ public:
     friend class AP_Tuning_Plane;
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
+    friend class ModeAuto;
+    friend class ModeQHover;
+    friend class ModeQLand;
+    friend class ModeQLoiter;
+    friend class ModeQRTL;
+    friend class ModeQStabilize;
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
