@@ -19,7 +19,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (plane.control_mode) {
+    switch ((FlightMode)plane.control_mode->mode_number()) {
     case MANUAL:
     case TRAINING:
     case ACRO:

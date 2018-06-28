@@ -579,7 +579,7 @@ bool Plane::allow_reverse_thrust(void)
         return false;
     }
 
-    switch (control_mode->mode_number()) {
+    switch ((FlightMode)control_mode->mode_number()) {
     case AUTO:
         {
         uint16_t nav_cmd = mission.get_current_nav_cmd().id;

@@ -19,7 +19,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
         plane.failsafe.adsb = true;
         failsafe_state_change = true;
         // record flight mode in case it's required for the recovery
-        prev_control_mode = plane.control_mode->mode_number();
+        prev_control_mode = (FlightMode)plane.control_mode->mode_number();
     }
 
     // take no action in some flight modes
