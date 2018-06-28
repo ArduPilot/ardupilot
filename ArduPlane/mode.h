@@ -118,6 +118,10 @@ public:
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
 
+protected:
+
+    bool _enter() override;
+    void _exit() override;
 };
 
 
@@ -134,6 +138,11 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
 };
 
 class ModeGuided : public Mode
@@ -189,11 +198,16 @@ public:
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override;
+    void update() override { }
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
 };
 
 
