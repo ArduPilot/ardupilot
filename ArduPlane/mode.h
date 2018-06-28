@@ -151,7 +151,7 @@ public:
     bool attitude_stabilized() const override { return false; }
 };
 
-class ModeCirlce : public Mode
+class ModeCircle: public Mode
 {
 public:
 

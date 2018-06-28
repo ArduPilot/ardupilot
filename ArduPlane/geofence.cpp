@@ -298,7 +298,7 @@ void Plane::geofence_check(bool altitude_check_only)
             guided_WP_loc.lat == geofence_state->guided_lat &&
             guided_WP_loc.lng == geofence_state->guided_lng) {
             geofence_state->old_switch_position = 254;
-            set_mode(previous_mode, MODE_REASON_GCS_COMMAND);
+            set_mode(*previous_mode, MODE_REASON_GCS_COMMAND);
         }
         return;
     }

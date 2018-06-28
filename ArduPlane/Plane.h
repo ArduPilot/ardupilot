@@ -109,6 +109,7 @@
 
 // Local modules
 #include "defines.h"
+#include "mode.h"
 
 #include "Parameters.h"
 #include "avoidance_adsb.h"
@@ -134,7 +135,7 @@ protected:
     void setup_IO_failsafe(void);
 
     // return the AFS mapped control mode
-    enum control_mode afs_mode(void);
+    enum AP_AdvancedFailsafe::control_mode afs_mode(void);
 };
 
 /*
