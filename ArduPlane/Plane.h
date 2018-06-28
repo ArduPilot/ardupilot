@@ -180,6 +180,24 @@ public:
     friend class ModeQLoiter;
     friend class ModeQLand;
     friend class ModeQRTL;
+    friend class ModeQAutotune;
+
+    friend class Mode;
+    friend class ModeCircle;
+    friend class ModeStabilize;
+    friend class ModeTraining;
+    friend class ModeAcro;
+    friend class ModeFBWA;
+    friend class ModeFBWB;
+    friend class ModeCruise;
+    friend class ModeAutoTune;
+    friend class ModeAuto;
+    friend class ModeRTL;
+    friend class ModeLoiter;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
+    friend class ModeInitializing;
+    friend class ModeManual;
 
     Plane(void);
 
@@ -350,6 +368,7 @@ private:
     ModeQLoiter mode_qloiter;
     ModeQLand mode_qland;
     ModeQRTL mode_qrtl;
+    ModeQAutotune mode_qautotune;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
