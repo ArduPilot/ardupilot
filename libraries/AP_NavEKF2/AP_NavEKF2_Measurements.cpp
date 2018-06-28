@@ -423,9 +423,12 @@ void NavEKF2_core::readGpsData()
             // get current fix time
             lastTimeGpsReceived_ms = gps.last_message_time_ms();
 
+
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
             // ideally we should be using a timing signal from the GPS receiver to set this time
-            gpsDataNew.time_ms = lastTimeGpsReceived_ms - frontend->_gpsDelay_ms;
+            float gps_delay = 0.0;
+            gps.get_lag(gps_delay); // ignore the return value
+            gpsDataNew.time_ms = lastTimeGpsReceived_ms - (uint32_t)(1e3f * gps_delay);
 
             // Correct for the average intersampling delay due to the filter updaterate
             gpsDataNew.time_ms -= localFilterTimeStep_ms/2;
