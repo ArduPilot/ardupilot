@@ -188,15 +188,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Units: m
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF2, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
-    // @Param: GPS_DELAY
-    // @DisplayName: GPS measurement delay (msec)
-    // @Description: This is the number of msec that the GPS measurements lag behind the inertial measurements.
-    // @Range: 0 250
-    // @Increment: 10
-    // @User: Advanced
-    // @Units: ms
-    // @RebootRequired: True
-    AP_GROUPINFO("GPS_DELAY", 8, NavEKF2, _gpsDelay_ms, 220),
+    // 8 was used for GPS_DELAY
 
     // Height measurement parameters
 
