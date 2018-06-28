@@ -665,6 +665,9 @@ class px4(Board):
 
         self.ROMFS_EXCLUDE = []
 
+        # use ardupilot version of px_uploader.py
+        os.environ['UPLOADER'] = os.path.realpath(os.path.join(os.path.dirname(__file__), 'px_uploader.py'))
+
     def configure(self, cfg):
         if not self.bootloader_name:
             cfg.fatal('configure: px4: bootloader name is required')
