@@ -1112,6 +1112,9 @@ void AP_GPS::Write_DataFlash_Log_Startup_messages()
  */
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
+    // always enusre a lag is provided
+    lag_sec = GPS_WORST_LAG_SEC;
+
     // return lag of blended GPS
     if (instance == GPS_BLENDED_INSTANCE) {
         lag_sec = _blended_lag_sec;
@@ -1129,8 +1132,6 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         if (_type[instance] == GPS_TYPE_NONE) {
             lag_sec = 0.0f;
             return true;
-        } else {
-            lag_sec = GPS_WORST_LAG_SEC;
         }
         return _type[instance] == GPS_TYPE_AUTO;
     } else {
