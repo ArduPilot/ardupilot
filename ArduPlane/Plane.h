@@ -152,6 +152,23 @@ public:
     friend class AP_Avoidance_Plane;
     friend class GCS_Plane;
 
+    friend class Mode;
+    friend class ModeCircle;
+    friend class ModeStabilize;
+    friend class ModeTraining;
+    friend class ModeAcro;
+    friend class ModeFBWA;
+    friend class ModeFBWB;
+    friend class ModeCruise;
+    friend class ModeAutoTune;
+    friend class ModeAuto;
+    friend class ModeRTL;
+    friend class ModeLoiter;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
+    friend class ModeInitializing;
+    friend class ModeManual;
+
     Plane(void);
 
     // HAL::Callbacks implementation.
@@ -300,6 +317,22 @@ private:
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
     enum FlightMode previous_mode = INITIALISING;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
+
+    ModeCircle mode_circle;
+    ModeStabilize mode_stabilize;
+    ModeTraining mode_training;
+    ModeAcro mode_acro;
+    ModeFBWA mode_fbwa;
+    ModeFBWB mode_fbwb;
+    ModeCruise mode_cruise;
+    ModeAutoTune mode_autotune;
+    ModeAuto mode_auto;
+    ModeRTL mode_rtl;
+    ModeLoiter mode_loiter;
+    ModeAvoidADSB mode_avoidADSB;
+    ModeGuided mode_guided;
+    ModeInitializing mode_initializing;
+    ModeManual mode_manual;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
@@ -854,6 +887,7 @@ private:
     bool verify_loiter_heading(bool init);
     void exit_mission_callback();
     void mavlink_delay(uint32_t ms);
+    Mode *mode_from_mode_num(enum Mode::Number num);
     void read_control_switch();
     uint8_t readSwitch(void);
     void reset_control_switch();
