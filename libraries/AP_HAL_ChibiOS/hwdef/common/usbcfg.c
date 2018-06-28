@@ -216,13 +216,13 @@ static void string_substitute(const char *str, char *str2)
     while (*str) {
         char c = *str;
         if (c == '%') {
-            if (strcmp(str, "%BOARD%") == 0) {
+            if (strncmp(str, "%BOARD%", 7) == 0) {
                 memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
                 str += 7;
                 p += strlen(HAL_BOARD_NAME);
                 continue;
             }
-            if (strcmp(str, "%SERIAL%") == 0) {
+            if (strncmp(str, "%SERIAL%", 8) == 0) {
                 const char *hex = "0123456789ABCDEF";
                 const uint8_t *cpu_id = (const uint8_t *)UDID_START;
                 uint8_t i;
