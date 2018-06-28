@@ -220,7 +220,7 @@ void Plane::read_radio()
     quadplane.tailsitter_check_input();
 
     // check for transmitter tuning changes
-    tuning.check_input(control_mode);
+    tuning.check_input(control_mode->mode_number());
 }
 
 int16_t Plane::rudder_input(void)

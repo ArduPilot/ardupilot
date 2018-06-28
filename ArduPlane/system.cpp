@@ -373,7 +373,7 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
     auto_state.vtol_mode = false;
     auto_state.vtol_loiter = false;
     
-    switch(control_mode->mode_number())
+    switch ((FlightMode)control_mode->mode_number())
     {
     case INITIALISING:
         throttle_allows_nudging = true;

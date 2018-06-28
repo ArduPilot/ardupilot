@@ -75,7 +75,7 @@ void Plane::setup_glide_slope(void)
       work out if we will gradually change altitude, or try to get to
       the new altitude as quickly as possible.
      */
-    switch (control_mode->mode_number()) {
+    switch ((FlightMode)control_mode->mode_number()) {
     case RTL:
     case AVOID_ADSB:
     case GUIDED:

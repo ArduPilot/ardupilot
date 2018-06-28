@@ -1631,7 +1631,7 @@ void QuadPlane::control_run(void)
         return;
     }
 
-    switch (plane.control_mode) {
+    switch ((FlightMode)plane.control_mode->mode_number()) {
     case QSTABILIZE:
         control_stabilize();
         break;
@@ -1674,7 +1674,7 @@ bool QuadPlane::init_mode(void)
 
     AP_Notify::flags.esc_calibration = false;
 
-    switch (plane.control_mode) {
+    switch ((FlightMode)plane.control_mode->mode_number()) {
     case QSTABILIZE:
         init_stabilize();
         break;

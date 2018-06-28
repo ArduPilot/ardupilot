@@ -16,7 +16,7 @@ void Plane::update_soaring() {
     g2.soaring_controller.update_vario();
 
     // Check for throttle suppression change.
-    switch (control_mode){
+    switch ((FlightMode)control_mode->mode_number()) {
     case AUTO:
         g2.soaring_controller.suppress_throttle();
         break;
@@ -42,7 +42,7 @@ void Plane::update_soaring() {
         return;
     }
 
-    switch (control_mode){
+    switch ((FlightMode)control_mode->mode_number()) {
     case AUTO:
     case FLY_BY_WIRE_B:
     case CRUISE:
@@ -61,7 +61,7 @@ void Plane::update_soaring() {
 
         if (g2.soaring_controller.check_cruise_criteria()) {
             // Exit as soon as thermal state estimate deteriorates
-            switch (previous_mode) {
+            switch ((FlightMode)previous_mode->mode_number()) {
             case FLY_BY_WIRE_B:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
                 set_mode(mode_rtl, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);

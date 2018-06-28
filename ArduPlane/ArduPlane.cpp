@@ -696,7 +696,7 @@ void Plane::update_navigation()
         qrtl_radius = abs(aparm.loiter_radius);
     }
     
-    switch(control_mode->mode_number()) {
+    switch ((FlightMode)control_mode->mode_number()) {
     case AUTO:
         if (ahrs.home_is_set()) {
             mission.update();

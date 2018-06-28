@@ -6,7 +6,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, reason);
-    switch(control_mode)
+    switch ((FlightMode)control_mode->mode_number())
     {
     case MANUAL:
     case STABILIZE:
@@ -16,7 +16,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case FLY_BY_WIRE_B:
     case CRUISE:
     case TRAINING:
-        failsafe.saved_mode = control_mode;
+        failsafe.saved_mode = (FlightMode)control_mode->mode_number();
         failsafe.saved_mode_set = true;
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(mode_fbwa, reason);
@@ -29,7 +29,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QLOITER:
     case QHOVER:
     case QAUTOTUNE:
-        failsafe.saved_mode = control_mode;
+        failsafe.saved_mode = (FlightMode)control_mode->mode_number();
         failsafe.saved_mode_set = true;
         set_mode(mode_qland, reason);
         break;
@@ -39,7 +39,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case GUIDED:
     case LOITER:
         if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
-            failsafe.saved_mode = control_mode;
+            failsafe.saved_mode = (FlightMode)control_mode->mode_number();
             failsafe.saved_mode_set = true;
             if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
                 set_mode(mode_fbwa, reason);
@@ -56,7 +56,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     default:
         break;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t reason)
@@ -66,7 +66,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
-    switch(control_mode)
+    switch ((FlightMode)control_mode->mode_number())
     {
     case MANUAL:
     case STABILIZE:
@@ -116,7 +116,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     default:
         break;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode);
+    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %u", (unsigned)control_mode->mode_number());
 }
 
 void Plane::failsafe_short_off_event(mode_reason_t reason)

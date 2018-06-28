@@ -147,7 +147,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
-    switch (control_mode) {
+    switch ((FlightMode)control_mode->mode_number()) {
     case MANUAL:
         break;
 
