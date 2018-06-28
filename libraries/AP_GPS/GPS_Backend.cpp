@@ -86,7 +86,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     msec = v % 1000; v /= 1000;
     sec  = v % 100; v /= 100;
     min  = v % 100; v /= 100;
-    hour = v % 100; v /= 100;
+    hour = v % 100;
 
     int8_t rmon = mon - 2;
     if (0 >= rmon) {    
