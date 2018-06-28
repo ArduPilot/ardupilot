@@ -36,16 +36,16 @@ MAV_COLLISION_ACTION AP_Avoidance_Plane::handle_avoidance(const AP_Avoidance::Ob
 
         case MAV_COLLISION_ACTION_RTL:
             if (failsafe_state_change) {
-                plane.set_mode(RTL, MODE_REASON_AVOIDANCE);
+                plane.set_mode(plane.mode_rtl, MODE_REASON_AVOIDANCE);
             }
             break;
 
         case MAV_COLLISION_ACTION_HOVER:
             if (failsafe_state_change) {
                 if (plane.quadplane.is_flying()) {
-                    plane.set_mode(QLOITER, MODE_REASON_AVOIDANCE);
+                    plane.set_mode(plane.mode_qloiter, MODE_REASON_AVOIDANCE);
                 } else {
-                    plane.set_mode(LOITER, MODE_REASON_AVOIDANCE);
+                    plane.set_mode(plane.mode_loiter, MODE_REASON_AVOIDANCE);
                 }
             }
             break;
@@ -113,16 +113,16 @@ void AP_Avoidance_Plane::handle_recovery(uint8_t recovery_action)
                 break;
 
             case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE:
-                plane.set_mode(prev_control_mode, MODE_REASON_AVOIDANCE_RECOVERY);
+                plane.set_mode(plane.prev_control_mode, MODE_REASON_AVOIDANCE_RECOVERY);
                 break;
 
             case AP_AVOIDANCE_RECOVERY_RTL:
-                plane.set_mode(RTL, MODE_REASON_AVOIDANCE_RECOVERY);
+                plane.set_mode(plane.mode_rtl, MODE_REASON_AVOIDANCE_RECOVERY);
                 break;
 
             case AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER:
                 if (prev_control_mode == AUTO) {
-                    plane.set_mode(AUTO, MODE_REASON_AVOIDANCE_RECOVERY);
+                    plane.set_mode(plane.mode_auto, MODE_REASON_AVOIDANCE_RECOVERY);
                 }
                 // else do nothing, same as AP_AVOIDANCE_RECOVERY_LOITER
                 break;
@@ -139,7 +139,7 @@ bool AP_Avoidance_Plane::check_flightmode(bool allow_mode_change)
 {
     // ensure plane is in avoid_adsb mode
     if (allow_mode_change && plane.control_mode != AVOID_ADSB) {
-        plane.set_mode(AVOID_ADSB, MODE_REASON_AVOIDANCE);
+        plane.set_mode(plane.mode_avoidADSB, MODE_REASON_AVOIDANCE);
     }
 
     // check flight mode

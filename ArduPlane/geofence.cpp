@@ -386,9 +386,9 @@ void Plane::geofence_check(bool altitude_check_only)
         int8_t saved_auto_trim = g.auto_trim;
         g.auto_trim.set(0);
         if (g.fence_action == FENCE_ACTION_RTL) {
-            set_mode(RTL, MODE_REASON_FENCE_BREACH);
+            set_mode(mode_rtl, MODE_REASON_FENCE_BREACH);
         } else {
-            set_mode(GUIDED, MODE_REASON_FENCE_BREACH);
+            set_mode(mode_guided, MODE_REASON_FENCE_BREACH);
         }
         g.auto_trim.set(saved_auto_trim);
 

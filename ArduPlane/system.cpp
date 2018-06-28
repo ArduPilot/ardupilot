@@ -226,7 +226,7 @@ void Plane::init_ardupilot()
 //********************************************************************************
 void Plane::startup_ground(void)
 {
-    set_mode(INITIALISING, MODE_REASON_UNKNOWN);
+    set_mode(mode_initializing, MODE_REASON_UNKNOWN);
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");

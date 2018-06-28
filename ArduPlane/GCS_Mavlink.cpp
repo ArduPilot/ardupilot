@@ -902,11 +902,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_loiter, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_rtl, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_TAKEOFF: {
@@ -920,7 +920,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 
     case MAV_CMD_MISSION_START:
-        plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_auto, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_COMPONENT_ARM_DISARM:
@@ -942,7 +942,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+            plane.set_mode(plane.mode_auto, MODE_REASON_UNKNOWN);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;

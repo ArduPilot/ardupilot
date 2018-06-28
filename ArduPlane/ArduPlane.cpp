@@ -421,7 +421,7 @@ void Plane::handle_auto_mode(void)
     if (mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
-        set_mode(RTL, MODE_REASON_MISSION_END);
+        set_mode(mode_rtl, MODE_REASON_MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -714,7 +714,7 @@ void Plane::update_navigation()
               are within the maximum of the stopping distance and the
               RTL_RADIUS
              */
-            set_mode(QRTL, MODE_REASON_UNKNOWN);
+            set_mode(mode_qrtl, MODE_REASON_UNKNOWN);
             break;
         } else if (g.rtl_autoland == 1 &&
             !auto_state.checked_for_autoland &&
@@ -723,7 +723,7 @@ void Plane::update_navigation()
             // we've reached the RTL point, see if we have a landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
-                set_mode(AUTO, MODE_REASON_UNKNOWN);
+                set_mode(mode_auto, MODE_REASON_UNKNOWN);
             }
 
             // prevent running the expensive jump_to_landing_sequence
@@ -735,7 +735,7 @@ void Plane::update_navigation()
             // Go directly to the landing sequence
             if (mission.jump_to_landing_sequence()) {
                 // switch from RTL -> AUTO
-                set_mode(AUTO, MODE_REASON_UNKNOWN);
+                set_mode(mode_auto, MODE_REASON_UNKNOWN);
             }
 
             // prevent running the expensive jump_to_landing_sequence

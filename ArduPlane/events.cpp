@@ -19,9 +19,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = true;
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-            set_mode(FLY_BY_WIRE_A, reason);
+            set_mode(mode_fbwa, reason);
         } else {
-            set_mode(CIRCLE, reason);
+            set_mode(mode_circle, reason);
         }
         break;
 
@@ -31,7 +31,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QAUTOTUNE:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = true;
-        set_mode(QLAND, reason);
+        set_mode(mode_qland, reason);
         break;
         
     case AUTO:
@@ -42,9 +42,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
             failsafe.saved_mode = control_mode;
             failsafe.saved_mode_set = true;
             if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-                set_mode(FLY_BY_WIRE_A, reason);
+                set_mode(mode_fbwa, reason);
             } else {
-                set_mode(CIRCLE, reason);
+                set_mode(mode_circle, reason);
             }
         }
         break;
@@ -82,9 +82,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(FLY_BY_WIRE_A, reason);
+            set_mode(mode_fbwa, reason);
         } else {
-            set_mode(RTL, reason);
+            set_mode(mode_rtl, reason);
         }
         break;
 
@@ -92,7 +92,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case QHOVER:
     case QLOITER:
     case QAUTOTUNE:
-        set_mode(QLAND, reason);
+        set_mode(mode_qland, reason);
         break;
         
     case AUTO:
@@ -104,9 +104,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(FLY_BY_WIRE_A, reason);
+            set_mode(mode_fbwa, reason);
         } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
-            set_mode(RTL, reason);
+            set_mode(mode_rtl, reason);
         }
         break;
 
@@ -145,7 +145,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
     switch ((Failsafe_Action)action) {
         case Failsafe_Action_QLand:
             if (quadplane.available()) {
-                plane.set_mode(QLAND, MODE_REASON_BATTERY_FAILSAFE);
+                plane.set_mode(mode_qland, MODE_REASON_BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
@@ -153,7 +153,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND) {
                 // never stop a landing if we were already committed
                 if (plane.mission.jump_to_landing_sequence()) {
-                    plane.set_mode(AUTO, MODE_REASON_BATTERY_FAILSAFE);
+                    plane.set_mode(mode_auto, MODE_REASON_BATTERY_FAILSAFE);
                     break;
                  }
             }
@@ -161,7 +161,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_RTL:
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND ) {
                 // never stop a landing if we were already committed
-                set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
+                set_mode(mode_rtl, MODE_REASON_BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
             }
             break;
