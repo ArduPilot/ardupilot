@@ -344,9 +344,9 @@ private:
     
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    Mode *control_mode;
+    Mode *control_mode = &mode_initializing;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
-    Mode *previous_mode;
+    Mode *previous_mode = &mode_initializing;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
     ModeCircle mode_circle;
