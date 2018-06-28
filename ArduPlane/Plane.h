@@ -965,7 +965,6 @@ private:
     void ice_update(void);
     void init_ardupilot();
     void startup_ground(void);
-    enum FlightMode get_previous_mode();
     bool set_mode(Mode& new_mode, mode_reason_t reason);
     void exit_mode(const Mode* mode);
     void check_long_failsafe();
