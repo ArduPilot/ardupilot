@@ -325,9 +325,9 @@ private:
     
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    enum FlightMode control_mode = INITIALISING;
+    Mode *control_mode;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
-    enum FlightMode previous_mode = INITIALISING;
+    Mode *previous_mode;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
     ModeCircle mode_circle;
@@ -986,8 +986,8 @@ private:
     void init_ardupilot();
     void startup_ground(void);
     enum FlightMode get_previous_mode();
-    void set_mode(enum FlightMode mode, mode_reason_t reason);
-    void exit_mode(enum FlightMode mode);
+    bool set_mode(Mode &new_mode, mode_reason_t reason);
+    void exit_mode(const Mode& mode);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);

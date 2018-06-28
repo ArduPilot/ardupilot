@@ -276,7 +276,7 @@ enum FlightMode Plane::get_previous_mode() {
     return previous_mode; 
 }
 
-void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
+bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 {
 #if !QAUTOTUNE_ENABLED
     if (mode == QAUTOTUNE) {
@@ -285,17 +285,34 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     }
 #endif
 
-    if(control_mode == mode) {
+    if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
-        return;
+        return true;
     }
 
-    if(g.auto_trim > 0 && control_mode == MANUAL) {
-        trim_radio();
+    Mode &old_mode = *control_mode;
+    if (!new_mode.enter()) {
+        // Log error that we failed to enter desired flight mode
+        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        return false;
     }
 
     // perform any cleanup required for prev flight mode
     exit_mode(control_mode);
+    control_mode.exit();
+
+    // set mode
+    previous_mode = control_mode;
+    previous_mode_reason = control_mode_reason;
+    control_mode = new_mode;
+    control_mode_reason = reason;
+
+
+
+//  MODE.ENTER() stuff below. Adding control_mode.enter() now but almost everything should get refactored into it later
+// ---------
+    control_mode.enter();
+// ---------
 
     // cancel inverted flight
     auto_state.inverted_flight = false;
@@ -317,24 +334,19 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     guided_state.last_forced_rpy_ms.zero();
     guided_state.last_forced_throttle_ms = 0;
 
-    // set mode
-    previous_mode = control_mode;
-    control_mode = mode;
-    previous_mode_reason = control_mode_reason;
-    control_mode_reason = reason;
 
 #if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode);
+    frsky_telemetry.update_control_mode(control_mode->mode_number());
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode);
+    devo_telemetry.update_control_mode(control_mode->mode_number());
 #endif
 
 #if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == AUTO);
+    camera.set_is_auto_mode(control_mode == &mode_auto);
 #endif
 
-    if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
+    if (previous_mode == &mode_autotune && control_mode != &mode_autotune) {
         // restore last gains
         autotune_restore();
     }
@@ -359,7 +371,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.vtol_mode = false;
     auto_state.vtol_loiter = false;
     
-    switch(control_mode)
+    switch(control_mode->mode_number())
     {
     case INITIALISING:
         throttle_allows_nudging = true;
@@ -505,21 +517,29 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     adsb.set_is_auto_mode(auto_navigation_mode);
 
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
-
-    // update notify with flight mode change
-    notify_flight_mode(control_mode);
-
     // reset steering integrator on mode change
-    steerController.reset_I();    
+    steerController.reset_I();
+
+// -----------
+//  End of MODE.ENTER() stuff
+// -----------
+
+
+
+
+
+
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+
+    notify_mode(control_mode);
+    return true;
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode
-void Plane::exit_mode(enum FlightMode mode)
+void Plane::exit_mode(const Mode& mode)
 {
     // stop mission when we leave auto
-    switch (mode) {
-    case AUTO:
+    if (mode == mode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
 
@@ -530,14 +550,14 @@ void Plane::exit_mode(enum FlightMode mode)
             }
         }
         auto_state.started_flying_in_auto_ms = 0;
-        break;
+    }
 #if QAUTOTUNE_ENABLED
-    case QAUTOTUNE:
+    else if (mode == mode_qautotune) {
         quadplane.qautotune.stop();
-        break;
+    }
 #endif
-    default:
-        break;
+    else if (mode == mode_manual && g.auto_trim > 0) {
+        trim_radio();
     }
 }
 
