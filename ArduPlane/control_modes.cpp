@@ -1,5 +1,60 @@
 #include "Plane.h"
 
+Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
+{
+    Mode *ret = nullptr;
+    switch (num) {
+    case Mode::Number::MANUAL:
+        ret = &mode_manual;
+        break;
+    case Mode::Number::CIRCLE:
+        ret = &mode_circle;
+        break;
+    case Mode::Number::STABILIZE:
+        ret = &mode_stabilize;
+        break;
+    case Mode::Number::TRAINING:
+        ret = &mode_training;
+        break;
+    case Mode::Number::ACRO:
+        ret = &mode_acro;
+        break;
+    case Mode::Number::FLY_BY_WIRE_A:
+        ret = &mode_fbwa;
+        break;
+    case Mode::Number::FLY_BY_WIRE_B:
+        ret = &mode_fbwb;
+        break;
+    case Mode::Number::CRUISE:
+        ret = &mode_cruise;
+        break;
+    case Mode::Number::AUTOTUNE:
+        ret = &mode_autotune;
+        break;
+    case Mode::Number::AUTO:
+        ret = &mode_auto;
+        break;
+    case Mode::Number::RTL:
+        ret = &mode_rtl;
+        break;
+    case Mode::Number::LOITER:
+        ret = &mode_loiter;
+        break;
+    case Mode::Number::AVOID_ADSB:
+        ret = &mode_avoidADSB;
+        break;
+    case Mode::Number::GUIDED:
+        ret = &mode_guided;
+        break;
+    case Mode::Number::INITIALISING:
+        ret = &mode_initializing;
+        break;
+    default:
+        break;
+    }
+    return ret;
+}
+
 void Plane::read_control_switch()
 {
     static bool switch_debouncer;
@@ -39,7 +94,10 @@ void Plane::read_control_switch()
             return;
         }
 
-        set_mode((enum FlightMode)(flight_modes[switchPosition].get()), MODE_REASON_TX_COMMAND);
+        Mode *new_mode = mode_from_mode_num((enum Mode::Number)modes[switchPosition].get());
+        if (new_mode != nullptr) {
+            set_mode(*new_mode, MODE_REASON_TX_COMMAND);
+        }
 
         oldSwitchPosition = switchPosition;
     }
