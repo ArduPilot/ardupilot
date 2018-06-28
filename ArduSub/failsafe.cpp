@@ -65,7 +65,7 @@ void Sub::mainloop_failsafe_check()
     }
 }
 
-void Sub::failsafe_sensors_check(void)
+void Sub::failsafe_sensors_check()
 {
     if (!ap.depth_sensor_present) {
         return;
@@ -95,7 +95,7 @@ void Sub::failsafe_sensors_check(void)
     }
 }
 
-void Sub::failsafe_ekf_check(void)
+void Sub::failsafe_ekf_check()
 {
     static uint32_t last_ekf_good_ms = 0;
 

@@ -5,7 +5,7 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-void Sub::do_erase_logs(void)
+void Sub::do_erase_logs()
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
@@ -357,7 +357,7 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 }
 
 
-void Sub::log_init(void)
+void Sub::log_init()
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 }
