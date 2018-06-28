@@ -369,5 +369,3 @@ void port_setbaud(uint32_t baudrate)
     sdStart((SerialDriver *)uarts[last_uart], &sercfg);
 #endif
 }
-
-
