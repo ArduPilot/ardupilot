@@ -269,11 +269,6 @@ void AP_Mount_SToRM32_serial::parse_reply() {
             _current_angle.y = _buffer.data.imu1_pitch;
             _current_angle.z = _buffer.data.imu1_yaw;
             break;
-        case ReplyType_ACK:
-            crc = crc_calculate(&_buffer[1],
-                                sizeof(SToRM32_reply_ack_struct) - 3);
-            crc_ok = crc == _buffer.ack.crc;
-            break;
         default:
             break;
     }
