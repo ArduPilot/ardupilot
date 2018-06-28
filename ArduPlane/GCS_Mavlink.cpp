@@ -857,7 +857,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             // location is valid load and set
             if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
                 (plane.control_mode == GUIDED)) {
-                plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
+                plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
                 plane.guided_WP_loc = requested_position;
 
                 // add home alt if needed
@@ -916,12 +916,12 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_NAV_LOITER_UNLIM:
-            plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
+            plane.set_mode(plane.mode_loiter, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
         case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
+            plane.set_mode(plane.mode_rtl, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -969,7 +969,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_MISSION_START:
-            plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
+            plane.set_mode(plane.mode_auto, MODE_REASON_GCS_COMMAND);
             result = MAV_RESULT_ACCEPTED;
             break;
 
@@ -1002,7 +1002,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
             
             // attempt to switch to next DO_LAND_START command in the mission
             if (plane.mission.jump_to_landing_sequence()) {
-                plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+                plane.set_mode(plane.mode_auto, MODE_REASON_UNKNOWN);
                 result = MAV_RESULT_ACCEPTED;
             } 
             break;
