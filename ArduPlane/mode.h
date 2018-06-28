@@ -317,4 +317,77 @@ public:
     bool attitude_stabilized() const override { return false; }
 };
 
+class ModeQStabilize : public Mode
+{
+public:
 
+    uint32_t mode_number() const override { return QSTABILIZE; }
+    const char *name4() const override { return "QSTB"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override { }
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+};
+
+class ModeQHover : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return QHOVER; }
+    const char *name4() const override { return "QHOV"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override { }
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+};
+
+class ModeQLoiter : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return QLOITER; }
+    const char *name4() const override { return "QLOT"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override { }
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+};
+
+class ModeQLand : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return QLAND; }
+    const char *name4() const override { return "QLND"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override { }
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+};
+
+class ModeQRTL : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return QRTL; }
+    const char *name4() const override { return "QRTL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override { }
+
+    // attributes for mavlink system status reporting
+    bool has_manual_input() const override { return true; }
+    bool attitude_stabilized() const override { return false; }
+};
