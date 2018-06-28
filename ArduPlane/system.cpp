@@ -308,63 +308,6 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 //  MODE.ENTER() stuff below. Adding control_mode.enter() now but almost everything should get refactored into it later
 // ---------
 
-    // cancel inverted flight
-    auto_state.inverted_flight = false;
-
-    // don't cross-track when starting a mission
-    auto_state.next_wp_crosstrack = false;
-
-    // reset landing check
-    auto_state.checked_for_autoland = false;
-    
-    // zero locked course
-    steer_state.locked_course_err = 0;
-
-    // reset crash detection
-    crash_state.is_crashed = false;
-    crash_state.impact_detected = false;
-
-    // reset external attitude guidance
-    guided_state.last_forced_rpy_ms.zero();
-    guided_state.last_forced_throttle_ms = 0;
-
-
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode->mode_number());
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode->mode_number());
-#endif
-
-#if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == &mode_auto);
-#endif
-
-    if (previous_mode == &mode_autotune && control_mode != &mode_autotune) {
-        // restore last gains
-        autotune_restore();
-    }
-
-    // zero initial pitch and highest airspeed on mode change
-    auto_state.highest_airspeed = 0;
-    auto_state.initial_pitch_cd = ahrs.pitch_sensor;
-
-    // disable taildrag takeoff on mode change
-    auto_state.fbwa_tdrag_takeoff_mode = false;
-
-    // start with previous WP at current location
-    prev_WP_loc = current_loc;
-
-    // new mode means new loiter
-    loiter.start_time_ms = 0;
-
-    // record time of mode change
-    last_mode_change_ms = AP_HAL::millis();
-    
-    // assume non-VTOL mode
-    auto_state.vtol_mode = false;
-    auto_state.vtol_loiter = false;
-    
     switch ((FlightMode)control_mode->mode_number())
     {
     case INITIALISING:
@@ -506,13 +449,6 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
         break;
     }
 
-    // start with throttle suppressed in auto_throttle modes
-    throttle_suppressed = auto_throttle_mode;
-
-    adsb.set_is_auto_mode(auto_navigation_mode);
-
-    // reset steering integrator on mode change
-    steerController.reset_I();
 
 // -----------
 //  End of MODE.ENTER() stuff
