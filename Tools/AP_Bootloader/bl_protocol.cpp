@@ -316,6 +316,8 @@ bootloader(unsigned timeout)
 {
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
     uint32_t	first_word = 0xffffffff;
+    bool done_sync = false;
+    bool done_get_device = false;
 
     chVTObjectInit(&systick_vt);
     chVTSet(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
@@ -366,7 +368,7 @@ bootloader(unsigned timeout)
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
-
+            done_sync = true;
             break;
 
         // get device info
@@ -422,7 +424,7 @@ bootloader(unsigned timeout)
             default:
                 goto cmd_bad;
             }
-
+            done_get_device = true;
             break;
 
         // erase and prepare for programming
@@ -433,6 +435,11 @@ bootloader(unsigned timeout)
         //
         case PROTO_CHIP_ERASE:
 
+            if (!done_sync || !done_get_device) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+            
             /* expect EOC */
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
@@ -473,6 +480,11 @@ bootloader(unsigned timeout)
         // readback failure:	INSYNC/FAILURE
         //
         case PROTO_PROG_MULTI:		// program bytes
+            if (!done_sync || !done_get_device) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+
             // expect count
             led_set(LED_OFF);
 
