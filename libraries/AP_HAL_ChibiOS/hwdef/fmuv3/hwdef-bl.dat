@@ -35,11 +35,7 @@ USB_STRING_SERIAL  "%SERIAL%"
 define BOOTLOADER_BAUDRATE 115200
 
 # uarts and USB to run bootloader protocol on
-UART_ORDER OTG1 USART2 UART7
-
-# UART4 serial GPS
-PA0 UART4_TX UART4
-PA1 UART4_RX UART4
+UART_ORDER OTG1 USART2 USART3 UART7
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -66,17 +62,12 @@ PD9 USART3_RX USART3
 PD11 USART3_CTS USART3
 PD12 USART3_RTS USART3
 
-# now the 2nd GPS UART
-# UART8 serial4 GPS2
-PE0 UART8_RX UART8
-PE1 UART8_TX UART8
-
 # UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters)
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
-# define a LED, mapping it to GPIO(0)
-PE12 LED_BOOTLOADER OUTPUT GPIO(0)
+# define a LED
+PE12 LED_BOOTLOADER OUTPUT
 define HAL_LED_ON 1
 
 # this adds a C define which sets up the ArduPilot architecture
