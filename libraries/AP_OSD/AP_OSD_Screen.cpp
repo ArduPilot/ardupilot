@@ -220,8 +220,8 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
                 int16_t end_position = start_position + message_visible_width;
 
                 //ensure array boundaries
-                start_position = MIN(start_position, sizeof(buffer)-1);
-                end_position = MIN(end_position, sizeof(buffer)-1);
+                start_position = MIN(start_position, int(sizeof(buffer)-1));
+                end_position = MIN(end_position, int(sizeof(buffer)-1));
 
                 //trim invisible part
                 buffer[end_position] = 0;
