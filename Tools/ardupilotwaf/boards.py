@@ -343,7 +343,8 @@ class chibios(Board):
             '-mno-thumb-interwork',
             '-mthumb',
             '-mfpu=fpv4-sp-d16',
-            '-mfloat-abi=hard'
+            '-mfloat-abi=hard',
+            '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
         ]
 
         if sys.platform == 'cygwin':
