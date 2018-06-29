@@ -98,7 +98,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_baudrate = baudrate;
             _uart_start_connection();
         } else if (strcmp(devtype, "sim") == 0) {
-            ::printf("SIM connection %s:%s\n", args1, args2);
+            ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
             if (!_connected) {
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
