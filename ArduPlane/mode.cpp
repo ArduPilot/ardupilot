@@ -35,14 +35,14 @@ bool Mode::enter()
 
 
  #if FRSKY_TELEM_ENABLED == ENABLED
-     plane.frsky_telemetry.update_control_mode(plane.control_mode->mode_number());
+     plane.frsky_telemetry.update_control_mode(mode_number());
  #endif
  #if DEVO_TELEM_ENABLED == ENABLED
-     plane.devo_telemetry.update_control_mode(plane.control_mode->mode_number());
+     plane.devo_telemetry.update_control_mode(mode_number());
  #endif
 
  #if CAMERA == ENABLED
-     plane.camera.set_is_auto_mode(plane.control_mode == &plane.mode_auto);
+     plane.camera.set_is_auto_mode(this == &plane.mode_auto);
  #endif
 
      // zero initial pitch and highest airspeed on mode change
