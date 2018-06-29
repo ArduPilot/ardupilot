@@ -541,6 +541,19 @@ bool AP_Arming::board_voltage_checks(bool report)
     return true;
 }
 
+/*
+  check base system operations
+ */
+bool AP_Arming::system_checks(bool report)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_SYSTEM)) {
+        if (!hal.storage->healthy()) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
+        }
+    }
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -560,7 +573,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
         &  servo_checks(report)
-        &  board_voltage_checks(report);
+        &  board_voltage_checks(report)
+        &  system_checks(report);
 }
 
 bool AP_Arming::arm_checks(uint8_t method)
@@ -573,6 +587,14 @@ bool AP_Arming::arm_checks(uint8_t method)
         }
     }
 
+    // check system health on arm as well as prearm
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_SYSTEM)) {
+        if (!system_checks(true)) {
+            return false;
+        }
+    }
+    
     // note that this will prepare DataFlash to start logging
     // so should be the last check to be done before arming
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
