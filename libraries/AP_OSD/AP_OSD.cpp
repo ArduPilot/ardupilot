@@ -58,6 +58,15 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Path: AP_OSD_Screen.cpp
     AP_SUBGROUPINFO(screen[3], "4_", 6, AP_OSD, AP_OSD_Screen),
 
+    // @Param: _SW_METHOD
+    // @DisplayName: Screen switch method
+    // @Description: This sets the method used to switch different OSD screens.
+    // @Values: 0: switch to next screen if channel value was changed,
+    //          1: select screen based on pwm ranges specified for each screen,
+    //          2: switch to next screen every 2s if channel value is high
+    // @User: Standard
+    AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
+
     AP_GROUPEND
 };
 
@@ -126,11 +135,55 @@ void AP_OSD::update_current_screen()
     }
 
     int16_t channel_value = channel->get_radio_in();
-    for (uint8_t i=0; i<AP_OSD_NUM_SCREENS; i++) {
-        if (screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
-            current_screen = i;
-            break;
+    switch (sw_method) {
+    //switch to next screen if channel value was changed
+    default:
+    case TOGGLE:
+        if (abs(channel_value-previous_channel_value) > 200) {
+            if (switch_debouncer) {
+                next_screen();
+                previous_channel_value = channel_value;
+            } else {
+                switch_debouncer = true;
+                return;
+            }
         }
+        break;
+    //select screen based on pwm ranges specified
+    case PWM_RANGE:
+        for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
+            if (screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value) {
+                current_screen = i;
+                break;
+            }
+        }
+        break;
+    //switch to next screen every 2s if channel value more than trim value
+    case AUTO_SWITCH:
+        if (channel_value > channel->get_radio_trim()) {
+            if (switch_debouncer) {
+                uint32_t now = AP_HAL::millis();
+                if (now - last_switch_ms > 2000) {
+                    next_screen();
+                    last_switch_ms = now;
+                }
+            } else {
+                switch_debouncer = true;
+                return;
+            }
+        }
+        break;
     }
+    switch_debouncer = false;
+}
+
+//select next avaliable screen, do nothing if all screens disabled
+void AP_OSD::next_screen()
+{
+    uint8_t t = current_screen;
+    do {
+        t = (t + 1)%AP_OSD_NUM_SCREENS;
+    } while (t != current_screen && !screen[t].enabled);
+    current_screen = t;
 }
 
