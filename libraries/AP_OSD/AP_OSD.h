@@ -17,6 +17,7 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_OSD_Backend;
 
@@ -63,6 +64,16 @@ public:
 private:
     AP_OSD_Backend *backend;
 
+    static const uint16_t message_show_time_ms = 20000;
+    static const uint8_t message_visible_width = 26;
+    static const uint8_t message_scroll_time_ms = 200;
+    static const uint8_t message_scroll_delay = 5;
+
+    static constexpr float ah_max_roll = DEG_TO_RAD * 40;
+    static constexpr float ah_max_pitch = DEG_TO_RAD * 20;
+    //typical fpv camera has 80deg vertical field of view, 16 row of chars
+    static constexpr float ah_pitch_rad_to_char = 16.0f/(DEG_TO_RAD * 80);
+
     AP_OSD_Setting altitude{true, 1, 1};
     AP_OSD_Setting bat_volt{true, 9, 1};
     AP_OSD_Setting rssi{false, 0, 0};
@@ -70,8 +81,9 @@ private:
     AP_OSD_Setting batused{true, 1, 3};
     AP_OSD_Setting sats{true, 1, 4};
     AP_OSD_Setting fltmode{true, 12, 14};
-    AP_OSD_Setting message{false, 0, 0};
+    AP_OSD_Setting message{false, 2, 13};
     AP_OSD_Setting gspeed{false, 0, 0};
+    AP_OSD_Setting horizon{true, 15, 8};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -82,6 +94,7 @@ private:
     void draw_fltmode(uint8_t x, uint8_t y);
     void draw_message(uint8_t x, uint8_t y);
     void draw_gspeed(uint8_t x, uint8_t y);
+    void draw_horizon(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -103,9 +116,15 @@ public:
         OSD_NONE=0,
         OSD_MAX7456=1,
     };
+    enum switch_method {
+        TOGGLE=0,
+        PWM_RANGE=1,
+        AUTO_SWITCH=2,
+    };
 
     AP_Int8 osd_type;
     AP_Int8 rc_channel;
+    AP_Int8 sw_method;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
@@ -113,8 +132,13 @@ private:
     void timer();
     void update_osd();
     void update_current_screen();
+    void next_screen();
     AP_OSD_Backend *backend;
     uint32_t last_update_ms;
 
+    //variables for screen switching
     uint8_t current_screen;
+    uint16_t previous_channel_value;
+    bool switch_debouncer;
+    uint32_t last_switch_ms;
 };
