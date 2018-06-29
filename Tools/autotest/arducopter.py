@@ -5,6 +5,8 @@ from __future__ import print_function
 import math
 import os
 import shutil
+import sys
+import time
 
 import pexpect
 from pymavlink import mavutil
@@ -91,6 +93,7 @@ class AutoTestCopter(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
+                                    vicon=True,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'ArduCopter', options=self.mavproxy_options())
@@ -330,7 +333,7 @@ class AutoTestCopter(AutoTest):
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
-            pos = self.mav.location()
+            pos = self.mav.location() # requires a GPS fix to function
             home_distance = self.get_distance(HOME, pos)
             home = ""
             if alt <= 1 and home_distance < 10:
@@ -1129,6 +1132,98 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
 
+    def fly_vision_position(self):
+        '''disable GPS navigation, enable Vicon input'''
+        # scribble down a location we can set origin to:
+
+        self.progress("Waiting for location")
+        start = self.mav.location()
+        self.mavproxy.send('switch 6\n')  # stabilize mode
+        self.mav.wait_heartbeat()
+        self.wait_mode('STABILIZE')
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+
+        old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        print("old_pos=%s" % str(old_pos))
+
+        old_gps_type = self.get_parameter("GPS_TYPE")
+        old_ek2_gps_type = self.get_parameter("EK2_GPS_TYPE")
+        old_serial5_protocol = self.get_parameter("SERIAL5_PROTOCOL")
+
+        ex = None
+        try:
+            self.set_parameter("GPS_TYPE", 0)
+            self.set_parameter("EK2_GPS_TYPE", 3)
+            self.set_parameter("SERIAL5_PROTOCOL", 1)
+            self.reboot_sitl()
+            # without a GPS or some sort of external prompting, AP
+            # doesn't send system_time messages.  So prompt it:
+            self.mav.mav.system_time_send(time.time() * 1000000, 0)
+            self.mav.mav.set_gps_global_origin_send(1,
+                                                    old_pos.lat,
+                                                    old_pos.lon,
+                                                    old_pos.alt)
+            self.progress("Waiting for non-zero-lat")
+            tstart = self.get_sim_time();
+            while True:
+                gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True)
+#                self.progress("gpi=%s" % str(gpi))
+                if gpi.lat != 0:
+                    break
+
+                if self.get_sim_time() - tstart > 10:
+                    raise AutoTestTimeoutException()
+
+            self.takeoff(arm=True)
+            self.set_rc(1, 1600)
+            tstart = self.get_sim_time();
+            while True:
+                vicon_pos = self.mav.recv_match(type='VICON_POSITION_ESTIMATE',
+                                                blocking=True)
+#                print("vpe=%s" % str(vicon_pos))
+                gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True)
+#                self.progress("gpi=%s" % str(gpi))
+                if vicon_pos.x > 40:
+                    break
+
+                if self.get_sim_time() - tstart > 100:
+                    raise AutoTestTimeoutException()
+
+            # recenter controls:
+            self.set_rc(1, 1500)
+            self.progress("# Enter RTL")
+            self.mavproxy.send('switch 3\n')
+            self.set_rc(3, 1500)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time() - tstart > 200:
+                    raise NotAchievedException()
+                gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True)
+#                print("gpi=%s" % str(gpi))
+                ss = self.mav.recv_match(type='SIMSTATE',
+                                         blocking=True)
+#                print("ss=%s" % str(ss))
+                # wait for RTL disarm:
+                if not self.armed():
+                    break
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.set_parameter("GPS_TYPE", old_gps_type)
+        self.set_parameter("EK2_GPS_TYPE", old_ek2_gps_type)
+        self.set_parameter("SERIAL5_PROTOCOL", old_serial5_protocol)
+        self.set_rc(3, 1000)
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest ArduCopter in SITL."""
         if not self.hasInit:
@@ -1143,6 +1238,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+            self.progress("Waiting for location")
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
             self.mavproxy.send('switch 6\n')  # stabilize mode
@@ -1307,6 +1403,9 @@ class AutoTestCopter(AutoTest):
 
             # wait for disarm
             self.mav.motors_disarmed_wait()
+
+            '''vision position''' # expects vehicle to be disarmed
+            self.run_test("Fly Vision Position", self.fly_vision_position)
 
             # Download logs
             self.run_test("log download",

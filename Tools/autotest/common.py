@@ -166,6 +166,32 @@ class AutoTest(ABC):
     def reboot_sitl(self):
         self.mavproxy.send("reboot\n")
         self.mavproxy.expect("tilt alignment complete")
+        # empty mav to avoid getting old timestamps:
+        if self.mav is not None:
+            while self.mav.recv_match(blocking=False):
+                pass
+        # after reboot stream-rates may be zero.  Prompt MAVProxy to
+        # send a rate-change message by changing away from our normal
+        # stream rates and back again:
+        if self.mav is not None:
+            tstart = self.get_sim_time()
+        while True:
+
+            self.mavproxy.send("set streamrate %u\n" % (self.sitl_streamrate()*2))
+            if self.mav is None:
+                break
+
+            if self.get_sim_time() - tstart > 10:
+                raise AutoTestTimeoutException()
+
+            m = self.mav.recv_match(type='SYSTEM_TIME',
+                                    blocking=True,
+                                    timeout=1)
+            if m is not None:
+                print("Received (%s)" % str(m))
+                break;
+        self.mavproxy.send("set streamrate %u\n" % self.sitl_streamrate())
+        self.progress("Reboot complete")
 
     def close(self):
         '''tidy up after running all tests'''
