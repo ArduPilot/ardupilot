@@ -89,6 +89,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: HORIZON
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -116,12 +120,22 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
 
-#define AH_SYMBOL_COUNT 9
+#define SYM_HOME 0xBF
+
+#define SYM_ARROW_START 0x60
+#define SYM_ARROW_COUNT 16
+
+#define SYM_AH_START 0x80
+#define SYM_AH_COUNT 9
+
+#define SYM_AH_CENTER_LINE_LEFT   0x26
+#define SYM_AH_CENTER_LINE_RIGHT  0x27
+#define SYM_AH_CENTER             0x7E
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
     float alt;
-    AP_AHRS::get_singleton()->get_relative_position_D_home(alt);
+    AP::ahrs().get_relative_position_D_home(alt);
     backend->write(x, y, false, "%4.0f%c", alt, SYM_ALT_M);
 }
 
@@ -135,9 +149,12 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
-    int rssiv = AP_RSSI::get_instance()->read_receiver_rssi_uint8();
-    rssiv = (rssiv * 99) / 255;
-    backend->write(x, y, rssiv < 5, "%c%2d", SYM_RSSI, rssiv);
+    AP_RSSI *ap_rssi = AP_RSSI::get_instance();
+    if (ap_rssi) {
+        int rssiv = ap_rssi->read_receiver_rssi_uint8();
+        rssiv = (rssiv * 99) / 255;
+        backend->write(x, y, rssiv < 5, "%c%2d", SYM_RSSI, rssiv);
+    }
 }
 
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
@@ -149,7 +166,10 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
-    backend->write(x, y, AP_Notify::instance()->get_flight_mode_str());
+    AP_Notify * notify = AP_Notify::instance();
+    if (notify) {
+        backend->write(x, y, notify->get_flight_mode_str());
+    }
 }
 
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
@@ -168,25 +188,76 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::instance();
     if (notify) {
-        bool text_is_valid = AP_HAL::millis() - notify->get_text_updated_millis() < 20000;
-        if (text_is_valid) {
+        uint32_t visible_time = AP_HAL::millis() - notify->get_text_updated_millis();
+        if (visible_time < message_show_time_ms) {
             char buffer[NOTIFY_TEXT_BUFFER_SIZE];
+            strncpy(buffer, notify->get_text(), sizeof(buffer));
+            int16_t len = strnlen(buffer, sizeof(buffer));
+
             //converted to uppercase,
             //because we do not have small letter chars inside used font
-            strncpy(buffer, notify->get_text(), sizeof(buffer));
-            for (uint8_t i=0; i<sizeof(buffer); i++) {
+            for (int16_t i=0; i<len; i++) {
                 buffer[i] = toupper(buffer[i]);
             }
-            backend->write(x, y, buffer);
+
+            int16_t start_position = 0;
+            //scroll if required
+            //scroll pattern: wait, scroll to the left, wait, scroll to the right
+            if (len > message_visible_width) {
+                int16_t chars_to_scroll = len - message_visible_width;
+                int16_t total_cycles = 2*message_scroll_delay + 2*chars_to_scroll;
+                int16_t current_cycle = (visible_time / message_scroll_time_ms) % total_cycles;
+
+                //calculate scroll start_position
+                if (current_cycle < total_cycles/2) {
+                    //move to the left
+                    start_position = current_cycle - message_scroll_delay;
+                } else {
+                    //move to the right
+                    start_position = total_cycles - current_cycle;
+                }
+                start_position = constrain_int16(start_position, 0, chars_to_scroll);
+                int16_t end_position = start_position + message_visible_width;
+
+                //ensure array boundaries
+                start_position = MIN(start_position, sizeof(buffer)-1);
+                end_position = MIN(end_position, sizeof(buffer)-1);
+
+                //trim invisible part
+                buffer[end_position] = 0;
+            }
+
+            backend->write(x, y, buffer + start_position);
         }
     }
 }
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 {
-    AP_GPS & gps = AP::gps();
-    float v = gps.ground_speed() * 3.6;
+    float v = AP::ahrs().groundspeed() * 3.6;
     backend->write(x, y, false, "%3.0f%c", v, SYM_KMH);
+}
+
+void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    float roll = ahrs.roll;
+    float pitch = ahrs.pitch;
+
+    roll = constrain_float(roll, -ah_max_roll, ah_max_roll);
+    pitch = constrain_float(pitch, -ah_max_pitch, ah_max_pitch);
+
+    for (int dx = -4; dx <= 4; dx++) {
+        float fy =  dx * roll + pitch * ah_pitch_rad_to_char + 0.5f;
+        int dy = floorf(fy);
+        char c = (fy - dy) * SYM_AH_COUNT;
+        //chars in font in reversed order
+        c = SYM_AH_START + ((SYM_AH_COUNT - 1) - c);
+        if (dy >= -4 && dy <= 4) {
+            backend->write(x + dx, y - dy, false, "%c", c);
+        }
+    }
+    backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -197,6 +268,11 @@ void AP_OSD_Screen::draw(void)
         return;
     }
 
+    //Note: draw order should be optimized.
+    //Big and less important items should be drawn first,
+    //so they will not overwrite more important ones.
+    DRAW_SETTING(message);
+    DRAW_SETTING(horizon);
     DRAW_SETTING(altitude);
     DRAW_SETTING(bat_volt);
     DRAW_SETTING(rssi);
@@ -204,6 +280,5 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(batused);
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
-    DRAW_SETTING(message);
     DRAW_SETTING(gspeed);
 }
