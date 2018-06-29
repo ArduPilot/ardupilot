@@ -176,7 +176,7 @@ const AP_Param::Info Rover::var_info[] = {
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLE),
 
     // @Param: RNGFND_TRIGGR_CM
-    // @DisplayName: Rangefinder trigger distance
+    // @DisplayName: Object avoidance trigger distance
     // @Description: The distance from an obstacle in centimeters at which the rangefinder triggers a turn to avoid the obstacle
     // @Units: cm
     // @Range: 0 1000
@@ -185,8 +185,8 @@ const AP_Param::Info Rover::var_info[] = {
     GSCALAR(rangefinder_trigger_cm,   "RNGFND_TRIGGR_CM",    100),
 
     // @Param: RNGFND_TURN_ANGL
-    // @DisplayName: Rangefinder trigger angle
-    // @Description: The course deviation in degrees to apply while avoiding an obstacle detected with the rangefinder. A positive number means to turn right, and a negative angle means to turn left.
+    // @DisplayName: Object avoidance turn aggressiveness and direction
+    // @Description: The aggressiveness and direction of turn to avoid an obstacle.  Large positive or negative values (i.e. -450 or 450) cause turns up to the vehicle's maximum lateral acceleration (TURN_MAX_G) while values near zero cause gentle turns. Positive means to turn right, negative means turn left.
     // @Units: deg
     // @Range: -450 450
     // @Increment: 1
@@ -194,7 +194,7 @@ const AP_Param::Info Rover::var_info[] = {
     GSCALAR(rangefinder_turn_angle,   "RNGFND_TURN_ANGL",    45),
 
     // @Param: RNGFND_TURN_TIME
-    // @DisplayName: Rangefinder turn time
+    // @DisplayName: Object avoidance turn time
     // @Description: The amount of time in seconds to apply the RNGFND_TURN_ANGL after detecting an obstacle.
     // @Units: s
     // @Range: 0 100
@@ -203,7 +203,7 @@ const AP_Param::Info Rover::var_info[] = {
     GSCALAR(rangefinder_turn_time,    "RNGFND_TURN_TIME",     1.0f),
 
     // @Param: RNGFND_DEBOUNCE
-    // @DisplayName: Rangefinder debounce count
+    // @DisplayName: Object avoidance rangefinder debounce count
     // @Description: The number of 50Hz rangefinder hits needed to trigger an obstacle avoidance event. If you get a lot of false rangefinder events then raise this number, but if you make it too large then it will cause lag in detecting obstacles, which could cause you go hit the obstacle.
     // @Range: 1 100
     // @Increment: 1
