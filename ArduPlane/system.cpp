@@ -290,24 +290,37 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
         return true;
     }
 
+    // backup current control_mode and previous_mode
+    Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
+
+    // update control_mode assuming success
+    // TODO: move these to be after enter() once start_command_callback() no longer checks control_mode
+    previous_mode = control_mode;
+    control_mode = &new_mode;
+
+    // attempt to enter new mode
     if (!new_mode.enter()) {
         // Log error that we failed to enter desired flight mode
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+
+        // we failed entering new mode, roll back to old
+        previous_mode = &old_previous_mode;
+        control_mode = &old_mode;
         return false;
     }
 
-    // set mode
-    previous_mode = control_mode;
-    previous_mode_reason = control_mode_reason;
-    control_mode = &new_mode;
-    control_mode_reason = reason;
-
+    // exit previous mode
     old_mode.exit();
 
-    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    // record reasons
+    previous_mode_reason = control_mode_reason;
+    control_mode_reason = reason;
 
+    // log and notify mode change
+    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
     notify_mode(control_mode);
+
     return true;
 }
 
