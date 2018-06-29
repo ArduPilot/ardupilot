@@ -27,22 +27,24 @@ void Rover::crash_check()
   // TODO : Check if min vel can be calculated
   // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
 
-  if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
-      (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
-      (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
-    crash_counter = 0;
-    return;
+  if (!is_balancebot()) {
+      if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
+          (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
+          (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
+        crash_counter = 0;
+        return;
+      }
+
+      // we may be crashing
+      crash_counter++;
+
+      // check if crashing for 2 seconds
+      if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * 10)) {
+        crashed = true;
+      }
   }
 
-  // we may be crashing
-  crash_counter++;
-
-  // check if crashing for 2 seconds
-  if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * 10)) {
-    crashed = true;
-  }
-
-  if (crashed){
+  if (crashed) {
     // log an error in the dataflash
     Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
 
