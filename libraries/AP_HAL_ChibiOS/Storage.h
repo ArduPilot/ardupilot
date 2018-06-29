@@ -41,6 +41,7 @@ public:
     void write_block(uint16_t dst, const void* src, size_t n);
 
     void _timer_tick(void) override;
+    bool healthy(void) override;
 
 private:
     volatile bool _initialised;
@@ -57,6 +58,7 @@ private:
     uint8_t _flash_page;
     bool _flash_failed;
     uint32_t _last_re_init_ms;
+    uint32_t _last_empty_ms;
 
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
@@ -73,6 +75,10 @@ private:
 #if HAL_WITH_RAMTRON
     AP_RAMTRON fram;
     bool using_fram;
+#endif
+#ifdef USE_POSIX
+    bool using_filesystem;
+    int log_fd;
 #endif
 };
 

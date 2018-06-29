@@ -19,6 +19,7 @@
 
 #include "Storage.h"
 #include "hwdef/common/flash.h"
+#include "sdcard.h"
 
 using namespace ChibiOS;
 
@@ -26,12 +27,25 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef HAL_STORAGE_FILE
+// using SKETCHNAME allows the one microSD to be used
+// for multiple vehicle types
+#define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
         return;
     }
 
+#ifdef USE_POSIX
+    // if we have failed filesystem init don't try again
+    if (log_fd == -1) {
+        return;
+    }
+#endif
+        
     _dirty_mask.clearall();
 
 #if HAL_WITH_RAMTRON
@@ -46,8 +60,37 @@ void Storage::_storage_open(void)
     // allow for FMUv3 with no FRAM chip, fall through to flash storage
 #endif
 
+#ifdef STORAGE_FLASH_PAGE
     // load from storage backend
     _flash_load();
+#endif
+    
+#ifdef USE_POSIX
+    // allow for fallback to microSD based storage
+    sdcard_init();
+    
+    log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
+    if (log_fd == -1) {
+        hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
+        return;
+    }
+    int ret = read(log_fd, _buffer, CH_STORAGE_SIZE);
+    if (ret < 0) {
+        hal.console->printf("read failed for " HAL_STORAGE_FILE "\n");
+        close(log_fd);
+        log_fd = -1;
+        return;
+    }
+    // pre-fill to full size
+    if (lseek(log_fd, ret, SEEK_SET) != ret ||
+        write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret) {
+        hal.console->printf("setup failed for " HAL_STORAGE_FILE "\n");
+        close(log_fd);
+        log_fd = -1;
+        return;        
+    }
+    using_filesystem = true;
+#endif
 
     _initialised = true;
 }
@@ -92,10 +135,13 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
 
 void Storage::_timer_tick(void)
 {
-    if (!_initialised || _dirty_mask.empty()) {
+    if (!_initialised) {
         return;
     }
-
+    if (_dirty_mask.empty()) {
+        _last_empty_ms = AP_HAL::millis();
+        return;
+    }
 
     // write out the first dirty line. We don't write more
     // than one to keep the latency of this call to a minimum
@@ -119,8 +165,27 @@ void Storage::_timer_tick(void)
     } 
 #endif
 
+#ifdef USE_POSIX
+    if (using_filesystem && log_fd != -1) {
+        uint32_t offset = CH_STORAGE_LINE_SIZE*i;
+        if (lseek(log_fd, offset, SEEK_SET) != offset) {
+            return;
+        }
+        if (write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
+            return;
+        }
+        if (fsync(log_fd) != 0) {
+            return;
+        }
+        _dirty_mask.clear(i);
+        return;
+    } 
+#endif
+    
+#ifdef STORAGE_FLASH_PAGE
     // save to storage backend
     _flash_write(i);
+#endif
 }
 
 /*
@@ -205,6 +270,15 @@ bool Storage::_flash_erase_ok(void)
 {
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();
+}
+
+/*
+  consider storage healthy if we have nothing to write sometime in the
+  last 2 seconds
+ */
+bool Storage::healthy(void)
+{
+    return _initialised && AP_HAL::millis() - _last_empty_ms < 2000;
 }
 
 #endif // HAL_USE_EMPTY_STORAGE
