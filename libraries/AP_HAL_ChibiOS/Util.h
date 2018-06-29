@@ -44,6 +44,9 @@ public:
     void set_imu_temp(float current);
     void set_imu_target_temp(int8_t *target);
 
+    // get system ID as a string
+    bool get_system_id(char buf[40]) override;
+    
 #ifdef HAL_PWM_ALARM
     bool toneAlarm_init();
     void toneAlarm_set_tune(uint8_t tone);
