@@ -154,6 +154,7 @@ bool AP_OSD_MAX7456::init()
 bool AP_OSD_MAX7456::update_font()
 {
     uint32_t font_size;
+    uint8_t updated_chars = 0;
     const uint8_t *font_data = AP_ROMFS::find_file("osd_font.bin", font_size);
     if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
         return false;
@@ -168,9 +169,13 @@ bool AP_OSD_MAX7456::update_font()
                 hal.console->printf("AP_OSD: error during font char update\n");
                 return false;
             }
+            updated_chars++;
         }
     }
-    hal.console->printf("AP_OSD: osd font is up to date\n");
+    if (updated_chars > 0) {
+        hal.console->printf("AP_OSD: updated %d symbols.\n", updated_chars);
+    }
+    hal.console->printf("AP_OSD: osd font is up to date.\n");
     return true;
 }
 
@@ -342,8 +347,9 @@ void AP_OSD_MAX7456::flush()
 
 void AP_OSD_MAX7456::transfer_frame()
 {
-    int updated_chars = 0;
+    uint16_t updated_chars = 0;
     uint8_t last_attribute = 0xFF;
+    uint16_t previous_pos = UINT16_MAX - 1;
     if (!initialized) {
         return;
     }
@@ -362,20 +368,36 @@ void AP_OSD_MAX7456::transfer_frame()
             shadow_attr[y][x] = attr[y][x];
             uint8_t attribute = attr[y][x] & (DMM_BLINK | DMM_INVERT_PIXEL_COLOR);
             uint8_t chr = frame[y][x];
+            uint16_t pos = y * video_columns + x;
+            bool attribute_changed = (attribute != last_attribute);
+            bool position_changed = ((previous_pos + 1) != pos);
 
-            if (attribute != last_attribute) {
-                buffer_add_cmd(MAX7456ADD_DMM, attribute);
+            if (position_changed) {
+                //it is impossible to write to MAX7456ADD_DMAH/MAX7456ADD_DMAL in autoincrement mode
+                //so, exit autoincrement mode
+                if (updated_chars != 0) {
+                    buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
+                    buffer_add_cmd(MAX7456ADD_DMM, 0);
+                }
+                buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
+                buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
+            }
+
+            //update character attributes and (re)enter autoincrement mode
+            if (position_changed || attribute_changed) {
+                buffer_add_cmd(MAX7456ADD_DMM, attribute | DMM_AUTOINCREMENT);
                 last_attribute = attribute;
             }
-            uint16_t pos = y * video_columns + x;
-            buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
-            buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
+
             buffer_add_cmd(MAX7456ADD_DMDI, chr);
             updated_chars++;
+            previous_pos = pos;
         }
     }
 
     if (buffer_offset > 0) {
+        buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
+        buffer_add_cmd(MAX7456ADD_DMM, 0);
         _dev->get_semaphore()->take_blocking();
         _dev->transfer(buffer, buffer_offset, nullptr, 0);
         _dev->get_semaphore()->give();
