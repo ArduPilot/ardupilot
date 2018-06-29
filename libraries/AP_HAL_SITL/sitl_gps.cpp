@@ -75,6 +75,8 @@ int SITL_State::gps_pipe(void)
     gps_state.gps_fd    = fd[1];
     gps_state.client_fd = fd[0];
     gps_state.last_update = AP_HAL::millis();
+    fcntl(fd[0], F_SETFD, FD_CLOEXEC);
+    fcntl(fd[1], F_SETFD, FD_CLOEXEC);
     HALSITL::UARTDriver::_set_nonblocking(gps_state.gps_fd);
     HALSITL::UARTDriver::_set_nonblocking(fd[0]);
     return gps_state.client_fd;
