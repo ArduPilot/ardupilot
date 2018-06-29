@@ -31,6 +31,7 @@ public:
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_SYSTEM     = 0x2000,
     };
 
     enum ArmingMethod {
@@ -105,6 +106,8 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 
+    virtual bool system_checks(bool report);
+    
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
 
