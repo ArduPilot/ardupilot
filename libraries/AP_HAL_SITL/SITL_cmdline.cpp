@@ -294,6 +294,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTD:
         case CMDLINE_UARTE:
         case CMDLINE_UARTF:
+        case CMDLINE_UARTG:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
         case CMDLINE_RTSCTS:

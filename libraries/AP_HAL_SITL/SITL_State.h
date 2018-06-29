@@ -71,13 +71,14 @@ public:
     uint16_t current2_pin_value;  // pin 14
 
     // paths for UART devices
-    const char *_uart_path[6] {
+    const char *_uart_path[7] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
         "tcp:3",
         "GPS2",
         "tcp:5",
+        "tcp:6",
     };
     
 private:
