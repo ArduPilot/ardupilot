@@ -181,6 +181,9 @@ define HAL_WITH_RAMTRON 1
 # fallback to flash storage
 define STORAGE_FLASH_PAGE 22
 
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
+
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
