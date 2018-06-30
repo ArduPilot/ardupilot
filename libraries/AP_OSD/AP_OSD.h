@@ -84,6 +84,7 @@ private:
     AP_OSD_Setting message{false, 2, 13};
     AP_OSD_Setting gspeed{false, 0, 0};
     AP_OSD_Setting horizon{true, 15, 8};
+    AP_OSD_Setting home{false, 0, 0};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -95,6 +96,7 @@ private:
     void draw_message(uint8_t x, uint8_t y);
     void draw_gspeed(uint8_t x, uint8_t y);
     void draw_horizon(uint8_t x, uint8_t y);
+    void draw_home(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
