@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: This sets the method used to switch different OSD screens.
     // @Values: 0: switch to next screen if channel value was changed,
     //          1: select screen based on pwm ranges specified for each screen,
-    //          2: switch to next screen every 2s if channel value is high
+    //          2: switch to next screen after low to high transition and every 1s while channel value is high
     // @User: Standard
     AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
 
@@ -139,6 +139,10 @@ void AP_OSD::update_current_screen()
     //switch to next screen if channel value was changed
     default:
     case TOGGLE:
+        if (previous_channel_value == 0) {
+            //do not switch to the next screen just after initialization
+            previous_channel_value = channel_value;
+        }
         if (abs(channel_value-previous_channel_value) > 200) {
             if (switch_debouncer) {
                 next_screen();
@@ -158,12 +162,12 @@ void AP_OSD::update_current_screen()
             }
         }
         break;
-    //switch to next screen every 2s if channel value more than trim value
+    //switch to next screen after low to high transition and every 1s while channel value is high
     case AUTO_SWITCH:
         if (channel_value > channel->get_radio_trim()) {
             if (switch_debouncer) {
                 uint32_t now = AP_HAL::millis();
-                if (now - last_switch_ms > 2000) {
+                if (now - last_switch_ms > 1000) {
                     next_screen();
                     last_switch_ms = now;
                 }
@@ -171,6 +175,8 @@ void AP_OSD::update_current_screen()
                 switch_debouncer = true;
                 return;
             }
+        } else {
+            last_switch_ms = 0;
         }
         break;
     }
