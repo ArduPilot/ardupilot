@@ -543,7 +543,7 @@ bool AP_Arming::board_voltage_checks(bool report)
  */
 bool AP_Arming::system_checks(bool report)
 {
-    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_SYSTEM)) {
+    if (check_enabled(ARMING_CHECK_SYSTEM)) {
         if (!hal.storage->healthy()) {
             check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
         }
