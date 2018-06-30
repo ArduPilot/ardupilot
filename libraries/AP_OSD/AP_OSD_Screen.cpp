@@ -93,6 +93,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: HOME
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(home, "HOME", 14, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -107,10 +111,11 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_ZERO_HALF_TRAILING_DOT 192
 #define SYM_ZERO_HALF_LEADING_DOT 208
 
-#define SYM_M       177
-#define SYM_ALT_M       177
+#define SYM_M           0xB9
+#define SYM_KM          0xBA
+#define SYM_ALT_M       0xB1
 #define SYM_BATT_FULL   0x90
-#define SYM_RSSI 0x01
+#define SYM_RSSI        0x01
 
 #define SYM_VOLT  0x06
 #define SYM_AMP   0x9A
@@ -131,6 +136,13 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AH_CENTER_LINE_LEFT   0x26
 #define SYM_AH_CENTER_LINE_RIGHT  0x27
 #define SYM_AH_CENTER             0x7E
+
+#define SYM_HEADING_N             0x18
+#define SYM_HEADING_S             0x19
+#define SYM_HEADING_E             0x1A
+#define SYM_HEADING_W             0x1B
+#define SYM_HEADING_DIVIDED_LINE  0x1C
+#define SYM_HEADING_LINE          0x1D
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
@@ -260,6 +272,28 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
 }
 
+void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    if (ahrs.get_position(loc) && ahrs.home_is_set()) {
+        const Location &home_loc = ahrs.get_home();
+        float distance = get_distance(home_loc, loc);
+        int32_t angle = get_bearing_cd(loc, home_loc);
+        int32_t interval = 36000 / SYM_ARROW_COUNT;
+        char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
+        if (distance < 999.0f) {
+            backend->write(x, y, false, "%c%c%3.0f%c", SYM_HOME, arrow, distance, SYM_M);
+        } else if (distance < 9999.0f) {
+            backend->write(x, y, false, "%c%c%1.1f%c", SYM_HOME, arrow, distance/1000, SYM_KM);
+        } else {
+            backend->write(x, y, false, "%c%c%3.0f%c", SYM_HOME, arrow, distance/1000, SYM_KM);
+        }
+    } else {
+        backend->write(x, y, true, "%c", SYM_HOME);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -281,4 +315,5 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
+    DRAW_SETTING(home);
 }
