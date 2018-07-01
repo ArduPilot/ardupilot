@@ -139,6 +139,7 @@ void AP_OSD::update_osd()
     backend->flush();
 }
 
+//Thanks to minimosd authors for the multiple osd screen idea
 void AP_OSD::update_current_screen()
 {
     if (rc_channel == 0) {
