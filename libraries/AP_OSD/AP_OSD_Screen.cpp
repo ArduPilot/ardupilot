@@ -256,8 +256,8 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    float roll = -ahrs.roll;
-    float pitch = ahrs.pitch;
+    float roll = ahrs.roll;
+    float pitch = -ahrs.pitch;
 
     roll = constrain_float(roll, -ah_max_roll, ah_max_roll);
     pitch = constrain_float(pitch, -ah_max_pitch, ah_max_pitch);
