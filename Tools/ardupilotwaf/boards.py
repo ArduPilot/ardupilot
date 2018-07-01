@@ -35,6 +35,7 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')
 
@@ -191,7 +192,8 @@ class Board:
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
-        pass
+        if bld.env.ROMFS_FILES:
+            self.embed_ROMFS_files(bld)
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
@@ -200,6 +202,13 @@ class Board:
         bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
         bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
         bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
+
+    def embed_ROMFS_files(self, ctx):
+        '''embed some files using AP_ROMFS'''
+        import embed
+        header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
+        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES):
+            bld.fatal("Failed to created ap_romfs_embedded.h")
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -262,10 +271,11 @@ class sitl(Board):
             'SITL',
         ]
 
-        if cfg.options.enable_osd:
-            env.LIB += ['sfml-graphics', 'sfml-window','sfml-system']
+        if cfg.options.enable_sfml:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
-            self.embed_files(cfg, [('osd_font.bin','libraries/AP_OSD/fonts/clarity.bin')])
+            env.ROMFS_FILES += [('osd_font.bin','libraries/AP_OSD/fonts/clarity.bin')]
 
         if sys.platform == 'cygwin':
             env.LIB += [
@@ -280,15 +290,6 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
             
-    def embed_files(self, cfg, files):
-        '''embed some files using AP_ROMFS'''
-        header = cfg.bldnode.make_node('sitl/ap_romfs_embedded.h').abspath()
-        paths = []
-        embed_path = cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/scripts').abspath()
-        sys.path.append(embed_path)
-        import embed
-        embed.create_embedded_h(header, files)
-
 class chibios(Board):
     toolchain = 'arm-none-eabi'
 
@@ -415,6 +416,7 @@ class chibios(Board):
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
+        super(chibios, self).pre_build(bld)
         from waflib.Context import load_tool
         module = load_tool('chibios', [], with_sys_path=True)
         fun = getattr(module, 'pre_build', None)
