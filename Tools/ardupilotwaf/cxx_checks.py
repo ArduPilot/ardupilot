@@ -223,3 +223,25 @@ def check_libdl(cfg, env):
     if ret:
         env.LIB += cfg.env['LIB_DL']
     return ret
+
+@conf
+def check_SFML(cfg, env):
+    if not cfg.options.enable_sfml:
+        cfg.msg("Checking for SFML graphics:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-graphics', 'sfml-window','sfml-system']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            return False
+    
+    # see if we need Graphics.hpp or Graphics.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",
+                     msg="Checking for Graphics.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Graphics.h>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_H",
+                         msg="Checking for Graphics.h", mandatory=False):
+            return False
+    env.LIB += libs
+    return True
+
