@@ -19,6 +19,9 @@
 
 #include "AP_OSD.h"
 #include "AP_OSD_MAX7456.h"
+#ifdef WITH_SITL_OSD
+#include "AP_OSD_SITL.h"
+#endif
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
@@ -86,7 +89,7 @@ void AP_OSD::init()
     default:
         break;
 
-    case OSD_MAX7456:
+    case OSD_MAX7456: {
         AP_HAL::OwnPtr<AP_HAL::Device> spi_dev = std::move(hal.spi->get_device("osd"));
         if (!spi_dev) {
             break;
@@ -98,6 +101,19 @@ void AP_OSD::init()
         hal.console->printf("Started MAX7456 OSD\n");
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
         break;
+    }
+
+#ifdef WITH_SITL_OSD
+    case OSD_SITL: {
+        backend = AP_OSD_SITL::probe(*this);
+        if (backend == nullptr) {
+            break;
+        }
+        hal.console->printf("Started SITL OSD\n");
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
+        break;
+    }
+#endif
     }
 }
 
