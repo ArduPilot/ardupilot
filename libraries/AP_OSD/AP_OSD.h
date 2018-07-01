@@ -18,6 +18,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 class AP_OSD_Backend;
 
@@ -91,6 +92,15 @@ private:
     AP_OSD_Setting wind{false, 0, 0};
     AP_OSD_Setting aspeed{false, 0, 0};
     AP_OSD_Setting vspeed{false, 0, 0};
+    
+#ifdef HAVE_AP_BLHELI_SUPPORT
+    AP_OSD_Setting blh_temp{false, 0, 0};
+    AP_OSD_Setting blh_rpm{false, 0, 0};
+    AP_OSD_Setting blh_amps{false, 0, 0};
+#endif
+    
+    AP_OSD_Setting gps_latitude{false, 0, 0};
+    AP_OSD_Setting gps_longitude{false, 0, 0};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -111,6 +121,15 @@ private:
     void draw_vspeed(uint8_t x, uint8_t y);
 
     void draw_speed_vector(uint8_t x, uint8_t y, Vector2f v, int32_t yaw);
+
+#ifdef HAVE_AP_BLHELI_SUPPORT
+    void draw_blh_temp(uint8_t x, uint8_t y);
+    void draw_blh_rpm(uint8_t x, uint8_t y);
+    void draw_blh_amps(uint8_t x, uint8_t y);
+#endif
+    
+    void draw_gps_latitude(uint8_t x, uint8_t y);
+    void draw_gps_longitude(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -159,3 +178,4 @@ private:
     bool switch_debouncer;
     uint32_t last_switch_ms;
 };
+
