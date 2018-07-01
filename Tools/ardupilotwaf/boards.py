@@ -262,6 +262,11 @@ class sitl(Board):
             'SITL',
         ]
 
+        if cfg.options.enable_osd:
+            env.LIB += ['sfml-graphics', 'sfml-window','sfml-system']
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+            self.embed_files(cfg, [('osd_font.bin','libraries/AP_OSD/fonts/clarity.bin')])
+
         if sys.platform == 'cygwin':
             env.LIB += [
                 'winmm',
@@ -274,7 +279,15 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-
+            
+    def embed_files(self, cfg, files):
+        '''embed some files using AP_ROMFS'''
+        header = cfg.bldnode.make_node('sitl/ap_romfs_embedded.h').abspath()
+        paths = []
+        embed_path = cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/scripts').abspath()
+        sys.path.append(embed_path)
+        import embed
+        embed.create_embedded_h(header, files)
 
 class chibios(Board):
     toolchain = 'arm-none-eabi'
