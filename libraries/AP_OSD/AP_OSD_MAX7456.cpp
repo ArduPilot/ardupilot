@@ -261,6 +261,7 @@ void AP_OSD_MAX7456::buffer_add_cmd(uint8_t reg, uint8_t arg)
     }
 }
 
+//Thanks to betaflight for the max stall/reboot detection approach and ntsc/pal autodetection
 void AP_OSD_MAX7456::check_reinit()
 {
     uint8_t check = 0xFF;
