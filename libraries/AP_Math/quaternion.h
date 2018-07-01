@@ -21,6 +21,7 @@
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
+#include <math.h>
 
 class Quaternion {
 public:
