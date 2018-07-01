@@ -282,7 +282,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     if (ahrs.get_position(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = get_distance(home_loc, loc);
-        int32_t angle = get_bearing_cd(loc, home_loc);
+        int32_t angle = wrap_360_cd(get_bearing_cd(loc, home_loc) - ahrs.yaw_sensor);
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         if (distance < 2.0f) {
             //avoid fast rotating arrow at small distances
