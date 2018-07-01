@@ -253,7 +253,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    float roll = ahrs.roll;
+    float roll = -ahrs.roll;
     float pitch = ahrs.pitch;
 
     roll = constrain_float(roll, -ah_max_roll, ah_max_roll);
@@ -281,6 +281,10 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
         float distance = get_distance(home_loc, loc);
         int32_t angle = get_bearing_cd(loc, home_loc);
         int32_t interval = 36000 / SYM_ARROW_COUNT;
+        if (distance < 2.0f) {
+            //avoid fast rotating arrow at small distances
+            angle = 0;
+        }
         char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
         if (distance < 999.0f) {
             backend->write(x, y, false, "%c%c%3.0f%c", SYM_HOME, arrow, distance, SYM_M);
