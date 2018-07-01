@@ -317,6 +317,10 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+
+    if opts.OSD:
+        cmd_configure.append("--enable-osd")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -866,6 +870,11 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--osd",
+                     action='store_true',
+                     dest='OSD',
+                     default=False,
+                     help="Enable SITL OSD")
 group_sim.add_option("", "--add-param-file",
                      type='string',
                      default=None,
