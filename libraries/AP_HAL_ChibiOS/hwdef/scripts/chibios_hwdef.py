@@ -965,9 +965,7 @@ def add_bootloader():
 
 def write_ROMFS(outdir):
     '''create ROMFS embedded header'''
-    from embed import create_embedded_h
-
-    create_embedded_h(os.path.join(outdir, 'ap_romfs_embedded.h'), romfs)
+    env_vars['ROMFS_FILES'] = romfs
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
