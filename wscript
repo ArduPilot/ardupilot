@@ -138,6 +138,10 @@ configuration in order to save typing.
         default=False,
         help="Disable compilation and test execution")
 
+    g.add_option('--enable-osd', action='store_true',
+                 default=False,
+                 help="Enable OSD display")
+
     g.add_option('--static',
         action='store_true',
         default=False,
