@@ -196,6 +196,8 @@ void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
     backend->write(x,y, battery.has_failsafed(), "%c%4.0f", SYM_MAH, battery.consumed_mah());
 }
 
+//Autoscroll message is the same as in minimosd-extra.
+//Thanks to night-ghost for the approach.
 void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::instance();
@@ -250,6 +252,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3.0f%c", v, SYM_KMH);
 }
 
+//Thanks to betaflight/inav for simple and clean artificial horizon visual design
 void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
