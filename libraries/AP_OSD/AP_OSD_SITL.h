@@ -18,7 +18,12 @@
 #ifdef WITH_SITL_OSD
 
 #include <AP_OSD/AP_OSD_Backend.h>
+
+#ifdef HAVE_SFML_GRAPHICS_H
+#include <SFML/Graphics.h>
+#else
 #include <SFML/Graphics.hpp>
+#endif
 
 class AP_OSD_SITL : public AP_OSD_Backend {
 
