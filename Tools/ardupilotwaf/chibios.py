@@ -198,6 +198,9 @@ def load_env_vars(env):
     e = pickle.load(open(env_py, 'rb'))
     for k in e.keys():
         v = e[k]
+        if k == 'ROMFS_FILES':
+            env.ROMFS_FILES += v
+            continue
         if k in env:
             if isinstance(env[k], dict):
                 a = v.split('=')
