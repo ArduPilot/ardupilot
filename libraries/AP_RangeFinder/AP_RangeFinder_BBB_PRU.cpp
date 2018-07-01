@@ -69,14 +69,15 @@ bool AP_RangeFinder_BBB_PRU::detect()
     {
         result = false;
     }
-
-    if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
+    else if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
     {
         result = false;
     }
-
-    fclose(file);
-
+	else
+    {
+    	fclose(file);
+	}
+	
     munmap(ram, PRU0_IRAM_SIZE);
 
     ram = mmap(0, PRU0_DRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_DRAM_BASE);
@@ -87,14 +88,15 @@ bool AP_RangeFinder_BBB_PRU::detect()
     {
         result = false;
     }
-
-    if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
+    else if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
     {
         result = false;
     }
-
-    fclose(file);
-
+	else
+	{
+		fclose(file);
+	}
+	
     munmap(ram, PRU0_DRAM_SIZE);
 
     // Map PRU RAM
