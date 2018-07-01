@@ -117,6 +117,7 @@ public:
     enum osd_types {
         OSD_NONE=0,
         OSD_MAX7456=1,
+        OSD_SITL=2,
     };
     enum switch_method {
         TOGGLE=0,
