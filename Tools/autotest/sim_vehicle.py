@@ -319,7 +319,7 @@ def do_build_waf(opts, frame_options):
         cmd_configure.append("--debug")
 
     if opts.OSD:
-        cmd_configure.append("--enable-osd")
+        cmd_configure.append("--enable-sfml")
 
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:

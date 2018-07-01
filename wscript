@@ -138,9 +138,9 @@ configuration in order to save typing.
         default=False,
         help="Disable compilation and test execution")
 
-    g.add_option('--enable-osd', action='store_true',
+    g.add_option('--enable-sfml', action='store_true',
                  default=False,
-                 help="Enable OSD display")
+                 help="Enable SFML graphics library")
 
     g.add_option('--static',
         action='store_true',
