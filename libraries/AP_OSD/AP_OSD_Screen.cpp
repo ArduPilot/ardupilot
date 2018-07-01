@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
+
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -122,6 +123,28 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
 
+#ifdef HAVE_AP_BLHELI_SUPPORT
+    // @Group: BLHTEMP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(blh_temp, "BLHTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: BLHRPM 
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(blh_rpm, "BLHRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: BLHAMPS
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+    
+    // @Group: GPSLAT
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(gps_latitude, "GPSLAT", 24, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: GPSLONG
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(gps_longitude, "GPSLONG", 25, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -177,6 +200,11 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_UP           0xA3
 #define SYM_DOWN         0xA4
 #define SYM_DOWN_DOWN    0xA5
+
+#define SYM_DEGREES_C 0x0E
+#define SYM_DEGREES_F 0x0D
+#define SYM_GPS_LAT   0xA6
+#define SYM_GPS_LONG  0xA7
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
@@ -429,6 +457,72 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%2.0f%c", sym, vspd, SYM_MS);
 }
 
+#ifdef HAVE_AP_BLHELI_SUPPORT
+
+void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
+{
+    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
+    if (blheli) {
+        AP_BLHeli::telem_data td;
+        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+
+        // AP_BLHeli & blh = AP_BLHeli::AP_BLHeli();
+        uint8_t esc_temp = td.temperature;
+        backend->write(x, y, false, "%3d%c", esc_temp, SYM_DEGREES_C);
+    }
+}
+
+void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
+{
+    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
+    if (blheli) {
+        AP_BLHeli::telem_data td;
+        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+
+        int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
+        backend->write(x, y, false, "%5d RPM", esc_rpm);
+    }
+}
+
+void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
+{
+    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
+    if (blheli) {
+        AP_BLHeli::telem_data td;
+        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+
+        float esc_amps = td.current;
+        backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
+    }
+}
+#endif  //HAVE_AP_BLHELI_SUPPORT
+
+void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    const Location &loc = gps.location();   // loc.lat and loc.lng
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lat = labs(loc.lat);
+
+    dec_portion = abs_lat / 10000000UL;
+    frac_portion = abs_lat - dec_portion*10000000UL;
+
+    backend->write(x, y, false, "%c%3ld.%07ld", SYM_GPS_LAT, (long)dec_portion,(long)frac_portion);
+}
+
+void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    const Location &loc = gps.location();   // loc.lat and loc.lng
+    int32_t dec_portion, frac_portion;
+    int32_t abs_lon = labs(loc.lng);
+
+    dec_portion = abs_lon / 10000000UL;
+    frac_portion = abs_lon - dec_portion*10000000UL;
+
+    backend->write(x, y, false, "%c%3ld.%07ld", SYM_GPS_LONG, (long)dec_portion,(long)frac_portion);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -457,4 +551,14 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+
+#ifdef HAVE_AP_BLHELI_SUPPORT
+    DRAW_SETTING(blh_temp);
+    DRAW_SETTING(blh_rpm);
+    DRAW_SETTING(blh_amps);
+#endif
+    
+    DRAW_SETTING(gps_latitude);
+    DRAW_SETTING(gps_longitude);
 }
+
