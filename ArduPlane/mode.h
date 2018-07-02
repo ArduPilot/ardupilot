@@ -67,6 +67,9 @@ public:
     // true if heading is controlled
     virtual bool attitude_stabilized() const { return true; }
 
+    // true only for vtol related FlightModes
+    virtual bool is_vtol_flightmode() const { return false; }
+
     //
     // navigation methods
     //
@@ -360,6 +363,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    bool is_vtol_flightmode() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -374,6 +379,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
+
+    bool is_vtol_flightmode() const override { return true; }
 
 protected:
 
@@ -390,6 +397,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    bool is_vtol_flightmode() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -404,6 +413,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
+
+    bool is_vtol_flightmode() const override { return true; }
 
 protected:
 
@@ -423,6 +434,8 @@ public:
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
 
+    bool is_vtol_flightmode() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -437,6 +450,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
+
+    bool is_vtol_flightmode() const override { return true; }
 
 protected:
 

@@ -1781,12 +1781,7 @@ bool QuadPlane::in_vtol_mode(void) const
     if (!enable) {
         return false;
     }
-    return (plane.control_mode == &plane.mode_qstabilize ||
-            plane.control_mode == &plane.mode_qhover ||
-            plane.control_mode == &plane.mode_qloiter ||
-            plane.control_mode == &plane.mode_qland ||
-            plane.control_mode == &plane.mode_qrtl ||
-            plane.control_mode == &plane.mode_qautotune ||
+    return (plane.control_mode->is_vtol_flightmode() ||
             ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }

@@ -391,12 +391,7 @@ void Plane::stabilize()
         stabilize_training(speed_scaler);
     } else if (control_mode == &mode_acro) {
         stabilize_acro(speed_scaler);
-    } else if ((control_mode == &mode_qstabilize ||
-                control_mode == &mode_qhover ||
-                control_mode == &mode_qloiter ||
-                control_mode == &mode_qland ||
-                control_mode == &mode_qrtl ||
-                control_mode == &mode_qautotune) &&
+    } else if (control_mode->is_vtol_flightmode() &&
                !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
