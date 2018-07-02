@@ -438,7 +438,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     Vector2f stopping_point = position_xy + safe_vel*((2.0f + get_stopping_distance(kP, accel_cmss, speed))/speed);
 
     uint16_t i, j;
-    for (i = 1, j = num_points-1; i < num_points; j = i++) {
+    for (i = 0, j = num_points-1; i < num_points; j = i++) {
         // end points of current edge
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
