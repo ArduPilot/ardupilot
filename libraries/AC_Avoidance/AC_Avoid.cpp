@@ -310,7 +310,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     float margin_cm = MAX(margin * 100.0f, 0);
 
     uint16_t i, j;
-    for (i = 1, j = num_points-1; i < num_points; j = i++) {
+    for (i = 0, j = num_points-1; i < num_points; j = i++) {
         // end points of current edge
         Vector2f start = boundary[j];
         Vector2f end = boundary[i];
