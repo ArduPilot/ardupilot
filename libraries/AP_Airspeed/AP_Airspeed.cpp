@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: Airspeed calibration offset
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("_OFFSET", 2, AP_Airspeed, param[0].offset, 0),
+    AP_GROUPINFO_FLAGS("_OFFSET", 2, AP_Airspeed, param[0].offset, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: _RATIO
     // @DisplayName: Airspeed ratio
