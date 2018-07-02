@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AP_Winch::var_info[] = {
     // @Description: Winch enable/disable
     // @User: Standard
     // @Values: 0:Disabled, 1:Enabled
-    AP_GROUPINFO_FLAGS("_ENABLE", 0, AP_Winch, _enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_ENABLE", 0, AP_Winch, _enabled, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: TYPE
     // @DisplayName: Winch Type
