@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
+    AP_GROUPINFO_FLAGS("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: TEMP
     // @DisplayName: ground temperature
@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("TEMP", 3, AP_Baro, _user_ground_temperature, 0),
+    AP_GROUPINFO_FLAGS("TEMP", 3, AP_Baro, _user_ground_temperature, 0, AP_PARAM_FLAG_VOLATILE),
 
     // index 4 reserved for old AP_Int8 version in legacy FRAM
     //AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
