@@ -558,6 +558,10 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     cmd.append("-S")
     cmd.append("-I" + str(opts.instance))
     cmd.extend(["--home", loc])
+
+    if opts.unhide_groups:
+        cmd.append("--unhide-groups")
+    
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -888,6 +892,9 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("", "--unhide-groups",
+                     action='store_true',
+                     help="unhide all param groups")
 parser.add_option_group(group_sim)
 
 
