@@ -63,7 +63,7 @@ const AP_Param::GroupInfo NotchFilterVector3fParam::var_info[] = {
     // @Description: Enable notch filter
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterVector3fParam, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterVector3fParam, enable, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: FREQ
     // @DisplayName: Frequency
