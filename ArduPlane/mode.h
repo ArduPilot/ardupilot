@@ -67,8 +67,11 @@ public:
     // attributes for mavlink system status reporting
     //
 
+    // return if in non-manual mode : Auto, Guided, RTL
+    virtual bool is_autopilot_mode() const { return false; }
+
     // returns true if any RC input is used
-    virtual bool has_manual_input() const { return false; }
+    virtual bool has_manual_input() const;
 
     // true if heading is controlled
     virtual bool attitude_stabilized() const { return true; }
@@ -119,8 +122,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -139,10 +141,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
-
 protected:
 
     bool _enter() override;
@@ -160,8 +158,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -179,8 +176,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -198,8 +194,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -238,8 +233,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -255,10 +249,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
 
 protected:
 
@@ -277,7 +267,7 @@ public:
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool attitude_stabilized() const override;
 
 protected:
 
@@ -295,7 +285,6 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
 
 protected:
@@ -313,10 +302,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
-
 protected:
 
     bool _enter() override;
@@ -332,10 +317,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
-
 protected:
 
     bool _enter() override;
@@ -350,10 +331,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
 
 protected:
 
@@ -371,8 +348,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
@@ -389,10 +365,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
-
 protected:
 
     bool _enter() override;
@@ -407,10 +379,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
 
 protected:
 
@@ -427,10 +395,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
-
 protected:
 
     bool _enter() override;
@@ -445,10 +409,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
-
-    // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
 
 protected:
 
@@ -466,8 +426,7 @@ public:
     void update() override { }
 
     // attributes for mavlink system status reporting
-    bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override { return false; }
+    bool is_autopilot_mode() const override { return true; }
 
 protected:
 
