@@ -977,6 +977,18 @@ void AP_Param::notify() const {
     send_parameter(name, (enum ap_var_type)param_header_type, idx);
 }
 
+// check for AP_PARAM_FLAG_ENABLE_*
+bool AP_Param::check_disabled(uint16_t flags)
+{
+    if (!(flags & (AP_PARAM_FLAG_ENABLE_MAJOR | AP_PARAM_FLAG_ENABLE_MINOR))) {
+        return false;
+    }
+    if (flags & AP_PARAM_FLAG_ENABLE_MAJOR) {
+        return _hide_disabled_groups >= PARAM_HIDE_MAJOR;
+    }
+    return _hide_disabled_groups == PARAM_HIDE_MINOR;
+}
+
 
 // Save the variable to EEPROM, if supported
 //
@@ -1014,7 +1026,7 @@ bool AP_Param::save(bool force_save)
         ap = (const AP_Param *)((ptrdiff_t)ap) - (idx*sizeof(float));
     }
 
-    if (phdr.type == AP_PARAM_INT8 && ginfo != nullptr && (ginfo->flags & AP_PARAM_FLAG_ENABLE)) {
+    if (phdr.type == AP_PARAM_INT8 && ginfo != nullptr && check_disabled(ginfo->flags)) {
         // clear cached parameter count
         _parameter_count = 0;
     }
@@ -1394,7 +1406,11 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
     token->idx = 0;
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
     if (boardconfig) {
-        _hide_disabled_groups = boardconfig->get_param_hide();
+        param_hide h = boardconfig->get_param_hide();
+        if (_hide_disabled_groups != h) {
+            _parameter_count = 0;
+            _hide_disabled_groups = h;
+        }
     }
     if (_num_vars == 0) {
         return nullptr;
@@ -1557,10 +1573,9 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
         const struct AP_Param::Info *info = ap->find_var_info_token(*token, &group_element,
                                                                     ginfo, group_nesting, &idx);
         if (info && ginfo &&
-            (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
+            check_disabled(ginfo->flags) &&
             !(ginfo->flags & AP_PARAM_FLAG_IGNORE_ENABLE) &&
-            ((AP_Int8 *)ap)->get() == 0 &&
-            _hide_disabled_groups != PARAM_HIDE_NONE) {
+            ((AP_Int8 *)ap)->get() == 0) {
             /*
               this is a disabled parameter tree, include this
               parameter but not others below it. We need to keep

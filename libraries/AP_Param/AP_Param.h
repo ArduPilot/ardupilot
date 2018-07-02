@@ -593,6 +593,9 @@ private:
      */
     static bool count_embedded_param_defaults(uint16_t &count);
     static void load_embedded_param_defaults(bool last_pass);
+
+    // check for AP_PARAM_FLAG_ENABLE_*
+    static bool check_disabled(uint16_t flags);
     
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
