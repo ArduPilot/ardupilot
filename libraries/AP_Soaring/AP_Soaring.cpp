@@ -11,7 +11,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Description: Toggles the soaring mode on and off
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, SoaringController, soar_active, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, SoaringController, soar_active, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: VSPEED
     // @DisplayName: Vertical v-speed
