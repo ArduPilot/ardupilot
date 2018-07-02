@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @Description: Enable temperature calibration. Set to 0 to disable. Set to 1 to use learned values. Set to 2 to learn new values and use the values
     // @Values: 0:Disabled,1:Enabled,2:EnableAndLearn
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_ENABLED", 1, AP_TempCalibration, enabled, TC_DISABLED, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_ENABLED", 1, AP_TempCalibration, enabled, TC_DISABLED, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: TEMP_MIN
     // @DisplayName: Min learned temperature
