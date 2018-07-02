@@ -2,16 +2,6 @@
 
 #include <stdint.h>
 
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Math/AP_Math.h>
-
-#include "defines.h"
-
-#define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
-
-// pre-define ModeRTL so Auto can appear higher in this file
-class ModeRTL;
-
 class Mode
 {
 public:
@@ -45,7 +35,7 @@ public:
     // Constructor
     Mode();
 
-    // enter this mode, returns false if we failed to enter
+    // enter this mode, always returns true/success
     bool enter();
 
     // perform any cleanups required:
