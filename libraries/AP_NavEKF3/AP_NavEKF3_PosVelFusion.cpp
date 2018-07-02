@@ -268,9 +268,7 @@ void NavEKF3_core::SelectVelPosFusion()
                 Vector3f angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
                 Vector3f velOffsetBody = angRate % posOffsetBody;
                 Vector3f velOffsetEarth = prevTnb.mul_transpose(velOffsetBody);
-                gpsDataDelayed.vel.x -= velOffsetEarth.x;
-                gpsDataDelayed.vel.y -= velOffsetEarth.y;
-                gpsDataDelayed.vel.z -= velOffsetEarth.z;
+                gpsDataDelayed.vel -= velOffsetEarth;
             }
             Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             gpsDataDelayed.pos.x -= posOffsetEarth.x;
