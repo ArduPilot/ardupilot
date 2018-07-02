@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @DisplayName: Enable Advanced Failsafe
     // @Description: This enables the advanced failsafe system. If this is set to zero (disable) then all the other AFS options have no effect
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE",       11, AP_AdvancedFailsafe, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE",       11, AP_AdvancedFailsafe, _enable, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: MAN_PIN
     // @DisplayName: Manual Pin
