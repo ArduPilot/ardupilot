@@ -76,7 +76,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: rad
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+    AP_GROUPINFO_FLAGS("DEC",    2, Compass, _declination, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
