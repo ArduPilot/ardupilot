@@ -9,3 +9,8 @@ bool ModeTraining::_enter()
 
     return true;
 }
+
+bool ModeTraining::attitude_stabilized() const
+{
+    return !plane.training_manual_pitch || !plane.training_manual_roll;
+}

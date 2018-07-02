@@ -83,3 +83,9 @@ bool Mode::enter()
     return enter_result;
 }
 
+bool Mode::has_manual_input() const
+{
+    return plane.g.stick_mixing != STICK_MIXING_DISABLED;
+}
+
+
