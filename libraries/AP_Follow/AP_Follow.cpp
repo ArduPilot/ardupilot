@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Description: Enabled/disable following a target
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO_FLAGS("_ENABLE", 1, AP_Follow, _enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_ENABLE", 1, AP_Follow, _enabled, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // 2 is reserved for TYPE parameter
 
