@@ -246,8 +246,10 @@ void NavEKF3_core::setAidingMode()
             // Check if range beacon data is being used
             bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
 
-            // Check if GPS is being used
+            // Check if position data is being used
             bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+
+            // Check if GPs velocity data is being used
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
             // Check if attitude drift has been constrained by a measurement source
