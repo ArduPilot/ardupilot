@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This enables internal combusion engine control
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_ICEngine, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_ICEngine, enable, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: START_CHAN
     // @DisplayName: Input channel for engine start
