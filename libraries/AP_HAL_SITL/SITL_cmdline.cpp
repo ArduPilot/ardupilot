@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
@@ -227,9 +228,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             AP_Param::erase_all();
             unlink("dataflash.bin");
             break;
-        case 'u':
-            AP_Param::set_hide_disabled_groups(false);
+        case 'u': {
+            AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+            if (boardconfig) {
+                boardconfig->set_hide_param_default(AP_Param::PARAM_HIDE_NONE);
+            }
             break;
+        }
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             break;
