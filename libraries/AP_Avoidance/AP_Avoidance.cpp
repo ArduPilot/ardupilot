@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Description: Enable Avoidance using ADSB
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Avoidance, _enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Avoidance, _enabled, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: F_ACTION
     // @DisplayName: Collision Avoidance Behavior
