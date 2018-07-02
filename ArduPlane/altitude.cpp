@@ -75,10 +75,10 @@ void Plane::setup_glide_slope(void)
       work out if we will gradually change altitude, or try to get to
       the new altitude as quickly as possible.
      */
-    switch ((FlightMode)control_mode->mode_number()) {
-    case RTL:
-    case AVOID_ADSB:
-    case GUIDED:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::RTL:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
         /* glide down slowly if above target altitude, but ascend more
            rapidly if below it. See
            https://github.com/ArduPilot/ardupilot/issues/39
@@ -90,7 +90,7 @@ void Plane::setup_glide_slope(void)
         }
         break;
 
-    case AUTO:
+    case Mode::Number::AUTO:
         // we only do glide slide handling in AUTO when above 20m or
         // when descending. The 20 meter threshold is arbitrary, and
         // is basically to prevent situations where we try to slowly

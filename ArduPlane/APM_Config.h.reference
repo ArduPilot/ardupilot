@@ -291,12 +291,12 @@
 //
 //#define FLIGHT_MODE_CHANNEL	8
 //
-//#define FLIGHT_MODE_1         RTL
-//#define FLIGHT_MODE_2         RTL
-//#define FLIGHT_MODE_3         STABILIZE
-//#define FLIGHT_MODE_4         STABILIZE
-//#define FLIGHT_MODE_5         MANUAL
-//#define FLIGHT_MODE_6         MANUAL
+//#define FLIGHT_MODE_1         Mode::Number::RTL
+//#define FLIGHT_MODE_2         Mode::Number::RTL
+//#define FLIGHT_MODE_3         Mode::Number::STABILIZE
+//#define FLIGHT_MODE_4         Mode::Number::STABILIZE
+//#define FLIGHT_MODE_5         Mode::Number::MANUAL
+//#define FLIGHT_MODE_6         Mode::Number::MANUAL
 //
 
 //////////////////////////////////////////////////////////////////////////////
