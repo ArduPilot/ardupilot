@@ -13,7 +13,7 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @Description: Number of times board has been booted
     // @ReadOnly: True
     // @User: Standard
-    AP_GROUPINFO("_BOOTCNT",    0, AP_Stats, params.bootcount, 0),
+    AP_GROUPINFO_FLAGS("_BOOTCNT",    0, AP_Stats, params.bootcount, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: _FLTTIME
     // @DisplayName: Total FlightTime
@@ -21,7 +21,7 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @Units: s
     // @ReadOnly: True
     // @User: Standard
-    AP_GROUPINFO("_FLTTIME",    1, AP_Stats, params.flttime, 0),
+    AP_GROUPINFO_FLAGS("_FLTTIME",    1, AP_Stats, params.flttime, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: _RUNTIME
     // @DisplayName: Total RunTime
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
     // @Units: s
     // @ReadOnly: True
     // @User: Standard
-    AP_GROUPINFO("_RUNTIME",    2, AP_Stats, params.runtime, 0),
+    AP_GROUPINFO_FLAGS("_RUNTIME",    2, AP_Stats, params.runtime, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: _RESET
     // @DisplayName: Reset time
