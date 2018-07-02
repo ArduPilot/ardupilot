@@ -1,5 +1,23 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc3 02-Jul-2018
+Changes from 3.6.0-rc2
+1) ChibiOS:
+    a) airbotf4, matekF305, matekF405-wing, omnibusf4pro, mini-pix, omnibusf7v2, revo-mini, sparky2 binaries built on firmware.ardupilot.org
+    b) STM32F7 support including Pixhack5 (aka fmuv4)
+    c) fixed dataflash logfile dates
+    d) bootloader included in firmware for easier uploading
+    e) additional UART added to fmuv4 and fmuv5 (STM32 F7 boards)
+    f) ChibiOS version written to dataflash log files
+2) TradHeli
+    a) fix collective jump on rotor shutdown in AltHold and Loiter
+    b) fix interlock pre-arm check
+3) Follow uses relative altitudes (FOLL_ALT_TYPE param allows specifying relative or absolute alts)
+4) Auxiliary switch de-bounced to avoid false positives
+5) Bug fixes and minor enhancements:
+    a) ESC calibration fix
+    b) ESC_TELEMETRY messages sent to ground station
+------------------------------------------------------------------
 Copter 3.6.0-rc2 01-Jun-2018
 Changes from 3.6.0-rc1
 1) ChibiOS support for Holybro Kakute F4
