@@ -47,7 +47,7 @@ void SITL_State::_usage(void)
     printf("Options:\n"
            "\t--help|-h                display this help information\n"
            "\t--wipe|-w                wipe eeprom and dataflash\n"
-           "\t--unhide-groups|-u       parameter enumeration ignores AP_PARAM_FLAG_ENABLE\n"
+           "\t--unhide-groups|-u       parameter enumeration ignores AP_PARAM_FLAG_ENABLE*\n"
            "\t--speedup|-s SPEEDUP     set simulation speedup\n"
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
