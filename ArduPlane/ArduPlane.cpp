@@ -509,8 +509,8 @@ void Plane::update_flight_mode(void)
         break;
         
     case Mode::Number::TRAINING: {
-        training_manual_roll = false;
-        training_manual_pitch = false;
+        mode_training.manual_roll = false;
+        mode_training.manual_pitch = false;
         update_load_factor();
         
         // if the roll is past the set roll limit, then
@@ -520,7 +520,7 @@ void Plane::update_flight_mode(void)
         } else if (ahrs.roll_sensor <= -roll_limit_cd) {
             nav_roll_cd = -roll_limit_cd;                
         } else {
-            training_manual_roll = true;
+            mode_training.manual_roll = true;
             nav_roll_cd = 0;
         }
         
@@ -531,7 +531,7 @@ void Plane::update_flight_mode(void)
         } else if (ahrs.pitch_sensor <= pitch_limit_min_cd) {
             nav_pitch_cd = pitch_limit_min_cd;
         } else {
-            training_manual_pitch = true;
+            mode_training.manual_pitch = true;
             nav_pitch_cd = 0;
         }
         if (fly_inverted()) {

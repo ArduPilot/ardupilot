@@ -268,7 +268,11 @@ public:
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
-    bool attitude_stabilized() const override;
+    bool attitude_stabilized() const override { return !manual_pitch || !manual_roll; }
+
+public:
+    bool manual_roll;  // user has manual roll control
+    bool manual_pitch; // user has manual pitch control
 
 protected:
 

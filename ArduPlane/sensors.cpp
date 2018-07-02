@@ -174,7 +174,7 @@ void Plane::update_sensor_status_flags(void)
         break;
 
     case Mode::Number::TRAINING:
-        if (!training_manual_roll || !training_manual_pitch) {
+        if (mode_training.attitude_stabilized()) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation        
         }

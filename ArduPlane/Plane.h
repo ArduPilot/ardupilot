@@ -283,10 +283,6 @@ private:
     SITL::SITL sitl;
 #endif
 
-    // Training mode
-    bool training_manual_roll;  // user has manual roll control
-    bool training_manual_pitch; // user has manual pitch control
-
     /*
       keep steering and rudder control separated until we update servos,
       to allow for a separate wheel servo from rudder servo

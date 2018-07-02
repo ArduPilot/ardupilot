@@ -272,7 +272,7 @@ void Plane::stabilize_yaw(float speed_scaler)
  */
 void Plane::stabilize_training(float speed_scaler)
 {
-    if (training_manual_roll) {
+    if (mode_training.manual_roll) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in());
     } else {
         // calculate what is needed to hold
@@ -284,7 +284,7 @@ void Plane::stabilize_training(float speed_scaler)
         }
     }
 
-    if (training_manual_pitch) {
+    if (mode_training.manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in());
     } else {
         stabilize_pitch(speed_scaler);
