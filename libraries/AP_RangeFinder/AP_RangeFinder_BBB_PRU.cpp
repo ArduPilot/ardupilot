@@ -51,14 +51,25 @@ AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_
 bool AP_RangeFinder_BBB_PRU::detect()
 {
     bool result = true;
-    uint32_t mem_fd;
-    uint32_t *ctrl;
-    void *ram;
 
-    mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-    ctrl = (uint32_t*)mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_CTRL_BASE);
-    ram = mmap(0, PRU0_IRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_IRAM_BASE);
-
+    uint32_t mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
+    if(mem_fd == -1)
+    {
+    	return false;
+	}
+    
+    uint32_t *ctrl = (uint32_t*)mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_CTRL_BASE);
+    if(ctrl == nullptr)
+    {
+    	goto fail_mmap;
+	}
+	
+    void *ram = mmap(0, PRU0_IRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_IRAM_BASE);
+    if(ram == nullptr)
+    {
+		goto fail_mmap;
+	}
+	
     // Reset PRU 0
     *ctrl = 0;
     hal.scheduler->delay(1);
@@ -67,17 +78,16 @@ bool AP_RangeFinder_BBB_PRU::detect()
     FILE *file = fopen("/lib/firmware/rangefinderprutext.bin", "rb");
     if(file == nullptr)
     {
-        result = false;
+        goto fail_fopen;
     }
-    else if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
+    
+	if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
     {
-        result = false;
+        goto fail_fread;
     }
-	else
-    {
-    	fclose(file);
-	}
 	
+    fclose(file);
+		
     munmap(ram, PRU0_IRAM_SIZE);
 
     ram = mmap(0, PRU0_DRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_DRAM_BASE);
@@ -86,16 +96,16 @@ bool AP_RangeFinder_BBB_PRU::detect()
     file = fopen("/lib/firmware/rangefinderprudata.bin", "rb");
     if(file == nullptr)
     {
-        result = false;
+        goto fail_fopen;
     }
-    else if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
+    
+	if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
     {
-        result = false;
+        goto fail_fread;
     }
-	else
-	{
-		fclose(file);
-	}
+	
+	fclose(file);
+	
 	
     munmap(ram, PRU0_DRAM_SIZE);
 
@@ -108,7 +118,17 @@ bool AP_RangeFinder_BBB_PRU::detect()
 
     rangerpru = (volatile struct range*)ram;
 
-    return result;
+	return result;
+
+fail_fread:	
+	fclose(file);
+		
+fail_fopen:
+	munmap(ram, PRU0_IRAM_SIZE);
+
+fail_mmap:
+	close(mem_fd);
+	return false;
 }
 
 /*
