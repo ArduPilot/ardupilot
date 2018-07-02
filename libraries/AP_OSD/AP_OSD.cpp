@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Values: 0:None,1:MAX7456
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: _CHAN
     // @DisplayName: Screen switch transmitter channel
