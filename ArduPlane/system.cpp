@@ -90,7 +90,7 @@ void Plane::init_ardupilot()
 
     // initialise notify system
     notify.init();
-    notify_mode(control_mode);
+    notify_mode(*control_mode);
 
     init_rc_out_main();
     
@@ -319,7 +319,7 @@ bool Plane::set_mode(Mode &new_mode, mode_reason_t reason)
 
     // log and notify mode change
     DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
-    notify_mode(control_mode);
+    notify_mode(*control_mode);
 
     return true;
 }
@@ -438,10 +438,10 @@ void Plane::update_notify()
 }
 
 // sets notify object flight mode information
-void Plane::notify_mode(const Mode *mode)
+void Plane::notify_mode(const Mode& mode)
 {
-    notify.flags.flight_mode = mode->mode_number();
-    notify.set_flight_mode_str(mode->name4());
+    notify.flags.flight_mode = mode.mode_number();
+    notify.set_flight_mode_str(mode.name4());
 }
 
 /*
