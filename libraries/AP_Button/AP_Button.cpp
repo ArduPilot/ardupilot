@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @Description: This enables the button checking module. When this is disabled the parameters for setting button inputs are not visible
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Button, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Button, enable, 0, AP_PARAM_FLAG_ENABLE_MINOR),
 
     // @Param: PIN1
     // @DisplayName: First button Pin
