@@ -32,6 +32,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Math/crc.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
@@ -80,6 +81,9 @@ const AP_Param::param_defaults_struct AP_Param::param_defaults_data = {
     AP_PARAM_MAX_EMBEDDED_PARAM,
     0
 };
+
+// magic hash parameter
+static AP_Int32 param_hash;
 
 // storage object
 StorageAccess AP_Param::_storage(StorageManager::StorageParam);
@@ -821,6 +825,13 @@ AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
 AP_Param *
 AP_Param::find(const char *name, enum ap_var_type *ptype)
 {
+    // special handling of _HASH_CHECK parameter
+    if (strcmp(name, "_HASH_CHECK") == 0) {
+        update_param_hash();
+        *ptype = AP_PARAM_INT32;
+        return &param_hash;
+    }
+    
     for (uint16_t i=0; i<_num_vars; i++) {
         uint8_t type = _var_info[i].type;
         if (type == AP_PARAM_GROUP) {
@@ -1403,7 +1414,7 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 {
     token->key = 0;
     token->group_element = 0;
-    token->idx = 0;
+    token->idx = 0;    
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
     if (boardconfig) {
         param_hide h = boardconfig->get_param_hide();
@@ -1423,6 +1434,7 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
         // should be impossible, first var needs to be non-pointer
         return nullptr;
     }
+    token->flags = _var_info[0].flags;    
     return (AP_Param *)base;
 }
 
@@ -1467,6 +1479,7 @@ AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_in
                 token->key = vindex;
                 token->group_element = group_id(group_info, group_base, i, group_shift);
                 token->idx = 0;
+                token->flags = group_info->flags;
                 if (ptype != nullptr) {
                     *ptype = type;
                 }
@@ -1544,6 +1557,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
             token->key = i;
             token->group_element = 0;
             token->idx = 0;
+            token->flags = _var_info[i].flags;
             if (ptype != nullptr) {
                 *ptype = type;
             }
@@ -2045,10 +2059,10 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         if (!vp) {
             if (last_pass) {
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
-                         pname, ptr - param_defaults_data.data);
+                         pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
                          "Ignored unknown param %s from embedded region (offset=%u)\n",
-                         pname, ptr - param_defaults_data.data);
+                         pname, unsigned(ptr - param_defaults_data.data));
             }
             continue;
         }
@@ -2278,3 +2292,29 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 }
 #endif // AP_PARAM_KEY_DUMP
 
+/*
+  update the magic param_hash AP_Int32 variable, used for
+  _HASH_CHECK. It is a hash of all non-volatile parameters
+ */
+void AP_Param::update_param_hash(void)
+{
+    uint32_t hash = 0;
+    AP_Param *p;
+    AP_Param::ParamToken token;
+    enum ap_var_type type;
+    uint32_t idx = 0;
+    
+    for (p = AP_Param::first(&token, &type); p;
+         p = AP_Param::next_scalar(&token, &type)) {
+        if (token.flags & AP_PARAM_FLAG_VOLATILE) {
+            // skip volatile parameters
+            continue;
+        }
+        idx++;
+        char s[AP_MAX_NAME_SIZE+1];
+        p->copy_name_token(token, s, sizeof(s), true);
+        hash = crc_crc32(hash, (const uint8_t *)s, strlen(s));
+        hash = crc_crc32(hash, (const uint8_t *)p, AP_Param::type_size(type));
+    }
+    param_hash.set((int32_t)hash);
+}

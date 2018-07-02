@@ -69,13 +69,16 @@
 // ignore the enable parameter on this group
 #define AP_PARAM_FLAG_IGNORE_ENABLE (1<<6)
 
+// mark a parameter as volatile (not included in _HASH_CHECK)
+#define AP_PARAM_FLAG_VOLATILE      (1<<7)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   7
+#define AP_PARAM_FRAME_TYPE_SHIFT   8
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -199,6 +202,7 @@ public:
         uint32_t key : 9;
         uint32_t idx : 5; // offset into array types
         uint32_t group_element : 18;
+        uint16_t flags; // AP_PARAM_FLAG_*
     } ParamToken;
 
     
@@ -599,6 +603,9 @@ private:
     
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
+
+    // update magic param_hash variable
+    static void update_param_hash(void);
     
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
