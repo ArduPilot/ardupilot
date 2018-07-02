@@ -407,6 +407,15 @@ class chibios(Board):
         env.GIT_SUBMODULES += [
             'ChibiOS',
         ]
+
+        try:
+            import intelhex
+            env.HAVE_INTEL_HEX = True
+            cfg.msg("Checking for intelhex module:", 'OK')
+        except Exception:
+            cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
+            env.HAVE_INTEL_HEX = False
+        
         cfg.load('chibios')
 
     def build(self, bld):
