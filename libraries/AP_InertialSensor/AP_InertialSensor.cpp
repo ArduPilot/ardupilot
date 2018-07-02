@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
-    AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
+    AP_GROUPINFO_FLAGS("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
@@ -112,7 +112,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
-    AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
+    AP_GROUPINFO_FLAGS("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
-    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+    AP_GROUPINFO_FLAGS("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
