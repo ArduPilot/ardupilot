@@ -31,6 +31,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
@@ -92,7 +93,7 @@ void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
     _storage.write_block(ofs, ptr, size);
 }
 
-bool AP_Param::_hide_disabled_groups = true;
+AP_Param::param_hide AP_Param::_hide_disabled_groups = AP_Param::PARAM_HIDE_MAJOR;
 
 // write a sentinal value at the given offset
 void AP_Param::write_sentinal(uint16_t ofs)
@@ -1391,6 +1392,10 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
     token->key = 0;
     token->group_element = 0;
     token->idx = 0;
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    if (boardconfig) {
+        _hide_disabled_groups = boardconfig->get_param_hide();
+    }
     if (_num_vars == 0) {
         return nullptr;
     }
@@ -1555,7 +1560,7 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
             (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
             !(ginfo->flags & AP_PARAM_FLAG_IGNORE_ENABLE) &&
             ((AP_Int8 *)ap)->get() == 0 &&
-            _hide_disabled_groups) {
+            _hide_disabled_groups != PARAM_HIDE_NONE) {
             /*
               this is a disabled parameter tree, include this
               parameter but not others below it. We need to keep

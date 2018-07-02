@@ -407,7 +407,13 @@ public:
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
-    static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
+    enum param_hide {
+        PARAM_HIDE_NONE=0,
+        PARAM_HIDE_MAJOR=1,
+        PARAM_HIDE_MINOR=2,
+    };
+    
+    static void set_hide_disabled_groups(param_hide value) { _hide_disabled_groups = value; }
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
@@ -433,7 +439,7 @@ public:
                              enum ap_var_type ptype, 
                              AP_HAL::BetterStream *port);
 #endif // AP_PARAM_KEY_DUMP
-    
+
 private:
     /// EEPROM header
     ///
@@ -607,7 +613,7 @@ private:
     static const uint8_t        k_EEPROM_magic1      = 0x41; ///< "AP"
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
 
-    static bool _hide_disabled_groups;
+    static param_hide _hide_disabled_groups;
 };
 
 /// Template class for scalar variables.
