@@ -151,6 +151,14 @@ public:
 #endif
     }
 
+    // get the parameter hide option
+    AP_Param::param_hide get_param_hide(void) {
+        return (AP_Param::param_hide)_param_hide.get();
+    }
+
+    void set_hide_param_default(AP_Param::param_hide v) {
+        _param_hide.set_default((int8_t)v);
+    }
     
 private:
     static AP_BoardConfig *instance;
@@ -173,6 +181,8 @@ private:
     } state;
 #endif
 
+    AP_Int8 _param_hide;
+    
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
 

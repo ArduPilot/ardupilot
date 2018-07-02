@@ -219,6 +219,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
 
+    // @Param: PARAM_HIDE
+    // @DisplayName: Hiding of parameters
+    // @Description: This controls the hiding of unused parameter subsystems. You can choose to not hide any subsystems, or only hide major subsystems or hide both major and minor subsystems
+    // @Bitmask: 0:HideNone,1:HideMajor,2:HideMinor
+    // @User: Standard
+    AP_GROUPINFO("PARAM_HIDE",  15, AP_BoardConfig, _param_hide, 1),
+    
     AP_GROUPEND
 };
 
