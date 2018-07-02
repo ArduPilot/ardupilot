@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Description: Gripper enable/disable
     // @User: Standard
     // @Values: 0:Disabled, 1:Enabled
-    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Gripper, _enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Gripper, _enabled, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: TYPE
     // @DisplayName: Gripper Type
