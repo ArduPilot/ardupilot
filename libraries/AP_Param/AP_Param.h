@@ -52,18 +52,22 @@
 #define AP_PARAM_FLAG_POINTER       (1<<1)
 
 // an enable variable allows a whole subtree of variables to be made
-// invisible
-#define AP_PARAM_FLAG_ENABLE        (1<<2)
+// invisible. This is for a major subsystem
+#define AP_PARAM_FLAG_ENABLE_MAJOR  (1<<2)
+
+// an enable variable allows a whole subtree of variables to be made
+// invisible. This is for a minor subsystem
+#define AP_PARAM_FLAG_ENABLE_MINOR  (1<<3)
 
 // don't shift index 0 to index 63. Use this when you know there will be
 // no conflict with the parent
-#define AP_PARAM_NO_SHIFT           (1<<3)
+#define AP_PARAM_NO_SHIFT           (1<<4)
 
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
-#define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
+#define AP_PARAM_FLAG_INFO_POINTER  (1<<5)
 
 // ignore the enable parameter on this group
-#define AP_PARAM_FLAG_IGNORE_ENABLE (1<<5)
+#define AP_PARAM_FLAG_IGNORE_ENABLE (1<<6)
 
 // keep all flags before the FRAME tags
 
@@ -71,7 +75,7 @@
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   7
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
