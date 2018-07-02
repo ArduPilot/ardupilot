@@ -143,6 +143,8 @@ void Sub::update_flight_mode()
     default:
         break;
     }
+
+    last_control_mode_update_us = micros();
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
