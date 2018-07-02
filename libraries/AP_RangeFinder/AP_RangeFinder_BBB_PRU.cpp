@@ -50,63 +50,53 @@ AP_RangeFinder_BBB_PRU::AP_RangeFinder_BBB_PRU(RangeFinder::RangeFinder_State &_
 */
 bool AP_RangeFinder_BBB_PRU::detect()
 {
-    bool result = true;
-
     uint32_t mem_fd = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC);
-    if(mem_fd == -1)
-    {
-    	return false;
-	}
-    
+    if(mem_fd == -1) {
+        goto FAIL_MEM_FD;
+    }
+
     uint32_t *ctrl = (uint32_t*)mmap(0, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_CTRL_BASE);
-    if(ctrl == nullptr)
-    {
-    	goto fail_mmap;
-	}
-	
+    if(ctrl == nullptr) {
+        goto FAIL_MMAP_CTRL;
+    }
+
     void *ram = mmap(0, PRU0_IRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_IRAM_BASE);
-    if(ram == nullptr)
-    {
-		goto fail_mmap;
-	}
-	
+    if(ram == nullptr) {
+        goto FAIL_MMAP_IRAM;
+    }
+
     // Reset PRU 0
     *ctrl = 0;
     hal.scheduler->delay(1);
 
     // Load firmware (.text)
     FILE *file = fopen("/lib/firmware/rangefinderprutext.bin", "rb");
-    if(file == nullptr)
-    {
-        goto fail_fopen;
+    if(file == nullptr) {
+        goto FAIL_FOPEN;
     }
-    
-	if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1)
-    {
-        goto fail_fread;
+
+    if(fread(ram, PRU0_IRAM_SIZE, 1, file) != 1) {
+        goto FAIL_FREAD;
     }
-	
+
     fclose(file);
-		
+
     munmap(ram, PRU0_IRAM_SIZE);
 
     ram = mmap(0, PRU0_DRAM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, PRU0_DRAM_BASE);
 
     // Load firmware (.data)
     file = fopen("/lib/firmware/rangefinderprudata.bin", "rb");
-    if(file == nullptr)
-    {
-        goto fail_fopen;
+    if(file == nullptr) {
+        goto FAIL_FOPEN;
     }
-    
-	if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1)
-    {
-        goto fail_fread;
+
+    if(fread(ram, PRU0_DRAM_SIZE, 1, file) != 1) {
+        goto FAIL_FREAD;
     }
-	
-	fclose(file);
-	
-	
+
+    fclose(file);
+
     munmap(ram, PRU0_DRAM_SIZE);
 
     // Map PRU RAM
@@ -118,17 +108,20 @@ bool AP_RangeFinder_BBB_PRU::detect()
 
     rangerpru = (volatile struct range*)ram;
 
-	return result;
+    return true;
 
-fail_fread:	
-	fclose(file);
-		
-fail_fopen:
-	munmap(ram, PRU0_IRAM_SIZE);
+FAIL_FREAD:	
+    fclose(file);
 
-fail_mmap:
-	close(mem_fd);
-	return false;
+FAIL_FOPEN:
+    munmap(ram, PRU0_IRAM_SIZE);
+
+FAIL_MMAP_CTRL:
+FAIL_MMAP_IRAM:
+    close(mem_fd);
+
+FAIL_MEM_FD:
+    return false;
 }
 
 /*
