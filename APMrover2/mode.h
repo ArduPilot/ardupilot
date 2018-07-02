@@ -25,6 +25,7 @@ public:
         HOLD         = 4,
         LOITER       = 5,
         FOLLOW       = 6,
+        SIMPLE       = 7,
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
@@ -133,6 +134,9 @@ protected:
 
     // decode pilot lateral movement input and return in lateral_out argument
     void get_pilot_desired_lateral(float &lateral_out);
+
+    // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
+    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out);
 
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
@@ -482,3 +486,26 @@ protected:
 
     bool _enter() override;
 };
+
+class ModeSimple : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return SIMPLE; }
+    const char *name4() const override { return "SMPL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+    void init_simple_heading();
+
+protected:
+
+    float simple_initial_heading;
+
+    // simple type enum used for SIMPLE_TYPE parameter
+    enum simple_type {
+        Simple_InitialHeading = 0,
+        Simple_CardinalDirections = 1,
+    };
+};
+

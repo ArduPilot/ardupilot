@@ -121,6 +121,7 @@ public:
     friend class ModeRTL;
     friend class ModeSmartRTL;
     friend class ModeFollow;
+    friend class ModeSimple;
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -376,6 +377,7 @@ private:
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
     ModeFollow mode_follow;
+    ModeSimple mode_simple;
 
     // cruise throttle and speed learning
     struct {
@@ -397,6 +399,7 @@ private:
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
+    void init_simple_mode(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
@@ -576,6 +579,9 @@ public:
     // frame type
     uint8_t get_frame_type() { return g2.frame_type.get(); }
     AP_WheelRateControl& get_wheel_rate_control() { return g2.wheel_rate_control; }
+
+    // Simple mode
+    float simple_sin_yaw;
 };
 
 extern const AP_HAL::HAL& hal;
