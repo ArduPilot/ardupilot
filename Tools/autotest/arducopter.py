@@ -369,7 +369,7 @@ class AutoTestCopter(AutoTest):
             home = ""
             if alt <= 1 and home_distance < 10:
                 home = "HOME"
-            self.progress("Alt: %u  HomeDist: %.0f %s" %
+            self.progress("Alt: %.02f  HomeDist: %.02f %s" %
                           (alt, home_distance, home))
             # our post-condition is that we are disarmed:
             if not self.armed():
@@ -480,7 +480,7 @@ class AutoTestCopter(AutoTest):
             alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(home, pos )
-            self.progress("Alt: %u  HomeDist: %.0f" % (alt, home_distance))
+            self.progress("Alt: %.02f  HomeDist: %.0f" % (alt, home_distance))
             # check if we've reached home
             if alt <= 1 and home_distance < 10:
                 # reduce throttle
@@ -602,7 +602,7 @@ class AutoTestCopter(AutoTest):
             alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
-            self.progress("Alt: %f  HomeDistance: %.0f" %
+            self.progress("Alt: %.02f  HomeDistance: %.02f" %
                           (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
             if pitching_forward and home_distance < 10:
@@ -766,7 +766,8 @@ class AutoTestCopter(AutoTest):
                 alt = m.alt/1000.0 # mm -> m
                 curr_pos = self.sim_location()
                 moved_distance = self.get_distance(curr_pos, start_pos)
-                self.progress("Alt: %u  Moved: %.0f" % (alt, moved_distance))
+                self.progress("Alt: %.02f  Moved: %.0f" %
+                              (alt, moved_distance))
                 if moved_distance > max_distance:
                     raise NotAchievedException(
                         "Moved over %u meters, Failed!" % max_distance)
@@ -885,7 +886,7 @@ class AutoTestCopter(AutoTest):
             self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
             dist_to_home = self.get_distance(HOME, pos)
-            self.progress("Dist from home: %u" % dist_to_home)
+            self.progress("Dist from home: %.02f" % dist_to_home)
 
         # turn off simulator display of gps and actual position
         if self.use_map:
@@ -1017,7 +1018,7 @@ class AutoTestCopter(AutoTest):
                       (start_altitude, holdtime))
         while self.get_sim_time() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading %u" % m.heading)
+            self.progress("heading %d" % m.heading)
 
         self.progress("CIRCLE OK for %u seconds" % holdtime)
 

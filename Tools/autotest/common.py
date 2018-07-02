@@ -1176,7 +1176,7 @@ class AutoTest(ABC):
             if self.get_sim_time() - tstart > 200:
                 raise NotAchievedException("Did not achieve heading")
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading=%f want=%f" % (m.heading, heading))
+            self.progress("heading=%d want=%f" % (m.heading, heading))
             if m.heading == heading:
                 return
 
@@ -1195,7 +1195,7 @@ class AutoTest(ABC):
         previous_alt = 0
 
         tstart = self.get_sim_time()
-        self.progress("Waiting for altitude between %u and %u" %
+        self.progress("Waiting for altitude between %.02f and %.02f" %
                       (alt_min, alt_max))
         last_wait_alt_msg = 0
         while self.get_sim_time_cached() < tstart + timeout:
@@ -1210,7 +1210,7 @@ class AutoTest(ABC):
             climb_rate = alt - previous_alt
             previous_alt = alt
             if self.get_sim_time_cached() - last_wait_alt_msg > 1:
-                self.progress("Wait Altitude: Cur:%u, min_alt:%u, climb_rate: %u"
+                self.progress("Wait Altitude: Cur:%.02f min_alt:%.02f climb_rate: %.02f"
                               % (alt, alt_min, climb_rate))
                 last_wait_alt_msg = self.get_sim_time_cached()
             if alt >= alt_min and alt <= alt_max:
@@ -1251,7 +1251,7 @@ class AutoTest(ABC):
     def wait_pitch(self, pitch, accuracy, timeout=30):
         """Wait for a given pitch in degrees."""
         tstart = self.get_sim_time()
-        self.progress("Waiting for pitch of %u at %s" % (pitch, time.ctime()))
+        self.progress("Waiting for pitch of %.02f at %s" % (pitch, time.ctime()))
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='ATTITUDE', blocking=True)
             p = math.degrees(m.pitch)
@@ -1265,7 +1265,7 @@ class AutoTest(ABC):
     def wait_heading(self, heading, accuracy=5, timeout=30):
         """Wait for a given heading."""
         tstart = self.get_sim_time()
-        self.progress("Waiting for heading %u with accuracy %u" %
+        self.progress("Waiting for heading %.02f with accuracy %.02f" %
                       (heading, accuracy))
         last_print_time = 0
         while True:
@@ -1274,13 +1274,13 @@ class AutoTest(ABC):
                 break
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             if now - last_print_time > 1:
-                self.progress("Heading %u (want %f +- %f)" %
+                self.progress("Heading %d (want %f +- %f)" %
                               (m.heading, heading, accuracy))
                 last_print_time = now
             if math.fabs(m.heading - heading) <= accuracy:
-                self.progress("Attained heading %u" % heading)
+                self.progress("Attained heading %d" % heading)
                 return True
-        raise WaitHeadingTimeout("Failed to attain heading %u" % heading)
+        raise WaitHeadingTimeout("Failed to attain heading %d" % heading)
 
     def wait_distance(self, distance, accuracy=5, timeout=30):
         """Wait for flight of a given distance."""
@@ -1295,7 +1295,7 @@ class AutoTest(ABC):
                               (delta, distance))
                 last_distance_message = self.get_sim_time_cached()
             if math.fabs(delta - distance) <= accuracy:
-                self.progress("Attained distance %.2f meters OK" % delta)
+                self.progress("Attained distance %.02f meters OK" % delta)
                 return True
             if delta > (distance + accuracy):
                 raise WaitDistanceTimeout("Failed distance - overshoot delta=%f dist=%f"
@@ -1393,7 +1393,7 @@ class AutoTest(ABC):
                 raise WaitWaypointTimeout('Exited %s mode' % mode)
 
             if self.get_sim_time_cached() - last_wp_msg > 1:
-                self.progress("WP %u (wp_dist=%u Alt=%d), current_wp: %u,"
+                self.progress("WP %u (wp_dist=%u Alt=%.02f), current_wp: %u,"
                               "wpnum_end: %u" %
                               (seq, wp_dist, m.alt, current_wp, wpnum_end))
                 last_wp_msg = self.get_sim_time_cached()
