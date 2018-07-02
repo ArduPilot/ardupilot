@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: Type of airspeed sensor
     // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X
     // @User: Standard
-    AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE_MINOR),
 
     // @Param: _USE
     // @DisplayName: Airspeed use
@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Description: Type of 2nd airspeed sensor
     // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X
     // @User: Standard
-    AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE_MINOR),
 
     // @Param: 2_USE
     // @DisplayName: Enable use of 2nd airspeed sensor
