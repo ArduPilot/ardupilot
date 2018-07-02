@@ -397,7 +397,7 @@ private:
         bool adsb:1;
 
         // saved flight mode
-        enum FlightMode saved_mode;
+        enum Mode::Number saved_mode;
 
         // A tracking variable for type of failsafe active
         // Used for failsafe based on loss of RC signal or GCS signal

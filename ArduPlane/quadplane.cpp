@@ -1631,18 +1631,18 @@ void QuadPlane::control_run(void)
         return;
     }
 
-    switch ((FlightMode)plane.control_mode->mode_number()) {
-    case QSTABILIZE:
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::QSTABILIZE:
         control_stabilize();
         break;
-    case QHOVER:
+    case Mode::Number::QHOVER:
         control_hover();
         break;
-    case QLOITER:
-    case QLAND:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
         control_loiter();
         break;
-    case QRTL:
+    case Mode::Number::QRTL:
         control_qrtl();
         break;
 #if QAUTOTUNE_ENABLED
@@ -1674,23 +1674,23 @@ bool QuadPlane::init_mode(void)
 
     AP_Notify::flags.esc_calibration = false;
 
-    switch ((FlightMode)plane.control_mode->mode_number()) {
-    case QSTABILIZE:
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::QSTABILIZE:
         init_stabilize();
         break;
-    case QHOVER:
+    case Mode::Number::QHOVER:
         init_hover();
         break;
-    case QLOITER:
+    case Mode::Number::QLOITER:
         init_loiter();
         break;
-    case QLAND:
+    case Mode::Number::QLAND:
         init_land();
         break;
-    case QRTL:
+    case Mode::Number::QRTL:
         init_qrtl();
         break;
-    case GUIDED:
+    case Mode::Number::GUIDED:
         guided_takeoff = false;
         break;
 #if QAUTOTUNE_ENABLED

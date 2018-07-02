@@ -6,17 +6,17 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, reason);
-    switch ((FlightMode)control_mode->mode_number())
+    switch (control_mode->mode_number())
     {
-    case MANUAL:
-    case STABILIZE:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-    case TRAINING:
-        failsafe.saved_mode = (FlightMode)control_mode->mode_number();
+    case Mode::Number::MANUAL:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::ACRO:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
+    case Mode::Number::TRAINING:
+        failsafe.saved_mode = control_mode->mode_number();
         failsafe.saved_mode_set = true;
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(mode_fbwa, reason);
@@ -25,21 +25,21 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
         }
         break;
 
-    case QSTABILIZE:
-    case QLOITER:
-    case QHOVER:
-    case QAUTOTUNE:
-        failsafe.saved_mode = (FlightMode)control_mode->mode_number();
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QAUTOTUNE:
+        failsafe.saved_mode = control_mode->mode_number();
         failsafe.saved_mode_set = true;
         set_mode(mode_qland, reason);
         break;
         
-    case AUTO:
-    case AVOID_ADSB:
-    case GUIDED:
-    case LOITER:
+    case Mode::Number::AUTO:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::LOITER:
         if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
-            failsafe.saved_mode = (FlightMode)control_mode->mode_number();
+            failsafe.saved_mode = control_mode->mode_number();
             failsafe.saved_mode_set = true;
             if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
                 set_mode(mode_fbwa, reason);
@@ -49,10 +49,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
         }
         break;
 
-    case CIRCLE:
-    case RTL:
-    case QLAND:
-    case QRTL:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::RTL:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
     default:
         break;
     }
@@ -66,17 +66,17 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
-    switch ((FlightMode)control_mode->mode_number())
+    switch (control_mode->mode_number())
     {
-    case MANUAL:
-    case STABILIZE:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-    case TRAINING:
-    case CIRCLE:
+    case Mode::Number::MANUAL:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::ACRO:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
+    case Mode::Number::TRAINING:
+    case Mode::Number::CIRCLE:
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
@@ -88,17 +88,17 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
         }
         break;
 
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QAUTOTUNE:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QAUTOTUNE:
         set_mode(mode_qland, reason);
         break;
         
-    case AUTO:
-    case AVOID_ADSB:
-    case GUIDED:
-    case LOITER:
+    case Mode::Number::AUTO:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::LOITER:
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
@@ -110,9 +110,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
         }
         break;
 
-    case RTL:
-    case QLAND:
-    case QRTL:
+    case Mode::Number::RTL:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
     default:
         break;
     }
@@ -129,7 +129,7 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
     // --------------------------------------------------------
     if (control_mode == &mode_circle && failsafe.saved_mode_set) {
         failsafe.saved_mode_set = false;
-        Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)failsafe.saved_mode);
+        Mode *new_mode = plane.mode_from_mode_num(failsafe.saved_mode);
         if (new_mode != nullptr) {
             set_mode(*new_mode, reason);
         }

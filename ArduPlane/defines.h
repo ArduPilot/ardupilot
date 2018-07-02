@@ -45,30 +45,6 @@ enum failsafe_action_long {
     FS_ACTION_LONG_PARACHUTE = 3,
 };
 
-enum FlightMode {
-    MANUAL        = 0,
-    CIRCLE        = 1,
-    STABILIZE     = 2,
-    TRAINING      = 3,
-    ACRO          = 4,
-    FLY_BY_WIRE_A = 5,
-    FLY_BY_WIRE_B = 6,
-    CRUISE        = 7,
-    AUTOTUNE      = 8,
-    AUTO          = 10,
-    RTL           = 11,
-    LOITER        = 12,
-    AVOID_ADSB    = 14,
-    GUIDED        = 15,
-    INITIALISING  = 16,
-    QSTABILIZE    = 17,
-    QHOVER        = 18,
-    QLOITER       = 19,
-    QLAND         = 20,
-    QRTL          = 21,
-    QAUTOTUNE	  = 22
-};
-
 enum mode_reason_t {
     MODE_REASON_UNKNOWN=0,
     MODE_REASON_TX_COMMAND,

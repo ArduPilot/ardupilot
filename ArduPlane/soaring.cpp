@@ -16,18 +16,18 @@ void Plane::update_soaring() {
     g2.soaring_controller.update_vario();
 
     // Check for throttle suppression change.
-    switch ((FlightMode)control_mode->mode_number()) {
-    case AUTO:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::AUTO:
         g2.soaring_controller.suppress_throttle();
         break;
-    case FLY_BY_WIRE_B:
-    case CRUISE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
         if (!g2.soaring_controller.suppress_throttle()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
             set_mode(mode_rtl, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
         break;
-    case LOITER:
+    case Mode::Number::LOITER:
         // Do nothing. We will switch back to auto/rtl before enabling throttle.
         break;
     default:
@@ -42,10 +42,10 @@ void Plane::update_soaring() {
         return;
     }
 
-    switch ((FlightMode)control_mode->mode_number()) {
-    case AUTO:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::AUTO:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
         // Test for switch into thermalling mode
         g2.soaring_controller.update_cruising();
 
@@ -55,19 +55,19 @@ void Plane::update_soaring() {
         }
         break;
 
-    case LOITER:
+    case Mode::Number::LOITER:
         // Update thermal estimate and check for switch back to AUTO
         g2.soaring_controller.update_thermalling();  // Update estimate
 
         if (g2.soaring_controller.check_cruise_criteria()) {
             // Exit as soon as thermal state estimate deteriorates
-            switch ((FlightMode)previous_mode->mode_number()) {
-            case FLY_BY_WIRE_B:
+            switch (previous_mode->mode_number()) {
+            case Mode::Number::FLY_BY_WIRE_B:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
                 set_mode(mode_rtl, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;
 
-            case CRUISE: {
+            case Mode::Number::CRUISE: {
                 // return to cruise with old ground course
                 CruiseState cruise = cruise_state;
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
@@ -77,7 +77,7 @@ void Plane::update_soaring() {
                 break;
             }
 
-            case AUTO:
+            case Mode::Number::AUTO:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
                 set_mode(mode_auto, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
                 break;

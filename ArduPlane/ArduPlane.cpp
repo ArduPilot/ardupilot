@@ -465,12 +465,12 @@ void Plane::handle_auto_mode(void)
  */
 void Plane::update_flight_mode(void)
 {
-    enum FlightMode effective_mode = (enum FlightMode)control_mode->mode_number();
+    enum Mode::Number effective_mode = control_mode->mode_number();
     if (control_mode == &mode_auto && g.auto_fbw_steer == 42) {
-        effective_mode = FLY_BY_WIRE_A;
+        effective_mode = Mode::Number::FLY_BY_WIRE_A;
     }
 
-    if (effective_mode != AUTO) {
+    if (effective_mode != Mode::Number::AUTO) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
     }
@@ -489,26 +489,26 @@ void Plane::update_flight_mode(void)
 
     switch (effective_mode) 
     {
-    case AUTO:
+    case Mode::Number::AUTO:
         handle_auto_mode();
         break;
 
-    case AVOID_ADSB:
-    case GUIDED:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
         if (auto_state.vtol_loiter && quadplane.available()) {
             quadplane.guided_update();
             break;
         }
         FALLTHROUGH;
 
-    case RTL:
-    case LOITER:
+    case Mode::Number::RTL:
+    case Mode::Number::LOITER:
         calc_nav_roll();
         calc_nav_pitch();
         calc_throttle();
         break;
         
-    case TRAINING: {
+    case Mode::Number::TRAINING: {
         training_manual_roll = false;
         training_manual_pitch = false;
         update_load_factor();
@@ -540,7 +540,7 @@ void Plane::update_flight_mode(void)
         break;
     }
 
-    case ACRO: {
+    case Mode::Number::ACRO: {
         // handle locked/unlocked control
         if (acro_state.locked_roll) {
             nav_roll_cd = acro_state.locked_roll_err;
@@ -555,8 +555,8 @@ void Plane::update_flight_mode(void)
         break;
     }
 
-    case AUTOTUNE:
-    case FLY_BY_WIRE_A: {
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -591,7 +591,7 @@ void Plane::update_flight_mode(void)
         break;
     }
 
-    case FLY_BY_WIRE_B:
+    case Mode::Number::FLY_BY_WIRE_B:
         // Thanks to Yury MonZon for the altitude limit code!
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
         nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
@@ -599,7 +599,7 @@ void Plane::update_flight_mode(void)
         update_fbwb_speed_height();
         break;
         
-    case CRUISE:
+    case Mode::Number::CRUISE:
         /*
           in CRUISE mode we use the navigation code to control
           roll when heading is locked. Heading becomes unlocked on
@@ -620,13 +620,13 @@ void Plane::update_flight_mode(void)
         update_fbwb_speed_height();
         break;
         
-    case STABILIZE:
+    case Mode::Number::STABILIZE:
         nav_roll_cd        = 0;
         nav_pitch_cd       = 0;
         // throttle is passthrough
         break;
         
-    case CIRCLE:
+    case Mode::Number::CIRCLE:
         // we have no GPS installed and have lost radio contact
         // or we just want to fly around in a gentle circle w/o GPS,
         // holding altitude at the altitude we set when we
@@ -637,18 +637,18 @@ void Plane::update_flight_mode(void)
         calc_throttle();
         break;
 
-    case MANUAL:
+    case Mode::Number::MANUAL:
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in_zero_dz());
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
         steering_control.steering = steering_control.rudder = channel_rudder->get_control_in_zero_dz();
         break;
 
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case QRTL:
-    case QAUTOTUNE: {
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+    case Mode::Number::QAUTOTUNE: {
         // set nav_roll and nav_pitch using sticks
         int16_t roll_limit = MIN(roll_limit_cd, quadplane.aparm.angle_max);
         float pitch_input = channel_pitch->norm_input();
@@ -679,7 +679,7 @@ void Plane::update_flight_mode(void)
         break;
     }
         
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         // handled elsewhere
         break;
     }
@@ -696,14 +696,14 @@ void Plane::update_navigation()
         qrtl_radius = abs(aparm.loiter_radius);
     }
     
-    switch ((FlightMode)control_mode->mode_number()) {
-    case AUTO:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::AUTO:
         if (ahrs.home_is_set()) {
             mission.update();
         }
         break;
             
-    case RTL:
+    case Mode::Number::RTL:
         if (quadplane.available() && quadplane.rtl_mode == 1 &&
             (nav_controller->reached_loiter_target() ||
              location_passed_point(current_loc, prev_WP_loc, next_WP_loc) ||
@@ -749,31 +749,31 @@ void Plane::update_navigation()
         // fall through to LOITER
         FALLTHROUGH;
 
-    case LOITER:
-    case AVOID_ADSB:
-    case GUIDED:
+    case Mode::Number::LOITER:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
         update_loiter(radius);
         break;
 
-    case CRUISE:
+    case Mode::Number::CRUISE:
         update_cruise();
         break;
 
-    case MANUAL:
-    case STABILIZE:
-    case TRAINING:
-    case INITIALISING:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CIRCLE:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case QRTL:
-    case QAUTOTUNE:
+    case Mode::Number::MANUAL:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::TRAINING:
+    case Mode::Number::INITIALISING:
+    case Mode::Number::ACRO:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+    case Mode::Number::QAUTOTUNE:
         // nothing to do
         break;
     }

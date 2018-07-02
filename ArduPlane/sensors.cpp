@@ -147,46 +147,46 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
-    switch ((FlightMode)control_mode->mode_number()) {
-    case MANUAL:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::MANUAL:
         break;
 
-    case ACRO:
+    case Mode::Number::ACRO:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         break;
 
-    case STABILIZE:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLAND:
-    case QLOITER:
-    case QAUTOTUNE:
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
-        break;
-
-    case FLY_BY_WIRE_B:
-    case CRUISE:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QAUTOTUNE:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         break;
 
-    case TRAINING:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
+        break;
+
+    case Mode::Number::TRAINING:
         if (!training_manual_roll || !training_manual_pitch) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation        
         }
         break;
 
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case AVOID_ADSB:
-    case GUIDED:
-    case CIRCLE:
-    case QRTL:
+    case Mode::Number::AUTO:
+    case Mode::Number::RTL:
+    case Mode::Number::LOITER:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::QRTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // attitude stabilisation
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
@@ -194,7 +194,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
         break;
 
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         break;
     }
 

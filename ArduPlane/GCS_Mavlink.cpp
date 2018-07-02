@@ -19,38 +19,38 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch ((FlightMode)plane.control_mode->mode_number()) {
-    case MANUAL:
-    case TRAINING:
-    case ACRO:
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::MANUAL:
+    case Mode::Number::TRAINING:
+    case Mode::Number::ACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
-    case STABILIZE:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case CRUISE:
-    case QAUTOTUNE:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::CRUISE:
+    case Mode::Number::QAUTOTUNE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case AVOID_ADSB:
-    case GUIDED:
-    case CIRCLE:
-    case QRTL:
+    case Mode::Number::AUTO:
+    case Mode::Number::RTL:
+    case Mode::Number::LOITER:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::QRTL:
         _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                      MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         break;
     }
 

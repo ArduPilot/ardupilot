@@ -104,22 +104,22 @@
 #endif
 
 #if !defined(FLIGHT_MODE_1)
- # define FLIGHT_MODE_1                  RTL
+ # define FLIGHT_MODE_1                  Mode::Number::RTL
 #endif
 #if !defined(FLIGHT_MODE_2)
- # define FLIGHT_MODE_2                  RTL
+ # define FLIGHT_MODE_2                  Mode::Number::RTL
 #endif
 #if !defined(FLIGHT_MODE_3)
- # define FLIGHT_MODE_3                  FLY_BY_WIRE_A
+ # define FLIGHT_MODE_3                  Mode::Number::FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_4)
- # define FLIGHT_MODE_4                  FLY_BY_WIRE_A
+ # define FLIGHT_MODE_4                  Mode::Number::FLY_BY_WIRE_A
 #endif
 #if !defined(FLIGHT_MODE_5)
- # define FLIGHT_MODE_5                  MANUAL
+ # define FLIGHT_MODE_5                  Mode::Number::MANUAL
 #endif
 #if !defined(FLIGHT_MODE_6)
- # define FLIGHT_MODE_6                  MANUAL
+ # define FLIGHT_MODE_6                  Mode::Number::MANUAL
 #endif
 
 
