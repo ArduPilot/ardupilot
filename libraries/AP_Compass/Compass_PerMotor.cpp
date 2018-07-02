@@ -13,7 +13,7 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Description: This enables per-motor compass corrections
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE_MAJOR),
 
     // @Param: _EXP
     // @DisplayName: per-motor exponential correction
