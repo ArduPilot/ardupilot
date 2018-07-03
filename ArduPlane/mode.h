@@ -94,7 +94,7 @@ public:
     const char *name4() const override { return "ACRO"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
@@ -113,7 +113,7 @@ public:
     const char *name4() const override { return "AUTO"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -133,7 +133,7 @@ public:
     const char *name4() const override { return "ATUN"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
 protected:
 
@@ -149,7 +149,7 @@ public:
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -167,7 +167,7 @@ public:
     const char *name4() const override { return "CIRC"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -185,7 +185,7 @@ public:
     const char *name4() const override { return "LOIT"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -203,7 +203,7 @@ public:
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
@@ -224,7 +224,7 @@ public:
     const char *name4() const override { return "RTL"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -242,7 +242,7 @@ public:
     const char *name4() const override { return "STAB"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
 protected:
 
@@ -257,7 +257,7 @@ public:
     const char *name4() const override { return "TRAN"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
@@ -298,7 +298,7 @@ public:
     const char *name4() const override { return "FBWA"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
 protected:
 
@@ -313,7 +313,7 @@ public:
     const char *name4() const override { return "FBWB"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
 protected:
 
@@ -328,7 +328,7 @@ public:
     const char *name4() const override { return "CRUS"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
 protected:
 
@@ -343,7 +343,7 @@ public:
     const char *name4() const override { return "AVOI"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -361,7 +361,7 @@ public:
     const char *name4() const override { return "QSTB"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
 
@@ -378,7 +378,7 @@ public:
     const char *name4() const override { return "QHOV"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
 
@@ -395,7 +395,7 @@ public:
     const char *name4() const override { return "QLOT"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
 
@@ -412,7 +412,7 @@ public:
     const char *name4() const override { return "QLND"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
 
@@ -429,7 +429,7 @@ public:
     const char *name4() const override { return "QRTL"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
@@ -449,7 +449,7 @@ public:
     const char *name4() const override { return "QAUTOTUNE"; }
 
     // methods that affect movement of the vehicle in this mode
-    void update() override { }
+    void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
 

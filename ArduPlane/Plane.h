@@ -1033,7 +1033,7 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void avoidance_adsb_update(void);
-    void update_flight_mode(void);
+    void update_control_mode(void);
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
@@ -1052,7 +1052,6 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
-    void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();

@@ -17,3 +17,14 @@ bool ModeAvoidADSB::_enter()
     return true;
 }
 
+void ModeAvoidADSB::update()
+{
+    if (plane.auto_state.vtol_loiter && plane.quadplane.available()) {
+        plane.quadplane.guided_update();
+    } else {
+        plane.calc_nav_roll();
+        plane.calc_nav_pitch();
+        plane.calc_throttle();
+    }
+}
+

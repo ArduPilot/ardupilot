@@ -25,6 +25,8 @@ public:
     friend class QAutoTune;
 
     friend class ModeAuto;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
     friend class ModeQHover;
     friend class ModeQLand;
     friend class ModeQLoiter;

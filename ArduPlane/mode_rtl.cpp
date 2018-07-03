@@ -12,3 +12,10 @@ bool ModeRTL::_enter()
     return true;
 }
 
+void ModeRTL::update()
+{
+    plane.calc_nav_roll();
+    plane.calc_nav_pitch();
+    plane.calc_throttle();
+}
+
