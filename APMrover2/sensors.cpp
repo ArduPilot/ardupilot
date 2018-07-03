@@ -39,11 +39,6 @@ void Rover::compass_accumulate(void)
     }
 }
 
-void Rover::init_rangefinder(void)
-{
-    rangefinder.init();
-}
-
 // init beacons used for non-gps position estimates
 void Rover::init_beacon()
 {
