@@ -108,7 +108,11 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     //@Group: COMPASS
     //@Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(throttle, "COMPASS", 17, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(compass, "COMPASS", 17, AP_OSD_Screen, AP_OSD_Setting),
+
+    //@Group: WIND
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(wind, "WIND", 18, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -141,6 +145,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_SAT_R 0x1F
 
 #define SYM_HOME 0xBF
+#define SYM_WIND 0x16
 
 #define SYM_ARROW_START 0x60
 #define SYM_ARROW_COUNT 16
@@ -261,9 +266,8 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v)
 {
-    Vector2f v = AP::ahrs().groundspeed_vector();
     float v_length = v.length();
     char arrow = SYM_ARROW_START;
     if (v_length > 1.0f) {
@@ -272,6 +276,13 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
     backend->write(x, y, false, "%c%3.0f%c", arrow,  v_length * 3.6, SYM_KMH);
+}
+
+void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
+{
+    Vector2f v = AP::ahrs().groundspeed_vector();
+    backend->write(x, y, false, "V");
+    draw_speed_vector(x + 1, y, v);
 }
 
 //Thanks to betaflight/inav for simple and clean artificial horizon visual design
@@ -368,6 +379,13 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
+{
+    Vector3f v = AP::ahrs().wind_estimate();
+    backend->write(x, y, "%c", SYM_WIND);
+    draw_speed_vector(x + 1, y, Vector2f(v.x, v.y));
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -392,5 +410,6 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(gspeed);
     DRAW_SETTING(throttle);
     DRAW_SETTING(heading);
+    DRAW_SETTING(wind);
     DRAW_SETTING(home);
 }
