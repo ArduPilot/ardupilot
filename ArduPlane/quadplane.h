@@ -20,6 +20,8 @@ public:
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class ModeAuto;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
     friend class ModeQHover;
     friend class ModeQLand;
     friend class ModeQLoiter;
