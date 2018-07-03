@@ -108,7 +108,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
-    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude. Copter still climb to 2m above ground if its current altitude lower than 2m (defined as RTL_ALT_MIN in config.h)
     // @Units: cm
     // @Range: 0 8000
     // @Increment: 1
