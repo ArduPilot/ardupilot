@@ -423,7 +423,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     } else {
         sym = SYM_DOWN_DOWN;
     }
-    backend->write(x, y, false, "%c%3.0f%c", sym, vspd, SYM_MS);
+    backend->write(x, y, false, "%c%2.0f%c", sym, vspd, SYM_MS);
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
