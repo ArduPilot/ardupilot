@@ -104,13 +104,6 @@ void Plane::rpm_update(void)
     }
 }
 
-/*
-  update AP_ICEngine
- */
-void Plane::ice_update(void)
-{
-    g2.ice_control.update();
-}
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but
