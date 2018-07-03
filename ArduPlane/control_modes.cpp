@@ -64,8 +64,6 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QRTL:
         ret = &mode_qrtl;
         break;
-    default:
-        break;
     }
     return ret;
 }
