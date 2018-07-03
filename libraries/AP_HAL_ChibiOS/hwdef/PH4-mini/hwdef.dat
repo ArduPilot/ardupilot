@@ -1,0 +1,13 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro PH4-mini hardware.
+# This is a varient of fmuv5 without the IOMCU
+
+include ../fmuv5/hwdef.dat
+
+undef IOMCU_UART
+undef UART8_TX
+undef UART8_RX
+undef AP_FEATURE_SBUS_OUT
+
+# RCInput
+PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
