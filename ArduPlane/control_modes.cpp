@@ -67,8 +67,6 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::QAUTOTUNE:
         ret = &mode_qautotune;
         break;
-    default:
-        break;
     }
     return ret;
 }
