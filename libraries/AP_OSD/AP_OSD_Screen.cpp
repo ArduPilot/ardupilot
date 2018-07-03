@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: GSPEED
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gspeed, "GSPEED", 12, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Group: HORIZON
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(horizon, "HORIZON", 13, AP_OSD_Screen, AP_OSD_Setting),
@@ -101,10 +101,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     //@Group: HEADING
     //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(heading, "HEADING", 15, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     //@Group: THROTTLE
     //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(throttle, "THROTTLE", 16, AP_OSD_Screen, AP_OSD_Setting),
+
+    //@Group: COMPASS
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(throttle, "COMPASS", 17, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -324,6 +328,39 @@ void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYM_PCNT);
 }
 
+//Thanks to betaflight/inav for simple and clean compass visual design
+void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
+{
+    const int8_t total_sectors = 16;
+    char compass_circle[total_sectors] = {
+        SYM_HEADING_N,
+        SYM_HEADING_LINE,
+        SYM_HEADING_DIVIDED_LINE,
+        SYM_HEADING_LINE,
+        SYM_HEADING_E,
+        SYM_HEADING_LINE,
+        SYM_HEADING_DIVIDED_LINE,
+        SYM_HEADING_LINE,
+        SYM_HEADING_S,
+        SYM_HEADING_LINE,
+        SYM_HEADING_DIVIDED_LINE,
+        SYM_HEADING_LINE,
+        SYM_HEADING_W,
+        SYM_HEADING_LINE,
+        SYM_HEADING_DIVIDED_LINE,
+        SYM_HEADING_LINE,
+    };
+    AP_AHRS &ahrs = AP::ahrs();
+    int32_t yaw = ahrs.yaw_sensor;
+    int32_t interval = 36000 / total_sectors;
+    int8_t center_sector = ((yaw + interval / 2) / interval) % total_sectors;
+    for (int8_t i=-2; i<=2; i++) {
+        int8_t sector = center_sector + i;
+        sector = (sector + total_sectors) % total_sectors;
+        backend->write(x + i, y, "%c", compass_circle[sector]);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -337,6 +374,7 @@ void AP_OSD_Screen::draw(void)
     //so they will not overwrite more important ones.
     DRAW_SETTING(message);
     DRAW_SETTING(horizon);
+    DRAW_SETTING(compass);
     DRAW_SETTING(altitude);
     DRAW_SETTING(bat_volt);
     DRAW_SETTING(rssi);
