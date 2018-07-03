@@ -76,6 +76,14 @@ protected:
 
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
+
+    bool q_enter();
+    void q_update();
+
+    bool guided_enter();
+    void guided_update();
+
+    void fbwa_update();
 };
 
 

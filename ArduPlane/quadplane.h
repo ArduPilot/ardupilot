@@ -24,6 +24,7 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class QAutoTune;
 
+    friend class Mode;
     friend class ModeAuto;
     friend class ModeAvoidADSB;
     friend class ModeGuided;
