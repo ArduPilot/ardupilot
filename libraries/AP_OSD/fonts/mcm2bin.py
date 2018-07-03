@@ -2,7 +2,7 @@
 import sys;
 
 if len(sys.argv) < 3:
-   print "Usage: ./mcm2bin.py clarify.mcm  clarify.bin"
+   print "Usage: ./mcm2bin.py clarity.mcm  clarity.bin"
    exit()
 
 with open(sys.argv[1]) as inp:
