@@ -57,7 +57,6 @@ public:
     //
     // attributes for mavlink system status reporting
     //
-
     // return if in non-manual mode : Auto, Guided, RTL
     virtual bool is_autopilot_mode() const { return false; }
 
@@ -69,13 +68,6 @@ public:
 
     // true only for vtol related FlightModes
     virtual bool is_vtol_flightmode() const { return false; }
-
-    //
-    // navigation methods
-    //
-
-    // return distance (in meters) to destination
-    virtual float get_distance_to_destination() const { return 0.0f; }
 
 protected:
 
