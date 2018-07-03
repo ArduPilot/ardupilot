@@ -4,7 +4,7 @@ Copter 3.6.0-rc3 02-Jul-2018
 Changes from 3.6.0-rc2
 1) ChibiOS:
     a) airbotf4, matekF405, matekF405-wing, omnibusf4pro, mini-pix, omnibusf7v2, revo-mini, sparky2 binaries built on firmware.ardupilot.org
-    b) STM32F7 support including Pixhack5 (aka fmuv4)
+    b) STM32F7 support including the CUAV v5 Autopilot and the PixHawk 4 (aka fmuv5)
     c) fixed dataflash logfile dates
     d) bootloader included in firmware for easier uploading
     e) additional UART added to fmuv4 and fmuv5 (STM32 F7 boards)
