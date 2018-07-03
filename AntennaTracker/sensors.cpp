@@ -15,7 +15,8 @@ void Tracker::init_compass()
         return;
     }
 
-    if (!compass.init()|| !compass.read()) {
+    compass.init();
+    if (!compass.read()) {
         hal.console->printf("Compass initialisation failed!\n");
         g.compass_enabled = false;
     } else {
