@@ -915,7 +915,6 @@ private:
     void read_rangefinder(void);
     void read_airspeed(void);
     void rpm_update(void);
-    void button_update(void);
     void ice_update(void);
     void init_ardupilot();
     void startup_ground(void);
