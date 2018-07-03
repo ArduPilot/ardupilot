@@ -103,7 +103,7 @@ void Plane::init_ardupilot()
     barometer.init();
 
     // initialise rangefinder
-    init_rangefinder();
+    rangefinder.init();
 
     // initialise battery monitoring
     battery.init();
