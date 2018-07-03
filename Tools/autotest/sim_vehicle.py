@@ -241,7 +241,7 @@ def kill_tasks():
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
         if under_macos() and os.environ.get('DISPLAY'):
-            #use special macos kill routine if Display is on
+            # use special macos kill routine if Display is on
             return kill_tasks_macos()
 
         try:
@@ -484,12 +484,12 @@ def run_in_terminal_window(autotest, name, cmd):
                 break
 
             time.sleep(0.1)
-        #sleep for extra 2 seconds for application to start
+        # sleep for extra 2 seconds for application to start
         time.sleep(2)
         if len(tabs) > 0:
             windowID.append(tabs[0])
         else:
-            progress("Cannot find %s process terminal" % name )
+            progress("Cannot find %s process terminal" % name)
     else:
         p = subprocess.Popen(runme)
 
@@ -581,7 +581,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         progress("Using defaults from (%s)" % (path,))
     if opts.add_param_file:
         if not os.path.isfile(opts.add_param_file):
-            print("The parameter file (%s) does not exist" % (opts.add_param_file,))
+            print("The parameter file (%s) does not exist" %
+                  (opts.add_param_file,))
             sys.exit(1)
         path += "," + str(opts.add_param_file)
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
@@ -637,7 +638,8 @@ def start_mavproxy(opts, stuff):
     if "extra_mavlink_cmds" in stuff:
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
-    # Parsing the arguments to pass to mavproxy, split args on space and "=" signs and ignore those signs within quotation marks
+    # Parsing the arguments to pass to mavproxy, split args on space
+    # and "=" signs and ignore those signs within quotation marks
     if opts.mavproxy_args:
         # It would be great if this could be done with regex
         mavargs = opts.mavproxy_args.split(" ")
@@ -646,12 +648,14 @@ def start_mavproxy(opts, stuff):
             if '=' in x:
                 mavargs[i] = x.split('=')[0]
                 mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair of quotation marks
+        # Use this flag to tell if parsing character inbetween a pair
+        # of quotation marks
         inString = False
         beginStringIndex = []
         endStringIndex = []
-        # Iterate through the arguments, looking for the arguments that
-        # begin with a quotation mark and the ones that end with a quotation mark
+        # Iterate through the arguments, looking for the arguments
+        # that begin with a quotation mark and the ones that end with
+        # a quotation mark
         for i, x in enumerate(mavargs):
             if not inString and x[0] == "\"":
                 beginStringIndex.append(i)
