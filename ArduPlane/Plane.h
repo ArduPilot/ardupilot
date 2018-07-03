@@ -912,7 +912,6 @@ private:
     void control_failsafe();
     bool trim_radio();
     bool rc_failsafe_active(void);
-    void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
     void rpm_update(void);

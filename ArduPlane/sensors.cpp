@@ -1,11 +1,6 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 
-void Plane::init_rangefinder(void)
-{
-    rangefinder.init();
-}
-
 /*
   read the rangefinder and update height estimate
  */
