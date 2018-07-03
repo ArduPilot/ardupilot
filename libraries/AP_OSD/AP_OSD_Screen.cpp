@@ -263,8 +263,15 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 {
-    float v = AP::ahrs().groundspeed() * 3.6;
-    backend->write(x, y, false, "%3.0f%c", v, SYM_KMH);
+    Vector2f v = AP::ahrs().groundspeed_vector();
+    float v_length = v.length();
+    char arrow = SYM_ARROW_START;
+    if (v_length > 1.0f) {
+        int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.x, v.y));
+        int32_t interval = 36000 / SYM_ARROW_COUNT;
+        arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
+    }
+    backend->write(x, y, false, "%c%3.0f%c", arrow,  v_length * 3.6, SYM_KMH);
 }
 
 //Thanks to betaflight/inav for simple and clean artificial horizon visual design
