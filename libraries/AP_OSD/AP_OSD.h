@@ -87,6 +87,7 @@ private:
     AP_OSD_Setting home{false, 0, 0};
     AP_OSD_Setting throttle{false, 0, 0};
     AP_OSD_Setting heading{false, 0, 0};
+    AP_OSD_Setting compass{false, 0, 0};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -101,6 +102,7 @@ private:
     void draw_home(uint8_t x, uint8_t y);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
+    void draw_compass(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
