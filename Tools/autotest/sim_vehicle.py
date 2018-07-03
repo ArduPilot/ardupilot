@@ -204,7 +204,7 @@ def kill_tasks_psutil(victims):
 def kill_tasks_pkill(victims):
     """Shell out to pkill(1) to kill processed by name"""
     for victim in victims:  # pkill takes a single pattern, so iterate
-        cmd = ["pkill", victim]
+        cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
 
 
@@ -538,7 +538,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(delete=False)
+        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
         atexit.register(os.unlink, gdb_commands_file.name)
 
         for breakpoint in opts.breakpoint:
