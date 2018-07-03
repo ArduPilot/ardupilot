@@ -114,6 +114,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     //@Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(wind, "WIND", 18, AP_OSD_Screen, AP_OSD_Setting),
 
+    //@Group: ASPEED
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(wind, "ASPEED", 19, AP_OSD_Screen, AP_OSD_Setting),
+
+    //@Group: VSPEED
+    //@Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(wind, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -137,6 +145,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_VOLT  0x06
 #define SYM_AMP   0x9A
 #define SYM_MAH   0x07
+#define SYM_MS    0x9F
 #define SYM_KMH   0xA1
 #define SYM_DEGR  0xA8
 #define SYM_PCNT  0x25
@@ -163,6 +172,11 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_HEADING_W             0x1B
 #define SYM_HEADING_DIVIDED_LINE  0x1C
 #define SYM_HEADING_LINE          0x1D
+
+#define SYM_UP_UP        0xA3
+#define SYM_UP           0xA4
+#define SYM_DOWN         0xA5
+#define SYM_DOWN_DOWN    0xA6
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
@@ -281,7 +295,7 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v)
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 {
     Vector2f v = AP::ahrs().groundspeed_vector();
-    backend->write(x, y, false, "V");
+    backend->write(x, y, false, "G");
     draw_speed_vector(x + 1, y, v);
 }
 
@@ -375,7 +389,7 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
     for (int8_t i=-2; i<=2; i++) {
         int8_t sector = center_sector + i;
         sector = (sector + total_sectors) % total_sectors;
-        backend->write(x + i, y, "%c", compass_circle[sector]);
+        backend->write(x + i, y, false,  "%c", compass_circle[sector]);
     }
 }
 
@@ -384,6 +398,32 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
     Vector3f v = AP::ahrs().wind_estimate();
     backend->write(x, y, "%c", SYM_WIND);
     draw_speed_vector(x + 1, y, Vector2f(v.x, v.y));
+}
+
+void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
+{
+    float aspd = 0.0f;
+    if (AP::ahrs().airspeed_estimate(&aspd)) {
+        backend->write(x, y, false, "A%3.0f%c", aspd * 3.6, SYM_KMH);
+    }
+}
+
+void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
+{
+    Vector3f v;
+    AP::ahrs().get_velocity_NED(v);
+    float vspd = -v.z;
+    char sym;
+    if (vspd > 3.0f) {
+        sym = SYM_UP_UP;
+    } else if (vspd >=0.0f) {
+        sym = SYM_UP;
+    } else if (vspd >= -3.0f) {
+        sym = SYM_DOWN;
+    } else {
+        sym = SYM_DOWN_DOWN;
+    }
+    backend->write(x, y, false, "%c%3.0f%c", sym, vspd, SYM_MS);
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -408,6 +448,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(sats);
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
+    DRAW_SETTING(aspeed);
+    DRAW_SETTING(vspeed);
     DRAW_SETTING(throttle);
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
