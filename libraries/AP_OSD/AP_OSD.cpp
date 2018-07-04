@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: This sets options that change the display
     // @Bitmask: 0:UseDecimalPack
     // @User: Standard
-    AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, 0),
+    AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
     
     AP_GROUPEND
 };
