@@ -160,7 +160,8 @@ class AutoTestSub(AutoTest):
             self.mav.wait_gps_fix()
 
             # wait for EKF and GPS checks to pass
-            self.mavproxy.expect('IMU0 is using GPS')
+            self.progress("Waiting for ready-to-arm")
+            self.wait_ready_to_arm()
 
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
