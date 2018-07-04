@@ -517,6 +517,95 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    switch (packet.command) {
+
+    case MAV_CMD_DO_CHANGE_SPEED:
+        // param1 : unused
+        // param2 : new speed in m/s
+        if (!rover.control_mode->set_desired_speed(packet.param2)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_DO_SET_HOME: {
+        // assume failure
+        if (is_equal(packet.param1, 1.0f)) {
+            // if param1 is 1, use current location
+            if (rover.set_home_to_current_location(true)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        }
+        // ensure param1 is zero
+        if (!is_zero(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
+        // check frame type is supported
+        if (packet.frame != MAV_FRAME_GLOBAL &&
+            packet.frame != MAV_FRAME_GLOBAL_INT &&
+            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            return MAV_RESULT_FAILED;
+        }
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location new_home_loc {};
+        new_home_loc.lat = packet.x;
+        new_home_loc.lng = packet.y;
+        new_home_loc.alt = packet.z * 100;
+        // handle relative altitude
+        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            if (!rover.ahrs.home_is_set()) {
+                // cannot use relative altitude if home is not set
+                return MAV_RESULT_FAILED;
+            }
+            new_home_loc.alt += rover.ahrs.get_home().alt;
+        }
+        if (!rover.set_home(new_home_loc, true)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+
+#if MOUNT == ENABLED
+    case MAV_CMD_DO_SET_ROI: {
+        // param1 : /* Region of interest mode (not used)*/
+        // param2 : /* MISSION index/ target ID (not used)*/
+        // param3 : /* ROI index (not used)*/
+        // param4 : /* empty */
+        // x : lat
+        // y : lon
+        // z : alt
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location roi_loc;
+        roi_loc.lat = packet.x;
+        roi_loc.lng = packet.y;
+        roi_loc.alt = (int32_t)(packet.z * 100.0f);
+        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+            // switch off the camera tracking if enabled
+            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                rover.camera_mount.set_mode_to_default();
+            }
+        } else {
+            // send the command to the camera mount
+            rover.camera_mount.set_roi_target(roi_loc);
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif
+
+    default:
+        return GCS_MAVLINK::handle_command_int_packet(packet);
+    }
+}
+
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
@@ -666,108 +755,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
-
-    case MAVLINK_MSG_ID_COMMAND_INT: {
-        // decode packet
-        mavlink_command_int_t packet;
-        mavlink_msg_command_int_decode(msg, &packet);
-        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-
-        switch (packet.command) {
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            // param1 : unused
-            // param2 : new speed in m/s
-            if (rover.control_mode->set_desired_speed(packet.param2)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-
-        case MAV_CMD_DO_SET_HOME: {
-            // assume failure
-            result = MAV_RESULT_FAILED;
-            if (is_equal(packet.param1, 1.0f)) {
-                // if param1 is 1, use current location
-                if (rover.set_home_to_current_location(true)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                break;
-            }
-            // check frame type is supported
-            if (packet.frame != MAV_FRAME_GLOBAL &&
-                packet.frame != MAV_FRAME_GLOBAL_INT &&
-                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                break;
-            }
-            // sanity check location
-            if (!check_latlng(packet.x, packet.y)) {
-                break;
-            }
-            Location new_home_loc {};
-            new_home_loc.lat = packet.x;
-            new_home_loc.lng = packet.y;
-            new_home_loc.alt = packet.z * 100;
-            // handle relative altitude
-            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                if (!rover.ahrs.home_is_set()) {
-                    // cannot use relative altitude if home is not set
-                    break;
-                }
-                new_home_loc.alt += rover.ahrs.get_home().alt;
-            }
-            if (rover.set_home(new_home_loc, true)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
-#if MOUNT == ENABLED
-        case MAV_CMD_DO_SET_ROI: {
-            // param1 : /* Region of interest mode (not used)*/
-            // param2 : /* MISSION index/ target ID (not used)*/
-            // param3 : /* ROI index (not used)*/
-            // param4 : /* empty */
-            // x : lat
-            // y : lon
-            // z : alt
-            // sanity check location
-            if (!check_latlng(packet.x, packet.y)) {
-                break;
-            }
-            Location roi_loc;
-            roi_loc.lat = packet.x;
-            roi_loc.lng = packet.y;
-            roi_loc.alt = (int32_t)(packet.z * 100.0f);
-            if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-                // switch off the camera tracking if enabled
-                if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                    rover.camera_mount.set_mode_to_default();
-                }
-            } else {
-                // send the command to the camera mount
-                rover.camera_mount.set_roi_target(roi_loc);
-            }
-            result = MAV_RESULT_ACCEPTED;
-            break;
-        }
-#endif
-
-        default:
-            result = MAV_RESULT_UNSUPPORTED;
-            break;
-        }
-
-        // send ACK or NAK
-        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
-        break;
-    }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
     {
