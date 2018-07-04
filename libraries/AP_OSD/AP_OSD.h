@@ -162,6 +162,12 @@ public:
     AP_Int8 rc_channel;
     AP_Int8 sw_method;
 
+    enum {
+        OPTION_DECIMAL_PACK = 1U<<0,
+    };
+    
+    AP_Int32 options;
+
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
 private:
