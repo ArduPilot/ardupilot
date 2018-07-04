@@ -94,18 +94,18 @@ bool AP_Baro_MS56XX::_init()
     _dev->transfer(&CMD_MS56XX_RESET, 1, nullptr, 0);
     hal.scheduler->delay(4);
     
-    const char *name = "MS5611";
+    const char *name;
     switch (_ms56xx_type) {
     case BARO_MS5607:
         name = "MS5607";
         FALLTHROUGH;
     case BARO_MS5611:
+        name = "MS5611";
         prom_read_ok = _read_prom_5611(prom);
         break;
     case BARO_MS5837:
         name = "MS5837";
-        prom_read_ok = _read_prom_5637(prom);
-        break;
+        FALLTHROUGH;
     case BARO_MS5637:
         name = "MS5637";
         prom_read_ok = _read_prom_5637(prom);
