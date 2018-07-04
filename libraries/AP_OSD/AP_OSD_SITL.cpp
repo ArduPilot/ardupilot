@@ -97,6 +97,7 @@ void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text, uint8_t char_att
     mutex->take_blocking();
     while ((x < video_cols) && (*text != 0)) {
         buffer[y][x] = *text;
+        attr[y][x] = char_attr;
         ++text;
         ++x;
     }
@@ -125,6 +126,8 @@ void AP_OSD_SITL::update_thread(void)
     if (!w) {
         AP_HAL::panic("Unable to create OSD window");
     }
+
+    uint8_t blink = 0;
     while (w->isOpen())
     {
         sf::Event event;
@@ -139,21 +142,32 @@ void AP_OSD_SITL::update_thread(void)
         last_counter = counter;
 
         uint8_t buffer2[video_lines][video_cols];
+        uint8_t attr2[video_lines][video_cols];
         mutex->take_blocking();
         memcpy(buffer2, buffer, sizeof(buffer2));
+        memcpy(attr2, attr, sizeof(attr2));
         mutex->give();
         w->clear();
+
         for (uint8_t y=0; y<video_lines; y++) {
             for (uint8_t x=0; x<video_cols; x++) {
                 uint16_t px = x * (char_width+char_spacing) * char_scale;
                 uint16_t py = y * (char_height+char_spacing) * char_scale;
                 sf::Sprite s;
-                s.setTexture(font[buffer2[y][x]]);
+                uint8_t c = buffer2[y][x];
+                if (attr2[y][x] & BLINK) {
+                    if (blink >= 2) {
+                        c = ' ';
+                    }
+                }
+                s.setTexture(font[c]);
                 s.setPosition(sf::Vector2f(px, py));
                 s.scale(sf::Vector2f(char_scale,char_scale));
                 w->draw(s);
             }
         }
+        
+        blink = (blink+1) % 4;
         w->display();
         usleep(10000);
     }
