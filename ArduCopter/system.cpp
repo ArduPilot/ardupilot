@@ -245,6 +245,11 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
+#if VISCA == ENABLED
+    // initialise camera mount
+    visca_camera.init(serial_manager);
+#endif
+
     // initialise DataFlash library
 #if MODE_AUTO_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
