@@ -732,10 +732,155 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
 }
 
 
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        if (!sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_NAV_LAND:
+        if (!sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_CONDITION_YAW:
+        // param1 : target angle [0-360]
+        // param2 : speed during change [deg per second]
+        // param3 : direction (-1:ccw, +1:cw)
+        // param4 : relative offset (1) or absolute angle (0)
+        if ((packet.param1 >= 0.0f)   &&
+            (packet.param1 <= 360.0f) &&
+            (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
+            sub.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_CHANGE_SPEED:
+        // param1 : unused
+        // param2 : new speed in m/s
+        // param3 : unused
+        // param4 : unused
+        if (packet.param2 > 0.0f) {
+            sub.wp_nav.set_speed_xy(packet.param2 * 100.0f);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_SET_HOME:
+        // param1 : use current (1=use current location, 0=use specified location)
+        // param5 : latitude
+        // param6 : longitude
+        // param7 : altitude (absolute)
+        if (is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
+            if (sub.set_home_to_current_location(true)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else {
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                return MAV_RESULT_FAILED;
+            }
+            // sanity check location
+            if (!check_latlng(packet.param5, packet.param6)) {
+                return MAV_RESULT_FAILED;
+            }
+            Location new_home_loc;
+            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+            if (!sub.far_from_EKF_origin(new_home_loc)) {
+                if (sub.set_home(new_home_loc, true)) {
+                    return MAV_RESULT_ACCEPTED;
+                }
+            }
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_SET_ROI:
+        // param1 : regional of interest mode (not supported)
+        // param2 : mission index/ target id (not supported)
+        // param3 : ROI index (not supported)
+        // param5 : x / lat
+        // param6 : y / lon
+        // param7 : z / alt
+        // sanity check location
+        if (!check_latlng(packet.param5, packet.param6)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location roi_loc;
+        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+        sub.set_auto_yaw_roi(roi_loc);
+        return MAV_RESULT_ACCEPTED;
+
+#if MOUNT == ENABLED
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        sub.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+        return MAV_RESULT_ACCEPTED;
+#endif
+
+    case MAV_CMD_MISSION_START:
+        if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        if (is_equal(packet.param1,1.0f)) {
+            // attempt to arm and return success or failure
+            if (sub.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else if (is_zero(packet.param1))  {
+            // force disarming by setting param2 = 21196 is deprecated
+            // see COMMAND_LONG DO_FLIGHTTERMINATION
+            sub.init_disarm_motors();
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        return MAV_RESULT_FAILED;
+
+#if AC_FENCE == ENABLED
+    case MAV_CMD_DO_FENCE_ENABLE:
+        switch ((uint16_t)packet.param1) {
+        case 0:
+            sub.fence.enable(false);
+            return MAV_RESULT_ACCEPTED;
+        case 1:
+            sub.fence.enable(true);
+            return MAV_RESULT_ACCEPTED;
+        default:
+            break;
+        }
+        return MAV_RESULT_FAILED;
+#endif
+
+    case MAV_CMD_DO_MOTOR_TEST:
+        // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
+        // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
+        // param3 : throttle (range depends upon param2)
+        // param4 : timeout (in seconds)
+        if (!sub.handle_do_motor_test(packet)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet);
+    }
+}
+
+
+
 void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 {
-    MAV_RESULT result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
-
     switch (msg->msgid) {
 
     case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
@@ -803,174 +948,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         sub.failsafe.last_pilot_input_ms = tnow;
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         sub.failsafe.last_heartbeat_ms = tnow;
-        break;
-    }
-
-
-    // Pre-Flight calibration requests
-    case MAVLINK_MSG_ID_COMMAND_LONG: {     // MAV ID: 76
-        // decode packet
-        mavlink_command_long_t packet;
-        mavlink_msg_command_long_decode(msg, &packet);
-
-        switch (packet.command) {
-        case MAV_CMD_NAV_LOITER_UNLIM:
-            if (sub.set_mode(POSHOLD, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_NAV_LAND:
-            if (sub.set_mode(SURFACE, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_CONDITION_YAW:
-            // param1 : target angle [0-360]
-            // param2 : speed during change [deg per second]
-            // param3 : direction (-1:ccw, +1:cw)
-            // param4 : relative offset (1) or absolute angle (0)
-            if ((packet.param1 >= 0.0f)   &&
-                    (packet.param1 <= 360.0f) &&
-                    (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-                sub.set_auto_yaw_look_at_heading(packet.param1, packet.param2, (int8_t)packet.param3, (uint8_t)packet.param4);
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            // param1 : unused
-            // param2 : new speed in m/s
-            // param3 : unused
-            // param4 : unused
-            if (packet.param2 > 0.0f) {
-                sub.wp_nav.set_speed_xy(packet.param2 * 100.0f);
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-
-        case MAV_CMD_DO_SET_HOME:
-            // param1 : use current (1=use current location, 0=use specified location)
-            // param5 : latitude
-            // param6 : longitude
-            // param7 : altitude (absolute)
-            result = MAV_RESULT_FAILED; // assume failure
-            if (is_equal(packet.param1,1.0f) || (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7))) {
-                if (sub.set_home_to_current_location(true)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            } else {
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                // sanity check location
-                if (!check_latlng(packet.param5, packet.param6)) {
-                    break;
-                }
-                Location new_home_loc;
-                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                if (!sub.far_from_EKF_origin(new_home_loc)) {
-                    if (sub.set_home(new_home_loc, true)) {
-                        result = MAV_RESULT_ACCEPTED;
-                    }
-                }
-            }
-            break;
-
-        case MAV_CMD_DO_SET_ROI:
-            // param1 : regional of interest mode (not supported)
-            // param2 : mission index/ target id (not supported)
-            // param3 : ROI index (not supported)
-            // param5 : x / lat
-            // param6 : y / lon
-            // param7 : z / alt
-            // sanity check location
-            if (!check_latlng(packet.param5, packet.param6)) {
-                break;
-            }
-            Location roi_loc;
-            roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            sub.set_auto_yaw_roi(roi_loc);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_DO_MOUNT_CONTROL:
-#if MOUNT == ENABLED
-            sub.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-            result = MAV_RESULT_ACCEPTED;
-#endif
-            break;
-
-        case MAV_CMD_MISSION_START:
-            if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (is_equal(packet.param1,1.0f)) {
-                // attempt to arm and return success or failure
-                if (sub.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            } else if (is_zero(packet.param1))  {
-                // force disarming by setting param2 = 21196 is deprecated
-                // see COMMAND_LONG DO_FLIGHTTERMINATION
-                sub.init_disarm_motors();
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_UNSUPPORTED;
-            }
-            break;
-
-        case MAV_CMD_DO_FENCE_ENABLE:
-#if AC_FENCE == ENABLED
-            result = MAV_RESULT_ACCEPTED;
-            switch ((uint16_t)packet.param1) {
-            case 0:
-                sub.fence.enable(false);
-                break;
-            case 1:
-                sub.fence.enable(true);
-                break;
-            default:
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-#else
-            // if fence code is not included return failure
-            result = MAV_RESULT_FAILED;
-#endif
-            break;
-
-        case MAV_CMD_DO_MOTOR_TEST:
-            // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
-            // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
-            // param3 : throttle (range depends upon param2)
-            // param4 : timeout (in seconds)
-            if (sub.handle_do_motor_test(packet)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        default:
-            result = handle_command_long_message(packet);
-            break;
-        }
-
-        // send ACK or NAK
-        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
-
         break;
     }
 
@@ -1069,22 +1046,11 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
 
         // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            if (sub.guided_set_destination_posvel(pos_vector, vel_vector)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
+            sub.guided_set_destination_posvel(pos_vector, vel_vector);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(vel_vector);
-            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (sub.guided_set_destination(pos_vector)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-        } else {
-            result = MAV_RESULT_FAILED;
+            sub.guided_set_destination(pos_vector);
         }
 
         break;
@@ -1126,7 +1092,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         if (!pos_ignore) {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
-                result = MAV_RESULT_FAILED;
                 break;
             }
             Location loc;
@@ -1155,29 +1120,17 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            if (sub.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f))) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
+            sub.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
-            result = MAV_RESULT_ACCEPTED;
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            if (sub.guided_set_destination(pos_neu_cm)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-        } else {
-            result = MAV_RESULT_FAILED;
+            sub.guided_set_destination(pos_neu_cm);
         }
 
         break;
     }
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
-        result = MAV_RESULT_ACCEPTED;
         sub.rangefinder.handle_msg(msg);
         break;
     }
