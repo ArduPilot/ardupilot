@@ -210,7 +210,7 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
-    backend->write(x, y, false, "%4.0f%c", alt, SYM_ALT_M);
+    backend->write(x, y, false, "%4.0f%c", -alt, SYM_ALT_M);
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
