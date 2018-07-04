@@ -173,10 +173,10 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_HEADING_DIVIDED_LINE  0x1C
 #define SYM_HEADING_LINE          0x1D
 
-#define SYM_UP_UP        0xA3
-#define SYM_UP           0xA4
-#define SYM_DOWN         0xA5
-#define SYM_DOWN_DOWN    0xA6
+#define SYM_UP_UP        0xA2
+#define SYM_UP           0xA3
+#define SYM_DOWN         0xA4
+#define SYM_DOWN_DOWN    0xA5
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
