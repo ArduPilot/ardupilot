@@ -154,10 +154,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 }
 
 //Symbols
-#define SYM_BLANK 0x20
-#define SYM_COLON 0x2D
-#define SYM_ZERO_HALF_TRAILING_DOT 192
-#define SYM_ZERO_HALF_LEADING_DOT 208
 
 #define SYM_M           0xB9
 #define SYM_KM          0xBA

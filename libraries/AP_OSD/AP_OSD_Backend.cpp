@@ -20,7 +20,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define SYM_DIG_OFS 0x90
+#define SYM_DIG_OFS_1 0x90
+#define SYM_DIG_OFS_2 0xA0
 
 void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
 {
@@ -32,7 +33,8 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
         // automatically use packed decimal characters
         char *p = strchr(&buff[1],'.');
         if (p && isdigit(p[1]) && isdigit(p[-1])) {
-            p[-1] += SYM_DIG_OFS;
+            p[-1] += SYM_DIG_OFS_1;
+            p[1] += SYM_DIG_OFS_2;
             memmove(p, p+1, strlen(p+1)+1);
             res--;
         }
