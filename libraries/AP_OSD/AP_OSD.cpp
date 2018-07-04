@@ -70,6 +70,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
 
+    // @Param: _OPTIONS
+    // @DisplayName: OSD Options
+    // @Description: This sets options that change the display
+    // @Bitmask: 0:UseDecimalPack
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, 0),
+    
     AP_GROUPEND
 };
 
