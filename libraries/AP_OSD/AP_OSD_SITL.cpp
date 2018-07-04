@@ -32,7 +32,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "pthread.h"
 
+extern const AP_HAL::HAL &hal;
 
 /*
   load *.bin font file, in MAX7456 format
@@ -92,47 +94,83 @@ void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text, uint8_t char_att
     if (y >= video_lines || text == nullptr) {
         return;
     }
+    mutex->take_blocking();
     while ((x < video_cols) && (*text != 0)) {
         buffer[y][x] = *text;
         ++text;
         ++x;
     }
+    mutex->give();
 }
 
 void AP_OSD_SITL::clear(void)
 {
+    mutex->take_blocking();
     memset(buffer, 0, sizeof(buffer));
+    mutex->give();
 }
 
 void AP_OSD_SITL::flush(void)
 {
-    if (!w->isOpen()) {
-        return;
-    }
-    w->clear();
-    for (uint8_t y=0; y<video_lines; y++) {
-        for (uint8_t x=0; x<video_cols; x++) {
-            uint16_t px = x * (char_width+char_spacing) * char_scale;
-            uint16_t py = y * (char_height+char_spacing) * char_scale;
-            sf::Sprite s;
-            s.setTexture(font[buffer[y][x]]);
-            s.setPosition(sf::Vector2f(px, py));
-            s.scale(sf::Vector2f(char_scale,char_scale));
-            w->draw(s);
-        }
-    }
-    w->display();
+    counter++;
 }
 
-bool AP_OSD_SITL::init(void)
+// main loop of graphics thread
+void AP_OSD_SITL::update_thread(void)
 {
     load_font();
     w = new sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
                                            video_lines*(char_height+char_spacing)*char_scale),
                              "OSD");
     if (!w) {
-        return false;
+        AP_HAL::panic("Unable to create OSD window");
     }
+    while (w->isOpen())
+    {
+        sf::Event event;
+        while (w->pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                w->close();
+        }
+        if (counter == last_counter) {
+            continue;
+        }
+        last_counter = counter;
+
+        uint8_t buffer2[video_lines][video_cols];
+        mutex->take_blocking();
+        memcpy(buffer2, buffer, sizeof(buffer2));
+        mutex->give();
+        w->clear();
+        for (uint8_t y=0; y<video_lines; y++) {
+            for (uint8_t x=0; x<video_cols; x++) {
+                uint16_t px = x * (char_width+char_spacing) * char_scale;
+                uint16_t py = y * (char_height+char_spacing) * char_scale;
+                sf::Sprite s;
+                s.setTexture(font[buffer2[y][x]]);
+                s.setPosition(sf::Vector2f(px, py));
+                s.scale(sf::Vector2f(char_scale,char_scale));
+                w->draw(s);
+            }
+        }
+        w->display();
+        usleep(10000);
+    }
+}
+
+// trampoline for update thread
+void *AP_OSD_SITL::update_thread_start(void *obj)
+{
+    ((AP_OSD_SITL *)obj)->update_thread();
+    return nullptr;
+}
+
+// initialise backend
+bool AP_OSD_SITL::init(void)
+{
+    mutex = hal.util->new_semaphore();
+    pthread_create(&thread, NULL, update_thread_start, this);
     return true;
 }
 

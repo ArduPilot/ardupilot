@@ -62,7 +62,14 @@ private:
     
     uint8_t buffer[video_lines][video_cols];
 
+    void update_thread();
+    static void *update_thread_start(void *obj);
     void load_font();
+
+    pthread_t thread;
+    AP_HAL::Semaphore *mutex;
+    uint32_t counter;
+    uint32_t last_counter;
 };
 
 #endif // WITH_SITL_OSD
