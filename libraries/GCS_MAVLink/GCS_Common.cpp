@@ -2689,11 +2689,22 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &
     return result;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
+{
+    if (!AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_ACCELCAL_VEHICLE_POS:
+        result = handle_command_accelcal_vehicle_pos(packet);
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
