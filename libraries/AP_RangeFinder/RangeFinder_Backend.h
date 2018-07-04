@@ -22,7 +22,8 @@ class AP_RangeFinder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state);
+	//AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state);
+	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     // we declare a virtual destructor so that RangeFinder drivers can
     // override with a custom destructor if need be
@@ -35,15 +36,15 @@ public:
 
     void update_pre_arm_check();
 
-    enum Rotation orientation() const { return (Rotation)state.orientation.get(); }
+    enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     uint16_t distance_cm() const { return state.distance_cm; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
-    int16_t max_distance_cm() const { return state.max_distance_cm; }
-    int16_t min_distance_cm() const { return state.min_distance_cm; }
-    int16_t ground_clearance_cm() const { return state.ground_clearance_cm; }
+    int16_t max_distance_cm() const { return params.max_distance_cm; }
+    int16_t min_distance_cm() const { return params.min_distance_cm; }
+    int16_t ground_clearance_cm() const { return params.ground_clearance_cm; }
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::RangeFinder_Status status() const;
-    RangeFinder::RangeFinder_Type type() const { return (RangeFinder::RangeFinder_Type)state.type.get(); }
+    RangeFinder::RangeFinder_Type type() const { return (RangeFinder::RangeFinder_Type)params.type.get(); }
 
     // true if sensor is returning data
     bool has_data() const;
@@ -53,7 +54,7 @@ public:
 
     // return a 3D vector defining the position offset of the sensor
     // in metres relative to the body frame origin
-    const Vector3f &get_pos_offset() const { return state.pos_offset; }
+    const Vector3f &get_pos_offset() const { return params.pos_offset; }
 
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
@@ -67,6 +68,7 @@ protected:
     void set_status(RangeFinder::RangeFinder_Status status);
 
     RangeFinder::RangeFinder_State &state;
+    AP_RangeFinder_Params &params;
 
     // semaphore for access to shared frontend data
     HAL_Semaphore _sem;

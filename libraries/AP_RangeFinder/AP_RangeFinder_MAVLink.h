@@ -11,7 +11,7 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 
 public:
     // constructor
-    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state);
+    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     // static detection function
     static bool detect();
