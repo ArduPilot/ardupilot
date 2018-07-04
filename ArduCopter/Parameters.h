@@ -211,6 +211,9 @@ public:
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
+        // 134: Visca camera control
+        k_param_visca_camera = 134,
+
         //
         // 135 : reserved for Solo until features merged with master
         //

@@ -143,6 +143,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update_trigger,  50,  75),
 #endif
+#if VISCA == ENABLED
+    SCHED_TASK_CLASS(AP_Visca_Camera,            &copter.visca_camera,              update,  3,  75),
+#endif
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),

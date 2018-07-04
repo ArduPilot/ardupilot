@@ -147,6 +147,9 @@
 #if CAMERA == ENABLED
  # include <AP_Camera/AP_Camera.h>
 #endif
+#if VISCA == ENABLED
+ #include <AP_Visca_Camera/AP_Visca_Camera.h>
+#endif
 
 #if DEVO_TELEM_ENABLED == ENABLED
  #include <AP_Devo_Telem/AP_Devo_Telem.h>
@@ -522,6 +525,11 @@ private:
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps solution for altitude rather than gps only.
     AP_Mount camera_mount{ahrs, current_loc};
+#endif
+
+    // Visca protocol for block cameras
+#if VISCA == ENABLED
+    AP_Visca_Camera visca_camera{};
 #endif
 
     // AC_Fence library to reduce fly-aways
