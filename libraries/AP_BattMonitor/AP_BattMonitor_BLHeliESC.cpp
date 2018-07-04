@@ -44,7 +44,9 @@ void AP_BattMonitor_BLHeliESC::read(void)
     
     for (uint8_t i=0; i<AP_BLHELI_MAX_ESCS; i++) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(i, td);
+        if (!blheli->get_telem_data(i, td)) {
+            continue;
+        }
 
         // accumulate consumed_sum regardless of age, to cope with ESC
         // dropping out
