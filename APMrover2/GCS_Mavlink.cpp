@@ -728,12 +728,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_ACCEPTED;
     }
 
-    case MAV_CMD_ACCELCAL_VEHICLE_POS:
-        if (!rover.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-
     case MAV_CMD_DO_MOTOR_TEST:
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
