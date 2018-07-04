@@ -1105,12 +1105,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
-    case MAV_CMD_ACCELCAL_VEHICLE_POS:
-        if (!plane.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
