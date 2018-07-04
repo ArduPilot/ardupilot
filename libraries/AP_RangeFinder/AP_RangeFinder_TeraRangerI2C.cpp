@@ -35,8 +35,9 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
+															AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
-    : AP_RangeFinder_Backend(_state)
+    : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(i2c_dev))
 {
 }
@@ -47,13 +48,14 @@ AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFin
    there.
 */
 AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeFinder_State &_state,
+																AP_RangeFinder_Params &_params,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
 {
     if (!i2c_dev) {
         return nullptr;
     }
 
-    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, std::move(i2c_dev));
+    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
     if (!sensor) {
         return nullptr;
     }
