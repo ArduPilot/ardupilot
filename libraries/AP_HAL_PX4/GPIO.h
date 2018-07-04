@@ -45,7 +45,9 @@ public:
     AP_HAL::DigitalSource* channel(uint16_t n) override;
 
     /* Interrupt interface: */
-    bool attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) override;
+    bool attach_interrupt(uint8_t interrupt_num,
+                          irq_handler_fn_t fn,
+                          INTERRUPT_TRIGGER_TYPE mode) override;
 
     /* return true if USB cable is connected */
     bool usb_connected(void) override;
@@ -58,6 +60,17 @@ private:
     int _gpio_fmu_fd = -1;
     int _gpio_io_fd = -1;
     bool _usb_connected = false;
+
+    static int irq_handler_gpio0(int irq, void *context);
+    static int irq_handler_gpio1(int irq, void *context);
+    static int irq_handler_gpio2(int irq, void *context);
+    static int irq_handler_gpio3(int irq, void *context);
+    static int irq_handler_gpio4(int irq, void *context);
+    static int irq_handler_gpio5(int irq, void *context);
+    static void irq_handler(uint8_t pin);
+
+    static uint32_t pin_to_gpio(uint8_t pin);
+    static AP_HAL::GPIO::irq_handler_fn_t pin_handlers[];
 };
 
 class PX4::PX4DigitalSource : public AP_HAL::DigitalSource {
