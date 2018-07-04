@@ -422,11 +422,10 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_UP;
     } else if (vspd >= -3.0f) {
         sym = SYM_DOWN;
-        vspd = -vspd;
     } else {
         sym = SYM_DOWN_DOWN;
-        vspd = -vspd;
     }
+    vspd = fabsf(vspd);
     backend->write(x, y, false, "%c%2.0f%c", sym, vspd, SYM_MS);
 }
 
