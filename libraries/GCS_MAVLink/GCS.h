@@ -284,6 +284,9 @@ protected:
 
     virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
+    void handle_command_int(mavlink_message_t* msg);
+    virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
