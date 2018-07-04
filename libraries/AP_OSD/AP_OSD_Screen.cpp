@@ -431,6 +431,8 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     if (AP::ahrs().airspeed_estimate(&aspd)) {
         backend->write(x, y, false, "A%4.0f%c", aspd * 3.6, SYM_KMH);
+    } else {
+        backend->write(x, y, false, "A ---%c", SYM_KMH);
     }
 }
 
