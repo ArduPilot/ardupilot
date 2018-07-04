@@ -2318,6 +2318,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_common_mission_message(msg);
         break;
 
+    case MAVLINK_MSG_ID_COMMAND_INT:
+        handle_command_int(msg);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg);
         break;
@@ -2767,6 +2771,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     }
 
     return result;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+void GCS_MAVLINK::handle_command_int(mavlink_message_t *msg)
+{
+    // decode packet
+    mavlink_command_int_t packet;
+    mavlink_msg_command_int_decode(msg, &packet);
+
+    const MAV_RESULT result = handle_command_int_packet(packet);
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 }
 
 bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
