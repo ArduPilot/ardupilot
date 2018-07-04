@@ -280,12 +280,12 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v)
+void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t yaw)
 {
     float v_length = v.length();
     char arrow = SYM_ARROW_START;
     if (v_length > 1.0f) {
-        int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.x, v.y));
+        int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.x, v.y) - yaw);
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
@@ -294,9 +294,10 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v)
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 {
-    Vector2f v = AP::ahrs().groundspeed_vector();
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
     backend->write(x, y, false, "G");
-    draw_speed_vector(x + 1, y, v);
+    draw_speed_vector(x + 1, y, v, ahrs.yaw_sensor);
 }
 
 //Thanks to betaflight/inav for simple and clean artificial horizon visual design
@@ -395,9 +396,10 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
-    Vector3f v = AP::ahrs().wind_estimate();
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector3f v = ahrs.wind_estimate();
     backend->write(x, y, false, "%c", SYM_WIND);
-    draw_speed_vector(x + 1, y, Vector2f(v.x, v.y));
+    draw_speed_vector(x + 1, y, Vector2f(v.x, v.y), ahrs.yaw_sensor);
 }
 
 void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)

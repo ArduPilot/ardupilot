@@ -110,7 +110,7 @@ private:
     void draw_aspeed(uint8_t x, uint8_t y);
     void draw_vspeed(uint8_t x, uint8_t y);
 
-    void draw_speed_vector(uint8_t x, uint8_t y, Vector2f v);
+    void draw_speed_vector(uint8_t x, uint8_t y, Vector2f v, int32_t yaw);
 };
 
 class AP_OSD {
