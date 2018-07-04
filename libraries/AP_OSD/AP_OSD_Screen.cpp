@@ -460,7 +460,10 @@ void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         // AP_BLHeli & blh = AP_BLHeli::AP_BLHeli();
         uint8_t esc_temp = td.temperature;
@@ -473,7 +476,10 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
         backend->write(x, y, false, "%5d RPM", esc_rpm);
@@ -485,7 +491,10 @@ void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         float esc_amps = td.current;
         backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
