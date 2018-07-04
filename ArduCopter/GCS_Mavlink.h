@@ -35,6 +35,8 @@ protected:
 
     void send_position_target_global_int() override;
 
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
