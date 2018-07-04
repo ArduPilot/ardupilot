@@ -759,6 +759,116 @@ bool GCS_MAVLINK_Plane::should_disable_overrides_on_reboot() const
 }
 
 
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    switch(packet.command) {
+
+    case MAV_CMD_DO_SET_HOME:
+        if (is_equal(packet.param1, 1.0f)) {
+            plane.set_home_persistently(AP::gps().location());
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                return MAV_RESULT_FAILED;
+            }
+            if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
+                // don't allow the 0,0 position
+                return MAV_RESULT_FAILED;
+            }
+            // check frame type is supported
+            if (packet.frame != MAV_FRAME_GLOBAL &&
+                packet.frame != MAV_FRAME_GLOBAL_INT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                return MAV_RESULT_FAILED;
+            }
+            // sanity check location
+            if (!check_latlng(packet.x, packet.y)) {
+                return MAV_RESULT_FAILED;
+            }
+            Location new_home_loc {};
+            new_home_loc.lat = packet.x;
+            new_home_loc.lng = packet.y;
+            new_home_loc.alt = packet.z * 100;
+            // handle relative altitude
+            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                if (!AP::ahrs().home_is_set()) {
+                    // cannot use relative altitude if home is not set
+                    return MAV_RESULT_FAILED;
+                }
+                new_home_loc.alt += plane.ahrs.get_home().alt;
+            }
+            plane.set_home(new_home_loc);
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_REPOSITION: {
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+
+        Location requested_position {};
+        requested_position.lat = packet.x;
+        requested_position.lng = packet.y;
+
+        // check the floating representation for overflow of altitude
+        if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
+            return MAV_RESULT_FAILED;
+        }
+        requested_position.alt = (int32_t)(packet.z * 100.0f);
+
+        // load option flags
+        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            requested_position.flags.relative_alt = 1;
+        }
+        else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+            requested_position.flags.terrain_alt = 1;
+        }
+        else if (packet.frame != MAV_FRAME_GLOBAL_INT) {
+            // not a supported frame
+            return MAV_RESULT_FAILED;
+        }
+
+        if (is_zero(packet.param4)) {
+            requested_position.flags.loiter_ccw = 0;
+        } else {
+            requested_position.flags.loiter_ccw = 1;
+        }
+
+        if (location_sanitize(plane.current_loc, requested_position)) {
+            // if the location wasn't already sane don't load it
+            return MAV_RESULT_FAILED; // failed as the location is not valid
+        }
+
+        // location is valid load and set
+        if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
+            (plane.control_mode == GUIDED)) {
+            plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
+            plane.guided_WP_loc = requested_position;
+
+            // add home alt if needed
+            if (plane.guided_WP_loc.flags.relative_alt) {
+                plane.guided_WP_loc.alt += plane.home.alt;
+                plane.guided_WP_loc.flags.relative_alt = 0;
+            }
+
+            plane.set_guided_WP();
+
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+    }
+
+    default:
+        return GCS_MAVLINK::handle_command_int_packet(packet);
+    }
+}
+
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     switch(packet.command) {
@@ -1009,133 +1119,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
-
-    case MAVLINK_MSG_ID_COMMAND_INT:
-    {
-        // decode
-        mavlink_command_int_t packet;
-        mavlink_msg_command_int_decode(msg, &packet);
-
-        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-
-        switch(packet.command) {
-
-        case MAV_CMD_DO_SET_HOME: {
-            result = MAV_RESULT_FAILED; // assume failure
-            if (is_equal(packet.param1, 1.0f)) {
-                plane.set_home_persistently(AP::gps().location());
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
-                    // don't allow the 0,0 position
-                    break;
-                }
-                // check frame type is supported
-                if (packet.frame != MAV_FRAME_GLOBAL &&
-                    packet.frame != MAV_FRAME_GLOBAL_INT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    break;
-                }
-                // sanity check location
-                if (!check_latlng(packet.x, packet.y)) {
-                    break;
-                }
-                Location new_home_loc {};
-                new_home_loc.lat = packet.x;
-                new_home_loc.lng = packet.y;
-                new_home_loc.alt = packet.z * 100;
-                // handle relative altitude
-                if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    if (!AP::ahrs().home_is_set()) {
-                        // cannot use relative altitude if home is not set
-                        break;
-                    }
-                    new_home_loc.alt += plane.ahrs.get_home().alt;
-                }
-                plane.set_home(new_home_loc);
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
-        case MAV_CMD_DO_REPOSITION:
-            // sanity check location
-            if (!check_latlng(packet.x, packet.y)) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-
-            Location requested_position {};
-            requested_position.lat = packet.x;
-            requested_position.lng = packet.y;
-
-            // check the floating representation for overflow of altitude
-            if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-            requested_position.alt = (int32_t)(packet.z * 100.0f);
-
-            // load option flags
-            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                requested_position.flags.relative_alt = 1;
-            }
-            else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-                requested_position.flags.terrain_alt = 1;
-            }
-            else if (packet.frame != MAV_FRAME_GLOBAL_INT) {
-                // not a supported frame
-                break;
-            }
-
-            if (is_zero(packet.param4)) {
-                requested_position.flags.loiter_ccw = 0;
-            } else {
-                requested_position.flags.loiter_ccw = 1;
-            }
-
-            if (location_sanitize(plane.current_loc, requested_position)) {
-                // if the location wasn't already sane don't load it
-                result = MAV_RESULT_FAILED; // failed as the location is not valid
-                break;
-            }
-
-            // location is valid load and set
-            if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-                (plane.control_mode == GUIDED)) {
-                plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
-                plane.guided_WP_loc = requested_position;
-
-                // add home alt if needed
-                if (plane.guided_WP_loc.flags.relative_alt) {
-                    plane.guided_WP_loc.alt += plane.home.alt;
-                    plane.guided_WP_loc.flags.relative_alt = 0;
-                }
-
-                plane.set_guided_WP();
-
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED; // failed as we are not in guided
-            }
-            break;
-        }
-
-        mavlink_msg_command_ack_send_buf(
-            msg,
-            chan,
-            packet.command,
-            result);
-
-        break;
-    }
 
 #if GEOFENCE_ENABLED == ENABLED
     // receive a fence point from GCS and store in EEPROM
