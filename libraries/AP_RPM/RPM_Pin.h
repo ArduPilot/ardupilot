@@ -30,15 +30,7 @@ public:
     void update(void);
 
 private:
-    static void irq_handler(uint8_t instance);
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    static int irq_handler0(int irq, void *context);
-    static int irq_handler1(int irq, void *context);
-#else
-    static void irq_handler0(void);
-    static void irq_handler1(void);
-#endif
-    
+
     ModeFilterFloat_Size5 signal_quality_filter {3};
     uint8_t last_pin = -1;
     uint32_t last_gpio;
@@ -48,4 +40,9 @@ private:
         uint32_t dt_count;
     };
     static struct IrqState irq_state[RPM_MAX_INSTANCES];
+
+    void irq_handler(uint8_t pin,
+                     bool pin_state,
+                     uint32_t timestamp);
+
 };

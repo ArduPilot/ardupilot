@@ -105,34 +105,23 @@ void AP_RPM::init(void)
         return;
     }
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
-        {
-            uint8_t type = _type[num_instances];
-            uint8_t instance = num_instances;
+        const uint8_t type = _type[i];
 
-            if (type == RPM_TYPE_PX4_PWM) {
-                state[instance].instance = instance;
-                drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
-            }
+#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
+        if (type == RPM_TYPE_PX4_PWM) {
+            drivers[i] = new AP_RPM_PX4_PWM(*this, i, state[i]);
         }
 #endif
-        {
-            uint8_t type = _type[num_instances];
-            uint8_t instance = num_instances;
-            if (type == RPM_TYPE_PIN) {
-                state[instance].instance = instance;
-                drivers[instance] = new AP_RPM_Pin(*this, instance, state[instance]);
-            }
+        if (type == RPM_TYPE_PIN) {
+            drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
         }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        uint8_t instance = num_instances;
-        state[instance].instance = instance;
-        drivers[instance] = new AP_RPM_SITL(*this, instance, state[instance]);
+        drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
 #endif
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
-            num_instances = i+1;
+            num_instances = i+1; // num_instances is a high-water-mark
         }
     }
 }
