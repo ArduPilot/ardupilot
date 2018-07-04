@@ -2318,6 +2318,10 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_common_mission_message(msg);
         break;
 
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+        handle_command_long(msg);
+        break;
+
     case MAVLINK_MSG_ID_COMMAND_INT:
         handle_command_int(msg);
         break;
@@ -2653,7 +2657,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &packet)
 {
     AP_Gripper *gripper = AP::gripper();
     if (gripper == nullptr) {
@@ -2685,7 +2689,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(mavlink_command_long_t &packet
     return result;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
@@ -2771,6 +2775,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     }
 
     return result;
+}
+
+void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
+{
+    // decode packet
+    mavlink_command_long_t packet;
+    mavlink_msg_command_long_decode(msg, &packet);
+
+    const MAV_RESULT result = handle_command_long_packet(packet);
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
