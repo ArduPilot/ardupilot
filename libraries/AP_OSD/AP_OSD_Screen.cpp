@@ -116,11 +116,11 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     //@Group: ASPEED
     //@Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(wind, "ASPEED", 19, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(aspeed, "ASPEED", 19, AP_OSD_Screen, AP_OSD_Setting),
 
     //@Group: VSPEED
     //@Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(wind, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -190,7 +190,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
     AP_BattMonitor &battery = AP_BattMonitor::battery();
     uint8_t p = battery.capacity_remaining_pct();
     p = (100 - p) / 16.6;
-    backend->write(x,y, battery.has_failsafed(), "%c%2.1fV", SYM_BATT_FULL + p, battery.voltage());
+    backend->write(x,y, battery.has_failsafed(), "%c%2.1f%c", SYM_BATT_FULL + p, battery.voltage(), SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
@@ -207,7 +207,7 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
     float amps = battery.current_amps();
-    backend->write(x, y, false, "%c%2.1f", SYM_AMP, amps);
+    backend->write(x, y, false, "%2.1f%c", amps, SYM_AMP);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -227,7 +227,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
-    backend->write(x,y, battery.has_failsafed(), "%c%4.0f", SYM_MAH, battery.consumed_mah());
+    backend->write(x,y, battery.has_failsafed(), "%4.0f%c", battery.consumed_mah(), SYM_MAH);
 }
 
 //Autoscroll message is the same as in minimosd-extra.
@@ -364,7 +364,7 @@ void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 {
     const int8_t total_sectors = 16;
-    char compass_circle[total_sectors] = {
+    static const char compass_circle[total_sectors] = {
         SYM_HEADING_N,
         SYM_HEADING_LINE,
         SYM_HEADING_DIVIDED_LINE,
@@ -386,7 +386,7 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
     int32_t yaw = ahrs.yaw_sensor;
     int32_t interval = 36000 / total_sectors;
     int8_t center_sector = ((yaw + interval / 2) / interval) % total_sectors;
-    for (int8_t i=-2; i<=2; i++) {
+    for (int8_t i = -4; i <= 4; i++) {
         int8_t sector = center_sector + i;
         sector = (sector + total_sectors) % total_sectors;
         backend->write(x + i, y, false,  "%c", compass_circle[sector]);
@@ -396,7 +396,7 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
     Vector3f v = AP::ahrs().wind_estimate();
-    backend->write(x, y, "%c", SYM_WIND);
+    backend->write(x, y, false, "%c", SYM_WIND);
     draw_speed_vector(x + 1, y, Vector2f(v.x, v.y));
 }
 
@@ -404,7 +404,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
 {
     float aspd = 0.0f;
     if (AP::ahrs().airspeed_estimate(&aspd)) {
-        backend->write(x, y, false, "A%3.0f%c", aspd * 3.6, SYM_KMH);
+        backend->write(x, y, false, "A%4.0f%c", aspd * 3.6, SYM_KMH);
     }
 }
 
@@ -420,8 +420,10 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_UP;
     } else if (vspd >= -3.0f) {
         sym = SYM_DOWN;
+        vspd = -vspd;
     } else {
         sym = SYM_DOWN_DOWN;
+        vspd = -vspd;
     }
     backend->write(x, y, false, "%c%2.0f%c", sym, vspd, SYM_MS);
 }
