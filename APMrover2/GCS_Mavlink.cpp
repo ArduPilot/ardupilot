@@ -517,6 +517,152 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+#if MOUNT == ENABLED
+        // Sets the region of interest (ROI) for the camera
+    case MAV_CMD_DO_SET_ROI:
+        // sanity check location
+        if (!check_latlng(packet.param5, packet.param6)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location roi_loc;
+        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+            // switch off the camera tracking if enabled
+            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                rover.camera_mount.set_mode_to_default();
+            }
+        } else {
+            // send the command to the camera mount
+            rover.camera_mount.set_roi_target(roi_loc);
+        }
+        return MAV_RESULT_ACCEPTED;
+#endif
+
+#if MOUNT == ENABLED
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        rover.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+        return MAV_RESULT_ACCEPTED;
+#endif
+
+    case MAV_CMD_MISSION_START:
+        rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        if (is_equal(packet.param1, 1.0f)) {
+            // run pre_arm_checks and arm_checks and display failures
+            if (rover.arm_motors(AP_Arming::MAVLINK)) {
+                return MAV_RESULT_ACCEPTED;
+            } else {
+                return MAV_RESULT_FAILED;
+            }
+        } else if (is_zero(packet.param1))  {
+            if (rover.disarm_motors()) {
+                return MAV_RESULT_ACCEPTED;
+            } else {
+                return MAV_RESULT_FAILED;
+            }
+        }
+        return MAV_RESULT_UNSUPPORTED;
+
+    case MAV_CMD_DO_FENCE_ENABLE:
+        switch ((uint16_t)packet.param1) {
+        case 0:
+            rover.g2.fence.enable(false);
+            return MAV_RESULT_ACCEPTED;
+        case 1:
+            rover.g2.fence.enable(true);
+            return MAV_RESULT_ACCEPTED;
+        default:
+            break;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_CHANGE_SPEED:
+        // param1 : unused
+        // param2 : new speed in m/s
+        if (!rover.control_mode->set_desired_speed(packet.param2)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_DO_SET_HOME:
+    {
+        // param1 : use current (1=use current location, 0=use specified location)
+        // param5 : latitude
+        // param6 : longitude
+        // param7 : altitude
+        if (is_equal(packet.param1, 1.0f)) {
+            if (rover.set_home_to_current_location(true)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else {
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                return MAV_RESULT_FAILED;
+            }
+            Location new_home_loc {};
+            new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
+            new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
+            new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
+            if (rover.set_home(new_home_loc, true)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+        }
+        return MAV_RESULT_FAILED;
+    }
+
+    case MAV_CMD_NAV_SET_YAW_SPEED:
+    {
+        // param1 : yaw angle to adjust direction by in centidegress
+        // param2 : Speed - normalized to 0 .. 1
+
+        // exit if vehicle is not in Guided mode
+        if (rover.control_mode != &rover.mode_guided) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+
+        // send yaw change and target speed to guided mode controller
+        const float speed_max = rover.control_mode->get_speed_default();
+        const float target_speed = constrain_float(packet.param2 * speed_max, -speed_max, speed_max);
+        rover.mode_guided.set_desired_heading_delta_and_speed(packet.param1, target_speed);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    case MAV_CMD_ACCELCAL_VEHICLE_POS:
+        if (!rover.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_DO_MOTOR_TEST:
+        // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
+        // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
+        // param3 : throttle (range depends upon param2)
+        // param4 : timeout (in seconds)
+        return rover.mavlink_motor_test_start(chan,
+                                              static_cast<uint8_t>(packet.param1),
+                                              static_cast<uint8_t>(packet.param2),
+                                              static_cast<int16_t>(packet.param3),
+                                              packet.param4);
+
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet);
+    }
+}
+
+
+
 void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -622,181 +768,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
         break;
     }
-
-    case MAVLINK_MSG_ID_COMMAND_LONG:
-        {
-            // decode
-            mavlink_command_long_t packet;
-            mavlink_msg_command_long_decode(msg, &packet);
-
-            MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-
-            // do command
-
-            switch (packet.command) {
-
-            case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-                rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-#if MOUNT == ENABLED
-            // Sets the region of interest (ROI) for the camera
-            case MAV_CMD_DO_SET_ROI:
-                // sanity check location
-                if (!check_latlng(packet.param5, packet.param6)) {
-                    break;
-                }
-                Location roi_loc;
-                roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-                roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-                roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-                    // switch off the camera tracking if enabled
-                    if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                        rover.camera_mount.set_mode_to_default();
-                    }
-                } else {
-                    // send the command to the camera mount
-                    rover.camera_mount.set_roi_target(roi_loc);
-                }
-                result = MAV_RESULT_ACCEPTED;
-                break;
-#endif
-
-            case MAV_CMD_DO_MOUNT_CONTROL:
-#if MOUNT == ENABLED
-                rover.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-                result = MAV_RESULT_ACCEPTED;
-#endif
-                break;
-
-            case MAV_CMD_MISSION_START:
-                rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-        case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (is_equal(packet.param1, 1.0f)) {
-                // run pre_arm_checks and arm_checks and display failures
-                if (rover.arm_motors(AP_Arming::MAVLINK)) {
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else if (is_zero(packet.param1))  {
-                if (rover.disarm_motors()) {
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else {
-                result = MAV_RESULT_UNSUPPORTED;
-            }
-            break;
-
-        case MAV_CMD_DO_FENCE_ENABLE:
-            result = MAV_RESULT_ACCEPTED;
-            switch ((uint16_t)packet.param1) {
-                case 0:
-                    rover.g2.fence.enable(false);
-                    break;
-                case 1:
-                    rover.g2.fence.enable(true);
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-            }
-            break;
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            // param1 : unused
-            // param2 : new speed in m/s
-            if (rover.control_mode->set_desired_speed(packet.param2)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-
-        case MAV_CMD_DO_SET_HOME:
-        {
-            // param1 : use current (1=use current location, 0=use specified location)
-            // param5 : latitude
-            // param6 : longitude
-            // param7 : altitude
-            result = MAV_RESULT_FAILED;  // assume failure
-            if (is_equal(packet.param1, 1.0f)) {
-                if (rover.set_home_to_current_location(true)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            } else {
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                Location new_home_loc {};
-                new_home_loc.lat = static_cast<int32_t>(packet.param5 * 1.0e7f);
-                new_home_loc.lng = static_cast<int32_t>(packet.param6 * 1.0e7f);
-                new_home_loc.alt = static_cast<int32_t>(packet.param7 * 100.0f);
-                if (rover.set_home(new_home_loc, true)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            }
-            break;
-        }
-
-        case MAV_CMD_NAV_SET_YAW_SPEED:
-        {
-            // param1 : yaw angle to adjust direction by in centidegress
-            // param2 : Speed - normalized to 0 .. 1
-
-            // exit if vehicle is not in Guided mode
-            if (rover.control_mode != &rover.mode_guided) {
-                break;
-            }
-
-            // send yaw change and target speed to guided mode controller
-            const float speed_max = rover.control_mode->get_speed_default();
-            const float target_speed = constrain_float(packet.param2 * speed_max, -speed_max, speed_max);
-            rover.mode_guided.set_desired_heading_delta_and_speed(packet.param1, target_speed);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-        }
-
-        case MAV_CMD_ACCELCAL_VEHICLE_POS:
-            result = MAV_RESULT_FAILED;
-
-            if (rover.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_DO_MOTOR_TEST:
-            // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
-            // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
-            // param3 : throttle (range depends upon param2)
-            // param4 : timeout (in seconds)
-            result = rover.mavlink_motor_test_start(chan, static_cast<uint8_t>(packet.param1),
-                                                    static_cast<uint8_t>(packet.param2),
-                                                    static_cast<int16_t>(packet.param3),
-                                                    packet.param4);
-            break;
-
-        default:
-            result = handle_command_long_message(packet);
-                break;
-            }
-
-            mavlink_msg_command_ack_send_buf(
-                msg,
-                chan,
-                packet.command,
-                result);
-
-            break;
-        }
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
     {
