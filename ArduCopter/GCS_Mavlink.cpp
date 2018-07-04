@@ -604,6 +604,86 @@ MAV_RESULT GCS_MAVLINK_Copter::_handle_command_preflight_calibration(const mavli
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    switch(packet.command) {
+    case MAV_CMD_DO_FOLLOW:
+#if MODE_FOLLOW_ENABLED == ENABLED
+        // param1: sysid of target to follow
+        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+            copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
+            return MAV_RESULT_ACCEPTED;
+        }
+#endif
+        return MAV_RESULT_UNSUPPORTED;
+
+    case MAV_CMD_DO_SET_HOME: {
+        // assume failure
+        if (is_equal(packet.param1, 1.0f)) {
+            // if param1 is 1, use current location
+            if (!copter.set_home_to_current_location(true)) {
+                return MAV_RESULT_FAILED;
+            }
+            return MAV_RESULT_ACCEPTED;
+        }
+        // ensure param1 is zero
+        if (!is_zero(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
+        // check frame type is supported
+        if (packet.frame != MAV_FRAME_GLOBAL &&
+            packet.frame != MAV_FRAME_GLOBAL_INT &&
+            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location new_home_loc {};
+        new_home_loc.lat = packet.x;
+        new_home_loc.lng = packet.y;
+        new_home_loc.alt = packet.z * 100;
+        // handle relative altitude
+        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            if (!AP::ahrs().home_is_set()) {
+                // cannot use relative altitude if home is not set
+                return MAV_RESULT_FAILED;
+            }
+            new_home_loc.alt += copter.ahrs.get_home().alt;
+        }
+        if (!copter.set_home(new_home_loc, true)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    case MAV_CMD_DO_SET_ROI: {
+        // param1 : /* Region of interest mode (not used)*/
+        // param2 : /* MISSION index/ target ID (not used)*/
+        // param3 : /* ROI index (not used)*/
+        // param4 : /* empty */
+        // x : lat
+        // y : lon
+        // z : alt
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location roi_loc;
+        roi_loc.lat = packet.x;
+        roi_loc.lng = packet.y;
+        roi_loc.alt = (int32_t)(packet.z * 100.0f);
+        copter.flightmode->auto_yaw.set_roi(roi_loc);
+        return MAV_RESULT_ACCEPTED;
+    }
+    default:
+        return GCS_MAVLINK::handle_command_int_packet(packet);
+    }
+}
+
 void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;         // assume failure.  Each messages id is responsible for return ACK or NAK if required
@@ -705,97 +785,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = tnow;
-        break;
-    }
-
-    case MAVLINK_MSG_ID_COMMAND_INT:
-    {
-        // decode packet
-        mavlink_command_int_t packet;
-        mavlink_msg_command_int_decode(msg, &packet);
-        switch(packet.command)
-        {
-            case MAV_CMD_DO_FOLLOW:
-#if MODE_FOLLOW_ENABLED == ENABLED
-                // param1: sysid of target to follow
-                if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-                    copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
-                    result = MAV_RESULT_ACCEPTED;
-                }
-#endif
-                break;
-
-            case MAV_CMD_DO_SET_HOME: {
-                // assume failure
-                result = MAV_RESULT_FAILED;
-                if (is_equal(packet.param1, 1.0f)) {
-                    // if param1 is 1, use current location
-                    if (copter.set_home_to_current_location(true)) {
-                        result = MAV_RESULT_ACCEPTED;
-                    }
-                    break;
-                }
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                // check frame type is supported
-                if (packet.frame != MAV_FRAME_GLOBAL &&
-                    packet.frame != MAV_FRAME_GLOBAL_INT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    break;
-                }
-                // sanity check location
-                if (!check_latlng(packet.x, packet.y)) {
-                    break;
-                }
-                Location new_home_loc {};
-                new_home_loc.lat = packet.x;
-                new_home_loc.lng = packet.y;
-                new_home_loc.alt = packet.z * 100;
-                // handle relative altitude
-                if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    if (!AP::ahrs().home_is_set()) {
-                        // cannot use relative altitude if home is not set
-                        break;
-                    }
-                    new_home_loc.alt += copter.ahrs.get_home().alt;
-                }
-                if (copter.set_home(new_home_loc, true)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-
-            case MAV_CMD_DO_SET_ROI: {
-                // param1 : /* Region of interest mode (not used)*/
-                // param2 : /* MISSION index/ target ID (not used)*/
-                // param3 : /* ROI index (not used)*/
-                // param4 : /* empty */
-                // x : lat
-                // y : lon
-                // z : alt
-                // sanity check location
-                if (!check_latlng(packet.x, packet.y)) {
-                    break;
-                }
-                Location roi_loc;
-                roi_loc.lat = packet.x;
-                roi_loc.lng = packet.y;
-                roi_loc.alt = (int32_t)(packet.z * 100.0f);
-                copter.flightmode->auto_yaw.set_roi(roi_loc);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-            }
-
-            default:
-                result = MAV_RESULT_UNSUPPORTED;
-                break;
-        }
-
-        // send ACK or NAK
-        mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
         break;
     }
 
