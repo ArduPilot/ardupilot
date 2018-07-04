@@ -55,7 +55,7 @@ private:
     static const uint8_t char_height = 18;
     static const uint8_t video_lines = 16; // PAL
     static const uint8_t video_cols = 30;
-    static const uint8_t char_spacing = 1;
+    static const uint8_t char_spacing = 0;
 
     // scaling factor to make it easier to read
     static const uint8_t char_scale = 2;
