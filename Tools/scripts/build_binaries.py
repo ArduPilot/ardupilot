@@ -58,8 +58,9 @@ class build_binaries(object):
         cmd_list.extend(args)
         self.run_program("BB-WAF", cmd_list)
 
-    def run_program(self, prefix, cmd_list):
-        self.progress("Running (%s)" % " ".join(cmd_list))
+    def run_program(self, prefix, cmd_list, show_output=True):
+        if show_output:
+            self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
                              stderr=subprocess.STDOUT)
@@ -75,9 +76,10 @@ class build_binaries(object):
                 continue
             output += x
             x = x.rstrip()
-            print("%s: %s" % (prefix, x))
+            if show_output:
+                print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0:
+        if status != 0 and show_output:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -146,24 +148,20 @@ is bob we will attempt to checkout bob-AVR'''
         '''
 
         try:
-            if self.string_in_filepath(board,
-                                       os.path.join(self.basedir,
-                                                    'Tools',
-                                                    'ardupilotwaf',
-                                                    'boards.py')):
-                return False
+            out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
+            lines = out.split('\n')
+            needle = "BOARDTEST' (choose from"
+            for line in lines:
+                idx = line.find(needle)
+                if idx != -1:
+                    line = line[idx+len(needle):-1]
+                    line = line.replace("'","")
+                    line = line.replace(" ","")
+                    boards = line.split(",")
+                    return not board in boards
         except IOError as e:
             if e.errno != 2:
                 raise
-
-        # see if there's a hwdef.dat for this board:
-        if os.path.exists(os.path.join(self.basedir,
-                                       'libraries',
-                                       'AP_HAL_ChibiOS',
-                                       'hwdef',
-                                       board)):
-            self.progress("ChibiOS build: %s" % (board,))
-            return False
 
         self.progress("Skipping unsupported board %s" % (board,))
         return True
