@@ -504,8 +504,8 @@ void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
     int32_t dec_portion, frac_portion;
     int32_t abs_lat = labs(loc.lat);
 
-    dec_portion = abs_lat / 10000000UL;
-    frac_portion = abs_lat - dec_portion*10000000UL;
+    dec_portion = loc.lat / 10000000L;
+    frac_portion = abs_lat - labs(dec_portion)*10000000UL;
 
     backend->write(x, y, false, "%c%3ld.%07ld", SYM_GPS_LAT, (long)dec_portion,(long)frac_portion);
 }
@@ -517,8 +517,8 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
     int32_t dec_portion, frac_portion;
     int32_t abs_lon = labs(loc.lng);
 
-    dec_portion = abs_lon / 10000000UL;
-    frac_portion = abs_lon - dec_portion*10000000UL;
+    dec_portion = loc.lng / 10000000L;
+    frac_portion = abs_lon - labs(dec_portion)*10000000UL;
 
     backend->write(x, y, false, "%c%3ld.%07ld", SYM_GPS_LONG, (long)dec_portion,(long)frac_portion);
 }
