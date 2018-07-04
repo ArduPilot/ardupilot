@@ -618,6 +618,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
+#if VISCA == ENABLED
+    // @group: VISCA
+    // @Path : ../libraries/AP_Visca_Camera/AP_Visca_Camera.cpp
+    GOBJECT(visca_camera,       "VSC_", AP_Visca_Camera),
+#endif
+
     // @Group: LOG
     // @Path: ../libraries/DataFlash/DataFlash.cpp
     GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
