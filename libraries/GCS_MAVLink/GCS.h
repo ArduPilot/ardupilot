@@ -355,6 +355,7 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration_baro();
 
     void handle_command_long(mavlink_message_t* msg);
+    MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
