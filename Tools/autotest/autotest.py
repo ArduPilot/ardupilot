@@ -87,7 +87,7 @@ def build_all_filepath():
 def build_all():
     """Run the build_all.sh script."""
     print("Running build_all.sh")
-    if util.run_cmd(build_all_filepath, directory=util.reltopdir('.')) != 0:
+    if util.run_cmd(build_all_filepath(), directory=util.reltopdir('.')) != 0:
         print("Failed build_all.sh")
         return False
     return True
