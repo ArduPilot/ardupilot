@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -163,7 +163,8 @@ void AP_OSD::update_osd()
     backend->clear();
 
     update_current_screen();
-
+    
+    screen[current_screen].set_osd(this);
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();
 

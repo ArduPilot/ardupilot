@@ -342,6 +342,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     float roll = ahrs.roll;
     float pitch = -ahrs.pitch;
+    
+    //inverted roll AH
+    if(osd->options.get() & AP_OSD::OPTION_INVERTED_AH_ROLL) {
+        roll = -roll;
+    }
 
     roll = constrain_float(roll, -ah_max_roll, ah_max_roll);
     pitch = constrain_float(pitch, -ah_max_pitch, ah_max_pitch);
@@ -434,6 +439,9 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     Vector3f v = ahrs.wind_estimate();
+    if(osd->options.get() & AP_OSD::OPTION_INVERTED_WIND) {
+        v = -v;
+    }
     backend->write(x, y, false, "%c", SYM_WSPD);
     draw_speed_vector(x + 1, y, Vector2f(v.x, v.y), ahrs.yaw_sensor);
 }

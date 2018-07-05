@@ -39,6 +39,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 };
 
+class AP_OSD;
 
 /*
   class to hold one screen of settings
@@ -55,6 +56,11 @@ public:
         backend = _backend;
     };
 
+    void set_osd(AP_OSD *_osd)
+    {
+        osd = _osd;
+    };
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -64,6 +70,7 @@ public:
 
 private:
     AP_OSD_Backend *backend;
+    AP_OSD *osd;
 
     static const uint16_t message_show_time_ms = 20000;
     static const uint8_t message_visible_width = 26;
@@ -168,6 +175,8 @@ public:
 
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
+        OPTION_INVERTED_WIND = 1U<<1,
+        OPTION_INVERTED_AH_ROLL = 1U<<2,
     };
 
     AP_Int32 options;
