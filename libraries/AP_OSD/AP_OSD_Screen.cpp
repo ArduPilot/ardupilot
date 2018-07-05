@@ -168,6 +168,18 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_KMH   0xA1
 #define SYM_DEGR  0xA8
 #define SYM_PCNT  0x25
+#define SYM_RPM   0xE0
+#define SYM_ASPD  0xE1
+#define SYM_GSPD  0xE2
+#define SYM_WSPD  0xE3
+#define SYM_VSPD  0xE4
+#define SYM_WPNO  0xE5
+#define SYM_WPDIR  0xE6
+#define SYM_WPDST  0xE7
+#define SYM_FTMIN  0xE8
+#define SYM_FTSEC  0x99
+
+
 
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
@@ -320,7 +332,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
-    backend->write(x, y, false, "G");
+    backend->write(x, y, false, "%c", SYM_GSPD);
     draw_speed_vector(x + 1, y, v, ahrs.yaw_sensor);
 }
 
@@ -422,7 +434,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     Vector3f v = ahrs.wind_estimate();
-    backend->write(x, y, false, "%c", SYM_WIND);
+    backend->write(x, y, false, "%c", SYM_WSPD);
     draw_speed_vector(x + 1, y, Vector2f(v.x, v.y), ahrs.yaw_sensor);
 }
 
@@ -430,9 +442,9 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
 {
     float aspd = 0.0f;
     if (AP::ahrs().airspeed_estimate(&aspd)) {
-        backend->write(x, y, false, "A%4.0f%c", aspd * 3.6, SYM_KMH);
+        backend->write(x, y, false, "%c%4.0f%c", SYM_ASPD, aspd * 3.6, SYM_KMH);
     } else {
-        backend->write(x, y, false, "A ---%c", SYM_KMH);
+        backend->write(x, y, false, "%c ---%c", SYM_ASPD, SYM_KMH);
     }
 }
 
@@ -484,7 +496,7 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
         }
 
         int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
-        backend->write(x, y, false, "%5d RPM", esc_rpm);
+        backend->write(x, y, false, "%5d%c", esc_rpm, SYM_RPM);
     }
 }
 
@@ -568,4 +580,3 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
 }
-
