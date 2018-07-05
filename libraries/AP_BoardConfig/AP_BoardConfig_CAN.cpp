@@ -139,7 +139,7 @@ void AP_BoardConfig_CAN::setup_canbus(void)
                 _var_info_can_protocol[i]._uavcan = new AP_UAVCAN;
 
                 if (_var_info_can_protocol[i]._uavcan == nullptr) {
-                    AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
+                    AP_HAL::panic("Failed to allocate uavcan %d", i + 1);
                     continue;
                 }
                 
