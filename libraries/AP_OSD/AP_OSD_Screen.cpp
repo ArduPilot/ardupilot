@@ -157,7 +157,10 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_M           0xB9
 #define SYM_KM          0xBA
+#define SYM_FT          0x0F
+#define SYM_MI          0xBB
 #define SYM_ALT_M       0xB1
+#define SYM_ALT_FT      0xB3
 #define SYM_BATT_FULL   0x90
 #define SYM_RSSI        0x01
 
@@ -165,7 +168,9 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AMP   0x9A
 #define SYM_MAH   0x07
 #define SYM_MS    0x9F
+#define SYM_FS    0x99
 #define SYM_KMH   0xA1
+#define SYM_MPH   0xB0
 #define SYM_DEGR  0xA8
 #define SYM_PCNT  0x25
 #define SYM_RPM   0xE0
@@ -214,11 +219,24 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_GPS_LAT   0xA6
 #define SYM_GPS_LONG  0xA7
 
+//units convertion
+#define M_TO_FT(x) (3.28084f*(x))
+#define M_TO_MI(x) ((x)/1609.34f)
+#define M_TO_KM(x) ((x)/1000.0f)
+#define MS_TO_KMH(x) (3.6f*(x))
+#define MS_TO_MPH(x) (2.23694f*(x))
+#define MS_TO_FS(x) (3.28084f*(x))
+
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
-    backend->write(x, y, false, "%4.0f%c", -alt, SYM_ALT_M);
+    alt = -alt;
+    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        backend->write(x, y, false, "%4d%c", (int)M_TO_FT(alt), SYM_ALT_FT);
+    } else {
+        backend->write(x, y, false, "%4d%c", (int)alt, SYM_ALT_M);
+    }
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
@@ -325,7 +343,11 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t y
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
-    backend->write(x, y, false, "%c%3.0f%c", arrow,  v_length * 3.6, SYM_KMH);
+    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        backend->write(x, y, false, "%c%3d%c", arrow,  (int)MS_TO_MPH(v_length), SYM_MPH);
+    } else {    
+        backend->write(x, y, false, "%c%3d%c", arrow,  (int)MS_TO_KMH(v_length), SYM_KMH);
+    }
 }
 
 void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
@@ -378,12 +400,21 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
             angle = 0;
         }
         char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
-        if (distance < 999.0f) {
-            backend->write(x, y, false, "%c%c%3.0f%c", SYM_HOME, arrow, distance, SYM_M);
-        } else if (distance < 9999.0f) {
-            backend->write(x, y, false, "%c%c%1.1f%c", SYM_HOME, arrow, distance/1000, SYM_KM);
+        if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+            float distance_in_ft = M_TO_FT(distance);
+            if(distance_in_ft < 9999.0f) {
+                backend->write(x, y, false, "%c%c%4d%c", SYM_HOME, arrow, (int)distance_in_ft, SYM_FT);
+            } else {
+                backend->write(x, y, false, "%c%c%2.2f%c", SYM_HOME, arrow, M_TO_MI(distance), SYM_MI);
+            }
         } else {
-            backend->write(x, y, false, "%c%c%3.0f%c", SYM_HOME, arrow, distance/1000, SYM_KM);
+            if (distance < 9999.0f) {
+                backend->write(x, y, false, "%c%c%4d%c", SYM_HOME, arrow, (int)distance, SYM_M);
+            } else if (distance < 99999.0f) {
+                backend->write(x, y, false, "%c%c%2.2f%c", SYM_HOME, arrow, M_TO_KM(distance), SYM_KM);
+            } else {
+                backend->write(x, y, false, "%c%c%4d%c", SYM_HOME, arrow, (int)M_TO_KM(distance), SYM_KM);
+            }
         }
     } else {
         backend->write(x, y, true, "%c", SYM_HOME);
@@ -449,10 +480,19 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
 {
     float aspd = 0.0f;
-    if (AP::ahrs().airspeed_estimate(&aspd)) {
-        backend->write(x, y, false, "%c%4.0f%c", SYM_ASPD, aspd * 3.6, SYM_KMH);
+    bool have_estimate = AP::ahrs().airspeed_estimate(&aspd);
+    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        if (have_estimate) {
+            backend->write(x, y, false, "%c%3d%c", SYM_ASPD, (int)MS_TO_MPH(aspd), SYM_MPH);
+        } else {
+            backend->write(x, y, false, "%c---%c", SYM_ASPD, SYM_MPH);
+        }                
     } else {
-        backend->write(x, y, false, "%c ---%c", SYM_ASPD, SYM_KMH);
+        if (have_estimate) {
+            backend->write(x, y, false, "%c%3d%c", SYM_ASPD, (int)MS_TO_KMH(aspd), SYM_KMH);
+        } else {
+            backend->write(x, y, false, "%c---%c", SYM_ASPD, SYM_KMH);
+        }        
     }
 }
 
@@ -472,7 +512,11 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_DOWN_DOWN;
     }
     vspd = fabsf(vspd);
-    backend->write(x, y, false, "%c%2.0f%c", sym, vspd, SYM_MS);
+    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        backend->write(x, y, false, "%c%2d%c", sym, (int)MS_TO_FS(vspd), SYM_FS);
+    } else {
+        backend->write(x, y, false, "%c%2d%c", sym, (int)vspd, SYM_MS);
+    }
 }
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
