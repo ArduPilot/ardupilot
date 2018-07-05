@@ -84,6 +84,20 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("_FONT", 9, AP_OSD, font_num, 0),
     
+    // @Param: _V_OFFSET
+    // @DisplayName: OSD vertical offset
+    // @Description: Sets vertical offset of the osd inside image
+    // @Range: 0 31
+    // @User: Standard
+    AP_GROUPINFO("_V_OFFSET", 10, AP_OSD, v_offset, 16),
+
+    // @Param: _H_OFFSET
+    // @DisplayName: OSD horizontal offset
+    // @Description: Sets horizontal offset of the osd inside image
+    // @Range: 0 63
+    // @User: Standard
+    AP_GROUPINFO("_H_OFFSET", 11, AP_OSD, h_offset, 32),
+
     AP_GROUPEND
 };
 

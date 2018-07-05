@@ -337,6 +337,12 @@ void AP_OSD_MAX7456::reinit()
     _dev->write_register(MAX7456ADD_VM1, BLINK_DUTY_CYCLE_50_50 | BLINK_TIME_3 | BACKGROUND_BRIGHTNESS_28);
     _dev->write_register(MAX7456ADD_DMM, DMM_CLEAR_DISPLAY);
 
+    //write osd position
+    int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
+    int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+    _dev->write_register(MAX7456ADD_HOS, hos);
+    _dev->write_register(MAX7456ADD_VOS, vos);
+
     // force redrawing all screen
     memset(shadow_frame, 0xFF, sizeof(shadow_frame));
     memset(shadow_attr, 0xFF, sizeof(shadow_attr));
