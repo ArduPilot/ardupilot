@@ -98,6 +98,27 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_H_OFFSET", 11, AP_OSD, h_offset, 32),
 
+    // @Param: _W_RSSI
+    // @DisplayName: RSSI warn level (in %)
+    // @Description: Set level at which RSSI item will flash
+    // @Range: 0 99
+    // @User: Standard
+    AP_GROUPINFO("_W_RSSI", 11, AP_OSD, warn_rssi, 30),
+
+    // @Param: _W_NSAT
+    // @DisplayName: NSAT warn leve
+    // @Description: Set level at which NSAT item will flash
+    // @Range: 1 30
+    // @User: Standard
+    AP_GROUPINFO("_W_NSAT", 12, AP_OSD, warn_nsat, 9),
+
+    // @Param: _W_BATVOLT
+    // @DisplayName: BAT_VOLT warn level
+    // @Description: Set level at which BAT_VOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_BATVOLT", 13, AP_OSD, warn_batvolt, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -163,7 +184,7 @@ void AP_OSD::update_osd()
     backend->clear();
 
     update_current_screen();
-    
+
     screen[current_screen].set_osd(this);
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();

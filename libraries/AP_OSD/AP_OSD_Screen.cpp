@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_temp, "BLHTEMP", 21, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Group: BLHRPM 
+    // @Group: BLHRPM
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_rpm, "BLHRPM", 22, AP_OSD_Screen, AP_OSD_Setting),
 
@@ -136,7 +136,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
-    
+
     // @Group: GPSLAT
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gps_latitude, "GPSLAT", 24, AP_OSD_Screen, AP_OSD_Setting),
@@ -232,7 +232,7 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
     float alt;
     AP::ahrs().get_relative_position_D_home(alt);
     alt = -alt;
-    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+    if (osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
         backend->write(x, y, false, "%4d%c", (int)M_TO_FT(alt), SYM_ALT_FT);
     } else {
         backend->write(x, y, false, "%4d%c", (int)alt, SYM_ALT_M);
@@ -242,9 +242,10 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
-    uint8_t p = battery.capacity_remaining_pct();
-    p = (100 - p) / 16.6;
-    backend->write(x,y, battery.has_failsafed(), "%c%2.1f%c", SYM_BATT_FULL + p, battery.voltage(), SYM_VOLT);
+    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t p = (100 - pct) / 16.6;
+    float v = battery.voltage();
+    backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYM_BATT_FULL + p, v, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
@@ -253,7 +254,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     if (ap_rssi) {
         int rssiv = ap_rssi->read_receiver_rssi_uint8();
         rssiv = (rssiv * 99) / 255;
-        backend->write(x, y, rssiv < 5, "%c%2d", SYM_RSSI, rssiv);
+        backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
     }
 }
 
@@ -275,13 +276,14 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    backend->write(x, y, false, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, gps.num_sats());
+    int nsat = gps.num_sats();
+    backend->write(x, y, nsat < osd->warn_nsat , "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
-    backend->write(x,y, battery.has_failsafed(), "%4.0f%c", battery.consumed_mah(), SYM_MAH);
+    backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
 }
 
 //Autoscroll message is the same as in minimosd-extra.
@@ -343,10 +345,10 @@ void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t y
         int32_t interval = 36000 / SYM_ARROW_COUNT;
         arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
     }
-    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
-        backend->write(x, y, false, "%c%3d%c", arrow,  (int)MS_TO_MPH(v_length), SYM_MPH);
-    } else {    
-        backend->write(x, y, false, "%c%3d%c", arrow,  (int)MS_TO_KMH(v_length), SYM_KMH);
+    if (osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)MS_TO_MPH(v_length), SYM_MPH);
+    } else {
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)MS_TO_KMH(v_length), SYM_KMH);
     }
 }
 
@@ -364,9 +366,9 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     float roll = ahrs.roll;
     float pitch = -ahrs.pitch;
-    
+
     //inverted roll AH
-    if(osd->options.get() & AP_OSD::OPTION_INVERTED_AH_ROLL) {
+    if (osd->options.get() & AP_OSD::OPTION_INVERTED_AH_ROLL) {
         roll = -roll;
     }
 
@@ -400,9 +402,9 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
             angle = 0;
         }
         char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
-        if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+        if (osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
             float distance_in_ft = M_TO_FT(distance);
-            if(distance_in_ft < 9999.0f) {
+            if (distance_in_ft < 9999.0f) {
                 backend->write(x, y, false, "%c%c%4d%c", SYM_HOME, arrow, (int)distance_in_ft, SYM_FT);
             } else {
                 backend->write(x, y, false, "%c%c%2.2f%c", SYM_HOME, arrow, M_TO_MI(distance), SYM_MI);
@@ -470,7 +472,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     Vector3f v = ahrs.wind_estimate();
-    if(osd->options.get() & AP_OSD::OPTION_INVERTED_WIND) {
+    if (osd->options.get() & AP_OSD::OPTION_INVERTED_WIND) {
         v = -v;
     }
     backend->write(x, y, false, "%c", SYM_WSPD);
@@ -481,7 +483,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
 {
     float aspd = 0.0f;
     bool have_estimate = AP::ahrs().airspeed_estimate(&aspd);
-    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+    if (osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
         if (have_estimate) {
             backend->write(x, y, false, "%c%3d%c", SYM_ASPD, (int)MS_TO_MPH(aspd), SYM_MPH);
         } else {
@@ -492,7 +494,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
             backend->write(x, y, false, "%c%3d%c", SYM_ASPD, (int)MS_TO_KMH(aspd), SYM_KMH);
         } else {
             backend->write(x, y, false, "%c---%c", SYM_ASPD, SYM_KMH);
-        }        
+        }
     }
 }
 
@@ -512,7 +514,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_DOWN_DOWN;
     }
     vspd = fabsf(vspd);
-    if(osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
+    if (osd->options.get() & AP_OSD::OPTION_IMPERIAL_UNITS) {
         backend->write(x, y, false, "%c%2d%c", sym, (int)MS_TO_FS(vspd), SYM_FS);
     } else {
         backend->write(x, y, false, "%c%2d%c", sym, (int)vspd, SYM_MS);
@@ -628,7 +630,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);
 #endif
-    
+
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
 }
