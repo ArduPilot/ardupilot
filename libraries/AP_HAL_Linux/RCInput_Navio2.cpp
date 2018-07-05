@@ -23,7 +23,7 @@ void RCInput_Navio2::init()
     for (size_t i = 0; i < ARRAY_SIZE(channels); i++) {
         channels[i] = open_channel(i);
         if (channels[i] < 0) {
-            AP_HAL::panic("[RCInput_Navio2]: failed to open channels\n");
+            AP_HAL::panic("[RCInput_Navio2]: failed to open channels");
         }
     }
 }
@@ -64,7 +64,7 @@ int RCInput_Navio2::open_channel(int channel)
 {
     char *channel_path;
     if (asprintf(&channel_path, "%s/ch%d", RCIN_SYSFS_PATH, channel) == -1) {
-        AP_HAL::panic("[RCInput_Navio2]: not enough memory\n");
+        AP_HAL::panic("[RCInput_Navio2]: not enough memory");
     }
 
     int fd = ::open(channel_path, O_RDONLY|O_CLOEXEC);
