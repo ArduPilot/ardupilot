@@ -365,10 +365,7 @@ class AutoTest(ABC):
     def set_parameter(self, name, value):
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
-            self.mavproxy.send("param fetch %s\n" % name)
-            self.mavproxy.expect("%s = (.*)" % (name,))
-            returned_value = self.mavproxy.match.group(1)
-            if float(returned_value) == float(value):
+            if self.get_parameter(name) == float(value):
                 # yes, exactly equal.
                 break
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
@@ -376,7 +373,7 @@ class AutoTest(ABC):
 
     def get_parameter(self, name):
         self.mavproxy.send("param fetch %s\n" % name)
-        self.mavproxy.expect("%s = ([-0-9.]*)" % (name,))
+        self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,))
         return float(self.mavproxy.match.group(1))
 
     #################################################
