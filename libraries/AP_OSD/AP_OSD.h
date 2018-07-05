@@ -92,13 +92,13 @@ private:
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
     AP_OSD_Setting vspeed{true, 24, 9};
-    
+
 #ifdef HAVE_AP_BLHELI_SUPPORT
-    AP_OSD_Setting blh_temp{false, 24, 13};
+    AP_OSD_Setting blh_temp {false, 24, 13};
     AP_OSD_Setting blh_rpm{false, 22, 12};
     AP_OSD_Setting blh_amps{false, 24, 14};
 #endif
-    
+
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
 
@@ -127,7 +127,7 @@ private:
     void draw_blh_rpm(uint8_t x, uint8_t y);
     void draw_blh_amps(uint8_t x, uint8_t y);
 #endif
-    
+
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);
 };
@@ -163,10 +163,13 @@ public:
     AP_Int8 sw_method;
     AP_Int8 font_num;
 
+    AP_Int8 v_offset;
+    AP_Int8 h_offset;
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
     };
-    
+
     AP_Int32 options;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
