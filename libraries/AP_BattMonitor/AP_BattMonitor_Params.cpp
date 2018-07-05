@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @DisplayName: Battery serial number
     // @Description: Battery serial number, automatically filled in for SMBus batteries, otherwise will be -1. With UAVCAN it is the battery_id.
     // @User: Advanced
-    AP_GROUPINFO("SERIAL_NUM", 9, AP_BattMonitor_Params, _serial_number, AP_BATT_SERIAL_NUMBER_DEFAULT),
+    AP_GROUPINFO_FLAGS("SERIAL_NUM", 9, AP_BattMonitor_Params, _serial_number, AP_BATT_SERIAL_NUMBER_DEFAULT, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: LOW_TIMER
     // @DisplayName: Low voltage timeout
