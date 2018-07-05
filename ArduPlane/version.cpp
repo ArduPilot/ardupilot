@@ -25,7 +25,7 @@ const AP_FWVersion AP_FWVersion::fwver{
     .major = FW_MAJOR,
     .minor = FW_MINOR,
     .patch = FW_PATCH,
-    .fw_type = FW_TYPE,
+    .fw_type = (enum FIRMWARE_VERSION_TYPE)(FW_TYPE),
 #ifndef GIT_VERSION
     .fw_string = THISFIRMWARE,
 #else
