@@ -85,7 +85,7 @@ AnalogSource* AnalogIn::_create_channel(uint8_t chnum) {
 
 void AnalogIn::_register_channel(AnalogSource* ch) {
     if (_num_channels >= F4Light_INPUT_MAX_CHANNELS) {
-        AP_HAL::panic("Error: AP_HAL_F4Light::AnalogIn out of channels\r\n");
+        AP_HAL::panic("Error: AP_HAL_F4Light::AnalogIn out of channels");
     }
     _channels[_num_channels] = ch;
 

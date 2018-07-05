@@ -87,19 +87,19 @@ void Storage::late_init(bool defer) {
 void Storage::error_parse(uint16_t status){
     switch(status) {
     case EEPROM_NO_VALID_PAGE: // despite repeated attempts, EEPROM does not work, but should
-        AP_HAL::panic("EEPROM Error: no valid page\r\n");
+        AP_HAL::panic("EEPROM Error: no valid page");
         break;
 
     case EEPROM_OUT_SIZE:
-        AP_HAL::panic("EEPROM Error: full\r\n");
+        AP_HAL::panic("EEPROM Error: full");
         break;
         
     case EEPROM_BAD_FLASH: // 
-        AP_HAL::panic("EEPROM Error: page not empty after erase\r\n");
+        AP_HAL::panic("EEPROM Error: page not empty after erase");
         break;
 
     case EEPROM_WRITE_FAILED:
-        AP_HAL::panic("EEPROM Error: write failed\r\n");
+        AP_HAL::panic("EEPROM Error: write failed");
         break;
 
     case EEPROM_BAD_ADDRESS: // just not found
