@@ -173,6 +173,10 @@ public:
     AP_Int8 v_offset;
     AP_Int8 h_offset;
 
+    AP_Int8 warn_rssi;
+    AP_Int8 warn_nsat;
+    AP_Float warn_batvolt;
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
