@@ -36,7 +36,7 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation) :
         rot_view.from_euler(0, radians(270), 0);
         break;
     default:
-        AP_HAL::panic("Unsupported AHRS view %u\n", (unsigned)rotation);
+        AP_HAL::panic("Unsupported AHRS view %u", (unsigned)rotation);
     }
 
     // setup initial state
