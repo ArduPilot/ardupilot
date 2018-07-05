@@ -39,7 +39,7 @@ public:
     AP_WheelEncoder &operator=(const AP_WheelEncoder&) = delete;
 
     // WheelEncoder driver types
-    enum WheelEncoder_Type {
+    enum WheelEncoder_Type : uint8_t {
         WheelEncoder_TYPE_NONE          = 0,
         WheelEncoder_TYPE_QUADRATURE    = 1
     };
