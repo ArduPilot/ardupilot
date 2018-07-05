@@ -177,6 +177,7 @@ public:
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
         OPTION_INVERTED_AH_ROLL = 1U<<2,
+        OPTION_IMPERIAL_UNITS = 1U<<3,
     };
 
     AP_Int32 options;
