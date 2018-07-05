@@ -1,3 +1,27 @@
+Release 3.9.0beta2, 5th July 2018
+---------------------------------
+
+This is the second in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+ - Builtin OSD support on boards with MAX7456 OSD device
+ - fixed throttle display on twin-engine planes
+ - improved timing in mavlink remote sensors
+ - added many more board types to autobuild
+ - fixed airspeed reporting for unhealthy sensors
+ - fixed log timestamps on ChibiOS
+ - added force arm option
+ - added fmuv5 support
+ - added CubeBlack build
+ - added ESC telemetry virtual battery
+ - added SERIAL6 on fmuv4 and fmuv5
+ - added MatekF405-Wing support
+ - added AP_Bootloader
+ - support bootloader update over MAVLink
+ - enable sdcard on several F4 boards
+
+Many thanks to all who contributed to this release, and our beta testers!
+
 Release 3.9.0beta1, 21st May 2018
 ---------------------------------
 

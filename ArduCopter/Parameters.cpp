@@ -108,9 +108,9 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
-    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
     // @Units: cm
-    // @Range: 0 8000
+    // @Range: 200 8000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),

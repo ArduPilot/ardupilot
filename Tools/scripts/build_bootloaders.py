@@ -8,6 +8,13 @@ import os
 import shutil
 import subprocess
 import sys
+import fnmatch
+
+board_pattern = '*'
+
+# allow argument for pattern of boards to build
+if len(sys.argv)>1:
+    board_pattern = sys.argv[1]
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
@@ -29,6 +36,8 @@ def run_program(cmd_list):
         sys.exit(1)
 
 for board in get_board_list():
+    if not fnmatch.fnmatch(board, board_pattern):
+        continue
     print("Building for %s" % board)
     run_program(["./waf", "configure", "--board", board, "--bootloader"])
     run_program(["./waf", "clean"])

@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc4 05-Jul-2018
+Changes from 3.6.0-rc3
+1) add support for Cube Black and Cube Orange
+2) Built-in OSD improvements including home direction fix, altitude fix
+3) Bug fixes:
+    a) ESC Telemetry current scaling fix
+    b) LED pre-arm GPS colour fix if glitch occurs
+------------------------------------------------------------------
 Copter 3.6.0-rc3 02-Jul-2018
 Changes from 3.6.0-rc2
 1) ChibiOS:

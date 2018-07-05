@@ -154,10 +154,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 }
 
 //Symbols
-#define SYM_BLANK 0x20
-#define SYM_COLON 0x2D
-#define SYM_ZERO_HALF_TRAILING_DOT 192
-#define SYM_ZERO_HALF_LEADING_DOT 208
 
 #define SYM_M           0xB9
 #define SYM_KM          0xBA
@@ -435,6 +431,8 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     if (AP::ahrs().airspeed_estimate(&aspd)) {
         backend->write(x, y, false, "A%4.0f%c", aspd * 3.6, SYM_KMH);
+    } else {
+        backend->write(x, y, false, "A ---%c", SYM_KMH);
     }
 }
 
@@ -464,7 +462,10 @@ void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         // AP_BLHeli & blh = AP_BLHeli::AP_BLHeli();
         uint8_t esc_temp = td.temperature;
@@ -477,7 +478,10 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
         backend->write(x, y, false, "%5d RPM", esc_rpm);
@@ -489,7 +493,10 @@ void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
     AP_BLHeli *blheli = AP_BLHeli::get_singleton();
     if (blheli) {
         AP_BLHeli::telem_data td;
-        blheli->get_telem_data(0, td);  // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+        if (!blheli->get_telem_data(0, td)) {
+            return;
+        }
 
         float esc_amps = td.current;
         backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
