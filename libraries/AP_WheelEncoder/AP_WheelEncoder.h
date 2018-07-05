@@ -34,6 +34,10 @@ public:
 
     AP_WheelEncoder(void);
 
+    /* Do not allow copies */
+    AP_WheelEncoder(const AP_WheelEncoder &other) = delete;
+    AP_WheelEncoder &operator=(const AP_WheelEncoder&) = delete;
+
     // WheelEncoder driver types
     enum WheelEncoder_Type {
         WheelEncoder_TYPE_NONE          = 0,
