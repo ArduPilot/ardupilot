@@ -934,10 +934,14 @@ def write_GPIO_config(f):
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
-    for l in sorted(bylabel.keys()):
+    last_label = None
+    for l in sorted(list(set(bylabel.keys()))):
         p = bylabel[l]
         label = p.label
         label = label.replace('-', '_')
+        if label == last_label:
+            continue
+        last_label = label
         f.write('#define HAL_GPIO_PIN_%-20s PAL_LINE(GPIO%s,%uU)\n' %
                 (label, p.port, p.pin))
     f.write('\n')
