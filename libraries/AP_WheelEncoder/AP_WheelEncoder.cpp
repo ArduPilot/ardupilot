@@ -152,20 +152,20 @@ void AP_WheelEncoder::init(void)
         return;
     }
     for (uint8_t i=0; i<WHEELENCODER_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-        uint8_t type = _type[num_instances];
-        uint8_t instance = num_instances;
-
-        if (type == WheelEncoder_TYPE_QUADRATURE) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_WheelEncoder_Quadrature(*this, instance, state[instance]);
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        switch ((WheelEncoder_Type)_type[i].get()) {
+        case WheelEncoder_TYPE_QUADRATURE:
+            drivers[i] = new AP_WheelEncoder_Quadrature(*this, i, state[i]);
+            break;
+        case WheelEncoder_TYPE_NONE:
+            break;
         }
 #endif
 
         if (drivers[i] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
-            num_instances = i+1;
+            num_instances = i+1;  // num_instances is a high-water-mark
         }
     }
 }
