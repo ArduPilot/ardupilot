@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
     // @DisplayName: Rally Total
     // @Description: Number of rally points currently loaded
     // @User: Advanced
-    AP_GROUPINFO("TOTAL", 0, AP_Rally, _rally_point_total_count, 0),
+    AP_GROUPINFO_FLAGS("TOTAL", 0, AP_Rally, _rally_point_total_count, 0, AP_PARAM_FLAG_VOLATILE),
 
     // @Param: LIMIT_KM
     // @DisplayName: Rally Limit
