@@ -75,32 +75,32 @@ private:
     //typical fpv camera has 80deg vertical field of view, 16 row of chars
     static constexpr float ah_pitch_rad_to_char = 16.0f/(DEG_TO_RAD * 80);
 
-    AP_OSD_Setting altitude{true, 1, 1};
-    AP_OSD_Setting bat_volt{true, 9, 1};
-    AP_OSD_Setting rssi{false, 0, 0};
-    AP_OSD_Setting current{true, 1, 2};
-    AP_OSD_Setting batused{true, 1, 3};
-    AP_OSD_Setting sats{true, 1, 4};
-    AP_OSD_Setting fltmode{true, 12, 14};
-    AP_OSD_Setting message{false, 2, 13};
-    AP_OSD_Setting gspeed{false, 0, 0};
-    AP_OSD_Setting horizon{true, 15, 8};
-    AP_OSD_Setting home{false, 0, 0};
-    AP_OSD_Setting throttle{false, 0, 0};
-    AP_OSD_Setting heading{false, 0, 0};
-    AP_OSD_Setting compass{false, 0, 0};
-    AP_OSD_Setting wind{false, 0, 0};
-    AP_OSD_Setting aspeed{false, 0, 0};
-    AP_OSD_Setting vspeed{false, 0, 0};
+    AP_OSD_Setting altitude{true, 23, 8};
+    AP_OSD_Setting bat_volt{true, 24, 1};
+    AP_OSD_Setting rssi{true, 1, 1};
+    AP_OSD_Setting current{true, 25, 2};
+    AP_OSD_Setting batused{true, 23, 3};
+    AP_OSD_Setting sats{true, 1, 3};
+    AP_OSD_Setting fltmode{true, 2, 8};
+    AP_OSD_Setting message{true, 2, 6};
+    AP_OSD_Setting gspeed{true, 2, 14};
+    AP_OSD_Setting horizon{true, 14, 8};
+    AP_OSD_Setting home{true, 14, 1};
+    AP_OSD_Setting throttle{true, 24, 11};
+    AP_OSD_Setting heading{true, 13, 2};
+    AP_OSD_Setting compass{true, 15, 3};
+    AP_OSD_Setting wind{false, 2, 12};
+    AP_OSD_Setting aspeed{false, 2, 13};
+    AP_OSD_Setting vspeed{true, 24, 9};
     
 #ifdef HAVE_AP_BLHELI_SUPPORT
-    AP_OSD_Setting blh_temp{false, 0, 0};
-    AP_OSD_Setting blh_rpm{false, 0, 0};
-    AP_OSD_Setting blh_amps{false, 0, 0};
+    AP_OSD_Setting blh_temp{false, 24, 13};
+    AP_OSD_Setting blh_rpm{false, 22, 12};
+    AP_OSD_Setting blh_amps{false, 24, 14};
 #endif
     
-    AP_OSD_Setting gps_latitude{false, 0, 0};
-    AP_OSD_Setting gps_longitude{false, 0, 0};
+    AP_OSD_Setting gps_latitude{true, 9, 13};
+    AP_OSD_Setting gps_longitude{true, 9, 14};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
