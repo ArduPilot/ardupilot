@@ -23,6 +23,7 @@ AP_WheelEncoder_Backend::AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint
         _frontend(frontend),
         _state(state) 
 {
+    state.instance = instance;
 }
 
 // return pin.  returns -1 if pin is not defined for this instance
