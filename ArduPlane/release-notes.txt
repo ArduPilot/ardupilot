@@ -1,4 +1,4 @@
-Release 3.9.0beta2, 5th July 2018
+Release 3.9.0beta2, 6th July 2018
 ---------------------------------
 
 This is the second in a series of beta releases for plane 3.9.0. It is
@@ -19,6 +19,8 @@ a major release, with a lot of changes.
  - added AP_Bootloader
  - support bootloader update over MAVLink
  - enable sdcard on several F4 boards
+ - fixed serial number logging on ChibiOS boards
+ - fixed revo-mini compass orientation
 
 Many thanks to all who contributed to this release, and our beta testers!
 
