@@ -973,7 +973,7 @@ class AutoTest(ABC):
         tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("Did not get good COMMAND_ACK")
+                raise AutoTestTimeoutException("Did not get good COMMAND_ACK")
             m = self.mav.recv_match(type='COMMAND_ACK',
                                     blocking=True,
                                     timeout=1)
@@ -1658,6 +1658,57 @@ class AutoTest(ABC):
             self.progress("GroundSpeed OK (got=%f) (want=%f)" %
                           (m.groundspeed, want))
 
+    def fly_test_set_home(self):
+        self.reboot_sitl()
+
+        # HOME_POSITION is used as a surrogate for origin until we
+        # start emitting GPS_GLOBAL_ORIGIN
+        orig_home = self.poll_home_position()
+        if orig_home is None:
+            raise AutoTestTimeoutException()
+        self.progress("Original home: %s" % str(orig_home))
+        new_x = orig_home.latitude + 1000
+        new_y = orig_home.longitude + 2000
+        new_z = orig_home.altitude + 300000 # 300 metres
+        print("new home: %s %s %s" % (str(new_x), str(new_y), str(new_z)))
+        self.mav.mav.command_int_send(1,
+                                      1,
+                                      mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                                      mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                                      0, # current
+                                      0, # autocontinue
+                                      0, # p1,
+                                      0, # p2,
+                                      0, # p3,
+                                      0, # p4,
+                                      new_x,
+                                      new_y,
+                                      new_z/1000.0) # mm => m
+        self.expect_command_ack(mavutil.mavlink.MAV_CMD_DO_SET_HOME)
+
+        home = self.poll_home_position()
+        self.progress("int-set home: %s" % str(home))
+        if (home.latitude != new_x or
+            home.longitude != new_y or
+            home.altitude != new_z):
+            self.reboot_sitl()
+            raise NotAchievedException(
+                "(%f, %f, %f) != (%f, %f, %f)" %
+                (home.latitude, home.longitude, home.altitude),
+                (new_x, new_y, new_z))
+
+        # watch it for a little while to ensure it doesn't drift at all:
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 10:
+            home = self.poll_home_position()
+            self.progress("int-set home: %s" % str(home))
+            if (home.latitude != new_x or
+                home.longitude != new_y or
+                home.altitude != new_z):
+                self.reboot_sitl()
+                raise NotAchievedException("home is drifting")
+        self.reboot_sitl()
+
     def test_arm_feature(self):
         """Common feature to test."""
         self.context_push()
@@ -2121,7 +2172,11 @@ switch value'''
         return {}
 
     def tests(self):
-        return []
+        return [
+            ("SetHome",
+            "Test Set Home",
+             self.fly_test_set_home),
+        ]
 
     def post_tests_announcements(self):
         if self._show_test_timings:
