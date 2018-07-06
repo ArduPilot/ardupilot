@@ -38,6 +38,9 @@ protected:
 
     void handle_mount_message(const mavlink_message_t* msg) override;
 
+    bool set_home_to_current_location(bool lock) override;
+    bool set_home(const Location& loc, bool lock) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
