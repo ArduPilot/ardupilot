@@ -268,10 +268,12 @@ extern "C" {
 
 bool PX4Util::flash_bootloader()
 {
+#if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     if (AP_BoardConfig::px4_start_driver(bl_update_main, "bl_update", "/etc/bootloader/fmu_bl.bin")) {
         hal.console->printf("updated bootloader\n");
         return true;
     }
+#endif
     return false;
 }
 
