@@ -298,7 +298,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         // to ease moving from PX4 to ChibiOS we'll lie a little about
         // the backend driver...
         if (AP_RangeFinder_PWM::detect()) {
-            drivers[instance] = new AP_RangeFinder_PWM(state[instance], _powersave_range, estimated_terrain_height);
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], _powersave_range, estimated_terrain_height);
         }
         break;
 #endif

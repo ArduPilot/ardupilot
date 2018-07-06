@@ -22,6 +22,7 @@ class AP_RangeFinder_PWM : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
+                       AP_RangeFinder_Params &_params,
                        AP_Int16 &_powersave_range,
                        float &_estimated_terrain_height);
 
