@@ -49,6 +49,12 @@ public:
 
     static void _run_io_procs();
     static bool _should_reboot;
+
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name,
+                       uint32_t stack_size, priority_base base, int8_t priority) override;
     
 private:
     SITL_State *_sitlState;
@@ -67,6 +73,8 @@ private:
 
     void stop_clock(uint64_t time_usec);
 
+    static void *thread_create_trampoline(void *ctx);
+    
     bool _initialized;
     uint64_t _stopped_clock_usec;
     uint64_t _last_io_run;
