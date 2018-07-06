@@ -1,11 +1,11 @@
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
+#include <pthread.h>
 
 using namespace HALSITL;
 
@@ -192,4 +192,34 @@ void Scheduler::stop_clock(uint64_t time_usec)
     }
 }
 
-#endif
+/*
+  trampoline for thread create
+*/
+void *Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+    return nullptr;
+}
+
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+    pthread_t thread {};
+    if (pthread_create(&thread, NULL, thread_create_trampoline, tproc) != 0) {
+        free(tproc);
+        return false;
+    }
+    return true;
+}
+
