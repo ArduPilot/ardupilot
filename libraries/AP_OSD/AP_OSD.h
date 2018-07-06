@@ -171,7 +171,7 @@ public:
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
 private:
-    void timer();
+    void osd_thread();
     void update_osd();
     void update_current_screen();
     void next_screen();
