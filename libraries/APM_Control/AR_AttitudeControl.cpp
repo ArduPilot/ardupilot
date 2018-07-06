@@ -503,7 +503,7 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool 
     const uint32_t now = AP_HAL::millis();
 
     // if not called recently, reset input filter
-    if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > (AR_ATTCONTROL_TIMEOUT_MS / 1000.0f))) {
+    if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > (AR_ATTCONTROL_TIMEOUT_MS))) {
         _pitch_to_throttle_pid.reset_filter();
     } else {
         _pitch_to_throttle_pid.set_dt(dt);
