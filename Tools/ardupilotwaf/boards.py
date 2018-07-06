@@ -150,6 +150,7 @@ class Board:
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Werror=unused-result',
+            '-Werror=return-type',
             '-Wfatal-errors',
             '-Wno-trigraphs',
         ]
