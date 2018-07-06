@@ -2705,6 +2705,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         result = handle_command_accelcal_vehicle_pos(packet);
+        break;
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
