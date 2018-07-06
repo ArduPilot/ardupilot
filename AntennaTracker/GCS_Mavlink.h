@@ -28,6 +28,9 @@ protected:
         return 0; // what if we have been picked up and carried somewhere?
     }
 
+    bool set_home_to_current_location(bool lock) override { return false; }
+    bool set_home(const Location& loc, bool lock) override { return false; }
+
 private:
 
     void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
