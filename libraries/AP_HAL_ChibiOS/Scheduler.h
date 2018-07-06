@@ -92,6 +92,11 @@ public:
       restore interrupt state from disable_interrupts_save()
      */
     void restore_interrupts(void *) override;
+
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
     
 private:
     bool _initialized;
@@ -132,5 +137,6 @@ private:
 #endif
     void _run_timers();
     void _run_io(void);
+    static void thread_create_trampoline(void *ctx);    
 };
 #endif
