@@ -3618,6 +3618,53 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int_t &packet)
+{
+    if (is_equal(packet.param1, 1.0f)) {
+        // if param1 is 1, use current location
+        if (!set_home_to_current_location(true)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+    // ensure param1 is zero
+    if (!is_zero(packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+    if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
+        // don't allow the 0,0 position
+        return MAV_RESULT_FAILED;
+    }
+    // check frame type is supported
+    if (packet.frame != MAV_FRAME_GLOBAL &&
+        packet.frame != MAV_FRAME_GLOBAL_INT &&
+        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+        packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    // sanity check location
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_FAILED;
+    }
+    Location new_home_loc {};
+    new_home_loc.lat = packet.x;
+    new_home_loc.lng = packet.y;
+    new_home_loc.alt = packet.z * 100;
+    // handle relative altitude
+    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT ||
+        packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+        if (!AP::ahrs().home_is_set()) {
+            // cannot use relative altitude if home is not set
+            return MAV_RESULT_FAILED;
+        }
+        new_home_loc.alt += AP::ahrs().get_home().alt;
+    }
+    if (!set_home(new_home_loc, true)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
     // be aware that this method is called for both MAV_CMD_DO_SET_ROI
@@ -3661,10 +3708,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
+    case MAV_CMD_DO_SET_HOME:
+        return handle_command_int_do_set_home(packet);
     default:
         break;
     }
-
     return MAV_RESULT_UNSUPPORTED;
 }
 
