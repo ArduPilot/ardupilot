@@ -2025,10 +2025,10 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         if (!vp) {
             if (last_pass) {
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
-                         pname, ptr - param_defaults_data.data);
+                         pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
                          "Ignored unknown param %s from embedded region (offset=%u)\n",
-                         pname, ptr - param_defaults_data.data);
+                         pname, unsigned(ptr - param_defaults_data.data));
             }
             continue;
         }
