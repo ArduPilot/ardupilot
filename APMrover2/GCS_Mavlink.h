@@ -33,6 +33,9 @@ protected:
 
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
 
+    bool set_home_to_current_location(bool lock) override;
+    bool set_home(const Location& loc, bool lock) override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
