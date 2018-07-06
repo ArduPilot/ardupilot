@@ -83,6 +83,31 @@ public:
     virtual void call_delay_cb();
     uint16_t _min_delay_cb_ms;
 
+    /*
+      priority_base is used to select what the priority for a new
+      thread is relative to
+     */
+    enum priority_base {
+        PRIORITY_BOOST,
+        PRIORITY_MAIN,
+        PRIORITY_SPI,
+        PRIORITY_I2C,
+        PRIORITY_CAN,
+        PRIORITY_TIMER,
+        PRIORITY_RCIN,
+        PRIORITY_IO,
+        PRIORITY_UART,
+        PRIORITY_STORAGE
+    };
+    
+    /*
+      create a new thread
+     */
+    virtual bool thread_create(AP_HAL::MemberProc proc, const char *name,
+                               uint32_t stack_size, priority_base base, int8_t priority) {
+        return false;
+    }
+
 private:
 
     AP_HAL::Proc _delay_cb;
