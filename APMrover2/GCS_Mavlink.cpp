@@ -569,6 +569,13 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+bool GCS_MAVLINK_Rover::set_home_to_current_location(bool lock) {
+    return rover.set_home_to_current_location(lock);
+}
+bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool lock) {
+    return rover.set_home(loc, lock);
+}
+
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
@@ -580,48 +587,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
-
-    case MAV_CMD_DO_SET_HOME: {
-        // assume failure
-        if (is_equal(packet.param1, 1.0f)) {
-            // if param1 is 1, use current location
-            if (rover.set_home_to_current_location(true)) {
-                return MAV_RESULT_ACCEPTED;
-            }
-            return MAV_RESULT_FAILED;
-        }
-        // ensure param1 is zero
-        if (!is_zero(packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
-        // check frame type is supported
-        if (packet.frame != MAV_FRAME_GLOBAL &&
-            packet.frame != MAV_FRAME_GLOBAL_INT &&
-            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-            packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-            return MAV_RESULT_FAILED;
-        }
-        // sanity check location
-        if (!check_latlng(packet.x, packet.y)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location new_home_loc {};
-        new_home_loc.lat = packet.x;
-        new_home_loc.lng = packet.y;
-        new_home_loc.alt = packet.z * 100;
-        // handle relative altitude
-        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-            if (!rover.ahrs.home_is_set()) {
-                // cannot use relative altitude if home is not set
-                return MAV_RESULT_FAILED;
-            }
-            new_home_loc.alt += rover.ahrs.get_home().alt;
-        }
-        if (!rover.set_home(new_home_loc, true)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
 
     case MAV_CMD_DO_SET_REVERSE:
         // param1 : Direction (0=Forward, 1=Reverse)
