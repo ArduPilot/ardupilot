@@ -260,7 +260,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_LWI2C:
         if (params[instance].address) {
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance],
+            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
                 hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)));
 #else
             if (!_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
@@ -305,7 +305,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     case RangeFinder_TYPE_BBB_PRU:
         if (AP_RangeFinder_BBB_PRU::detect()) {
-            drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance]);
+            drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance], params[instance]);
         }
         break;
 #endif
