@@ -881,7 +881,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.arm_vehicle(timeout=5)
                 self.disarm_vehicle()
                 success = False
-            except NotAchievedException as e:
+            except AutoTestTimeoutException as e:
                 success = True
                 pass
             self.mav.srcSystem = old_srcSystem
