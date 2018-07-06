@@ -109,7 +109,6 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started MAX7456 OSD\n");
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
         break;
     }
 
@@ -120,19 +119,20 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started SITL OSD\n");
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
         break;
     }
 #endif
     }
+    if (backend != nullptr) {
+        // create thread as higher priority than IO
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 512, AP_HAL::Scheduler::PRIORITY_IO, 1);
+    }
 }
 
-void AP_OSD::timer()
+void AP_OSD::osd_thread()
 {
-    uint32_t now = AP_HAL::millis();
-
-    if (now - last_update_ms >= 100) {
-        last_update_ms = now;
+    while (true) {
+        hal.scheduler->delay(100);
         update_osd();
     }
 }
