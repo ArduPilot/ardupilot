@@ -10,6 +10,7 @@
 
 #define PX4_SCHEDULER_MAX_TIMER_PROCS 8
 
+#define APM_MAX_PRIORITY        243
 #define APM_MAIN_PRIORITY_BOOST 241
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
@@ -72,6 +73,11 @@ public:
       restore interrupt state from disable_interrupts_save()
      */
     void restore_interrupts(void *) override;
+
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
     
 private:
     bool _initialized;
@@ -115,5 +121,6 @@ private:
     perf_counter_t  _perf_io_timers;
     perf_counter_t  _perf_storage_timer;
     perf_counter_t  _perf_delay;
+    static void *thread_create_trampoline(void *ctx);    
 };
 #endif
