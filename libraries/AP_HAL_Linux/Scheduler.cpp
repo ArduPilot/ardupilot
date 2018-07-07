@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "RCInput.h"
@@ -26,6 +27,7 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
+#define APM_LINUX_MAX_PRIORITY          20
 #define APM_LINUX_TIMER_PRIORITY        15
 #define APM_LINUX_UART_PRIORITY         14
 #define APM_LINUX_RCIN_PRIORITY         13
@@ -355,4 +357,68 @@ void Scheduler::teardown()
     _rcin_thread.join();
     _uart_thread.join();
     _tonealarm_thread.join();
+}
+
+/*
+  trampoline for thread create
+*/
+void *Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+    return nullptr;
+}
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    uint8_t thread_priority = APM_LINUX_IO_PRIORITY;
+    static const struct {
+        priority_base base;
+        uint8_t p;
+    } priority_map[] = {
+        { PRIORITY_BOOST, APM_LINUX_MAIN_PRIORITY},
+        { PRIORITY_MAIN, APM_LINUX_MAIN_PRIORITY},
+        { PRIORITY_SPI, AP_LINUX_SENSORS_SCHED_PRIO},
+        { PRIORITY_I2C, AP_LINUX_SENSORS_SCHED_PRIO},
+        { PRIORITY_CAN, APM_LINUX_TIMER_PRIORITY},
+        { PRIORITY_TIMER, APM_LINUX_TIMER_PRIORITY},
+        { PRIORITY_RCIN, APM_LINUX_RCIN_PRIORITY},
+        { PRIORITY_IO, APM_LINUX_IO_PRIORITY},
+        { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
+        { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
+        if (priority_map[i].base == base) {
+            thread_priority = constrain_int16(priority_map[i].p + priority, 1, APM_LINUX_MAX_PRIORITY);
+            break;
+        }
+    }
+    pthread_t thread;
+    pthread_attr_t thread_attr;
+    struct sched_param param;
+
+    pthread_attr_init(&thread_attr);
+    pthread_attr_setstacksize(&thread_attr, stack_size);
+
+    param.sched_priority = thread_priority;
+    (void)pthread_attr_setschedparam(&thread_attr, &param);
+    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+
+    if (pthread_create(&thread, &thread_attr, thread_create_trampoline, tproc) != 0) {
+        free(tproc);
+        return false;
+    }
+    pthread_setname_np(thread, name);
+    return true;
 }
