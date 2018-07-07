@@ -31,6 +31,15 @@ Scheduler::Scheduler(SITL_State *sitlState) :
 
 void Scheduler::init()
 {
+    _main_ctx = pthread_self();
+}
+
+bool Scheduler::in_main_thread() const
+{
+    if (!_in_timer_proc && !_in_io_proc && pthread_self() == _main_ctx) {
+        return true;
+    }
+    return false;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
@@ -51,7 +60,9 @@ void Scheduler::delay(uint16_t ms)
         delay_microseconds(1000);
         ms--;
         if (_min_delay_cb_ms <= ms) {
-            call_delay_cb();
+            if (in_main_thread()) {
+                call_delay_cb();
+            }
         }
     }
 }
