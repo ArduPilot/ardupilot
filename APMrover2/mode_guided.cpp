@@ -6,8 +6,10 @@ bool ModeGuided::_enter()
     // initialise waypoint speed
     set_desired_speed_to_default();
 
-    // when entering guided mode we set the target as the current location.
-    set_desired_location(rover.current_loc);
+    // set desired location to reasonable stopping point
+    Location stopping_point;
+    calc_stopping_location(_destination);
+    set_desired_location(stopping_point);
 
     return true;
 }
