@@ -87,6 +87,9 @@ AP_OSD::AP_OSD()
     AP_Param::setup_object_defaults(this, var_info);
     // default first screen enabled
     screen[0].enabled = 1;
+#ifdef WITH_SITL_OSD
+    osd_type.set_default(2);
+#endif
 }
 
 void AP_OSD::init()
