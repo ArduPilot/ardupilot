@@ -148,17 +148,12 @@ void Scheduler::delay(uint16_t ms)
         return;
     }
 
-    if (!in_main_thread()) {
-        fprintf(stderr, "Scheduler::delay() called outside main thread\n");
-        return;
-    }
-
     uint64_t start = AP_HAL::millis64();
 
     while ((AP_HAL::millis64() - start) < ms) {
         // this yields the CPU to other apps
         microsleep(1000);
-        if (_min_delay_cb_ms <= ms) {
+        if (in_main_thread() && _min_delay_cb_ms <= ms) {
             call_delay_cb();
         }
     }
