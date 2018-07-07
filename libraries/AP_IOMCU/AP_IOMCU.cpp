@@ -133,24 +133,11 @@ void AP_IOMCU::init(void)
     if (!boardconfig || boardconfig->io_enabled() == 1) {
         check_crc();
     }
-        
-    thread_ctx = chThdCreateFromHeap(NULL,
-                                     THD_WORKING_AREA_SIZE(1024),
-                                     "IOMCU",
-                                     183,
-                                     thread_start,
-                                     this);
-    if (thread_ctx == nullptr) {
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
+                                      1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
         AP_HAL::panic("Unable to allocate IOMCU thread");
     }
-}
-
-/*
-  static function to enter thread_main()
- */
-void AP_IOMCU::thread_start(void *ctx)
-{
-    ((AP_IOMCU *)ctx)->thread_main();
 }
 
 /*
