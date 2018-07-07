@@ -87,7 +87,6 @@ public:
 private:
     AP_HAL::UARTDriver &uart;
 
-    static void thread_start(void *ctx);
     void thread_main(void);
 
     // read count 16 bit registers
