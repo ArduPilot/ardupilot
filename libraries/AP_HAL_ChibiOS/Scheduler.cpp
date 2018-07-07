@@ -176,16 +176,14 @@ bool Scheduler::check_called_boost(void)
 
 void Scheduler::delay(uint16_t ms)
 {
-    if (!in_main_thread()) {
-        //chprintf("ERROR: delay() from timer process\n");
-        return;
-    }
     uint64_t start = AP_HAL::micros64();
 
     while ((AP_HAL::micros64() - start)/1000 < ms) {
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
-            call_delay_cb();
+            if (in_main_thread()) {
+                call_delay_cb();
+            }
         }
     }
 }
