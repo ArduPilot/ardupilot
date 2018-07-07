@@ -47,6 +47,11 @@ public:
 
     void teardown();
 
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    
 private:
     class SchedulerThread : public PeriodicThread {
     public:
@@ -97,6 +102,8 @@ private:
     pthread_t _main_ctx;
 
     Semaphore _io_semaphore;
+
+    static void *thread_create_trampoline(void *ctx);    
 };
 
 }
