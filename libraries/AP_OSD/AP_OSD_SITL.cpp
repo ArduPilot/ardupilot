@@ -137,6 +137,7 @@ void AP_OSD_SITL::update_thread(void)
                 w->close();
         }
         if (counter == last_counter) {
+            usleep(10000);
             continue;
         }
         last_counter = counter;
