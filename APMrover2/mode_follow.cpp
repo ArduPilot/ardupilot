@@ -4,54 +4,70 @@
 // initialize follow mode
 bool ModeFollow::_enter()
 {
-    return ModeGuided::enter();
+    if (!g2.follow.enabled()) {
+        return false;
+    }
+
+    // initialise waypoint speed
+    set_desired_speed_to_default();
+
+    // initialise heading to current heading
+    _desired_yaw_cd = ahrs.yaw_sensor;
+    _yaw_error_cd = 0.0f;
+
+    return true;
 }
 
 void ModeFollow::update()
 {
-    // variables to be sent to velocity controller
-    Vector3f desired_velocity_neu_cms;
-    float yaw_cd = 0.0f;
+    // stop vehicle if no speed estimate
+    float speed;
+    if (!attitude_control.get_forward_speed(speed)) {
+        // no valid speed so stop
+        g2.motors.set_throttle(0.0f);
+        g2.motors.set_steering(0.0f);
+        return;
+    }
 
-    Vector3f dist_vec;  //vector to lead vehicle
+    Vector3f dist_vec;  // vector to lead vehicle
     Vector3f dist_vec_offs; // vector to lead vehicle + offset
     Vector3f vel_of_target; // velocity of lead vehicle
 
-    if (g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
-
-        // convert dist_vec_offs to cm in NEU
-        const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
-
-        // calculate desired velocity vector in cm/s in NEU
-        const float kp = g2.follow.get_pos_p().kP();
-        desired_velocity_neu_cms.x = (vel_of_target.x * 100.0f) + (dist_vec_offs_neu.x * kp);
-        desired_velocity_neu_cms.y = (vel_of_target.y * 100.0f) + (dist_vec_offs_neu.y * kp);
-
-        // scaled desired velocity to stay within horizontal speed limit
-        float desired_speed = safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y));
-        if (!is_zero(desired_speed) && (desired_speed > _desired_speed)) {
-            const float scalar_xy = _desired_speed / desired_speed;
-            desired_velocity_neu_cms.x *= scalar_xy;
-            desired_velocity_neu_cms.y *= scalar_xy;
-            desired_speed = _desired_speed;
-        }
-
-        // unit vector towards target position (i.e. vector to lead vehicle + offset)
-        Vector3f dir_to_target_neu = dist_vec_offs_neu;
-        const float dir_to_target_neu_len = dir_to_target_neu.length();
-        if (!is_zero(dir_to_target_neu_len)) {
-            dir_to_target_neu /= dir_to_target_neu_len;
-        }
-
-        // calculate vehicle heading
-        const Vector3f dist_vec_xy(dist_vec_offs.x, dist_vec_offs.y, 0.0f);
-        if (dist_vec_xy.length() > 1.0f) {
-            yaw_cd = get_bearing_cd(Vector3f(), dist_vec_xy);
-        }
+    // if no target simply stop the vehicle
+    if (!g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+        _reached_destination = true;
+        stop_vehicle();
+        return;
     }
 
-    // re-use guided mode's heading and speed controller
-    ModeGuided::set_desired_heading_and_speed(yaw_cd, safe_sqrt(sq(desired_velocity_neu_cms.x) + sq(desired_velocity_neu_cms.y)));
+    // calculate desired velocity vector
+    Vector2f desired_velocity_ne;
+    const float kp = g2.follow.get_pos_p().kP();
+    desired_velocity_ne.x = vel_of_target.x + (dist_vec_offs.x * kp);
+    desired_velocity_ne.y = vel_of_target.y + (dist_vec_offs.y * kp);
 
-    ModeGuided::update();
+    // if desired velocity is zero stop vehicle
+    if (is_zero(desired_velocity_ne.x) && is_zero(desired_velocity_ne.y)) {
+        _reached_destination = true;
+        stop_vehicle();
+        return;
+    }
+
+    // we have not reached the target
+    _reached_destination = false;
+
+    // scale desired velocity to stay within horizontal speed limit
+    float desired_speed = safe_sqrt(sq(desired_velocity_ne.x) + sq(desired_velocity_ne.y));
+    if (!is_zero(desired_speed) && (desired_speed > _desired_speed)) {
+        const float scalar_xy = _desired_speed / desired_speed;
+        desired_velocity_ne *= scalar_xy;
+        desired_speed = _desired_speed;
+    }
+
+    // calculate vehicle heading
+    _desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
+
+    // run steering and throttle controllers
+    calc_steering_to_heading(_desired_yaw_cd, desired_speed < 0);
+    calc_throttle(calc_reduced_speed_for_turn_or_distance(desired_speed), false, true);
 }

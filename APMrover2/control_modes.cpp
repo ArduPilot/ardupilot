@@ -21,6 +21,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
+    case Mode::Number::FOLLOW:
+        ret = &mode_follow;
+        break;
     case Mode::Number::AUTO:
         ret = &mode_auto;
         break;
@@ -32,9 +35,6 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
         break;
     case Mode::Number::GUIDED:
        ret = &mode_guided;
-        break;
-    case Mode::Number::FOLLOW:
-        ret = &mode_follow;
         break;
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;

@@ -467,7 +467,7 @@ public:
     bool attitude_stabilized() const override { return false; }
 };
 
-class ModeFollow : public ModeGuided
+class ModeFollow : public Mode
 {
 public:
 
@@ -480,5 +480,4 @@ public:
 protected:
 
     bool _enter() override;
-    uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };

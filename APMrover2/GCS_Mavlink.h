@@ -40,6 +40,8 @@ private:
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
 
+    void packetReceived(const mavlink_status_t &status, mavlink_message_t &msg) override;
+
     MAV_TYPE frame_type() const override;
     MAV_MODE base_mode() const override;
     uint32_t custom_mode() const override;
