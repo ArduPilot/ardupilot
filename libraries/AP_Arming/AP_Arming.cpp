@@ -73,6 +73,22 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
 
+    // @Param: OPTMP_MIN
+    // @DisplayName: Arming minimum operating temperature
+    // @Description: The minimum temperature of tha barometer required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("OPTMP_MIN",     6,     AP_Arming,  _operating_temp_min,  0.0f),
+
+    // @Param: OPTMP_MAX
+    // @DisplayName: Arming Maximum operating temperature
+    // @Description: The maximum temperature of tha barometer required to arm, 0 disables the check
+    // @Units: degC
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("OPTMP_MAX",     7,     AP_Arming,  _operating_temp_max,  0.0f),
+
     AP_GROUPEND
 };
 
@@ -538,6 +554,35 @@ bool AP_Arming::board_voltage_checks(bool report)
     return true;
 }
 
+// Check operation guarantee temperature
+bool AP_Arming::optemp_checks(bool report)
+{
+    bool check = true;
+
+    if ((checks_to_perform & ARMING_CHECK_ALL) ||
+        (checks_to_perform & ARMING_CHECK_OPTEMP)) {
+        const AP_Baro &baro = AP::baro();
+        if (AP_HAL::millis() - baro.get_last_update() > 5000) {
+            return check;
+        }
+
+        // Determination as minimum operating guaranteed temperature
+        if (check && _operating_temp_min != 0.0f && baro.get_temperature() < _operating_temp_min) {
+            check = false;
+        }
+
+        // Determination as maximum operation guarantee temperature
+        if (check && _operating_temp_max != 0.0f && baro.get_temperature() > _operating_temp_max) {
+            check = false;
+        }
+
+        if (check == false) {
+            check_failed(ARMING_CHECK_OPTEMP, report, "Check FC temperature");
+        }
+    }
+    return check;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -557,7 +602,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
         &  servo_checks(report)
-        &  board_voltage_checks(report);
+        &  board_voltage_checks(report)
+        &  optemp_checks(report);
 }
 
 bool AP_Arming::arm_checks(ArmingMethod method)

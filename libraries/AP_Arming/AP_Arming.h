@@ -31,6 +31,7 @@ public:
         ARMING_CHECK_LOGGING    = 0x0400,
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
+        ARMING_CHECK_OPTEMP     = 0x2000,
     };
 
     enum ArmingMethod {
@@ -76,6 +77,8 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
+    AP_Float                _operating_temp_min;
+    AP_Float                _operating_temp_max;
 
     // internal members
     bool                    armed:1;
@@ -107,6 +110,8 @@ protected:
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
+
+    bool optemp_checks(bool report);  // Check operation guarantee temperature
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
