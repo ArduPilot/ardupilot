@@ -11,7 +11,7 @@ fi
 #install xconde dependencies
 xcode-select --install
 
-brew tap PX4/homebrew-px4
+brew tap ardupilot/homebrew-px4
 brew update
 brew install genromfs
 brew install gcc-arm-none-eabi
@@ -26,7 +26,7 @@ else
     echo "pip installed"
 fi
 
-sudo pip2 install pyserial future catkin_pkg empy
+sudo pip2 install pyserial future empy
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
