@@ -48,7 +48,6 @@ void ModeGuided::update()
                 calc_throttle(_desired_speed, true, true);
             } else {
                 stop_vehicle();
-                g2.motors.set_steering(0.0f);
             }
             break;
         }
@@ -70,7 +69,6 @@ void ModeGuided::update()
                 calc_throttle(_desired_speed, true, true);
             } else {
                 stop_vehicle();
-                g2.motors.set_steering(0.0f);
             }
             break;
         }
