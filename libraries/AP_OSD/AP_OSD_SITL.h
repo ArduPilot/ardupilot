@@ -60,7 +60,7 @@ private:
 
     // scaling factor to make it easier to read
     static const uint8_t char_scale = 2;
-    
+
     uint8_t buffer[video_lines][video_cols];
     uint8_t attr[video_lines][video_cols];
 
