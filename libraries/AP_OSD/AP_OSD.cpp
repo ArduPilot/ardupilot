@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll, 3:ImperialUnits
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
 
@@ -89,6 +89,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: Sets vertical offset of the osd inside image
     // @Range: 0 31
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_V_OFFSET", 10, AP_OSD, v_offset, 16),
 
     // @Param: _H_OFFSET
@@ -96,6 +97,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: Sets horizontal offset of the osd inside image
     // @Range: 0 63
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_H_OFFSET", 11, AP_OSD, h_offset, 32),
 
     // @Param: _W_RSSI
@@ -103,21 +105,21 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Description: Set level at which RSSI item will flash
     // @Range: 0 99
     // @User: Standard
-    AP_GROUPINFO("_W_RSSI", 11, AP_OSD, warn_rssi, 30),
+    AP_GROUPINFO("_W_RSSI", 12, AP_OSD, warn_rssi, 30),
 
     // @Param: _W_NSAT
-    // @DisplayName: NSAT warn leve
+    // @DisplayName: NSAT warn level
     // @Description: Set level at which NSAT item will flash
     // @Range: 1 30
     // @User: Standard
-    AP_GROUPINFO("_W_NSAT", 12, AP_OSD, warn_nsat, 9),
+    AP_GROUPINFO("_W_NSAT", 13, AP_OSD, warn_nsat, 9),
 
     // @Param: _W_BATVOLT
     // @DisplayName: BAT_VOLT warn level
     // @Description: Set level at which BAT_VOLT item will flash
     // @Range: 0 100
     // @User: Standard
-    AP_GROUPINFO("_W_BATVOLT", 13, AP_OSD, warn_batvolt, 10.0f),
+    AP_GROUPINFO("_W_BATVOLT", 14, AP_OSD, warn_batvolt, 10.0f),
 
     AP_GROUPEND
 };
@@ -185,7 +187,6 @@ void AP_OSD::update_osd()
 
     update_current_screen();
 
-    screen[current_screen].set_osd(this);
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();
 

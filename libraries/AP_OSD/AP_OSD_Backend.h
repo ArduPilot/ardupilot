@@ -49,6 +49,11 @@ public:
         INVERT = (1 << 3),
     };
 
+    AP_OSD * get_osd()
+    {
+        return &_osd;
+    }
+
 protected:
     AP_OSD& _osd;
 

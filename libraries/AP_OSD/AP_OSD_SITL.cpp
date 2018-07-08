@@ -84,7 +84,7 @@ void AP_OSD_SITL::load_font(void)
                     p[3] = 255;
                     break;
                 }
-                    
+
             }
         }
         font[i].update(pixels);
@@ -131,13 +131,12 @@ void AP_OSD_SITL::update_thread(void)
     }
 
     uint8_t blink = 0;
-    while (w->isOpen())
-    {
+    while (w->isOpen()) {
         sf::Event event;
-        while (w->pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
+        while (w->pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
                 w->close();
+            }
         }
         if (counter == last_counter) {
             usleep(10000);
@@ -170,7 +169,7 @@ void AP_OSD_SITL::update_thread(void)
                 w->draw(s);
             }
         }
-        
+
         blink = (blink+1) % 4;
         w->display();
         usleep(10000);
