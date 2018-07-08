@@ -1157,7 +1157,7 @@ def write_env_py(filename):
 
     # see if board has a defaults.parm file
     defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
-    if os.path.exists(defaults_filename):
+    if os.path.exists(defaults_filename) and not args.bootloader:
         print("Adding defaults.parm")
         env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(defaults_filename)
     
