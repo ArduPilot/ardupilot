@@ -224,8 +224,10 @@ jump_to_app()
     // resetting the clocks is needed for loading NuttX
     rccDisableAPB1(~0, 0);
     rccDisableAPB2(~0, 0);
+#if HAL_USE_SERIAL_USB == TRUE    
     rccResetOTG_FS();
     rccResetOTG_HS();
+#endif
     
     // disable all interrupt sources
     port_disable();
