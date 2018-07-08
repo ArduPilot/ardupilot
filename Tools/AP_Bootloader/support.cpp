@@ -242,12 +242,14 @@ extern "C" {
 // printf to USB for debugging
 void uprintf(const char *fmt, ...)
 {
+#if HAL_USE_SERIAL_USB == TRUE
     char msg[200];
     va_list ap;
     va_start(ap, fmt);
     uint32_t n = vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
     chnWriteTimeout(&SDU1, (const uint8_t *)msg, n, MS2ST(100));
+#endif
 }
 
 // generate a pulse sequence forever, for debugging
@@ -327,7 +329,7 @@ void lock_bl_port(void)
  */
 void init_uarts(void)
 {
-#ifdef HAL_USE_SERIAL_USB
+#if HAL_USE_SERIAL_USB == TRUE
     sduObjectInit(&SDU1);
     sduStart(&SDU1, &serusbcfg);
     
@@ -341,7 +343,7 @@ void init_uarts(void)
     sercfg.speed = BOOTLOADER_BAUDRATE;
     
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
-#ifdef HAL_USE_SERIAL_USB
+#if HAL_USE_SERIAL_USB == TRUE
         if (uarts[i] == (BaseChannel *)&SDU1) {
             continue;
         }
@@ -357,7 +359,7 @@ void init_uarts(void)
  */
 void port_setbaud(uint32_t baudrate)
 {
-#ifdef HAL_USE_SERIAL_USB
+#if HAL_USE_SERIAL_USB == TRUE
     if (uarts[last_uart] == (BaseChannel *)&SDU1) {
         // can't set baudrate on USB
         return;
