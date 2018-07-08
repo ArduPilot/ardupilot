@@ -51,15 +51,7 @@ public:
 
     void draw(void);
 
-    void set_backend(AP_OSD_Backend *_backend)
-    {
-        backend = _backend;
-    };
-
-    void set_osd(AP_OSD *_osd)
-    {
-        osd = _osd;
-    };
+    void set_backend(AP_OSD_Backend *_backend);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -109,6 +101,11 @@ private:
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
 
+    bool check_option(uint32_t option);
+
+    char u_icon(uint16_t unit_type);
+    float u_scale(uint16_t unit_type, float value);
+
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
@@ -127,7 +124,9 @@ private:
     void draw_aspeed(uint8_t x, uint8_t y);
     void draw_vspeed(uint8_t x, uint8_t y);
 
+    //helper functions
     void draw_speed_vector(uint8_t x, uint8_t y, Vector2f v, int32_t yaw);
+    void draw_distance(uint8_t x, uint8_t y, float distance);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     void draw_blh_temp(uint8_t x, uint8_t y);
@@ -137,6 +136,17 @@ private:
 
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);
+
+    enum {
+        ALTITUDE=0,
+        SPEED=1,
+        VSPEED=2,
+        DISTANCE=3,
+        DISTANCE_LONG=4,
+        TEMPERATURE=5,
+        UNIT_LAST=6,
+    };
+
 };
 
 class AP_OSD {
@@ -181,10 +191,17 @@ public:
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
         OPTION_INVERTED_AH_ROLL = 1U<<2,
-        OPTION_IMPERIAL_UNITS = 1U<<3,
     };
 
     AP_Int32 options;
+
+    enum {
+        UNITS_METRIC=0,
+        UNITS_IMPERIAL=1,
+        UNITS_LAST=2,
+    };
+
+    AP_Int8 units;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
