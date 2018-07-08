@@ -373,9 +373,12 @@ void LogReader::end_format_msgs(void)
                 pkt.msgid = LOG_FORMAT_MSG;
                 pkt.type = s->msg_type;
                 pkt.length = s->msg_len;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
                 strncpy(pkt.name, s->name, sizeof(pkt.name));
                 strncpy(pkt.format, s->format, sizeof(pkt.format));
                 strncpy(pkt.labels, s->labels, sizeof(pkt.labels));
+#pragma GCC diagnostic pop
                 dataflash.WriteCriticalBlock(&pkt, sizeof(pkt));
             }
         }

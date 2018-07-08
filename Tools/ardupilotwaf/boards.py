@@ -134,7 +134,14 @@ class Board:
             '-Werror=sign-compare',
             '-Wfatal-errors',
             '-Wno-trigraphs',
+            '-Wno-unknown-warning',
+            '-Wno-class-memaccess',
         ]
+
+        if not cfg.options.disable_werror:
+            env.CXXFLAGS += [
+                    '-Werror'
+            ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             env.CXXFLAGS += [
