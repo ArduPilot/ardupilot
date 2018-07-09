@@ -342,6 +342,8 @@ void AP_OSD_MAX7456::reinit()
     int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
     _dev->write_register(MAX7456ADD_HOS, hos);
     _dev->write_register(MAX7456ADD_VOS, vos);
+    last_v_offset = _osd.v_offset;
+    last_h_offset = _osd.h_offset;
 
     // force redrawing all screen
     memset(shadow_frame, 0xFF, sizeof(shadow_frame));
@@ -355,6 +357,23 @@ void AP_OSD_MAX7456::flush()
     if (last_font != get_font_num()) {
         update_font();
     }
+    
+    // check for offset changes
+    if (last_v_offset != _osd.v_offset) {
+        int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+        _dev->get_semaphore()->take_blocking();
+        _dev->write_register(MAX7456ADD_VOS, vos);
+        _dev->get_semaphore()->give();
+        last_v_offset = _osd.v_offset;
+    }
+    if (last_h_offset != _osd.h_offset) {
+        int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
+        _dev->get_semaphore()->take_blocking();
+        _dev->write_register(MAX7456ADD_HOS, hos);
+        _dev->get_semaphore()->give();
+        last_h_offset = _osd.h_offset;
+    }
+    
     check_reinit();
     transfer_frame();
 }
