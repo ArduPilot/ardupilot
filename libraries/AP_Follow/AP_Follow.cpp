@@ -293,7 +293,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         if (_sysid_to_follow == 0) {
             _sysid_to_follow = msg.sysid;
         }
-        if ((AP_HAL::millis() - _last_location_sent_to_gcs > AP_GCS_INTERVAL_MS)) {
+        if ((now - _last_location_sent_to_gcs) > AP_GCS_INTERVAL_MS) {
+            _last_location_sent_to_gcs = now;
             gcs().send_text(MAV_SEVERITY_INFO, "Foll: %u %ld %ld %4.2f\n",
                             (unsigned)_sysid_to_follow,
                             (long)_target_location.lat,
