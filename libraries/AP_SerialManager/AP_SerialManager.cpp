@@ -316,7 +316,7 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
     if (_state == nullptr) {
         return 0;
     }
-    return _state->baud;
+    return map_baudrate(_state->baud);
 }
 
 // get_mavlink_channel - provides the mavlink channel associated with a given protocol
