@@ -361,7 +361,6 @@ void AP_OSD_MAX7456::flush()
 
 void AP_OSD_MAX7456::transfer_frame()
 {
-    uint16_t updated_chars = 0;
     uint8_t last_attribute = 0xFF;
     uint16_t previous_pos = UINT16_MAX - 1;
     if (!initialized) {
@@ -375,7 +374,8 @@ void AP_OSD_MAX7456::transfer_frame()
             if (frame[y][x] == shadow_frame[y][x] && attr[y][x] == shadow_attr[y][x]) {
                 continue;
             }
-            if (updated_chars > max_updated_chars) {
+            //ensure space for 1 char and escape sequence
+            if (buffer_offset >= spi_buffer_size - 32) {
                 break;
             }
             shadow_frame[y][x] = frame[y][x];
@@ -389,7 +389,7 @@ void AP_OSD_MAX7456::transfer_frame()
             if (position_changed) {
                 //it is impossible to write to MAX7456ADD_DMAH/MAX7456ADD_DMAL in autoincrement mode
                 //so, exit autoincrement mode
-                if (updated_chars != 0) {
+                if (buffer_offset != 0) {
                     buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
                     buffer_add_cmd(MAX7456ADD_DMM, 0);
                 }
@@ -404,7 +404,6 @@ void AP_OSD_MAX7456::transfer_frame()
             }
 
             buffer_add_cmd(MAX7456ADD_DMDI, chr);
-            updated_chars++;
             previous_pos = pos;
         }
     }
