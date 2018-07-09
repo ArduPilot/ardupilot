@@ -91,7 +91,8 @@ known_units = {
              'dB'      : 'decibel'               ,
 # compound
 
-             'kB'      : 'kilobytes'                ,
+             'KiB'     : 'kibibyte'              , # A kibibyte is 1024 bytes, this is different from kilobyte which is 1000 bytes
+             'MiB'     : 'mebibyte'              , # A mebibyte is 1024*1024 bytes, this is different from megabyte which is 1000*1000 bytes
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
