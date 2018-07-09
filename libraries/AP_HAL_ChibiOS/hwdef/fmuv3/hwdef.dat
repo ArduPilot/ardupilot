@@ -343,6 +343,12 @@ PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 
+define BOARD_PWM_COUNT_DEFAULT 4
+
+# relays default to use GPIO pins 54 and 55
+define RELAY1_PIN_DEFAULT 54
+define RELAY2_PIN_DEFAULT 55
+
 # this is the invensense data-ready pin. We don't use it in the
 # default driver
 PD15 MPU_DRDY INPUT
