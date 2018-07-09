@@ -59,7 +59,6 @@ private:
 
     uint8_t  video_signal_reg;
     bool initialized;
-    bool font_updated;
 
     static const uint8_t video_lines_ntsc = 13;
     static const uint8_t video_lines_pal = 16;
