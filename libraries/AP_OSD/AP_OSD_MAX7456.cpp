@@ -148,7 +148,10 @@ bool AP_OSD_MAX7456::init()
     hal.scheduler->delay(1);
     _dev->read_registers(MAX7456ADD_VM0|MAX7456ADD_READ, &status, 1);
     _dev->get_semaphore()->give();
-    return status == 0;
+    if (status != 0) {
+        return false;
+    }
+    return update_font();
 }
 
 bool AP_OSD_MAX7456::update_font()
@@ -342,10 +345,6 @@ void AP_OSD_MAX7456::reinit()
 
 void AP_OSD_MAX7456::flush()
 {
-    if (!font_updated) {
-        update_font();
-        font_updated = true;
-    }
     check_reinit();
     transfer_frame();
 }
