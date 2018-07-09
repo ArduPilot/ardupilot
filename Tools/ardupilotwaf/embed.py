@@ -7,7 +7,7 @@ Andrew Tridgell
 May 2017
 '''
 
-import os, sys
+import os, sys, tempfile, gzip
 
 def write_encode(out, s):
     out.write(s.encode())
@@ -21,7 +21,16 @@ def embed_file(out, f, idx):
         return False
     write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
 
-    for c in bytearray(contents):
+    # compress it
+    compressed = tempfile.NamedTemporaryFile()
+    with gzip.open(compressed.name, mode='wb', compresslevel=9) as g:
+        g.write(contents)
+
+    compressed.seek(0)
+    b = bytearray(compressed.read())
+    compressed.close()
+    
+    for c in b:
         write_encode(out, '%u,' % c)
     write_encode(out, '};\n\n');
     return True
