@@ -21,9 +21,9 @@ void Copter::failsafe_radio_on_event()
                    battery.get_highest_failsafe_priority() <= FAILSAFE_LAND_PRIORITY) {
             // continue landing or other high priority failsafes
         } else {
-            if (control_mode != AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
-                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
+                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else if (control_mode != AUTO && g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
                 set_mode_SmartRTL_or_RTL(MODE_REASON_RADIO_FAILSAFE);
