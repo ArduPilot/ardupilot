@@ -159,7 +159,8 @@ bool AP_OSD_MAX7456::update_font()
     uint32_t font_size;
     uint8_t updated_chars = 0;
     char fontname[] = "font0.bin";
-    fontname[4] = get_font_num() + '0';
+    last_font = get_font_num();
+    fontname[4] = last_font + '0';
     uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
     if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
         return false;
@@ -345,6 +346,9 @@ void AP_OSD_MAX7456::reinit()
 
 void AP_OSD_MAX7456::flush()
 {
+    if (last_font != get_font_num()) {
+        update_font();
+    }
     check_reinit();
     transfer_frame();
 }
