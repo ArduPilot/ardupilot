@@ -275,7 +275,10 @@ class sitl(Board):
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
-            env.ROMFS_FILES += [('osd_font.bin','libraries/AP_OSD/fonts/clarity.bin')]
+            import fnmatch
+            for f in os.listdir('libraries/AP_OSD/fonts'):
+                if fnmatch.fnmatch(f, "font*bin"):
+                    env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         if sys.platform == 'cygwin':
             env.LIB += [
