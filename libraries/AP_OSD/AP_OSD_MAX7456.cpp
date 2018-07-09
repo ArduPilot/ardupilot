@@ -155,7 +155,7 @@ bool AP_OSD_MAX7456::update_font()
 {
     uint32_t font_size;
     uint8_t updated_chars = 0;
-    const uint8_t *font_data = AP_ROMFS::find_file("osd_font.bin", font_size);
+    uint8_t *font_data = AP_ROMFS::find_decompress("osd_font.bin", font_size);
     if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
         return false;
     }
@@ -167,6 +167,7 @@ bool AP_OSD_MAX7456::update_font()
             //update char inside max7456 NVM
             if (!update_font_char(chr, chr_font_data)) {
                 hal.console->printf("AP_OSD: error during font char update\n");
+                free(font_data);
                 return false;
             }
             updated_chars++;
@@ -176,6 +177,7 @@ bool AP_OSD_MAX7456::update_font()
         hal.console->printf("AP_OSD: updated %d symbols.\n", updated_chars);
     }
     hal.console->printf("AP_OSD: osd font is up to date.\n");
+    free(font_data);
     return true;
 }
 
