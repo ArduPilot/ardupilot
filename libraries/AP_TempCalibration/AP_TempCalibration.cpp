@@ -48,14 +48,7 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TEMP_MIN", 2, AP_TempCalibration, temp_min, 0),
 
-    // @Param: TEMP_MIN
-    // @DisplayName: Min learned temperature
-    // @Description: Minimum learned temperature. This is automatically set by the learning process
-    // @Units: degC
-    // @ReadOnly: True
-    // @Volatile: True
-    // @User: Advanced
-    AP_GROUPINFO("_TEMP_MIN", 3, AP_TempCalibration, temp_min, 0),
+    // 3 was used by a duplicated temp_min entry (do not use in the future!)
 
     // @Param: TEMP_MAX
     // @DisplayName: Max learned temperature
