@@ -28,7 +28,8 @@ public:
         RTL          = 11,
         SMART_RTL    = 12,
         GUIDED       = 15,
-        INITIALISING = 16
+        INITIALISING = 16,
+        FOLLOW       = 17
     };
 
     // Constructor
@@ -310,6 +311,48 @@ protected:
     bool _enter() override;
 
     GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
+
+    // attitude control
+    bool have_attitude_target;  // true if we have a valid attitude target
+    uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
+    float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
+};
+
+class ModeFollow : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return FOLLOW; }
+    const char *name4() const override { return "FOLL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override;
+
+    // set desired location, heading and speed
+    void set_desired_location(const struct Location& destination);
+    void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
+
+    // set desired heading-delta, turn-rate and speed
+    void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
+    void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
+
+protected:
+
+    enum FollowMode {
+        Follow_WP,
+        Follow_HeadingAndSpeed,
+        Follow_TurnRateAndSpeed
+    };
+
+    bool _enter() override;
+
+    FollowMode _follow_mode;    // stores which GUIDED mode the vehicle is in
 
     // attitude control
     bool have_attitude_target;  // true if we have a valid attitude target
