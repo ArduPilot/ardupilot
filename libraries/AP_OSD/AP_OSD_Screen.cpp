@@ -231,7 +231,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_PTCHUP    0xEC
 #define SYM_PTCHDWN   0xED
 #define SYM_XERR      0xEE
-#define SYM_KTS       0xF0
+#define SYM_KN        0xF0
 #define SYM_NM        0xF1
 
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
