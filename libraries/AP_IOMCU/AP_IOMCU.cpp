@@ -643,9 +643,8 @@ bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
 	const uint32_t flash_size = 0x10000 - 0x1000;
-    uint32_t fw_size;
     
-    fw = AP_ROMFS::find_file(fw_name, fw_size);
+    fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
         hal.console->printf("failed to find %s\n", fw_name);
         return false;
@@ -664,16 +663,22 @@ bool AP_IOMCU::check_crc(void)
         io_crc == crc) {
         hal.console->printf("IOMCU: CRC ok\n");
         crc_is_ok = true;
+        free(fw);
+        fw = nullptr;
         return true;
     }
 
     const uint16_t magic = REBOOT_BL_MAGIC;
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
-    if (!upload_fw(fw_name)) {
+    if (!upload_fw()) {
+        free(fw);
+        fw = nullptr;
         AP_BoardConfig::sensor_config_error("Failed to update IO firmware");
     }
     
+    free(fw);
+    fw = nullptr;
     return false;
 }
 
