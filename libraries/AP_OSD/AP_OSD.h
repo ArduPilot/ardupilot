@@ -100,6 +100,8 @@ private:
 
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
+    AP_OSD_Setting roll_angle{false, 0, 0};
+    AP_OSD_Setting pitch_angle{false, 0, 0};
 
     bool check_option(uint32_t option);
 
@@ -146,6 +148,8 @@ private:
 
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);
+    void draw_roll_angle(uint8_t x, uint8_t y);
+    void draw_pitch_angle(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -220,4 +224,3 @@ private:
     bool switch_debouncer;
     uint32_t last_switch_ms;
 };
-
