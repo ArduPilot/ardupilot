@@ -211,9 +211,10 @@ private:
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
-    const uint8_t *fw;
+    uint8_t *fw;
+    uint32_t fw_size;
 
-    bool upload_fw(const char *filename);
+    bool upload_fw(void);
     bool recv_byte_with_timeout(uint8_t *c, uint32_t timeout_ms);
     bool recv_bytes(uint8_t *p, uint32_t count);
     void drain(void);
