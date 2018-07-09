@@ -60,6 +60,8 @@ private:
     uint8_t  video_signal_reg;
     bool initialized;
     uint8_t last_font;
+    int8_t last_v_offset;
+    int8_t last_h_offset;
 
     static const uint8_t video_lines_ntsc = 13;
     static const uint8_t video_lines_pal = 16;
