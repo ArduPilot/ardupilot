@@ -144,6 +144,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: GPSLONG
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gps_longitude, "GPSLONG", 25, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: ROLL
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(roll_angle, "ROLL", 26, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: PITCH
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -218,6 +226,17 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_DEGREES_F 0x0D
 #define SYM_GPS_LAT   0xA6
 #define SYM_GPS_LONG  0xA7
+#define SYM_ARMED     0x00
+#define SYM_DISARMED  0xE9
+#define SYM_ROLL0     0x2D
+#define SYM_ROLLR     0xEA
+#define SYM_ROLLL     0xEB
+#define SYM_PTCH0     0x7C
+#define SYM_PTCHUP    0xEC
+#define SYM_PTCHDWN   0xED
+#define SYM_XERR      0xEE
+#define SYM_KN        0xF0
+#define SYM_NM        0xF1
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -374,8 +393,14 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::instance();
+    char arm;
+    if (AP_Notify::flags.armed) {
+        arm = SYM_ARMED;
+    } else {
+        arm = SYM_DISARMED;
+    }
     if (notify) {
-        backend->write(x, y, notify->get_flight_mode_str());
+        backend->write(x, y, false, "%s%c", notify->get_flight_mode_str(), arm);
     }
 }
 
@@ -695,6 +720,36 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%4ld.%07ld", SYM_GPS_LONG, (long)dec_portion,(long)frac_portion);
 }
 
+void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    char r;
+    if (ahrs.roll_sensor > 50) {
+        r = SYM_ROLLR;
+    } else if (ahrs.roll_sensor < -50) {
+        r = SYM_ROLLL;
+    } else {
+        r = SYM_ROLL0;
+    }
+    backend->write(x, y, false, "%c%3d%c", r, roll, SYM_DEGR);
+}
+
+void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    char p;
+    if (ahrs.pitch_sensor > 50) {
+        p = SYM_PTCHUP;
+    } else if (ahrs.pitch_sensor < -50) {
+        p = SYM_PTCHDWN;
+    } else {
+        p = SYM_PTCH0;
+    }
+    backend->write(x, y, false, "%c%3d%c", p, pitch, SYM_DEGR);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -723,6 +778,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+    DRAW_SETTING(roll_angle);
+    DRAW_SETTING(pitch_angle);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
