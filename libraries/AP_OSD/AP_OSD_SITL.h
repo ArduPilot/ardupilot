@@ -49,6 +49,7 @@ private:
     sf::RenderWindow *w;
 
     sf::Texture font[256];
+    uint8_t last_font;
 
     // setup to match MAX7456 layout
     static const uint8_t char_width = 12;
