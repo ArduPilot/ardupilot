@@ -64,8 +64,7 @@ private:
     static const uint8_t video_lines_ntsc = 13;
     static const uint8_t video_lines_pal = 16;
     static const uint8_t video_columns = 30;
-    static const uint16_t max_updated_chars = 64; //up to 480
-    static const uint16_t spi_buffer_size = ((max_updated_chars + 1) * 8);
+    static const uint16_t spi_buffer_size = 512;
 
     uint8_t frame[video_lines_pal][video_columns];
 
