@@ -121,6 +121,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_W_BATVOLT", 14, AP_OSD, warn_batvolt, 10.0f),
 
+    // @Param: _UNITS
+    // @DisplayName: Display Units
+    // @Description: Sets the units to use in displaying items
+    // @Values: 0:Metric,1:Imperial
+    // @User: Standard
+    AP_GROUPINFO("_UNITS", 15, AP_OSD, units, 0),
+    
     AP_GROUPEND
 };
 
