@@ -1,49 +1,42 @@
 # Font styles
 
-_The implementation of on-the-fly font style switching is still work in progress. As for now, there's a variety of font styles that can be chosen prior to building the code._
+There are various font styles available to choose from. Credits to [inavosd](https://github.com/iNavFlight/inav-configurator/tree/master/resources/osd) for providing the basis to develop on. 
 
-Credits to [inavosd](https://github.com/iNavFlight/inav-configurator/tree/master/resources/osd) for providing the basis to develop on.
+Font styles can be switched on-the-fly font style by setting parameter OSD_FONT to the desired number. This works for hardware backends as well as for SITL OSD.
 
-Available font styles are:
+Available styles and respective OSD_FONT numbers are:
 
-**clarity (default)** a clearly visible large font:
+**clarity (OSD_FONT 0, default)** a clearly visible large font:
 
   ![](clarity.png)
 
-**clarity_medium** good visibility, less dominant than clarity default:
+**clarity_medium (OSD_FONT 1)** good visibility, less dominant than clarity default:
 
 ![](clarity_medium.png)
 
-**bfstyle** bf- / inav-osd default style: 
+**bfstyle (OSD_FONT 2)** bf- / inav-osd default style: 
 
 ![](bfstyle.png)
 
-**bold** a bolder version of bfstyle:
+**bold (OSD_FONT 3)** a bolder version of bfstyle:
 
 ![](bold.png)
 
-**digital** 80's clock radio style:
+**digital (OSD_FONT 4)** 80's clock radio style:
 
 ![](digital.png)
 
 
+## Adding font styles ##
 
-## Individualizing charsets ##
+Charsets can be edited or built form scratch using [MAX7456charwizard](https://github.com/diydrones/MinimOSD-Extra/blob/master/Tools/MAX7456Charwizard.jar). Added charsets need to be converted to a binary file named fontN.bin prior to building the code. Files within this namespace will be automatically included in the build, so you can modify and replace existing .bin files or add your individual styles.
 
-Charsets can be edited or built form scratch using [MAX7456charwizard](https://github.com/diydrones/MinimOSD-Extra/blob/master/Tools/MAX7456Charwizard.jar)
-
-
-
-## Building a firmware with a non-default font style
-
-_On-the-fly style switching being still-work-in progress, as for now it is required to convert the desired .mcm file to a file named clarity.bin that is automatically integrated into the build._
-
-In your cloned repository navigate to this directory:
+To do that, navigate to:
 ```
 /ardupilot/libraries/AP_OSD/fonts
 ```
-and call "mcm2bin.py input.mcm output.bin" to convert your chosen .mcm file:
+in your cloned repository and call:
 ```
-./mcm2bin.py yourfont.mcm clarity.bin
+./mcm2bin.py yourfont.mcm fontN.bin
 ```
-Now navigate back to the directory root, configure and build for your desired board.
+to convert existent or added charsets into a binary. Now navigate back to the directory root, configure and build for your desired board.
