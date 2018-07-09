@@ -42,7 +42,7 @@ extern const AP_HAL::HAL &hal;
 void AP_OSD_SITL::load_font(void)
 {
     uint32_t font_size;
-    const uint8_t *font_data = AP_ROMFS::find_file("osd_font.bin", font_size);
+    uint8_t *font_data = AP_ROMFS::find_decompress("osd_font.bin", font_size);
     if (font_data == nullptr || font_size != 54 * 256) {
         AP_HAL::panic("Bad font file");
     }
@@ -87,6 +87,7 @@ void AP_OSD_SITL::load_font(void)
         }
         font[i].update(pixels);
     }
+    free(font_data);
 }
 
 void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr)
