@@ -167,7 +167,7 @@ define HAL_COMPASS_HMC5843_ROTATION ROTATION_YAW_90
 define ALLOW_ARM_NO_COMPASS
 
 define OSD_ENABLED ENABLED
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 9
 
