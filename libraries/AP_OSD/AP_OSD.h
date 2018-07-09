@@ -103,8 +103,18 @@ private:
 
     bool check_option(uint32_t option);
 
-    char u_icon(uint16_t unit_type);
-    float u_scale(uint16_t unit_type, float value);
+    enum unit_type {
+        ALTITUDE=0,
+        SPEED=1,
+        VSPEED=2,
+        DISTANCE=3,
+        DISTANCE_LONG=4,
+        TEMPERATURE=5,
+        UNIT_TYPE_LAST=6,
+    };
+    
+    char u_icon(enum unit_type unit);
+    float u_scale(enum unit_type unit, float value);
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -136,17 +146,6 @@ private:
 
     void draw_gps_latitude(uint8_t x, uint8_t y);
     void draw_gps_longitude(uint8_t x, uint8_t y);
-
-    enum {
-        ALTITUDE=0,
-        SPEED=1,
-        VSPEED=2,
-        DISTANCE=3,
-        DISTANCE_LONG=4,
-        TEMPERATURE=5,
-        UNIT_LAST=6,
-    };
-
 };
 
 class AP_OSD {
