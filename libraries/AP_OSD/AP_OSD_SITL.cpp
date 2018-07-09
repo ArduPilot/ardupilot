@@ -46,6 +46,11 @@ void AP_OSD_SITL::load_font(void)
     last_font = get_font_num();
     fontname[4] = last_font + '0';
     uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
+    if (font_data == nullptr && last_font != 0) {
+        last_font = 0;
+        fontname[4] = last_font + '0';
+        font_data = AP_ROMFS::find_decompress(fontname, font_size);
+    }
     if (font_data == nullptr || font_size != 54 * 256) {
         AP_HAL::panic("Bad font file");
     }
