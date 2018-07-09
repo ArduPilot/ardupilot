@@ -62,7 +62,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @DisplayName: Maximum DataFlash MAVLink Backend buffer size
     // @Description: Maximum amount of memory to allocate to DataFlash-over-mavlink
     // @User: Advanced
-    // @Units: kB
+    // @Units: KiB
     AP_GROUPINFO("_MAV_BUFSIZE",  5, DataFlash_Class, _params.mav_bufsize,       HAL_DATAFLASH_MAV_BUFSIZE),
 
     AP_GROUPEND
