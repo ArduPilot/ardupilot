@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _UNITS
     // @DisplayName: Display Units
     // @Description: Sets the units to use in displaying items
-    // @Values: 0:Metric,1:Imperial
+    // @Values: 0:Metric,1:Imperial,2:SI,3:Aviation
     // @User: Standard
     AP_GROUPINFO("_UNITS", 15, AP_OSD, units, 0),
     
