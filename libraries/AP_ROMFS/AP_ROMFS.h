@@ -6,10 +6,15 @@
 
 class AP_ROMFS {
 public:
+    // find a file and de-compress, assumning gzip format. The
+    // decompressed data will be allocated with malloc(). You must
+    // call free on the return value after use
+    static uint8_t *find_decompress(const char *name, uint32_t &size);
+    
+private:
     // find an embedded file
     static const uint8_t *find_file(const char *name, uint32_t &size);
 
-private:
     struct embedded_file {
         const char *filename;
         uint32_t size;
