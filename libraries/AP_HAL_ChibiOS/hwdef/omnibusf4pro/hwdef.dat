@@ -136,4 +136,4 @@ define BOARD_PWM_COUNT_DEFAULT 6
 #define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 #font for the osd
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin

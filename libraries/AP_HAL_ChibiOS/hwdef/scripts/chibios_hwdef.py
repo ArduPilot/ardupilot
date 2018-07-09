@@ -1165,6 +1165,18 @@ def write_env_py(filename):
     env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(build_flags)
     pickle.dump(env_vars, open(filename, "wb"))
 
+def romfs_add(romfs_filename, filename):
+    '''add a file to ROMFS'''
+    romfs.append((romfs_filename, filename))
+
+def romfs_wildcard(pattern):
+    '''add a set of files to ROMFS by wildcard'''
+    base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+    (pattern_dir, pattern) = os.path.split(pattern)
+    for f in os.listdir(os.path.join(base_path, pattern_dir)):
+        if fnmatch.fnmatch(f, pattern):
+            romfs.append((f, os.path.join(pattern_dir, f)))
+    
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins
@@ -1205,7 +1217,9 @@ def process_line(line):
     if a[0] == 'SPIDEV':
         spidev.append(a[1:])
     if a[0] == 'ROMFS':
-        romfs.append((a[1],a[2]))
+        romfs_add(a[1],a[2])
+    if a[0] == 'ROMFS_WILDCARD':
+        romfs_wildcard(a[1])
     if a[0] == 'undef':
         print("Removing %s" % a[1])
         config.pop(a[1], '')

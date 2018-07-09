@@ -166,4 +166,4 @@ define BOARD_PWM_COUNT_DEFAULT 8
 
 # setup for OSD
 define OSD_ENABLED ENABLED
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
