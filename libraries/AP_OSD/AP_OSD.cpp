@@ -76,6 +76,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Bitmask: 0:UseDecimalPack
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
+
+    // @Param: _FONT
+    // @DisplayName: OSD Font
+    // @Description: This sets which OSD font to use. It is an integer from 0 to the number of fonts available
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("_FONT", 9, AP_OSD, font_num, 0),
     
     AP_GROUPEND
 };

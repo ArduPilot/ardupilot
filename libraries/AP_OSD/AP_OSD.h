@@ -161,6 +161,7 @@ public:
     AP_Int8 osd_type;
     AP_Int8 rc_channel;
     AP_Int8 sw_method;
+    AP_Int8 font_num;
 
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
