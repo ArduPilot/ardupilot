@@ -251,9 +251,27 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
         (char)SYM_MI,       //DISTANCE_LONG
         (char)SYM_DEGREES_F //TEMPERATURE
     };
+    static const char icons_SI[UNIT_TYPE_LAST] {
+        (char)SYM_ALT_M,    //ALTITUDE
+        (char)SYM_MS,       //SPEED
+        (char)SYM_MS,       //VSPEED
+        (char)SYM_M,        //DISTANCE
+        (char)SYM_KM,       //DISTANCE_LONG
+        (char)SYM_DEGREES_C //TEMPERATURE
+    };
+    static const char icons_aviation[UNIT_TYPE_LAST] {
+        (char)SYM_ALT_FT,   //ALTITUDE Ft
+        (char)SYM_KN,       //SPEED Knots
+        (char)SYM_FS,       //VSPEED
+        (char)SYM_FT,       //DISTANCE
+        (char)SYM_NM,       //DISTANCE_LONG Nm
+        (char)SYM_DEGREES_C //TEMPERATURE
+    };
     static const char *icons[AP_OSD::UNITS_LAST] = {
         icons_metric,
-        icons_imperial
+        icons_imperial,
+        icons_SI,
+        icons_aviation,
     };
     return icons[constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1)][unit];
 }
@@ -264,20 +282,20 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
 float AP_OSD_Screen::u_scale(enum unit_type unit, float value)
 {
     static const float scale_metric[UNIT_TYPE_LAST] = {
-        1.0,       //ALTITUDE
-        3.6,       //SPEED
-        1.0,       //VSPEED
-        1.0,       //DISTANCE
-        1.0/1000,  //DISTANCE_LONG
-        1.0,       //TEMPERATURE
+        1.0,       //ALTITUDE m
+        3.6,       //SPEED km/hr
+        1.0,       //VSPEED m/s
+        1.0,       //DISTANCE m
+        1.0/1000,  //DISTANCE_LONG km
+        1.0,       //TEMPERATURE C
     };
     static const float scale_imperial[UNIT_TYPE_LAST] = {
-        3.28084,     //ALTITUDE
-        2.23694,     //SPEED
-        3.28084,     //VSPEED
-        3.28084,     //DISTANCE
-        1.0/1609.34, //DISTANCE_LONG
-        1.8,         //TEMPERATURE
+        3.28084,     //ALTITUDE ft
+        2.23694,     //SPEED mph
+        3.28084,     //VSPEED ft/s
+        3.28084,     //DISTANCE ft
+        1.0/1609.34, //DISTANCE_LONG miles
+        1.8,         //TEMPERATURE F
     };
     static const float offset_imperial[UNIT_TYPE_LAST] = {
         0.0,          //ALTITUDE
@@ -285,15 +303,35 @@ float AP_OSD_Screen::u_scale(enum unit_type unit, float value)
         0.0,          //VSPEED
         0.0,          //DISTANCE
         0.0,          //DISTANCE_LONG
-        32.0,         //TEMPERATURE
+        32.0,         //TEMPERATURE F
+    };
+    static const float scale_SI[UNIT_TYPE_LAST] = {
+        1.0,       //ALTITUDE m
+        1.0,       //SPEED m/s
+        1.0,       //VSPEED m/s
+        1.0,       //DISTANCE m
+        1.0/1000,  //DISTANCE_LONG km
+        1.0,       //TEMPERATURE C
+    };
+    static const float scale_aviation[UNIT_TYPE_LAST] = {
+        3.28084,   //ALTITUDE Ft
+        1.94384,   //SPEED Knots
+        196.85,    //VSPEED ft/min
+        3.28084,   //DISTANCE ft
+        0.000539957,  //DISTANCE_LONG Nm
+        1.0,       //TEMPERATURE C
     };
     static const float *scale[AP_OSD::UNITS_LAST] = {
         scale_metric,
-        scale_imperial
+        scale_imperial,
+        scale_SI,
+        scale_aviation
     };
     static const float *offsets[AP_OSD::UNITS_LAST] = {
         nullptr,
-        offset_imperial
+        offset_imperial,
+        nullptr,
+        nullptr
     };
     uint8_t units = constrain_int16(osd->units, 0, AP_OSD::UNITS_LAST-1);
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);

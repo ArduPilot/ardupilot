@@ -197,7 +197,9 @@ public:
     enum {
         UNITS_METRIC=0,
         UNITS_IMPERIAL=1,
-        UNITS_LAST=2,
+        UNITS_SI=2,
+        UNITS_AVIATION=3,
+        UNITS_LAST=4,
     };
 
     AP_Int8 units;
