@@ -162,7 +162,7 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
         if (is_zero(turn_angle_cd)) {
             // if not turning can continue at full speed
             _desired_speed_final = _desired_speed;
-        } else if (rover.use_pivot_steering(turn_angle_cd)) {
+        } else if (rover.use_pivot_steering_at_next_WP(turn_angle_cd)) {
             // pivoting so we will stop
             _desired_speed_final = 0.0f;
         } else {
