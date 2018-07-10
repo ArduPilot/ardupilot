@@ -19,6 +19,7 @@
 
 #include "Storage.h"
 #include "hwdef/common/flash.h"
+#include "hwdef/common/posix.h"
 #include "sdcard.h"
 
 using namespace ChibiOS;
