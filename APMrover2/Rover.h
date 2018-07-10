@@ -512,6 +512,7 @@ private:
     void update_sensor_status_flags(void);
 
     // Steering.cpp
+    bool use_pivot_steering_at_next_WP(float yaw_error_cd);
     bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
 
