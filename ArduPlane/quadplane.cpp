@@ -1163,7 +1163,7 @@ bool QuadPlane::assistance_needed(float aspeed)
         return false;
     }
     
-    uint32_t max_angle_cd = 100U*assist_angle;
+    int32_t max_angle_cd = 100U*assist_angle;
     if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
          labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
         // not beyond angle error
