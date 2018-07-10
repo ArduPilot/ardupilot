@@ -629,8 +629,12 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
 {
     Vector3f v;
-    AP::ahrs().get_velocity_NED(v);
-    float vspd = -v.z;
+    float vspd;
+    if (AP::ahrs().get_velocity_NED(v)) {
+        vspd = -v.z;
+    } else {
+        vspd = AP::baro().get_climb_rate();
+    }
     char sym;
     if (vspd > 3.0f) {
         sym = SYM_UP_UP;
