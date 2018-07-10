@@ -102,8 +102,6 @@ private:
     pthread_t _main_ctx;
 
     Semaphore _io_semaphore;
-
-    static void *thread_create_trampoline(void *ctx);    
 };
 
 }
