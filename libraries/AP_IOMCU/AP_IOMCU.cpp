@@ -651,11 +651,10 @@ bool AP_IOMCU::check_crc(void)
     }
     uint32_t crc = crc_crc32(0, fw, fw_size);
 
-    // pad to max size
-	while (fw_size < flash_size) {
+    // pad CRC to max size
+	for (uint32_t i=0; i<flash_size-fw_size; i++) {
 		uint8_t b = 0xff;
 		crc = crc_crc32(crc, &b, 1);
-		fw_size++;
 	}
 
     uint32_t io_crc = 0;
