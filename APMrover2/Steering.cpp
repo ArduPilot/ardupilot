@@ -1,6 +1,27 @@
 #include "Rover.h"
 
 /*
+    work out if we are going to use pivot steering at next waypoint
+*/
+bool Rover::use_pivot_steering_at_next_WP(float yaw_error_cd)
+{
+    // check cases where we clearly cannot use pivot steering
+    if (!g2.motors.have_skid_steering() || g.pivot_turn_angle <= 0) {
+        return false;
+    }
+
+    // calc bearing error
+    const float yaw_error = fabsf(yaw_error_cd) * 0.01f;
+
+    // if error is larger than pivot_turn_angle then use pivot steering at next WP
+    if (yaw_error > g.pivot_turn_angle) {
+        return true;
+    }
+
+    return false;
+}
+
+/*
     work out if we are going to use pivot steering
 */
 bool Rover::use_pivot_steering(float yaw_error_cd)
