@@ -355,27 +355,14 @@ void Scheduler::teardown()
 }
 
 /*
-  trampoline for thread create
-*/
-void *Scheduler::thread_create_trampoline(void *ctx)
-{
-    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
-    (*t)();
-    free(t);
-    return nullptr;
-}
-
-/*
   create a new thread
 */
 bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
-    // take a copy of the MemberProc, it is freed after thread exits
-    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
-    if (!tproc) {
+    Thread *thread = new Thread{(Thread::task_t)proc};
+    if (!thread) {
         return false;
     }
-    *tproc = proc;
 
     uint8_t thread_priority = APM_LINUX_IO_PRIORITY;
     static const struct {
@@ -399,21 +386,19 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
-    pthread_t thread;
-    pthread_attr_t thread_attr;
-    struct sched_param param;
 
-    pthread_attr_init(&thread_attr);
-    pthread_attr_setstacksize(&thread_attr, stack_size);
+    thread->set_stack_size(stack_size);
 
-    param.sched_priority = thread_priority;
-    (void)pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
+    /*
+     * We should probably store the thread handlers and join() when exiting,
+     * but let's the thread manage itself for now.
+     */
+    thread->set_auto_free(true);
 
-    if (pthread_create(&thread, &thread_attr, thread_create_trampoline, tproc) != 0) {
-        free(tproc);
+    if (!thread->start(name, SCHED_FIFO, thread_priority)) {
+        delete thread;
         return false;
     }
-    pthread_setname_np(thread, name);
+
     return true;
 }
