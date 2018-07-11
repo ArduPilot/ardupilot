@@ -14,6 +14,8 @@ public:
     // update state
     void update(void) override;
 
+    static void set_addr(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, uint8_t addr);
+
 protected:
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
