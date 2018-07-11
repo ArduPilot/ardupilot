@@ -99,7 +99,7 @@ public:
     uint8_t get_rsc_mode() const { return _rsc_mode; }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
-    float get_rsc_setpoint() const { return _rsc_setpoint / 1000.0f; }
+    float get_rsc_setpoint() const { return _rsc_setpoint * 0.001f; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
@@ -166,7 +166,7 @@ protected:
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
     // reset_swash_servo - free up swash servo for maximum movement
-    void reset_swash_servo(SRV_Channel *servo);
+    void reset_swash_servo(SRV_Channel::Aux_servo_function_t function);
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
     virtual bool init_outputs() = 0;
@@ -184,10 +184,9 @@ protected:
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;
 
-    // convert input in -1 to +1 range to pwm output for swashplate servos. .  Special handling of trim is required 
-    // to keep travel between the swashplate servos consistent.
-    int16_t calc_pwm_output_1to1_swash_servo(float input, const SRV_Channel *servo);
-
+    // write to a swash servo. output value is pwm
+    void rc_write_swash(uint8_t chan, float swash_in);
+    
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum

@@ -25,6 +25,10 @@ void AP_MotorsHeli_RSC::init_servo()
 {
     // setup RSC on specified channel by default
     SRV_Channels::set_aux_channel_default(_aux_fn, _default_channel);
+
+    // set servo range 
+    SRV_Channels::set_range(SRV_Channels::get_motor_function(_aux_fn), 1000);
+
 }
 
 // set_power_output_range

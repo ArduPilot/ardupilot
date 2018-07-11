@@ -184,28 +184,20 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
 bool AP_MotorsHeli_Dual::init_outputs()
 {
     if (!_flags.initialised_ok) {
-        _swash_servo_1 = SRV_Channels::get_channel_for(SRV_Channel::k_motor1, CH_1);
-        _swash_servo_2 = SRV_Channels::get_channel_for(SRV_Channel::k_motor2, CH_2);
-        _swash_servo_3 = SRV_Channels::get_channel_for(SRV_Channel::k_motor3, CH_3);
-        _swash_servo_4 = SRV_Channels::get_channel_for(SRV_Channel::k_motor4, CH_4);
-        _swash_servo_5 = SRV_Channels::get_channel_for(SRV_Channel::k_motor5, CH_5);
-        _swash_servo_6 = SRV_Channels::get_channel_for(SRV_Channel::k_motor6, CH_6);
-        if (!_swash_servo_1 || !_swash_servo_2 || !_swash_servo_3 ||
-            !_swash_servo_4 || !_swash_servo_5 || !_swash_servo_6) {
-            return false;
+        // make sure 6 output channels are mapped
+        for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+            add_motor_num(CH_1+i);
         }
+
+        // set rotor servo range
+        _rotor.init_servo();
+
     }
 
     // reset swash servo range and endpoints
-    reset_swash_servo (_swash_servo_1);
-    reset_swash_servo (_swash_servo_2);
-    reset_swash_servo (_swash_servo_3);
-    reset_swash_servo (_swash_servo_4);
-    reset_swash_servo (_swash_servo_5);
-    reset_swash_servo (_swash_servo_6);
-
-    // set rotor servo range
-    _rotor.init_servo();
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        reset_swash_servo(SRV_Channels::get_motor_function(i));
+    }
 
     _flags.initialised_ok = true;
 
@@ -513,28 +505,21 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     _rotor.set_collective(fabsf(collective_out));
 
     // swashplate servos
-    float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
-    float servo2_out = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
-    float servo3_out = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
-    float servo4_out = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)*0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
-    float servo5_out = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)*0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
-    float servo6_out = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)*0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
+    float servo_out[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
+    
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        servo_out[i] = (_rollFactor[i] * roll_out + _pitchFactor[i] * pitch_out + _yawFactor[i] * yaw_out)*0.45f + _collectiveFactor[i] * collective_out_scaled;
+    }
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
-    servo1_out = 2*servo1_out - 1;
-    servo2_out = 2*servo2_out - 1;
-    servo3_out = 2*servo3_out - 1;
-    servo4_out = 2*servo4_out - 1;
-    servo5_out = 2*servo5_out - 1;
-    servo6_out = 2*servo6_out - 1;
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        servo_out[i] = 2*servo_out[i] - 1;
+    }
 
-    // actually move the servos
-    rc_write(AP_MOTORS_MOT_1, calc_pwm_output_1to1_swash_servo(servo1_out, _swash_servo_1));
-    rc_write(AP_MOTORS_MOT_2, calc_pwm_output_1to1_swash_servo(servo2_out, _swash_servo_2));
-    rc_write(AP_MOTORS_MOT_3, calc_pwm_output_1to1_swash_servo(servo3_out, _swash_servo_3));
-    rc_write(AP_MOTORS_MOT_4, calc_pwm_output_1to1_swash_servo(servo4_out, _swash_servo_4));
-    rc_write(AP_MOTORS_MOT_5, calc_pwm_output_1to1_swash_servo(servo5_out, _swash_servo_5));
-    rc_write(AP_MOTORS_MOT_6, calc_pwm_output_1to1_swash_servo(servo6_out, _swash_servo_6));
+    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        rc_write_swash(i, servo_out[i]);
+    }
 }
 
 
