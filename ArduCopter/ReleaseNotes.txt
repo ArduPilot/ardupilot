@@ -1,5 +1,20 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc5 07-Jul-2018
+Changes from 3.6.0-rc4
+1) Support new boards CubeBlack and HolyBro Pixhawk4-mini
+2) ChibiOS small enhancement and fixes:
+    a) make board serial number match NuttX
+    b) relay fix for Pixhawk boards by defaulting BRD_PWM_COUNT to 4 (same as NuttX)
+    c) MatekF405-Wing default compass orientation fix
+    d) Pixhawk4 default compass orientation fix
+    e) Omnibus F4 Pro I2C fix
+3) Bug fixes:
+    a) Telemetry baud rate fix
+    b) RC failsafe fix to RTL in all modes except Auto when FS_THR_ENABLE is continue-with-mission
+    c) waypoint navigation related safety check that PSC_POS_XY_P is non-zero 
+    d) aerofc-v1 update bootloader utility fix
+------------------------------------------------------------------
 Copter 3.6.0-rc4 05-Jul-2018
 Changes from 3.6.0-rc3
 1) add support for Cube Black and Cube Orange
