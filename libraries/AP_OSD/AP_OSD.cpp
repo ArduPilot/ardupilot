@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("_FONT", 9, AP_OSD, font_num, 0),
-    
+
     // @Param: _V_OFFSET
     // @DisplayName: OSD vertical offset
     // @Description: Sets vertical offset of the osd inside image
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Values: 0:Metric,1:Imperial,2:SI,3:Aviation
     // @User: Standard
     AP_GROUPINFO("_UNITS", 15, AP_OSD, units, 0),
-    
+
     AP_GROUPEND
 };
 
