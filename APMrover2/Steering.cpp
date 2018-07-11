@@ -10,11 +10,8 @@ bool Rover::use_pivot_steering_at_next_WP(float yaw_error_cd)
         return false;
     }
 
-    // calc bearing error
-    const float yaw_error = fabsf(yaw_error_cd) * 0.01f;
-
     // if error is larger than pivot_turn_angle then use pivot steering at next WP
-    if (yaw_error > g.pivot_turn_angle) {
+    if (fabsf(yaw_error_cd) * 0.01f > g.pivot_turn_angle) {
         return true;
     }
 
