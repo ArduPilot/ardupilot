@@ -25,6 +25,7 @@
 #include "shared_dma.h"
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
+#include "hwdef/common/stm32_util.h"
 
 #include <hwdef.h>
 
@@ -176,6 +177,8 @@ static THD_FUNCTION(main_loop,arg)
 
     schedulerInstance.hal_initialized();
 
+    peripheral_power_enable();
+    
     g_callbacks->setup();
     hal.scheduler->system_initialized();
 
