@@ -2,13 +2,18 @@
 # Matek F405-Wing, developed by David Ingraham
 # Board configuration borrowed from Inav F405SE target
 
-# There is currently an issue with UART Mapping. For now, reference the table below:
-#-----------------------------------------------------------------------------------
-# Serial1 - T3/R3
-# Serial2 - T4/R4
-# Serial3 - T1/R1
-# Serial4 - T5/R5
-# Serial5 - T6/R6
+# Read hwdef/fmuv3/hwdef.dat for more info on these options
+
+# SerialX ports are mapped as printed on the top board
+# R1/T1 -> Serial1
+# R2 -> Sbus (T2 not currently used or available)
+# R3/T3 -> Serial3
+# R4/T4 -> Serial4
+# R5/T5 -> Serial5
+# R6/T6 -> Serial6
+
+# Note: UART4/Serial4, UART5/Serial5, USART6/Serial6 have no DMA on RX (TX always DMA).
+# If sending highspeed serial data (eg. 921600 baud) to the board, use Serial1/Serial3.
 
 #################################################
 ###             MCU CONFIGURATION             ###
@@ -43,8 +48,7 @@ STM32_VDD 330U
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs
-UART_ORDER OTG1 USART1 USART3 UART4 UART5 USART6
-
+UART_ORDER OTG1 USART3 USART1 EMPTY UART4 UART5 USART6
 
 #################################################
 ###             PIN DEFINITIONS               ###
