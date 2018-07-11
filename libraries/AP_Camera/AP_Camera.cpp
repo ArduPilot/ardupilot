@@ -380,12 +380,8 @@ void AP_Camera::setup_feedback_callback(void)
 failed:
 #endif // CONFIG_HAL_BOARD
 
-    int8_t dpin = hal.gpio->analogPinToDigitalPin(_feedback_pin);
-    if (dpin == -1) {
-        return;
-    }
-    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT); // ensure we are in input mode
-    hal.gpio->write(dpin, 1);                // enable pullup
+    hal.gpio->pinMode(_feedback_pin, HAL_GPIO_INPUT); // ensure we are in input mode
+    hal.gpio->write(_feedback_pin, 1);                // enable pullup
 
     // install a 1kHz timer to check feedback pin
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Camera::feedback_pin_timer, void));
