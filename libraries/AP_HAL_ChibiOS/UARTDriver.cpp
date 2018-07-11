@@ -155,12 +155,18 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _initialised = false;
         _readbuf.set_size(rxS);
     }
-    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
-        _readbuf.clear();
-    }
 
+    bool clear_buffers = false;
     if (b != 0) {
+        // clear buffers on baudrate change, but not on the console (which is usually USB)
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
         _baudrate = b;
+    }
+    
+    if (clear_buffers) {
+        _readbuf.clear();
     }
 
     if (rx_bounce_buf == nullptr) {
@@ -182,7 +188,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _initialised = false;
         _writebuf.set_size(txS);
     }
-    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
+
+    if (clear_buffers) {
         _writebuf.clear();
     }
 
