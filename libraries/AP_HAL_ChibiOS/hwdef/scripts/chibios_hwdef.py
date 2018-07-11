@@ -245,7 +245,8 @@ class generic_pin(object):
             self.type.startswith('UART')) and (
             (self.label.endswith('_TX') or
              self.label.endswith('_RX') or
-             self.label.endswith('_CTS'))):
+             self.label.endswith('_CTS') or
+             self.label.endswith('_RTS'))):
             # default RX/TX lines to pullup, to prevent spurious bytes
             # on disconnected ports. CTS is the exception, which is pulldown
             if self.label.endswith("CTS"):
