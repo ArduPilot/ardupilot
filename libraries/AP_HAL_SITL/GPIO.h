@@ -7,7 +7,6 @@ public:
     explicit GPIO(SITL_State *sitlState): _sitlState(sitlState) {}
     void init();
     void pinMode(uint8_t pin, uint8_t output);
-    int8_t analogPinToDigitalPin(uint8_t pin);
     uint8_t read(uint8_t pin);
     void write(uint8_t pin, uint8_t value);
     void toggle(uint8_t pin);
