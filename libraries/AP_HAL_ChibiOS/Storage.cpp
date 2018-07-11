@@ -34,6 +34,11 @@ extern const AP_HAL::HAL& hal;
 #define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
 #endif
 
+#ifndef HAL_STORAGE_BACKUP_FILE
+// location of backup file
+#define HAL_STORAGE_BACKUP_FILE "/APM/" SKETCHNAME ".bak"
+#endif
+
 void Storage::_storage_open(void)
 {
     if (_initialised) {
@@ -55,6 +60,7 @@ void Storage::_storage_open(void)
         if (!fram.read(0, _buffer, CH_STORAGE_SIZE)) {
             return;
         }
+        _save_backup();
         _initialised = true;
         return;
     }
@@ -64,9 +70,7 @@ void Storage::_storage_open(void)
 #ifdef STORAGE_FLASH_PAGE
     // load from storage backend
     _flash_load();
-#endif
-    
-#ifdef USE_POSIX
+#elif defined(USE_POSIX)
     // allow for fallback to microSD based storage
     sdcard_init();
     
@@ -93,7 +97,26 @@ void Storage::_storage_open(void)
     using_filesystem = true;
 #endif
 
+    _save_backup();
     _initialised = true;
+}
+
+/*
+  save a backup of storage file if we have microSD available. This is
+  very handy for diagnostics, and for moving a copy of storage into
+  SITL for testing
+ */
+void Storage::_save_backup(void)
+{
+#ifdef USE_POSIX
+    // allow for fallback to microSD based storage
+    sdcard_init();
+    int fd = open(HAL_STORAGE_BACKUP_FILE, O_WRONLY|O_CREAT|O_TRUNC);
+    if (fd != -1) {
+        write(fd, _buffer, CH_STORAGE_SIZE);
+        close(fd);
+    }
+#endif
 }
 
 /*
