@@ -156,9 +156,6 @@ public:
         return gpio_read_bit(PIN_MAP[BOARD_USB_SENSE].gpio_device,PIN_MAP[BOARD_USB_SENSE].gpio_bit);
     }
     
-    inline        int8_t  analogPinToDigitalPin(uint8_t pin) override { return pin; }
-    static inline uint8_t analogPinToDigital(uint8_t pin){ return pin; }
-    
 // internal usage static versions
     static void           _pinMode(uint8_t pin, uint8_t output);
     static inline uint8_t _read(uint8_t pin) { const stm32_pin_info &pp = PIN_MAP[pin];   return gpio_read_bit( pp.gpio_device, pp.gpio_bit) ? HIGH : LOW; }
