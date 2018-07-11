@@ -251,3 +251,17 @@ void set_fast_reboot(enum rtc_boot_magic v)
 {
     set_rtc_backup0(v);
 }
+
+/*
+  enable peripheral power if needed This is done late to prevent
+  problems with RTS causing SiK radios to stay in the bootloader
+*/
+void peripheral_power_enable(void)
+{
+#ifdef HAL_GPIO_PIN_nVDD_5V_PERIPH_EN
+    palWriteLine(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN, 0);
+#endif
+#ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
+    palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
+#endif
+}

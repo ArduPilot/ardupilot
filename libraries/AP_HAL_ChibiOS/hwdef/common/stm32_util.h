@@ -64,6 +64,9 @@ enum rtc_boot_magic check_fast_reboot(void);
 
 // set RTC register for a fast reboot
 void set_fast_reboot(enum rtc_boot_magic v);
+
+// enable peripheral power if needed
+void peripheral_power_enable(void);
     
 #ifdef __cplusplus
 }
