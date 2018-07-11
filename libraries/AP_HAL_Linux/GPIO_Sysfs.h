@@ -50,11 +50,6 @@ public:
     AP_HAL::DigitalSource *channel(uint16_t vpin) override;
 
     /*
-     * Currently this function always returns -1.
-     */
-    int8_t analogPinToDigitalPin(uint8_t vpin) override;
-
-    /*
      * Currently this function always returns false.
      */
     bool attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode) override;

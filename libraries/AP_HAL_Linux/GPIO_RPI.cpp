@@ -91,11 +91,6 @@ void GPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
     }
 }
 
-int8_t GPIO_RPI::analogPinToDigitalPin(uint8_t pin)
-{
-    return -1;
-}
-
 uint8_t GPIO_RPI::read(uint8_t pin)
 {
     uint32_t value = GPIO_GET(pin);
