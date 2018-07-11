@@ -138,7 +138,7 @@ public:
     // these methods cover only the primary instance
     bool sensor_present() const;
     bool sensor_enabled() const;
-    bool sensor_failed() const;
+    bool sensor_healthy() const;
 
 private:
     static AP_Proximity *_singleton;
