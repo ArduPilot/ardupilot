@@ -30,6 +30,7 @@
 #define GPIO_SET_HIGH       *(_gpio+7)  // sets   bits which are 1
 #define GPIO_SET_LOW        *(_gpio+10) // clears bits which are 1
 #define GPIO_GET(g)         (*(_gpio+13)&(1<<g)) // 0 if LOW, (1<<g) if HIGH
+#define GPIO_RPI_MAX_NUMBER_PINS 32
 
 using namespace Linux;
 
@@ -93,6 +94,9 @@ void GPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
 
 uint8_t GPIO_RPI::read(uint8_t pin)
 {
+    if (pin >= GPIO_RPI_MAX_NUMBER_PINS) {
+        return 0;
+    }
     uint32_t value = GPIO_GET(pin);
     return value ? 1: 0;
 }
