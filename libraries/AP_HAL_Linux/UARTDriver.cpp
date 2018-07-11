@@ -86,9 +86,20 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     _device->set_speed(b);
 
-    _baudrate = b;
+    bool clear_buffers = false;
+    if (b != 0) {
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
+        _baudrate = b;
+    }
 
     _allocate_buffers(rxS, txS);
+
+    if (clear_buffers) {
+        _readbuf.clear();
+        _writebuf.clear();
+    }
 }
 
 void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
@@ -107,10 +118,6 @@ void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
 
     if (_writebuf.set_size(txS) && _readbuf.set_size(rxS)) {
         _initialised = true;
-    }
-    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
-        _readbuf.clear();
-        _writebuf.clear();
     }
 }
 
