@@ -114,7 +114,7 @@ private:
         TEMPERATURE=5,
         UNIT_TYPE_LAST=6,
     };
-    
+
     char u_icon(enum unit_type unit);
     float u_scale(enum unit_type unit, float value);
 

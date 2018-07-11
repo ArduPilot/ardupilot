@@ -25,12 +25,16 @@ extern const AP_HAL::HAL& hal;
 
 void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
 {
+    if (blink && (blink_phase < 2)) {
+        return;
+    }
     char buff[32];
     va_list ap;
     va_start(ap, fmt);
     int res = hal.util->vsnprintf(buff, sizeof(buff), fmt, ap);
-    if (res > 0 && _osd.options.get() & AP_OSD::OPTION_DECIMAL_PACK) {
+    if (res > 0 && check_option(AP_OSD::OPTION_DECIMAL_PACK)) {
         // automatically use packed decimal characters
+        // based on fiam idea implemented in inav osd
         char *p = strchr(&buff[1],'.');
         if (p && isdigit(p[1]) && isdigit(p[-1])) {
             p[-1] += SYM_DIG_OFS_1;
@@ -40,7 +44,7 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
         }
     }
     if (res < int(sizeof(buff))) {
-        write(x, y, buff, blink? AP_OSD_Backend::BLINK : 0);
+        write(x, y, buff);
     }
     va_end(ap);
 }

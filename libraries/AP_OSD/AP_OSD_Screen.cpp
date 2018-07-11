@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: GPSLONG
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(gps_longitude, "GPSLONG", 25, AP_OSD_Screen, AP_OSD_Setting),
-    
+
     // @Group: ROLL
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(roll_angle, "ROLL", 26, AP_OSD_Screen, AP_OSD_Setting),
