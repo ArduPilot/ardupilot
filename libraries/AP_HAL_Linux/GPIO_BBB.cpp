@@ -77,12 +77,6 @@ void GPIO_BBB::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-int8_t GPIO_BBB::analogPinToDigitalPin(uint8_t pin)
-{
-    return -1;
-}
-
-
 uint8_t GPIO_BBB::read(uint8_t pin) {
 
     uint8_t bank = pin/32;
