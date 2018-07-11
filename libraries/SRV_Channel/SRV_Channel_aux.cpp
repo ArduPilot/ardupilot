@@ -201,6 +201,7 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
 /*
   set radio_out for all channels matching the given function type
   trim the output assuming a 1500 center on the given value
+  reverses pwm output based on channel reversed property
  */
 void
 SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function, int16_t value)
@@ -210,7 +211,12 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function,
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            int16_t value2 = value - 1500 + channels[i].get_trim();
+            int16_t value2;
+            if (channels[i].get_reversed()) {
+                value2 = 1500 - value + channels[i].get_trim();
+            } else {
+                value2 = value - 1500 + channels[i].get_trim();
+            }
             channels[i].set_output_pwm(constrain_int16(value2,channels[i].get_output_min(),channels[i].get_output_max()));
             channels[i].output_ch();
           }
