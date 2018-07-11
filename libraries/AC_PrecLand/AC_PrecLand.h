@@ -5,7 +5,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
-#include <AP_Buffer/AP_Buffer.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 // declare backend classes
@@ -58,6 +58,9 @@ public:
 
     // returns time of last update
     uint32_t last_update_ms() const { return _last_update_ms; }
+
+    // create or update the inertial buffer
+    void inertial_buffer();
 
     // returns time of last time target was seen
     uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
@@ -119,12 +122,14 @@ private:
     AP_Int8                     _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
     AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Int16                    _inertial_buffer_length; // inertial buffer length in ms
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
     AP_Float                    _land_ofs_cm_y;     // Desired landing position of the camera right of the target in vehicle body frame
     AP_Float                    _accel_noise;       // accelometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
+    uint16_t                    _inertial_buffer_size;   // inertial buffer queue length, calculated from _inertial_buffer_length
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
     uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen
@@ -140,15 +145,16 @@ private:
     Vector2f                    _target_pos_rel_out_NE; // target's position relative to the camera, fed into position controller
     Vector2f                    _target_vel_rel_out_NE; // target's velocity relative to the CG, fed into position controller
 
-    // structure and buffer to hold a short history of vehicle velocity
+    // structure and buffer to hold a history of vehicle velocity
     struct inertial_data_frame_s {
         Matrix3f Tbn;                               // dcm rotation matrix to rotate body frame to north
         Vector3f correctedVehicleDeltaVelocityNED;
         Vector3f inertialNavVelocity;
         bool inertialNavVelocityValid;
         float dt;
+        uint64_t time_usec;
     };
-    AP_Buffer<inertial_data_frame_s,8>       _inertial_history;
+    ObjectArray<inertial_data_frame_s> *_inertial_history;
 
     // backend state
     struct precland_state {
