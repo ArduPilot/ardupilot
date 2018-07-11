@@ -347,8 +347,19 @@ void AP_MotorsHeli_Single::calculate_roll_pitch_collective_factors()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsHeli_Single::get_motor_mask()
 {
-    // heli uses channels 1,2,3,4,7 and 8
-    return rc_map_mask(1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_EXTGYRO | 1U << AP_MOTORS_HELI_SINGLE_RSC);
+    // heli uses channels 1,2,3,4 and 8
+    // setup fast channels
+    uint32_t mask = 1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_SINGLE_RSC;
+
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
+        mask |= 1U << AP_MOTORS_HELI_SINGLE_EXTGYRO;
+    }
+
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH) {
+        mask |= 1U << AP_MOTORS_HELI_SINGLE_TAILRSC;
+    }
+
+    return rc_map_mask(mask);
 }
 
 // update_motor_controls - sends commands to motor controllers

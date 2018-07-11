@@ -169,13 +169,10 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask =
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 |
-        1U << AP_MOTORS_MOT_5 |
-        1U << AP_MOTORS_MOT_6;
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        mask |= 1U << (AP_MOTORS_MOT_1+i);
+    }
 
     rc_set_freq(mask, _speed_hz);
 }
@@ -376,7 +373,12 @@ void AP_MotorsHeli_Dual::calculate_roll_pitch_collective_factors()
 uint16_t AP_MotorsHeli_Dual::get_motor_mask()
 {
     // dual heli uses channels 1,2,3,4,5,6 and 8
-    return (1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << 4 | 1U << 5 | 1U << 6 | 1U << AP_MOTORS_HELI_DUAL_RSC);
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        mask |= 1U << (AP_MOTORS_MOT_1+i);
+    }
+    mask |= 1U << AP_MOTORS_HELI_DUAL_RSC;
+    return mask;
 }
 
 // update_motor_controls - sends commands to motor controllers
