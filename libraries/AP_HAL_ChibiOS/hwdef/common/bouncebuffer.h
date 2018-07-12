@@ -21,7 +21,7 @@ struct bouncebuffer_t {
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer);
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes);
 
 /*
   setup for reading from a device into memory, allocating a bouncebuffer if needed

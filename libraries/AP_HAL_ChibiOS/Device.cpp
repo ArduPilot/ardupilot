@@ -31,8 +31,8 @@ static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
         thread_priority(_thread_priority)
 {
-    bouncebuffer_init(&bounce_buffer_tx);
-    bouncebuffer_init(&bounce_buffer_rx);
+    bouncebuffer_init(&bounce_buffer_tx, 10);
+    bouncebuffer_init(&bounce_buffer_rx, 10);
 }
 
 /*
