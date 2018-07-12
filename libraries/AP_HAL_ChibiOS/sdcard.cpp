@@ -46,9 +46,7 @@ void sdcard_init()
     sdcard_init_done = true;
 #if HAL_USE_SDC
 
-#if defined(STM32_SDC_USE_SDMMC1) && STM32_SDC_USE_SDMMC1 == TRUE
     bouncebuffer_init(&SDCD1.bouncebuffer);
-#endif
     
     sdcStart(&SDCD1, NULL);
 
