@@ -652,6 +652,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     }
 
     /* TX DMA channel preparation.*/
+    _total_written += tx_len;
     _writebuf.advance(tx_len);
     tx_len = _writebuf.peekbytes(tx_bounce_buf, MIN(n, TX_BOUNCE_BUFSIZE));
     if (tx_len == 0) {
@@ -712,6 +713,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         }
         if (ret > 0) {
             _last_write_completed_us = AP_HAL::micros();
+            _total_written += ret;
         }
         _writebuf.advance(ret);
         
@@ -751,9 +753,27 @@ void UARTDriver::write_pending_bytes(void)
         if (_first_write_started_us == 0) {
             _first_write_started_us = AP_HAL::micros();
         }
-        if (_last_write_completed_us != 0) {
-            _flow_control = FLOW_CONTROL_ENABLE;
-        } else if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
+        if (sdef.dma_tx) {
+            // when we are using DMA we have a reliable indication that a write
+            // has completed from the DMA completion interrupt
+            if (_last_write_completed_us != 0) {
+                _flow_control = FLOW_CONTROL_ENABLE;
+                return;
+            }
+        } else {
+            // without DMA we need to look at the number of bytes written into the queue versus the
+            // remaining queue space
+            uint32_t space = qSpaceI(&((SerialDriver*)sdef.serial)->oqueue);
+            uint32_t used = SERIAL_BUFFERS_SIZE - space;
+            // threshold is 8 for the GCS_Common code to unstick SiK radios, which
+            // sends 6 bytes with flow control disabled
+            const uint8_t threshold = 8;
+            if (_total_written > used && _total_written - used > threshold) {
+                _flow_control = FLOW_CONTROL_ENABLE;
+                return;
+            }
+        }
+        if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
             hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
             set_flow_control(FLOW_CONTROL_DISABLE);
@@ -868,8 +888,9 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     if (sdef.rts_line == 0 || sdef.is_usb) {
         // no hw flow control available
         return;
-    }
+    }    
 #if HAL_USE_SERIAL == TRUE
+    SerialDriver *sd = (SerialDriver*)(sdef.serial);
     _flow_control = flowcontrol;
     if (!_initialised) {
         // not ready yet, we just set variable for when we call begin
@@ -883,7 +904,13 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
         // disable hardware CTS support
-        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
+        chSysLock();
+        if ((sd->usart->CR3 & (USART_CR3_CTSE | USART_CR3_RTSE)) != 0) {
+            sd->usart->CR1 &= ~USART_CR1_UE;
+            sd->usart->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
+            sd->usart->CR1 |= USART_CR1_UE;
+        }
+        chSysUnlock();
         break;
 
     case FLOW_CONTROL_AUTO:
@@ -899,8 +926,15 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
         // enable hardware CTS support, disable RTS support as we do that in software
-        ((SerialDriver*)(sdef.serial))->usart->CR3 |= USART_CR3_CTSE;
-        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~USART_CR3_RTSE;
+        chSysLock();
+        if ((sd->usart->CR3 & (USART_CR3_CTSE | USART_CR3_RTSE)) != USART_CR3_CTSE) {
+            // CTSE and RTSE can only be written when uart is disabled
+            sd->usart->CR1 &= ~USART_CR1_UE;
+            sd->usart->CR3 |= USART_CR3_CTSE;
+            sd->usart->CR3 &= ~USART_CR3_RTSE;
+            sd->usart->CR1 |= USART_CR1_UE;
+        }
+        chSysUnlock();
         break;
     }
 #endif // HAL_USE_SERIAL
