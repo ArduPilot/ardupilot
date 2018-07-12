@@ -128,6 +128,14 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_UNITS", 15, AP_OSD, units, 0),
 
+    // @Param: _MSG_TIME
+    // @DisplayName: Message display duration in seconds
+    // @Description: Sets message duration seconds
+    // @Range: 1 20
+    // @User: Standard
+    AP_GROUPINFO("_MSG_TIME", 16, AP_OSD, msgtime_s, 10),
+
+
     AP_GROUPEND
 };
 
@@ -270,4 +278,3 @@ void AP_OSD::next_screen()
     } while (t != current_screen && !screen[t].enabled);
     current_screen = t;
 }
-
