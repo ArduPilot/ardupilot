@@ -32,10 +32,15 @@
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer)
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes)
 {
     (*bouncebuffer) = calloc(1, sizeof(struct bouncebuffer_t));
     osalDbgAssert(((*bouncebuffer) != NULL), "bouncebuffer init");
+    if (prealloc_bytes) {
+        (*bouncebuffer)->dma_buf = malloc_dma(prealloc_bytes);
+        osalDbgAssert(((*bouncebuffer)->dma_buf != NULL), "bouncebuffer preallocate");
+        (*bouncebuffer)->size = prealloc_bytes;
+    }
 }
 
 /*
