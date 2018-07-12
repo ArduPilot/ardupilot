@@ -27,6 +27,7 @@
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
+#include "AP_Airspeed_DLVR.h"
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_Backend.h"
 
@@ -247,6 +248,11 @@ void AP_Airspeed::init()
             break;
         case TYPE_I2C_SDP3X:
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
+            break;
+        case TYPE_I2C_DLVR:
+#if !HAL_MINIMIZE_FEATURES
+            sensor[i] = new AP_Airspeed_DLVR(*this, i);
+#endif // !HAL_MINIMIZE_FEATURES
             break;
         }
         if (sensor[i] && !sensor[i]->init()) {

@@ -228,7 +228,7 @@ void AP_Airspeed_MS5525::calculate(void)
     }
 }
 
-// 50Hz timer
+// 80Hz timer
 void AP_Airspeed_MS5525::timer()
 {
     if (AP_HAL::micros() - command_send_us < 10000) {
