@@ -25,7 +25,8 @@ class AP_RCProtocol_Backend
 
 public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
-    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) = 0;
+    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
+    virtual void process_byte(uint8_t byte) {}
     uint16_t read(uint8_t chan);
     bool new_input();
     uint8_t num_channels();
@@ -35,7 +36,10 @@ public:
 
     // allow for backends that need regular polling
     virtual void update(void) {}
-
+    enum {
+        PARSE_TYPE_SIGREAD,
+        PARSE_TYPE_SERIAL
+    };
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
     

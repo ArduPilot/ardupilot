@@ -20,6 +20,8 @@
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SBUS_NI.h"
+#include "AP_RCProtocol_SUMD.h"
+#include "AP_RCProtocol_SUMD_NI.h"
 
 void AP_RCProtocol::init()
 {
@@ -27,6 +29,7 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this);
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS_NI(*this);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+    backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
 }
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
@@ -46,6 +49,32 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
             backend[i]->process_pulse(width_s0, width_s1);
+            if (backend[i]->new_input()) {
+                _new_input = true;
+                _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
+                _last_input_ms = AP_HAL::millis();
+            }
+        }
+    }
+}
+
+void AP_RCProtocol::process_byte(uint8_t byte)
+{
+    uint32_t now = AP_HAL::millis();
+    // first try current protocol
+    if (_detected_protocol != AP_RCProtocol::NONE && now - _last_input_ms < 200) {
+        backend[_detected_protocol]->process_byte(byte);
+        if (backend[_detected_protocol]->new_input()) {
+            _new_input = true;
+            _last_input_ms = AP_HAL::millis();
+        }
+        return;
+    }
+
+    // otherwise scan all protocols
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            backend[i]->process_byte(byte);
             if (backend[i]->new_input()) {
                 _new_input = true;
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
