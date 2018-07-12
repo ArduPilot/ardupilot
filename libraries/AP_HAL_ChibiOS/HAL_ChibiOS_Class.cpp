@@ -153,7 +153,9 @@ static THD_FUNCTION(main_loop,arg)
 #endif
 
     ChibiOS::Shared_DMA::init();
-    
+
+    peripheral_power_enable();
+        
     hal.uartA->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
@@ -177,8 +179,6 @@ static THD_FUNCTION(main_loop,arg)
 
     schedulerInstance.hal_initialized();
 
-    peripheral_power_enable();
-    
     g_callbacks->setup();
     hal.scheduler->system_initialized();
 
