@@ -60,7 +60,9 @@ void sdcard_init()
             printf("Successfully mounted SDCard..\n");
         }
         //Create APM Directory
-        mkdir("/APM", 0777);
+        if (mkdir("/APM", 0777) != 0) {
+            printf("Err: Not create an APM Directory!\n");
+        }
     }
 #elif HAL_USE_MMC_SPI
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
@@ -91,7 +93,9 @@ void sdcard_init()
             printf("Successfully mounted SDCard..\n");
         }
         //Create APM Directory
-        mkdir("/APM", 0777);
+        if (mkdir("/APM", 0777) != 0) {
+            printf("Err: Not create an APM Directory!\n");
+        }
     }
 #endif
 #endif
