@@ -263,7 +263,8 @@ void peripheral_power_enable(void)
     // we don't know what state the bootloader had the CTS pin in, so
     // wait here with it pulled up from the PAL table for enough time
     // for the radio to be definately powered down
-    for (uint8_t i=0; i<100; i++) {
+    uint8_t i;
+    for (i=0; i<100; i++) {
         // use a loop as this may be a 16 bit timer
         chThdSleep(MS2ST(1));
     }
