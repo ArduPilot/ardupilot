@@ -56,15 +56,17 @@ void Scheduler::delay_microseconds(uint16_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    while (ms > 0) {
+    uint32_t start = AP_HAL::millis();
+    uint32_t now = start;
+    do {
         delay_microseconds(1000);
-        ms--;
-        if (_min_delay_cb_ms <= ms) {
+        if (_min_delay_cb_ms <= (ms - (now - start))) {
             if (in_main_thread()) {
                 call_delay_cb();
             }
         }
-    }
+        now = AP_HAL::millis();
+    } while (now - start < ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
