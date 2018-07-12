@@ -254,14 +254,24 @@ void set_fast_reboot(enum rtc_boot_magic v)
 
 /*
   enable peripheral power if needed This is done late to prevent
-  problems with RTS causing SiK radios to stay in the bootloader
+  problems with CTS causing SiK radios to stay in the bootloader. A
+  SiK radio will stay in the bootloader if CTS is held to GND on boot
 */
 void peripheral_power_enable(void)
 {
+#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN)
+    // we don't know what state the bootloader had the CTS pin in, so
+    // wait here with it pulled up from the PAL table for enough time
+    // for the radio to be definately powered down
+    for (uint8_t i=0; i<100; i++) {
+        // use a loop as this may be a 16 bit timer
+        chThdSleep(MS2ST(1));
+    }
 #ifdef HAL_GPIO_PIN_nVDD_5V_PERIPH_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN, 0);
 #endif
 #ifdef HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN, 0);
+#endif
 #endif
 }
