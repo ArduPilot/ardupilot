@@ -368,7 +368,8 @@ class AutoTest(ABC):
     def set_parameter(self, name, value):
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
-            if self.get_parameter(name) == float(value):
+            returned_value = self.get_parameter(name)
+            if returned_value == float(value):
                 # yes, exactly equal.
                 break
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
