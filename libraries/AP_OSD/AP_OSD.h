@@ -64,7 +64,6 @@ private:
     AP_OSD_Backend *backend;
     AP_OSD *osd;
 
-    static const uint16_t message_show_time_ms = 20000;
     static const uint8_t message_visible_width = 26;
     static const uint8_t message_scroll_time_ms = 200;
     static const uint8_t message_scroll_delay = 5;
@@ -189,6 +188,7 @@ public:
     AP_Int8 warn_rssi;
     AP_Int8 warn_nsat;
     AP_Float warn_batvolt;
+    AP_Int8 msgtime_s;
 
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
