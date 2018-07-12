@@ -83,6 +83,8 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define SSL_AIR_PRESSURE 101325.01576f // Pascal
 #define SSL_AIR_TEMPERATURE    288.15f // K
 
+#define INCH_OF_H2O_TO_PASCAL 248.84f
+
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX
   clock.h
