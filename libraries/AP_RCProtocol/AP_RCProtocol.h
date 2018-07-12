@@ -18,7 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
-#define MAX_RCIN_CHANNELS 16
+#define MAX_RCIN_CHANNELS 32
 #define MIN_RCIN_CHANNELS  5
 
 class AP_RCProtocol_Backend;
@@ -29,10 +29,13 @@ public:
         SBUS,
         SBUS_NI,
         DSM,
+        SUMD,
         NONE    //last enum always is None
     };
     void init();
+    bool valid_serial_prot() { return _valid_serial_prot; }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
+    void process_byte(uint8_t byte);
     enum rcprotocol_t protocol_detected() { return _detected_protocol; }
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
@@ -44,6 +47,7 @@ private:
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input = false;
     uint32_t _last_input_ms;
+    bool _valid_serial_prot = false;
 };
 
 #include "AP_RCProtocol_Backend.h"
