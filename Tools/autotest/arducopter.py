@@ -1165,7 +1165,7 @@ class AutoTestCopter(AutoTest):
                                                     old_pos.lon,
                                                     old_pos.alt)
             self.progress("Waiting for non-zero-lat")
-            tstart = self.get_sim_time();
+            tstart = self.get_sim_time()
             while True:
                 gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                           blocking=True)
@@ -1178,7 +1178,7 @@ class AutoTestCopter(AutoTest):
 
             self.takeoff(arm=True)
             self.set_rc(1, 1600)
-            tstart = self.get_sim_time();
+            tstart = self.get_sim_time()
             while True:
                 vicon_pos = self.mav.recv_match(type='VICON_POSITION_ESTIMATE',
                                                 blocking=True)
