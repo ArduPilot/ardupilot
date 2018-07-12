@@ -46,7 +46,7 @@ void sdcard_init()
     sdcard_init_done = true;
 #if HAL_USE_SDC
 
-    bouncebuffer_init(&SDCD1.bouncebuffer);
+    bouncebuffer_init(&SDCD1.bouncebuffer, 512);
     
     sdcStart(&SDCD1, NULL);
 
