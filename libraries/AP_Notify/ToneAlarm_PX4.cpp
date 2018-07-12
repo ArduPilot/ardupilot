@@ -64,7 +64,7 @@ const ToneAlarm_PX4::Tone ToneAlarm_PX4::_tones[] {
     #define AP_NOTIFY_PX4_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
     #define AP_NOTIFY_PX4_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
-    { "MBNT255<C16P2", true },
+    { "MBMST128L4e16d16e<a.>p4f16e16f8e8d.p4f16e16f<a.>p4d16c16d8c8<b8>d8cp8e16d16e<a.>p4f16e16f8e8d.p4f16e16f<a.>p4d16c16d8c8<b8>d8cp8<b16>c16dp8c16d16e8d8c8<b8a>fe2p4f16e16d8e2.pp", true },
     #define AP_NOTIFY_PX4_TONE_WAITING_FOR_THROW 15
     { "MBNT90L4O2A#O3DFN0N0N0", true},
     #define AP_NOTIFY_PX4_TONE_LOUD_1 16
