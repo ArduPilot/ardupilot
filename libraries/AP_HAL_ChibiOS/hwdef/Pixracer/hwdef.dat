@@ -1,0 +1,4 @@
+# hw definition file for processing by chibios_hwdef.py for the
+# mRo Pixracer board. This is a fmuv4 board
+
+include ../fmuv4/hwdef.dat
