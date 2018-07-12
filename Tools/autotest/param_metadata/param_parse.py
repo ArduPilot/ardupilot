@@ -170,7 +170,7 @@ def process_library(vehicle, library, pathprefix=None):
                     error("Unknown vehicles (%s)" % delta)
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" % (field[0], vehicle.name,vehicle.truename,field[1], str(only_for_vehicles)))
                 if vehicle.truename not in only_for_vehicles:
-                    continue;
+                    continue
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[2])
                     setattr(p, field[0], value)

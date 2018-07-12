@@ -189,7 +189,7 @@ class AutoTest(ABC):
                                     timeout=1)
             if m is not None:
                 print("Received (%s)" % str(m))
-                break;
+                break
         self.mavproxy.send("set streamrate %u\n" % self.sitl_streamrate())
         self.progress("Reboot complete")
 
@@ -346,7 +346,7 @@ class AutoTest(ABC):
 
     def armed(self):
         '''Return true if vehicle is armed and safetyoff'''
-        return self.mav.motors_armed();
+        return self.mav.motors_armed()
 
     def arm_vehicle(self):
         """Arm vehicle with mavlink arm message."""
