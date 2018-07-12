@@ -203,8 +203,12 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_ARROW_START 0x60
 #define SYM_ARROW_COUNT 16
 
-#define SYM_AH_START 0x80
-#define SYM_AH_COUNT 9
+#define SYM_AH_H_START 0x80
+#define SYM_AH_H_COUNT 9
+
+#define SYM_AH_V_START 0xCA
+#define SYM_AH_V_COUNT 6
+
 
 #define SYM_AH_CENTER_LINE_LEFT   0x26
 #define SYM_AH_CENTER_LINE_RIGHT  0x27
@@ -500,17 +504,30 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         roll = -roll;
     }
 
-    roll = constrain_float(roll, -ah_max_roll, ah_max_roll);
     pitch = constrain_float(pitch, -ah_max_pitch, ah_max_pitch);
+    float ky = sinf(roll);
+    float kx = cosf(roll);
 
-    for (int dx = -4; dx <= 4; dx++) {
-        float fy =  dx * roll + pitch * ah_pitch_rad_to_char + 0.5f;
-        int dy = floorf(fy);
-        char c = (fy - dy) * SYM_AH_COUNT;
-        //chars in font in reversed order
-        c = SYM_AH_START + ((SYM_AH_COUNT - 1) - c);
-        if (dy >= -4 && dy <= 4) {
-            backend->write(x + dx, y - dy, false, "%c", c);
+    if (fabsf(ky) < fabsf(kx)) {
+        for (int dx = -4; dx <= 4; dx++) {
+            float fy =  dx * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
+            int dy = floorf(fy);
+            char c = (fy - dy) * SYM_AH_H_COUNT;
+            //chars in font in reversed order
+            c = SYM_AH_H_START + ((SYM_AH_H_COUNT - 1) - c);
+            if (dy >= -4 && dy <= 4) {
+                backend->write(x + dx, y - dy, false, "%c", c);
+            }
+        }
+    } else {
+        for (int dy=-4; dy<=4; dy++) {
+            float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
+            int dx = floorf(fx);
+            char c = (fx - dx) * SYM_AH_V_COUNT;
+            c = SYM_AH_V_START + c;
+            if (dx >= -4 && dx <=4) {
+                backend->write(x + dx, y - dy, false, "%c", c);
+            }
         }
     }
     backend->write(x-1,y, false, "%c%c%c", SYM_AH_CENTER_LINE_LEFT, SYM_AH_CENTER, SYM_AH_CENTER_LINE_RIGHT);
