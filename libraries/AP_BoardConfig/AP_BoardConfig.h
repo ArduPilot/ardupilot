@@ -72,12 +72,10 @@ public:
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        BOARD_TYPE_UNKNOWN = -1,
         PX4_BOARD_AUTO     = 0,
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
@@ -100,18 +98,18 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_OLDDRIVERS = 100,
-#endif
     };
-#endif // AP_FEATURE_BOARD_DETECT
 
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
 
-#if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type get_board_type(void) {
+#if AP_FEATURE_BOARD_DETECT
         return px4_configured_board;
-    }
+#else
+        return BOARD_TYPE_UNKNOWN;
 #endif
+    }
 
     // ask if IOMCU is enabled. This is a uint8_t to allow
     // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
