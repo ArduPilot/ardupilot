@@ -268,7 +268,7 @@ bool AP_RangeFinder_VL53L0X::check_id(void)
 
 void AP_RangeFinder_VL53L0X::set_addr(AP_HAL::OwnPtr<AP_HAL::I2CDevice> base_dev, uint8_t addr)
 {
-	base_dev->write_register(0x8a, addr);
+	base_dev->write_register(I2C_SLAVE_DEVICE_ADDRESS, addr);
 }
 
 // Get reference SPAD (single photon avalanche diode) count and type
