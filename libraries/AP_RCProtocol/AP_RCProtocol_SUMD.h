@@ -19,7 +19,7 @@
 
 #include "AP_RCProtocol.h"
 #define SUMD_MAX_CHANNELS	32
-
+#define SUMD_FRAME_MAXLEN   40
 class AP_RCProtocol_SUMD : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SUMD(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
@@ -63,7 +63,7 @@ private:
     bool		_crcOK	= false;
     struct {
         uint16_t bytes[40];
-        uint8_t bit_ofs;
+        uint16_t bit_ofs;
         bool packet_parsed;
     } sumd_state;
 };

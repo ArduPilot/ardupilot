@@ -97,7 +97,9 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
 
     byte_ofs = sumd_state.bit_ofs/10;
     bit_ofs = sumd_state.bit_ofs%10;
-
+	if (byte_ofs >= SUMD_FRAME_MAXLEN) {
+		goto reset;
+	}
     // pull in the high bits
     nbits = bits_s0;
     if (nbits+bit_ofs > 10) {

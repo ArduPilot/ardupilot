@@ -21,7 +21,8 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SBUS_NI.h"
 #include "AP_RCProtocol_SUMD.h"
-#include "AP_RCProtocol_SUMD_NI.h"
+#include "AP_RCProtocol_SRXL.h"
+#include "AP_RCProtocol_ST24.h"
 
 void AP_RCProtocol::init()
 {
@@ -30,6 +31,8 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS_NI(*this);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+    backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+    backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
 }
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)

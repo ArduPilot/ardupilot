@@ -222,6 +222,9 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
         goto reset;
     }
 
+	if (byte_ofs > 25) {
+		goto reset;
+	}
     // pull in the high bits
     sbus_state.bytes[byte_ofs] |= ((1U<<bits_s0)-1) << bit_ofs;
     sbus_state.bit_ofs += bits_s0;
