@@ -77,7 +77,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(Compass &compass,
                                                        bool force_external,
                                                        enum Rotation rotation)
 {
-    if (!dev) {
+    if (!dev || !dev_icm) {
         return nullptr;
     }
     AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(compass, std::move(dev), std::move(dev_icm),
