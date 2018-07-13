@@ -5,6 +5,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
+
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -66,5 +68,11 @@ void loop()
         hal.scheduler->delay(1);
     }
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
+
 
 AP_HAL_MAIN();
