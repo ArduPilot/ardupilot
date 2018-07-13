@@ -27,6 +27,7 @@ enum ioevents {
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
+    IOEVENT_SET_BRUSHED_ON,
     IOEVENT_SET_RATES,
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
@@ -183,6 +184,13 @@ void AP_IOMCU::thread_main(void)
             }
         }
 
+        if (mask & EVENT_MASK(IOEVENT_SET_BRUSHED_ON)) {
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_BRUSHED)) {
+                event_failed(IOEVENT_SET_BRUSHED_ON);
+                continue;
+            }
+        }
+        
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
                 event_failed(IOEVENT_SET_SAFETY_MASK);
@@ -637,6 +645,12 @@ void AP_IOMCU::set_default_rate(uint16_t rate_hz)
 void AP_IOMCU::set_oneshot_mode(void)
 {
     trigger_event(IOEVENT_SET_ONESHOT_ON);
+}
+
+// setup for brushed mode
+void AP_IOMCU::set_brushed_mode(void)
+{
+    trigger_event(IOEVENT_SET_BRUSHED_ON);
 }
 
 // handling of BRD_SAFETYOPTION parameter
