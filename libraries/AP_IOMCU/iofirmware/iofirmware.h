@@ -94,6 +94,7 @@ private:
     uint8_t led_counter;
     uint32_t last_loop_ms;
     bool oneshot_enabled;
+    bool brushed_enabled;
     thread_t *thread_ctx;
     bool last_safety_off;
 };

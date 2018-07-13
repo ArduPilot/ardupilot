@@ -330,13 +330,6 @@ bool AP_IOMCU_FW::handle_code_write()
                     }
                     break;
                 case PAGE_REG_SETUP_ALTRATE:
-                    if (rx_io_packet.regs[0] < 25 && reg_setup.pwm_altclock == 1) {
-                        rx_io_packet.regs[0] = 25;
-                    }
-
-                    if (rx_io_packet.regs[0] > 400 && reg_setup.pwm_altclock == 1) {
-                        rx_io_packet.regs[0] = 400;
-                    }
                     reg_setup.pwm_altrate = rx_io_packet.regs[0];
                     update_rcout_freq = true;
                     break;
@@ -487,6 +480,19 @@ void AP_IOMCU_FW::rcout_mode_update(void)
     if (use_oneshot && !oneshot_enabled) {
         oneshot_enabled = true;
         hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+    }
+    bool use_brushed = (reg_setup.features & P_SETUP_FEATURES_BRUSHED) != 0;
+    if (use_brushed && !brushed_enabled) {
+        brushed_enabled = true;
+        if (reg_setup.pwm_rates == 0) {
+            // default to 2kHz for all channels for brushed output
+            reg_setup.pwm_rates = 0xFF;
+            reg_setup.pwm_altrate = 2000;
+            hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+        }
+        hal.rcout->set_esc_scaling(1000, 2000);
+        hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
     }
 }
 
