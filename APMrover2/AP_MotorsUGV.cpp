@@ -401,24 +401,27 @@ void AP_MotorsUGV::sanity_check_parameters()
 // setup pwm output type
 void AP_MotorsUGV::setup_pwm_type()
 {
+    uint16_t motor_mask = 0;
+
+    // work out mask of channels assigned to motors
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttle);
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleLeft);
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleRight);
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_motor1);
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_motor2);
+    motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_motor3);
+    
     switch (_pwm_type) {
     case PWM_TYPE_ONESHOT:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
     case PWM_TYPE_ONESHOT125:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
     case PWM_TYPE_BRUSHED_WITH_RELAY:
     case PWM_TYPE_BRUSHED_BIPOLAR:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
-        /*
-         * Group 0: channels 0 1
-         * Group 1: channels 4 5 6 7
-         * Group 2: channels 2 3
-         */
-        // TODO : See if we can seperate frequency between groups
-        hal.rcout->set_freq((1UL << 0), static_cast<uint16_t>(_pwm_freq * 1000));  // Steering group
-        hal.rcout->set_freq((1UL << 2), static_cast<uint16_t>(_pwm_freq * 1000));  // Throttle group
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_freq(motor_mask, uint16_t(_pwm_freq * 1000));
         break;
     default:
         // do nothing
