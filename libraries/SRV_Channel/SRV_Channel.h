@@ -171,6 +171,9 @@ public:
     // return true if function is for a multicopter motor
     static bool is_motor(SRV_Channel::Aux_servo_function_t function);
 
+    // return true if function is any throttle type
+    static bool is_throttle(const SRV_Channel::Aux_servo_function_t function);
+
     // return the function of a channel
     SRV_Channel::Aux_servo_function_t get_function(void) const {
         return (SRV_Channel::Aux_servo_function_t)function.get();
@@ -268,6 +271,9 @@ public:
 
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
+
+    // return a bitmask of each channel that is a motor or a throttle
+    static uint16_t get_motor_mask(void);
 
     // set output value for a function channel as a scaled value. This
     // calls calc_pwm() to also set the pwm value

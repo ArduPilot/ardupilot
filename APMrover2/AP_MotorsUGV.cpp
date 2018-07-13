@@ -401,16 +401,18 @@ void AP_MotorsUGV::sanity_check_parameters()
 // setup pwm output type
 void AP_MotorsUGV::setup_pwm_type()
 {
+    const uint16_t motor_bitmask = SRV_Channels::get_motor_mask();
+
     switch (_pwm_type) {
     case PWM_TYPE_ONESHOT:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        hal.rcout->set_output_mode(motor_bitmask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
     case PWM_TYPE_ONESHOT125:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        hal.rcout->set_output_mode(motor_bitmask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
     case PWM_TYPE_BRUSHED_WITH_RELAY:
     case PWM_TYPE_BRUSHED_BIPOLAR:
-        hal.rcout->set_output_mode(0xFFFF, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        hal.rcout->set_output_mode(motor_bitmask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         /*
          * Group 0: channels 0 1
          * Group 1: channels 4 5 6 7
