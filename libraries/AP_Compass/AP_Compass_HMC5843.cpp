@@ -168,7 +168,6 @@ bool AP_Compass_HMC5843::init()
     }
 
     if (!_check_whoami()) {
-        hal.console->printf("HMC5843: not a HMC device\n");
         goto errout;
     }
 
