@@ -30,6 +30,8 @@ public:
         SBUS_NI,
         DSM,
         SUMD,
+        SRXL,
+        ST24,
         NONE    //last enum always is None
     };
     void init();
