@@ -26,3 +26,15 @@
 #define HAL_Semaphore HALSITL::Semaphore
 #define HAL_Semaphore_Recursive HALSITL::Semaphore_Recursive
 
+#define HAL_PWM_GROUP1 {{3, 2, 1, 0}, \
+        }
+#define HAL_PWM_GROUP2 { {7, 6, 5, 4}, \
+        }
+#define HAL_PWM_GROUP3 { {11, 10, 9, 8}, \
+        }
+#define HAL_PWM_GROUP4 { {15, 14, 13, 12}, \
+        }
+#define HAL_PWM_GROUPS HAL_PWM_GROUP1,HAL_PWM_GROUP2,HAL_PWM_GROUP3,HAL_PWM_GROUP4
+
+// number of rc output channels
+#define SITL_NUM_CHANNELS 16
