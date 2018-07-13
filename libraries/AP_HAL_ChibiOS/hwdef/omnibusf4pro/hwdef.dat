@@ -100,12 +100,12 @@ define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_180
 define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
 define HAL_BARO_BMP280_NAME "bmp280"
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
-define HAL_COMPASS_HMC5843_I2C_BUS 0
-define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-
-# there is no compass fitted by default
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
 
 define STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
