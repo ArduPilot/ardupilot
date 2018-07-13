@@ -76,3 +76,9 @@
 
 // we support RC serial for BLHeli pass-thru
 #define HAL_SUPPORT_RCOUT_SERIAL 1
+
+// by default assume first I2C bus is internal
+#ifndef HAL_I2C_INTERNAL_MASK
+#define HAL_I2C_INTERNAL_MASK 1
+#endif
+
