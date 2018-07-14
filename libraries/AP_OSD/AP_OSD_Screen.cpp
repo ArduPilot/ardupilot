@@ -153,6 +153,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: TEMP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -771,6 +775,13 @@ void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%3d%c", p, pitch, SYM_DEGR);
 }
 
+void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
+{
+    AP_Baro &barometer = AP::baro();
+    float tmp = barometer.get_temperature();
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -801,6 +812,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(home);
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
+    DRAW_SETTING(temp);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
