@@ -46,7 +46,19 @@ void RCOutput::disable_ch(uint8_t ch)
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     _sitlState->output_ready = true;
+    // keep unscaled value
+    _last_sent[ch] = period_us;
     if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
+        if (_output_mode == MODE_PWM_BRUSHED) {
+            // Calculate the duty cycle
+            if (period_us <= _esc_pwm_min) {
+                period_us = 0;
+            } else if (period_us >= _esc_pwm_max) {
+                period_us = 100;
+            } else {
+                period_us = ((int32_t)period_us - _esc_pwm_min) * (int32_t)100 / (int32_t)(_esc_pwm_max - _esc_pwm_min);
+            }
+        }
         if (_corked) {
             _pending[ch] = period_us;
         } else {
@@ -68,6 +80,21 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
     memcpy(period_us, _sitlState->pwm_output, len * sizeof(uint16_t));
 }
 
+uint16_t RCOutput::read_last_sent(uint8_t ch)
+{
+    if (ch >= SITL_NUM_CHANNELS) {
+        return 0;
+    }
+    return _last_sent[ch];
+}
+
+void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
+{
+    for (uint8_t i=0; i < len; i++) {
+        period_us[i] = read_last_sent(i);
+    }
+}
+
 void RCOutput::cork(void)
 {
     if (!_corked) {
@@ -82,6 +109,32 @@ void RCOutput::push(void)
         memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
         _corked = false;
     }
+}
+
+/*
+  setup output mode
+ */
+void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
+{
+    if (_output_mode == mode) {
+        // no change
+        return;
+    }
+    _output_mode = mode;
+    _sitlState->pwm_type = mode;
+#if ENABLE_DEBUG
+    switch (_output_mode) {
+        case MODE_PWM_ONESHOT:
+            printf("Setting %s\n", "MODE_PWM_ONESHOT");
+            break;
+        case MODE_PWM_NORMAL:
+            printf("Setting %s\n", "MODE_PWM_NORMAL");
+            break;
+        case MODE_PWM_BRUSHED:
+            printf("Setting %s\n", "MODE_PWM_BRUSHED");
+            break;
+    }
+#endif
 }
 
 #endif
