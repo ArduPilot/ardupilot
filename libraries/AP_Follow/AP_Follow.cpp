@@ -329,11 +329,11 @@ bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
     return true;
 }
 
-// initialise offsets to provided distance vector (in meters in NED frame) if required
+// initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
 void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
 {
     if (_offset.get().is_zero()) {
-        _offset = dist_vec_ned;
+        _offset = -dist_vec_ned;
     }
 }
 
