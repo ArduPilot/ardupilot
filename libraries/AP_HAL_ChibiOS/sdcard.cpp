@@ -61,7 +61,12 @@ void sdcard_init()
         }
         //Create APM Directory
         if (mkdir("/APM", 0777) != 0) {
-            printf("Err: Not create an APM Directory!\n");
+            // Is there an APM directory?
+            if (chdir("/APM") != 0) {
+                printf("Err: Not create an APM Directory!\n");
+            } else {
+                chdir("/");
+            }
         }
     }
 #elif HAL_USE_MMC_SPI
@@ -94,7 +99,12 @@ void sdcard_init()
         }
         //Create APM Directory
         if (mkdir("/APM", 0777) != 0) {
-            printf("Err: Not create an APM Directory!\n");
+            // Is there an APM directory?
+            if (chdir("/APM") != 0) {
+                printf("Err: Not create an APM Directory!\n");
+            } else {
+                chdir("/");
+            }
         }
     }
 #endif
