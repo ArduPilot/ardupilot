@@ -269,7 +269,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
-        
+
         // select altitude source based on FOLL_ALT_TYPE param 
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
@@ -304,7 +304,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         // log lead's estimated vs reported position
         DataFlash_Class::instance()->Log_Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelX,VelY,VelZ,LatE,LonE,AltE",  // labels
+                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
                                                "sDUmnnnDUm",    // units
                                                "F--B000--B",    // mults
                                                "QLLifffLLi",    // fmt
@@ -342,7 +342,7 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 {
     const Vector3f &off = _offset.get();
 
-    // if offsets are zero or type if NED, simply return offset vector
+    // if offsets are zero or type is NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
         offset = off;
         return true;
