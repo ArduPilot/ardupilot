@@ -81,7 +81,7 @@ private:
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
 
-    // initialise offsets to provided distance vector (in meters in NED frame) if required
+    // initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
     void init_offsets_if_required(const Vector3f &dist_vec_ned);
 
     // get offsets in meters in NED frame
