@@ -122,6 +122,11 @@ define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 18.2
 
+#analog rssi pin (also could be used as analog airspeed input)
+# PA0 - ADC123_CH0
+define BOARD_RSSI_ANA_PIN 0
+
+
 define HAL_GPIO_A_LED_PIN 57
 
 define OSD_ENABLED ENABLED

@@ -158,10 +158,16 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define HAL_DATAFLASH_FILE_BUFSIZE 8
 define HAL_DATAFLASH_MAV_BUFSIZE 2
+
+# define default battery setup
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 31.7
+
+#analog rssi pin (also could be used as analog airspeed input)
+# PC5 - ADC12_CH15
+define BOARD_RSSI_ANA_PIN 15
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
