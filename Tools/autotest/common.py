@@ -98,6 +98,10 @@ class PreconditionFailedException(ErrorException):
     pass
 
 
+class Context(object):
+    def __init__(self):
+        self.parameters = []
+
 class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
@@ -109,6 +113,8 @@ class AutoTest(ABC):
         self.mav = None
         self.viewerip = viewerip
         self.use_map = use_map
+        self.contexts = []
+        self.context_push()
 
     @staticmethod
     def progress(text):
@@ -164,6 +170,10 @@ class AutoTest(ABC):
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
+
+    def fetch_parameters(self):
+        self.mavproxy.send("param fetch\n")
+        self.mavproxy.expect("Received [0-9]+ parameters")
 
     def reboot_sitl(self):
         self.mavproxy.send("reboot\n")
@@ -365,20 +375,42 @@ class AutoTest(ABC):
         self.progress("DISARMED")
         return True
 
-    def set_parameter(self, name, value):
+    def set_parameter(self, name, value, add_to_context=True):
+        old_value = self.get_parameter(name)
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
             returned_value = self.get_parameter(name)
             if returned_value == float(value):
                 # yes, exactly equal.
-                break
+                if add_to_context:
+                    self.context_get().parameters.append( (name, old_value) )
+                return
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
                           % (returned_value, value))
+        raise ValueError()
 
     def get_parameter(self, name):
         self.mavproxy.send("param fetch %s\n" % name)
         self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,))
         return float(self.mavproxy.match.group(1))
+
+    def context_get(self):
+        return self.contexts[-1]
+
+    def context_push(self):
+        self.contexts.append(Context())
+
+    def context_pop(self):
+        dead = self.contexts.pop()
+
+        '''set paramters to origin values in reverse order'''
+        dead_parameters = dead.parameters
+        dead_parameters.reverse()
+        for p in dead_parameters:
+            (name, old_value) = p
+            self.set_parameter(name,
+                               old_value,
+                               add_to_context=False)
 
     #################################################
     # UTILITIES
