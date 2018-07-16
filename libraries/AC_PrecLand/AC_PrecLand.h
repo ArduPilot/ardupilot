@@ -25,7 +25,7 @@ class AC_PrecLand
     friend class AC_PrecLand_SITL;
 
 public:
-    AC_PrecLand(const AP_AHRS_NavEKF& ahrs);
+    AC_PrecLand();
 
     /* Do not allow copies */
     AC_PrecLand(const AC_PrecLand &other) = delete;
@@ -113,9 +113,6 @@ private:
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
-
-    // references to inertial nav and ahrs libraries
-    const AP_AHRS_NavEKF&       _ahrs;
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
