@@ -35,8 +35,9 @@ private:
     bool _has_sample;
     uint32_t _last_sample_time;
 
-    Vector3f _mag_accum;
+    Vector3f _mag_accum[SITL_NUM_COMPASSES];
     uint32_t _accum_count;
+    Matrix3f _eliptical_corr;
 
 
 };
