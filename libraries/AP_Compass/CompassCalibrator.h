@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_Math/AP_Math.h>
 
 #define COMPASS_CAL_NUM_SPHERE_PARAMS 4
@@ -32,9 +34,16 @@ public:
 
     bool running() const;
 
+    void set_orientation(enum Rotation orientation, bool is_external) {
+        _auto_orientation = true;
+        _orientation = orientation;
+        _is_external = is_external;
+    }
+    
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
+    enum Rotation get_orientation(void) { return _orientation; }
 
     float get_completion_percent() const;
     completion_mask_t& get_completion_mask();
@@ -59,17 +68,31 @@ private:
         Vector3f offdiag;
     };
 
+    // compact class for approximate attitude, to save memory
+    class AttitudeSample {
+    public:
+        Matrix3f get_rotmat();
+        void set_from_ahrs();
+    private:
+        int8_t roll;
+        int8_t pitch;
+        int8_t yaw;
+    };
+
     class CompassSample {
     public:
         Vector3f get() const;
         void set(const Vector3f &in);
+        AttitudeSample att;
     private:
         int16_t x;
         int16_t y;
         int16_t z;
     };
 
-
+    enum Rotation _orientation;
+    bool _is_external;
+    bool _auto_orientation;
 
     enum compass_cal_status_t _status;
 
@@ -136,4 +159,7 @@ private:
      * Reset and update #_completion_mask with the current samples.
      */
     void update_completion_mask();
+
+    Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);
+    void calculate_orientation();
 };

@@ -60,6 +60,7 @@
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_GeodesicGrid.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -167,6 +168,7 @@ void CompassCalibrator::new_sample(const Vector3f& sample) {
     if(running() && _samples_collected < COMPASS_CAL_NUM_SAMPLES && accept_sample(sample)) {
         update_completion_mask(sample);
         _sample_buffer[_samples_collected].set(sample);
+        _sample_buffer[_samples_collected].att.set_from_ahrs();
         _samples_collected++;
     }
 }
@@ -195,6 +197,7 @@ void CompassCalibrator::update(bool &failure) {
     } else if(_status == COMPASS_CAL_RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
             if(fit_acceptable()) {
+                calculate_orientation();
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
@@ -695,4 +698,131 @@ void CompassCalibrator::CompassSample::set(const Vector3f &in) {
     x = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.x);
     y = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.y);
     z = COMPASS_CAL_SAMPLE_SCALE_TO_FIXED(in.z);
+}
+
+
+void CompassCalibrator::AttitudeSample::set_from_ahrs(void) {
+    const Matrix3f &dcm = AP::ahrs().get_DCM_rotation_body_to_ned();
+    float roll_rad, pitch_rad, yaw_rad;
+    dcm.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
+    roll = constrain_int16(127 * (roll_rad / M_PI), -127, 127);
+    pitch = constrain_int16(127 * (pitch_rad / M_PI_2), -127, 127);
+    yaw = constrain_int16(127 * (yaw_rad / M_PI), -127, 127);
+}
+
+Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) {
+    float roll_rad, pitch_rad, yaw_rad;
+    roll_rad = roll * (M_PI / 127);
+    pitch_rad = pitch * (M_PI_2 / 127);
+    yaw_rad = yaw * (M_PI / 127);
+    Matrix3f dcm;
+    dcm.from_euler(roll_rad, pitch_rad, yaw_rad);
+    return dcm;
+}
+
+/*
+  calculate the implied earth field for a compass sample and compass rotation
+ */
+Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Rotation r)
+{
+    Vector3f v = sample.get();
+
+    // convert the sample back to sensor frame
+    v.rotate_inverse(_orientation);
+
+    // rotate to body frame for this rotation
+    v.rotate(r);
+
+    Vector3f rot_offsets = _params.offset;
+    rot_offsets.rotate_inverse(_orientation);
+
+    rot_offsets.rotate(r);
+    
+    v += rot_offsets;
+
+    Matrix3f rot = sample.att.get_rotmat();
+
+    Vector3f efield = rot * v;
+    return efield;
+}
+
+/*
+  calculate compass orientation using the attitude estimate associated with each sample
+ */
+void CompassCalibrator::calculate_orientation(void)
+{
+    if (!_auto_orientation) {
+        // only calculate orientation for external compasses
+        return;
+    }
+
+    float sum_error[ROTATION_MAX] {};
+
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        // calculate the average implied earth field across all samples
+        Vector3f total_ef {};
+        for (uint32_t i=0; i<_samples_collected; i++) {
+            Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
+            total_ef += efield;
+        }
+        Vector3f avg_efield = total_ef / _samples_collected;
+
+        // now calculate the square error for this rotation against the average earth field
+        for (uint32_t i=0; i<_samples_collected; i++) {
+            Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
+            float err = (efield - avg_efield).length_squared();
+            sum_error[r] += err;
+        }
+    }
+
+    // find the rotation with the lowest square error
+    enum Rotation besti = ROTATION_NONE;
+    float bestv = sum_error[0];
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        if (sum_error[r] < bestv) {
+            bestv = sum_error[r];
+            besti = r;
+        }
+    }
+
+    // consider this a pass if the best orientation is 4x better
+    // square error than 2nd best
+    float second_best = besti==ROTATION_NONE?sum_error[1]:sum_error[0];
+    for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
+        if (r != besti) {
+            if (sum_error[r] < second_best) {
+                second_best = sum_error[r];
+            }
+        }
+    }
+    bool pass = (second_best / bestv) > 4;
+    if (!pass) {
+        hal.console->printf("Bad orientation estimation: %u %f\n", besti, second_best/bestv);
+    } else if (besti == _orientation) {
+        // no orientation change
+        hal.console->printf("Good orientation: %u %f\n", besti, second_best/bestv);
+    } else {
+        hal.console->printf("New orientation: %u was %u %f\n", besti, _orientation, second_best/bestv);
+    }
+
+    if (!pass) {
+        return;
+    }
+    
+    if (_orientation != besti) {
+        // correct the offsets for the new orientation
+        Vector3f rot_offsets = _params.offset;
+        rot_offsets.rotate_inverse(_orientation);
+        rot_offsets.rotate(besti);
+        _params.offset = rot_offsets;
+
+        Vector3f &diagonals = _params.diag;
+        Vector3f &offdiagonals = _params.offdiag;
+        // we should calculated the corrected diagonals and off-diagonals here, but
+        // for now just avoid eliptical correction if we're changing the orientation
+        diagonals = Vector3f(1,1,1);
+        offdiagonals.zero();
+    
+        _orientation = besti;
+    }
 }

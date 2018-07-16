@@ -443,6 +443,12 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     AP_GROUPINFO("FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
+
+    // @Param: ROT_AUTO
+    // @DisplayName: Automatically set orientation
+    // @Description: When enabled this will automatically set the orientation of external compasses on successful completion of compass calibration
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("ROT_AUTO", 35, Compass, _rotate_auto, 1),
     
     AP_GROUPEND
 };

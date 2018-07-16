@@ -61,6 +61,9 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
         // lot noisier
         _calibrator[i].set_tolerance(_calibration_threshold*2);
     }
+    if (_state[i].external && _rotate_auto) {
+        _calibrator[i].set_orientation((enum Rotation)_state[i].orientation.get(), _state[i].external);
+    }
     _cal_saved[i] = false;
     _calibrator[i].start(retry, delay, get_offsets_max());
 
@@ -146,6 +149,10 @@ Compass::_accept_calibration(uint8_t i)
         set_and_save_offsets(i, ofs);
         set_and_save_diagonals(i,diag);
         set_and_save_offdiagonals(i,offdiag);
+
+        if (_state[i].external && _rotate_auto) {
+            _state[i].orientation.set_and_save_ifchanged(cal.get_orientation());
+        }
 
         if (!is_calibrating()) {
             AP_Notify::events.compass_cal_saved = 1;
