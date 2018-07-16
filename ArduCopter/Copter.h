@@ -552,7 +552,7 @@ private:
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland{ahrs};
+    AC_PrecLand precland;
 #endif
 
     // Pilot Input Management Library
