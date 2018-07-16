@@ -192,7 +192,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ALT_SOURCE
     // @DisplayName: Primary altitude sensor source
-    // @Description: This parameter controls the primary height sensor used by the EKF. If the selected option cannot be used, it will default to Baro as the primary height source. Setting 0 will use the baro altitude at all times. Setting 1 uses the range finder and is only available in combination with optical flow navigation (EK3_GPS_TYPE = 3). Setting 2 uses GPS. Setting 3 uses the range beacon data. NOTE - the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
+    // @Description: Primary height sensor used by the EKF. If the selected option cannot be used, baro is used. 1 uses the range finder and only with optical flow navigation (EK2_GPS_TYPE = 3), Do not use "1" for terrain following. NOTE: the EK3_RNG_USE_HGT parameter can be used to switch to range-finder when close to the ground.
     // @Values: 0:Use Baro, 1:Use Range Finder, 2:Use GPS, 3:Use Range Beacon
     // @User: Advanced
     // @RebootRequired: True
@@ -472,7 +472,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: RNG_USE_HGT
     // @DisplayName: Range finder switch height percentage
-    // @Description: The range finder will be used as the primary height source when below a specified percentage of the sensor maximum as set by the RNGFND_MAX_CM parameter. Set to -1 to prevent range finder use.
+    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND_MAX_CM). Set to -1 when EK3_ALT_SOURCE is not set to range finder.  This is not for terrain following.
     // @Range: -1 70
     // @Increment: 1
     // @User: Advanced
