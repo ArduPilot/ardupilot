@@ -22,7 +22,25 @@ AP_Compass_SITL::AP_Compass_SITL(Compass &compass):
             // save so the compass always comes up configured in SITL
             save_dev_id(_compass_instance[i]);
         }
+        
+        // make first compass external
+        set_external(_compass_instance[0], true);
+        
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_SITL::_timer, void));
+
+        // create correction matrix for diagnonals and off-diagonals
+        Vector3f diag = _sitl->mag_diag.get();
+        if (diag.is_zero()) {
+            diag(1,1,1);
+        }
+        const Vector3f &diagonals = diag;
+        const Vector3f &offdiagonals = _sitl->mag_offdiag;
+        _eliptical_corr = Matrix3f(diagonals.x,    offdiagonals.x, offdiagonals.y,
+                                   offdiagonals.x, diagonals.y,    offdiagonals.z,
+                                   offdiagonals.y, offdiagonals.z, diagonals.z);
+        if (!_eliptical_corr.invert()) {
+            _eliptical_corr.identity();
+        }
     }
 }
 
@@ -73,22 +91,31 @@ void AP_Compass_SITL::_timer()
         new_mag_data = buffer[best_index].data;
     }
 
+    new_mag_data = _eliptical_corr * new_mag_data;
     new_mag_data -= _sitl->mag_ofs.get();
 
     for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
-        rotate_field(new_mag_data, _compass_instance[i]);
-        publish_raw_field(new_mag_data, _compass_instance[i]);
-        correct_field(new_mag_data, _compass_instance[i]);
+        Vector3f f = new_mag_data;
+        if (i == 0) {
+            // rotate the first compass, allowing for testing of external compass rotation
+            f.rotate_inverse((enum Rotation)_sitl->mag_orient.get());
+        }
+        rotate_field(f, _compass_instance[i]);
+        publish_raw_field(f, _compass_instance[i]);
+        correct_field(f, _compass_instance[i]);
+
+        _mag_accum[i] += f;
     }
 
     if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         return;
     }
 
-    _mag_accum += new_mag_data;
     _accum_count++;
     if (_accum_count == 10) {
-        _mag_accum /= 2;
+        for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
+            _mag_accum[i] /= 2;
+        }
         _accum_count = 5;
         _has_sample = true;
     }
@@ -103,14 +130,13 @@ void AP_Compass_SITL::read()
             return;
         }
 
-        Vector3f field(_mag_accum);
-        field /= _accum_count;
-        _mag_accum.zero();
-        _accum_count = 0;
-
         for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
+            Vector3f field(_mag_accum[i]);
+            field /= _accum_count;
+            _mag_accum[i].zero();
             publish_filtered_field(field, _compass_instance[i]);
         }
+        _accum_count = 0;
 
         _has_sample = false;
         _sem->give();
