@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc6 16-Jul-2018
+Changes from 3.6.0-rc5
+1) ChibiOS small enhancement and fixes:
+    a) KakuteF4 UART order fix
+    b) mRobotics bootloader and autobuild of binaries for AUAV2.1 and Pixracer
+    c) Mateksys F405-Wing uart reorder to better match labels on board
+2) Improve telemetry/GPS detection by only clearing UART when baud rate changes
+------------------------------------------------------------------
 Copter 3.6.0-rc5 07-Jul-2018
 Changes from 3.6.0-rc4
 1) Support new boards CubeBlack and HolyBro Pixhawk4-mini
