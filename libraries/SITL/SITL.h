@@ -108,6 +108,9 @@ public:
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
     AP_Vector3f mag_ofs;  // in mag units
+    AP_Vector3f mag_diag;  // diagonal corrections
+    AP_Vector3f mag_offdiag;  // off-diagonal corrections
+    AP_Int8 mag_orient;   // external compass orientation
     AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
