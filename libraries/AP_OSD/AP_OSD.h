@@ -106,6 +106,7 @@ private:
     AP_OSD_Setting xtrack_error{false, 0, 0};
     AP_OSD_Setting dist{false,22,11};
     AP_OSD_Setting stat{false,0,0};
+    AP_OSD_Setting flightime{false, 23, 10};
 
     bool check_option(uint32_t option);
 
@@ -160,6 +161,7 @@ private:
     void draw_xtrack_error(uint8_t x, uint8_t y);
     void draw_dist(uint8_t x, uint8_t y);
     void draw_stat(uint8_t x, uint8_t y);
+    void draw_flightime(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
