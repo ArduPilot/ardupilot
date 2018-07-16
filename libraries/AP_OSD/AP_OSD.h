@@ -100,6 +100,7 @@ private:
     AP_OSD_Setting gps_longitude{true, 9, 14};
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
+    AP_OSD_Setting totdist{false, 24, 11};
 
     bool check_option(uint32_t option);
 
@@ -148,6 +149,7 @@ private:
     void draw_gps_longitude(uint8_t x, uint8_t y);
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
+    void draw_time_armed(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -208,12 +210,14 @@ public:
     AP_Int8 units;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
-
+    
 private:
     void osd_thread();
     void update_osd();
     void update_current_screen();
     void next_screen();
+    void stats();
+
     AP_OSD_Backend *backend;
     uint32_t last_update_ms;
 
@@ -222,4 +226,8 @@ private:
     uint16_t previous_channel_value;
     bool switch_debouncer;
     uint32_t last_switch_ms;
+    //variables for timearmed
+    uint32_t timearmed;
+
+   
 };

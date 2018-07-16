@@ -201,6 +201,8 @@ void AP_OSD::update_osd()
     backend->clear();
 
     update_current_screen();
+  
+    stats();
 
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();
@@ -277,4 +279,13 @@ void AP_OSD::next_screen()
         t = (t + 1)%AP_OSD_NUM_SCREENS;
     } while (t != current_screen && !screen[t].enabled);
     current_screen = t;
+}
+
+void AP_OSD::stats()
+{
+uint32_t now = AP_HAL::millis();
+if (AP_Notify::flags.armed) {
+timearmed = timearmed + (now - last_update_ms);
+}
+last_update_ms = now;
 }
