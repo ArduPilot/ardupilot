@@ -39,9 +39,7 @@ private:
     float velocity_vf_x;
 
     float max_speed;
-    float max_accel;
     float skid_turn_rate;
-    bool skid_steering;
 
     float calc_yaw_rate(float steering);
 };
