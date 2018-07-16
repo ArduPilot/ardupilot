@@ -61,6 +61,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_GeodesicGrid.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -196,8 +197,7 @@ void CompassCalibrator::update(bool &failure) {
         }
     } else if(_status == COMPASS_CAL_RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
-            if(fit_acceptable()) {
-                calculate_orientation();
+            if(fit_acceptable() && calculate_orientation()) {
                 set_status(COMPASS_CAL_SUCCESS);
             } else {
                 set_status(COMPASS_CAL_FAILED);
@@ -749,11 +749,11 @@ Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Ro
 /*
   calculate compass orientation using the attitude estimate associated with each sample
  */
-void CompassCalibrator::calculate_orientation(void)
+bool CompassCalibrator::calculate_orientation(void)
 {
     if (!_auto_orientation) {
         // only calculate orientation for external compasses
-        return;
+        return true;
     }
 
     float sum_error[ROTATION_MAX] {};
@@ -795,18 +795,26 @@ void CompassCalibrator::calculate_orientation(void)
             }
         }
     }
-    bool pass = (second_best / bestv) > 4;
+    bool pass;
+    if (besti == _orientation) {
+        // if the orientation matched then allow for a low threshold
+        pass = true;
+    } else {
+        pass = (second_best / bestv) > 4;
+    }
     if (!pass) {
-        hal.console->printf("Bad orientation estimation: %u %f\n", besti, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad orientation: %u %.1f\n", besti, second_best/bestv);
     } else if (besti == _orientation) {
         // no orientation change
-        hal.console->printf("Good orientation: %u %f\n", besti, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_INFO, "Good orientation: %u %.1f\n", besti, second_best/bestv);
     } else {
-        hal.console->printf("New orientation: %u was %u %f\n", besti, _orientation, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_INFO, "New orientation: %u was %u %.1f\n", besti, _orientation, second_best/bestv);
     }
 
     if (!pass) {
-        return;
+        // give an indication of orientation failure by showing a very high fitness
+        _fitness += 1000;
+        return false;
     }
     
     if (_orientation != besti) {
@@ -825,4 +833,6 @@ void CompassCalibrator::calculate_orientation(void)
     
         _orientation = besti;
     }
+    
+    return true;
 }

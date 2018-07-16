@@ -161,5 +161,5 @@ private:
     void update_completion_mask();
 
     Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);
-    void calculate_orientation();
+    bool calculate_orientation();
 };
