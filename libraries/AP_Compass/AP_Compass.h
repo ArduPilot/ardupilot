@@ -417,6 +417,9 @@ private:
     // 0 = disabled, 1 = enabled for throttle, 2 = enabled for current
     AP_Int8     _motor_comp_type;
 
+    // automatic compass orientation on calibration
+    AP_Int8     _rotate_auto;
+    
     // throttle expressed as a percentage from 0 ~ 1.0, used for motor compensation
     float       _thr;
 
