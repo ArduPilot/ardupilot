@@ -698,7 +698,19 @@ class AutoTest(ABC):
         """Wait for EKF to be happy"""
 
         tstart = self.get_sim_time()
-        required_value = 831
+        # all of these must be set for arming to happen:
+        required_value = (mavutil.mavlink.EKF_ATTITUDE |
+                          mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
+                          mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                          mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
+                          mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+                          mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
+                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL |
+                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
+        # none of these bits must be set for arming to happen:
+        error_bits = (mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
+                      mavutil.mavlink.ESTIMATOR_GPS_GLITCH |
+                      mavutil.mavlink.ESTIMATOR_ACCEL_ERROR)
         self.progress("Waiting for EKF value %u" % required_value)
         while timeout is None or self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True)
@@ -706,7 +718,11 @@ class AutoTest(ABC):
             if (tstart - self.get_sim_time()) % 5 == 0:
                 self.progress("Wait EKF.flags: required:%u current:%u" %
                               (required_value, current))
-            if current == required_value:
+            errors = current & error_bits
+            if errors:
+                self.progress("Wait EKF.flags: errors=%u" % errors)
+                continue
+            if (current & required_value == required_value):
                 self.progress("EKF Flags OK")
                 return True
         self.progress("Failed to get EKF.flags=%u" % required_value)
