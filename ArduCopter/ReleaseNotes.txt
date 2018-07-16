@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.5.7-rc1 12-Jul-2018
+Copter 3.5.7 17-Jul-2018 / 3.5.7-rc1 12-Jul-2018
 Changes from 3.5.6
 1) Bug fix to ESC calibration safety switch issue 
 ------------------------------------------------------------------
