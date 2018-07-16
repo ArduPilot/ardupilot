@@ -436,6 +436,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     const AP_GPS &_gps = AP::gps();
 
+    if (_compass && _compass->is_calibrating()) {
+        // don't do any yaw correction while calibrating
+        return;
+    }
+    
     if (AP_AHRS_DCM::use_compass()) {
         /*
           we are using compass for yaw
