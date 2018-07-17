@@ -268,9 +268,11 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # switch back to stabilize mode
-        self.set_rc(3, 1500)
         self.mavproxy.send('switch 6\n')
         self.wait_mode('STABILIZE')
+
+        # increase throttle because we're about to pitch:
+        self.set_rc(3, 1550)
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
@@ -311,6 +313,9 @@ class AutoTestCopter(AutoTest):
         # save bottom left corner of square (should be near home) as waypoint
         self.progress("Save WP 6")
         self.save_wp()
+
+        # reduce throttle again
+        self.set_rc(3, 1500)
 
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
