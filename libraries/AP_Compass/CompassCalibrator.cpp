@@ -816,23 +816,33 @@ bool CompassCalibrator::calculate_orientation(void)
         _fitness += 1000;
         return false;
     }
-    
-    if (_orientation != besti) {
-        // correct the offsets for the new orientation
-        Vector3f rot_offsets = _params.offset;
-        rot_offsets.rotate_inverse(_orientation);
-        rot_offsets.rotate(besti);
-        _params.offset = rot_offsets;
 
-        Vector3f &diagonals = _params.diag;
-        Vector3f &offdiagonals = _params.offdiag;
-        // we should calculated the corrected diagonals and off-diagonals here, but
-        // for now just avoid eliptical correction if we're changing the orientation
-        diagonals = Vector3f(1,1,1);
-        offdiagonals.zero();
-    
-        _orientation = besti;
+    if (_orientation == besti) {
+        // no orientation change
+        return true;
     }
     
-    return true;
+    // correct the offsets for the new orientation
+    Vector3f rot_offsets = _params.offset;
+    rot_offsets.rotate_inverse(_orientation);
+    rot_offsets.rotate(besti);
+    _params.offset = rot_offsets;
+
+    // rotate the samples for the new orientation
+    for (uint32_t i=0; i<_samples_collected; i++) {
+        Vector3f s = _sample_buffer[i].get();
+        s.rotate_inverse(_orientation);
+        s.rotate(besti);
+        _sample_buffer[i].set(s);
+    }
+
+    _orientation = besti;
+
+    // re-run the fit to get the diagonals and off-diagonals for the
+    // new orientation
+    initialize_fit();
+    run_sphere_fit();
+    run_ellipsoid_fit();
+    
+    return fit_acceptable();
 }
