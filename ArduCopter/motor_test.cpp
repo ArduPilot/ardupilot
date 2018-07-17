@@ -55,7 +55,7 @@ void Copter::motor_test_output()
                 compass.set_voltage(battery.voltage());
                 compass.per_motor_calibration_update();
                 FALLTHROUGH;
-                
+
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
 #if FRAME_CONFIG != HELI_FRAME
@@ -135,7 +135,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     // if test has not started try to start it
     if (!ap.motor_test) {
         gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
-        
+
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
            supplied
@@ -176,7 +176,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
         compass.per_motor_calibration_start();
     }            
-                
+
     // return success
     return MAV_RESULT_ACCEPTED;
 }
@@ -209,7 +209,7 @@ void Copter::motor_test_stop()
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
         compass.per_motor_calibration_end();
     }
-    
+
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 }
