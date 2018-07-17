@@ -40,6 +40,7 @@ float BalanceBot::calc_yaw_rate(float steering)
     return steering * skid_turn_rate;
 }
 
+
 /*
   update the Balance Bot simulation by one time step
  */
@@ -52,19 +53,23 @@ float BalanceBot::calc_yaw_rate(float steering)
  */
 void BalanceBot::update(const struct sitl_input &input)
 {
-    const float length = 1.0f; //m length of body
+    // pendulum/chassis constants
+    const float m_p = 3.060f; //pendulum mass(kg)
+    const float width = 0.0650f; //width(m)
+    const float height = 0.240f; //height(m)
+    const float l = 0.120f; //height of center of mass from base(m)
+    const float i_p = (1/12.0f)*m_p*(width*width + height*height); //Moment of inertia about pitch axis(SI units)
 
-    const float mass_cart = 1.0f; // kg
-    const float mass_rod = 1.0f; //kg
+    // wheel constants
+    const float r_w = 0.10f; //wheel radius(m)
+    const float m_w = 0.120f; //wheel mass(kg)
+    const float i_w = 0.5f*m_w*r_w*r_w; // moment of inertia of wheel(SI units)
 
-    // maximum force the motors can apply to the cart
-    const float max_force = 50.0f; //N
-
-    //Moment of Inertia of the rod
-    const float I_rod = (mass_rod*4*length*length)/12.0f; //kg.m^2
-
-    // air resistance
-    const float damping_constant = 0.7; // N-s/m
+    // motor constants
+    const float R = 1.0f; //Winding resistance(ohm)
+    const float k_e = 0.13f; //back-emf constant(SI units)
+    const float k_t = 0.242f; //torque constant(SI units)
+    const float v_max = 12.0f; //max input voltage(V)
 
     // balance bot uses skid steering
     const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
@@ -72,33 +77,54 @@ void BalanceBot::update(const struct sitl_input &input)
     const float steering = motor1 - motor2;
     const float throttle = 0.5 * (motor1 + motor2);
 
+//    if (throttle!=prev_throt) {
+//        theta = throttle * radians(180);
+//        prev_throt = throttle;
+//    }
+
+    // motor input voltage: (throttle/max_throttle)*v_max
+    const float v = throttle*v_max;
+
     // how much time has passed?
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // yaw rate in degrees/s
     const float yaw_rate = calc_yaw_rate(steering);
 
-    // target speed with current throttle
-    const float target_speed = throttle * max_speed;
-
-    //input force to the cart
-    // a very crude model! Needs remodeling!
-    const float force_on_body = ((target_speed - velocity_vf_x) / max_speed) * max_force; //N
-
     // obtain roll, pitch, yaw from dcm
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
-    float theta = p; //radians
-
-    float ang_vel = gyro.y; //radians/s
+//    float theta = p; //radians
+//
+//    float ang_vel = gyro.y; //radians/s
     
-    //vehicle frame x acceleration
-    const float accel_vf_x = (force_on_body - (damping_constant*velocity_vf_x) - mass_rod*length*ang_vel*ang_vel*sin(theta)
-    + (3.0f/4.0f)*mass_rod*GRAVITY_MSS*sin(theta)*cos(theta))
-            / (mass_cart + mass_rod - (3.0f/4.0f)*mass_rod*cos(theta)*cos(theta));
+    const float t1 = ((2.0f*k_t*v/(R*r_w)) - (2.0f*k_t*k_e*velocity_vf_x/(R*r_w*r_w)) - (m_p*l*ang_vel*ang_vel*sin(theta))) * (i_p + m_p*l*l);
+    const float t2 = -m_p*l*cos(theta)*((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + (m_p*GRAVITY_MSS*l*sin(theta)));
+    const float t3 = ( ((2.0f*m_w + 2.0f*i_w/(r_w*r_w) + m_p) * (i_p + m_p*l*l)) - (m_p*m_p*l*l*cos(theta)*cos(theta)) );
 
-    const float angular_accel_bf_y = mass_rod*length*(GRAVITY_MSS*sin(theta) + accel_vf_x*cos(theta))
-        /(I_rod + mass_rod*length*length);
+//    const float t1 = i_w*(GRAVITY_MSS*l*R*m_p*sin(theta) + 2.0f*k_t*(v - k_e*velocity_vf_x/r_w));
+//    const float t2 = l*r_w*R*m_p*sin(theta) * (m_p*(GRAVITY_MSS - l*ang_vel*ang_vel*cos(theta)) + GRAVITY_MSS*m_w);
+//    const float t3 = 2.0f*k_t*(v - k_e*velocity_vf_x/r_w)*(m_p*(l*cos(theta) + r_w) + r_w*m_w);
+//    const float t4 = R*(i_p*(i_w + r_w*r_w*(m_p + m_w)) - l*l*r_w*r_w*m_p*m_p*cos(theta)*cos(theta));
+//
+//    const float angular_accel_bf_y = fmod((t1 + r_w*(t2 + t3))/t4, radians(360));
+//
+//    const float t5 = l*r_w*m_p*cos(theta)*(GRAVITY_MSS*l*R*m_p*sin(theta) + 2.0f*k_t*(v - k_e*velocity_vf_x/r_w));
+//    const float t6 = i_p*(2.0f*k_t*(v - k_e*velocity_vf_x/r_w) - l*R*r_w*r_w*m_p*ang_vel*ang_vel*sin(theta));
+//
+//    const float accel_vf_x = r_w*(t5+t6)/t4;
+
+    const float accel_vf_x = (t1-t2)/t3;
+
+    const float angular_accel_bf_y = ((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + m_p*l*accel_vf_x*cos(theta) + m_p*GRAVITY_MSS*l*sin(theta))
+                                     / (i_p + m_p*l*l);
+    //vehicle frame x acceleration
+//    const float accel_vf_x = (force_on_body - (damping_constant*velocity_vf_x) - mass_rod*length*ang_vel*ang_vel*sin(theta)
+//    + (3.0f/4.0f)*mass_rod*GRAVITY_MSS*sin(theta)*cos(theta))
+//            / (mass_cart + mass_rod - (3.0f/4.0f)*mass_rod*cos(theta)*cos(theta));
+//
+//    const float angular_accel_bf_y = mass_rod*length*(GRAVITY_MSS*sin(theta) + accel_vf_x*cos(theta))
+//        /(I_rod + mass_rod*length*length);
 
     // update theta and angular velocity
     ang_vel += angular_accel_bf_y * delta_time;
@@ -134,6 +160,8 @@ void BalanceBot::update(const struct sitl_input &input)
         dcm.identity();
         gyro.zero();
         velocity_vf_x =0;
+        theta = radians(0);
+        ang_vel = 0;
     }
     
     // work out acceleration as seen by the accelerometers. It sees the kinematic
@@ -150,6 +178,8 @@ void BalanceBot::update(const struct sitl_input &input)
     dcm.to_euler(&r, &p, &y);
     dcm.from_euler(0.0f, p, y);
     use_smoothing = true;
+
+    printf("Accel:%f Theta: %f velocity:%f\n",accel_vf_x, degrees(theta), velocity_vf_x);
 
     // update lat/lon/altitude
     update_position();
