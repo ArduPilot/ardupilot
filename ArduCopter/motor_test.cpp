@@ -8,7 +8,7 @@
 // motor test definitions
 #define MOTOR_TEST_PWM_MIN              800     // min pwm value accepted by the test
 #define MOTOR_TEST_PWM_MAX              2200    // max pwm value accepted by the test
-#define MOTOR_TEST_TIMEOUT_MS_MAX       30000   // max timeout is 30 seconds
+#define MOTOR_TEST_TIMEOUT_SEC          600     // max timeout is 10 minutes (600 seconds)
 
 static uint32_t motor_test_start_ms;        // system time the motor test began
 static uint32_t motor_test_timeout_ms;      // test will timeout this many milliseconds after the motor_test_start_ms
@@ -165,7 +165,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
 
     // set timeout
     motor_test_start_ms = AP_HAL::millis();
-    motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test_timeout_ms = MIN(timeout_sec, MOTOR_TEST_TIMEOUT_SEC) * 1000;
 
     // store required output
     motor_test_seq = motor_seq;
