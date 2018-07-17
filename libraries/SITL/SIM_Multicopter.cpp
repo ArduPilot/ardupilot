@@ -46,7 +46,7 @@ MultiCopter::MultiCopter(const char *home_str, const char *frame_str) :
 }
 
 // calculate rotational and linear accelerations
-void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
+void MultiCopter::calculate_forces(const struct SITL::sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     frame->calculate_forces(*this, input, rot_accel, body_accel);
 }
@@ -54,7 +54,7 @@ void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot
 /*
   update the multicopter simulation by one time step
  */
-void MultiCopter::update(const struct sitl_input &input)
+void MultiCopter::update(const struct SITL::sitl_input &input)
 {
     // get wind vector setup
     update_wind(input);

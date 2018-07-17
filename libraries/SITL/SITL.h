@@ -35,6 +35,7 @@ struct sitl_fdm {
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
 };
 
+
 // number of rc output channels
 #define SITL_NUM_CHANNELS 16
 
@@ -58,6 +59,21 @@ public:
 
     static SITL *_s_instance;
     static SITL *get_instance() { return _s_instance; }
+
+
+    /*
+      structure passed in giving servo positions as PWM values in
+      microseconds
+     */
+    struct sitl_input {
+        uint16_t servos[16];
+        struct {
+            float speed;      // m/s
+            float direction;  // degrees 0..360
+            float turbulence;
+            float dir_z;	  //degrees -90..90
+        } wind;
+    };
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,

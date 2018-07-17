@@ -354,7 +354,7 @@ failed:
 /*
   send data to X-Plane via UDP
 */
-void XPlane::send_data(const struct sitl_input &input)
+void XPlane::send_data(const struct SITL::sitl_input &input)
 {
     float aileron  = (input.servos[0]-1500)/500.0f;
     float elevator = (input.servos[1]-1500)/500.0f;
@@ -458,7 +458,7 @@ void XPlane::send_dref(const char *name, float value)
 /*
   update the XPlane simulation by one time step
  */
-void XPlane::update(const struct sitl_input &input)
+void XPlane::update(const struct SITL::sitl_input &input)
 {
     if (receive_data()) {
         send_data(input);

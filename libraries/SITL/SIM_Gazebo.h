@@ -31,7 +31,7 @@ public:
     Gazebo(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -62,8 +62,8 @@ private:
       double position_xyz[3];
     };
 
-    void recv_fdm(const struct sitl_input &input);
-    void send_servos(const struct sitl_input &input);
+    void recv_fdm(const struct SITL::sitl_input &input);
+    void send_servos(const struct SITL::sitl_input &input);
     void drain_sockets();
 
     double last_timestamp;

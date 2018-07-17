@@ -33,20 +33,6 @@ public:
     Aircraft(const char *home_str, const char *frame_str);
 
     /*
-      structure passed in giving servo positions as PWM values in
-      microseconds
-     */
-    struct sitl_input {
-        uint16_t servos[16];
-        struct {
-            float speed;      // m/s
-            float direction;  // degrees 0..360
-            float turbulence;
-            float dir_z;	  //degrees -90..90 
-        } wind;
-    };
-
-    /*
       set simulation speedup
      */
     void set_speedup(float speedup);
@@ -71,7 +57,7 @@ public:
     /*
       step the FDM by one time step
      */
-    virtual void update(const struct sitl_input &input) = 0;
+    virtual void update(const struct SITL::sitl_input &input) = 0;
 
     /* fill a sitl_fdm structure from the simulator state */
     void fill_fdm(struct sitl_fdm &fdm);
@@ -223,18 +209,18 @@ protected:
     void update_dynamics(const Vector3f &rot_accel);
 
     // update wind vector
-    void update_wind(const struct sitl_input &input);
+    void update_wind(const struct SITL::sitl_input &input);
 
     // return filtered servo input as -1 to 1 range
     float filtered_idx(float v, uint8_t idx);
-    float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
-    float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
+    float filtered_servo_angle(const struct SITL::sitl_input &input, uint8_t idx);
+    float filtered_servo_range(const struct SITL::sitl_input &input, uint8_t idx);
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
 
     // update external payload/sensor dynamic
-    void update_external_payload(const struct sitl_input &input);
+    void update_external_payload(const struct SITL::sitl_input &input);
     
 private:
     uint64_t last_time_us = 0;

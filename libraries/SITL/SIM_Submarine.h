@@ -34,7 +34,7 @@ public:
     Submarine(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -60,7 +60,7 @@ protected:
     bool on_ground() const override;
 
     // calculate rotational and linear accelerations
-    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
+    void calculate_forces(const struct SITL::sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     // calculate buoyancy
     float calculate_buoyancy_acceleration();
 

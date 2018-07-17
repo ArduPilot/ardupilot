@@ -44,7 +44,7 @@ Submarine::Submarine(const char *home_str, const char *frame_str) :
 }
 
 // calculate rotational and linear accelerations
-void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
+void Submarine::calculate_forces(const struct SITL::sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     rot_accel = Vector3f(0,0,0);
 
@@ -112,7 +112,7 @@ float Submarine::calculate_buoyancy_acceleration()
 /*
   update the Submarine simulation by one time step
  */
-void Submarine::update(const struct sitl_input &input)
+void Submarine::update(const struct SITL::sitl_input &input)
 {
     // get wind vector setup
     update_wind(input);

@@ -32,7 +32,7 @@ public:
     XPlane(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -42,7 +42,7 @@ public:
 private:
     bool receive_data(void);
     void send_dref(const char *name, float value);
-    void send_data(const struct sitl_input &input);
+    void send_data(const struct SITL::sitl_input &input);
     void select_data(uint64_t usel_mask, uint64_t sel_mask);
 
     const char *xplane_ip = "127.0.0.1";

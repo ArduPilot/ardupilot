@@ -32,7 +32,7 @@ public:
     Plane(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    virtual void update(const struct sitl_input &input);
+    virtual void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -110,7 +110,7 @@ protected:
     float dragCoeff(float alpha) const;
     Vector3f getForce(float inputAileron, float inputElevator, float inputRudder) const;
     Vector3f getTorque(float inputAileron, float inputElevator, float inputRudder, float inputThrust, const Vector3f &force) const;
-    void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
+    void calculate_forces(const struct SITL::sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
 };
 
 } // namespace SITL
