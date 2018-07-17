@@ -1758,6 +1758,8 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
 
+            self.mavproxy.send("wp clear\n")
+
             # Arm
             self.run_test("Arm features", self.test_arm_feature)
             self.arm_vehicle()
