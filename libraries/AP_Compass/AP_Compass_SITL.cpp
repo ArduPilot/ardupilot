@@ -25,23 +25,36 @@ AP_Compass_SITL::AP_Compass_SITL(Compass &compass):
         
         // make first compass external
         set_external(_compass_instance[0], true);
-        
-        hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_SITL::_timer, void));
 
-        // create correction matrix for diagnonals and off-diagonals
-        Vector3f diag = _sitl->mag_diag.get();
-        if (diag.is_zero()) {
-            diag(1,1,1);
-        }
-        const Vector3f &diagonals = diag;
-        const Vector3f &offdiagonals = _sitl->mag_offdiag;
-        _eliptical_corr = Matrix3f(diagonals.x,    offdiagonals.x, offdiagonals.y,
-                                   offdiagonals.x, diagonals.y,    offdiagonals.z,
-                                   offdiagonals.y, offdiagonals.z, diagonals.z);
-        if (!_eliptical_corr.invert()) {
-            _eliptical_corr.identity();
-        }
+        hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Compass_SITL::_timer, void));
     }
+}
+
+
+/*
+  create correction matrix for diagnonals and off-diagonals
+*/
+void AP_Compass_SITL::_setup_eliptical_correcion(void)
+{
+    Vector3f diag = _sitl->mag_diag.get();
+    if (diag.is_zero()) {
+        diag(1,1,1);
+    }
+    const Vector3f &diagonals = diag;
+    const Vector3f &offdiagonals = _sitl->mag_offdiag;
+    
+    if (diagonals == _last_dia && offdiagonals == _last_odi) {
+        return;
+    }
+    
+    _eliptical_corr = Matrix3f(diagonals.x,    offdiagonals.x, offdiagonals.y,
+                               offdiagonals.x, diagonals.y,    offdiagonals.z,
+                               offdiagonals.y, offdiagonals.z, diagonals.z);
+    if (!_eliptical_corr.invert()) {
+        _eliptical_corr.identity();
+    }
+    _last_dia = diag;
+    _last_odi = offdiagonals;
 }
 
 void AP_Compass_SITL::_timer()
@@ -91,6 +104,8 @@ void AP_Compass_SITL::_timer()
         new_mag_data = buffer[best_index].data;
     }
 
+    _setup_eliptical_correcion();        
+    
     new_mag_data = _eliptical_corr * new_mag_data;
     new_mag_data -= _sitl->mag_ofs.get();
 
