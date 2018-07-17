@@ -50,7 +50,7 @@ float BalanceBot::calc_yaw_rate(float steering)
  * 1) http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
  * 2) http://journals.sagepub.com/doi/pdf/10.5772/63933
  */
-void BalanceBot::update(const struct sitl_input &input)
+void BalanceBot::update(const struct SITL::sitl_input &input)
 {
     const float length = 1.0f; //m length of body
 

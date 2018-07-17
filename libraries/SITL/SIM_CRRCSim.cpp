@@ -44,7 +44,7 @@ CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
 /*
   decode and send servos for heli
 */
-void CRRCSim::send_servos_heli(const struct sitl_input &input)
+void CRRCSim::send_servos_heli(const struct SITL::sitl_input &input)
 {
     float swash1 = (input.servos[0]-1000) / 1000.0f;
     float swash2 = (input.servos[1]-1000) / 1000.0f;
@@ -70,7 +70,7 @@ void CRRCSim::send_servos_heli(const struct sitl_input &input)
 /*
   decode and send servos for fixed wing
 */
-void CRRCSim::send_servos_fixed_wing(const struct sitl_input &input)
+void CRRCSim::send_servos_fixed_wing(const struct SITL::sitl_input &input)
 {
     float roll_rate  = ((input.servos[0]-1000)/1000.0) - 0.5;
     float pitch_rate = ((input.servos[1]-1000)/1000.0) - 0.5;
@@ -90,7 +90,7 @@ void CRRCSim::send_servos_fixed_wing(const struct sitl_input &input)
 /*
   decode and send servos
 */
-void CRRCSim::send_servos(const struct sitl_input &input)
+void CRRCSim::send_servos(const struct SITL::sitl_input &input)
 {
     if (heli_servos) {
         send_servos_heli(input);
@@ -103,7 +103,7 @@ void CRRCSim::send_servos(const struct sitl_input &input)
   receive an update from the FDM
   This is a blocking function
  */
-void CRRCSim::recv_fdm(const struct sitl_input &input)
+void CRRCSim::recv_fdm(const struct SITL::sitl_input &input)
 {
     fdm_packet pkt;
 
@@ -146,7 +146,7 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
 /*
   update the CRRCSim simulation by one time step
  */
-void CRRCSim::update(const struct sitl_input &input)
+void CRRCSim::update(const struct SITL::sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);

@@ -53,7 +53,7 @@ Helicopter::Helicopter(const char *home_str, const char *frame_str) :
 /*
   update the helicopter simulation by one time step
  */
-void Helicopter::update(const struct sitl_input &input)
+void Helicopter::update(const struct SITL::sitl_input &input)
 {
     // get wind vector setup
     update_wind(input);

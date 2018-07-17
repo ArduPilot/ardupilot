@@ -60,7 +60,7 @@ void Gazebo::set_interface_ports(const char* address, const int port_in, const i
 /*
   decode and send servos
 */
-void Gazebo::send_servos(const struct sitl_input &input)
+void Gazebo::send_servos(const struct SITL::sitl_input &input)
 {
     servo_packet pkt;
     // should rename servo_command
@@ -76,7 +76,7 @@ void Gazebo::send_servos(const struct sitl_input &input)
   receive an update from the FDM
   This is a blocking function
  */
-void Gazebo::recv_fdm(const struct sitl_input &input)
+void Gazebo::recv_fdm(const struct SITL::sitl_input &input)
 {
     fdm_packet pkt;
 
@@ -158,7 +158,7 @@ void Gazebo::drain_sockets()
 /*
   update the Gazebo simulation by one time step
  */
-void Gazebo::update(const struct sitl_input &input)
+void Gazebo::update(const struct SITL::sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);

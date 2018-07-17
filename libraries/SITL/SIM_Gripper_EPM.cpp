@@ -17,27 +17,49 @@
 */
 
 #include "SIM_Gripper_EPM.h"
+#include "AP_HAL/AP_HAL.h"
 #include <stdio.h>
-#include <AP_Common/AP_Common.h>
 
 using namespace SITL;
+
+// table of user settable parameters
+const AP_Param::GroupInfo Gripper_EPM::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Gripper servo Sim enable/disable
+    // @Description: Allows you to enable (1) or disable (0) the gripper servo simulation
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE", 0, Gripper_EPM, gripper_emp_enable, 0),
+
+    // @Param: PIN
+    // @DisplayName: Gripper emp pin
+    // @Description: The pin number that the gripper emp is connected to. (start at 0)
+    // @Range: 0 15
+    // @User: Advanced
+    AP_GROUPINFO("PIN", 1, Gripper_EPM, gripper_emp_servo_pin, -1),
+
+    AP_GROUPEND
+};
 
 /*
   update gripper state
  */
-void Gripper_EPM::update_servobased(const Aircraft::sitl_input &input)
+void Gripper_EPM::update_servobased(int16_t gripper_pwm)
 {
-    if (! servo_based) {
+    if (!servo_based) {
         return;
     }
-    demand = (input.servos[gripper_servo]-1000) * 0.001f; // 0.0 - 1.0
-    if (demand < 0) { // never updated
-        demand = 0;
+    if (gripper_pwm >= 0) {
+        demand = (gripper_pwm - 1000) * 0.001f; // 0.0 - 1.0
+        if (demand < 0) { // never updated
+            demand = 0;
+        }
     }
 }
 
 
-void Gripper_EPM::update_from_demand(const Aircraft::sitl_input &input)
+void Gripper_EPM::update_from_demand()
 {
     const uint64_t now = AP_HAL::micros64();
     const float dt = (now - last_update_us) * 1.0e-6f;
@@ -47,10 +69,10 @@ void Gripper_EPM::update_from_demand(const Aircraft::sitl_input &input)
 
     // note that "demand" here is just an on/off switch; we only care
     // about which range it falls into
-    if (demand > 0.6) {
+    if (demand > 0.6f) {
         // we are instructed to grip harder
         field_strength = field_strength + (100.0f-field_strength) * field_strength_slew_rate/100.0f * dt;
-    } else if (demand < 0.4) {
+    } else if (demand < 0.4f) {
         // we are instructed to loosen grip
         field_strength = field_strength * (100-field_degauss_rate * dt)/100.0f;
     } else {
@@ -66,14 +88,13 @@ void Gripper_EPM::update_from_demand(const Aircraft::sitl_input &input)
     }
 
     last_update_us = now;
-    return;
 }
 
-void Gripper_EPM::update(const Aircraft::sitl_input &input)
+void Gripper_EPM::update(int16_t gripper_pwm)
 {
-    update_servobased(input);
+    update_servobased(gripper_pwm);
 
-    update_from_demand(input);
+    update_from_demand();
 }
 
 
@@ -83,7 +104,7 @@ bool Gripper_EPM::should_report()
         return false;
     }
 
-    if (fabs(reported_field_strength - field_strength) > 10.0f) {
+    if (abs(reported_field_strength - field_strength) > 10.0) {
         return true;
     }
 
@@ -94,6 +115,6 @@ float Gripper_EPM::tesla()
 {
     // https://en.wikipedia.org/wiki/Orders_of_magnitude_(magnetic_field)
     // 200N lifting capacity ~= 2.5T
-    const float percentage_to_tesla = 0.25;
-    return percentage_to_tesla * field_strength/100.0f;
+    const float percentage_to_tesla = 0.25f;
+    return static_cast<float>(percentage_to_tesla * field_strength/100.0f);
 }

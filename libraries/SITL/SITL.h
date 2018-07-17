@@ -3,6 +3,10 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
+
 class DataFlash_Class;
 
 namespace SITL {
@@ -31,6 +35,7 @@ struct sitl_fdm {
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
 };
 
+
 // number of rc output channels
 #define SITL_NUM_CHANNELS 16
 
@@ -54,6 +59,21 @@ public:
 
     static SITL *_s_instance;
     static SITL *get_instance() { return _s_instance; }
+
+
+    /*
+      structure passed in giving servo positions as PWM values in
+      microseconds
+     */
+    struct sitl_input {
+        uint16_t servos[16];
+        struct {
+            float speed;      // m/s
+            float direction;  // degrees 0..360
+            float turbulence;
+            float dir_z;	  //degrees -90..90
+        } wind;
+    };
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -140,7 +160,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
@@ -202,6 +222,11 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
 };
 
 } // namespace SITL

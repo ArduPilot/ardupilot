@@ -247,7 +247,7 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
     return Vector3f(ax, ay, az);
 }
 
-void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
+void Plane::calculate_forces(const struct SITL::sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
     float aileron  = filtered_servo_angle(input, 0);
     float elevator = filtered_servo_angle(input, 1);
@@ -360,7 +360,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
 /*
   update the plane simulation by one time step
  */
-void Plane::update(const struct sitl_input &input)
+void Plane::update(const struct SITL::sitl_input &input)
 {
     Vector3f rot_accel;
 

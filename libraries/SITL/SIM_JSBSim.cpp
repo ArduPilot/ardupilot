@@ -319,7 +319,7 @@ bool JSBSim::open_fdm_socket(void)
 /*
   decode and send servos
 */
-void JSBSim::send_servos(const struct sitl_input &input)
+void JSBSim::send_servos(const struct SITL::sitl_input &input)
 {
     char *buf = nullptr;
     float aileron  = filtered_servo_angle(input, 0);
@@ -396,7 +396,7 @@ void FGNetFDM::ByteSwap(void)
   receive an update from the FDM
   This is a blocking function
  */
-void JSBSim::recv_fdm(const struct sitl_input &input)
+void JSBSim::recv_fdm(const struct SITL::sitl_input &input)
 {
     FGNetFDM fdm;
     check_stdout();
@@ -452,7 +452,7 @@ void JSBSim::drain_control_socket()
 /*
   update the JSBSim simulation by one time step
  */
-void JSBSim::update(const struct sitl_input &input)
+void JSBSim::update(const struct SITL::sitl_input &input)
 {
     while (!initialised) {
         if (!create_templates() ||

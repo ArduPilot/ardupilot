@@ -278,7 +278,7 @@ void SITL_State::_output_to_flightgear(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    SITL::Aircraft::sitl_input input;
+    SITL::SITL::sitl_input input;
 
     // check for direct RC input
     _check_rc_input();
@@ -336,7 +336,7 @@ void SITL_State::_fdm_input_local(void)
 /*
   create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
+void SITL_State::_simulator_servos(SITL::SITL::sitl_input &input)
 {
     static uint32_t last_update_usec;
 

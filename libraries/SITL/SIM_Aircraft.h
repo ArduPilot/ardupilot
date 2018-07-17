@@ -23,31 +23,14 @@
 #include "SITL.h"
 #include <AP_Terrain/AP_Terrain.h>
 
-
 namespace SITL {
 
 /*
   parent class for all simulator types
  */
 class Aircraft {
-    friend class Gripper_Servo;
-
 public:
     Aircraft(const char *home_str, const char *frame_str);
-
-    /*
-      structure passed in giving servo positions as PWM values in
-      microseconds
-     */
-    struct sitl_input {
-        uint16_t servos[16];
-        struct {
-            float speed;      // m/s
-            float direction;  // degrees 0..360
-            float turbulence;
-            float dir_z;	  //degrees -90..90 
-        } wind;
-    };
 
     /*
       set simulation speedup
@@ -74,7 +57,7 @@ public:
     /*
       step the FDM by one time step
      */
-    virtual void update(const struct sitl_input &input) = 0;
+    virtual void update(const struct SITL::sitl_input &input) = 0;
 
     /* fill a sitl_fdm structure from the simulator state */
     void fill_fdm(struct sitl_fdm &fdm);
@@ -111,7 +94,7 @@ public:
         return mag_bf;
     }
 
-    virtual float gross_mass() const { return mass; }
+    float gross_mass() const { return mass + external_payload_mass; }
 
     const Location &get_location() const { return location; }
 
@@ -129,26 +112,27 @@ protected:
     float ground_level;
     float home_yaw;
     float frame_height;
-    Matrix3f dcm;                   // rotation matrix, APM conventions, from body to earth
-    Vector3f gyro;                  // rad/s
-    Vector3f gyro_prev;             // rad/s
-    Vector3f ang_accel;             // rad/s/s
-    Vector3f velocity_ef;           // m/s, earth frame
-    Vector3f wind_ef;               // m/s, earth frame
-    Vector3f velocity_air_ef;       // velocity relative to airmass, earth frame
-    Vector3f velocity_air_bf;       // velocity relative to airmass, body frame
-    Vector3f position;              // meters, NED from origin
-    float mass;                     // kg
-    Vector3f accel_body;            // m/s/s NED, body frame
-    float airspeed;                 // m/s, apparent airspeed
-    float airspeed_pitot;           // m/s, apparent airspeed, as seen by fwd pitot tube
+    Matrix3f dcm;                        // rotation matrix, APM conventions, from body to earth
+    Vector3f gyro;                       // rad/s
+    Vector3f gyro_prev;                  // rad/s
+    Vector3f ang_accel;                  // rad/s/s
+    Vector3f velocity_ef;                // m/s, earth frame
+    Vector3f wind_ef;                    // m/s, earth frame
+    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
+    Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
+    Vector3f position;                   // meters, NED from origin
+    float mass;                          // kg
+    float external_payload_mass = 0.0f;  // kg
+    Vector3f accel_body;                 // m/s/s NED, body frame
+    float airspeed;                      // m/s, apparent airspeed
+    float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
     float battery_current = 0.0f;
     float rpm1 = 0;
     float rpm2 = 0;
     uint8_t rcin_chan_count = 0;
     float rcin[8];
-    float range = -1.0f;            // rangefinder detection in m
+    float range = -1.0f;                 // rangefinder detection in m
 
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
@@ -175,7 +159,7 @@ protected:
 
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
-    
+
     enum {
         GROUND_BEHAVIOR_NONE = 0,
         GROUND_BEHAVIOR_NO_MOVEMENT,
@@ -225,15 +209,18 @@ protected:
     void update_dynamics(const Vector3f &rot_accel);
 
     // update wind vector
-    void update_wind(const struct sitl_input &input);
+    void update_wind(const struct SITL::sitl_input &input);
 
     // return filtered servo input as -1 to 1 range
     float filtered_idx(float v, uint8_t idx);
-    float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
-    float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
+    float filtered_servo_angle(const struct SITL::sitl_input &input, uint8_t idx);
+    float filtered_servo_range(const struct SITL::sitl_input &input, uint8_t idx);
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
+
+    // update external payload/sensor dynamic
+    void update_external_payload(const struct SITL::sitl_input &input);
     
 private:
     uint64_t last_time_us = 0;

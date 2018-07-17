@@ -31,7 +31,7 @@ Balloon::Balloon(const char *home_str, const char *frame_str) :
 /*
   update the balloon simulation by one time step
  */
-void Balloon::update(const struct sitl_input &input)
+void Balloon::update(const struct SITL::sitl_input &input)
 {
     // get wind vector setup
     update_wind(input);

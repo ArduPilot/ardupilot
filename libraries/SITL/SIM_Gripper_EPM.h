@@ -18,20 +18,24 @@
 
 #pragma once
 
-#include "SIM_Aircraft.h"
+#include "stdint.h"
+#include <AP_Param/AP_Param.h>
 
 namespace SITL {
 
 class Gripper_EPM {
 public:
-    const uint8_t gripper_servo;
-
-    Gripper_EPM(const uint8_t _gripper_servo) :
-        gripper_servo(_gripper_servo)
-    {}
+    Gripper_EPM() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
 
     // update field stength
-    void update(const struct Aircraft::sitl_input &input);
+    void update(int16_t gripper_pwm);
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int8  gripper_emp_enable;  // enable gripper sim
+    AP_Int8  gripper_emp_servo_pin;
 
 private:
 
@@ -52,8 +56,8 @@ private:
 
     bool should_report();
 
-    void update_from_demand(const Aircraft::sitl_input &input);
-    void update_servobased(const struct Aircraft::sitl_input &input);
+    void update_from_demand();
+    void update_servobased(int16_t gripper_pwm);
 
     float tesla();
 

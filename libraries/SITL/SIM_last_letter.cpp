@@ -74,7 +74,7 @@ void last_letter::start_last_letter(void)
 /*
   send servos
 */
-void last_letter::send_servos(const struct sitl_input &input)
+void last_letter::send_servos(const struct SITL::sitl_input &input)
 {
     servo_packet pkt;
     memcpy(pkt.servos, input.servos, sizeof(pkt.servos));
@@ -85,7 +85,7 @@ void last_letter::send_servos(const struct sitl_input &input)
   receive an update from the FDM
   This is a blocking function
  */
-void last_letter::recv_fdm(const struct sitl_input &input)
+void last_letter::recv_fdm(const struct SITL::sitl_input &input)
 {
     fdm_packet pkt;
 
@@ -122,7 +122,7 @@ void last_letter::recv_fdm(const struct sitl_input &input)
 /*
   update the last_letter simulation by one time step
  */
-void last_letter::update(const struct sitl_input &input)
+void last_letter::update(const struct SITL::sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);

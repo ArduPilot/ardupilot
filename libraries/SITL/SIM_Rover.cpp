@@ -87,7 +87,7 @@ float SimRover::calc_lat_accel(float steering_angle, float speed)
 /*
   update the rover simulation by one time step
  */
-void SimRover::update(const struct sitl_input &input)
+void SimRover::update(const struct SITL::sitl_input &input)
 {
     float steering, throttle;
 
