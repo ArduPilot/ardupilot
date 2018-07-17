@@ -29,6 +29,7 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
 
+
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -153,9 +154,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(pitch_angle, "PITCH", 27, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Group: TOTDIST
+    // @Group: FLIGHTIME
     // @Path: AP_OSD_Setting.cpp
-    AP_SUBGROUPINFO(time_armed, "TIMEARMED", 28, AP_OSD_Screen, AP_OSD_Setting),
+    AP_SUBGROUPINFO(flightime, "FLTIME", 28, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -194,7 +196,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_WPDST  0xE7
 #define SYM_FTMIN  0xE8
 #define SYM_FTSEC  0x99
-#define SYM_TOTDST 0X22
 
 
 
@@ -245,6 +246,9 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
+#define SYM_COL       0x3A
+#define SYM_FLY       0x9C
+#define SYM_ZERO      0x30
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -775,12 +779,12 @@ void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%3d%c", p, pitch, SYM_DEGR);
 }
 
-void AP_OSD_Screen::draw_time_armed(uint8_t x, uint8_t y)
+void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 {
-   
-   backend->write(x, y, false, "%c ", SYM_TOTDST);
-   backend->write(x, y, false, "%4d", timearmed);
-   
+    backend->write(x, y, false, "%c", SYM_FLY);
+    backend->write (x+1, y, false, "%3d%c%02.2d", (osd->flightime/1000)/60, SYM_COL,(osd->flightime/1000) % 60);
+    
+  
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -794,7 +798,7 @@ void AP_OSD_Screen::draw(void)
     //Note: draw order should be optimized.
     //Big and less important items should be drawn first,
     //so they will not overwrite more important ones.
-    DRAW_SETTING(message);
+    
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
     DRAW_SETTING(altitude);
@@ -813,15 +817,14 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(home);
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
-    DRAW_SETTING(time_armed);
+    DRAW_SETTING(flightime);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);
 #endif
-
+    DRAW_SETTING(message);
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
-
 }
