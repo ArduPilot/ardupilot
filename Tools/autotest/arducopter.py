@@ -1500,6 +1500,8 @@ class AutoTestCopter(AutoTest):
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
 
+            self.mavproxy.send("wp clear\n")
+
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)
 
