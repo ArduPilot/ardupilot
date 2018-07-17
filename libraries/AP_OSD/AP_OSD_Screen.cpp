@@ -246,9 +246,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
-#define SYM_COL       0x3A
 #define SYM_FLY       0x9C
-#define SYM_ZERO      0x30
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -408,7 +406,8 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
     char arm;
     if (AP_Notify::flags.armed) {
         arm = SYM_ARMED;
-    } else {
+    }
+    else {
         arm = SYM_DISARMED;
     }
     if (notify) {
@@ -420,7 +419,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     int nsat = gps.num_sats();
-    backend->write(x, y, nsat < osd->warn_nsat , "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
@@ -459,7 +458,8 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
                 if (current_cycle < total_cycles/2) {
                     //move to the left
                     start_position = current_cycle - message_scroll_delay;
-                } else {
+                }
+                else {
                     //move to the right
                     start_position = total_cycles - current_cycle;
                 }
@@ -527,7 +527,8 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
                 backend->write(x + dx, y - dy, false, "%c", c);
             }
         }
-    } else {
+    }
+    else {
         for (int dy=-4; dy<=4; dy++) {
             float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
             int dx = floorf(fx);
@@ -552,11 +553,14 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
         //try to pack as many useful info as possible
         if (distance_scaled<9.0f) {
             fmt = "%1.3f%c";
-        } else if (distance_scaled < 99.0f) {
+        }
+        else if (distance_scaled < 99.0f) {
             fmt = "%2.2f%c";
-        } else if (distance_scaled < 999.0f) {
+        }
+        else if (distance_scaled < 999.0f) {
             fmt = "%3.1f%c";
-        } else {
+        }
+        else {
             fmt = "%4.0f%c";
         }
     }
@@ -579,7 +583,8 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
         char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
         backend->write(x, y, false, "%c%c", SYM_HOME, arrow);
         draw_distance(x+2, y, distance);
-    } else {
+    }
+    else {
         backend->write(x, y, true, "%c", SYM_HOME);
     }
 }
@@ -646,7 +651,8 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     bool have_estimate = AP::ahrs().airspeed_estimate(&aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, aspd), u_icon(SPEED));
-    } else {
+    }
+    else {
         backend->write(x, y, false, "%c ---%c", SYM_ASPD, u_icon(SPEED));
     }
 }
@@ -657,17 +663,21 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     float vspd;
     if (AP::ahrs().get_velocity_NED(v)) {
         vspd = -v.z;
-    } else {
+    }
+    else {
         vspd = AP::baro().get_climb_rate();
     }
     char sym;
     if (vspd > 3.0f) {
         sym = SYM_UP_UP;
-    } else if (vspd >=0.0f) {
+    }
+    else if (vspd >=0.0f) {
         sym = SYM_UP;
-    } else if (vspd >= -3.0f) {
+    }
+    else if (vspd >= -3.0f) {
         sym = SYM_DOWN;
-    } else {
+    }
+    else {
         sym = SYM_DOWN_DOWN;
     }
     vspd = fabsf(vspd);
@@ -756,9 +766,11 @@ void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
     char r;
     if (ahrs.roll_sensor > 50) {
         r = SYM_ROLLR;
-    } else if (ahrs.roll_sensor < -50) {
+    }
+    else if (ahrs.roll_sensor < -50) {
         r = SYM_ROLLL;
-    } else {
+    }
+    else {
         r = SYM_ROLL0;
     }
     backend->write(x, y, false, "%c%3d%c", r, roll, SYM_DEGR);
@@ -771,9 +783,11 @@ void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
     char p;
     if (ahrs.pitch_sensor > 50) {
         p = SYM_PTCHUP;
-    } else if (ahrs.pitch_sensor < -50) {
+    }
+    else if (ahrs.pitch_sensor < -50) {
         p = SYM_PTCHDWN;
-    } else {
+    }
+    else {
         p = SYM_PTCH0;
     }
     backend->write(x, y, false, "%c%3d%c", p, pitch, SYM_DEGR);
@@ -782,9 +796,9 @@ void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%c", SYM_FLY);
-    backend->write (x+1, y, false, "%3d%c%02.2d", (osd->flightime/1000)/60, SYM_COL,(osd->flightime/1000) % 60);
-    
-  
+    backend->write(x+1, y, false, "%3d%c%02.2d", (osd->flightime/1000)/60, 0x3A,(osd->flightime/1000) % 60);
+
+
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -798,8 +812,9 @@ void AP_OSD_Screen::draw(void)
     //Note: draw order should be optimized.
     //Big and less important items should be drawn first,
     //so they will not overwrite more important ones.
-    
+
     DRAW_SETTING(horizon);
+    DRAW_SETTING(message);
     DRAW_SETTING(compass);
     DRAW_SETTING(altitude);
     DRAW_SETTING(bat_volt);
@@ -824,7 +839,6 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(blh_rpm);
     DRAW_SETTING(blh_amps);
 #endif
-    DRAW_SETTING(message);
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
 }
