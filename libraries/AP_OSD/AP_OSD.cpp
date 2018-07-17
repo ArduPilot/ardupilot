@@ -29,6 +29,7 @@
 
 #include <utility>
 #include <AP_Notify/AP_Notify.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
@@ -292,7 +293,7 @@ void AP_OSD::stats()
    float speed;
    speed = v.length();
    bool flying;
-   flying = (AP_Notify::flags.armed) && ((speed > 2) || (alt > 5));
+   flying = (AP_Notify::flags.armed) && ((speed > 2) || (alt > 5 || gcs().get_hud_throttle() >20));
    if (flying) {
     flightime= flightime + (AP_HAL::millis() - last_update_ms);
      }
