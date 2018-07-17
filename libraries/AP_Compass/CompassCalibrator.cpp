@@ -80,7 +80,8 @@ void CompassCalibrator::clear() {
     set_status(COMPASS_CAL_NOT_STARTED);
 }
 
-void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max) {
+void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx)
+{
     if(running()) {
         return;
     }
@@ -89,6 +90,7 @@ void CompassCalibrator::start(bool retry, float delay, uint16_t offset_max) {
     _retry = retry;
     _delay_start_sec = delay;
     _start_time_ms = AP_HAL::millis();
+    _compass_idx = compass_idx;
     set_status(COMPASS_CAL_WAITING_TO_START);
 }
 
@@ -116,6 +118,7 @@ float CompassCalibrator::get_completion_percent() const {
         case COMPASS_CAL_SUCCESS:
             return 100.0f;
         case COMPASS_CAL_FAILED:
+        case COMPASS_CAL_BAD_ORIENTATION:
         default:
             return 0.0f;
     };
@@ -317,6 +320,13 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             return true;
 
         case COMPASS_CAL_FAILED:
+            if (status == COMPASS_CAL_BAD_ORIENTATION) {
+                // don't overwrite bad orientation status
+                return false;
+            }
+            FALLTHROUGH;
+            
+        case COMPASS_CAL_BAD_ORIENTATION:
             if(_status == COMPASS_CAL_NOT_STARTED) {
                 return false;
             }
@@ -331,9 +341,9 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
                 _sample_buffer = nullptr;
             }
 
-            _status = COMPASS_CAL_FAILED;
+            _status = status;
             return true;
-
+            
         default:
             return false;
     };
@@ -752,7 +762,7 @@ Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Ro
 bool CompassCalibrator::calculate_orientation(void)
 {
     if (!_auto_orientation) {
-        // only calculate orientation for external compasses
+        // we are not checking orientation
         return true;
     }
 
@@ -795,31 +805,41 @@ bool CompassCalibrator::calculate_orientation(void)
             }
         }
     }
+
+    _orientation_confidence = second_best/bestv;
+    
     bool pass;
     if (besti == _orientation) {
         // if the orientation matched then allow for a low threshold
         pass = true;
     } else {
-        pass = (second_best / bestv) > 4;
+        pass = _orientation_confidence > 4;
     }
     if (!pass) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad orientation: %u %.1f\n", besti, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
     } else if (besti == _orientation) {
         // no orientation change
-        gcs().send_text(MAV_SEVERITY_INFO, "Good orientation: %u %.1f\n", besti, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
+    } else if (!_is_external) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
     } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "New orientation: %u was %u %.1f\n", besti, _orientation, second_best/bestv);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f\n", _compass_idx, besti, _orientation, _orientation_confidence);
     }
 
     if (!pass) {
-        // give an indication of orientation failure by showing a very high fitness
-        _fitness += 1000;
+        set_status(COMPASS_CAL_BAD_ORIENTATION);
         return false;
     }
 
     if (_orientation == besti) {
         // no orientation change
         return true;
+    }
+
+    if (!_is_external) {
+        // we can't change the orientation on internal compasses
+        set_status(COMPASS_CAL_BAD_ORIENTATION);
+        return false;
     }
     
     // correct the offsets for the new orientation

@@ -61,11 +61,11 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
         // lot noisier
         _calibrator[i].set_tolerance(_calibration_threshold*2);
     }
-    if (_state[i].external && _rotate_auto) {
-        _calibrator[i].set_orientation((enum Rotation)_state[i].orientation.get(), _state[i].external);
+    if (_rotate_auto) {
+        _calibrator[i].set_orientation(_state[i].external?(enum Rotation)_state[i].orientation.get():ROTATION_NONE, _state[i].external);
     }
     _cal_saved[i] = false;
-    _calibrator[i].start(retry, delay, get_offsets_max());
+    _calibrator[i].start(retry, delay, get_offsets_max(), i);
 
     // disable compass learning both for calibration and after completion
     _learn.set_and_save(0);
@@ -222,8 +222,9 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
         }
 
         uint8_t cal_status = _calibrator[compass_id].get_status();
-        if ((cal_status == COMPASS_CAL_SUCCESS ||
-            cal_status == COMPASS_CAL_FAILED)) {
+        if (cal_status == COMPASS_CAL_SUCCESS ||
+            cal_status == COMPASS_CAL_FAILED ||
+            cal_status == COMPASS_CAL_BAD_ORIENTATION) {
             float fitness = _calibrator[compass_id].get_fitness();
             Vector3f ofs, diag, offdiag;
             _calibrator[compass_id].get_calibration(ofs, diag, offdiag);
@@ -236,7 +237,10 @@ void Compass::send_mag_cal_report(mavlink_channel_t chan)
                 fitness,
                 ofs.x, ofs.y, ofs.z,
                 diag.x, diag.y, diag.z,
-                offdiag.x, offdiag.y, offdiag.z
+                offdiag.x, offdiag.y, offdiag.z,
+                _calibrator[compass_id].get_orientation_confidence(),
+                _calibrator[compass_id].get_original_orientation(),
+                _calibrator[compass_id].get_orientation()
             );
         }
     }
@@ -250,6 +254,7 @@ Compass::is_calibrating() const
             case COMPASS_CAL_NOT_STARTED:
             case COMPASS_CAL_SUCCESS:
             case COMPASS_CAL_FAILED:
+            case COMPASS_CAL_BAD_ORIENTATION:
                 break;
             default:
                 return true;
