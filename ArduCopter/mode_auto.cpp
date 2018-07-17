@@ -182,8 +182,6 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Copter::ModeAuto::wp_start(const Vector3f& destination)
 {
-    _mode = Auto_WP;
-
     // initialise wpnav (no need to check return status because terrain data is not used)
     wp_nav->set_wp_destination(destination, false);
 
@@ -197,8 +195,6 @@ void Copter::ModeAuto::wp_start(const Vector3f& destination)
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Copter::ModeAuto::wp_start(const Location_Class& dest_loc)
 {
-    _mode = Auto_WP;
-
     // send target to waypoint controller
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
@@ -936,7 +932,6 @@ void Copter::ModeAuto::loiter_run()
 // auto_payload_place_start - initialises controller to implement placement of a load
 void Copter::ModeAuto::payload_place_start(const Vector3f& destination)
 {
-    _mode = Auto_NavPayloadPlace;
     nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
     // initialise loiter target destination
@@ -968,6 +963,7 @@ void Copter::ModeAuto::payload_place_run()
 
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
+        return wp_run();
     case PayloadPlaceStateType_Calibrating_Hover_Start:
     case PayloadPlaceStateType_Calibrating_Hover:
         return payload_place_run_loiter();
@@ -1090,6 +1086,7 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;
 
     // Set wp navigation target
+    _mode = Auto_WP;
     wp_start(target_loc);
 
     // if no delay as well as not final waypoint set the waypoint as "fast"
@@ -1111,6 +1108,7 @@ void Copter::ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 
         Location_Class target_loc = terrain_adjusted_location(cmd);
 
+        _mode = Auto_WP;
         wp_start(target_loc);
     } else {
         // set landing state
@@ -1153,6 +1151,7 @@ void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cm
     }
 
     // start way point navigator and provide it the desired location
+    _mode = Auto_WP;
     wp_start(target_loc);
 }
 
@@ -1481,6 +1480,8 @@ void Copter::ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void Copter::ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
+    _mode = Auto_NavPayloadPlace;
+
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
