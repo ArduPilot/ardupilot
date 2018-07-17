@@ -37,8 +37,11 @@ private:
 
     Vector3f _mag_accum[SITL_NUM_COMPASSES];
     uint32_t _accum_count;
+
+    void _setup_eliptical_correcion();
+    
     Matrix3f _eliptical_corr;
-
-
+    Vector3f _last_dia;
+    Vector3f _last_odi;
 };
 #endif // CONFIG_HAL_BOARD
