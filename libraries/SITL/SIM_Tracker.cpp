@@ -66,7 +66,7 @@ void Tracker::update_onoff_servos(float &yaw_rate, float &pitch_rate)
 /*
   update state of tracker
  */
-void Tracker::update(const struct sitl_input &input)
+void Tracker::update(const struct SITL::sitl_input &input)
 {
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;

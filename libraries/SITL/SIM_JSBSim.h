@@ -32,7 +32,7 @@ public:
     JSBSim(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -72,8 +72,8 @@ private:
     bool start_JSBSim(void);
     bool open_control_socket(void);
     bool open_fdm_socket(void);
-    void send_servos(const struct sitl_input &input);
-    void recv_fdm(const struct sitl_input &input);
+    void send_servos(const struct SITL::sitl_input &input);
+    void recv_fdm(const struct SITL::sitl_input &input);
     void check_stdout(void);
     bool expect(const char *str);
 

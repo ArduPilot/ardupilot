@@ -576,7 +576,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 /*
   update wind vector
 */
-void Aircraft::update_wind(const struct sitl_input &input)
+void Aircraft::update_wind(const struct SITL::sitl_input &input)
 {
     // wind vector in earth frame
     wind_ef = Vector3f(cosf(radians(input.wind.direction))*cosf(radians(input.wind.dir_z)), 
@@ -701,7 +701,7 @@ float Aircraft::filtered_idx(float v, uint8_t idx)
   return a filtered servo input as a value from -1 to 1
   servo is assumed to be 1000 to 2000, trim at 1500
  */
-float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
+float Aircraft::filtered_servo_angle(const struct SITL::sitl_input &input, uint8_t idx)
 {
     const float v = (input.servos[idx] - 1500)/500.0f;
     return filtered_idx(v, idx);
@@ -711,7 +711,7 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
   return a filtered servo input as a value from 0 to 1
   servo is assumed to be 1000 to 2000
  */
-float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
+float Aircraft::filtered_servo_range(const struct SITL::sitl_input &input, uint8_t idx)
 {
     const float v = (input.servos[idx] - 1000)/1000.0f;
     return filtered_idx(v, idx);
@@ -736,5 +736,3 @@ void Aircraft::extrapolate_sensors(float delta_time)
     velocity_air_ef = velocity_ef + wind_ef;
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 }
-
-

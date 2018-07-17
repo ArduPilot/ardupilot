@@ -32,7 +32,7 @@ public:
     FlightAxis(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -153,14 +153,14 @@ public:
 
 private:
     char *soap_request(const char *action, const char *fmt, ...);
-    void exchange_data(const struct sitl_input &input);
+    void exchange_data(const struct SITL::sitl_input &input);
     void parse_reply(const char *reply);
 
     static void *update_thread(void *arg);
     void update_loop(void);
     void report_FPS(void);
 
-    struct sitl_input last_input;
+    struct SITL::sitl_input last_input;
 
     double average_frame_time_s;
     double extrapolated_s;

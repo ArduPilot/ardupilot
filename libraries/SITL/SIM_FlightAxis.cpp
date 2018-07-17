@@ -138,7 +138,7 @@ void *FlightAxis::update_thread(void *arg)
 void FlightAxis::update_loop(void)
 {
     while (true) {
-        struct sitl_input new_input;
+        struct SITL::sitl_input new_input;
         mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
         new_input = last_input;
         mutex->give();
@@ -258,7 +258,7 @@ Connection: Keep-Alive
 
 
 
-void FlightAxis::exchange_data(const struct sitl_input &input)
+void FlightAxis::exchange_data(const struct SITL::sitl_input &input)
 {
     if (!controller_started ||
         is_zero(state.m_flightAxisControllerIsActive) ||
@@ -359,7 +359,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 /*
   update the FlightAxis simulation by one time step
  */
-void FlightAxis::update(const struct sitl_input &input)
+void FlightAxis::update(const struct SITL::sitl_input &input)
 {
     mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
     

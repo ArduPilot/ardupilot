@@ -32,7 +32,7 @@ public:
     CRRCSim(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct SITL::sitl_input &input);
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -66,10 +66,10 @@ private:
         double airspeed;
     };
 
-    void send_servos_heli(const struct sitl_input &input);
-    void send_servos_fixed_wing(const struct sitl_input &input);
-    void recv_fdm(const struct sitl_input &input);
-    void send_servos(const struct sitl_input &input);
+    void send_servos_heli(const struct SITL::sitl_input &input);
+    void send_servos_fixed_wing(const struct SITL::sitl_input &input);
+    void recv_fdm(const struct SITL::sitl_input &input);
+    void send_servos(const struct SITL::sitl_input &input);
 
     bool heli_servos;
     double last_timestamp;

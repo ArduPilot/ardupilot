@@ -44,7 +44,7 @@ SingleCopter::SingleCopter(const char *home_str, const char *frame_str) :
 /*
   update the copter simulation by one time step
  */
-void SingleCopter::update(const struct sitl_input &input)
+void SingleCopter::update(const struct SITL::sitl_input &input)
 {
     // get wind vector setup
     update_wind(input);
