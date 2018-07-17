@@ -15,7 +15,8 @@ enum compass_cal_status_t {
     COMPASS_CAL_RUNNING_STEP_ONE=2,
     COMPASS_CAL_RUNNING_STEP_TWO=3,
     COMPASS_CAL_SUCCESS=4,
-    COMPASS_CAL_FAILED=5
+    COMPASS_CAL_FAILED=5,
+    COMPASS_CAL_BAD_ORIENTATION=6,
 };
 
 class CompassCalibrator {
@@ -24,7 +25,7 @@ public:
 
     CompassCalibrator();
 
-    void start(bool retry, float delay, uint16_t offset_max);
+    void start(bool retry, float delay, uint16_t offset_max, uint8_t compass_idx);
     void clear();
 
     void update(bool &failure);
@@ -37,6 +38,7 @@ public:
     void set_orientation(enum Rotation orientation, bool is_external) {
         _auto_orientation = true;
         _orientation = orientation;
+        _orig_orientation = orientation;
         _is_external = is_external;
     }
     
@@ -44,11 +46,13 @@ public:
 
     void get_calibration(Vector3f &offsets, Vector3f &diagonals, Vector3f &offdiagonals);
     enum Rotation get_orientation(void) { return _orientation; }
+    enum Rotation get_original_orientation(void) { return _orig_orientation; }
 
     float get_completion_percent() const;
     completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
     float get_fitness() const { return sqrtf(_fitness); }
+    float get_orientation_confidence() const { return _orientation_confidence; }
     uint8_t get_attempt() const { return _attempt; }
 
 private:
@@ -91,8 +95,10 @@ private:
     };
 
     enum Rotation _orientation;
+    enum Rotation _orig_orientation;
     bool _is_external;
     bool _auto_orientation;
+    uint8_t _compass_idx;
 
     enum compass_cal_status_t _status;
 
@@ -119,6 +125,7 @@ private:
     float _ellipsoid_lambda;
     uint16_t _samples_collected;
     uint16_t _samples_thinned;
+    float _orientation_confidence;
 
     bool set_status(compass_cal_status_t status);
 
