@@ -138,7 +138,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_BLHeli/AP_BLHeli.cpp
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -224,7 +224,7 @@ void SRV_Channels::cork()
 void SRV_Channels::push()
 {
     hal.rcout->push();
-    
+
     // give volz library a chance to update
     volz_ptr->update();
 
@@ -238,8 +238,8 @@ void SRV_Channels::push()
 
 #if HAL_WITH_UAVCAN
     // push outputs to UAVCAN
-    uint8_t can_num_ifaces = AP_BoardConfig_CAN::get_can_num_ifaces();
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS && i < can_num_ifaces; i++) {
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
         AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
         if (ap_uavcan == nullptr) {
             continue;
