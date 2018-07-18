@@ -125,8 +125,6 @@ void AP_BoardConfig_CAN::setup_canbus(void)
         }
     }
 
-    bool any_uavcan_present = false;
-
     if (initret) {
         for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
             if (hal.can_mgr[i] == nullptr) {
@@ -142,26 +140,11 @@ void AP_BoardConfig_CAN::setup_canbus(void)
                     AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
                     continue;
                 }
-                
+
                 AP_Param::load_object_from_eeprom(_var_info_can_protocol[i]._uavcan, AP_UAVCAN::var_info);
 
-                hal.can_mgr[i]->set_UAVCAN(_var_info_can_protocol[i]._uavcan);
-                _var_info_can_protocol[i]._uavcan->set_parent_can_mgr(hal.can_mgr[i]);
-
-                if (_var_info_can_protocol[i]._uavcan->try_init() == true) {
-                    any_uavcan_present = true;
-                } else {
-                    printf("Failed to initialize uavcan interface %d\n\r", i + 1);
-                }
+                _var_info_can_protocol[i]._uavcan->init(i);
             }
-        }
-
-        if (any_uavcan_present) {
-            // start UAVCAN working thread
-            hal.scheduler->create_uavcan_thread();
-
-            // Delay for magnetometer and barometer discovery
-            hal.scheduler->delay(5000);
         }
     }
 }
