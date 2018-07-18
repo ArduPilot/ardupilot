@@ -445,10 +445,10 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
 
     // @Param: ROT_AUTO
-    // @DisplayName: Automatically set orientation
-    // @Description: When enabled this will automatically set the orientation of external compasses on successful completion of compass calibration
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("ROT_AUTO", 35, Compass, _rotate_auto, 1),
+    // @DisplayName: Automatically check orientation
+    // @Description: When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.
+    // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix
+    AP_GROUPINFO("ROT_AUTO", 35, Compass, _rotate_auto, 2),
     
     AP_GROUPEND
 };

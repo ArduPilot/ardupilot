@@ -35,11 +35,12 @@ public:
 
     bool running() const;
 
-    void set_orientation(enum Rotation orientation, bool is_external) {
-        _auto_orientation = true;
+    void set_orientation(enum Rotation orientation, bool is_external, bool fix_orientation) {
+        _check_orientation = true;
         _orientation = orientation;
         _orig_orientation = orientation;
         _is_external = is_external;
+        _fix_orientation = fix_orientation;
     }
     
     void set_tolerance(float tolerance) { _tolerance = tolerance; }
@@ -97,7 +98,8 @@ private:
     enum Rotation _orientation;
     enum Rotation _orig_orientation;
     bool _is_external;
-    bool _auto_orientation;
+    bool _check_orientation;
+    bool _fix_orientation;
     uint8_t _compass_idx;
 
     enum compass_cal_status_t _status;
