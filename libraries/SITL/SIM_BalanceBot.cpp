@@ -25,7 +25,6 @@ namespace SITL {
 
 BalanceBot::BalanceBot(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    max_speed(4),
     skid_turn_rate(140) // degrees/sec
 {
     dcm.from_euler(0,0,0); // initial yaw, pitch and roll in radians
@@ -45,10 +44,9 @@ float BalanceBot::calc_yaw_rate(float steering)
   update the Balance Bot simulation by one time step
  */
 /*
- * WIP!
- * The balance bot is physically modeled as an inverted pendulum(rod) on a cart
- * Further details can be found here:
- * 1) http://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling
+ * The balance bot is physically modeled as an inverted pendulum(cuboid) on wheels
+ * Further details on the equations used can be found here:
+ * 1) http://robotics.ee.uwa.edu.au/theses/2003-Balance-Ooi.pdf page 33 onwards
  * 2) http://journals.sagepub.com/doi/pdf/10.5772/63933
  */
 void BalanceBot::update(const struct sitl_input &input)
@@ -77,11 +75,6 @@ void BalanceBot::update(const struct sitl_input &input)
     const float steering = motor1 - motor2;
     const float throttle = 0.5 * (motor1 + motor2);
 
-//    if (throttle!=prev_throt) {
-//        theta = throttle * radians(180);
-//        prev_throt = throttle;
-//    }
-
     // motor input voltage: (throttle/max_throttle)*v_max
     const float v = throttle*v_max;
 
@@ -94,37 +87,20 @@ void BalanceBot::update(const struct sitl_input &input)
     // obtain roll, pitch, yaw from dcm
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
-//    float theta = p; //radians
-//
-//    float ang_vel = gyro.y; //radians/s
+    float theta = p; //radians
+
+    float ang_vel = gyro.y; //radians/s
     
+    // t1,t2,t3 are terms in the equation to find vehicle frame x acceleration
     const float t1 = ((2.0f*k_t*v/(R*r_w)) - (2.0f*k_t*k_e*velocity_vf_x/(R*r_w*r_w)) - (m_p*l*ang_vel*ang_vel*sin(theta))) * (i_p + m_p*l*l);
     const float t2 = -m_p*l*cos(theta)*((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + (m_p*GRAVITY_MSS*l*sin(theta)));
     const float t3 = ( ((2.0f*m_w + 2.0f*i_w/(r_w*r_w) + m_p) * (i_p + m_p*l*l)) - (m_p*m_p*l*l*cos(theta)*cos(theta)) );
 
-//    const float t1 = i_w*(GRAVITY_MSS*l*R*m_p*sin(theta) + 2.0f*k_t*(v - k_e*velocity_vf_x/r_w));
-//    const float t2 = l*r_w*R*m_p*sin(theta) * (m_p*(GRAVITY_MSS - l*ang_vel*ang_vel*cos(theta)) + GRAVITY_MSS*m_w);
-//    const float t3 = 2.0f*k_t*(v - k_e*velocity_vf_x/r_w)*(m_p*(l*cos(theta) + r_w) + r_w*m_w);
-//    const float t4 = R*(i_p*(i_w + r_w*r_w*(m_p + m_w)) - l*l*r_w*r_w*m_p*m_p*cos(theta)*cos(theta));
-//
-//    const float angular_accel_bf_y = fmod((t1 + r_w*(t2 + t3))/t4, radians(360));
-//
-//    const float t5 = l*r_w*m_p*cos(theta)*(GRAVITY_MSS*l*R*m_p*sin(theta) + 2.0f*k_t*(v - k_e*velocity_vf_x/r_w));
-//    const float t6 = i_p*(2.0f*k_t*(v - k_e*velocity_vf_x/r_w) - l*R*r_w*r_w*m_p*ang_vel*ang_vel*sin(theta));
-//
-//    const float accel_vf_x = r_w*(t5+t6)/t4;
-
+    //vehicle frame x acceleration
     const float accel_vf_x = (t1-t2)/t3;
 
     const float angular_accel_bf_y = ((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + m_p*l*accel_vf_x*cos(theta) + m_p*GRAVITY_MSS*l*sin(theta))
                                      / (i_p + m_p*l*l);
-    //vehicle frame x acceleration
-//    const float accel_vf_x = (force_on_body - (damping_constant*velocity_vf_x) - mass_rod*length*ang_vel*ang_vel*sin(theta)
-//    + (3.0f/4.0f)*mass_rod*GRAVITY_MSS*sin(theta)*cos(theta))
-//            / (mass_cart + mass_rod - (3.0f/4.0f)*mass_rod*cos(theta)*cos(theta));
-//
-//    const float angular_accel_bf_y = mass_rod*length*(GRAVITY_MSS*sin(theta) + accel_vf_x*cos(theta))
-//        /(I_rod + mass_rod*length*length);
 
     // update theta and angular velocity
     ang_vel += angular_accel_bf_y * delta_time;
@@ -178,8 +154,6 @@ void BalanceBot::update(const struct sitl_input &input)
     dcm.to_euler(&r, &p, &y);
     dcm.from_euler(0.0f, p, y);
     use_smoothing = true;
-
-    printf("Accel:%f Theta: %f velocity:%f\n",accel_vf_x, degrees(theta), velocity_vf_x);
 
     // update lat/lon/altitude
     update_position();
