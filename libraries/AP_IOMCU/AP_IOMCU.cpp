@@ -311,7 +311,7 @@ void AP_IOMCU::read_rc_input()
     // read a min of 9 channels and max of IOMCU_MAX_CHANNELS
     uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
-    if (rc_input.flags_rc_ok) {
+    if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_input.last_input_us = AP_HAL::micros();
     }
 }
