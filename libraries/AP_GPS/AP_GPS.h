@@ -43,7 +43,8 @@
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 class AP_GPS_Backend;
-
+class AP_GPS_UAVCAN;
+class AP_UAVCAN;
 /// @class AP_GPS
 /// GPS driver main class
 class AP_GPS
@@ -61,6 +62,7 @@ class AP_GPS
     friend class AP_GPS_SBP2;
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
+    friend class AP_GPS_UAVCAN;
     friend class AP_GPS_Backend;
 
 public:
