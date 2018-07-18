@@ -331,7 +331,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
 */
 uint32_t I2CDeviceManager::get_bus_mask(void) const
 {
-    return (1U << ARRAY_SIZE_SIMPLE(I2CD)) - 1;
+    return ((1U << ARRAY_SIZE_SIMPLE(I2CD)) - 1) << HAL_I2C_BUS_BASE;
 }
 
 /*
