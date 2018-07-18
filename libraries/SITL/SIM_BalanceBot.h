@@ -37,11 +37,7 @@ public:
 private:
     // vehicle frame x velocity
     float velocity_vf_x;
-    float theta;
-    float ang_vel;
-    float prev_throt;
 
-    float max_speed;
     float skid_turn_rate;
 
     float calc_yaw_rate(float steering);
