@@ -448,7 +448,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Automatically check orientation
     // @Description: When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.
     // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix
-    AP_GROUPINFO("AUTO_ROT", 35, Compass, _rotate_auto, 2),
+    AP_GROUPINFO("AUTO_ROT", 35, Compass, _rotate_auto, 1),
     
     AP_GROUPEND
 };
