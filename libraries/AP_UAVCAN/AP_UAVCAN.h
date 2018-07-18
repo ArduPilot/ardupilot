@@ -18,7 +18,6 @@
 #include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
-#include <uavcan/equipment/indication/RGB565.hpp>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -121,7 +120,7 @@ public:
     // synchronization for RC output
     void SRV_sem_take();
     void SRV_sem_give();
-    
+
     // synchronization for LED output
     bool led_out_sem_take();
     void led_out_sem_give();
@@ -184,7 +183,9 @@ private:
     typedef struct {
         bool enabled;
         uint8_t led_index;
-        uavcan::equipment::indication::RGB565 rgb565_color;
+        uint8_t red;
+        uint8_t green;
+        uint8_t blue;
     } _led_device;
 
     struct {
@@ -266,10 +267,6 @@ private:
 public:
     void init(uint8_t driver_index) override;
 
-    void SRV_set_safety_pwm(uint32_t chmask, uint16_t pulse_len);
-    void SRV_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len);
-    void SRV_force_safety_on(void);
-    void SRV_force_safety_off(void);
     void SRV_arm_actuators(bool arm);
     void SRV_write(uint16_t pulse_len, uint8_t ch);
     void SRV_push_servos(void);
