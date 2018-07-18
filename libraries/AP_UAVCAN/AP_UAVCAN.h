@@ -1,6 +1,18 @@
 /*
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *      Author: Eugene Shamaev
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Author: Eugene Shamaev, Siddharth Bharat Purohit
  */
 #ifndef AP_UAVCAN_H_
 #define AP_UAVCAN_H_
@@ -9,13 +21,7 @@
 
 #include <AP_HAL/CAN.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_Param/AP_Param.h>
-
-#include <AP_GPS/GPS_Backend.h>
-#include <AP_Baro/AP_Baro_Backend.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -30,12 +36,6 @@
 #ifndef UAVCAN_SRV_NUMBER
 #define UAVCAN_SRV_NUMBER 18
 #endif
-
-#define AP_UAVCAN_MAX_LISTENERS 4
-#define AP_UAVCAN_MAX_GPS_NODES 4
-#define AP_UAVCAN_MAX_MAG_NODES 4
-#define AP_UAVCAN_MAX_BARO_NODES 4
-#define AP_UAVCAN_MAX_BI_NUMBER 4
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
@@ -78,75 +78,6 @@ public:
 
     ///// LED /////
     bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
-
-    ///// GPS /////
-
-    uint8_t find_gps_without_listener(void);
-
-    // this function will register the listening class on a first free channel or on the specified channel
-    // if preferred_channel = 0 then free channel will be searched for
-    // if preferred_channel > 0 then listener will be added to specific channel
-    // return value is the number of assigned channel or 0 if fault
-    // channel numbering starts from 1
-    uint8_t register_gps_listener(AP_GPS_Backend* new_listener, uint8_t preferred_channel);
-
-    uint8_t register_gps_listener_to_node(AP_GPS_Backend* new_listener, uint8_t node);
-
-    // Removes specified listener from all nodes
-    void remove_gps_listener(AP_GPS_Backend* rem_listener);
-
-    // Returns pointer to GPS state connected with specified node.
-    // If node is not found and there are free space, locate a new one
-    AP_GPS::GPS_State *find_gps_node(uint8_t node);
-
-    // Updates all listeners of specified node
-    void update_gps_state(uint8_t node);
-
-    ///// BARO /////
-
-    struct Baro_Info {
-        float pressure;
-        float pressure_variance;
-        float temperature;
-        float temperature_variance;
-    };
-
-    uint8_t find_smallest_free_baro_node();
-    uint8_t register_baro_listener(AP_Baro_Backend* new_listener, uint8_t preferred_channel);
-    uint8_t register_baro_listener_to_node(AP_Baro_Backend* new_listener, uint8_t node);
-    void remove_baro_listener(AP_Baro_Backend* rem_listener);
-    Baro_Info *find_baro_node(uint8_t node);
-    void update_baro_state(uint8_t node);
-
-    ///// COMPASS /////
-
-    struct Mag_Info {
-        Vector3f mag_vector;
-    };
-
-    uint8_t find_smallest_free_mag_node();
-    uint8_t register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel);
-    uint8_t register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node);
-    void remove_mag_listener(AP_Compass_Backend* rem_listener);
-    Mag_Info *find_mag_node(uint8_t node, uint8_t sensor_id);
-    void update_mag_state(uint8_t node, uint8_t sensor_id);
-
-    ///// BATTERY /////
-
-    struct BatteryInfo_Info {
-        float temperature;
-        float voltage;
-        float current;
-        float remaining_capacity_wh;
-        float full_charge_capacity_wh;
-        uint8_t status_flags;
-    };
-
-    uint8_t find_smallest_free_bi_id();
-    uint8_t register_BM_bi_listener_to_id(AP_BattMonitor_Backend* new_listener, uint8_t id);
-    void remove_BM_bi_listener(AP_BattMonitor_Backend* rem_listener);
-    BatteryInfo_Info *find_bi_id(uint8_t id);
-    void update_bi_state(uint8_t id);
 
 
     template <typename DataType_>
@@ -255,45 +186,6 @@ private:
     } _led_conf;
 
     AP_HAL::Semaphore *_led_out_sem;
-
-    ///// GPS /////
-    // 255 - means free node
-    uint8_t _gps_nodes[AP_UAVCAN_MAX_GPS_NODES];
-
-    // Counter of how many listeners are connected to this source
-    uint8_t _gps_node_taken[AP_UAVCAN_MAX_GPS_NODES];
-
-    // GPS data of the sources
-    AP_GPS::GPS_State _gps_node_state[AP_UAVCAN_MAX_GPS_NODES];
-
-    // 255 - means no connection
-    uint8_t _gps_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
-
-    // Listeners with callbacks to be updated
-    AP_GPS_Backend* _gps_listeners[AP_UAVCAN_MAX_LISTENERS];
-
-    ///// BARO /////
-    uint8_t _baro_nodes[AP_UAVCAN_MAX_BARO_NODES];
-    uint8_t _baro_node_taken[AP_UAVCAN_MAX_BARO_NODES];
-    Baro_Info _baro_node_state[AP_UAVCAN_MAX_BARO_NODES];
-    uint8_t _baro_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
-    AP_Baro_Backend* _baro_listeners[AP_UAVCAN_MAX_LISTENERS];
-
-    ///// COMPASS /////
-    uint8_t _mag_nodes[AP_UAVCAN_MAX_MAG_NODES];
-    uint8_t _mag_node_taken[AP_UAVCAN_MAX_MAG_NODES];
-    Mag_Info _mag_node_state[AP_UAVCAN_MAX_MAG_NODES];
-    uint8_t _mag_node_max_sensorid_count[AP_UAVCAN_MAX_MAG_NODES];
-    uint8_t _mag_listener_to_node[AP_UAVCAN_MAX_LISTENERS];
-    AP_Compass_Backend* _mag_listeners[AP_UAVCAN_MAX_LISTENERS];
-    uint8_t _mag_listener_sensor_ids[AP_UAVCAN_MAX_LISTENERS];
-
-    ///// BATTERY /////
-    uint16_t _bi_id[AP_UAVCAN_MAX_BI_NUMBER];
-    uint16_t _bi_id_taken[AP_UAVCAN_MAX_BI_NUMBER];
-    BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
-    uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
-    AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
 };
 
 #endif /* AP_UAVCAN_H_ */
