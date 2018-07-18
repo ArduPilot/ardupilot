@@ -10,6 +10,8 @@
 #if HAL_WITH_UAVCAN
 #define UAVCAN_PROTOCOL_ENABLE  1
 
+class AP_UAVCAN;
+
 class AP_BoardConfig_CAN {
 public:
     AP_BoardConfig_CAN() {
