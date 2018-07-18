@@ -5,7 +5,6 @@
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
-#include <pthread.h>
 
 using namespace HALSITL;
 
