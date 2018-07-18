@@ -19,19 +19,11 @@
 
 #include "AP_Compass_UAVCAN.h"
 
-#if HAL_OS_POSIX_IO
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#endif
-
-#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_mag_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
+#define debug_mag_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
 /*
   constructor - registers instance at top Compass driver
@@ -47,27 +39,25 @@ AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
     if (!_initialized) {
         return;
     }
-    
+
     AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
     if (ap_uavcan == nullptr) {
         return;
     }
-    
+
     ap_uavcan->remove_mag_listener(this);
     delete _sem_mag;
-    
-    debug_mag_uavcan(2, "AP_Compass_UAVCAN destructed\n\r");
+
+    debug_mag_uavcan(2, _manager, "AP_Compass_UAVCAN destructed\n\r");
 }
 
 AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
 {
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
-        return nullptr;
-    }
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
 
     AP_Compass_UAVCAN *sensor;
 
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
         AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
         if (ap_uavcan == nullptr) {
             continue;
@@ -77,9 +67,9 @@ AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
             continue;
         }
         sensor = new AP_Compass_UAVCAN(compass);
-        
+
         if (sensor->register_uavcan_compass(i, freemag)) {
-            debug_mag_uavcan(2, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
+            debug_mag_uavcan(2, i, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
             return sensor;
         } else {
             delete sensor;
@@ -123,11 +113,11 @@ bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
         _sum.zero();
         _count = 0;
 
-        debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
+        debug_mag_uavcan(2, mgr, "AP_Compass_UAVCAN loaded\n\r");
 
         return true;
     }
-    
+
     return false;
 }
 
