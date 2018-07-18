@@ -62,7 +62,10 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
         _calibrator[i].set_tolerance(_calibration_threshold*2);
     }
     if (_rotate_auto) {
-        _calibrator[i].set_orientation(_state[i].external?(enum Rotation)_state[i].orientation.get():ROTATION_NONE, _state[i].external, _rotate_auto>=2);
+        enum Rotation r = _state[i].external?(enum Rotation)_state[i].orientation.get():ROTATION_NONE;
+        if (r != ROTATION_CUSTOM) {
+            _calibrator[i].set_orientation(r, _state[i].external, _rotate_auto>=2);
+        }
     }
     _cal_saved[i] = false;
     _calibrator[i].start(retry, delay, get_offsets_max(), i);
