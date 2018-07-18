@@ -833,14 +833,14 @@ bool CompassCalibrator::calculate_orientation(void)
         pass = _orientation_confidence > variance_threshold;
     }
     if (!pass) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u %.1f", _compass_idx, besti, _orientation_confidence);
     } else if (besti == _orientation) {
         // no orientation change
-        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f", _compass_idx, besti, _orientation_confidence);
     } else if (!_is_external || !_fix_orientation) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f", _compass_idx, besti, _orientation_confidence);
     } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f\n", _compass_idx, besti, _orientation, _orientation_confidence);
+        gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f", _compass_idx, besti, _orientation, _orientation_confidence);
     }
 
     if (!pass) {
