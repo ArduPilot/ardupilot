@@ -62,7 +62,7 @@ void Copter::ModeCircle::run()
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
 
-        target_angular_acceleration = get_desired_angular_acceleration(channel_roll->norm_input_dz());
+        target_angular_acceleration = get_desired_angular_acceleration(-1*(channel_roll->norm_input_dz()));
 
         // check for pilot requested take-off
         if (ap.land_complete && target_climb_rate > 0) {
