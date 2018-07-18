@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:MAVlink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink),
+    AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
     
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
