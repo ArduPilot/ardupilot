@@ -434,8 +434,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         if ((desired_speed >= 0.0f) && (throttle_out <= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_low = true;
-        }
-        if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
+        } else if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_high = true;
         }
