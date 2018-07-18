@@ -512,7 +512,8 @@ is bob we will attempt to checkout bob-AVR'''
                 "PH4-mini",
                 "CUAVv5",
                 "mRoX21",
-                "Pixracer"]
+                "Pixracer",
+                "f4by"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
