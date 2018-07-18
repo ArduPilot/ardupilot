@@ -320,7 +320,7 @@ bool CompassCalibrator::set_status(compass_cal_status_t status) {
             return true;
 
         case COMPASS_CAL_FAILED:
-            if (status == COMPASS_CAL_BAD_ORIENTATION) {
+            if (_status == COMPASS_CAL_BAD_ORIENTATION) {
                 // don't overwrite bad orientation status
                 return false;
             }
@@ -731,7 +731,15 @@ Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) {
 }
 
 /*
-  calculate the implied earth field for a compass sample and compass rotation
+  calculate the implied earth field for a compass sample and compass
+  rotation. This is used to check for consistency between
+  samples. 
+
+  If the orientation is correct then when rotated the same (or
+  similar) earth field should be given for all samples. 
+
+  Note that this earth field uses an arbitrary north reference, so it
+  may not match the true earth field.
  */
 Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Rotation r)
 {
@@ -743,6 +751,7 @@ Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Ro
     // rotate to body frame for this rotation
     v.rotate(r);
 
+    // apply offsets, rotating them for the orientation we are testing
     Vector3f rot_offsets = _params.offset;
     rot_offsets.rotate_inverse(_orientation);
 
@@ -750,23 +759,28 @@ Vector3f CompassCalibrator::calculate_earth_field(CompassSample &sample, enum Ro
     
     v += rot_offsets;
 
+    // rotate the sample from body frame back to earth frame
     Matrix3f rot = sample.att.get_rotmat();
 
     Vector3f efield = rot * v;
+
+    // earth field is the mag sample in earth frame
     return efield;
 }
 
 /*
-  calculate compass orientation using the attitude estimate associated with each sample
+  calculate compass orientation using the attitude estimate associated
+  with each sample, and fix orientation on external compasses if
+  the feature is enabled
  */
 bool CompassCalibrator::calculate_orientation(void)
 {
-    if (!_auto_orientation) {
+    if (!_check_orientation) {
         // we are not checking orientation
         return true;
     }
 
-    float sum_error[ROTATION_MAX] {};
+    float variance[ROTATION_MAX] {};
 
     for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
         // calculate the average implied earth field across all samples
@@ -781,27 +795,30 @@ bool CompassCalibrator::calculate_orientation(void)
         for (uint32_t i=0; i<_samples_collected; i++) {
             Vector3f efield = calculate_earth_field(_sample_buffer[i], r);
             float err = (efield - avg_efield).length_squared();
-            sum_error[r] += err;
+            // divide by number of samples collected to get the variance
+            variance[r] += err / _samples_collected;
         }
     }
 
-    // find the rotation with the lowest square error
+    // find the rotation with the lowest variance
     enum Rotation besti = ROTATION_NONE;
-    float bestv = sum_error[0];
+    float bestv = variance[0];
     for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
-        if (sum_error[r] < bestv) {
-            bestv = sum_error[r];
+        if (variance[r] < bestv) {
+            bestv = variance[r];
             besti = r;
         }
     }
 
-    // consider this a pass if the best orientation is 4x better
-    // square error than 2nd best
-    float second_best = besti==ROTATION_NONE?sum_error[1]:sum_error[0];
+    // consider this a pass if the best orientation is 2x better
+    // variance than 2nd best
+    const float variance_threshold = 2.0;
+    
+    float second_best = besti==ROTATION_NONE?variance[1]:variance[0];
     for (enum Rotation r = ROTATION_NONE; r<ROTATION_MAX; r = (enum Rotation)(r+1)) {
         if (r != besti) {
-            if (sum_error[r] < second_best) {
-                second_best = sum_error[r];
+            if (variance[r] < second_best) {
+                second_best = variance[r];
             }
         }
     }
@@ -813,14 +830,14 @@ bool CompassCalibrator::calculate_orientation(void)
         // if the orientation matched then allow for a low threshold
         pass = true;
     } else {
-        pass = _orientation_confidence > 4;
+        pass = _orientation_confidence > variance_threshold;
     }
     if (!pass) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
     } else if (besti == _orientation) {
         // no orientation change
         gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) good orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
-    } else if (!_is_external) {
+    } else if (!_is_external || !_fix_orientation) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Mag(%u) internal bad orientation: %u %.1f\n", _compass_idx, besti, _orientation_confidence);
     } else {
         gcs().send_text(MAV_SEVERITY_INFO, "Mag(%u) new orientation: %u was %u %.1f\n", _compass_idx, besti, _orientation, _orientation_confidence);
@@ -836,8 +853,10 @@ bool CompassCalibrator::calculate_orientation(void)
         return true;
     }
 
-    if (!_is_external) {
-        // we can't change the orientation on internal compasses
+    if (!_is_external || !_fix_orientation) {
+        // we won't change the orientation, but we set _orientation
+        // for reporting purposes
+        _orientation = besti;
         set_status(COMPASS_CAL_BAD_ORIENTATION);
         return false;
     }
