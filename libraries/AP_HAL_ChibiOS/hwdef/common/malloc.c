@@ -90,26 +90,20 @@ void *malloc(size_t size)
     if (size == 0) {
         return NULL;
     }
-    void *p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    //first try ccm memory
+    void *p = malloc_ccm(size);
     if (p) {
-        memset(p, 0, size);
         return p;
     }
-    if (!p) {
-        // fall back to CCM memory
-        p = malloc_ccm(size);
-        if (p) {
-            return p;
-        }
+    //after use main memory
+    p = chHeapAllocAligned(NULL, size, MIN_ALIGNMENT);
+    if (p) {
+       memset(p, 0, size);
+       return p;
     }
-    if (!p) {
-        // fall back to DTCM memory
-        p = malloc_dtcm(size);
-        if (p) {
-            return p;
-        }
-    }
-    return NULL;
+    // fall back to DTCM memory
+    p = malloc_dtcm(size);
+    return p;
 }
 
 /*
