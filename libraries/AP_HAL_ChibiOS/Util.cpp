@@ -157,6 +157,11 @@ void Util::toneAlarm_set_tune(uint8_t tone)
     _toneAlarm.set_tune(tone);
 }
 
+void Util::toneAlarm_set_tune_string(const char *str)
+{
+    _toneAlarm.set_tune_string(str);
+}
+
 // (state 0) if init_tune() -> (state 1) complete=false
 // (state 1) if set_note -> (state 2) -> if play -> (state 3)
 //   play returns true if tune has changed or tune is complete (repeating tunes never complete)

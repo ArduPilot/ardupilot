@@ -121,6 +121,7 @@ class ToneAlarm {
 public:
     ToneAlarm();
     void set_tune(uint8_t tone);
+    void set_tune_string(const char *str);
     virtual bool init();
     virtual void stop();
     virtual bool play();
@@ -130,8 +131,9 @@ public:
 
 protected:
     bool tune_comp;
+    char tune_str[100];
+    bool repeat;
     static const char *tune[TONE_NUMBER_OF_TUNES];
-    static bool tune_repeat[TONE_NUMBER_OF_TUNES];
     bool tune_changed;
     uint8_t default_oct;
     uint8_t default_dur;
@@ -139,9 +141,9 @@ protected:
     uint16_t wholenote;
     uint16_t cur_note;
     uint16_t duration;
-    int32_t prev_tune_num;
+    uint32_t tune_crc;
+    uint32_t prev_tune_crc;
     uint32_t prev_time;
-    int8_t tune_num;
     uint8_t tune_pos;
 
 private:
