@@ -202,3 +202,8 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
     return ret;
 }
 
+
+enum Rotation AP_Compass_Backend::get_board_orientation(void) const
+{
+    return _compass._board_orientation;
+}
