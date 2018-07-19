@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Speed control brake enable/disable. Allows sending a reversed output to the motors to slow the vehicle.
     // @Values: 0:Disable,1:Enable
     // @User: Standard
-    AP_GROUPINFO("_BRAKE", 4, AR_AttitudeControl, _brake_enable, 0),
+    AP_GROUPINFO("_BRAKE", 4, AR_AttitudeControl, _brake_enable, 1),
 
     // @Param: _STOP_SPEED
     // @DisplayName: Speed control stop speed
