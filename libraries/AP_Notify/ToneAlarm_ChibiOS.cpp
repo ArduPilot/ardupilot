@@ -21,6 +21,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "ToneAlarm_ChibiOS.h"
 #include <AP_HAL_ChibiOS/ToneAlarm.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
@@ -100,6 +101,28 @@ void ToneAlarm_ChibiOS::update()
             play_tune(TONE_PARACHUTE_RELEASE_TUNE);
         }
     }
+}
+
+/*
+  handle a PLAY_TUNE message
+*/
+void ToneAlarm_ChibiOS::handle_play_tune(mavlink_message_t *msg)
+{
+    // decode mavlink message
+    mavlink_play_tune_t packet;
+    
+    mavlink_msg_play_tune_decode(msg, &packet);
+
+    char str[100];
+    strncpy(str, packet.tune, MIN(sizeof(packet.tune), sizeof(str)-1));
+    str[sizeof(str)-1] = 0;
+    uint8_t len = strlen(str);
+    uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
+    len2 = MIN((sizeof(str)-1)-len, len2);
+    strncpy(str+len, packet.tune2, len2);
+    str[sizeof(str)-1] = 0;
+    
+    hal.util->toneAlarm_set_tune_string(str);
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
