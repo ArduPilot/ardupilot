@@ -17,6 +17,7 @@
 
 #include "hal.h"
 #include "usbcfg.h"
+#include "stm32_util.h"
 
 #if HAL_USE_PAL || defined(__DOXYGEN__)
 /**
@@ -64,6 +65,9 @@ void __early_init(void) {
 void __late_init(void) {
   halInit();
   chSysInit();
+#if CH_CFG_USE_HEAP == TRUE
+  malloc_init();
+#endif
 #ifdef HAL_USB_PRODUCT_ID
   setup_usb_strings();
 #endif
