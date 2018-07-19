@@ -284,9 +284,3 @@ bool Copter::should_disarm_on_failsafe() {
             return ap.land_complete;
     }
 }
-
-void Copter::update_events()
-{
-    ServoRelayEvents.update_events();
-}
-
