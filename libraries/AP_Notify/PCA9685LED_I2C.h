@@ -1,5 +1,5 @@
 /*
-   NavioLED I2C driver
+   PCA9685LED I2C driver
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@
 #include <AP_HAL/I2CDevice.h>
 #include "RGBLed.h"
 
-class NavioLED_I2C : public RGBLed
+class PCA9685LED_I2C : public RGBLed
 {
 public:
-    NavioLED_I2C(void);
+    PCA9685LED_I2C(void);
 protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
