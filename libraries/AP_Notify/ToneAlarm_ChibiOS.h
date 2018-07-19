@@ -28,6 +28,9 @@ public:
     /// update - updates led according to timed_updated.  Should be called at 50Hz
     void update();
 
+    // handle a PLAY_TUNE message
+    void handle_play_tune(mavlink_message_t *msg);
+    
 private:
     /// play_tune - play one of the pre-defined tunes
     bool play_tune(uint8_t tune_number);
