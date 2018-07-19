@@ -31,7 +31,6 @@ void show_stack_usage(void);
 // allocation functions in malloc.c    
 size_t mem_available(void);
 void *malloc_ccm(size_t size);
-void *malloc_dtcm(size_t size);
 void *malloc_dma(size_t size);
 
 // flush all dcache
@@ -67,6 +66,9 @@ void set_fast_reboot(enum rtc_boot_magic v);
 
 // enable peripheral power if needed
 void peripheral_power_enable(void);
+
+// initialise allocation subsystem
+void malloc_init(void);
     
 #ifdef __cplusplus
 }
