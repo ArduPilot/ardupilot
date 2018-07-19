@@ -10,7 +10,6 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_ADC/AP_ADC.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>

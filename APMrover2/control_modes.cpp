@@ -21,6 +21,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
+    case Mode::Number::FOLLOW:
+        ret = &mode_follow;
+        break;
     case Mode::Number::AUTO:
         ret = &mode_auto;
         break;
@@ -263,5 +266,11 @@ void Rover::read_aux_switch()
     case CH7_LOITER:
         do_aux_function_change_mode(rover.mode_loiter, aux_ch7);
         break;
+
+    // Set mode to Follow
+    case CH7_FOLLOW:
+        do_aux_function_change_mode(rover.mode_follow, aux_ch7);
+        break;
+
     }
 }

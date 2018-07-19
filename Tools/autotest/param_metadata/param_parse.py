@@ -154,14 +154,19 @@ def process_library(vehicle, library, pathprefix=None):
             debug(p.name + ' ')
             field_text = param_match[1]
             fields = prog_param_fields.findall(field_text)
+            non_vehicle_specific_values_seen = False
             for field in fields:
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
                     setattr(p, field[0], value)
+                    if field[0] == "Values":
+                        non_vehicle_specific_values_seen = True
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
+            this_vehicle_values_seen = False
+            other_vehicle_values_seen = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
                 only_for_vehicles = [ x.rstrip().lstrip() for x in only_for_vehicles ]
@@ -169,14 +174,21 @@ def process_library(vehicle, library, pathprefix=None):
                 if len(delta):
                     error("Unknown vehicles (%s)" % delta)
                 debug("field[0]=%s vehicle=%s truename=%s field[1]=%s only_for_vehicles=%s\n" % (field[0], vehicle.name,vehicle.truename,field[1], str(only_for_vehicles)))
-                if vehicle.truename not in only_for_vehicles:
-                    continue
+                if field[0] == "Values":
+                    if vehicle.truename in only_for_vehicles:
+                        this_vehicle_values_seen = True
+                        if len(only_for_vehicles) > 1:
+                            other_vehicle_values_seen = True
+                    elif len(only_for_vehicles):
+                        other_vehicle_values_seen = True
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[2])
                     setattr(p, field[0], value)
                 else:
-                    error("tagged param: unknown parameter metadata field '%s'" % field[0])
-            library.params.append(p)
+                    error("tagged param<: unknown parameter metadata field '%s'" % field[0])
+            if ((non_vehicle_specific_values_seen or not other_vehicle_values_seen)
+                or this_vehicle_values_seen):
+                library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))

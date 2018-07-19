@@ -1,3 +1,55 @@
+Release 3.9.0beta5, 19th July 2018
+----------------------------------
+
+This is the fifth in a series of beta releases for plane 3.9.0. It
+fixes two important bugs over 3.9.0beta4
+
+ - fixed RC failsafe on IOMCU when a SBUS receiver is set to "hold" mode
+ - allowed for RC override failsafe to support holding override value
+   on timeout
+
+Thanks to Jon and Michael for the failsafe fixes!
+
+It also includes two smaller changes:
+
+ - updated F4BY board id, and added F4BY to autobuild list
+ - fixed UARTD for px4-v1 build
+
+Release 3.9.0beta4, 18th July 2018
+----------------------------------
+
+This is the fourth in a series of beta releases for plane 3.9.0. It is
+a major release, with a lot of changes.
+
+ - fixed compass detection on pixracer
+ - greatly improved OSD support
+ - fixed ARMING_REQUIRE=2 support (thanks Marco!)
+ - added automatic compass orientation support
+ - added probe for all external compasses on new ChibiOS boards
+ - fixed arming with compass disabled
+ - fixed flow control on F7 based boards
+ - fixed prealloc of DMA bouncebuffers
+ - added board specific builds for mRoX21 and Pixracer
+ - fixed mRoX21 IMU detection
+ 
+Many thanks to all who contributed to this release, and our beta testers!
+
+Release 3.9.0beta3, 11th July 2018
+----------------------------------
+
+This is the third in a series of beta releases for plane 3.9.0. It is
+a minor update to beta2
+
+Changes are:
+
+- fixed nul termination of system ID on ChibiOS
+- added PH4-mini support
+- fixed compass orientation on fmuv5
+- matched BRD_PWM_COUNT between px4-v3 and fmuv3
+- fixed MatekF405-Wing compass orientation
+- backup storage to microSD if possible
+
+
 Release 3.9.0beta2, 6th July 2018
 ---------------------------------
 

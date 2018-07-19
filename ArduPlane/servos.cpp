@@ -352,8 +352,12 @@ void Plane::set_servos_controlled(void)
     if (!hal.util->get_soft_armed()) {
         if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
         } else {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
         }
     } else if (suppress_throttle()) {
         // throttle is suppressed in auto mode
@@ -502,9 +506,18 @@ void Plane::servos_twin_engine_mix(void)
         throttle_left  = constrain_float(throttle + 50 * rudder, 0, 100);
         throttle_right = constrain_float(throttle - 50 * rudder, 0, 100);
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
-
+    if (!hal.util->get_soft_armed()) {
+        if (arming.arming_required() == AP_Arming::YES_ZERO_PWM) {
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+            SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::SRV_CHANNEL_LIMIT_ZERO_PWM);
+        } else {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
+        }
+    } else {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+    }
 }
 
 
@@ -599,11 +612,15 @@ void Plane::set_servos(void)
 
         case AP_Arming::YES_ZERO_PWM:
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, 0);
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, 0);
             break;
 
         case AP_Arming::YES_MIN_PWM:
         default:
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
             break;
         }
     }

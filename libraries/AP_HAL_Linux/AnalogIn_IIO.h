@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AP_HAL_Linux.h"
-#include <AP_ADC/AP_ADC.h>
 
 #include <fcntl.h>
 #include <unistd.h>

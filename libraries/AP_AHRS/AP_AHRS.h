@@ -263,6 +263,9 @@ public:
     const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
     const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
+    // get rotation matrix specifically from DCM backend (used for compass calibrator)
+    virtual const Matrix3f &get_DCM_rotation_body_to_ned(void) const = 0;
+    
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
     virtual bool get_position(struct Location &loc) const = 0;

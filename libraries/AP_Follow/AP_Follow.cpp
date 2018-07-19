@@ -269,7 +269,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
-        
+
         // select altitude source based on FOLL_ALT_TYPE param 
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
@@ -293,7 +293,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         if (_sysid_to_follow == 0) {
             _sysid_to_follow = msg.sysid;
         }
-        if ((AP_HAL::millis() - _last_location_sent_to_gcs > AP_GCS_INTERVAL_MS)) {
+        if ((now - _last_location_sent_to_gcs) > AP_GCS_INTERVAL_MS) {
+            _last_location_sent_to_gcs = now;
             gcs().send_text(MAV_SEVERITY_INFO, "Foll: %u %ld %ld %4.2f\n",
                             (unsigned)_sysid_to_follow,
                             (long)_target_location.lat,
@@ -303,7 +304,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         // log lead's estimated vs reported position
         DataFlash_Class::instance()->Log_Write("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelX,VelY,VelZ,LatE,LonE,AltE",  // labels
+                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
                                                "sDUmnnnDUm",    // units
                                                "F--B000--B",    // mults
                                                "QLLifffLLi",    // fmt
@@ -328,11 +329,11 @@ bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
     return true;
 }
 
-// initialise offsets to provided distance vector (in meters in NED frame) if required
+// initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
 void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
 {
     if (_offset.get().is_zero()) {
-        _offset = dist_vec_ned;
+        _offset = -dist_vec_ned;
     }
 }
 
@@ -341,7 +342,7 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 {
     const Vector3f &off = _offset.get();
 
-    // if offsets are zero or type if NED, simply return offset vector
+    // if offsets are zero or type is NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
         offset = off;
         return true;
