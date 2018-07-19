@@ -27,13 +27,13 @@ public:
         return static_cast<Util*>(util);
     }
 
-    bool run_debug_shell(AP_HAL::BetterStream *stream) { return false; }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
     AP_HAL::Semaphore *new_semaphore(void) override { return new ChibiOS::Semaphore; }
     uint32_t available_memory() override;
 
     // Special Allocation Routines
-    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type);
-    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type);
+    void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+    void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
     /*
       return state of safety switch, if applicable
@@ -41,16 +41,17 @@ public:
     enum safety_state safety_switch_state(void) override;
 
     // IMU temperature control
-    void set_imu_temp(float current);
-    void set_imu_target_temp(int8_t *target);
+    void set_imu_temp(float current) override;
+    void set_imu_target_temp(int8_t *target) override;
 
     // get system ID as a string
     bool get_system_id(char buf[40]) override;
     
 #ifdef HAL_PWM_ALARM
-    bool toneAlarm_init();
-    void toneAlarm_set_tune(uint8_t tone);
-    void _toneAlarm_timer_tick();
+    bool toneAlarm_init() override;
+    void toneAlarm_set_tune(uint8_t tone) override;
+    void toneAlarm_set_tune_string(const char *str) override;
+    void _toneAlarm_timer_tick() override;
 
     static ToneAlarm& get_ToneAlarm() { return _toneAlarm; }
 #endif
