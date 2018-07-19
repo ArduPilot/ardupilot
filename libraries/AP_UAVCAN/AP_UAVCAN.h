@@ -252,6 +252,34 @@ private:
     BatteryInfo_Info _bi_id_state[AP_UAVCAN_MAX_BI_NUMBER];
     uint16_t _bi_BM_listener_to_id[AP_UAVCAN_MAX_LISTENERS];
     AP_BattMonitor_Backend* _bi_BM_listeners[AP_UAVCAN_MAX_LISTENERS];
+
+    template <typename DataType_, typename Backend_, typename Frontend_>
+    class Callback {
+        AP_UAVCAN* _uc;
+        void (Backend_::*_bfunc)(const uavcan::ReceivedDataStructure<DataType_> &);
+        Backend_* (Frontend_::*_ffunc)(AP_UAVCAN*, uint8_t); 
+        Frontend_* _frontend;       
+
+        public:
+            Callback()
+                : _uc(),
+                _bfunc(),
+                _ffunc(),
+                _frontend() {}
+            Callback(AP_UAVCAN* uc, void (Backend_::*bfunc)(const uavcan::ReceivedDataStructure<DataType_> &), 
+                    Backend_* (Frontend_::*ffunc)(AP_UAVCAN*, uint8_t), Frontend_ *frontend):
+                _uc(uc),
+                _bfunc(bfunc),
+                _ffunc(ffunc),
+                _frontend(frontend) {}
+
+            void operator()(const uavcan::ReceivedDataStructure<DataType_> & msg) {
+                Backend_* bk = (_frontend->*_ffunc)(_uc, msg.getSrcNodeID().get());
+                if (bk != nullptr) {
+                    (bk->*_bfunc)(msg);
+                }
+            }
+    };
 };
 
 #endif /* AP_UAVCAN_H_ */
