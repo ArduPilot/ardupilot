@@ -58,6 +58,17 @@ public:
         OreoLED_Automobile      = 2,    // Automobile themed lighting (white front, red back)
     };
 
+    enum Notify_LED_Type {
+        Notify_LED_None                     = 0,        // not enabled
+        Notify_LED_Board                    = (1 << 0), // Built in board LED's
+        Notify_LED_ToshibaLED_I2C_Internal  = (1 << 1), // Internal ToshibaLED_I2C
+        Notify_LED_ToshibaLED_I2C_External  = (1 << 2), // External ToshibaLED_I2C
+        Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
+        Notify_LED_OreoLED                  = (1 << 4), // Oreo
+        Notify_LED_UAVCAN                   = (1 << 5), // UAVCAN RGB LED
+        Notify_LED_MAX
+    };
+
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_and_values_type {
         uint32_t initialising       : 1;    // 1 if initialising and copter should not be moved
@@ -159,6 +170,7 @@ private:
     AP_Int8 _display_type;
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
+    AP_Int32 _led_type;
 
     char _send_text[NOTIFY_TEXT_BUFFER_SIZE];
     uint32_t _send_text_updated_millis; // last time text changed
