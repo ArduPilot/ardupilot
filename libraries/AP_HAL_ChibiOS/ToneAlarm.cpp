@@ -4,6 +4,7 @@
 #ifdef HAL_PWM_ALARM
 
 #include "ToneAlarm.h"
+#include <AP_Math/crc.h>
 
 using namespace ChibiOS;
 
@@ -23,13 +24,13 @@ static uint16_t notes[] = { 0,
 //List of RTTTL tones
 const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = {
                                 "Startup:d=8,o=6,b=480:a,d7,c7,a,d7,c7,a,d7,16d7,16c7,16d7,16c7,16d7,16c7,16d7,16c7",
-                                "Error:d=4,o=6,b=400:8a,8a,8a,p,a,a,a,p",
+                                "Error:d=4,o=6,b=400:8a,8a,8a,p,a,a,a,pR",
                                 "notify_pos:d=4,o=6,b=400:8e,8e,a",
                                 "notify_neut:d=4,o=6,b=400:8e,e",
                                 "notify_neg:d=4,o=6,b=400:8e,8c,8e,8c,8e,8c",
                                 "arming_warn:d=1,o=4,b=75:g",
-                                "batt_war_slow:d=4,o=6,b=200:8a",
-                                "batt_war_fast:d=4,o=6,b=512:8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a",
+                                "batt_war_slow:d=4,o=6,b=200:8aR",
+                                "batt_war_fast:d=4,o=6,b=512:8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8a,8aR",
                                 "GPS_war:d=4,o=6,b=512:a,a,a,1f#",
                                 "Arm_fail:d=4,o=4,b=512:b,a,p",
                                 "para_rel:d=16,o=6,b=512:a,g,a,g,a,g,a,g",
@@ -37,12 +38,9 @@ const char* ToneAlarm::tune[TONE_NUMBER_OF_TUNES] = {
                                 "modechangesoft:d=4,o=6,b=400:8e",
 };
 
-//Tune Repeat true: play rtttl tune in loop, false: play only once
-bool ToneAlarm::tune_repeat[TONE_NUMBER_OF_TUNES] = {false,true,false,false,false,false,true,true,false,false,false};
-
 ToneAlarm::ToneAlarm()
 {
-    tune_num = -1;                    //initially no tune to play
+    tune_str[0] = 0; //initially no tune to play
     tune_pos = 0;
 }
 
@@ -52,14 +50,33 @@ bool ToneAlarm::init()
     pwm_group.pwm_cfg.period = 1000;
     pwmStart(pwm_group.pwm_drv, &pwm_group.pwm_cfg);
 
-    tune_num = 0;                    //play startup tune
+    //play startup tune
+    set_tune(0);
 
     return true;
 }
 
+void ToneAlarm::set_tune_string(const char *str)
+{
+    tune_crc = 0;
+    strncpy(tune_str, str, sizeof(tune_str));
+    tune_str[sizeof(tune_str)-1] = 0;
+    tune_crc = crc_crc32(0, (const uint8_t *)tune_str, strlen(tune_str));
+    if (tune_str[strlen(tune_str)-1] == 'R') {
+        repeat = true;
+        tune_str[strlen(tune_str)-1] = 0;
+    } else {
+        repeat = false;
+    }
+}
+
 void ToneAlarm::set_tune(uint8_t tone)
 {
-    tune_num = tone;
+    if (tone < ARRAY_SIZE(tune)) {
+        set_tune_string(tune[tone]);
+    } else {
+        set_tune_string("");
+    }
 }
 
 bool ToneAlarm::is_tune_comp()
@@ -76,7 +93,7 @@ void ToneAlarm::stop()
 bool ToneAlarm::play()
 {
     const uint32_t cur_time = AP_HAL::millis();
-    if(tune_num != prev_tune_num) {
+    if (tune_crc != prev_tune_crc) {
         stop();
         tune_changed = true;
         tune_pos = 0;
@@ -99,11 +116,10 @@ bool ToneAlarm::play()
         // yes, stop the PWM signal
         stop();
         // was that the last note?
-        if(tune[tune_num][tune_pos] == '\0') {
+        if(tune_str[tune_pos] == '\0') {
             // this was the last note
-            // if this is not a repeating tune, disable playback
-            if(!tune_repeat[tune_num]){
-                tune_num = -1;
+            if (!repeat) {
+                tune_str[0] = 0;
             }
             // reset tune spec index to zero: this is the only place tune_pos is reset
             tune_pos = 0;
@@ -123,9 +139,14 @@ bool ToneAlarm::set_note()
     uint16_t scale,note,num =0;
     duration = 0;
 
-    while(isdigit(tune[tune_num][tune_pos])){                   //this is a safe while loop as it can't go further than
+    if (tune_str[tune_pos] == 'R' && tune_str[tune_pos+1] == 0) {
+        init_tune();
+        return false;
+    }
+    
+    while(isdigit(tune_str[tune_pos])){                   //this is a safe while loop as it can't go further than
                                                                 //the length of the rtttl tone string
-        num = (num * 10) + (tune[tune_num][tune_pos++] - '0');
+        num = (num * 10) + (tune_str[tune_pos++] - '0');
     }
     if(num){
         duration = wholenote / num;
@@ -135,7 +156,7 @@ bool ToneAlarm::set_note()
     // now get the note
     note = 0;
 
-    switch(tune[tune_num][tune_pos]){
+    switch(tune_str[tune_pos]){
         case 'c':
         note = 1;
         break;
@@ -165,22 +186,22 @@ bool ToneAlarm::set_note()
     tune_pos++;
 
     // now, get optional '#' sharp
-    if(tune[tune_num][tune_pos] == '#'){
+    if(tune_str[tune_pos] == '#'){
         note++;
         tune_pos++;
     }
 
     // now, get optional '.' dotted note
 
-    if(tune[tune_num][tune_pos] == '.'){
+    if(tune_str[tune_pos] == '.'){
         duration += duration/2;
         tune_pos++;
     }
 
     // now, get scale
 
-    if(isdigit(tune[tune_num][tune_pos])){
-        scale = tune[tune_num][tune_pos] - '0';
+    if(isdigit(tune_str[tune_pos])){
+        scale = tune_str[tune_pos] - '0';
         tune_pos++;
     } else{
         scale = default_oct;
@@ -188,7 +209,7 @@ bool ToneAlarm::set_note()
 
     scale += OCTAVE_OFFSET;
 
-    if(tune[tune_num][tune_pos] == ','){
+    if(tune_str[tune_pos] == ','){
         tune_pos++;       // skip comma for next note (or we may be at the end)
     }
     // now play the note
@@ -209,27 +230,28 @@ bool ToneAlarm::init_tune()
     default_dur = 4;
     default_oct = 6;
     bpm = 63;
-    prev_tune_num = tune_num;
+    prev_tune_crc = tune_crc;
     tune_changed = false;
-    if(tune_num <0 || tune_num > TONE_NUMBER_OF_TUNES){
+
+    if (tune_str[0] == 0) {
         return false;
     }
 
     tune_comp = false;
-    while(tune[tune_num][tune_pos] != ':'){
-        if(tune[tune_num][tune_pos] == '\0'){
+    while(tune_str[tune_pos] != ':'){
+        if(tune_str[tune_pos] == '\0'){
             return false;
         }
         tune_pos++;
     }
     tune_pos++;
 
-    if(tune[tune_num][tune_pos] == 'd'){
+    if(tune_str[tune_pos] == 'd'){
         tune_pos+=2;
         num = 0;
 
-        while(isdigit(tune[tune_num][tune_pos])){
-            num = (num * 10) + (tune[tune_num][tune_pos++] - '0');
+        while(isdigit(tune_str[tune_pos])){
+            num = (num * 10) + (tune_str[tune_pos++] - '0');
         }
         if(num > 0){
             default_dur = num;
@@ -240,10 +262,10 @@ bool ToneAlarm::init_tune()
 
     // get default octave
 
-    if(tune[tune_num][tune_pos] == 'o')
+    if(tune_str[tune_pos] == 'o')
     {
         tune_pos+=2;              // skip "o="
-        num = tune[tune_num][tune_pos++] - '0';
+        num = tune_str[tune_pos++] - '0';
         if(num >= 3 && num <=7){
             default_oct = num;
         }
@@ -252,11 +274,11 @@ bool ToneAlarm::init_tune()
 
     // get BPM
 
-    if(tune[tune_num][tune_pos] == 'b'){
+    if(tune_str[tune_pos] == 'b'){
         tune_pos+=2;              // skip "b="
         num = 0;
-        while(isdigit(tune[tune_num][tune_pos])){
-            num = (num * 10) + (tune[tune_num][tune_pos++] - '0');
+        while(isdigit(tune_str[tune_pos])){
+            num = (num * 10) + (tune_str[tune_pos++] - '0');
         }
         bpm = num;
         tune_pos++;                   // skip colon
