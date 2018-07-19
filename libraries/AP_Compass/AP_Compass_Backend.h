@@ -106,6 +106,9 @@ protected:
     // set rotation of an instance
     void set_rotation(uint8_t instance, enum Rotation rotation);
 
+    // get board orientation (for SITL)
+    enum Rotation get_board_orientation(void) const;
+    
     // access to frontend
     Compass &_compass;
 
