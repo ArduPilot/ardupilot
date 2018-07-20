@@ -97,7 +97,7 @@ public:
         return mag_bf;
     }
 
-    virtual float gross_mass() const { return mass; }
+    float gross_mass() const { return mass + external_payload_mass; }
 
     const Location &get_location() const { return location; }
 
@@ -128,6 +128,7 @@ protected:
     Vector3f accel_body;            // m/s/s NED, body frame
     float airspeed;                 // m/s, apparent airspeed
     float airspeed_pitot;           // m/s, apparent airspeed, as seen by fwd pitot tube
+    float external_payload_mass = 0.0f;  // kg
     float battery_voltage = -1.0f;
     float battery_current = 0.0f;
     float rpm1 = 0;
@@ -220,6 +221,9 @@ protected:
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
+
+    // update external payload/sensor dynamic
+    void update_external_payload(const struct SITL::sitl_input &input);
 
 private:
     uint64_t last_time_us = 0;
