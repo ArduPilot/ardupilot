@@ -176,12 +176,13 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     }
 
     // get current position
-    const Vector3f &curr_pos = _inav.get_position();
+    Vector3f stopping_point;
+    _pos_control.get_stopping_point_xy(stopping_point);
 
-    // calc vector from current location to circle center
+    // calc vector from stopping point to circle center
     Vector2f vec;   // vector from circle center to current location
-    vec.x = (curr_pos.x - _center.x);
-    vec.y = (curr_pos.y - _center.y);
+    vec.x = (stopping_point.x - _center.x);
+    vec.y = (stopping_point.y - _center.y);
     float dist = norm(vec.x, vec.y);
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
