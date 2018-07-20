@@ -25,8 +25,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include <utility>
+#include <AP_Notify/AP_Notify.h>
+#include <GCS_MAVLink/GCS.h>
 
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
@@ -153,6 +156,7 @@ AP_OSD::AP_OSD()
 
 void AP_OSD::init()
 {
+    flightime = 0; //init stats
     switch ((enum osd_types)osd_type.get()) {
     case OSD_NONE:
     default:
@@ -201,7 +205,7 @@ void AP_OSD::update_osd()
     backend->clear();
 
     update_current_screen();
-
+    stats();
     screen[current_screen].set_backend(backend);
     screen[current_screen].draw();
 
@@ -233,7 +237,8 @@ void AP_OSD::update_current_screen()
             if (switch_debouncer) {
                 next_screen();
                 previous_channel_value = channel_value;
-            } else {
+            }
+            else {
                 switch_debouncer = true;
                 return;
             }
@@ -257,11 +262,13 @@ void AP_OSD::update_current_screen()
                     next_screen();
                     last_switch_ms = now;
                 }
-            } else {
+            }
+            else {
                 switch_debouncer = true;
                 return;
             }
-        } else {
+        }
+        else {
             last_switch_ms = 0;
         }
         break;
@@ -275,6 +282,25 @@ void AP_OSD::next_screen()
     uint8_t t = current_screen;
     do {
         t = (t + 1)%AP_OSD_NUM_SCREENS;
-    } while (t != current_screen && !screen[t].enabled);
+    }
+    while (t != current_screen && !screen[t].enabled);
     current_screen = t;
+}
+
+void AP_OSD::stats()
+{
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    alt = -alt;
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed;
+    speed = v.length();
+    bool flying;
+    flying = (AP_Notify::flags.armed) && ((speed > 2) || (alt > 5 || gcs().get_hud_throttle() >20));
+    if (flying) {
+        flightime= flightime + (AP_HAL::millis() - last_update_ms);
+    }
+    last_update_ms= AP_HAL::millis();
+
 }
