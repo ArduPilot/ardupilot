@@ -20,126 +20,168 @@
 #include "AP_Compass_UAVCAN.h"
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_Common/Semaphore.h>
+#include <AP_UAVCAN/AP_UAVCAN.h>
+
+#include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
+#include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
 
 extern const AP_HAL::HAL& hal;
 
 #define debug_mag_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
+
+// Frontend Registry Binders
+UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
+UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
+
+AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
+AP_HAL::Semaphore* AP_Compass_UAVCAN::_sem_registry = nullptr;
+
 /*
   constructor - registers instance at top Compass driver
  */
-AP_Compass_UAVCAN::AP_Compass_UAVCAN(Compass &compass):
-    AP_Compass_Backend(compass)
-{
-    _sem_mag = hal.util->new_semaphore();
-}
+AP_Compass_UAVCAN::AP_Compass_UAVCAN(Compass &compass, AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id):
+    AP_Compass_Backend(compass),
+    _ap_uavcan(ap_uavcan),
+    _node_id(node_id),
+    _sensor_id(sensor_id)
+{}
 
-AP_Compass_UAVCAN::~AP_Compass_UAVCAN()
+void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
-    if (!_initialized) {
-        return;
-    }
-
-    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
     if (ap_uavcan == nullptr) {
         return;
     }
 
-    ap_uavcan->remove_mag_listener(this);
-    delete _sem_mag;
+    auto* node = ap_uavcan->get_node();
 
-    debug_mag_uavcan(2, _manager, "AP_Compass_UAVCAN destructed\n\r");
+    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength, MagCb> *mag_listener;
+    mag_listener = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength, MagCb>(*node);
+    const int mag_listener_res = mag_listener->start(MagCb(ap_uavcan, &handle_magnetic_field));
+    if (mag_listener_res < 0) {
+        AP_HAL::panic("UAVCAN Mag subscriber start problem\n\r");
+        return;
+    }
+
+    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2, Mag2Cb> *mag2_listener;
+    mag2_listener = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2, Mag2Cb>(*node);
+    const int mag2_listener_res = mag2_listener->start(Mag2Cb(ap_uavcan, &handle_magnetic_field_2));
+    if (mag2_listener_res < 0) {
+        AP_HAL::panic("UAVCAN Mag subscriber start problem\n\r");
+        return;
+    }
 }
 
-AP_Compass_Backend *AP_Compass_UAVCAN::probe(Compass &compass)
+bool AP_Compass_UAVCAN::take_registry()
 {
-    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    if (_sem_registry == nullptr) {
+        _sem_registry = hal.util->new_semaphore();
+    }
+    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+}
 
-    AP_Compass_UAVCAN *sensor;
+void AP_Compass_UAVCAN::give_registry()
+{
+    _sem_registry->give();
+}
 
-    for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-        if (ap_uavcan == nullptr) {
-            continue;
+AP_Compass_Backend* AP_Compass_UAVCAN::probe(Compass& _frontend)
+{
+    if (!take_registry()) {
+        return nullptr;
+    }
+    AP_Compass_UAVCAN* driver = nullptr;
+    for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+        if (!_detected_modules[i].driver && _detected_modules[i].ap_uavcan) {
+            // Register new Compass mode to a backend
+            driver = new AP_Compass_UAVCAN(_frontend, _detected_modules[i].ap_uavcan, _detected_modules[i].node_id, _detected_modules[i].sensor_id);
+            if (driver) {
+                _detected_modules[i].driver = driver;
+                driver->init();
+                debug_mag_uavcan(2,
+                                 _detected_modules[i].ap_uavcan->get_driver_index(),
+                                 "Found Mag Node %d on Bus %d Sensor ID %d\n",
+                                 _detected_modules[i].node_id,
+                                 _detected_modules[i].ap_uavcan->get_driver_index(),
+                                 _detected_modules[i].sensor_id);
+            }
+            break;
         }
-        uint8_t freemag = ap_uavcan->find_smallest_free_mag_node();
-        if (freemag == UINT8_MAX) {
-            continue;
-        }
-        sensor = new AP_Compass_UAVCAN(compass);
+    }
+    give_registry();
+    return driver;
+}
 
-        if (sensor->register_uavcan_compass(i, freemag)) {
-            debug_mag_uavcan(2, i, "AP_Compass_UAVCAN probed, drv: %d, node: %d\n\r", i, freemag);
-            return sensor;
-        } else {
-            delete sensor;
+void AP_Compass_UAVCAN::init()
+{
+    _instance = register_compass();
+
+    struct DeviceStructure {
+        uint8_t bus_type : 3;
+        uint8_t bus: 5;
+        uint8_t address;
+        uint8_t devtype;
+    };
+    union DeviceId {
+        struct DeviceStructure devid_s;
+        uint32_t devid;
+    };
+    union DeviceId d;
+
+    d.devid_s.bus_type = 3;
+    d.devid_s.bus = _ap_uavcan->get_driver_index();
+    d.devid_s.address = _node_id;
+    d.devid_s.devtype = 1;
+
+    set_dev_id(_instance, d.devid);
+    set_external(_instance, true);
+
+    _sum.zero();
+    _count = 0;
+
+    debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
+}
+
+AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
+{
+    if (ap_uavcan == nullptr) {
+        return nullptr;
+    }
+    for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
+        if (_detected_modules[i].driver &&
+            _detected_modules[i].ap_uavcan == ap_uavcan &&
+            _detected_modules[i].node_id == node_id &&
+            _detected_modules[i].sensor_id == sensor_id) {
+            return _detected_modules[i].driver;
         }
     }
 
+    bool already_detected = false;
+    // Check if there's an empty spot for possible registeration
+    for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+        if (_detected_modules[i].ap_uavcan == ap_uavcan && 
+            _detected_modules[i].node_id == node_id &&
+            _detected_modules[i].sensor_id == sensor_id) {
+            // Already Detected
+            already_detected = true;
+            break;
+        }
+    }
+    if (!already_detected) {
+        for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
+            if (nullptr == _detected_modules[i].ap_uavcan) {
+                _detected_modules[i].ap_uavcan = ap_uavcan;
+                _detected_modules[i].node_id = node_id;
+                _detected_modules[i].sensor_id = sensor_id;
+                break;
+            }
+        }
+    }
     return nullptr;
 }
 
-bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
-{
-    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
-    if (ap_uavcan == nullptr) {
-        return false;
-    }
-    _manager = mgr;
-
-    if (ap_uavcan->register_mag_listener_to_node(this, node)) {
-        _instance = register_compass();
-
-        struct DeviceStructure {
-            uint8_t bus_type : 3;
-            uint8_t bus: 5;
-            uint8_t address;
-            uint8_t devtype;
-        };
-        union DeviceId {
-            struct DeviceStructure devid_s;
-            uint32_t devid;
-        };
-        union DeviceId d;
-
-        d.devid_s.bus_type = 3;
-        d.devid_s.bus = mgr;
-        d.devid_s.address = node;
-        d.devid_s.devtype = 1;
-
-        set_dev_id(_instance, d.devid);
-        set_external(_instance, true);
-
-        _sum.zero();
-        _count = 0;
-
-        debug_mag_uavcan(2, mgr, "AP_Compass_UAVCAN loaded\n\r");
-
-        return true;
-    }
-
-    return false;
-}
-
-void AP_Compass_UAVCAN::read(void)
-{
-    // avoid division by zero if we haven't received any mag reports
-    if (_count == 0) {
-        return;
-    }
-
-    if (_sem_mag->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _sum /= _count;
-
-        publish_filtered_field(_sum, _instance);
-
-        _sum.zero();
-        _count = 0;
-        _sem_mag->give();
-    }
-}
-
-void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
+void AP_Compass_UAVCAN::handle_mag_msg(const Vector3f &mag)
 {
     Vector3f raw_field = mag * 1000.0;
 
@@ -152,12 +194,59 @@ void AP_Compass_UAVCAN::handle_mag_msg(Vector3f &mag)
     // correct raw_field for known errors
     correct_field(raw_field, _instance);
 
-    if (_sem_mag->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        // accumulate into averaging filter
-        _sum += raw_field;
-        _count++;
-        _sem_mag->give();
+    WITH_SEMAPHORE(_sem_mag);
+    // accumulate into averaging filter
+    _sum += raw_field;
+    _count++;
+}
+
+void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb)
+{
+    if (take_registry()) {
+        Vector3f mag_vector;
+        AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, 0);
+        if (driver == nullptr) {
+            return;
+        }
+        mag_vector[0] = cb.msg->magnetic_field_ga[0];
+        mag_vector[1] = cb.msg->magnetic_field_ga[1];
+        mag_vector[2] = cb.msg->magnetic_field_ga[2];
+        driver->handle_mag_msg(mag_vector);
+        give_registry();
     }
+}
+
+void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Mag2Cb &cb)
+{
+    if (take_registry()) {
+        Vector3f mag_vector;
+        uint8_t sensor_id = cb.msg->sensor_id;
+        AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, sensor_id);
+        if (driver == nullptr) {
+            return;
+        }
+        mag_vector[0] = cb.msg->magnetic_field_ga[0];
+        mag_vector[1] = cb.msg->magnetic_field_ga[1];
+        mag_vector[2] = cb.msg->magnetic_field_ga[2];
+        driver->handle_mag_msg(mag_vector);
+        give_registry();
+    }
+}
+
+void AP_Compass_UAVCAN::read(void)
+{
+    // avoid division by zero if we haven't received any mag reports
+    if (_count == 0) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_sem_mag);
+    _sum /= _count;
+
+    publish_filtered_field(_sum, _instance);
+
+    _sum.zero();
+    _count = 0;
 }
 
 #endif
