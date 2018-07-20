@@ -97,7 +97,7 @@ for FrSky SPort Passthrough
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
 #define AP_IMU_TEMP_LIMIT           0x3F
-#define AP_IMU_TEMP_OFFSET          19
+#define AP_IMU_TEMP_OFFSET          25
 // for home position related data
 #define HOME_ALT_OFFSET             12
 #define HOME_BEARING_LIMIT          0x7F
