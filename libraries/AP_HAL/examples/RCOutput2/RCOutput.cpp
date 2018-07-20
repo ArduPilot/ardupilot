@@ -5,6 +5,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Menu/AP_Menu.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
 
 void setup();
 void loop();
@@ -29,6 +31,7 @@ public:
 };
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+AP_BoardConfig BoardConfig;
 
 Menu_Commands commands;
 
@@ -77,7 +80,7 @@ MENU(menu, "Menu: ", rcoutput_menu_commands);
 
 void setup(void) {
     hal.console->printf("Starting AP_HAL::RCOutput test\n");
-
+    BoardConfig.init();
     for (uint8_t i = 0; i < 14; i++) {
         hal.rcout->enable_ch(i);
     }

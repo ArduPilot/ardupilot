@@ -3,15 +3,18 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+AP_BoardConfig BoardConfig;
 
 void setup (void)
 {
     hal.console->printf("Starting AP_HAL::RCOutput test\n");
+    BoardConfig.init();
     for (uint8_t i = 0; i< 14; i++) {
         hal.rcout->enable_ch(i);
     }
@@ -30,7 +33,7 @@ void loop (void)
             hal.console->printf("reversing\n");
         } else if (delta < 0 && pwm <= 1000) {
             delta = 1;
-            hal.console->printf("reversing\n");
+            hal.console->printf("normalizing\n");
         }
     }
     hal.scheduler->delay(5);

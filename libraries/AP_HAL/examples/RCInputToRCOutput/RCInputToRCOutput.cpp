@@ -5,11 +5,13 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+AP_BoardConfig BoardConfig;
 
 #define MAX_CHANNELS 14
 
@@ -19,7 +21,7 @@ static uint16_t last_value[MAX_CHANNELS];
 void setup(void)
 {
     hal.console->printf("Starting RCInputToRCOutput test\n");
-
+    BoardConfig.init();
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
         hal.rcout->enable_ch(i);
     }
