@@ -697,6 +697,10 @@ class AutoTest(ABC):
     def wait_ekf_happy(self, timeout=30):
         """Wait for EKF to be happy"""
 
+        """ if using SITL estimates directly """
+        if (int(self.get_parameter('AHRS_EKF_TYPE')) == 10):
+            return True
+
         tstart = self.get_sim_time()
         required_value = 831
         self.progress("Waiting for EKF value %u" % required_value)
