@@ -748,8 +748,9 @@ void Aircraft::update_external_payload(const struct SITL::sitl_input &input)
 
     // update gripper
     if (sitl->gripper_sim.is_enable()) {
+        sitl->gripper_sim.set_alt(hagl());
         sitl->gripper_sim.update(input);
-        external_payload_mass += sitl->gripper_sim.payload_mass(hagl());
+        external_payload_mass += sitl->gripper_sim.payload_mass();
     }
     if (sitl->gripper_epm_sim.is_enable()) {
         sitl->gripper_epm_sim.update(input);

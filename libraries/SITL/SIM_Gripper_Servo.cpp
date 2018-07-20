@@ -71,7 +71,7 @@ void Gripper_Servo::update(const struct SITL::sitl_input &input)
         }
 
         if (jaw_gap < 5) {
-            if (on_ground) {
+            if (altitude <= 0.0f) {
                 load_mass = 1.0f; // attach the load
             }
         } else if (jaw_gap > 10) {
@@ -95,9 +95,9 @@ bool Gripper_Servo::should_report()
 }
 
 
-float Gripper_Servo::payload_mass(float alt) const
+float Gripper_Servo::payload_mass() const
 {
-    if (alt < string_length) {
+    if (altitude < string_length) {
         return 0.0f;
     }
     return load_mass;

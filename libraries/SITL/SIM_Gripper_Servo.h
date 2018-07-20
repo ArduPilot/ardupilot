@@ -32,8 +32,9 @@ public:
     // update Gripper state
     void update(const struct SITL::sitl_input &input);
 
-    float payload_mass(float alt) const; // kg
+    float payload_mass() const; // kg
 
+    void set_alt(float alt) {altitude = alt;};
     static const struct AP_Param::GroupInfo var_info[];
     bool is_enable() const {return static_cast<bool>(gripper_enable);}
 
@@ -44,7 +45,7 @@ private:
     uint64_t last_report_us;
 
     const float gap = 30; // mm
-
+    float altitude;
     float position; // percentage
     float position_slew_rate = 35; // percentage
     float reported_position = -1; // unlikely
