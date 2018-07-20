@@ -685,9 +685,9 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     
     // prepare imu temp to a 6 bit value with a range from 20° - 83° value offset is 19
     // 1 = 20°, 63 = 82°
-    uint32_t imutemp = AP::ins().get_temperature(0)-AP_IMU_TEMP_OFFSET;
-    if (imutemp < 0) imutemp = 0;
-    if (imutemp > 63) imutemp = 63;
+    uint32_t imutemp = AP::ins().get_temperature(0) - AP_IMU_TEMP_OFFSET;
+    if (imutemp <= 0) imutemp = 0;
+    if (imutemp >= 63) imutemp = 63;
     
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
