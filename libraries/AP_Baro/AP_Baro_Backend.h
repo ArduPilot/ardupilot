@@ -18,9 +18,6 @@ public:
     // trigger them to read the sensor
     virtual void accumulate(void) {}
 
-    // callback for UAVCAN messages
-    virtual void handle_baro_msg(float pressure, float temperature) {}
-
     void backend_update(uint8_t instance);
 
     //  Check that the baro valid by using a mean filter.
