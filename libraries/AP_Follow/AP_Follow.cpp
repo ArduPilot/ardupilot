@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_GCS_INTERVAL_MS 1000 // interval between updating GCS on position of vehicle
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
-#define AP_FOLLOW_OFFSET_TYPE_RELATIVE  0   // offsets are relative to lead vehicle's heading
+#define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
 
 #define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
 
@@ -335,6 +335,21 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
     if (_offset.get().is_zero()) {
         _offset = -dist_vec_ned;
     }
+
+    //  if offset type is relative then the offsets should be rotated appropriately based on the lead vehicle's heading.
+    if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+        const Vector3f &off = _offset.get();
+        Vector3f off_rotated;
+
+        // rotate roll, pitch input from north facing to vehicle's perspective
+        const float veh_cos_yaw = cosf(radians(_target_heading));
+        const float veh_sin_yaw = sinf(radians(_target_heading));
+        off_rotated.x = (off.x * veh_cos_yaw) - (off.y * veh_sin_yaw);
+        off_rotated.y = (off.y * veh_cos_yaw) + (off.x * veh_sin_yaw);
+        off_rotated.z = off.z;
+
+        _offset.set(off_rotated);
+    }
 }
 
 // get offsets in meters in NED frame
@@ -347,18 +362,21 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
         offset = off;
         return true;
     }
+    
+    // if offset type is relative, rotate offsets from NED to vehicle's heading
+    if (_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) {
+        // check if we have a valid heading for target vehicle
+        if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+            return false;
+        }
 
-    // offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE
-    // check if we have a valid heading for target vehicle
-    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
-        return false;
+        // rotate roll, pitch input from north facing to vehicle's perspective
+        const float veh_cos_yaw = cosf(radians(_target_heading));
+        const float veh_sin_yaw = sinf(radians(_target_heading));
+        offset.x = (off.x * veh_cos_yaw) - (off.y * veh_sin_yaw);
+        offset.y = (off.y * veh_cos_yaw) + (off.x * veh_sin_yaw);
+        offset.z = off.z;
     }
 
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    const float veh_cos_yaw = cosf(radians(_target_heading));
-    const float veh_sin_yaw = sinf(radians(_target_heading));
-    offset.x = (off.x * veh_cos_yaw) - (off.y * veh_sin_yaw);
-    offset.y = (off.y * veh_cos_yaw) + (off.x * veh_sin_yaw);
-    offset.z = off.z;
     return true;
 }
