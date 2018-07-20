@@ -39,8 +39,6 @@ struct Guided_Limit {
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
-        // initialise yaw
-        auto_yaw.set_mode_to_default(false);
         // start in position control mode
         pos_control_start();
         return true;
@@ -50,8 +48,8 @@ bool Copter::ModeGuided::init(bool ignore_checks)
 }
 
 
-// guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
+// do_user_takeoff_start - initialises waypoint controller to implement take-off
+bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
 
@@ -766,6 +764,15 @@ int32_t Copter::ModeGuided::wp_bearing() const
         return pos_control->get_bearing_to_target();
         break;
     default:
+        return 0;
+    }
+}
+
+float Copter::ModeGuided::crosstrack_error() const
+{
+    if (mode() == Guided_WP) {
+        return wp_nav->crosstrack_error();
+    } else {
         return 0;
     }
 }

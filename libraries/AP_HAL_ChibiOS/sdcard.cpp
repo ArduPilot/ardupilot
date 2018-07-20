@@ -22,6 +22,7 @@ extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
+static bool sdcard_init_done;
 #endif
 
 #if HAL_USE_MMC_SPI
@@ -39,11 +40,13 @@ static bool sdcard_running;
 void sdcard_init()
 {
 #ifdef USE_POSIX
+    if (sdcard_init_done) {
+        return;
+    }
+    sdcard_init_done = true;
 #if HAL_USE_SDC
 
-#if defined(STM32_SDC_USE_SDMMC1) && STM32_SDC_USE_SDMMC1 == TRUE
-    bouncebuffer_init(&SDCD1.bouncebuffer);
-#endif
+    bouncebuffer_init(&SDCD1.bouncebuffer, 512);
     
     sdcStart(&SDCD1, NULL);
 

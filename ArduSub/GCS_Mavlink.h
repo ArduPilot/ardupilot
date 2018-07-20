@@ -22,9 +22,12 @@ protected:
     uint8_t sysid_my_gcs() const override;
 
     bool set_mode(uint8_t mode) override;
+    bool should_zero_rc_outputs_on_reboot() const override { return true; }
 
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
+    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
 
     // override sending of scaled_pressure3 to send on-board temperature:
     void send_scaled_pressure3() override;

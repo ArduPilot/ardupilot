@@ -155,11 +155,6 @@ void ToneAlarm_PX4::check_cont_tone() {
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void ToneAlarm_PX4::update()
 {
-    // exit immediately if we haven't initialised successfully
-    if (_tonealarm_fd == -1) {
-        return;
-    }
-
     // exit if buzzer is not enabled
     if (pNotify->buzzer_enabled() == false) {
         return;

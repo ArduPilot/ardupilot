@@ -78,7 +78,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: PILOT_THR_BHV
     // @DisplayName: Throttle stick behavior
-    // @Description: Bitmask containing various throttle stick options. Add up the values for options that you want.
+    // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.
     // @User: Standard
     // @Values: 0:None,1:Feedback from mid stick,2:High throttle cancels landing,4:Disarm on land detection
     // @Bitmask: 0:Feedback from mid stick,1:High throttle cancels landing,2:Disarm on land detection
@@ -108,9 +108,9 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude
-    // @Description: The minimum relative altitude the model will move to before Returning to Launch.  Set to zero to return at current altitude.
+    // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
     // @Units: cm
-    // @Range: 0 8000
+    // @Range: 200 8000
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
@@ -795,6 +795,12 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW", 0),
 #endif
 
+#if OSD_ENABLED == ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+    
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -1067,7 +1073,7 @@ void Copter::load_parameters(void)
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
-    AP_Param::load_all(false);
+    AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 

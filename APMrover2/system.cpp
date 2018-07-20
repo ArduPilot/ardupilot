@@ -58,7 +58,6 @@ void Rover::init_ardupilot()
 
     // initialise notify system
     notify.init(false);
-    AP_Notify::flags.failsafe_battery = false;
     notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -69,11 +68,6 @@ void Rover::init_ardupilot()
 
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
-
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    usb_connected = true;
-    check_usb_mux();
 
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
@@ -94,7 +88,7 @@ void Rover::init_ardupilot()
     init_compass();
 
     // initialise rangefinder
-    init_rangefinder();
+    rangefinder.init();
 
     // init proximity sensor
     init_proximity();
@@ -288,17 +282,6 @@ void Rover::startup_INS_ground(void)
     ahrs.reset();
 }
 
-void Rover::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
-}
-
 // update notify with mode change
 void Rover::notify_mode(const Mode *mode)
 {
@@ -311,17 +294,13 @@ void Rover::notify_mode(const Mode *mode)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
-    const int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
-    if (dpin == -1) {
-        return 0;
-    }
     // ensure we are in input mode
-    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+    hal.gpio->pinMode(pin, HAL_GPIO_INPUT);
 
     // enable pullup
-    hal.gpio->write(dpin, 1);
+    hal.gpio->write(pin, 1);
 
-    return hal.gpio->read(dpin);
+    return hal.gpio->read(pin);
 }
 
 /*

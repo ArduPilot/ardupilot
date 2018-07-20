@@ -141,8 +141,6 @@ protected:
     /*
       read a block
     */
-    virtual bool ReadBlock(void *pkt, uint16_t size) = 0;
-
     virtual bool WriteBlockCheckStartupMessages();
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();

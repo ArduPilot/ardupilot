@@ -789,11 +789,7 @@ bool Sub::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    if (labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200) {
-        return true;
-    } else {
-        return false;
-    }
+    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
 }
 
 /********************************************************************************/

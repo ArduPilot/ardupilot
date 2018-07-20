@@ -7,7 +7,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_ADC/AP_ADC.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_GPS/AP_GPS.h>

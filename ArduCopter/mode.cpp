@@ -24,7 +24,6 @@ Copter::Mode::Mode(void) :
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
     ap(copter.ap),
-    takeoff_state(copter.takeoff_state),
     ekfGndSpdLimit(copter.ekfGndSpdLimit),
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags(copter.heli_flags),
@@ -281,7 +280,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     }
 
     // cancel any takeoffs in progress
-    takeoff_stop();
+    old_flightmode->takeoff_stop();
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
     // call smart_rtl cleanup
@@ -353,9 +352,9 @@ void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_o
     // roll_out and pitch_out are returned
 }
 
-bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
+bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
 {
-    if (!ap.land_complete) {
+    if (!copter.ap.land_complete) {
         // can't take off if we're already flying
         return false;
     }
@@ -364,7 +363,7 @@ bool Copter::Mode::takeoff_triggered(const float target_climb_rate) const
         return false;
     }
 #if FRAME_CONFIG == HELI_FRAME
-    if (!motors->rotor_runup_complete()) {
+    if (!copter.motors->rotor_runup_complete()) {
         // hold heli on the ground until rotor speed runup has finished
         return false;
     }
@@ -599,21 +598,6 @@ void Copter::Mode::Log_Write_Event(uint8_t id)
 void Copter::Mode::set_throttle_takeoff()
 {
     return copter.set_throttle_takeoff();
-}
-
-void Copter::Mode::takeoff_timer_start(float alt_cm)
-{
-    return copter.takeoff_timer_start(alt_cm);
-}
-
-void Copter::Mode::takeoff_stop()
-{
-    return copter.takeoff_stop();
-}
-
-void Copter::Mode::takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate)
-{
-    return copter.takeoff_get_climb_rates(pilot_climb_rate, takeoff_climb_rate);
 }
 
 float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)

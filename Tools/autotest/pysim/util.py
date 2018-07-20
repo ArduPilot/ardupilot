@@ -192,7 +192,8 @@ def valgrind_log_filepath(binary, model):
 
 def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
     synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
-               unhide_parameters=False, gdbserver=False):
+               unhide_parameters=False, gdbserver=False,
+               vicon=False):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
@@ -236,6 +237,8 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
         cmd.extend(['--defaults', defaults_file])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
+    if vicon:
+        cmd.extend(["--uartF=sim:vicon:"])
     print("Running: %s" % cmd_as_shell(cmd))
     first = cmd[0]
     rest = cmd[1:]

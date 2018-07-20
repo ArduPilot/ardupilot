@@ -26,7 +26,6 @@
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
-#include <AP_ADC/AP_ADC.h>                          // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
 #include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
 #include <AP_Baro/AP_Baro.h>
@@ -80,6 +79,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AP_Follow/AP_Follow.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -118,6 +118,7 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
+    friend class ModeFollow;
 
     Rover(void);
 
@@ -179,7 +180,7 @@ private:
 #endif
 
     // Arming/Disarming management class
-    AP_Arming_Rover arming{ahrs, compass, battery, g2.fence};
+    AP_Arming_Rover arming;
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
@@ -230,9 +231,6 @@ private:
 
     // true if initialisation has completed
     bool initialised;
-
-    // if USB is connected
-    bool usb_connected;
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
@@ -368,6 +366,7 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
+    ModeFollow mode_follow;
 
     // cruise throttle and speed learning
     struct {
@@ -503,18 +502,19 @@ private:
     // sensors.cpp
     void init_compass(void);
     void compass_accumulate(void);
-    void init_rangefinder(void);
     void init_beacon();
     void init_visual_odom();
     void update_visual_odom();
     void update_wheel_encoder();
     void compass_cal_update(void);
+    void compass_save(void);
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
     void update_sensor_status_flags(void);
 
     // Steering.cpp
+    bool use_pivot_steering_at_next_WP(float yaw_error_cd);
     bool use_pivot_steering(float yaw_error_cd);
     void set_servos(void);
 
@@ -525,7 +525,6 @@ private:
     bool set_mode(Mode &new_mode, mode_reason_t reason);
     bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
-    void check_usb_mux(void);
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
@@ -560,6 +559,10 @@ private:
 public:
     void mavlink_delay_cb();
     void failsafe_check();
+
+    // BalanceBot.cpp
+    void balancebot_pitch_control(float &, bool);
+    bool is_balancebot() const;
 
     void update_soft_armed();
     // Motor test

@@ -66,7 +66,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_aux_switch,        10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
-    SCHED_TASK(check_usb_mux,           3,    200),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif
@@ -80,6 +79,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
     SCHED_TASK(compass_cal_update,     50,    200),
+    SCHED_TASK(compass_save,           0.1,   200),
     SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
@@ -197,7 +197,7 @@ void Rover::update_compass(void)
         ahrs.set_compass(&compass);
         // update offsets
         if (should_log(MASK_LOG_COMPASS)) {
-            DataFlash.Log_Write_Compass(compass);
+            DataFlash.Log_Write_Compass();
         }
     }
 }
@@ -273,18 +273,6 @@ void Rover::one_second_loop(void)
 
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
-
-    static uint8_t counter;
-
-    counter++;
-
-    // save compass offsets once a minute
-    if (counter >= 60) {
-        if (g.compass_enabled) {
-            compass.save_offsets();
-        }
-        counter = 0;
-    }
 
     // update home position if not soft armed and gps position has
     // changed. Update every 1s at most

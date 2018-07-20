@@ -8,9 +8,10 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// rsc and aux function output channels
+// rsc and extgyro function output channels. 
 #define AP_MOTORS_HELI_SINGLE_RSC                              CH_8
-#define AP_MOTORS_HELI_SINGLE_AUX                              CH_7
+#define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
+#define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
 
 // servo position defaults
 #define AP_MOTORS_HELI_SINGLE_SERVO1_POS                       -60
@@ -52,7 +53,7 @@ public:
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
-        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_AUX)
+        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -60,10 +61,10 @@ public:
     // set update rate to motors - a value in hertz
     void set_update_rate(uint16_t speed_hz) override;
 
-    // output_test - spin a motor at the pwm value specified
+    // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    void output_test(uint8_t motor_seq, int16_t pwm) override;
+    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
@@ -121,9 +122,6 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
-    // write_aux - converts servo_out parameter value (0 to 1 range) to pwm and outputs to aux channel (ch7)
-    void write_aux(float servo_out);
-
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
@@ -152,12 +150,6 @@ protected:
     AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
-
-    SRV_Channel    *_swash_servo_1;
-    SRV_Channel    *_swash_servo_2;
-    SRV_Channel    *_swash_servo_3;
-    SRV_Channel    *_yaw_servo;
-    SRV_Channel    *_servo_aux;
 
     bool            _acro_tail = false;
     float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];

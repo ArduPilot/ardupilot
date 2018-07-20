@@ -164,7 +164,7 @@ void Sub::fifty_hz_loop()
 
 // update_batt_compass - read battery and compass
 // should be called at 10hz
-void Sub::update_batt_compass(void)
+void Sub::update_batt_compass()
 {
     // read battery before compass because it may be used for motor interference compensation
     battery.read();
@@ -175,7 +175,7 @@ void Sub::update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            DataFlash.Log_Write_Compass(compass);
+            DataFlash.Log_Write_Compass();
         }
     }
 }
@@ -292,7 +292,7 @@ void Sub::one_hz_loop()
 }
 
 // called at 50hz
-void Sub::update_GPS(void)
+void Sub::update_GPS()
 {
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
     bool gps_updated = false;
@@ -315,7 +315,7 @@ void Sub::update_GPS(void)
     }
 }
 
-void Sub::read_AHRS(void)
+void Sub::read_AHRS()
 {
     // Perform IMU calculations and get attitude info
     //-----------------------------------------------

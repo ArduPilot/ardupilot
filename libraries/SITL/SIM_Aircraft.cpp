@@ -61,7 +61,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
 #endif
 {
     // make the SIM_* variables available to simulator backends
-    sitl = (SITL *)AP_Param::find_object("SIM_");
+    sitl = AP::sitl();
 
     if (!parse_home(home_str, home, home_yaw)) {
         ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
@@ -85,7 +85,7 @@ Aircraft::Aircraft(const char *home_str, const char *frame_str) :
     enum ap_var_type ptype;
     ahrs_orientation = (AP_Int8 *)AP_Param::find("AHRS_ORIENTATION", &ptype);
 
-    terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 }
 
 

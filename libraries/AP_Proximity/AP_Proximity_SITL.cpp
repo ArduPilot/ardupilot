@@ -30,9 +30,9 @@ extern const AP_HAL::HAL& hal;
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
                                      AP_Proximity::Proximity_State &_state):
-    AP_Proximity_Backend(_frontend, _state)
+    AP_Proximity_Backend(_frontend, _state),
+    sitl(AP::sitl())
 {
-    sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
     ap_var_type ptype;
     fence_count = (AP_Int8 *)AP_Param::find("FENCE_TOTAL", &ptype);
     if (fence_count == nullptr || ptype != AP_PARAM_INT8) {

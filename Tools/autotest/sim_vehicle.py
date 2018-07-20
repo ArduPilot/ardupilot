@@ -204,7 +204,7 @@ def kill_tasks_psutil(victims):
 def kill_tasks_pkill(victims):
     """Shell out to pkill(1) to kill processed by name"""
     for victim in victims:  # pkill takes a single pattern, so iterate
-        cmd = ["pkill", victim]
+        cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
 
 
@@ -241,7 +241,7 @@ def kill_tasks():
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
         if under_macos() and os.environ.get('DISPLAY'):
-            #use special macos kill routine if Display is on
+            # use special macos kill routine if Display is on
             return kill_tasks_macos()
 
         try:
@@ -317,6 +317,10 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+
+    if opts.OSD:
+        cmd_configure.append("--enable-sfml")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -480,12 +484,12 @@ def run_in_terminal_window(autotest, name, cmd):
                 break
 
             time.sleep(0.1)
-        #sleep for extra 2 seconds for application to start
+        # sleep for extra 2 seconds for application to start
         time.sleep(2)
         if len(tabs) > 0:
             windowID.append(tabs[0])
         else:
-            progress("Cannot find %s process terminal" % name )
+            progress("Cannot find %s process terminal" % name)
     else:
         p = subprocess.Popen(runme)
 
@@ -534,7 +538,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(delete=False)
+        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
         atexit.register(os.unlink, gdb_commands_file.name)
 
         for breakpoint in opts.breakpoint:
@@ -569,11 +573,16 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         if not isinstance(paths, list):
             paths = [paths]
         paths = [os.path.join(autotest, x) for x in paths]
+        for x in paths:
+            if not os.path.isfile(x):
+                print("The parameter file (%s) does not exist" % (x,))
+                sys.exit(1)
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.add_param_file:
         if not os.path.isfile(opts.add_param_file):
-            print("The parameter file (%s) does not exist" % (opts.add_param_file,))
+            print("The parameter file (%s) does not exist" %
+                  (opts.add_param_file,))
             sys.exit(1)
         path += "," + str(opts.add_param_file)
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
@@ -629,7 +638,8 @@ def start_mavproxy(opts, stuff):
     if "extra_mavlink_cmds" in stuff:
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
-    # Parsing the arguments to pass to mavproxy, split args on space and "=" signs and ignore those signs within quotation marks
+    # Parsing the arguments to pass to mavproxy, split args on space
+    # and "=" signs and ignore those signs within quotation marks
     if opts.mavproxy_args:
         # It would be great if this could be done with regex
         mavargs = opts.mavproxy_args.split(" ")
@@ -638,12 +648,14 @@ def start_mavproxy(opts, stuff):
             if '=' in x:
                 mavargs[i] = x.split('=')[0]
                 mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair of quotation marks
+        # Use this flag to tell if parsing character inbetween a pair
+        # of quotation marks
         inString = False
         beginStringIndex = []
         endStringIndex = []
-        # Iterate through the arguments, looking for the arguments that
-        # begin with a quotation mark and the ones that end with a quotation mark
+        # Iterate through the arguments, looking for the arguments
+        # that begin with a quotation mark and the ones that end with
+        # a quotation mark
         for i, x in enumerate(mavargs):
             if not inString and x[0] == "\"":
                 beginStringIndex.append(i)
@@ -862,6 +874,11 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--osd",
+                     action='store_true',
+                     dest='OSD',
+                     default=False,
+                     help="Enable SITL OSD")
 group_sim.add_option("", "--add-param-file",
                      type='string',
                      default=None,

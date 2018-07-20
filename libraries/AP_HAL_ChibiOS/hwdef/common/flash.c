@@ -57,7 +57,7 @@
   this driver has been tested with STM32F427 and STM32F412
  */
 
-#ifndef HAL_USE_EMPTY_STORAGE
+#ifndef HAL_NO_FLASH_SUPPORT
 
 #ifndef BOARD_FLASH_SIZE
 #error "You must define BOARD_FLASH_SIZE in kbyte"
@@ -114,7 +114,7 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 // keep a cache of the page addresses
 static uint32_t flash_pageaddr[STM32_FLASH_NPAGES];
 static bool flash_pageaddr_initialised;
-
+static bool flash_keep_unlocked;
 
 #define FLASH_KEY1      0x45670123
 #define FLASH_KEY2      0xCDEF89AB
@@ -135,8 +135,23 @@ static inline void putreg16(uint16_t val, unsigned int addr)
     __asm__ __volatile__("\tstrh %0, [%1]\n\t": : "r"(val), "r"(addr));
 }
 
+/* # define getreg32(a)       (*(volatile uint32_t *)(a)) */
+static inline uint32_t getreg32(unsigned int addr)
+{
+    uint32_t retval;
+    __asm__ __volatile__("\tldr %0, [%1]\n\t" : "=r"(retval) : "r"(addr));
+    return retval;
+}
+
+/* define putreg32(v,a)       (*(volatile uint32_t *)(a) = (v)) */
+static inline void putreg32(uint32_t val, unsigned int addr)
+{
+    __asm__ __volatile__("\tstr %0, [%1]\n\t": : "r"(val), "r"(addr));
+}
+
 static void stm32_flash_wait_idle(void)
 {
+    __DSB();
 	while (FLASH->SR & FLASH_SR_BSY) {
         // nop
     }
@@ -144,6 +159,9 @@ static void stm32_flash_wait_idle(void)
 
 static void stm32_flash_unlock(void)
 {
+    if (flash_keep_unlocked) {
+        return;
+    }
     stm32_flash_wait_idle();
 
     if (FLASH->CR & FLASH_CR_LOCK) {
@@ -160,6 +178,9 @@ static void stm32_flash_unlock(void)
 
 void stm32_flash_lock(void)
 {
+    if (flash_keep_unlocked) {
+        return;
+    }
     stm32_flash_wait_idle();
     FLASH->CR |= FLASH_CR_LOCK;
 
@@ -212,7 +233,7 @@ uint32_t stm32_flash_getnumpages()
     return STM32_FLASH_NPAGES;
 }
 
-static bool stm32_flash_ispageerased(uint32_t page)
+bool stm32_flash_ispageerased(uint32_t page)
 {
     uint32_t addr;
     uint32_t count;
@@ -222,8 +243,9 @@ static bool stm32_flash_ispageerased(uint32_t page)
     }
 
     for (addr = stm32_flash_getpageaddr(page), count = stm32_flash_getpagesize(page);
-        count; count--, addr++) {
-        if ((*(volatile uint8_t *)(addr)) != 0xff) {
+        count; count -= 4, addr += 4) {
+        uint32_t v = getreg32(addr);
+        if (v != 0xffffffff) {
             return false;
         }
     }
@@ -245,7 +267,7 @@ bool stm32_flash_erasepage(uint32_t page)
 #endif
     stm32_flash_wait_idle();
     stm32_flash_unlock();
-    
+
     // clear any previous errors
     FLASH->SR = 0xF3;
 
@@ -253,34 +275,28 @@ bool stm32_flash_erasepage(uint32_t page)
 
     // the snb mask is not contiguous, calculate the mask for the page
     uint8_t snb = (((page % 12) << 3) | ((page / 12) << 7));
-    
-	FLASH->CR = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
-	FLASH->CR |= FLASH_CR_STRT;
+
+    // use 32 bit operations
+    FLASH->CR = FLASH_CR_PSIZE_1 | snb | FLASH_CR_SER;
+    FLASH->CR |= FLASH_CR_STRT;
 
     stm32_flash_wait_idle();
 
-    if (FLASH->SR) {
-        // an error occurred
-        FLASH->SR = 0xF3;
-        stm32_flash_lock();
-#if STM32_FLASH_DISABLE_ISR
-        chSysRestoreStatusX(sts);
+#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
+    dmaBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
 #endif
-        return false;
-    }
-    
+        
     stm32_flash_lock();
 #if STM32_FLASH_DISABLE_ISR
     chSysRestoreStatusX(sts);
 #endif
-
     return stm32_flash_ispageerased(page);
 }
 
 
 int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
-    uint16_t *hword = (uint16_t *)buf;
+    uint8_t *b = (uint8_t *)buf;
     uint32_t written = count;
 
     /* STM32 requires half-word access */
@@ -307,15 +323,18 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     // clear previous errors
     FLASH->SR = 0xF3;
 
-    /* TODO: implement up_progmem_write() to support other sizes than 16-bits */
-    FLASH->CR &= ~(FLASH_CR_PSIZE);
-    FLASH->CR |= FLASH_CR_PSIZE_0 | FLASH_CR_PG;
+    stm32_flash_wait_idle();
 
-    for (;count; count -= 2, hword++, addr += 2) {
-        /* Write half-word and wait to complete */
+    // do as much as possible with 32 bit writes
+    while (count >= 4 && (addr & 3) == 0) {
+        FLASH->CR &= ~(FLASH_CR_PSIZE);
+        FLASH->CR |= FLASH_CR_PSIZE_1 | FLASH_CR_PG;
 
-        putreg16(*hword, addr);
+        putreg32(*(uint32_t *)b, addr);
 
+        // ensure write ordering with cache
+        __DSB();
+        
         stm32_flash_wait_idle();
 
         if (FLASH->SR) {
@@ -325,10 +344,36 @@ int32_t stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
             goto failed;
         }
 
-        if (getreg16(addr) != *hword) {
+        if (getreg32(addr) != *(uint32_t *)b) {
             FLASH->CR &= ~(FLASH_CR_PG);
             goto failed;
         }
+
+        count -= 4;
+        b += 4;
+        addr += 4;
+    }
+
+    // the rest as 16 bit
+    while (count >= 2) {
+        FLASH->CR &= ~(FLASH_CR_PSIZE);
+        FLASH->CR |= FLASH_CR_PSIZE_0 | FLASH_CR_PG;
+
+        putreg16(*(uint16_t *)b, addr);
+
+        // ensure write ordering with cache
+        __DSB();
+        
+        stm32_flash_wait_idle();
+
+        if (getreg16(addr) != *(uint16_t *)b) {
+            FLASH->CR &= ~(FLASH_CR_PG);
+            goto failed;
+        }
+
+        count -= 2;
+        b += 2;
+        addr += 2;
     }
 
     FLASH->CR &= ~(FLASH_CR_PG);
@@ -347,4 +392,16 @@ failed:
     return -1;
 }
 
-#endif // HAL_USE_EMPTY_STORAGE
+void stm32_flash_keep_unlocked(bool set)
+{
+    if (set && !flash_keep_unlocked) {
+        stm32_flash_unlock();
+        flash_keep_unlocked = true;
+    } else if (!set && flash_keep_unlocked) {
+        flash_keep_unlocked = false;
+        stm32_flash_lock();        
+    }
+}
+
+#endif // HAL_NO_FLASH_SUPPORT
+

@@ -47,6 +47,7 @@ public:
         k_param_g2, // 2nd block of parameters
         k_param_NavEKF3,
         k_param_BoardConfig_CAN,
+        k_param_osd,
 
         // simulation
         k_param_sitl = 10,
@@ -585,6 +586,7 @@ public:
     // follow
     AP_Follow follow;
 #endif
+
 };
 
 extern const AP_Param::Info        var_info[];

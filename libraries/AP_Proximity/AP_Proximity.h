@@ -134,6 +134,12 @@ public:
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
 
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // these methods cover only the primary instance
+    bool sensor_present() const;
+    bool sensor_enabled() const;
+    bool sensor_failed() const;
+
 private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];

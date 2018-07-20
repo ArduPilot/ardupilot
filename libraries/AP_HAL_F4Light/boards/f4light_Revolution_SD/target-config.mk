@@ -8,7 +8,7 @@
 
     BOARD_TYPE     := 70
     BOARD_REV      := 7
-    BOOTLOADER     := revo405_bl
+    BOOTLOADER     := F4LightF405_bl
     
 # Memory target-specific configuration values
 

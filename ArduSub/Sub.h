@@ -333,7 +333,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Sub::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-    AP_Arming_Sub arming{ahrs, compass, battery};
+    AP_Arming_Sub arming;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -601,7 +601,7 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    bool init_arm_motors(bool arming_from_gcs);
+    bool init_arm_motors(AP_Arming::ArmingMethod method);
     void init_disarm_motors();
     void motors_output();
     Vector3f pv_location_to_vector(const Location& loc);
@@ -700,6 +700,12 @@ private:
     uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
+    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool init_motor_test();
+    bool verify_motor_test();
+
+    uint32_t last_do_motor_test_fail_ms = 0;
+    uint32_t last_do_motor_test_ms = 0;
 
     bool control_check_barometer();
 

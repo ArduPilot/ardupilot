@@ -197,8 +197,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
     
-    bus.dma_handle->lock();
-
 #if defined(STM32F7)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
@@ -221,25 +219,21 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         */
         if (send && send_len) {
             if (!_transfer(send, send_len, nullptr, 0)) {
-                bus.dma_handle->unlock();
                 return false;
             }
         }
         if (recv && recv_len) {
             if (!_transfer(nullptr, 0, recv, recv_len)) {
-                bus.dma_handle->unlock();
                 return false;
             }
         }
     } else {
         // combined transfer
         if (!_transfer(send, send_len, recv, recv_len)) {
-            bus.dma_handle->unlock();
             return false;
         }
     }
 
-    bus.dma_handle->unlock();
     return true;
 }
 
@@ -256,6 +250,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
 
+        // we get the lock inside the retry loop to allow us to give up the DMA channel to an
+        // SPI device on retries
+        bus.dma_handle->lock();
+
         // if we are not using DMA then we may need to start the bus here
         bus.dma_allocate(bus.dma_handle);
         
@@ -267,7 +265,9 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
             ret = i2cMasterTransmitTimeout(I2CD[bus.busnum].i2c, _address, send, send_len,
                                            recv, recv_len, MS2ST(timeout_ms));
         }
-           
+
+        bus.dma_handle->unlock();
+        
         bus.i2c_active = false;
         if (ret != MSG_OK) {
             //restart the bus
@@ -324,6 +324,32 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
+}
+
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return ((1U << ARRAY_SIZE_SIMPLE(I2CD)) - 1) << HAL_I2C_BUS_BASE;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    // assume first bus is internal
+    return get_bus_mask() & HAL_I2C_INTERNAL_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    // assume first bus is internal
+    return get_bus_mask() & ~HAL_I2C_INTERNAL_MASK;
 }
 
 #endif // HAL_USE_I2C

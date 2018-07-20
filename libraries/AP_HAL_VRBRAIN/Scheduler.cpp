@@ -173,17 +173,13 @@ void VRBRAINScheduler::delay_microseconds_boost(uint16_t usec)
 
 void VRBRAINScheduler::delay(uint16_t ms)
 {
-    if (!in_main_thread()) {
-        ::printf("ERROR: delay() from timer process\n");
-        return;
-    }
     perf_begin(_perf_delay);
     uint64_t start = AP_HAL::micros64();
 
     while ((AP_HAL::micros64() - start)/1000 < ms &&
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
-        if (_min_delay_cb_ms <= ms) {
+        if (in_main_thread() && _min_delay_cb_ms <= ms) {
             call_delay_cb();
         }
     }

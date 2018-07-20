@@ -37,7 +37,6 @@
 #include <AP_Baro/AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
@@ -85,6 +84,7 @@
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
+#include <AP_OSD/AP_OSD.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 
 #include <AP_Rally/AP_Rally.h>
@@ -289,6 +289,10 @@ private:
     // RSSI
     AP_RSSI rssi;
 
+#if OSD_ENABLED == ENABLED
+    AP_OSD osd;
+#endif
+    
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;
@@ -742,7 +746,7 @@ private:
 #endif
 
     // Arming/Disarming mangement class
-    AP_Arming_Plane arming{ahrs, compass, battery};
+    AP_Arming_Plane arming;
 
     AP_Param param_loader {var_info};
 
@@ -907,13 +911,9 @@ private:
     void control_failsafe();
     bool trim_radio();
     bool rc_failsafe_active(void);
-    void init_rangefinder(void);
     void read_rangefinder(void);
     void read_airspeed(void);
     void rpm_update(void);
-    void button_update(void);
-    void stats_update();
-    void ice_update(void);
     void init_ardupilot();
     void startup_ground(void);
     enum FlightMode get_previous_mode();
@@ -927,7 +927,7 @@ private:
     int8_t throttle_percentage(void);
     void change_arm_state(void);
     bool disarm_motors(void);
-    bool arm_motors(AP_Arming::ArmingMethod method);
+    bool arm_motors(AP_Arming::ArmingMethod method, bool do_arming_checks=true);
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
@@ -943,16 +943,12 @@ private:
     void afs_fs_check(void);
     void compass_accumulate(void);
     void compass_cal_update();
-    void barometer_accumulate(void);
     void update_optical_flow(void);
     void one_second_loop(void);
     void airspeed_ratio_update(void);
-    void update_mount(void);
-    void update_trigger(void);    
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
-    void terrain_update(void);
     void avoidance_adsb_update(void);
     void update_flight_mode(void);
     void stabilize();
@@ -1025,8 +1021,6 @@ private:
     void notify_flight_mode(enum FlightMode mode);
     void log_init();
     void init_capabilities(void);
-    void ins_periodic();
-    void dataflash_periodic(void);
     void parachute_check();
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);

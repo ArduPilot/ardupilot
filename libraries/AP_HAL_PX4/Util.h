@@ -60,6 +60,8 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
+    bool flash_bootloader() override;
+    
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;

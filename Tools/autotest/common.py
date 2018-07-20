@@ -110,12 +110,14 @@ class AutoTest(ABC):
         self.viewerip = viewerip
         self.use_map = use_map
 
-    def progress(self, text):
+    @staticmethod
+    def progress(text):
         """Display autotest progress text."""
         print("AUTOTEST: " + text)
 
     # following two functions swiped from autotest.py:
-    def buildlogs_dirpath(self):
+    @staticmethod
+    def buildlogs_dirpath():
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
 
     def buildlogs_path(self, path):
@@ -146,17 +148,8 @@ class AutoTest(ABC):
     def vehicleinfo_key(self):
         return self.log_name
 
-    def apply_parameters_using_sitl(self):
-        '''start SITL, apply parameter file, stop SITL'''
-        sitl = util.start_SITL(self.binary,
-                               wipe=True,
-                               model=self.frame,
-                               home=self.home,
-                               speedup=self.speedup_default)
-        self.mavproxy = util.start_MAVProxy_SITL(self.log_name)
-
-        self.progress("WAITING FOR PARAMETERS")
-        self.mavproxy.expect('Received [0-9]+ parameters')
+    def apply_defaultfile_parameters(self):
+        '''apply parameter file'''
 
         # setup test parameters
         vinfo = vehicleinfo.VehicleInfo()
@@ -170,11 +163,37 @@ class AutoTest(ABC):
             self.mavproxy.expect('Loaded [0-9]+ parameters')
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
+        self.reboot_sitl()
 
-        # kill this SITL instance off:
-        util.pexpect_close(self.mavproxy)
-        util.pexpect_close(sitl)
-        self.mavproxy = None
+    def reboot_sitl(self):
+        self.mavproxy.send("reboot\n")
+        self.mavproxy.expect("tilt alignment complete")
+        # empty mav to avoid getting old timestamps:
+        if self.mav is not None:
+            while self.mav.recv_match(blocking=False):
+                pass
+        # after reboot stream-rates may be zero.  Prompt MAVProxy to
+        # send a rate-change message by changing away from our normal
+        # stream rates and back again:
+        if self.mav is not None:
+            tstart = self.get_sim_time()
+        while True:
+
+            self.mavproxy.send("set streamrate %u\n" % (self.sitl_streamrate()*2))
+            if self.mav is None:
+                break
+
+            if self.get_sim_time() - tstart > 10:
+                raise AutoTestTimeoutException()
+
+            m = self.mav.recv_match(type='SYSTEM_TIME',
+                                    blocking=True,
+                                    timeout=1)
+            if m is not None:
+                print("Received (%s)" % str(m))
+                break
+        self.mavproxy.send("set streamrate %u\n" % self.sitl_streamrate())
+        self.progress("Reboot complete")
 
     def close(self):
         '''tidy up after running all tests'''
@@ -282,7 +301,8 @@ class AutoTest(ABC):
             self.mavproxy.send('map set showgpspos 0\n')
             self.mavproxy.send('map set showsimpos 0\n')
 
-    def mission_count(self, filename):
+    @staticmethod
+    def mission_count(filename):
         """Load a mission from a file and return number of waypoints."""
         wploader = mavwp.MAVWPLoader()
         wploader.load(filename)
@@ -329,7 +349,7 @@ class AutoTest(ABC):
 
     def armed(self):
         '''Return true if vehicle is armed and safetyoff'''
-        return self.mav.motors_armed();
+        return self.mav.motors_armed()
 
     def arm_vehicle(self):
         """Arm vehicle with mavlink arm message."""
@@ -348,10 +368,8 @@ class AutoTest(ABC):
     def set_parameter(self, name, value):
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
-            self.mavproxy.send("param fetch %s\n" % name)
-            self.mavproxy.expect("%s = (.*)" % (name,))
-            returned_value = self.mavproxy.match.group(1)
-            if float(returned_value) == float(value):
+            returned_value = self.get_parameter(name)
+            if returned_value == float(value):
                 # yes, exactly equal.
                 break
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
@@ -359,7 +377,7 @@ class AutoTest(ABC):
 
     def get_parameter(self, name):
         self.mavproxy.send("param fetch %s\n" % name)
-        self.mavproxy.expect("%s = ([0-9.]*)" % (name,))
+        self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,))
         return float(self.mavproxy.match.group(1))
 
     #################################################

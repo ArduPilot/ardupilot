@@ -47,6 +47,7 @@ public:
         k_param_landing,
         k_param_NavEKF3,
         k_param_BoardConfig_CAN,
+        k_param_osd,
 
         // Misc
         //
@@ -541,7 +542,6 @@ public:
     // Payload Gripper
     AP_Gripper gripper;
 #endif
-
 };
 
 extern const AP_Param::Info var_info[];

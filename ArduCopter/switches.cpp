@@ -146,10 +146,7 @@ void Copter::read_aux_switches()
     read_aux_switch(CH_9, aux_con.CH9_flag, g.ch9_option);
     read_aux_switch(CH_10, aux_con.CH10_flag, g.ch10_option);
     read_aux_switch(CH_11, aux_con.CH11_flag, g.ch11_option);
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     read_aux_switch(CH_12, aux_con.CH12_flag, g.ch12_option);
-#endif
 }
 
 #undef read_aux_switch
@@ -637,7 +634,7 @@ void Copter::do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
             // arm or disarm the vehicle
             switch (ch_flag) {
             case AUX_SWITCH_HIGH:
-                init_arm_motors(false);
+                init_arm_motors(AP_Arming::ArmingMethod::AUXSWITCH);
                 // remember that we are using an arming switch, for use by set_throttle_zero_flag
                 ap.armed_with_switch = true;
                 break;

@@ -71,6 +71,8 @@ public:
     };
     static AutoYaw auto_yaw;
 
+    bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
+
 protected:
 
     virtual bool init(bool ignore_checks) = 0;
@@ -85,6 +87,8 @@ protected:
 
     virtual const char *name() const = 0;
 
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+
     // returns a string for this flightmode, exactly 4 bytes
     virtual const char *name4() const = 0;
 
@@ -93,6 +97,7 @@ protected:
     virtual void run_autopilot() {}
     virtual uint32_t wp_distance() const { return 0; }
     virtual int32_t wp_bearing() const { return 0; }
+    virtual float crosstrack_error() const { return 0.0f;}
     virtual bool get_wp(Location_Class &loc) { return false; };
     virtual bool in_guided_mode() const { return false; }
 
@@ -127,7 +132,30 @@ protected:
     RC_Channel *&channel_yaw;
     float &G_Dt;
     ap_t &ap;
-    takeoff_state_t &takeoff_state;
+
+    // auto-takeoff support; takeoff state is shared across all mode instances
+    class _TakeOff {
+    public:
+        void start(float alt_cm);
+        void stop();
+        void get_climb_rates(float& pilot_climb_rate,
+                             float& takeoff_climb_rate);
+        bool triggered(float target_climb_rate) const;
+
+        bool running() const { return _running; }
+    private:
+        bool _running;
+        float max_speed;
+        float alt_delta;
+        uint32_t start_ms;
+    };
+
+    static _TakeOff takeoff;
+
+    static void takeoff_stop() { takeoff.stop(); }
+
+    // takeoff support
+    virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
     // gnd speed limit required to observe optical flow sensor limits
     float &ekfGndSpdLimit;
@@ -153,9 +181,6 @@ protected:
     GCS_Copter &gcs();
     void Log_Write_Event(uint8_t id);
     void set_throttle_takeoff(void);
-    void takeoff_timer_start(float alt_cm);
-    void takeoff_stop(void);
-    void takeoff_get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 
@@ -219,6 +244,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
 protected:
 
@@ -263,6 +291,10 @@ public:
 
     bool landing_gear_should_be_deployed() const override;
 
+    // return true if this flight mode supports user takeoff
+    //  must_nagivate is true if mode must also control horizontal position
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+
     void payload_place_start();
 
     // only out here temporarily
@@ -280,6 +312,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location_Class &loc) override;
     void run_autopilot() override;
 
@@ -673,6 +706,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -753,6 +789,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const { return true; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
     void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
@@ -766,7 +803,7 @@ public:
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
     bool limit_check();
 
-    bool takeoff_start(float final_alt_above_home);
+    bool do_user_takeoff_start(float final_alt_above_home) override;
 
     GuidedMode mode() const { return guided_mode; }
 
@@ -780,6 +817,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 
@@ -865,6 +903,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
 #if PRECISION_LANDING == ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
@@ -905,6 +944,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
 protected:
 
@@ -957,6 +997,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
     void descent_start();
     void descent_run();
@@ -1018,6 +1059,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
 
 private:
 
@@ -1043,6 +1085,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool has_user_takeoff(bool must_navigate) const override {
+        return !must_navigate;
+    }
 
 protected:
 

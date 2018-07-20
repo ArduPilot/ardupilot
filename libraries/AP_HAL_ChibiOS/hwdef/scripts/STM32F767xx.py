@@ -804,7 +804,7 @@ AltFunction_map = {
 	"PF13:DFSDM1_DATAIN6"  	:	6,
 	"PF14:EVENTOUT"     	:	15,
 	"PF14:FMC_A8"       	:	12,
-	"PF14:I2C4_SCK"     	:	4,
+	"PF14:I2C4_SCL"     	:	4,
 	"PF14:DFSDM1_CKIN6"  	:	6,
 	"PF15:EVENTOUT"     	:	15,
 	"PF15:FMC_A9"       	:	12,

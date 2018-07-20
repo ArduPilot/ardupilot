@@ -35,6 +35,7 @@ class Board:
 
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = self.toolchain
+        cfg.env.ROMFS_FILES = []
         cfg.load('toolchain')
         cfg.load('cxx_checks')
 
@@ -130,6 +131,7 @@ class Board:
             '-Werror=uninitialized',
             '-Werror=init-self',
             '-Werror=switch',
+            '-Werror=sign-compare',
             '-Wfatal-errors',
             '-Wno-trigraphs',
         ]
@@ -190,7 +192,8 @@ class Board:
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
-        pass
+        if bld.env.ROMFS_FILES:
+            self.embed_ROMFS_files(bld)
 
     def build(self, bld):
         bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
@@ -199,6 +202,13 @@ class Board:
         bld.ap_version_append_int('BUILD_DATE_YEAR', ltime.tm_year)
         bld.ap_version_append_int('BUILD_DATE_MONTH', ltime.tm_mon)
         bld.ap_version_append_int('BUILD_DATE_DAY', ltime.tm_mday)
+
+    def embed_ROMFS_files(self, ctx):
+        '''embed some files using AP_ROMFS'''
+        import embed
+        header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
+        if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES):
+            bld.fatal("Failed to created ap_romfs_embedded.h")
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -261,6 +271,15 @@ class sitl(Board):
             'SITL',
         ]
 
+        if cfg.options.enable_sfml:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=ENABLED','-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+            import fnmatch
+            for f in os.listdir('libraries/AP_OSD/fonts'):
+                if fnmatch.fnmatch(f, "font*bin"):
+                    env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
         if sys.platform == 'cygwin':
             env.LIB += [
                 'winmm',
@@ -273,8 +292,7 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-
-
+            
 class chibios(Board):
     toolchain = 'arm-none-eabi'
 
@@ -342,7 +360,8 @@ class chibios(Board):
             '-mno-thumb-interwork',
             '-mthumb',
             '-mfpu=fpv4-sp-d16',
-            '-mfloat-abi=hard'
+            '-mfloat-abi=hard',
+            '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
         ]
 
         if sys.platform == 'cygwin':
@@ -391,6 +410,15 @@ class chibios(Board):
         env.GIT_SUBMODULES += [
             'ChibiOS',
         ]
+
+        try:
+            import intelhex
+            env.HAVE_INTEL_HEX = True
+            cfg.msg("Checking for intelhex module:", 'OK')
+        except Exception:
+            cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
+            env.HAVE_INTEL_HEX = False
+        
         cfg.load('chibios')
 
     def build(self, bld):
@@ -400,6 +428,7 @@ class chibios(Board):
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
+        super(chibios, self).pre_build(bld)
         from waflib.Context import load_tool
         module = load_tool('chibios', [], with_sys_path=True)
         fun = getattr(module, 'pre_build', None)
@@ -448,15 +477,6 @@ class linux(Board):
             waflib.Options.commands.append('rsync')
             # Avoid infinite recursion
             bld.options.upload = False
-
-class minlure(linux):
-    def configure_env(self, cfg, env):
-        super(minlure, self).configure_env(cfg, env)
-
-        env.DEFINES.update(
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MINLURE',
-        )
-
 
 class erleboard(linux):
     toolchain = 'arm-linux-gnueabihf'
@@ -672,6 +692,9 @@ class px4(Board):
         self.param_defaults = None
 
         self.ROMFS_EXCLUDE = []
+
+        # use ardupilot version of px_uploader.py
+        os.environ['UPLOADER'] = os.path.realpath(os.path.join(os.path.dirname(__file__), 'px_uploader.py'))
 
     def configure(self, cfg):
         if not self.bootloader_name:

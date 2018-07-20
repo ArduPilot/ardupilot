@@ -132,7 +132,7 @@ public:
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
     void Log_Write_Current();
-    void Log_Write_Compass(const Compass &compass, uint64_t time_us=0);
+    void Log_Write_Compass(uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason);
 
     void Log_Write_EntireMission(const AP_Mission &mission);
@@ -216,7 +216,7 @@ public:
     bool vehicle_is_armed() const { return _armed; }
 
     void handle_log_send();
-    bool in_log_download() const { return _in_log_download; }
+    bool in_log_download() const { return transfer_activity != IDLE; }
 
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
@@ -291,8 +291,7 @@ private:
     void Log_Write_IMU_instance(uint64_t time_us,
                                 uint8_t imu_instance,
                                 enum LogMessages type);
-    void Log_Write_Compass_instance(const Compass &compass,
-                                    uint64_t time_us,
+    void Log_Write_Compass_instance(uint64_t time_us,
                                     uint8_t mag_instance,
                                     enum LogMessages type);
     void Log_Write_Current_instance(uint64_t time_us,
@@ -332,11 +331,12 @@ private:
     bool _writes_enabled:1;
 
     /* support for retrieving logs via mavlink: */
-    uint8_t  _log_listing:1; // sending log list
-    uint8_t  _log_sending:1; // sending log data
 
-    // bolean replicating old vehicle in_log_download flag:
-    bool _in_log_download:1;
+    enum transfer_activity_t : uint8_t {
+        IDLE,    // not doing anything, all file descriptors closed
+        LISTING, // actively sending log_entry packets
+        SENDING, // actively sending log_sending packets
+    } transfer_activity = IDLE;
 
     // next log list entry to send
     uint16_t _log_next_list_entry;
@@ -371,8 +371,9 @@ private:
     void handle_log_request_data(class GCS_MAVLINK &, mavlink_message_t *msg);
     void handle_log_request_erase(class GCS_MAVLINK &, mavlink_message_t *msg);
     void handle_log_request_end(class GCS_MAVLINK &, mavlink_message_t *msg);
-    void handle_log_send_listing();
-    bool handle_log_send_data();
+    void handle_log_send_listing(); // handle LISTING state
+    void handle_log_sending(); // handle SENDING state
+    bool handle_log_send_data(); // send data chunk to client
 
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 

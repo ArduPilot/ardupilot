@@ -83,7 +83,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, const struct grid_info 
  */
 void AP_Terrain::send_request(mavlink_channel_t chan)
 {
-    if (enable == 0 || !allocate()) {
+    if (!allocate()) {
         // not enabled
         return;
     }

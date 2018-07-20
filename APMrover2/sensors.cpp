@@ -39,11 +39,6 @@ void Rover::compass_accumulate(void)
     }
 }
 
-void Rover::init_rangefinder(void)
-{
-    rangefinder.init();
-}
-
 // init beacons used for non-gps position estimates
 void Rover::init_beacon()
 {
@@ -149,6 +144,15 @@ void Rover::update_wheel_encoder()
 void Rover::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Rover::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !arming.is_armed()) {
+        compass.save_offsets();
     }
 }
 

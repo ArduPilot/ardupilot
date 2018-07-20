@@ -24,6 +24,7 @@ protected:
     bool set_mode(uint8_t mode) override;
 
     MAV_RESULT _handle_command_preflight_calibration_baro() override;
+    MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
 
     int32_t global_position_int_relative_alt() const {
         return 0; // what if we have been picked up and carried somewhere?

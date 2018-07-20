@@ -27,7 +27,8 @@ enum ch7_option {
     CH7_RTL             = 9,
     CH7_SMART_RTL       = 10,
     CH7_GUIDED          = 11,
-    CH7_LOITER          = 12
+    CH7_LOITER          = 12,
+    CH7_FOLLOW          = 13
 };
 
 // HIL enumerations
@@ -132,7 +133,8 @@ enum pilot_steer_type_t {
 enum frame_class {
     FRAME_UNDEFINED = 0,
     FRAME_ROVER = 1,
-    FRAME_BOAT = 2
+    FRAME_BOAT = 2,
+    FRAME_BALANCEBOT = 3,
 };
 
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked

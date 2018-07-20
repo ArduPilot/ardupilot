@@ -22,10 +22,11 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
-#define RX_BOUNCE_BUFSIZE 128
-#define TX_BOUNCE_BUFSIZE 64
+#define RX_BOUNCE_BUFSIZE 128U
+#define TX_BOUNCE_BUFSIZE 64U
 
-#define UART_MAX_DRIVERS 7
+// enough for uartA to uartG, plus IOMCU
+#define UART_MAX_DRIVERS 8
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -103,9 +104,6 @@ private:
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
 
-    // last time we ran the uart thread
-    static uint32_t last_thread_run_us;
-    
     // table to find UARTDrivers from serial number, used for event handling
     static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
 
@@ -156,6 +154,7 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
+    uint32_t _total_written;
     
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;

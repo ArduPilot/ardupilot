@@ -67,6 +67,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--bootloader',
+        action='store_true',
+        default=False,
+        help='Configure for building a bootloader.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
@@ -105,7 +110,7 @@ submodules at specific revisions.
         action='store',
         default='',
         help='''Where to save data like parameters, log and terrain.
-This is the --localstatedir + ArduPilot's subdirectory [default:
+This is the --localstatedir + ArduPilots subdirectory [default:
 board-dependent, usually /var/lib/ardupilot]''')
 
     g.add_option('--rsync-dest',
@@ -132,6 +137,10 @@ configuration in order to save typing.
     g.add_option('--disable-tests', action='store_true',
         default=False,
         help="Disable compilation and test execution")
+
+    g.add_option('--enable-sfml', action='store_true',
+                 default=False,
+                 help="Enable SFML graphics library")
 
     g.add_option('--static',
         action='store_true',
@@ -167,6 +176,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.BOOTLOADER = cfg.options.bootloader
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
@@ -285,18 +295,19 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
-    bld(
-        features='mavgen',
-        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
-        output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
-        name='mavlink',
-        # this below is not ideal, mavgen tool should set this, but that's not
-        # currently possible
-        export_includes=[
+    if not bld.env.BOOTLOADER:
+        bld(
+            features='mavgen',
+            source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+            output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
+            name='mavlink',
+            # this below is not ideal, mavgen tool should set this, but that's not
+            # currently possible
+            export_includes=[
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
-        ],
-    )
+            ],
+            )
 
     if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
@@ -448,7 +459,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

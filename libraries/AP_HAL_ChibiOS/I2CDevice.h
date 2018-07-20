@@ -127,6 +127,21 @@ public:
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
+
+    /*
+      get mask of bus numbers for all configured I2C buses
+     */
+    uint32_t get_bus_mask(void) const override;
+
+    /*
+      get mask of bus numbers for all configured external I2C buses
+     */
+    uint32_t get_bus_mask_external(void) const override;
+
+    /*
+      get mask of bus numbers for all configured internal I2C buses
+     */
+    uint32_t get_bus_mask_internal(void) const override;
 };
 }
 

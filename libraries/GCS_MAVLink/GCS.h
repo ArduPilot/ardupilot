@@ -109,6 +109,7 @@ public:
     void        setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager::SerialProtocol protocol, uint8_t instance);
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...);
+    void        send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     void        data_stream_send();
     void        queued_param_send();
     void        queued_waypoint_send();
@@ -283,6 +284,9 @@ protected:
 
     virtual void handle_command_ack(const mavlink_message_t* msg);
     void handle_set_mode(mavlink_message_t* msg);
+    void handle_command_int(mavlink_message_t* msg);
+    virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
@@ -308,7 +312,10 @@ protected:
     void handle_common_message(mavlink_message_t *msg);
     void handle_set_gps_global_origin(const mavlink_message_t *msg);
     void handle_setup_signing(const mavlink_message_t *msg);
-    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides);
+    virtual bool should_disable_overrides_on_reboot() const { return true; }
+    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
+    void disable_overrides();
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
@@ -338,6 +345,7 @@ protected:
     virtual uint32_t telem_delay() const = 0;
 
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_flash_bootloader(const mavlink_command_long_t &packet);
 
     // generally this should not be overridden; Plane overrides it to ensure
     // failsafe isn't triggered during calibation
@@ -346,11 +354,13 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro();
 
+    void handle_command_long(mavlink_message_t* msg);
+    MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_send_banner(const mavlink_command_long_t &packet);
-    MAV_RESULT handle_command_do_gripper(mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gripper(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
 
@@ -373,6 +383,9 @@ protected:
     virtual int16_t vfr_hud_throttle() const { return 0; }
     Vector3f vfr_hud_velned;
 
+    static constexpr const float magic_force_arm_value = 2989.0f;
+    static constexpr const float magic_force_disarm_value = 21196.0f;
+
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);
@@ -381,7 +394,7 @@ private:
 
     virtual void        handleMessage(mavlink_message_t * msg) = 0;
 
-    MAV_RESULT handle_servorelay_message(mavlink_command_long_t &packet);
+    MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
 
     bool calibrate_gyros();
 
@@ -551,6 +564,8 @@ private:
     struct Location global_position_current_loc;
 
     void send_global_position_int();
+
+    void zero_rc_outputs();
 };
 
 /// @class GCS
@@ -577,6 +592,7 @@ public:
     }
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...);
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text);
     void service_statustext(void);
     virtual GCS_MAVLINK &chan(const uint8_t ofs) = 0;
@@ -629,6 +645,9 @@ public:
     
     // install an alternative protocol handler
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
+
+    // get the VFR_HUD throttle
+    int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0).vfr_hud_throttle():0; }
     
 private:
 

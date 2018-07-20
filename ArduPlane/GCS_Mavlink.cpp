@@ -636,7 +636,8 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_RPM,
     MSG_AOA_SSA,
     MSG_PID_TUNING,
-    MSG_LANDING
+    MSG_LANDING,
+    MSG_ESC_TELEMETRY,
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
@@ -752,430 +753,366 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
+bool GCS_MAVLINK_Plane::should_disable_overrides_on_reboot() const
+{
+    return (plane.quadplane.enable != 0);
+}
+
+
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    switch(packet.command) {
+
+    case MAV_CMD_DO_SET_HOME:
+        if (is_equal(packet.param1, 1.0f)) {
+            plane.set_home_persistently(AP::gps().location());
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                return MAV_RESULT_FAILED;
+            }
+            if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
+                // don't allow the 0,0 position
+                return MAV_RESULT_FAILED;
+            }
+            // check frame type is supported
+            if (packet.frame != MAV_FRAME_GLOBAL &&
+                packet.frame != MAV_FRAME_GLOBAL_INT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
+                packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                return MAV_RESULT_FAILED;
+            }
+            // sanity check location
+            if (!check_latlng(packet.x, packet.y)) {
+                return MAV_RESULT_FAILED;
+            }
+            Location new_home_loc {};
+            new_home_loc.lat = packet.x;
+            new_home_loc.lng = packet.y;
+            new_home_loc.alt = packet.z * 100;
+            // handle relative altitude
+            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+                if (!AP::ahrs().home_is_set()) {
+                    // cannot use relative altitude if home is not set
+                    return MAV_RESULT_FAILED;
+                }
+                new_home_loc.alt += plane.ahrs.get_home().alt;
+            }
+            plane.set_home(new_home_loc);
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_REPOSITION: {
+        // sanity check location
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_FAILED;
+        }
+
+        Location requested_position {};
+        requested_position.lat = packet.x;
+        requested_position.lng = packet.y;
+
+        // check the floating representation for overflow of altitude
+        if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
+            return MAV_RESULT_FAILED;
+        }
+        requested_position.alt = (int32_t)(packet.z * 100.0f);
+
+        // load option flags
+        if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            requested_position.flags.relative_alt = 1;
+        }
+        else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+            requested_position.flags.terrain_alt = 1;
+        }
+        else if (packet.frame != MAV_FRAME_GLOBAL_INT) {
+            // not a supported frame
+            return MAV_RESULT_FAILED;
+        }
+
+        if (is_zero(packet.param4)) {
+            requested_position.flags.loiter_ccw = 0;
+        } else {
+            requested_position.flags.loiter_ccw = 1;
+        }
+
+        if (location_sanitize(plane.current_loc, requested_position)) {
+            // if the location wasn't already sane don't load it
+            return MAV_RESULT_FAILED; // failed as the location is not valid
+        }
+
+        // location is valid load and set
+        if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
+            (plane.control_mode == GUIDED)) {
+            plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
+            plane.guided_WP_loc = requested_position;
+
+            // add home alt if needed
+            if (plane.guided_WP_loc.flags.relative_alt) {
+                plane.guided_WP_loc.alt += plane.home.alt;
+                plane.guided_WP_loc.flags.relative_alt = 0;
+            }
+
+            plane.set_guided_WP();
+
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+    }
+
+    default:
+        return GCS_MAVLINK::handle_command_int_packet(packet);
+    }
+}
+
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_long_t &packet)
+{
+    switch(packet.command) {
+
+    case MAV_CMD_DO_CHANGE_SPEED:
+        // if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
+        // controlled modes (e.g., MANUAL, TRAINING)
+        // this command should be ignored since it comes in from GCS
+        // or a companion computer:
+        if (plane.control_mode != GUIDED && plane.control_mode != AUTO && plane.control_mode != AVOID_ADSB) {
+            // failed
+            return MAV_RESULT_FAILED;
+        }
+
+        AP_Mission::Mission_Command cmd;
+        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) == MAV_MISSION_ACCEPTED) {
+            plane.do_change_speed(cmd);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+        plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_NAV_TAKEOFF: {
+        // user takeoff only works with quadplane code for now
+        // param7 : altitude [metres]
+        float takeoff_alt = packet.param7;
+        if (plane.quadplane.available() && plane.quadplane.do_user_takeoff(takeoff_alt)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+    }
+
+#if MOUNT == ENABLED
+        // Sets the region of interest (ROI) for the camera
+    case MAV_CMD_DO_SET_ROI:
+        // sanity check location
+        if (!check_latlng(packet.param5, packet.param6)) {
+            return MAV_RESULT_FAILED;
+        }
+        Location roi_loc;
+        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+            // switch off the camera tracking if enabled
+            if (plane.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                plane.camera_mount.set_mode_to_default();
+            }
+        } else {
+            // send the command to the camera mount
+            plane.camera_mount.set_roi_target(roi_loc);
+        }
+        return MAV_RESULT_ACCEPTED;
+#endif
+
+#if MOUNT == ENABLED
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        plane.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+        return MAV_RESULT_ACCEPTED;
+#endif
+
+    case MAV_CMD_MISSION_START:
+        plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        if (is_equal(packet.param1,1.0f)) {
+            // run pre_arm_checks and arm_checks and display failures
+            const bool do_arming_checks = !is_equal(packet.param2,magic_force_arm_value);
+            if (plane.arm_motors(AP_Arming::MAVLINK, do_arming_checks)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        } else if (is_zero(packet.param1))  {
+            if (plane.disarm_motors()) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+
+    case MAV_CMD_DO_LAND_START:
+        // attempt to switch to next DO_LAND_START command in the mission
+        if (plane.mission.jump_to_landing_sequence()) {
+            plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_GO_AROUND:
+        if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+            // Initiate an aborted landing. This will trigger a pitch-up and
+            // climb-out to a safe altitude holding heading then one of the
+            // following actions will occur, check for in this order:
+            // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
+            //      increment mission index to execute it
+            // - else if DO_LAND_START is available, jump to it
+            // - else decrement the mission index to repeat the landing approach
+
+            if (!is_zero(packet.param1)) {
+                plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
+            }
+            if (plane.landing.request_go_around()) {
+                plane.auto_state.next_wp_crosstrack = false;
+                return MAV_RESULT_ACCEPTED;
+            }
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_FENCE_ENABLE:
+        if (!plane.geofence_present()) {
+            gcs().send_text(MAV_SEVERITY_NOTICE,"Fence not configured");
+            return MAV_RESULT_FAILED;
+        }
+        switch((uint16_t)packet.param1) {
+        case 0:
+            if (! plane.geofence_set_enabled(false, GCS_TOGGLED)) {
+                return MAV_RESULT_FAILED;
+            }
+            return MAV_RESULT_ACCEPTED;
+        case 1:
+            if (! plane.geofence_set_enabled(true, GCS_TOGGLED)) {
+                return MAV_RESULT_FAILED;
+            }
+            return MAV_RESULT_ACCEPTED;
+        case 2: //disable fence floor only
+            if (! plane.geofence_set_floor_enabled(false)) {
+                return MAV_RESULT_FAILED;
+            }
+            gcs().send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
+            return MAV_RESULT_ACCEPTED;
+        default:
+            break;
+        }
+        return MAV_RESULT_FAILED;
+
+    case MAV_CMD_DO_SET_HOME: {
+        // param1 : use current (1=use current location, 0=use specified location)
+        // param5 : latitude
+        // param6 : longitude
+        // param7 : altitude (absolute)
+        if (is_equal(packet.param1,1.0f)) {
+            plane.set_home_persistently(AP::gps().location());
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            // ensure param1 is zero
+            if (!is_zero(packet.param1)) {
+                return MAV_RESULT_FAILED;
+            }
+            if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
+                // don't allow the 0,0 position
+                return MAV_RESULT_FAILED;
+            }
+            // sanity check location
+            if (!check_latlng(packet.param5,packet.param6)) {
+                return MAV_RESULT_FAILED;
+            }
+            Location new_home_loc {};
+            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+            plane.set_home(new_home_loc);
+            AP::ahrs().lock_home();
+            return MAV_RESULT_ACCEPTED;
+        }
+        break;
+    }
+
+    case MAV_CMD_DO_AUTOTUNE_ENABLE:
+        // param1 : enable/disable
+        plane.autotune_enable(!is_zero(packet.param1));
+        return MAV_RESULT_ACCEPTED;
+
+#if PARACHUTE == ENABLED
+    case MAV_CMD_DO_PARACHUTE:
+        // configure or release parachute
+        switch ((uint16_t)packet.param1) {
+        case PARACHUTE_DISABLE:
+            plane.parachute.enabled(false);
+            return MAV_RESULT_ACCEPTED;
+        case PARACHUTE_ENABLE:
+            plane.parachute.enabled(true);
+            return MAV_RESULT_ACCEPTED;
+        case PARACHUTE_RELEASE:
+            // treat as a manual release which performs some additional check of altitude
+            if (plane.parachute.released()) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute already released");
+                return MAV_RESULT_FAILED;
+            }
+            if (!plane.parachute.enabled()) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute not enabled");
+                return MAV_RESULT_FAILED;
+            }
+            if (!plane.parachute_manual_release()) {
+                return MAV_RESULT_FAILED;
+            }
+            return MAV_RESULT_ACCEPTED;
+        default:
+            break;
+        }
+        return MAV_RESULT_FAILED;
+#endif
+
+    case MAV_CMD_DO_MOTOR_TEST:
+        // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
+        // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
+        // param3 : throttle (range depends upon param2)
+        // param4 : timeout (in seconds)
+        // param5 : motor count (number of motors to test in sequence)
+        return plane.quadplane.mavlink_motor_test_start(chan,
+                                                        (uint8_t)packet.param1,
+                                                        (uint8_t)packet.param2,
+                                                        (uint16_t)packet.param3,
+                                                        packet.param4,
+                                                        (uint8_t)packet.param5);
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    case MAV_CMD_DO_ENGINE_CONTROL:
+        if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet);
+    }
+}
+
 void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
-
-    case MAVLINK_MSG_ID_COMMAND_INT:
-    {
-        // decode
-        mavlink_command_int_t packet;
-        mavlink_msg_command_int_decode(msg, &packet);
-
-        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-
-        switch(packet.command) {
-
-        case MAV_CMD_DO_SET_HOME: {
-            result = MAV_RESULT_FAILED; // assume failure
-            if (is_equal(packet.param1, 1.0f)) {
-                plane.set_home_persistently(AP::gps().location());
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                if ((packet.x == 0) && (packet.y == 0) && is_zero(packet.z)) {
-                    // don't allow the 0,0 position
-                    break;
-                }
-                // check frame type is supported
-                if (packet.frame != MAV_FRAME_GLOBAL &&
-                    packet.frame != MAV_FRAME_GLOBAL_INT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-                    packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    break;
-                }
-                // sanity check location
-                if (!check_latlng(packet.x, packet.y)) {
-                    break;
-                }
-                Location new_home_loc {};
-                new_home_loc.lat = packet.x;
-                new_home_loc.lng = packet.y;
-                new_home_loc.alt = packet.z * 100;
-                // handle relative altitude
-                if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT || packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                    if (!AP::ahrs().home_is_set()) {
-                        // cannot use relative altitude if home is not set
-                        break;
-                    }
-                    new_home_loc.alt += plane.ahrs.get_home().alt;
-                }
-                plane.set_home(new_home_loc);
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
-        case MAV_CMD_DO_REPOSITION:
-            // sanity check location
-            if (!check_latlng(packet.x, packet.y)) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-
-            Location requested_position {};
-            requested_position.lat = packet.x;
-            requested_position.lng = packet.y;
-
-            // check the floating representation for overflow of altitude
-            if (fabsf(packet.z * 100.0f) >= 0x7fffff) {
-                result = MAV_RESULT_FAILED;
-                break;
-            }
-            requested_position.alt = (int32_t)(packet.z * 100.0f);
-
-            // load option flags
-            if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
-                requested_position.flags.relative_alt = 1;
-            }
-            else if (packet.frame == MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-                requested_position.flags.terrain_alt = 1;
-            }
-            else if (packet.frame != MAV_FRAME_GLOBAL_INT) {
-                // not a supported frame
-                break;
-            }
-
-            if (is_zero(packet.param4)) {
-                requested_position.flags.loiter_ccw = 0;
-            } else {
-                requested_position.flags.loiter_ccw = 1;
-            }
-
-            if (location_sanitize(plane.current_loc, requested_position)) {
-                // if the location wasn't already sane don't load it
-                result = MAV_RESULT_FAILED; // failed as the location is not valid
-                break;
-            }
-
-            // location is valid load and set
-            if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-                (plane.control_mode == GUIDED)) {
-                plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
-                plane.guided_WP_loc = requested_position;
-
-                // add home alt if needed
-                if (plane.guided_WP_loc.flags.relative_alt) {
-                    plane.guided_WP_loc.alt += plane.home.alt;
-                    plane.guided_WP_loc.flags.relative_alt = 0;
-                }
-
-                plane.set_guided_WP();
-
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED; // failed as we are not in guided
-            }
-            break;
-        }
-
-        mavlink_msg_command_ack_send_buf(
-            msg,
-            chan,
-            packet.command,
-            result);
-
-        break;
-    }
-
-    case MAVLINK_MSG_ID_COMMAND_LONG:
-    {
-        // decode
-        mavlink_command_long_t packet;
-        mavlink_msg_command_long_decode(msg, &packet);
-
-        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-
-        // do command
-
-        switch(packet.command) {
-
-        case MAV_CMD_DO_CHANGE_SPEED:
-            // if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
-            // controlled modes (e.g., MANUAL, TRAINING)
-            // this command should be ignored since it comes in from GCS
-            // or a companion computer:
-            result = MAV_RESULT_FAILED;
-            if (plane.control_mode != GUIDED && plane.control_mode != AUTO && plane.control_mode != AVOID_ADSB) {
-                // failed
-                break;
-            }
-
-            AP_Mission::Mission_Command cmd;
-            if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd)
-                    == MAV_MISSION_ACCEPTED) {
-                plane.do_change_speed(cmd);
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_NAV_LOITER_UNLIM:
-            plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-            plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_NAV_TAKEOFF: {
-            // user takeoff only works with quadplane code for now
-            // param7 : altitude [metres]
-            float takeoff_alt = packet.param7;
-            if (plane.quadplane.available() && plane.quadplane.do_user_takeoff(takeoff_alt)) {
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                result = MAV_RESULT_FAILED;
-            }
-            break;
-        }
-            
-#if MOUNT == ENABLED
-        // Sets the region of interest (ROI) for the camera
-        case MAV_CMD_DO_SET_ROI:
-            // sanity check location
-            if (!check_latlng(packet.param5, packet.param6)) {
-                break;
-            }
-            Location roi_loc;
-            roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-            if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-                // switch off the camera tracking if enabled
-                if (plane.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                    plane.camera_mount.set_mode_to_default();
-                }
-            } else {
-                // send the command to the camera mount
-                plane.camera_mount.set_roi_target(roi_loc);
-            }
-            result = MAV_RESULT_ACCEPTED;
-            break;
-#endif
-
-        case MAV_CMD_DO_MOUNT_CONTROL:
-#if MOUNT == ENABLED
-            plane.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-            result = MAV_RESULT_ACCEPTED;
-#endif
-            break;
-
-        case MAV_CMD_MISSION_START:
-            plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
-            result = MAV_RESULT_ACCEPTED;
-            break;
-
-        case MAV_CMD_COMPONENT_ARM_DISARM:
-            if (is_equal(packet.param1,1.0f)) {
-                // run pre_arm_checks and arm_checks and display failures
-                if (plane.arm_motors(AP_Arming::MAVLINK)) {
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else if (is_zero(packet.param1))  {
-                if (plane.disarm_motors()) {
-                    result = MAV_RESULT_ACCEPTED;
-                } else {
-                    result = MAV_RESULT_FAILED;
-                }
-            } else {
-                result = MAV_RESULT_UNSUPPORTED;
-            }
-            break;
-
-        case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            result = handle_preflight_reboot(packet, plane.quadplane.enable != 0);
-            break;
-
-        case MAV_CMD_DO_LAND_START:
-            result = MAV_RESULT_FAILED;
-            
-            // attempt to switch to next DO_LAND_START command in the mission
-            if (plane.mission.jump_to_landing_sequence()) {
-                plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
-                result = MAV_RESULT_ACCEPTED;
-            } 
-            break;
-
-        case MAV_CMD_DO_GO_AROUND:
-            result = MAV_RESULT_FAILED;
-
-            if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-                // Initiate an aborted landing. This will trigger a pitch-up and
-                // climb-out to a safe altitude holding heading then one of the
-                // following actions will occur, check for in this order:
-                // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
-                //      increment mission index to execute it
-                // - else if DO_LAND_START is available, jump to it
-                // - else decrement the mission index to repeat the landing approach
-
-                if (!is_zero(packet.param1)) {
-                    plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
-                }
-                if (plane.landing.request_go_around()) {
-                    plane.auto_state.next_wp_crosstrack = false;
-                    result = MAV_RESULT_ACCEPTED;
-                }
-            }
-            break;
-
-        case MAV_CMD_DO_FENCE_ENABLE:
-            result = MAV_RESULT_ACCEPTED;
-            
-            if (!plane.geofence_present()) {
-                gcs().send_text(MAV_SEVERITY_NOTICE,"Fence not configured");
-                result = MAV_RESULT_FAILED;
-            } else {
-                switch((uint16_t)packet.param1) {
-                case 0:
-                    if (! plane.geofence_set_enabled(false, GCS_TOGGLED)) {
-                        result = MAV_RESULT_FAILED;
-                    }
-                    break;
-                case 1:
-                    if (! plane.geofence_set_enabled(true, GCS_TOGGLED)) {
-                        result = MAV_RESULT_FAILED; 
-                    }
-                    break;
-                case 2: //disable fence floor only 
-                    if (! plane.geofence_set_floor_enabled(false)) {
-                        result = MAV_RESULT_FAILED;
-                    } else {
-                        gcs().send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
-                    }
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-                }
-            }
-            break;
-
-        case MAV_CMD_DO_SET_HOME: {
-            // param1 : use current (1=use current location, 0=use specified location)
-            // param5 : latitude
-            // param6 : longitude
-            // param7 : altitude (absolute)
-            result = MAV_RESULT_FAILED; // assume failure
-            if (is_equal(packet.param1,1.0f)) {
-                plane.set_home_persistently(AP::gps().location());
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            } else {
-                // ensure param1 is zero
-                if (!is_zero(packet.param1)) {
-                    break;
-                }
-                if (is_zero(packet.param5) && is_zero(packet.param6) && is_zero(packet.param7)) {
-                    // don't allow the 0,0 position
-                    break;
-                }
-                // sanity check location
-                if (!check_latlng(packet.param5,packet.param6)) {
-                    break;
-                }
-                Location new_home_loc {};
-                new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-                new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-                new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
-                plane.set_home(new_home_loc);
-                AP::ahrs().lock_home();
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        }
-
-        case MAV_CMD_DO_AUTOTUNE_ENABLE:
-            // param1 : enable/disable
-            plane.autotune_enable(!is_zero(packet.param1));
-            break;
-
-#if PARACHUTE == ENABLED
-        case MAV_CMD_DO_PARACHUTE:
-            // configure or release parachute
-            result = MAV_RESULT_ACCEPTED;
-            switch ((uint16_t)packet.param1) {
-                case PARACHUTE_DISABLE:
-                    plane.parachute.enabled(false);
-                    break;
-                case PARACHUTE_ENABLE:
-                    plane.parachute.enabled(true);
-                    break;
-                case PARACHUTE_RELEASE:
-                    // treat as a manual release which performs some additional check of altitude
-                    if (plane.parachute.released()) {
-                        gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute already released");
-                        result = MAV_RESULT_FAILED;
-                    } else if (!plane.parachute.enabled()) {
-                        gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute not enabled");
-                        result = MAV_RESULT_FAILED;
-                    } else {
-                        if (!plane.parachute_manual_release()) {
-                            result = MAV_RESULT_FAILED;
-                        }
-                    }
-                    break;
-                default:
-                    result = MAV_RESULT_FAILED;
-                    break;
-            }
-            break;
-#endif
-
-        case MAV_CMD_DO_MOTOR_TEST:
-            // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
-            // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
-            // param3 : throttle (range depends upon param2)
-            // param4 : timeout (in seconds)
-            // param5 : motor count (number of motors to test in sequence)
-            result = plane.quadplane.mavlink_motor_test_start(chan, (uint8_t)packet.param1, (uint8_t)packet.param2, (uint16_t)packet.param3, packet.param4, (uint8_t)packet.param5);
-            break;
-            
-        case MAV_CMD_DO_VTOL_TRANSITION:
-            if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_DO_ENGINE_CONTROL:
-            if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
-                result = MAV_RESULT_FAILED;
-            } else {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        case MAV_CMD_ACCELCAL_VEHICLE_POS:
-            result = MAV_RESULT_FAILED;
-
-            if (plane.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
-                result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-
-        default:
-            result = handle_command_long_message(packet);
-            break;
-        }
-
-        mavlink_msg_command_ack_send_buf(
-            msg,
-            chan,
-            packet.command,
-            result);
-
-        break;
-    }
 
 #if GEOFENCE_ENABLED == ENABLED
     // receive a fence point from GCS and store in EEPROM

@@ -37,7 +37,6 @@ public:
     PX4GPIO();
     void    init() override;
     void    pinMode(uint8_t pin, uint8_t output) override;
-    int8_t  analogPinToDigitalPin(uint8_t pin) override;
     uint8_t read(uint8_t pin) override;
     void    write(uint8_t pin, uint8_t value) override;
     void    toggle(uint8_t pin) override;

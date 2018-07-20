@@ -21,6 +21,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "ToneAlarm_ChibiOS.h"
 #include <AP_HAL_ChibiOS/ToneAlarm.h>
+#include <AP_Math/AP_Math.h>
 #include "AP_Notify.h"
 
 extern const AP_HAL::HAL& hal;
@@ -28,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 bool ToneAlarm_ChibiOS::init()
 {
     // open the tone alarm device
-    _initialized = hal.util->toneAlarm_init();
+    bool _initialized = hal.util->toneAlarm_init();
     if (!_initialized) {
         hal.console->printf("AP_Notify: Failed to initialise ToneAlarm");
         return false;
@@ -52,11 +53,6 @@ bool ToneAlarm_ChibiOS::play_tune(uint8_t tune_number)
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void ToneAlarm_ChibiOS::update()
 {
-    // exit immediately if we haven't initialised successfully
-    if (!_initialized) {
-        return;
-    }
-
     // exit if buzzer is not enabled
     if (pNotify->buzzer_enabled() == false) {
         return;
@@ -105,6 +101,28 @@ void ToneAlarm_ChibiOS::update()
             play_tune(TONE_PARACHUTE_RELEASE_TUNE);
         }
     }
+}
+
+/*
+  handle a PLAY_TUNE message
+*/
+void ToneAlarm_ChibiOS::handle_play_tune(mavlink_message_t *msg)
+{
+    // decode mavlink message
+    mavlink_play_tune_t packet;
+    
+    mavlink_msg_play_tune_decode(msg, &packet);
+
+    char str[100];
+    strncpy(str, packet.tune, MIN(sizeof(packet.tune), sizeof(str)-1));
+    str[sizeof(str)-1] = 0;
+    uint8_t len = strlen(str);
+    uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
+    len2 = MIN((sizeof(str)-1)-len, len2);
+    strncpy(str+len, packet.tune2, len2);
+    str[sizeof(str)-1] = 0;
+    
+    hal.util->toneAlarm_set_tune_string(str);
 }
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

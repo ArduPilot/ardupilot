@@ -133,6 +133,14 @@ void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 }
 
 /*
+  save dev_id, used by SITL
+*/
+void AP_Compass_Backend::save_dev_id(uint8_t instance)
+{
+    _compass._state[instance].dev_id.save();
+}
+
+/*
   set external for an instance
 */
 void AP_Compass_Backend::set_external(uint8_t instance, bool external)
@@ -194,3 +202,8 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
     return ret;
 }
 
+
+enum Rotation AP_Compass_Backend::get_board_orientation(void) const
+{
+    return _compass._board_orientation;
+}

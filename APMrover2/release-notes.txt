@@ -1,6 +1,6 @@
 APMrover2 Release Notes:
 ========================
-Rover 3.4.1-rc1 12-Jun-2018
+Rover 3.4.1 04-Jul-2018 / 3.4.1-rc1 12-Jun-2018
 Changes from 3.4.0:
 1) lane based speed control (vehicle slows to stay close to line between waypoints), WP_OVERSHOOT replaces SPEED_TURN_GAIN 
 2) MOT_SPD_SCA_BASE allow configuring speed above which speed scaling begins

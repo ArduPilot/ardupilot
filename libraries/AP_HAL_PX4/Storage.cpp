@@ -24,7 +24,7 @@ using namespace PX4;
 // name the storage file after the sketch so you can use the same sd
 // card for ArduCopter and ArduPlane
 #define STORAGE_DIR "/fs/microsd/APM"
-//#define SAVE_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".sav"
+#define SAVE_STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".bak"
 #define MTD_PARAMS_FILE "/fs/mtd"
 
 extern const AP_HAL::HAL& hal;
@@ -53,11 +53,10 @@ void PX4Storage::_storage_open(void)
 #endif
 
 #ifdef SAVE_STORAGE_FILE
-    fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    int fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
     if (fd != -1) {
         write(fd, _buffer, sizeof(_buffer));
         close(fd);
-        ::printf("Saved storage file %s\n", SAVE_STORAGE_FILE);
     }
 #endif
     _initialised = true;

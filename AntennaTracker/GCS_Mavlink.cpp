@@ -370,6 +370,43 @@ MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
     return ret;
 }
 
+MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command_long_t &packet)
+{
+    // do command
+    send_text(MAV_SEVERITY_INFO,"Command received: ");
+
+    switch(packet.command) {
+
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
+            if (is_equal(packet.param1,1.0f)) {
+                tracker.arm_servos();
+                return MAV_RESULT_ACCEPTED;
+            } else if (is_zero(packet.param1))  {
+                tracker.disarm_servos();
+                return MAV_RESULT_ACCEPTED;
+            } else {
+                return MAV_RESULT_UNSUPPORTED;
+            }
+        }
+        return MAV_RESULT_UNSUPPORTED;
+
+    case MAV_CMD_DO_SET_SERVO:
+        if (!tracker.servo_test_set_servo(packet.param1, packet.param2)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
+        // mavproxy/mavutil sends this when auto command is entered 
+    case MAV_CMD_MISSION_START:
+        tracker.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
+        return MAV_RESULT_ACCEPTED;
+
+    default:
+        return GCS_MAVLINK::handle_command_long_packet(packet);
+    }
+}
+
 void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 {
     switch (msg->msgid) {
@@ -377,77 +414,6 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_HEARTBEAT:
         break;
 
-    case MAVLINK_MSG_ID_COMMAND_LONG:
-    {
-        // decode
-        mavlink_command_long_t packet;
-        mavlink_msg_command_long_decode(msg, &packet);
-        
-        MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
-        
-        // do command
-        send_text(MAV_SEVERITY_INFO,"Command received: ");
-        
-        switch(packet.command) {
-
-            case MAV_CMD_COMPONENT_ARM_DISARM:
-                if (packet.target_component == MAV_COMP_ID_SYSTEM_CONTROL) {
-                    if (is_equal(packet.param1,1.0f)) {
-                        tracker.arm_servos();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else if (is_zero(packet.param1))  {
-                        tracker.disarm_servos();
-                        result = MAV_RESULT_ACCEPTED;
-                    } else {
-                        result = MAV_RESULT_UNSUPPORTED;
-                    }
-                } else {
-                    result = MAV_RESULT_UNSUPPORTED;
-                }
-            break;
-
-            case MAV_CMD_DO_SET_SERVO:
-                if (tracker.servo_test_set_servo(packet.param1, packet.param2)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-
-                // mavproxy/mavutil sends this when auto command is entered 
-            case MAV_CMD_MISSION_START:
-                tracker.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
-                result = MAV_RESULT_ACCEPTED;
-                break;
-
-            case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            {
-                if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-                    // when packet.param1 == 3 we reboot to hold in bootloader
-                    hal.scheduler->reboot(is_equal(packet.param1,3.0f));
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-            }
-
-            case MAV_CMD_ACCELCAL_VEHICLE_POS:
-                result = MAV_RESULT_FAILED;
-
-                if (tracker.ins.get_acal()->gcs_vehicle_position(packet.param1)) {
-                    result = MAV_RESULT_ACCEPTED;
-                }
-                break;
-
-            default:
-                result = handle_command_long_message(packet);
-                break;
-        }
-        mavlink_msg_command_ack_send(
-            chan,
-            packet.command,
-            result);
-        
-        break;
-    }
-         
     // When mavproxy 'wp sethome' 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     {
