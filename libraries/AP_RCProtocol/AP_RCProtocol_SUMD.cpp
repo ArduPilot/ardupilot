@@ -66,20 +66,20 @@ extern const AP_HAL::HAL& hal;
 
 uint16_t AP_RCProtocol_SUMD::sumd_crc16(uint16_t crc, uint8_t value)
 {
-	int i;
-	crc ^= (uint16_t)value << 8;
+    int i;
+    crc ^= (uint16_t)value << 8;
 
-	for (i = 0; i < 8; i++) {
-		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
-	}
+    for (i = 0; i < 8; i++) {
+        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    }
 
-	return crc;
+    return crc;
 }
 
 uint8_t AP_RCProtocol_SUMD::sumd_crc8(uint8_t crc, uint8_t value)
 {
-	crc += value;
-	return crc;
+    crc += value;
+    return crc;
 }
 
 void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
@@ -97,9 +97,9 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
 
     byte_ofs = sumd_state.bit_ofs/10;
     bit_ofs = sumd_state.bit_ofs%10;
-	if (byte_ofs >= SUMD_FRAME_MAXLEN) {
-		goto reset;
-	}
+    if (byte_ofs >= SUMD_FRAME_MAXLEN) {
+        goto reset;
+    }
     // pull in the high bits
     nbits = bits_s0;
     if (nbits+bit_ofs > 10) {
@@ -147,170 +147,170 @@ reset:
 
 void AP_RCProtocol_SUMD::process_byte(uint8_t byte)
 {
-	switch (_decode_state) {
-	case SUMD_DECODE_STATE_UNSYNCED:
+    switch (_decode_state) {
+    case SUMD_DECODE_STATE_UNSYNCED:
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_UNSYNCED \n") ;
 #endif
-		if (byte == SUMD_HEADER_ID) {
-			_rxpacket.header = byte;
-			_sumd = true;
-			_rxlen = 0;
-			_crc16 = 0x0000;
-			_crc8 = 0x00;
-			_crcOK = false;
-			_crc16 = sumd_crc16(_crc16, byte);
-			_crc8 = sumd_crc8(_crc8, byte);
-			_decode_state = SUMD_DECODE_STATE_GOT_HEADER;
+        if (byte == SUMD_HEADER_ID) {
+            _rxpacket.header = byte;
+            _sumd = true;
+            _rxlen = 0;
+            _crc16 = 0x0000;
+            _crc8 = 0x00;
+            _crcOK = false;
+            _crc16 = sumd_crc16(_crc16, byte);
+            _crc8 = sumd_crc8(_crc8, byte);
+            _decode_state = SUMD_DECODE_STATE_GOT_HEADER;
 
 #ifdef SUMD_DEBUG
-        hal.console->printf(" SUMD_DECODE_STATE_GOT_HEADER: %x \n", byte) ;
+            hal.console->printf(" SUMD_DECODE_STATE_GOT_HEADER: %x \n", byte) ;
 #endif
-		}
-		break;
+        }
+        break;
 
-	case SUMD_DECODE_STATE_GOT_HEADER:
-		if (byte == SUMD_ID_SUMD || byte == SUMD_ID_SUMH) {
-			_rxpacket.status = byte;
+    case SUMD_DECODE_STATE_GOT_HEADER:
+        if (byte == SUMD_ID_SUMD || byte == SUMD_ID_SUMH) {
+            _rxpacket.status = byte;
 
-			if (byte == SUMD_ID_SUMH) {
-				_sumd = false;
-			}
+            if (byte == SUMD_ID_SUMH) {
+                _sumd = false;
+            }
 
-			if (_sumd) {
-				_crc16 = sumd_crc16(_crc16, byte);
+            if (_sumd) {
+                _crc16 = sumd_crc16(_crc16, byte);
 
-			} else {
-				_crc8 = sumd_crc8(_crc8, byte);
-			}
+            } else {
+                _crc8 = sumd_crc8(_crc8, byte);
+            }
 
-			_decode_state = SUMD_DECODE_STATE_GOT_STATE;
+            _decode_state = SUMD_DECODE_STATE_GOT_STATE;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_STATE: %x \n", byte) ;
 #endif
 
-		} else {
-			_decode_state = SUMD_DECODE_STATE_UNSYNCED;
-		}
+        } else {
+            _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        }
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_STATE:
-		if (byte >= 2 && byte <= SUMD_MAX_CHANNELS) {
-			_rxpacket.length = byte;
+    case SUMD_DECODE_STATE_GOT_STATE:
+        if (byte >= 2 && byte <= SUMD_MAX_CHANNELS) {
+            _rxpacket.length = byte;
 
-			if (_sumd) {
-				_crc16 = sumd_crc16(_crc16, byte);
+            if (_sumd) {
+                _crc16 = sumd_crc16(_crc16, byte);
 
-			} else {
-				_crc8 = sumd_crc8(_crc8, byte);
-			}
+            } else {
+                _crc8 = sumd_crc8(_crc8, byte);
+            }
 
-			_rxlen++;
-			_decode_state = SUMD_DECODE_STATE_GOT_LEN;
+            _rxlen++;
+            _decode_state = SUMD_DECODE_STATE_GOT_LEN;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_LEN: %x (%d) \n", byte, byte) ;
 #endif
 
-		} else {
-			_decode_state = SUMD_DECODE_STATE_UNSYNCED;
-		}
+        } else {
+            _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        }
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_LEN:
-		_rxpacket.sumd_data[_rxlen] = byte;
+    case SUMD_DECODE_STATE_GOT_LEN:
+        _rxpacket.sumd_data[_rxlen] = byte;
 
-		if (_sumd) {
-			_crc16 = sumd_crc16(_crc16, byte);
+        if (_sumd) {
+            _crc16 = sumd_crc16(_crc16, byte);
 
-		} else {
-			_crc8 = sumd_crc8(_crc8, byte);
-		}
+        } else {
+            _crc8 = sumd_crc8(_crc8, byte);
+        }
 
-		_rxlen++;
+        _rxlen++;
 
-		if (_rxlen <= ((_rxpacket.length * 2))) {
+        if (_rxlen <= ((_rxpacket.length * 2))) {
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_DATA[%d]: %x\n", _rxlen - 2, byte) ;
 #endif
 
-		} else {
-			_decode_state = SUMD_DECODE_STATE_GOT_DATA;
+        } else {
+            _decode_state = SUMD_DECODE_STATE_GOT_DATA;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_DATA -- finish --\n") ;
 #endif
 
-		}
+        }
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_DATA:
-		_rxpacket.crc16_high = byte;
+    case SUMD_DECODE_STATE_GOT_DATA:
+        _rxpacket.crc16_high = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC16[1]: %x   [%x]\n", byte, ((_crc16 >> 8) & 0xff)) ;
 #endif
 
-		if (_sumd) {
-			_decode_state = SUMD_DECODE_STATE_GOT_CRC;
+        if (_sumd) {
+            _decode_state = SUMD_DECODE_STATE_GOT_CRC;
 
-		} else {
-			_decode_state = SUMD_DECODE_STATE_GOT_CRC16_BYTE_1;
-		}
+        } else {
+            _decode_state = SUMD_DECODE_STATE_GOT_CRC16_BYTE_1;
+        }
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_CRC16_BYTE_1:
-		_rxpacket.crc16_low = byte;
+    case SUMD_DECODE_STATE_GOT_CRC16_BYTE_1:
+        _rxpacket.crc16_low = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC16[2]: %x   [%x]\n", byte, (_crc16 & 0xff)) ;
 #endif
 
-		_decode_state = SUMD_DECODE_STATE_GOT_CRC16_BYTE_2;
+        _decode_state = SUMD_DECODE_STATE_GOT_CRC16_BYTE_2;
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_CRC16_BYTE_2:
-		_rxpacket.telemetry = byte;
+    case SUMD_DECODE_STATE_GOT_CRC16_BYTE_2:
+        _rxpacket.telemetry = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_SUMH_TELEMETRY: %x\n", byte) ;
 #endif
 
-		_decode_state = SUMD_DECODE_STATE_GOT_CRC;
+        _decode_state = SUMD_DECODE_STATE_GOT_CRC;
 
-		break;
+        break;
 
-	case SUMD_DECODE_STATE_GOT_CRC:
-		if (_sumd) {
-			_rxpacket.crc16_low = byte;
+    case SUMD_DECODE_STATE_GOT_CRC:
+        if (_sumd) {
+            _rxpacket.crc16_low = byte;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC[2]: %x   [%x]\n\n", byte, (_crc16 & 0xff)) ;
 #endif
 
-			if (_crc16 == (uint16_t)(_rxpacket.crc16_high << 8) + _rxpacket.crc16_low) {
-				_crcOK = true;
-			}
+            if (_crc16 == (uint16_t)(_rxpacket.crc16_high << 8) + _rxpacket.crc16_low) {
+                _crcOK = true;
+            }
 
-		} else {
-			_rxpacket.crc8 = byte;
+        } else {
+            _rxpacket.crc8 = byte;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC8_SUMH: %x   [%x]\n\n", byte, _crc8) ;
 #endif
 
-			if (_crc8 == _rxpacket.crc8) {
-				_crcOK = true;
-			}
-		}
+            if (_crc8 == _rxpacket.crc8) {
+                _crcOK = true;
+            }
+        }
 
-		if (_crcOK) {
+        if (_crcOK) {
 #ifdef SUMD_DEBUG
             hal.console->printf(" CRC - OK \n") ;
 #endif
@@ -318,69 +318,69 @@ void AP_RCProtocol_SUMD::process_byte(uint8_t byte)
 #ifdef SUMD_DEBUG
                 hal.console->printf(" Got valid SUMD Packet\n") ;
 #endif
-			} else {
+            } else {
 #ifdef SUMD_DEBUG
                 hal.console->printf(" Got valid SUMH Packet\n") ;
 #endif
 
-			}
+            }
 
 #ifdef SUMD_DEBUG
-				hal.console->printf(" RXLEN: %d  [Chans: %d] \n\n", _rxlen - 1, (_rxlen - 1) / 2) ;
+            hal.console->printf(" RXLEN: %d  [Chans: %d] \n\n", _rxlen - 1, (_rxlen - 1) / 2) ;
 #endif
 
 
-			unsigned i;
+            unsigned i;
             uint8_t num_values;
             uint16_t values[SUMD_MAX_CHANNELS];
 
-			/* received Channels */
-			if ((uint16_t)_rxpacket.length > SUMD_MAX_CHANNELS) {
-				_rxpacket.length = (uint8_t) SUMD_MAX_CHANNELS;
-			}
+            /* received Channels */
+            if ((uint16_t)_rxpacket.length > SUMD_MAX_CHANNELS) {
+                _rxpacket.length = (uint8_t) SUMD_MAX_CHANNELS;
+            }
 
-			num_values = (uint16_t)_rxpacket.length;
+            num_values = (uint16_t)_rxpacket.length;
 
-			/* decode the actual packet */
-			/* reorder first 4 channels */
+            /* decode the actual packet */
+            /* reorder first 4 channels */
 
-			/* ch1 = roll -> sumd = ch2 */
-			values[0] = (uint16_t)((_rxpacket.sumd_data[1 * 2 + 1] << 8) | _rxpacket.sumd_data[1 * 2 + 2]) >> 3;
-			/* ch2 = pitch -> sumd = ch2 */
-			values[1] = (uint16_t)((_rxpacket.sumd_data[2 * 2 + 1] << 8) | _rxpacket.sumd_data[2 * 2 + 2]) >> 3;
-			/* ch3 = throttle -> sumd = ch2 */
-			values[2] = (uint16_t)((_rxpacket.sumd_data[0 * 2 + 1] << 8) | _rxpacket.sumd_data[0 * 2 + 2]) >> 3;
-			/* ch4 = yaw -> sumd = ch2 */
-			values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
+            /* ch1 = roll -> sumd = ch2 */
+            values[0] = (uint16_t)((_rxpacket.sumd_data[1 * 2 + 1] << 8) | _rxpacket.sumd_data[1 * 2 + 2]) >> 3;
+            /* ch2 = pitch -> sumd = ch2 */
+            values[1] = (uint16_t)((_rxpacket.sumd_data[2 * 2 + 1] << 8) | _rxpacket.sumd_data[2 * 2 + 2]) >> 3;
+            /* ch3 = throttle -> sumd = ch2 */
+            values[2] = (uint16_t)((_rxpacket.sumd_data[0 * 2 + 1] << 8) | _rxpacket.sumd_data[0 * 2 + 2]) >> 3;
+            /* ch4 = yaw -> sumd = ch2 */
+            values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
 
-			/* we start at channel 5(index 4) */
-			unsigned chan_index = 4;
+            /* we start at channel 5(index 4) */
+            unsigned chan_index = 4;
 
-			for (i = 4; i < _rxpacket.length; i++) {
+            for (i = 4; i < _rxpacket.length; i++) {
 #ifdef SUMD_DEBUG
                 hal.console->printf("ch[%d] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
-					       ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
-					       ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3);
+                                    ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
+                                    ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3);
 #endif
 
-				values[chan_index] = (uint16_t)((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3;
-				/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-				//channels[chan_index] = (uint16_t)(channels[chan_index] * SUMD_SCALE_FACTOR + .5f) + SUMD_SCALE_OFFSET;
+                values[chan_index] = (uint16_t)((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3;
+                /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
+                //channels[chan_index] = (uint16_t)(channels[chan_index] * SUMD_SCALE_FACTOR + .5f) + SUMD_SCALE_OFFSET;
 
-				chan_index++;
-			}
+                chan_index++;
+            }
             if (_rxpacket.status == 0x01) {
                 add_input(num_values, values, false);
             } else if (_rxpacket.status == 0x81) {
-                add_input(num_values, values, true);                
+                add_input(num_values, values, true);
             }
-		} else {
+        } else {
 #ifdef SUMD_DEBUG
             hal.console->printf(" CRC - fail 0x%X 0x%X\n", _crc16, (uint16_t)(_rxpacket.crc16_high << 8) + _rxpacket.crc16_low);
 #endif
-		}
+        }
 
-		_decode_state = SUMD_DECODE_STATE_UNSYNCED;
-		break;
-	}
+        _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        break;
+    }
 }

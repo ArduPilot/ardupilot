@@ -50,28 +50,28 @@ extern const AP_HAL::HAL& hal;
 
 uint8_t AP_RCProtocol_ST24::st24_crc8(uint8_t *ptr, uint8_t len)
 {
-	uint8_t i, crc ;
-	crc = 0;
+    uint8_t i, crc ;
+    crc = 0;
 
-	while (len--) {
-		for (i = 0x80; i != 0; i >>= 1) {
-			if ((crc & 0x80) != 0) {
-				crc <<= 1;
-				crc ^= 0x07;
+    while (len--) {
+        for (i = 0x80; i != 0; i >>= 1) {
+            if ((crc & 0x80) != 0) {
+                crc <<= 1;
+                crc ^= 0x07;
 
-			} else {
-				crc <<= 1;
-			}
+            } else {
+                crc <<= 1;
+            }
 
-			if ((*ptr & i) != 0) {
-				crc ^= 0x07;
-			}
-		}
+            if ((*ptr & i) != 0) {
+                crc ^= 0x07;
+            }
+        }
 
-		ptr++;
-	}
+        ptr++;
+    }
 
-	return (crc);
+    return (crc);
 }
 
 
@@ -142,141 +142,141 @@ void AP_RCProtocol_ST24::process_byte(uint8_t byte)
 {
 
 
-	switch (_decode_state) {
-	case ST24_DECODE_STATE_UNSYNCED:
-		if (byte == ST24_STX1) {
-			_decode_state = ST24_DECODE_STATE_GOT_STX1;
+    switch (_decode_state) {
+    case ST24_DECODE_STATE_UNSYNCED:
+        if (byte == ST24_STX1) {
+            _decode_state = ST24_DECODE_STATE_GOT_STX1;
 
-		}
+        }
 
-		break;
+        break;
 
-	case ST24_DECODE_STATE_GOT_STX1:
-		if (byte == ST24_STX2) {
-			_decode_state = ST24_DECODE_STATE_GOT_STX2;
+    case ST24_DECODE_STATE_GOT_STX1:
+        if (byte == ST24_STX2) {
+            _decode_state = ST24_DECODE_STATE_GOT_STX2;
 
-		} else {
-			_decode_state = ST24_DECODE_STATE_UNSYNCED;
-		}
+        } else {
+            _decode_state = ST24_DECODE_STATE_UNSYNCED;
+        }
 
-		break;
+        break;
 
-	case ST24_DECODE_STATE_GOT_STX2:
+    case ST24_DECODE_STATE_GOT_STX2:
 
-		/* ensure no data overflow failure or hack is possible */
-		if ((unsigned)byte <= sizeof(_rxpacket.length) + sizeof(_rxpacket.type) + sizeof(_rxpacket.st24_data)) {
-			_rxpacket.length = byte;
-			_rxlen = 0;
-			_decode_state = ST24_DECODE_STATE_GOT_LEN;
+        /* ensure no data overflow failure or hack is possible */
+        if ((unsigned)byte <= sizeof(_rxpacket.length) + sizeof(_rxpacket.type) + sizeof(_rxpacket.st24_data)) {
+            _rxpacket.length = byte;
+            _rxlen = 0;
+            _decode_state = ST24_DECODE_STATE_GOT_LEN;
 
-		} else {
-			_decode_state = ST24_DECODE_STATE_UNSYNCED;
-		}
+        } else {
+            _decode_state = ST24_DECODE_STATE_UNSYNCED;
+        }
 
-		break;
+        break;
 
-	case ST24_DECODE_STATE_GOT_LEN:
-		_rxpacket.type = byte;
-		_rxlen++;
-		_decode_state = ST24_DECODE_STATE_GOT_TYPE;
-		break;
+    case ST24_DECODE_STATE_GOT_LEN:
+        _rxpacket.type = byte;
+        _rxlen++;
+        _decode_state = ST24_DECODE_STATE_GOT_TYPE;
+        break;
 
-	case ST24_DECODE_STATE_GOT_TYPE:
-		_rxpacket.st24_data[_rxlen - 1] = byte;
-		_rxlen++;
+    case ST24_DECODE_STATE_GOT_TYPE:
+        _rxpacket.st24_data[_rxlen - 1] = byte;
+        _rxlen++;
 
-		if (_rxlen == (_rxpacket.length - 1)) {
-			_decode_state = ST24_DECODE_STATE_GOT_DATA;
-		}
+        if (_rxlen == (_rxpacket.length - 1)) {
+            _decode_state = ST24_DECODE_STATE_GOT_DATA;
+        }
 
-		break;
+        break;
 
-	case ST24_DECODE_STATE_GOT_DATA:
-		_rxpacket.crc8 = byte;
-		_rxlen++;
+    case ST24_DECODE_STATE_GOT_DATA:
+        _rxpacket.crc8 = byte;
+        _rxlen++;
 
-		if (st24_crc8((uint8_t *) & (_rxpacket.length), _rxlen) == _rxpacket.crc8) {
+        if (st24_crc8((uint8_t *) & (_rxpacket.length), _rxlen) == _rxpacket.crc8) {
 
-			/* decode the actual packet */
+            /* decode the actual packet */
 
-			switch (_rxpacket.type) {
+            switch (_rxpacket.type) {
 
-			case ST24_PACKET_TYPE_CHANNELDATA12: {
-                    uint16_t values[12];
-                    uint8_t num_values;
-					ChannelData12 *d = (ChannelData12 *)_rxpacket.st24_data;
-                    //TBD: add support for RSSI
-					// *rssi = d->rssi;
-					//*rx_count = d->packet_count;
+            case ST24_PACKET_TYPE_CHANNELDATA12: {
+                uint16_t values[12];
+                uint8_t num_values;
+                ChannelData12 *d = (ChannelData12 *)_rxpacket.st24_data;
+                //TBD: add support for RSSI
+                // *rssi = d->rssi;
+                //*rx_count = d->packet_count;
 
-					/* this can lead to rounding of the strides */
-					num_values = (MAX_RCIN_CHANNELS < 12) ? MAX_RCIN_CHANNELS : 12;
+                /* this can lead to rounding of the strides */
+                num_values = (MAX_RCIN_CHANNELS < 12) ? MAX_RCIN_CHANNELS : 12;
 
-					unsigned stride_count = (num_values * 3) / 2;
-					unsigned chan_index = 0;
+                unsigned stride_count = (num_values * 3) / 2;
+                unsigned chan_index = 0;
 
-					for (unsigned i = 0; i < stride_count; i += 3) {
-						values[chan_index] = ((uint16_t)d->channel[i] << 4);
-						values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
-						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
-						chan_index++;
+                for (unsigned i = 0; i < stride_count; i += 3) {
+                    values[chan_index] = ((uint16_t)d->channel[i] << 4);
+                    values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
+                    /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    chan_index++;
 
-						values[chan_index] = ((uint16_t)d->channel[i + 2]);
-						values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
-						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
-						chan_index++;
-					}
-				}
-				break;
+                    values[chan_index] = ((uint16_t)d->channel[i + 2]);
+                    values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
+                    /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    chan_index++;
+                }
+            }
+            break;
 
-			case ST24_PACKET_TYPE_CHANNELDATA24: {
-                    uint16_t values[24];
-                    uint8_t num_values;
-					ChannelData24 *d = (ChannelData24 *)&_rxpacket.st24_data;
+            case ST24_PACKET_TYPE_CHANNELDATA24: {
+                uint16_t values[24];
+                uint8_t num_values;
+                ChannelData24 *d = (ChannelData24 *)&_rxpacket.st24_data;
 
-					//*rssi = d->rssi;
-					//*rx_count = d->packet_count;
+                //*rssi = d->rssi;
+                //*rx_count = d->packet_count;
 
-					/* this can lead to rounding of the strides */
-					num_values = (MAX_RCIN_CHANNELS < 24) ? MAX_RCIN_CHANNELS : 24;
+                /* this can lead to rounding of the strides */
+                num_values = (MAX_RCIN_CHANNELS < 24) ? MAX_RCIN_CHANNELS : 24;
 
-					unsigned stride_count = (num_values * 3) / 2;
-					unsigned chan_index = 0;
+                unsigned stride_count = (num_values * 3) / 2;
+                unsigned chan_index = 0;
 
-					for (unsigned i = 0; i < stride_count; i += 3) {
-						values[chan_index] = ((uint16_t)d->channel[i] << 4);
-						values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
-						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
-						chan_index++;
+                for (unsigned i = 0; i < stride_count; i += 3) {
+                    values[chan_index] = ((uint16_t)d->channel[i] << 4);
+                    values[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
+                    /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    chan_index++;
 
-						values[chan_index] = ((uint16_t)d->channel[i + 2]);
-						values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
-						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
-						chan_index++;
-					}
-				}
-				break;
+                    values[chan_index] = ((uint16_t)d->channel[i + 2]);
+                    values[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
+                    /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
+                    values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+                    chan_index++;
+                }
+            }
+            break;
 
-			case ST24_PACKET_TYPE_TRANSMITTERGPSDATA: {
+            case ST24_PACKET_TYPE_TRANSMITTERGPSDATA: {
 
-					// ReceiverFcPacket* d = (ReceiverFcPacket*)&_rxpacket.st24_data;
-					/* we silently ignore this data for now, as it is unused */
-				}
-				break;
+                // ReceiverFcPacket* d = (ReceiverFcPacket*)&_rxpacket.st24_data;
+                /* we silently ignore this data for now, as it is unused */
+            }
+            break;
 
-			default:
-				break;
-			}
+            default:
+                break;
+            }
 
-		} else {
-			/* decoding failed */
-		}
+        } else {
+            /* decoding failed */
+        }
 
-		_decode_state = ST24_DECODE_STATE_UNSYNCED;
-		break;
-	}
+        _decode_state = ST24_DECODE_STATE_UNSYNCED;
+        break;
+    }
 }

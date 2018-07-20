@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #pragma once
@@ -22,7 +22,8 @@
 class AP_RCProtocol_SBUS_NI : public AP_RCProtocol_SBUS {
 public:
     AP_RCProtocol_SBUS_NI(AP_RCProtocol &_frontend) : AP_RCProtocol_SBUS(_frontend), saved_width(0) {}
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override {
+    void process_pulse(uint32_t width_s0, uint32_t width_s1) override
+    {
         AP_RCProtocol_SBUS::process_pulse(saved_width, width_s0);
         saved_width = width_s1;
     }
