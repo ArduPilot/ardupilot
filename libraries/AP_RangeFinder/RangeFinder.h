@@ -22,7 +22,7 @@
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
-#define RANGEFINDER_MAX_INSTANCES 7
+#define RANGEFINDER_MAX_INSTANCES 10
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
