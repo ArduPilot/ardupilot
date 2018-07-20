@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -19,8 +19,7 @@
 
 #include "AP_RCProtocol.h"
 
-class AP_RCProtocol_Backend
-{
+class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
@@ -42,7 +41,7 @@ public:
     };
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
-    
+
 private:
     AP_RCProtocol &frontend;
     unsigned int rc_input_count;

@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -25,7 +25,7 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
 private:
     bool sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
-                    bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values);
+                     bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values);
     struct {
         uint16_t bytes[25]; // including start bit, parity and stop bits
         uint16_t bit_ofs;

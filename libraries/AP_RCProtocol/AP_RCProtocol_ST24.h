@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -48,7 +48,7 @@ private:
         ST24_PACKET_TYPE_TRANSMITTERGPSDATA
     };
 
-    #pragma pack(push, 1)
+#pragma pack(push, 1)
     typedef struct {
         uint8_t	header1;			///< 0x55 for a valid packet
         uint8_t	header2;			///< 0x55 for a valid packet
@@ -129,7 +129,7 @@ private:
         uint8_t	pressCompassStatus;	///< baro / compass status
     } TelemetryData;
 
-    #pragma pack(pop)
+#pragma pack(pop)
 
     enum ST24_DECODE_STATE {
         ST24_DECODE_STATE_UNSYNCED = 0,
