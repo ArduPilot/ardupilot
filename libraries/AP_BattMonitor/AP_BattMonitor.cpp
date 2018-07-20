@@ -3,9 +3,13 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
+
+#include <AP_HAL/AP_HAL.h>
+
 #if HAL_WITH_UAVCAN
 #include "AP_BattMonitor_UAVCAN.h"
 #endif
+
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
