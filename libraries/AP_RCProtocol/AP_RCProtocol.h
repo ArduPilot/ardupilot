@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -24,7 +24,7 @@
 class AP_RCProtocol_Backend;
 class AP_RCProtocol {
 public:
-    enum rcprotocol_t{
+    enum rcprotocol_t {
         PPM = 0,
         SBUS,
         SBUS_NI,
@@ -35,15 +35,21 @@ public:
         NONE    //last enum always is None
     };
     void init();
-    bool valid_serial_prot() { return _valid_serial_prot; }
+    bool valid_serial_prot()
+    {
+        return _valid_serial_prot;
+    }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_byte(uint8_t byte);
-    enum rcprotocol_t protocol_detected() { return _detected_protocol; }
+    enum rcprotocol_t protocol_detected()
+    {
+        return _detected_protocol;
+    }
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
     bool new_input();
     void start_bind(void);
-    
+
 private:
     enum rcprotocol_t _detected_protocol = NONE;
     AP_RCProtocol_Backend *backend[NONE];

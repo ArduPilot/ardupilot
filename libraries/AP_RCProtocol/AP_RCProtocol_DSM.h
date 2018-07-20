@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -25,12 +25,12 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void start_bind(void) override;
     void update(void) override;
-    
+
 private:
     void dsm_decode();
     bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
     void dsm_guess_format(bool reset, const uint8_t dsm_frame[16]);
-    bool dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16], 
+    bool dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16],
                     uint16_t *values, uint16_t *num_values, uint16_t max_values);
 
     uint64_t dsm_last_frame_time;		/**< Timestamp for start of last dsm frame */
@@ -50,5 +50,5 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
-    
+
 };

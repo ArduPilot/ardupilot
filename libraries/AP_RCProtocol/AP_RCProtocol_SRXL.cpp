@@ -41,8 +41,8 @@ uint16_t AP_RCProtocol_SRXL::srxl_crc16(uint16_t crc, uint8_t new_byte)
 {
     uint8_t loop;
     crc = crc ^ (uint16_t)new_byte << 8;
-    for(loop = 0; loop < 8; loop++) {
-		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+    for (loop = 0; loop < 8; loop++) {
+        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
     }
     return crc;
 }
@@ -163,7 +163,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num
     }
 
     /* provide channel data to FMU */
-    if ( (uint16_t)*num_values > max_values) {
+    if ((uint16_t)*num_values > max_values) {
         *num_values = (uint8_t)max_values;
     }
     memcpy(values, channels, (*num_values)*2);
@@ -204,7 +204,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
         int32_t v = b & 0x7FF;
         if (b & 0x8000) {
             continue;
-        } 
+        }
         if (c == 12) {
             // special handling for channel 12
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
@@ -230,7 +230,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
                 max_channels = c+1;
             }
         }
-        
+
         //printf("%u:%u ", (unsigned)c, (unsigned)v);
     }
     //printf("\n");
@@ -244,7 +244,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     // check failsafe bit, this goes low when connection to the
     // transmitter is lost
     *failsafe_state = ((buffer[1] & 2) == 0);
-    
+
     // success
     return 0;
 }
@@ -254,9 +254,9 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
     uint64_t timestamp_us = AP_HAL::micros64();
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
-    if ( (timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
+    if ((timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
         /* Now detect SRXL variant based on header */
-        switch(byte) {
+        switch (byte) {
         case SRXL_HEADER_V1:
             frame_len_full = SRXL_FRAMELEN_V1;
             frame_header = SRXL_HEADER_V1;
@@ -304,11 +304,11 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
         buflen++;
         /* CRC not over last 2 frame bytes as these bytes inhabitate the crc */
         if (buflen <= (frame_len_full-2)) {
-           crc_fmu = srxl_crc16(crc_fmu,byte);
+            crc_fmu = srxl_crc16(crc_fmu,byte);
         }
-        if(  buflen == frame_len_full ) {
+        if (buflen == frame_len_full) {
             /* CRC check here */
-            crc_receiver =  ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
+            crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
             if (crc_receiver == crc_fmu) {
                 /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
                 uint16_t values[SRXL_MAX_CHANNELS];
@@ -332,8 +332,7 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
                 }
             }
             decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
-        }
-        else {
+        } else {
             /* frame not completely received --> frame data buffering still ongoing  */
             decode_state_next = STATE_COLLECT;
         }
@@ -343,6 +342,6 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
         break;
     } /* switch (decode_state) */
 
-   decode_state = decode_state_next;
-   last_data_us = timestamp_us;
+    decode_state = decode_state_next;
+    last_data_us = timestamp_us;
 }

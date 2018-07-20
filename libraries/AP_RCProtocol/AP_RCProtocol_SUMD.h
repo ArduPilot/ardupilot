@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -29,7 +29,7 @@ private:
     static uint16_t sumd_crc16(uint16_t crc, uint8_t value);
     static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
 
-    #pragma pack(push, 1)
+#pragma pack(push, 1)
     typedef struct {
         uint8_t	header;							///< 0xA8 for a valid packet
         uint8_t	status;							///< 0x01 valid and live SUMD data frame / 0x00 = SUMH / 0x81 = Failsafe
@@ -40,7 +40,7 @@ private:
         uint8_t	telemetry;						///< Telemetry request
         uint8_t	crc8;							///< SUMH CRC8
     } ReceiverFcPacketHoTT;
-    #pragma pack(pop)
+#pragma pack(pop)
 
 
     enum SUMD_DECODE_STATE {

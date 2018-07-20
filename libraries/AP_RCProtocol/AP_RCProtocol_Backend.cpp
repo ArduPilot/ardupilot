@@ -11,14 +11,14 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 
-AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) : 
+AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
     rc_input_count(0),
     last_rc_input_count(0),
