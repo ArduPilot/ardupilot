@@ -34,9 +34,6 @@ public:
     // read sensor data
     virtual void read(void) = 0;
 
-    // callback for UAVCAN messages
-    virtual void handle_mag_msg(Vector3f &mag) {};
-
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as COMPASS*ID* parameters to
