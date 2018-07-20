@@ -22,12 +22,13 @@
 class PCA9685LED_I2C : public RGBLed
 {
 public:
-    PCA9685LED_I2C(void);
+    PCA9685LED_I2C(uint8_t bus);
 protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
+    uint8_t bus;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
     void _timer(void);
     struct {
