@@ -46,6 +46,7 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
+class AP_UAVCAN;
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -69,6 +70,7 @@ public:
     ///             found or is not functioning.
     ///
     bool init();
+
 
     /// Read the compass and update the mag_ variables.
     ///
