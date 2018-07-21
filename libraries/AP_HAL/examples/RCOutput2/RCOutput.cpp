@@ -1,5 +1,7 @@
 /*
-  Simple test of RC output interface with Menu
+* Simple test of RC output interface with Menu
+* Attention: If your board has safety switch,
+* don't forget to push it to enable the PWM output.
 */
 
 #include <AP_Common/AP_Common.h>
@@ -7,6 +9,11 @@
 #include <AP_Menu/AP_Menu.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+/* change "PWM_COUNT" value accoding to the board type.
+* If you are using Pixhawk,  set to 6 will enable all of the
+* FMU output as PWM channels
+*/
+#define FMU_PWM_COUNT 6
 
 void setup();
 void loop();
@@ -80,6 +87,7 @@ MENU(menu, "Menu: ", rcoutput_menu_commands);
 
 void setup(void) {
     hal.console->printf("Starting AP_HAL::RCOutput test\n");
+     AP_Param::set_object_value(&BoardConfig, BoardConfig.var_info, "PWM_COUNT", FMU_PWM_COUNT);
     BoardConfig.init();
     for (uint8_t i = 0; i < 14; i++) {
         hal.rcout->enable_ch(i);
