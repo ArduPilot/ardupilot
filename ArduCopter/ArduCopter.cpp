@@ -121,6 +121,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,           accumulate,      50,  90),
 #if PRECISION_LANDING == ENABLED
     SCHED_TASK(update_precland,      400,     50),
+    SCHED_TASK(check_precland_target,  1,    110),   // Check for PrecLanding target lock and send notification to GCS on changes, max duration is based on gcs_send_heartbeat
 #endif
 #if FRAME_CONFIG == HELI_FRAME
     SCHED_TASK(check_dynamic_flight,  50,     75),

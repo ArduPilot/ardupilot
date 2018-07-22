@@ -337,6 +337,7 @@ private:
             uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
             uint8_t rc_override_enable      : 1; // 27      // aux switch rc_override is allowed
             uint8_t armed_with_switch       : 1; // 28      // we armed using a arming switch
+            uint8_t precland_target_aquired : 1; // 29      // true when precland target is aquired,
         };
         uint32_t value;
     } ap_t;
@@ -745,6 +746,7 @@ private:
     void set_mode_SmartRTL_or_RTL(mode_reason_t reason);
     void set_mode_SmartRTL_or_land_with_pause(mode_reason_t reason);
     bool should_disarm_on_failsafe();
+    void check_precland_target();
 
     // failsafe.cpp
     void failsafe_enable();

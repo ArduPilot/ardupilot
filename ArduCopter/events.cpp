@@ -284,3 +284,28 @@ bool Copter::should_disarm_on_failsafe() {
             return ap.land_complete;
     }
 }
+
+
+// Check precision landing target status and send notification to GCS about changes
+// Severity set to MAV_SEVERITY_WARNING to display message in HUD area
+void Copter::check_precland_target() 
+{
+
+    //Do not waste time if precland is disabled
+    if (!precland.enabled()) {
+        return;
+    }
+
+    bool precland_target_aquired = copter.precland.target_acquired();
+
+    if (precland_target_aquired != ap.precland_target_aquired) {
+        ap.precland_target_aquired = precland_target_aquired;
+        if (precland_target_aquired) {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Precland target aquired");
+        } else {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Precland target lost");
+        }
+    }
+
+ 
+}
