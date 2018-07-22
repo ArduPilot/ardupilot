@@ -15,6 +15,10 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
+#if !HAL_MINIMIZE_FEATURES
+  #include <uavcan/transport/can_acceptance_filter_configurator.hpp>
+#endif
+
 // Zubax GPS and other GPS, baro, magnetic sensors
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
@@ -570,6 +574,10 @@ void AP_UAVCAN::init(uint8_t driver_index)
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
     _led_conf.devices_count = 0;
+
+#if !HAL_MINIMIZE_FEATURES
+    configureCanAcceptanceFilters(*_node);
+#endif
 
     /*
      * Informing other nodes that we're ready to work.
