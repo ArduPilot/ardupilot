@@ -35,12 +35,14 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::Interface::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BITRATE", 2, AP_BoardConfig_CAN::Interface, _bitrate, 1000000),
 
+#if AP_CAN_DEBUG
     // @Param: DEBUG
     // @DisplayName: Level of debug for CAN devices
     // @Description: Enabling this option will provide debug messages
     // @Values: 0:Disabled,1:Major messages,2:All messages
     // @User: Advanced
     AP_GROUPINFO("DEBUG", 3, AP_BoardConfig_CAN::Interface, _debug_level, 1),
+#endif
 
     AP_GROUPEND
 };
