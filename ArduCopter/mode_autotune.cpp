@@ -324,7 +324,7 @@ void Copter::ModeAutoTune::run()
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
     // check for pilot requested take-off - this should not actually be possible because of init() checks
-    if (takeoff_triggered(target_climb_rate)) {
+    if (takeoff.triggered(target_climb_rate)) {
         // indicate we are taking off
         set_land_complete(false);
         // clear i term when we're taking off
