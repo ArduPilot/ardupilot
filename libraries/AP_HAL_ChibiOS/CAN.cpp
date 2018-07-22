@@ -43,11 +43,7 @@ uavcan::MonotonicTime clock::getMonotonic()
 
 bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    if (can_helper.init(bitrate, CanIface::OperatingMode::NormalMode, can_number) == 0) {
-        bitrate_ = bitrate;
-        initialized_ = true;
-    }
-    return initialized_;
+    return (can_helper.init(bitrate, CanIface::OperatingMode::NormalMode, can_number) == 0);
 }
 
 bool CANManager::is_initialized()

@@ -74,7 +74,6 @@ public:
 private:
     AP_UAVCAN *p_uavcan;
     bool initialized_;
-    uint32_t bitrate_;
     uavcan_stm32::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
 };
 
