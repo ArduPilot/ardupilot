@@ -101,6 +101,8 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting bat2_vlt{false, 0, 0};
+    AP_OSD_Setting bat2used{false, 0, 0};
 
     bool check_option(uint32_t option);
 
@@ -150,6 +152,8 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+    void draw_bat2_vlt(uint8_t x, uint8_t y);
+    void draw_bat2used(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
