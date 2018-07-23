@@ -135,6 +135,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_MSG_TIME", 16, AP_OSD, msgtime_s, 10),
 
+    // @Param: _W_BAT2VOLT
+    // @DisplayName: BAT2_VOLT warn level
+    // @Description: Set level at which BAT2_VOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_BAT2VOLT", 17, AP_OSD, warn_bat2volt, 10.0f),
+
 
     AP_GROUPEND
 };
