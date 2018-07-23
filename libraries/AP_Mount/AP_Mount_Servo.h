@@ -20,13 +20,8 @@ public:
         _roll_idx(SRV_Channel::k_none),
         _tilt_idx(SRV_Channel::k_none),
         _pan_idx(SRV_Channel::k_none),
-        _open_idx(SRV_Channel::k_none),
-        _last_check_servo_map_ms(0)
+        _open_idx(SRV_Channel::k_none)
     {
-        // init to no axis being controlled
-        _flags.roll_control = false;
-        _flags.tilt_control = false;
-        _flags.pan_control = false;
     }
 
     // init - performs any required initialisation for this instance
