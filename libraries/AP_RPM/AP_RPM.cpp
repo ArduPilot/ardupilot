@@ -90,14 +90,9 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_GROUPEND
 };
 
-AP_RPM::AP_RPM(void) :
-    num_instances(0)
+AP_RPM::AP_RPM(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // init state and drivers
-    memset(state,0,sizeof(state));
-    memset(drivers,0,sizeof(drivers));
 }
 
 /*
