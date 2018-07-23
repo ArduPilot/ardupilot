@@ -697,7 +697,6 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // IMU temperature: offset -19, 0 means temp =< 19°, 63 means temp => 82°
     ap_status |= ((AP::ins().get_temperature(0) < AP_IMU_TEMP_ORIGIN) ? 0 : (AP::ins().get_temperature(0) > (AP_IMU_TEMP_ORIGIN + AP_IMU_TEMP_LIMIT)) ? AP_IMU_TEMP_LIMIT : (uint8_t)roundf(AP::ins().get_temperature(0) - AP_IMU_TEMP_ORIGIN))<<AP_IMU_TEMP_OFFSET;
-    ap_status |= (uint8_t)(imutemp & AP_IMU_TEMP_LIMIT)<<AP_IMU_TEMP_OFFSET;
     return ap_status;
 }
 
