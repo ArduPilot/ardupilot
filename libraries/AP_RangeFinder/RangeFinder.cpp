@@ -50,8 +50,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
+    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Standard
     AP_GROUPINFO("_PIN",     1, RangeFinder, state[0].pin, -1),
 
@@ -181,8 +181,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
+    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("2_PIN",     13, RangeFinder, state[1].pin, -1),
 
@@ -306,8 +306,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: 3_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
+    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("3_PIN",     26, RangeFinder, state[2].pin, -1),
 
@@ -431,8 +431,8 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Param: 4_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set this to 0..9 for the APM2 analog pins. Set to 64 on an APM1 for the dedicated 'airspeed' port on the end of the board. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 0:APM2-A0, 1:APM2-A1, 2:APM2-A2, 3:APM2-A3, 4:APM2-A4, 5:APM2-A5, 6:APM2-A6, 7:APM2-A7, 8:APM2-A8, 9:APM2-A9, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 64:APM1-airspeed port
+    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("4_PIN",     38, RangeFinder, state[3].pin, -1),
 
