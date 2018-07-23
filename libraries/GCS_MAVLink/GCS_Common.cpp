@@ -203,12 +203,31 @@ void GCS_MAVLINK::send_battery_status(const AP_BattMonitor &battery,
 
     float temp;
     bool got_temperature = battery.get_temperature(temp, instance);
+
+    // ensure we always send a voltage estimate to the GCS, because not all battery monitors monitor individual cells
+    // as a work around for this we create a set of fake cells to be used if the backend doesn't provide direct monitoring
+    // the GCS can then recover the pack voltage by summing all non ignored cell values. Because this is looped we can
+    // report a pack up to 655.34 V with this method
+    AP_BattMonitor::cells fake_cells;
+    if (!battery.has_cell_voltages(instance)) {
+        float voltage = battery.voltage(instance) * 1e3f;
+        for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i++) {
+          if (voltage < 0.001f) {
+              // too small to send to the GCS, set it to the no cell value
+              fake_cells.cells[i] = UINT16_MAX;
+          } else {
+              fake_cells.cells[i] = MIN(voltage, 65534.0f); // Can't send more then UINT16_MAX - 1 in a cell
+              voltage -= 65534.0f;
+          }
+        }
+    }
+
     mavlink_msg_battery_status_send(chan,
                                     instance, // id
                                     MAV_BATTERY_FUNCTION_UNKNOWN, // function
                                     MAV_BATTERY_TYPE_UNKNOWN, // type
                                     got_temperature ? ((int16_t) (temp * 100)) : INT16_MAX, // temperature. INT16_MAX if unknown
-                                    battery.get_cell_voltages(instance).cells, // cell voltages
+                                    battery.has_cell_voltages(instance) ? battery.get_cell_voltages(instance).cells : fake_cells.cells, // cell voltages
                                     battery.has_current(instance) ? battery.current_amps(instance) * 100 : -1, // current in centiampere
                                     battery.has_current(instance) ? battery.consumed_mah(instance) : -1,       // total consumed current in milliampere.hour
                                     battery.has_consumed_energy(instance) ? battery.consumed_wh(instance) * 36 : -1, // consumed energy in hJ (hecto-Joules)
