@@ -308,6 +308,7 @@ def run_step(step):
         "valgrind": opts.valgrind,
         "gdb": opts.gdb,
         "gdbserver": opts.gdbserver,
+        "breakpoints": opts.breakpoint,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -604,6 +605,11 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under gdbserver')
+    group_sim.add_option("-B", "--breakpoint",
+                         type='string',
+                         action="append",
+                         default=[],
+                         help="add a breakpoint at given location in debugger")
     parser.add_option_group(group_sim)
 
     opts, args = parser.parse_args()

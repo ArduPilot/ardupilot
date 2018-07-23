@@ -38,6 +38,7 @@ class AutoTestCopter(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestCopter, self).__init__(**kwargs)
         self.binary = binary
@@ -46,6 +47,7 @@ class AutoTestCopter(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -93,6 +95,7 @@ class AutoTestCopter(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
                                     vicon=True,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(

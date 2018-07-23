@@ -36,6 +36,7 @@ class AutoTestRover(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestRover, self).__init__(**kwargs)
         self.binary = binary
@@ -44,6 +45,7 @@ class AutoTestRover(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -69,6 +71,7 @@ class AutoTestRover(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'APMrover2', options=self.mavproxy_options())
