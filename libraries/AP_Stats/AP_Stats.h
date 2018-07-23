@@ -20,7 +20,7 @@ public:
     uint32_t reset; // last time parameters were reset
     
     // variable for total distance flown since boot
-    uint32_t fltdistance;
+    float fltdistance;
 
     void init();
 
@@ -39,7 +39,7 @@ public:
     }
 
     // accessor for flight distance. Returns flown distance
-    uint32_t get_flight_distance_m(void);
+    float get_flight_distance_m(void);
     
     // get singleton
     static AP_Stats *get_singleton(void) {

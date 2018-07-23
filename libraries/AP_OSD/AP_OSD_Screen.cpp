@@ -791,7 +791,7 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_flightdist(uint8_t x, uint8_t y)
 {
     AP_Stats *stats = AP::stats();
-    uint32_t dist=0;
+    float dist=0;
     if (stats) {
         dist = stats->get_flight_distance_m();
     }

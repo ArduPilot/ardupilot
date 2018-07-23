@@ -135,7 +135,7 @@ void AP_Stats::set_flying(const bool is_flying)
 /*
   get flight distance since boot
  */
-uint32_t AP_Stats::get_flight_distance_m(void)
+float AP_Stats::get_flight_distance_m(void)
 {
     update_flighttime();
     AP_AHRS &ahrs = AP::ahrs();
@@ -143,7 +143,7 @@ uint32_t AP_Stats::get_flight_distance_m(void)
     float speed = v.length();
     uint64_t time = _flying_ms - _last_distance_ms;
     _last_distance_ms = _flying_ms;
-    uint32_t delta = (time * speed)/1000; //meters
+    float delta = (time * speed)/1000; //meters
     fltdistance += delta;
     return fltdistance;
 }
