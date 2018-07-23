@@ -554,7 +554,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 5),
+    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 2),
 
     // @Param: CRASH_ANGLE
     // @DisplayName: Crash Angle
