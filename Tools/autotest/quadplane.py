@@ -26,6 +26,7 @@ class AutoTestQuadPlane(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestQuadPlane, self).__init__(**kwargs)
         self.binary = binary
@@ -34,6 +35,7 @@ class AutoTestQuadPlane(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -64,7 +66,9 @@ class AutoTestQuadPlane(AutoTest):
                                     defaults_file=defaults_file,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
+        )
         self.mavproxy = util.start_MAVProxy_SITL(
             'QuadPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
