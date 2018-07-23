@@ -157,6 +157,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: BAT2VLT
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(bat2_vlt, "BAT2_VLT", 29, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: BAT2USED
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(bat2used, "BAT2USED", 30, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -179,6 +187,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_VOLT  0x06
 #define SYM_AMP   0x9A
 #define SYM_MAH   0x07
+#define SYM_AH    0xF2
 #define SYM_MS    0x9F
 #define SYM_FS    0x99
 #define SYM_KMH   0xA1
@@ -422,7 +431,12 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
-    backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
+    float ah = battery.consumed_mah() / 1000;
+    if (battery.consumed_mah() <= 9999) {
+        backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(), SYM_MAH);
+        } else {
+        backend->write(x,y, false, "%2.2f%c", ah, SYM_AH);
+        }
 }
 
 //Autoscroll message is the same as in minimosd-extra.
@@ -782,6 +796,26 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    uint8_t pct2 = battery.capacity_remaining_pct(1);
+    uint8_t p2 = (100 - pct2) / 16.6;
+    float v2 = battery.voltage(1);
+    backend->write(x,y, v2 < osd->warn_batvolt, "%c%2.1f%c", SYM_BATT_FULL + p2, v2, SYM_VOLT);
+}
+
+void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float ah = battery.consumed_mah(1) / 1000;
+    if (battery.consumed_mah(1) <= 9999) {
+        backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
+        } else {
+        backend->write(x,y, false, "%2.2f%c", ah, SYM_AH);
+        }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -813,6 +847,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+    DRAW_SETTING(bat2_vlt);
+    DRAW_SETTING(bat2used);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
