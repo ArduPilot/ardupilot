@@ -193,6 +193,7 @@ public:
     AP_Int8 warn_rssi;
     AP_Int8 warn_nsat;
     AP_Float warn_batvolt;
+    AP_Float warn_bat2volt;
     AP_Int8 msgtime_s;
 
     enum {
