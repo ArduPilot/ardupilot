@@ -33,22 +33,11 @@ AP_Motors *AP_Motors::_instance;
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
-    _roll_in(0.0f),
-    _pitch_in(0.0f),
-    _yaw_in(0.0f),
-    _throttle_in(0.0f),
-    _throttle_avg_max(0.0f),
     _throttle_filter(),
     _spool_desired(DESIRED_SHUT_DOWN),
-    _air_density_ratio(1.0f),
-    _motor_fast_mask(0)
+    _air_density_ratio(1.0f)
 {
     _instance = this;
-    
-    // init other flags
-    _flags.armed = false;
-    _flags.interlock = false;
-    _flags.initialised_ok = false;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
