@@ -683,13 +683,6 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
 {
     uint32_t ap_status;
     
-    // prepare imu temp to a 6 bit value with a range from 20° - 83° value offset is 19
-    // 1 = 20°, 63 = 82°
-    uint32_t imutemp = AP::ins().get_temperature(0) - 19;
-    if (imutemp <= 0) imutemp = 0;
-    if (imutemp >= 63) imutemp = 63;
-    
-
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
@@ -702,7 +695,8 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
     // bad ekf flag
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
-    // IMU temperature
+    // IMU temperature: offset -19, 0 means temp =< 19°, 63 means temp => 82°
+    ap_status |= ((AP::ins().get_temperature(0) < AP_IMU_TEMP_ORIGIN) ? 0 : (AP::ins().get_temperature(0) > (AP_IMU_TEMP_ORIGIN + AP_IMU_TEMP_LIMIT)) ? AP_IMU_TEMP_LIMIT : (uint8_t)roundf(AP::ins().get_temperature(0) - AP_IMU_TEMP_ORIGIN))<<AP_IMU_TEMP_OFFSET;
     ap_status |= (uint8_t)(imutemp & AP_IMU_TEMP_LIMIT)<<AP_IMU_TEMP_OFFSET;
     return ap_status;
 }
