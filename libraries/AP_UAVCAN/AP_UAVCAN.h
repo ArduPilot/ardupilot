@@ -45,6 +45,18 @@
 
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
+/*
+    Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
+    The Callback will invoke registery to register the node as separate backend.
+*/
+#define UC_REGISTRY_BINDER(ClassName_, DataType_) \
+class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
+    public: \
+        ClassName_() : RegistryBinder() {} \
+        ClassName_(AP_UAVCAN* uc,  void (*ffunc)(AP_UAVCAN*, uint8_t, const ClassName_&)): \
+                    RegistryBinder(uc, (Registry)ffunc) {} \
+} \
+
 class AP_UAVCAN : public AP_HAL::CANProtocol {
 public:
     AP_UAVCAN();
@@ -65,7 +77,31 @@ public:
     bool led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue);
 
     uavcan::Node<0>* get_node() { return _node; }
-    uint8_t get_driver_num() { return _driver_num; }
+    uint8_t get_driver_index() { return _driver_index; }
+
+    template <typename DataType_>
+    class RegistryBinder {
+    protected:
+        typedef void* (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
+        AP_UAVCAN* _uc;
+        Registry _ffunc;
+    public:
+        RegistryBinder()
+            : _uc(),
+                _ffunc(),
+                msg() {}
+        RegistryBinder(AP_UAVCAN* uc, Registry ffunc):
+            _uc(uc),
+            _ffunc(ffunc),
+            msg(nullptr) {}
+        void operator()(const uavcan::ReceivedDataStructure<DataType_>& _msg)
+        {
+            msg = &_msg;
+            _ffunc(_uc, _msg.getSrcNodeID().get(), *this);
+        }
+        const uavcan::ReceivedDataStructure<DataType_> *msg;
+    };
+
 private:
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
     public:
@@ -146,42 +182,6 @@ private:
     } _led_conf;
 
     AP_HAL::Semaphore *_led_out_sem;
-    /*
-        Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
-        The Callback will invoke frontend to register the node as separate backend.
-
-        Note: Generic Subscriptions should not be done using this mechanism, i.e. messages for which
-        you don't want Frontend to init a new Backend when they come from different Nodes.
-        Use uavcan::MethodBinder or util/Functor template instead and initialise the subscriber in the Backend Constructor.
-    */
-    template <typename DataType_, typename Backend_, typename Frontend_>
-    class FrontendRegistryBinder {
-        AP_UAVCAN* _uc;
-        void (Backend_::*_bfunc)(const uavcan::ReceivedDataStructure<DataType_> &);
-        Backend_* (Frontend_::*_ffunc)(AP_UAVCAN*, uint8_t);
-        Frontend_* _frontend;
-
-    public:
-        FrontendRegistryBinder()
-            : _uc(),
-              _bfunc(),
-              _ffunc(),
-              _frontend() {}
-        FrontendRegistryBinder(AP_UAVCAN* uc, void (Backend_::*bfunc)(const uavcan::ReceivedDataStructure<DataType_> &),
-                               Backend_* (Frontend_::*ffunc)(AP_UAVCAN*, uint8_t), Frontend_ *frontend):
-            _uc(uc),
-            _bfunc(bfunc),
-            _ffunc(ffunc),
-            _frontend(frontend) {}
-
-        void operator()(const uavcan::ReceivedDataStructure<DataType_> & msg)
-        {
-            Backend_* bk = (_frontend->*_ffunc)(_uc, msg.getSrcNodeID().get());
-            if (bk != nullptr) {
-                (bk->*_bfunc)(msg);
-            }
-        }
-    };
 };
 
 #endif /* AP_UAVCAN_H_ */

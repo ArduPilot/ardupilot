@@ -39,10 +39,10 @@
 #include <uavcan/equipment/indication/SingleLightCommand.hpp>
 #include <uavcan/equipment/indication/RGB565.hpp>
 
-#include <AP_Baro/AP_Baro.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_Compass/AP_Compass.h>
+#include <AP_Baro/AP_Baro_UAVCAN.h>
+#include <AP_GPS/AP_GPS_UAVCAN.h>
+#include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
+#include <AP_Compass/AP_Compass_UAVCAN.h>
 
 #define LED_DELAY_US 50000
 
@@ -193,10 +193,10 @@ void AP_UAVCAN::init(uint8_t driver_index)
     }
 
     //Roundup all subscribers from supported drivers
-    AP_GPS::uavcan_init_callback(this);
-    Compass::uavcan_init_callback(this);
-    AP_Baro::uavcan_init_callback(this);
-    AP_BattMonitor::uavcan_init_callback(this);
+    AP_GPS_UAVCAN::subscribe_gps_uavcan_messages(this);
+    AP_Compass_UAVCAN::subscribe_compass_uavcan_messages(this);
+    AP_Baro_UAVCAN::subscribe_baro_uavcan_messages(this);
+    AP_BattMonitor_UAVCAN::subscribe_battmon_uavcan_messages(this);
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
