@@ -25,6 +25,7 @@ if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
+PWM_TYPE = {"NORMAL": 0, "BRUSHED": 1}
 
 class ErrorException(Exception):
     """Base class for other exceptions"""
@@ -122,6 +123,7 @@ class AutoTest(ABC):
         self.copy_tlog = False
         self.logfile = None
         self.max_set_rc_timeout = 0
+        self.config_motor_test = {"sequence": [1], "output": [1], "type": 0, "trim": 0}
 
     @staticmethod
     def progress(text):
@@ -1580,6 +1582,40 @@ class AutoTest(ABC):
     # @abc.abstractmethod
     # def test_mission(self, filename):
     #     pass
+    def test_motor_signal(self, pwm_type=0, timeout=5):
+        """Test differents motor signal types."""
+        self.progress("Enter motor test")
+        valid = False
+        output_num = 0
+        test_type = self.config_motor_test["type"]
+        for seq in self.config_motor_test["sequence"]:
+            for i in range(0, 6, 1):
+                percent = 20 * i
+                self.mavproxy.send("motortest "
+                                   + str(seq) + " "
+                                   + str(test_type) + " "
+                                   + str(percent) + " "
+                                   + str(timeout) + "\n")
+                tstart = self.get_sim_time()
+                while self.get_sim_time() < tstart + timeout:
+                    m = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+                    output_pwm = getattr(m, "servo" + str(self.config_motor_test["output"][output_num]) + "_raw")
+                    target_pwm = 0
+                    if test_type == 0:  # percent
+                        if pwm_type == PWM_TYPE["NORMAL"]:
+                            target_pwm = (1000 + self.config_motor_test["trim"] + (1000 - self.config_motor_test["trim"]) * percent / 100)
+                        if pwm_type == PWM_TYPE["BRUSHED"]:
+                            target_pwm = percent
+                        self.progress("Request %s%% == %s, acheived %s" % (percent, target_pwm, output_pwm))
+                    if output_pwm == target_pwm:
+                        valid = True
+                        self.mav.motors_disarmed_wait()
+                        break
+                    valid = False
+                if not valid:
+                    self.progress("Failed to acheived requested PWM")
+                    raise NotAchievedException()
+            output_num = output_num + 1
 
     @abc.abstractmethod
     def autotest(self):
