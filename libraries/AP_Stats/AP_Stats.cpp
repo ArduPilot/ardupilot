@@ -141,10 +141,15 @@ float AP_Stats::get_flight_distance_m(void)
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = v.length();
+    if (_flying_ms){
     uint64_t time = _flying_ms - _last_distance_ms;
     _last_distance_ms = _flying_ms;
-    float delta = (time * speed)/1000; //meters
+    float delta = (time * speed)/1000.0; //meters
     fltdistance += delta;
+    }
+    else
+    _last_distance_ms=AP_HAL::millis();
+
     return fltdistance;
 }
 
