@@ -12,6 +12,7 @@ from common import AutoTest
 from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
+from common import PWM_TYPE
 
 from pysim import util
 
@@ -784,6 +785,34 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_motors(self):
+        """Test RC PWM and Brushed PWM outputs"""
+        # TODO add test for different pwm type on different group
+        # see AP_MotorsUGV.h for sequence:
+        #         MOTOR_TEST_THROTTLE = 1,
+        #         MOTOR_TEST_STEERING = 2,
+        #         MOTOR_TEST_THROTTLE_LEFT = 3,
+        #         MOTOR_TEST_THROTTLE_RIGHT = 4,
+        self.progress("Testing Traditional rover")
+        self.start_test("Testing RC PWM")
+        self.wait_ready_to_arm()
+        self.config_motor_test["sequence"] = [1, 2]  # test throttle, then steering
+        self.config_motor_test["output"] = [3, 1]  # 3 == throttle, 1 == steering
+        self.config_motor_test["type"] = 0
+        self.config_motor_test["trim"] = 500
+        self.test_motor_signal()
+        self.progress("PASS RC PWM")
+        self.start_test("Testing Brushed PWM")
+        self.set_parameter('MOT_PWM_TYPE', 3)
+        self.reboot_sitl()
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+        self.config_motor_test["sequence"] = [1]  # test throttle, steering isn't supported in brushed mode
+        self.config_motor_test["output"] = [3, 1]  # 3 == throttle, 1 == steering
+        self.config_motor_test["type"] = 0
+        self.config_motor_test["trim"] = 0
+        self.test_motor_signal(pwm_type=PWM_TYPE["BRUSHED"])
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -861,6 +890,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.run_test("Test Camera Mission Items",
                           self.test_camera_mission_items)
+
+            self.disarm_vehicle()
+            self.run_test("Test motor types", self.test_motors)
+            self.disarm_vehicle()
 
             self.run_test("Download logs", lambda:
                           self.log_download(
