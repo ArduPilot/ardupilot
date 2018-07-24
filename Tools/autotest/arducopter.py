@@ -15,6 +15,7 @@ from pymavlink import quaternion
 from pysim import util
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
+from common import PWM_TYPE
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -241,6 +242,23 @@ class AutoTestCopter(AutoTest):
     #################################################
     #   TESTS FLY
     #################################################
+
+    def test_motors(self):
+        """Test RC PWM and Brushed PWM outputs"""
+        self.start_test("Testing RC PWM")
+        self.wait_ready_to_arm()
+        self.config_motor_test["sequence"] = [1, 2, 3, 4]
+        self.config_motor_test["output"] = [3, 1, 4, 2]
+        self.config_motor_test["type"] = 0
+        self.config_motor_test["trim"] = 0
+        self.test_motor_signal()
+        self.progress("PASS RC PWM")
+        self.start_test("Testing Brushed PWM")
+        self.set_parameter('MOT_PWM_TYPE', 3)
+        self.reboot_sitl()
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+        self.test_motor_signal(pwm_type=PWM_TYPE["BRUSHED"])
 
     # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
@@ -2396,6 +2414,10 @@ class AutoTestCopter(AutoTest):
 
             '''tests for camera/antenna mount'''
             self.run_test("Test Mount", self.test_mount)
+
+            self.disarm_vehicle()
+            self.run_test("Test motor types", self.test_motors)
+            self.disarm_vehicle()
 
             # Download logs
             self.run_test("log download",
