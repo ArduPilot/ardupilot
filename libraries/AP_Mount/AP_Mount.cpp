@@ -397,6 +397,14 @@ AP_Mount::AP_Mount(const AP_AHRS_TYPE &ahrs, const struct Location &current_loc)
     _ahrs(ahrs),
     _current_loc(current_loc)
 {
+    if (_singleton != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Mount must be singleton");
+#endif
+        return;
+    }
+    _singleton = this;
+
 	AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -635,3 +643,16 @@ void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
         }
     }    
 }
+
+
+// singleton instance
+AP_Mount *AP_Mount::_singleton;
+
+namespace AP {
+
+AP_Mount *mount()
+{
+    return AP_Mount::get_singleton();
+}
+
+};
