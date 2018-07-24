@@ -17,7 +17,7 @@
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
 #define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
-
+#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
 #define AC_FENCE_ALT_MIN_DEFAULT                    -10.0f  // default maximum depth in meters
