@@ -8,6 +8,7 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
 #include "RCInput.h"
+#include "RCOutput.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>

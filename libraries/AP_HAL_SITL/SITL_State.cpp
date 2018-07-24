@@ -412,6 +412,30 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
             input.servos[i] = pwm_output[i];
         }
     }
+    for (uint8_t g = 0; g < HALSITL::RCOutput::pwm_group_number; g++ ) {
+        //Start Pwm groups
+        HALSITL::RCOutput::pwm_group &group = HALSITL::RCOutput::pwm_group_list[g];
+        for (uint8_t j = 0; j < 4; j++ ) {
+            if (output_ready && group.current_mode == AP_HAL::RCOutput::MODE_PWM_BRUSHED) {
+                int8_t pwm_dir = 1;
+                const uint8_t chan = group.chan[j];
+                if (_vehicle == APMrover2) {
+                    switch(chan) {
+                        case 0 : {
+                            pwm_dir = (hal.gpio->read(2) ? -1 : 1);  // todo: make that modifiable
+                            break;
+                        }
+                        case 2 : {
+                            pwm_dir = (hal.gpio->read(1) ? -1 : 1);  // todo: make that modifiable
+                            break;
+                        }
+                    }
+                }
+                // revert duty cyle to 1000 - 2000 us for backend
+                input.servos[chan] = static_cast<uint16_t>(1500 + (input.servos[chan] * pwm_dir * 0.01 * 500));
+            }
+        }
+    }
 
     float engine_mul = _sitl?_sitl->engine_mul.get():1;
     uint8_t engine_fail = _sitl?_sitl->engine_fail.get():0;
