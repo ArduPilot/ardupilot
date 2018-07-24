@@ -61,6 +61,10 @@ public:
     AP_Mount(const AP_Mount &other) = delete;
     AP_Mount &operator=(const AP_Mount&) = delete;
 
+    // get singleton instance
+    static AP_Mount *get_singleton() {
+        return _singleton;
+    }
 
     // Enums
     enum MountType {
@@ -139,6 +143,9 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+
+    static AP_Mount *_singleton;
+
     // private members
     const AP_AHRS_TYPE     &_ahrs;
     const struct Location   &_current_loc;  // reference to the vehicle's current location
@@ -182,4 +189,8 @@ protected:
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
     } state[AP_MOUNT_MAX_INSTANCES];
+};
+
+namespace AP {
+    AP_Mount *mount();
 };
