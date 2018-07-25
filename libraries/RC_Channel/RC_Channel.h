@@ -26,6 +26,11 @@ public:
         RC_CHANNEL_LIMIT_MAX
     };
 
+    enum InputIgnore {
+        RC_IGNORE_RECEIVER  = (1 << 0), // RC reciever modules
+        RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
+    };
+
     // setup the control preferences
     void        set_range(uint16_t high);
     void        set_angle(uint16_t angle);
@@ -37,7 +42,7 @@ public:
     int16_t     get_control_mid() const;
 
     // read input from hal.rcin - create a control_in value
-    void        set_pwm(int16_t pwm);
+    bool        update(void);
     void        recompute_pwm_no_deadzone();
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
@@ -59,9 +64,6 @@ public:
     uint8_t     percent_input();
     int16_t     pwm_to_range();
     int16_t     pwm_to_range_dz(uint16_t dead_zone);
-
-    // read the input value from hal.rcin for this channel
-    uint16_t    read() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -164,6 +166,8 @@ private:
     static RC_Channel *channels;
     static bool has_new_overrides;
     static AP_Float *override_timeout;
+    static AP_Int32 *options;
     RC_Channel obj_channels[NUM_RC_CHANNELS];
     AP_Float _override_timeout;
+    AP_Int32  _options;
 };
