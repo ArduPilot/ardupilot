@@ -6,14 +6,16 @@
 
 extern const AP_HAL::HAL& hal;
 
-void MMLPlayer::update() {
+void MMLPlayer::update()
+{
     // Check if note is over
     if (_playing && AP_HAL::micros()-_note_start_us > _note_duration_us) {
         next_action();
     }
 }
 
-void MMLPlayer::play(const char* string) {
+void MMLPlayer::play(const char* string)
+{
     stop();
 
     _string = string;
@@ -30,24 +32,28 @@ void MMLPlayer::play(const char* string) {
     next_action();
 }
 
-void MMLPlayer::stop() {
+void MMLPlayer::stop()
+{
     _playing = false;
     hal.util->toneAlarm_set_buzzer_tone(0,0);
 }
 
-void MMLPlayer::start_silence(float duration) {
+void MMLPlayer::start_silence(float duration)
+{
     _note_start_us = AP_HAL::micros();
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(0, 0);
 }
 
-void MMLPlayer::start_note(float duration, float frequency, float volume) {
+void MMLPlayer::start_note(float duration, float frequency, float volume)
+{
     _note_start_us = AP_HAL::micros();
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(frequency, volume);
 }
 
-char MMLPlayer::next_char() {
+char MMLPlayer::next_char()
+{
     while (_string[_next] != '\0' && isspace(_string[_next])) {
         _next++;
     }
@@ -55,7 +61,8 @@ char MMLPlayer::next_char() {
     return toupper(_string[_next]);
 }
 
-uint8_t MMLPlayer::next_number() {
+uint8_t MMLPlayer::next_number()
+{
     uint8_t ret = 0;
     while (isdigit(next_char())) {
         ret = (ret*10) + (next_char() - '0');
@@ -64,7 +71,8 @@ uint8_t MMLPlayer::next_number() {
     return ret;
 }
 
-size_t MMLPlayer::next_dots() {
+size_t MMLPlayer::next_dots()
+{
     size_t ret = 0;
     while (next_char() == '.') {
         ret++;
@@ -73,7 +81,8 @@ size_t MMLPlayer::next_dots() {
     return ret;
 }
 
-float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots) {
+float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots)
+{
     float whole_note_period = 240.0f / _tempo;
     if (rest_length == 0) {
         rest_length = 1;
@@ -90,7 +99,8 @@ float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots) {
     return rest_period;
 }
 
-void MMLPlayer::next_action() {
+void MMLPlayer::next_action()
+{
     if (_silence_duration > 0) {
         start_silence(_silence_duration);
         _silence_duration = 0;
@@ -113,129 +123,129 @@ void MMLPlayer::next_action() {
 
         _next++;
 
-        switch(c) {
-            case 'V': {
-                _volume = next_number();
-                break;
+        switch (c) {
+        case 'V': {
+            _volume = next_number();
+            break;
+        }
+        case 'L': {
+            _default_note_length = next_number();
+            if (_default_note_length == 0) {
+                stop();
+                return;
             }
-            case 'L': {
-                _default_note_length = next_number();
-                if (_default_note_length == 0) {
-                    stop();
-                    return;
-                }
-                break;
+            break;
+        }
+        case 'O':
+            _octave = next_number();
+            if (_octave > 6) {
+                _octave = 6;
             }
-            case 'O':
-                _octave = next_number();
-                if (_octave > 6) {
-                    _octave = 6;
-                }
+            break;
+        case '<':
+            if (_octave > 0) {
+                _octave--;
+            }
+            break;
+        case '>':
+            if (_octave < 6) {
+                _octave++;
+            }
+            break;
+        case 'M':
+            c = next_char();
+            if (c == '\0') {
+                stop();
+                return;
+            }
+            _next++;
+            switch (c) {
+            case 'N':
+                _note_mode = MODE_NORMAL;
                 break;
-            case '<':
-                if (_octave > 0) {
-                    _octave--;
-                }
+            case 'L':
+                _note_mode = MODE_LEGATO;
                 break;
-            case '>':
-                if (_octave < 6) {
-                    _octave++;
-                }
+            case 'S':
+                _note_mode = MODE_STACCATO;
                 break;
-            case 'M':
-                c = next_char();
-                if (c == '\0') {
-                    stop();
-                    return;
-                }
-                _next++;
-                switch (c) {
-                    case 'N':
-                        _note_mode = MODE_NORMAL;
-                        break;
-                    case 'L':
-                        _note_mode = MODE_LEGATO;
-                        break;
-                    case 'S':
-                        _note_mode = MODE_STACCATO;
-                        break;
-                    case 'F':
-                        _repeat = false;
-                        break;
-                    case 'B':
-                        _repeat = true;
-                        break;
-                    default:
-                        stop();
-                        return;
-                }
+            case 'F':
+                _repeat = false;
                 break;
-            case 'R':
-            case 'P': {
+            case 'B':
+                _repeat = true;
+                break;
+            default:
+                stop();
+                return;
+            }
+            break;
+        case 'R':
+        case 'P': {
+            uint8_t num = next_number();
+            uint8_t dots = next_dots();
+            start_silence(rest_duration(num, dots));
+            return;
+        }
+        case 'T':
+            _tempo = next_number();
+            if (_tempo < 32) {
+                stop();
+                return;
+            }
+            break;
+        case 'N':
+            note = next_number();
+            note_length = _default_note_length;
+            if (note > 84) {
+                stop();
+                return;
+            }
+            if (note == 0) {
                 uint8_t num = next_number();
                 uint8_t dots = next_dots();
                 start_silence(rest_duration(num, dots));
                 return;
             }
-            case 'T':
-                _tempo = next_number();
-                if (_tempo < 32) {
-                    stop();
-                    return;
-                }
-                break;
-            case 'N':
-                note = next_number();
-                note_length = _default_note_length;
-                if (note > 84) {
-                    stop();
-                    return;
-                }
-                if (note == 0) {
-                    uint8_t num = next_number();
-                    uint8_t dots = next_dots();
-                    start_silence(rest_duration(num, dots));
-                    return;
-                }
-                break;
-            case 'A':
-            case 'B':
-            case 'C':
-            case 'D':
-            case 'E':
-            case 'F':
-            case 'G': {
-                uint8_t note_tab[] = {9,11,0,2,4,5,7};
-                note = note_tab[c-'A'] + (_octave*12) + 1;
+            break;
+        case 'A':
+        case 'B':
+        case 'C':
+        case 'D':
+        case 'E':
+        case 'F':
+        case 'G': {
+            uint8_t note_tab[] = {9,11,0,2,4,5,7};
+            note = note_tab[c-'A'] + (_octave*12) + 1;
 
-                c = next_char();
+            c = next_char();
 
-                switch (c) {
-                    case '#':
-                    case '+':
-                        if (note < 84) {
-                            note++;
-                        }
-                        _next++;
-                        break;
-                    case '-':
-                        if (note > 1) {
-                            note--;
-                        }
-                        _next++;
-                        break;
-                    default:
-                        break;
+            switch (c) {
+            case '#':
+            case '+':
+                if (note < 84) {
+                    note++;
                 }
-                note_length = next_number();
-                if (note_length == 0) {
-                    note_length = _default_note_length;
+                _next++;
+                break;
+            case '-':
+                if (note > 1) {
+                    note--;
                 }
+                _next++;
+                break;
+            default:
                 break;
             }
-            default:
-                stop();
-                return;
+            note_length = next_number();
+            if (note_length == 0) {
+                note_length = _default_note_length;
+            }
+            break;
+        }
+        default:
+            stop();
+            return;
         }
     }
 
@@ -248,15 +258,15 @@ void MMLPlayer::next_action() {
     float note_period = 240.0f / (float)_tempo / (float)note_length;
 
     switch (_note_mode) {
-        case MODE_NORMAL:
-            _silence_duration = note_period/8;
-            break;
-        case MODE_STACCATO:
-            _silence_duration = note_period/4;
-            break;
-        case MODE_LEGATO:
-            _silence_duration = 0;
-            break;
+    case MODE_NORMAL:
+        _silence_duration = note_period/8;
+        break;
+    case MODE_STACCATO:
+        _silence_duration = note_period/4;
+        break;
+    case MODE_LEGATO:
+        _silence_duration = 0;
+        break;
     }
     note_period -= _silence_duration;
 
