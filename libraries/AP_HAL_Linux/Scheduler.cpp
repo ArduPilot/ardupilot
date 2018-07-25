@@ -32,7 +32,6 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_UART_PRIORITY         14
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
-#define APM_LINUX_TONEALARM_PRIORITY    11
 #define APM_LINUX_IO_PRIORITY           10
 
 #define APM_LINUX_TIMER_RATE            1000
@@ -43,11 +42,9 @@ extern const AP_HAL::HAL& hal;
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
 #define APM_LINUX_RCIN_RATE             2000
-#define APM_LINUX_TONEALARM_RATE        100
 #define APM_LINUX_IO_RATE               50
 #else
 #define APM_LINUX_RCIN_RATE             100
-#define APM_LINUX_TONEALARM_RATE        100
 #define APM_LINUX_IO_RATE               50
 #endif
 
@@ -76,7 +73,6 @@ void Scheduler::init()
         SCHED_THREAD(timer, TIMER),
         SCHED_THREAD(uart, UART),
         SCHED_THREAD(rcin, RCIN),
-        SCHED_THREAD(tonealarm, TONEALARM),
         SCHED_THREAD(io, IO),
     };
 
@@ -128,8 +124,7 @@ void Scheduler::_debug_stack()
                 _timer_thread.get_stack_usage(),
                 _io_thread.get_stack_usage(),
                 _rcin_thread.get_stack_usage(),
-                _uart_thread.get_stack_usage(),
-                _tonealarm_thread.get_stack_usage());
+                _uart_thread.get_stack_usage());
         _last_stack_debug_msec = now;
     }
 }
@@ -280,12 +275,6 @@ void Scheduler::_uart_task()
     _run_uarts();
 }
 
-void Scheduler::_tonealarm_task()
-{
-    // process tone command
-    Util::from(hal.util)->_toneAlarm_timer_tick();
-}
-
 void Scheduler::_io_task()
 {
     // process any pending storage writes
@@ -345,13 +334,11 @@ void Scheduler::teardown()
     _io_thread.stop();
     _rcin_thread.stop();
     _uart_thread.stop();
-    _tonealarm_thread.stop();
 
     _timer_thread.join();
     _io_thread.join();
     _rcin_thread.join();
     _uart_thread.join();
-    _tonealarm_thread.join();
 }
 
 /*
