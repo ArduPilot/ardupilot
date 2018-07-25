@@ -1,5 +1,5 @@
 /*
- *  ToneAlarm ChibiOS driver
+ *  AP_ToneAlarm driver
  */
 /*
  *   This program is free software: you can redistribute it and/or modify
@@ -19,20 +19,16 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
-#ifdef HAL_PWM_ALARM
 #include "ToneAlarm.h"
 #include "AP_Notify.h"
 
-// #include <sys/types.h>
-// #include <sys/stat.h>
-// #include <unistd.h>
 #include <string.h>
 
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
-const ToneAlarm::Tone ToneAlarm::_tones[] {
+const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },
 #define AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK 1
@@ -95,7 +91,7 @@ const ToneAlarm::Tone ToneAlarm::_tones[] {
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
 };
 
-bool ToneAlarm::init()
+bool AP_ToneAlarm::init()
 {
     if (!hal.util->toneAlarm_init()) {
         return false;
@@ -109,13 +105,13 @@ bool ToneAlarm::init()
     flags.failsafe_battery = AP_Notify::flags.failsafe_battery;
     flags.pre_arm_check = 1;
     _cont_tone_playing = -1;
-    hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &ToneAlarm::_timer_task, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
     play_tone(AP_NOTIFY_TONE_STARTUP);
     return true;
 }
 
 // play_tune - play one of the pre-defined tunes
-void ToneAlarm::play_tone(const uint8_t tone_index)
+void AP_ToneAlarm::play_tone(const uint8_t tone_index)
 {
     uint32_t tnow_ms = AP_HAL::millis();
     const Tone &tone_requested = _tones[tone_index];
@@ -130,19 +126,17 @@ void ToneAlarm::play_tone(const uint8_t tone_index)
     play_string(tone_requested.str);
 }
 
-void ToneAlarm::_timer_task()
+void AP_ToneAlarm::_timer_task()
 {
-    if (_sem) {
-        _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _mml_player.update();
         _sem->give();
     }
 }
 
-void ToneAlarm::play_string(const char *str)
+void AP_ToneAlarm::play_string(const char *str)
 {
-    if (_sem) {
-        _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _mml_player.stop();
         strncpy(_tone_buf, str, AP_NOTIFY_TONEALARM_TONE_BUF_SIZE);
         _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE-1] = 0;
@@ -151,7 +145,7 @@ void ToneAlarm::play_string(const char *str)
     }
 }
 
-void ToneAlarm::stop_cont_tone()
+void AP_ToneAlarm::stop_cont_tone()
 {
     if (_cont_tone_playing == _tone_playing) {
         play_string("");
@@ -160,20 +154,20 @@ void ToneAlarm::stop_cont_tone()
     _cont_tone_playing = -1;
 }
 
-void ToneAlarm::check_cont_tone()
+void AP_ToneAlarm::check_cont_tone()
 {
     uint32_t tnow_ms = AP_HAL::millis();
     // if we are supposed to be playing a continuous tone,
     // and it was interrupted, and the interrupting tone has timed out,
     // resume the continuous tone
 
-    if (_cont_tone_playing != -1 && _tone_playing != _cont_tone_playing && tnow_ms-_tone_beginning_ms > AP_NOTIFY_PX4_MAX_TONE_LENGTH_MS) {
+    if (_cont_tone_playing != -1 && _tone_playing != _cont_tone_playing && tnow_ms-_tone_beginning_ms > AP_NOTIFY_TONEALARM_MAX_TONE_LENGTH_MS) {
         play_tone(_cont_tone_playing);
     }
 }
 
 // update - updates led according to timed_updated.  Should be called at 50Hz
-void ToneAlarm::update()
+void AP_ToneAlarm::update()
 {
     // exit if buzzer is not enabled
     if (pNotify->buzzer_enabled() == false) {
@@ -386,15 +380,14 @@ void ToneAlarm::update()
 /*
  *  handle a PLAY_TUNE message
  */
-void ToneAlarm::handle_play_tune(mavlink_message_t *msg)
+void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
 
     mavlink_msg_play_tune_decode(msg, &packet);
 
-    if (_sem) {
-        _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (_sem && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _mml_player.stop();
 
         strncpy(_tone_buf, packet.tune, MIN(sizeof(packet.tune), sizeof(_tone_buf)-1));
@@ -409,6 +402,3 @@ void ToneAlarm::handle_play_tune(mavlink_message_t *msg)
 
     play_string(packet.tune);
 }
-
-
-#endif // HAL_PWM_ALARM
