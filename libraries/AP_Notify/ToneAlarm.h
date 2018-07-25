@@ -24,8 +24,7 @@
 #define AP_NOTIFY_PX4_MAX_TONE_LENGTH_MS 2000
 #define AP_NOTIFY_TONEALARM_TONE_BUF_SIZE 512
 
-class ToneAlarm: public NotifyDevice
-{
+class ToneAlarm: public NotifyDevice {
 public:
     /// init - initialised the tone alarm
     bool init(void);
@@ -74,11 +73,11 @@ private:
     struct Tone {
         const char *str;
         const uint8_t continuous : 1;
+        };
+
+        const static Tone _tones[];
+
+        AP_HAL::Semaphore* _sem;
+        MMLPlayer _mml_player;
+        char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
     };
-
-    const static Tone _tones[];
-
-    AP_HAL::Semaphore* _sem;
-    MMLPlayer _mml_player;
-    char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
-};
