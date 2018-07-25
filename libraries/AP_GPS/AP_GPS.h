@@ -143,10 +143,10 @@ public:
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
         float horizontal_accuracy;          ///< horizontal RMS accuracy estimate in m
         float vertical_accuracy;            ///< vertical RMS accuracy estimate in m
-        bool have_vertical_velocity:1;      ///< does GPS give vertical velocity? Set to true only once available.
-        bool have_speed_accuracy:1;         ///< does GPS give speed accuracy? Set to true only once available.
-        bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
-        bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuracy? Set to true only once available.
+        bool have_vertical_velocity;      ///< does GPS give vertical velocity? Set to true only once available.
+        bool have_speed_accuracy;         ///< does GPS give speed accuracy? Set to true only once available.
+        bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
+        bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
 
         // all the following fields must only all be filled by RTK capable backend drivers
@@ -467,13 +467,13 @@ private:
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
-    uint8_t primary_instance:2;
+    uint8_t primary_instance;
 
     /// number of GPS instances present
-    uint8_t num_instances:2;
+    uint8_t num_instances;
 
     // which ports are locked
-    uint8_t locked_ports:2;
+    uint8_t locked_ports;
 
     // state of auto-detection process, per instance
     struct detect_state {
@@ -515,8 +515,8 @@ private:
       in a RTCM data block
      */
     struct rtcm_buffer {
-        uint8_t fragments_received:4;
-        uint8_t sequence:5;
+        uint8_t fragments_received;
+        uint8_t sequence;
         uint8_t fragment_count;
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
