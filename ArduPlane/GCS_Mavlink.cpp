@@ -180,16 +180,32 @@ void Plane::send_extended_status1(mavlink_channel_t chan)
 
 void Plane::send_nav_controller_output(mavlink_channel_t chan)
 {
-    mavlink_msg_nav_controller_output_send(
-        chan,
-        nav_roll_cd * 0.01f,
-        nav_pitch_cd * 0.01f,
-        nav_controller->nav_bearing_cd() * 0.01f,
-        nav_controller->target_bearing_cd() * 0.01f,
-        MIN(auto_state.wp_distance, UINT16_MAX),
-        altitude_error_cm * 0.01f,
-        airspeed_error * 100,
-        nav_controller->crosstrack_error());
+    if (quadplane.in_vtol_mode()) {
+        const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
+        bool wp_nav_valid = quadplane.using_wp_nav();
+
+        mavlink_msg_nav_controller_output_send(
+            chan,
+            targets.x * 1.0e-2f,
+            targets.y * 1.0e-2f,
+            targets.z * 1.0e-2f,
+            wp_nav_valid ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0,
+            wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0,
+            (plane.control_mode != QSTABILIZE) ? quadplane.pos_control->get_alt_error() * 1.0e-2f : 0,
+            airspeed_error * 100,
+            wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
+    } else {
+        mavlink_msg_nav_controller_output_send(
+            chan,
+            nav_roll_cd * 0.01f,
+            nav_pitch_cd * 0.01f,
+            nav_controller->nav_bearing_cd() * 0.01f,
+            nav_controller->target_bearing_cd() * 0.01f,
+            MIN(auto_state.wp_distance, UINT16_MAX),
+            altitude_error_cm * 0.01f,
+            airspeed_error * 100,
+            nav_controller->crosstrack_error());
+    }
 }
 
 void GCS_MAVLINK_Plane::send_position_target_global_int()
