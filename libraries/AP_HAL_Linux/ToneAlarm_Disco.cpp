@@ -25,58 +25,22 @@ extern const AP_HAL::HAL &hal;
 
 using namespace Linux;
 
-ToneAlarm_Disco::ToneAlarm_Disco()
-{
-    // initialy no tune to play
-    tune_num = -1;
-    tune_pos = 0;
-}
+ToneAlarm_Disco::ToneAlarm_Disco(){}
 
 bool ToneAlarm_Disco::init()
 {
-    // play startup tune
-    tune_num = 0;
-
     bebop_out = RCOutput_Disco::from(hal.rcout);
 
     return true;
 }
 
-void ToneAlarm_Disco::stop()
+void ToneAlarm_Disco::set_buzzer_tone(float frequency, float volume)
 {
-    bebop_out->play_note(0, 0, 0);
-}
-
-bool ToneAlarm_Disco::play()
-{
-    uint32_t cur_time = AP_HAL::millis();
-
-    if (tune_num != prev_tune_num){
-        tune_changed = true;
-        return true;
+    if (is_zero(frequency) || is_zero(volume)) {
+        bebop_out->play_note(0, 0, 0);
+    } else {
+        bebop_out->play_note(TONEALARM_PWM_POWER, (uint16_t)roundf(frequency), 10000);
     }
-
-    if (cur_note != 0){
-        bebop_out->play_note(TONEALARM_PWM_POWER, cur_note, duration);
-        cur_note = 0;
-        prev_time = cur_time;
-    }
-
-    if ((cur_time - prev_time) > duration){
-        stop();
-        if (tune[tune_num][tune_pos] == '\0'){
-            if (!tune_repeat[tune_num]){
-                tune_num = -1;
-            }
-
-            tune_pos = 0;
-            tune_comp = true;
-            return false;
-        }
-        return true;
-    }
-
-    return false;
 }
 
 #endif
