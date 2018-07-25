@@ -3,8 +3,6 @@ set USB autoconnect
 set NSH_ERROR_UART1 /dev/ttyACM0
 set NSH_ERROR_UART2 /dev/ttyS0
 
-tone_alarm /etc/tones/startup
-
 if sercon
 then
     echo "[init] USB interface connected"
