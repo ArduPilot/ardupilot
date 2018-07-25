@@ -1027,6 +1027,9 @@ private:
     void parachute_release();
     bool parachute_manual_release();
 #endif
+#if OSD_ENABLED == ENABLED
+    void publish_osd_info();
+#endif
     void accel_cal_update(void);
     void update_soft_armed();
 #if SOARING_ENABLED == ENABLED
