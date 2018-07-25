@@ -145,6 +145,7 @@ enum AutoMode {
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
+    Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
 };
 
