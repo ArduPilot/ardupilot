@@ -74,11 +74,11 @@ void AP_Proximity_TeraRangerTowerEvo::update(void)
 // get maximum and minimum distances (in meters) of primary sensor
 float AP_Proximity_TeraRangerTowerEvo::distance_max() const
 {
-    return 8.0f;
+    return 60.0f;
 }
 float AP_Proximity_TeraRangerTowerEvo::distance_min() const
 {
-    return 0.75f;
+    return 0.50f;
 }
 
 void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
@@ -136,7 +136,7 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
                 break;
         }
     }
-    
+
     while (nbytes-- > 0) {
         char c = uart->read();
         if (c == 'T' ) {
@@ -147,10 +147,10 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
         // we should always read 19 bytes THxxxxxxxxxxxxxxxxMC
         if (buffer_count >= 20){
             buffer_count = 0;
-            
+
             //check if message has right CRC
             if (crc_crc8(buffer, 19) == buffer[19]){
-                
+
                 uint16_t d1 = process_distance(buffer[2], buffer[3]);
                 uint16_t d2 = process_distance(buffer[4], buffer[5]);
                 uint16_t d3 = process_distance(buffer[6], buffer[7]);
@@ -188,7 +188,7 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     if (convert_angle_to_sector(angle_deg, sector)) {
         _angle[sector] = angle_deg;
         _distance[sector] = ((float) distance_cm) / 1000;
-        
+
         //check for target too far, target too close and sensor not connected
         _distance_valid[sector] = distance_cm != 0xffff && distance_cm != 0x0000 && distance_cm != 0x0001;
         _last_distance_received_ms = AP_HAL::millis();
