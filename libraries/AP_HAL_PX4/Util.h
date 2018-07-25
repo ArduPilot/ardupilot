@@ -61,6 +61,9 @@ public:
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
     bool flash_bootloader() override;
+
+    bool toneAlarm_init() override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume) override;
     
 private:
     int _safety_handle;
@@ -74,4 +77,6 @@ private:
         uint32_t last_update_ms;
         int fd = -1;
     } _heater;
+
+    int _tonealarm_fd;
 };
