@@ -19,7 +19,6 @@
 
 #include "Util.h"
 #include <chheap.h>
-#include "ToneAlarm.h"
 #include "RCOutput.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
@@ -144,45 +143,25 @@ void Util::set_imu_target_temp(int8_t *target)
 }
 
 #ifdef HAL_PWM_ALARM
-static int state;
-ToneAlarm Util::_toneAlarm;
+struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
 
 bool Util::toneAlarm_init()
 {
-    return _toneAlarm.init();
+    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
+    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+
+    return true;
 }
 
-void Util::toneAlarm_set_tune(uint8_t tone)
-{
-    _toneAlarm.set_tune(tone);
-}
+void Util::toneAlarm_set_buzzer_tone(float frequency, float volume) {
+    if (is_zero(frequency) || is_zero(volume)) {
+        pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
+    } else {
+        pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
+                        roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
 
-void Util::toneAlarm_set_tune_string(const char *str)
-{
-    _toneAlarm.set_tune_string(str);
-}
-
-// (state 0) if init_tune() -> (state 1) complete=false
-// (state 1) if set_note -> (state 2) -> if play -> (state 3)
-//   play returns true if tune has changed or tune is complete (repeating tunes never complete)
-// (state 3) -> (state 1)
-// (on every tick) if (complete) -> (state 0)
-void Util::_toneAlarm_timer_tick() {
-    if(state == 0) {
-        state = state + _toneAlarm.init_tune();
-    } else if (state == 1) {
-        state = state + _toneAlarm.set_note();
+        pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
     }
-    if (state == 2) {
-        state = state + _toneAlarm.play();
-    } else if (state == 3) {
-        state = 1;
-    }
-
-    if (_toneAlarm.is_tune_comp()) {
-        state = 0;
-    }
-
 }
 #endif // HAL_PWM_ALARM
 
