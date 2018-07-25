@@ -729,6 +729,10 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::takeoff_run()
 {
     auto_takeoff_run();
+    if (wp_nav->reached_wp_destination()) {
+        const Vector3f target = wp_nav->get_wp_destination();
+        wp_start(target);
+    }
 }
 
 // auto_wp_run - runs the auto waypoint controller

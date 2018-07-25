@@ -366,6 +366,10 @@ void Copter::ModeGuided::run()
 void Copter::ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
+    if (wp_nav->reached_wp_destination()) {
+        const Vector3f target = wp_nav->get_wp_destination();
+        set_destination(target);
+    }
 }
 
 void Copter::Mode::auto_takeoff_run()
