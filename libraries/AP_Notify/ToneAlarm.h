@@ -21,13 +21,13 @@
 #include "MMLPlayer.h"
 
 // wait 2 seconds before assuming a tone is done and continuing the continuous tone
-#define AP_NOTIFY_PX4_MAX_TONE_LENGTH_MS 2000
+#define AP_NOTIFY_TONEALARM_MAX_TONE_LENGTH_MS 2000
 #define AP_NOTIFY_TONEALARM_TONE_BUF_SIZE 512
 
-class ToneAlarm: public NotifyDevice {
+class AP_ToneAlarm: public NotifyDevice {
 public:
     /// init - initialised the tone alarm
-    bool init(void);
+    bool init(void) override;
 
     /// update - updates led according to timed_updated.  Should be called at 50Hz
     void update();
@@ -73,11 +73,11 @@ private:
     struct Tone {
         const char *str;
         const uint8_t continuous : 1;
-        };
-
-        const static Tone _tones[];
-
-        AP_HAL::Semaphore* _sem;
-        MMLPlayer _mml_player;
-        char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
     };
+
+    const static Tone _tones[];
+
+    AP_HAL::Semaphore* _sem;
+    MMLPlayer _mml_player;
+    char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
+};
