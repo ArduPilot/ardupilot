@@ -2498,6 +2498,12 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     return true;
 }
 
+// return true if the wp_nav controller is being updated
+bool QuadPlane::using_wp_nav(void) const
+{
+    return plane.control_mode == QLOITER || plane.control_mode == QLAND || plane.control_mode == QRTL;
+}
+
 /*
   return mav_type for heartbeat
  */
