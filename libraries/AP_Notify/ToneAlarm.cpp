@@ -17,6 +17,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 #ifdef HAL_PWM_ALARM
 #include "ToneAlarm.h"
@@ -391,6 +392,20 @@ void ToneAlarm::handle_play_tune(mavlink_message_t *msg)
     mavlink_play_tune_t packet;
 
     mavlink_msg_play_tune_decode(msg, &packet);
+
+    if (_sem) {
+        _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        _mml_player.stop();
+
+        strncpy(_tone_buf, packet.tune, MIN(sizeof(packet.tune), sizeof(_tone_buf)-1));
+        _tone_buf[sizeof(_tone_buf)-1] = 0;
+        uint8_t len = strlen(_tone_buf);
+        uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
+        len2 = MIN((sizeof(_tone_buf)-1)-len, len2);
+        strncpy(_tone_buf+len, packet.tune2, len2);
+        _tone_buf[sizeof(_tone_buf)-1] = 0;
+        _sem->give();
+    }
 
     play_string(packet.tune);
 }
