@@ -214,7 +214,7 @@ Complete Parameter List
                 name = param.name
             else:
                 name = param.name.split(':')[-1]
-            tag_frametype =' (%s)' % frame_type if frame_type else ''
+            tag_frametype = ' (%s)' % frame_type if frame_type else ''
             tag = '%s%s: %s' % (self.escape(name), self.escape(tag_frametype), self.escape(param.DisplayName),)
             tag = tag.strip()
             reference = param.name
