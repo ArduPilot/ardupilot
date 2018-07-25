@@ -75,9 +75,11 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-*_3DR_*',
                   '/dev/serial/by-id/usb-Hex_Technology_Limited*',
                   '/dev/serial/by-id/usb-Hex_ProfiCNC*',
-                  '/dev/ttyS*',
                   '/dev/tty.usbmodem*']
 
+if "cygwin" in _platform:
+    default_ports += [ '/dev/ttyS*' ]
+    
 # Detect python version
 if sys.version_info[0] < 3:
     runningPython3 = False
