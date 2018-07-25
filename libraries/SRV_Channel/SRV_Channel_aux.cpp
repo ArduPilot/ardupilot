@@ -255,9 +255,6 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
             if (rc == nullptr) {
                 continue;
             }
-            if (do_input_output) {
-                rc->read();
-            }
             channels[i].set_output_pwm(rc->get_radio_in());
             if (do_input_output) {
                 channels[i].output_ch();
