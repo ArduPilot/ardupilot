@@ -102,6 +102,8 @@ private:
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
     AP_OSD_Setting hdop{false, 0, 0};
+    AP_OSD_Setting waypoint{false, 0, 0};
+    AP_OSD_Setting xtrack_error{false, 0, 0};
 
     bool check_option(uint32_t option);
 
@@ -152,10 +154,13 @@ private:
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
     void draw_hdop(uint8_t x, uint8_t y);
+    void draw_waypoint(uint8_t x, uint8_t y);
+    void draw_xtrack_error(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
 public:
+    friend class AP_OSD_Screen;
     //constructor
     AP_OSD();
 
@@ -213,6 +218,15 @@ public:
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
+    struct NavInfo {
+        float wp_distance;
+        int32_t wp_bearing;
+        float wp_xtrack_error;
+        uint16_t wp_number;
+    };
+
+    void set_nav_info(NavInfo &nav_info);
+    
 private:
     void osd_thread();
     void update_osd();
@@ -226,4 +240,5 @@ private:
     uint16_t previous_channel_value;
     bool switch_debouncer;
     uint32_t last_switch_ms;
+    struct NavInfo nav_info;
 };

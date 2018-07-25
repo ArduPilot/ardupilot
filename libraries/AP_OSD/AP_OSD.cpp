@@ -278,3 +278,10 @@ void AP_OSD::next_screen()
     } while (t != current_screen && !screen[t].enabled);
     current_screen = t;
 }
+
+// set navigation information for display
+void AP_OSD::set_nav_info(NavInfo &navinfo)
+{
+    // do this without a lock for now
+    nav_info = navinfo;
+}
