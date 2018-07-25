@@ -161,6 +161,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: WAYPOINT
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(waypoint, "WAYPOINT", 30, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: XTRACK
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(xtrack_error, "XTRACK", 31, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -795,6 +803,25 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, hdp);
 }
 
+void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    int32_t angle = wrap_360_cd(osd->nav_info.wp_bearing - ahrs.yaw_sensor);
+    int32_t interval = 36000 / SYM_ARROW_COUNT;
+    if (osd->nav_info.wp_distance < 2.0f) {
+        //avoid fast rotating arrow at small distances
+        angle = 0;
+    }
+    char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
+    backend->write(x,y, false, "%c%2u%c",SYM_WPNO, osd->nav_info.wp_number, arrow);
+    draw_distance(x+4, y, osd->nav_info.wp_distance);
+}
+
+void AP_OSD_Screen::draw_xtrack_error(uint8_t x, uint8_t y)
+{
+    backend->write(x, y, false, "%c%4d", SYM_XERR, (int)osd->nav_info.wp_xtrack_error);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -810,6 +837,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
     DRAW_SETTING(altitude);
+    DRAW_SETTING(waypoint);
+    DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);
@@ -837,3 +866,4 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
 }
+
