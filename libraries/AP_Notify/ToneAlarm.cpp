@@ -32,65 +32,65 @@
 extern const AP_HAL::HAL& hal;
 
 const ToneAlarm::Tone ToneAlarm::_tones[] {
-    #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
+#define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
     { "MFT200L4<<<B#A#2", false },
-    #define AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK 1
+#define AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK 1
     { "MFT100L4>B#A#2P8B#A#2", false },
-    #define AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK 2
+#define AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK 2
     { "MFT200L4<B#", false },
-    #define AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK 3
+#define AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK 3
     { "MFT100L4>B#", false },
-    #define AP_NOTIFY_TONE_QUIET_POS_FEEDBACK 4
+#define AP_NOTIFY_TONE_QUIET_POS_FEEDBACK 4
     { "MFT200L4<A#B#", false },
-    #define AP_NOTIFY_TONE_LOUD_POS_FEEDBACK 5
+#define AP_NOTIFY_TONE_LOUD_POS_FEEDBACK 5
     { "MFT100L4>A#B#", false },
-    #define AP_NOTIFY_TONE_LOUD_READY_OR_FINISHED 6
+#define AP_NOTIFY_TONE_LOUD_READY_OR_FINISHED 6
     { "MFT100L4>G#6A#6B#4", false },
-    #define AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED 7
+#define AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED 7
     { "MFT200L4<G#6A#6B#4", false },
-    #define AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED 8
+#define AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED 8
     { "MFT100L4>A#A#A#A#", false },
-    #define AP_NOTIFY_TONE_QUIET_ARMING_WARNING 9
+#define AP_NOTIFY_TONE_QUIET_ARMING_WARNING 9
     { "MNT75L1O2G", false },
-    #define AP_NOTIFY_TONE_LOUD_WP_COMPLETE 10
+#define AP_NOTIFY_TONE_LOUD_WP_COMPLETE 10
     { "MFT200L8G>C3", false },
-    #define AP_NOTIFY_TONE_LOUD_LAND_WARNING_CTS 11
+#define AP_NOTIFY_TONE_LOUD_LAND_WARNING_CTS 11
     { "MBT200L2A-G-A-G-A-G-", true },
-    #define AP_NOTIFY_TONE_LOUD_VEHICLE_LOST_CTS 12
+#define AP_NOTIFY_TONE_LOUD_VEHICLE_LOST_CTS 12
     { "MBT200>A#1", true },
-    #define AP_NOTIFY_TONE_LOUD_BATTERY_ALERT_CTS 13
+#define AP_NOTIFY_TONE_LOUD_BATTERY_ALERT_CTS 13
     { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
-    #define AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
+#define AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
     { "MBNT255<C16P2", true },
-    #define AP_NOTIFY_TONE_WAITING_FOR_THROW 15
+#define AP_NOTIFY_TONE_WAITING_FOR_THROW 15
     { "MBNT90L4O2A#O3DFN0N0N0", true},
-    #define AP_NOTIFY_TONE_LOUD_1 16
+#define AP_NOTIFY_TONE_LOUD_1 16
     { "MFT100L8>B", false},
-    #define AP_NOTIFY_TONE_LOUD_2 17
+#define AP_NOTIFY_TONE_LOUD_2 17
     { "MFT100L8>BB", false},
-    #define AP_NOTIFY_TONE_LOUD_3 18
+#define AP_NOTIFY_TONE_LOUD_3 18
     { "MFT100L8>BBB", false},
-    #define AP_NOTIFY_TONE_LOUD_4 19
+#define AP_NOTIFY_TONE_LOUD_4 19
     { "MFT100L8>BBBB", false},
-    #define AP_NOTIFY_TONE_LOUD_5 20
+#define AP_NOTIFY_TONE_LOUD_5 20
     { "MFT100L8>BBBBB", false},
-    #define AP_NOTIFY_TONE_LOUD_6 21
+#define AP_NOTIFY_TONE_LOUD_6 21
     { "MFT100L8>BBBBBB", false},
-    #define AP_NOTIFY_TONE_LOUD_7 22
+#define AP_NOTIFY_TONE_LOUD_7 22
     { "MFT100L8>BBBBBBB", false},
-    #define AP_NOTIFY_TONE_TUNING_START 23
+#define AP_NOTIFY_TONE_TUNING_START 23
     { "MFT100L20>C#D#", false},
-    #define AP_NOTIFY_TONE_TUNING_SAVE 24
+#define AP_NOTIFY_TONE_TUNING_SAVE 24
     { "MFT100L10DBDB>", false},
-    #define AP_NOTIFY_TONE_TUNING_ERROR 25
+#define AP_NOTIFY_TONE_TUNING_ERROR 25
     { "MFT100L10>BBBBBBBB", false},
-    #define AP_NOTIFY_TONE_LEAK_DETECTED 26
+#define AP_NOTIFY_TONE_LEAK_DETECTED 26
     { "MBT255L8>A+AA-", true},
-    #define AP_NOTIFY_TONE_QUIET_SHUTDOWN 27
+#define AP_NOTIFY_TONE_QUIET_SHUTDOWN 27
     { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
-    #define AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
+#define AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
     { "MFT200L4<B#4A#6G#6", false },
-    #define AP_NOTIFY_TONE_STARTUP 29
+#define AP_NOTIFY_TONE_STARTUP 29
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
 };
 
@@ -119,7 +119,7 @@ void ToneAlarm::play_tone(const uint8_t tone_index)
     uint32_t tnow_ms = AP_HAL::millis();
     const Tone &tone_requested = _tones[tone_index];
 
-    if(tone_requested.continuous) {
+    if (tone_requested.continuous) {
         _cont_tone_playing = tone_index;
     }
 
@@ -129,7 +129,8 @@ void ToneAlarm::play_tone(const uint8_t tone_index)
     play_string(tone_requested.str);
 }
 
-void ToneAlarm::_timer_task() {
+void ToneAlarm::_timer_task()
+{
     if (_sem) {
         _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _mml_player.update();
@@ -137,7 +138,8 @@ void ToneAlarm::_timer_task() {
     }
 }
 
-void ToneAlarm::play_string(const char *str) {
+void ToneAlarm::play_string(const char *str)
+{
     if (_sem) {
         _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _mml_player.stop();
@@ -148,15 +150,17 @@ void ToneAlarm::play_string(const char *str) {
     }
 }
 
-void ToneAlarm::stop_cont_tone() {
-    if(_cont_tone_playing == _tone_playing) {
+void ToneAlarm::stop_cont_tone()
+{
+    if (_cont_tone_playing == _tone_playing) {
         play_string("");
         _tone_playing = -1;
     }
     _cont_tone_playing = -1;
 }
 
-void ToneAlarm::check_cont_tone() {
+void ToneAlarm::check_cont_tone()
+{
     uint32_t tnow_ms = AP_HAL::millis();
     // if we are supposed to be playing a continuous tone,
     // and it was interrupted, and the interrupting tone has timed out,
@@ -186,11 +190,11 @@ void ToneAlarm::update()
     }
 
     if (AP_Notify::flags.compass_cal_running != flags.compass_cal_running) {
-        if(AP_Notify::flags.compass_cal_running) {
+        if (AP_Notify::flags.compass_cal_running) {
             play_tone(AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS);
             play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
         } else {
-            if(_cont_tone_playing == AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS) {
+            if (_cont_tone_playing == AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS) {
                 stop_cont_tone();
             }
         }
@@ -256,7 +260,7 @@ void ToneAlarm::update()
     }
 
     // failsafe initiated mode change
-    if(AP_Notify::events.failsafe_mode_change) {
+    if (AP_Notify::events.failsafe_mode_change) {
         play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
     }
 
@@ -302,7 +306,7 @@ void ToneAlarm::update()
         if (flags.armed) {
             // arming tune
             play_tone(AP_NOTIFY_TONE_QUIET_ARMING_WARNING);
-        }else{
+        } else {
             // disarming tune
             play_tone(AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK);
             if (!flags.leak_detected) {
