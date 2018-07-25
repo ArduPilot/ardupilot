@@ -2,6 +2,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "RCInput.h"
+#include <SITL/SITL.h>
 
 using namespace HALSITL;
 
@@ -22,7 +23,7 @@ bool RCInput::new_input()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    if (ch >= SITL_RC_INPUT_CHANNELS) {
+    if (ch >= num_channels()) {
         return 0;
     }
     return _sitlState->pwm_input[ch];
@@ -30,13 +31,22 @@ uint16_t RCInput::read(uint8_t ch)
 
 uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
-    if (len > SITL_RC_INPUT_CHANNELS) {
-        len = SITL_RC_INPUT_CHANNELS;
+    if (len > num_channels()) {
+        len = num_channels();
     }
     for (uint8_t i=0; i < len; i++) {
         periods[i] = read(i);
     }
     return len;
+}
+
+uint8_t RCInput::num_channels()
+{
+    SITL::SITL *_sitl = AP::sitl();
+    if (_sitl) {
+        return MIN(_sitl->rc_chancount.get(), SITL_RC_INPUT_CHANNELS);
+    }
+    return SITL_RC_INPUT_CHANNELS;
 }
 
 #endif

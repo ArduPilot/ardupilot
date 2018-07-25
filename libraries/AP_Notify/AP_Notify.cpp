@@ -196,10 +196,9 @@ void AP_Notify::add_backends(void)
         return;
     }
 
-    for (uint32_t i = 1; i < 32; i = i << 1) {
+    for (uint32_t i = 1; i < Notify_LED_MAX; i = i << 1) {
         switch(_led_type & i) {
             case Notify_LED_None:
-            case Notify_LED_MAX:
                 break;
             case Notify_LED_Board:
                 // select the most appropriate built in LED driver type

@@ -56,10 +56,6 @@ public:
         AP_Motors(loop_rate, speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
-
-        // initialise flags
-        _heliflags.landing_collective = 0;
-        _heliflags.rotor_runup_complete = 0;
     };
 
     // init
