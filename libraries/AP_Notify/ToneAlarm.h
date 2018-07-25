@@ -1,28 +1,30 @@
 /*
-  ToneAlarm PX4 driver
-*/
+ *  ToneAlarm PX4 driver
+ */
 /*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
 
 #include "NotifyDevice.h"
+#include "MMLPlayer.h"
 
 // wait 2 seconds before assuming a tone is done and continuing the continuous tone
 #define AP_NOTIFY_PX4_MAX_TONE_LENGTH_MS 2000
+#define AP_NOTIFY_TONEALARM_TONE_BUF_SIZE 512
 
-class ToneAlarm_PX4: public NotifyDevice
+class ToneAlarm: public NotifyDevice
 {
 public:
     /// init - initialised the tone alarm
@@ -33,7 +35,7 @@ public:
 
     // handle a PLAY_TUNE message
     void handle_play_tune(mavlink_message_t *msg);
-    
+
 private:
     /// play_tune - play one of the pre-defined tunes
     void play_tone(const uint8_t tone_index);
@@ -47,7 +49,8 @@ private:
     // check_cont_tone - check if we should begin playing a continuous tone
     void check_cont_tone();
 
-    int _tonealarm_fd;      // file descriptor for the tone alarm
+    // timer task - runs at 1khz
+    void _timer_task();
 
     /// tonealarm_type - bitmask of states we track
     struct tonealarm_type {
@@ -74,4 +77,8 @@ private:
     };
 
     const static Tone _tones[];
+
+    AP_HAL::Semaphore* _sem;
+    MMLPlayer _mml_player;
+    char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
 };

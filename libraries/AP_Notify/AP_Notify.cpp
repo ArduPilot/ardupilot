@@ -23,9 +23,7 @@
 #include "PCA9685LED_I2C.h"
 #include "OreoLED_PX4.h"
 #include "RCOutputRGBLed.h"
-#include "ToneAlarm_Linux.h"
-#include "ToneAlarm_ChibiOS.h"
-#include "ToneAlarm_PX4.h"
+#include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
@@ -259,7 +257,7 @@ void AP_Notify::add_backends(void)
     // Add noise making devices
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
     CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN  
-    ADD_BACKEND(new ToneAlarm_PX4());
+    ADD_BACKEND(new ToneAlarm());
 
 // ChibiOS noise makers
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -267,7 +265,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new Buzzer());
 #endif
 #ifdef HAL_PWM_ALARM
-    ADD_BACKEND(new ToneAlarm_ChibiOS());
+    ADD_BACKEND(new ToneAlarm());
 #endif
 
 // Linux noise makers
@@ -286,7 +284,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new Buzzer());
 
   #else // other linux
-    ADD_BACKEND(new ToneAlarm_Linux());
+    ADD_BACKEND(new ToneAlarm());
   #endif
 
 // F4Light noise makers
