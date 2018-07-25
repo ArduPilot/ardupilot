@@ -108,14 +108,16 @@ RC_Channel::get_reverse(void) const
     return bool(reversed.get());
 }
 
-// read input from APM_RC - create a control_in value
-void
-RC_Channel::set_pwm(int16_t pwm)
+// read input from hal.rcin or overrides
+bool
+RC_Channel::update(void)
 {
-    if (has_override()) {
+    if (has_override() && !(*RC_Channels::options & RC_IGNORE_OVERRIDES)) {
         radio_in = override_value;
+    } else if (!(*RC_Channels::options & RC_IGNORE_RECEIVER)) {
+        radio_in = hal.rcin->read(ch_in);
     } else {
-        radio_in = pwm;
+        return false;
     }
 
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
@@ -124,6 +126,8 @@ RC_Channel::set_pwm(int16_t pwm)
         //RC_CHANNEL_TYPE_ANGLE
         control_in = pwm_to_angle();
     }
+
+    return true;
 }
 
 // recompute control values with no deadzone
@@ -297,12 +301,6 @@ RC_Channel::percent_input()
         ret = 100 - ret;
     }
     return ret;
-}
-
-uint16_t
-RC_Channel::read() const
-{
-    return hal.rcin->read(ch_in);
 }
 
 /*
