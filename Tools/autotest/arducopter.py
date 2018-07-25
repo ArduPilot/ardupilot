@@ -357,6 +357,58 @@ class AutoTestCopter(AutoTest):
                 return
         raise AutoTestTimeoutException("Did not get home and disarm")
 
+    def fly_loiter_to_alt(self):
+        """loiter to alt"""
+
+        self.context_push()
+
+        ex = None
+        try:
+
+            self.set_parameter("PLND_ENABLED", 1)
+            self.fetch_parameters()
+            self.set_parameter("PLND_TYPE", 4)
+
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+
+            self.reboot_sitl()
+
+            global num_wp
+            num_wp = self.load_mission("copter_loiter_to_alt.txt")
+            if not num_wp:
+                self.progress("load copter_loiter_to_target failed")
+                raise NotAchievedException()
+
+            self.mavproxy.send('switch 5\n')
+            self.wait_mode('LOITER')
+
+            self.wait_ready_to_arm()
+
+            self.arm_vehicle()
+
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+
+            self.set_rc(3, 1550)
+
+            self.wait_current_waypoint(2)
+
+            self.set_rc(3, 1500)
+
+            self.mav.motors_disarmed_wait()
+        except Exception as e:
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def fly_throttle_failsafe(self, side=60, timeout=180):
         """Fly east, Failsafe, return, land."""
 
@@ -2146,12 +2198,15 @@ class AutoTestCopter(AutoTest):
             self.run_test("Test submode change",
                           self.fly_guided_change_submode)
 
+            self.run_test("Loiter-To-Alt", self.fly_loiter_to_alt)
+
             self.progress("Waiting for location")
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.mav.wait_heartbeat()
             self.wait_mode('STABILIZE')
+            self.set_rc(3, 1000)
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
 

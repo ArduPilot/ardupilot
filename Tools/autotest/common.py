@@ -1078,6 +1078,14 @@ class AutoTest(ABC):
                 return True
         raise WaitLocationTimeout("Failed to attain location")
 
+    def wait_current_waypoint(self, wpnum, timeout=60):
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            seq = self.mav.waypoint_current()
+            self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
+            if seq == wpnum:
+                break;
+
     def wait_waypoint(self,
                       wpnum_start,
                       wpnum_end,
