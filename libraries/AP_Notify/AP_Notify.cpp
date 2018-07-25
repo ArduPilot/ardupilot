@@ -256,8 +256,8 @@ void AP_Notify::add_backends(void)
 
     // Add noise making devices
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
-    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN  
-    ADD_BACKEND(new ToneAlarm());
+    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    ADD_BACKEND(new AP_ToneAlarm());
 
 // ChibiOS noise makers
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -265,7 +265,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new Buzzer());
 #endif
 #ifdef HAL_PWM_ALARM
-    ADD_BACKEND(new ToneAlarm());
+    ADD_BACKEND(new AP_ToneAlarm());
 #endif
 
 // Linux noise makers
@@ -284,7 +284,7 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new Buzzer());
 
   #else // other linux
-    ADD_BACKEND(new ToneAlarm());
+    ADD_BACKEND(new AP_ToneAlarm());
   #endif
 
 // F4Light noise makers
