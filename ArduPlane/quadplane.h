@@ -109,6 +109,9 @@ public:
     
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
+
+    // return true if the wp_nav controller is being updated
+    bool using_wp_nav(void) const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
