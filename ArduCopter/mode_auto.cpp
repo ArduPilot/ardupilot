@@ -94,6 +94,10 @@ void Copter::ModeAuto::run()
         loiter_run();
         break;
 
+    case Auto_LoiterToAlt:
+        loiter_to_alt_run();
+        break;
+
     case Auto_NavPayloadPlace:
         payload_place_run();
         break;
@@ -412,6 +416,10 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_time(cmd);
         break;
 
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        do_loiter_to_alt(cmd);
+        break;
+
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
         do_RTL();
         break;
@@ -632,6 +640,9 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
+
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+        return verify_loiter_to_alt();
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
@@ -856,6 +867,58 @@ void Copter::ModeAuto::loiter_run()
 
     pos_control->update_z_controller();
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+}
+
+// auto_loiter_run - loiter to altitude in AUTO flight mode
+//      called by auto_run at 100hz or more
+void Copter::ModeAuto::loiter_to_alt_run()
+{
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
+        zero_throttle_and_relax_ac();
+        return;
+    }
+
+    // possibly just run the waypoint controller:
+    if (!loiter_to_alt.reached_destination_xy) {
+        loiter_to_alt.reached_destination_xy = wp_nav->reached_wp_destination_xy();
+        if (!loiter_to_alt.reached_destination_xy) {
+            wp_run();
+            return;
+        }
+    }
+
+    if (!loiter_to_alt.loiter_start_done) {
+        loiter_nav->init_target();
+        _mode = Auto_LoiterToAlt;
+        loiter_to_alt.loiter_start_done = true;
+    }
+    const float alt_error_cm = copter.current_loc.alt - loiter_to_alt.alt;
+    if (fabsf(alt_error_cm) < 5.0) { // random numbers R US
+        loiter_to_alt.reached_alt = true;
+    } else if (alt_error_cm * loiter_to_alt.alt_error_cm < 0) {
+        // we were above and are now below, or vice-versa
+        loiter_to_alt.reached_alt = true;
+    }
+    loiter_to_alt.alt_error_cm = alt_error_cm;
+
+    // loiter...
+
+    land_run_horizontal_control();
+
+    // Compute a vertical velocity demand such that the vehicle
+    // approaches the desired altitude.
+    float target_climb_rate = AC_AttitudeControl::sqrt_controller(
+        -alt_error_cm,
+        pos_control->get_pos_z_p().kP(),
+        pos_control->get_max_accel_z(),
+        G_Dt);
+
+    // get avoidance adjusted climb rate
+    target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+    pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+    pos_control->update_z_controller();
 }
 
 // auto_payload_place_start - initialises controller to implement placement of a load
@@ -1110,6 +1173,43 @@ void Copter::ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     // setup loiter timer
     loiter_time     = 0;
     loiter_time_max = cmd.p1;     // units are (seconds)
+}
+
+// do_loiter_alt - initiate loitering at a point until a given altitude is reached
+// note: caller should set yaw_mode
+void Copter::ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
+{
+    // re-use loiter unlimited
+    do_loiter_unlimited(cmd);
+    _mode = Auto_LoiterToAlt;
+
+    // if we aren't navigating to a location then we have to adjust
+    // altitude for current location
+    Location_Class target_loc(cmd.content.location);
+    const Location_Class &current_loc = copter.current_loc;
+    if (target_loc.lat == 0 && target_loc.lng == 0) {
+        target_loc.lat = current_loc.lat;
+        target_loc.lng = current_loc.lng;
+    }
+
+    if (!target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, loiter_to_alt.alt)) {
+        loiter_to_alt.reached_destination_xy = true;
+        loiter_to_alt.reached_alt = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");
+        return;
+    }
+    loiter_to_alt.reached_destination_xy = false;
+    loiter_to_alt.loiter_start_done = false;
+    loiter_to_alt.reached_alt = false;
+    loiter_to_alt.alt_error_cm = 0;
+
+    pos_control->set_max_accel_z(wp_nav->get_accel_z());
+    pos_control->set_max_speed_z(wp_nav->get_speed_down(),
+                                 wp_nav->get_speed_up());
+
+    if (pos_control->is_active_z()) {
+        pos_control->freeze_ff_z();
+    }
 }
 
 // do_spline_wp - initiate move to next waypoint
@@ -1583,6 +1683,17 @@ bool Copter::ModeAuto::verify_loiter_time()
 
     // check if loiter timer has run out
     return (((millis() - loiter_time) / 1000) >= loiter_time_max);
+}
+
+// verify_loiter_to_alt - check if we have reached both destination
+// (roughly) and altitude (precisely)
+bool Copter::ModeAuto::verify_loiter_to_alt()
+{
+    if (loiter_to_alt.reached_destination_xy &&
+        loiter_to_alt.reached_alt) {
+        return true;
+    }
+    return false;
 }
 
 // verify_RTL - handles any state changes required to implement RTL
