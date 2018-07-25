@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -279,6 +280,8 @@ void MMLPlayer::next_action()
 
     float note_frequency = 880.0f * expf(logf(2.0f) * ((int)note - 46) / 12.0f);
     float note_volume = _volume/255.0f;
+
+    note_frequency = constrain_float(note_frequency, 10, 22000);
 
     start_note(note_period, note_frequency, note_volume);
 }
