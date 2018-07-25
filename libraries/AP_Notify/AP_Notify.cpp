@@ -21,6 +21,7 @@
 #include "Display.h"
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
+#include "NCP5623.h"
 #include "OreoLED_PX4.h"
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
@@ -42,31 +43,35 @@ AP_Notify *AP_Notify::_instance;
 #define TOSHIBA_LED_I2C_BUS_INTERNAL    0
 #define TOSHIBA_LED_I2C_BUS_EXTERNAL    1
 
+// all I2C_LEDS
+#define I2C_LEDS (Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External | \
+                  Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
+
 #ifndef BUILD_DEFAULT_LED_TYPE
 // PX4 boards
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External | Notify_LED_OreoLED)
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
   #else   // All other px4 boards use standard devices
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
 
 // ChibiOS and VRBrain boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
       CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
+  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External |\
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External |\
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_UAVCAN)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
@@ -81,7 +86,7 @@ AP_Notify *AP_Notify::_instance;
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_ToshibaLED_I2C_External)
 
   #else // other linux
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
 
 // F4Light
@@ -90,7 +95,7 @@ AP_Notify *AP_Notify::_instance;
 
 // All other builds
 #else
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_Internal | Notify_LED_ToshibaLED_I2C_External)
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
 #endif // board selection
 
@@ -149,7 +154,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN
+    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
@@ -234,6 +239,14 @@ void AP_Notify::add_backends(void)
             case Notify_LED_ToshibaLED_I2C_External:
                 ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
                 break;
+#if !HAL_MINIMIZE_FEATURES
+            case Notify_LED_NCP5623_I2C_External:
+                ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_EXTERNAL));
+                break;
+            case Notify_LED_NCP5623_I2C_Internal:
+                ADD_BACKEND(new NCP5623(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                break;
+#endif
             case Notify_LED_PCA9685LED_I2C_External:
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
