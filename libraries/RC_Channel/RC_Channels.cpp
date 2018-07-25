@@ -31,6 +31,7 @@ extern const AP_HAL::HAL& hal;
 RC_Channel *RC_Channels::channels;
 bool RC_Channels::has_new_overrides;
 AP_Float *RC_Channels::override_timeout;
+AP_Int32 *RC_Channels::options;
 
 const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Group: 1_
@@ -105,6 +106,13 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Units: s
     AP_GROUPINFO("_OVERRIDE_TIME", 32, RC_Channels, _override_timeout, 3.0),
     
+    // @Param: _OPTIONS
+    // @DisplayName: RC options
+    // @Description: RC input options
+    // @User: Advanced
+    // @Bitmask: 0:Ignore RC Reciever, 1:Ignore MAVLink Overrides
+    AP_GROUPINFO("_OPTIONS", 33, RC_Channels, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -117,6 +125,7 @@ RC_Channels::RC_Channels(void)
     channels = obj_channels;
 
     override_timeout = &_override_timeout;
+    options = &_options;
     
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
@@ -150,9 +159,7 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
     return read_channels;
 }
 
-/*
-  call read() and set_pwm() on all channels if there is new data
- */
+// update all the input channels
 bool
 RC_Channels::read_input(void)
 {
@@ -162,11 +169,12 @@ RC_Channels::read_input(void)
 
     has_new_overrides = false;
 
+    bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channels[i].set_pwm(channels[i].read());
+        success |= channels[i].update();
     }
 
-    return true;
+    return success;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)
