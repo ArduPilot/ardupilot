@@ -30,6 +30,7 @@ known_param_fields = [
              'Bitmask',
              'Volatile',
              'ReadOnly',
+             'FrameType',
                       ]
 
 # Follow SI units conventions from:

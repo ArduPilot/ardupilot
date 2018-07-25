@@ -12,6 +12,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Units: cdeg
     // @Range: 0 1000
     // @User: Advanced
+    // @FrameType: Heli
     AP_GROUPINFO("HOVR_ROL_TRM",    1, AC_AttitudeControl_Heli, _hover_roll_trim, AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT),
 
     // @Param: RAT_RLL_P
@@ -20,6 +21,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_RLL_I
     // @DisplayName: Roll axis rate controller I gain
@@ -27,6 +29,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.01 0.6
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
@@ -34,6 +37,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
@@ -41,6 +45,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.001 0.03
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_RLL_FF
     // @DisplayName: Roll axis rate controller feed forward
@@ -48,6 +53,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_RLL_FILT
     // @DisplayName: Roll axis rate controller input frequency in Hz
@@ -55,6 +61,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
+    // @FrameType: Heli
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 2, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_PIT_P
@@ -63,6 +70,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
@@ -70,6 +78,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.01 0.6
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
@@ -77,6 +86,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
@@ -84,6 +94,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.001 0.03
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_PIT_FF
     // @DisplayName: Pitch axis rate controller feed forward
@@ -91,6 +102,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_PIT_FILT
     // @DisplayName: Pitch axis rate controller input frequency in Hz
@@ -98,6 +110,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
+    // @FrameType: Heli
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 3, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_YAW_P
@@ -106,6 +119,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.180 0.60
     // @Increment: 0.005
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
@@ -113,6 +127,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.01 0.06
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
@@ -120,6 +135,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_YAW_D
     // @DisplayName: Yaw axis rate controller D gain
@@ -127,6 +143,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_YAW_FF
     // @DisplayName: Yaw axis rate controller feed forward
@@ -134,6 +151,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
+    // @FrameType: Heli
 
     // @Param: RAT_YAW_FILT
     // @DisplayName: Yaw axis rate controller input frequency in Hz
@@ -141,6 +159,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Units: Hz
     // @Range: 1 20
     // @Increment: 1
+    // @FrameType: Heli
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 4, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: PIRO_COMP
@@ -148,6 +167,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Description: Pirouette compensation enabled
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    // @FrameType: Heli
     AP_GROUPINFO("PIRO_COMP",    5, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
     
     AP_GROUPEND
