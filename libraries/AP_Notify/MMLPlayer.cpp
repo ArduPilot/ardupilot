@@ -215,7 +215,7 @@ void MMLPlayer::next_action()
         case 'E':
         case 'F':
         case 'G': {
-            uint8_t note_tab[] = {9,11,0,2,4,5,7};
+            static const uint8_t note_tab[] = {9,11,0,2,4,5,7};
             note = note_tab[c-'A'] + (_octave*12) + 1;
 
             c = next_char();
