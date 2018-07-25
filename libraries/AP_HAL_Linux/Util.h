@@ -36,11 +36,6 @@ public:
      */
     void commandline_arguments(uint8_t &argc, char * const *&argv);
 
-    bool toneAlarm_init();
-    void toneAlarm_set_tune(uint8_t tune);
-
-    void _toneAlarm_timer_tick();
-
     /*
       set system clock in UTC microseconds
      */
@@ -99,6 +94,9 @@ public:
     AP_HAL::Semaphore *new_semaphore(void) override { return new Semaphore; }
 
     int get_hw_arm32();
+
+    bool toneAlarm_init() override { return _toneAlarm.init(); }
+    void toneAlarm_set_buzzer_tone(float frequency, float volume) override { _toneAlarm.set_buzzer_tone(frequency, volume); }
 
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO

@@ -63,34 +63,6 @@ void Util::commandline_arguments(uint8_t &argc, char * const *&argv)
     argv = saved_argv;
 }
 
-bool Util::toneAlarm_init()
-{
-    return _toneAlarm.init();
-}
-
-void Util::toneAlarm_set_tune(uint8_t tone)
-{
-    _toneAlarm.set_tune(tone);
-}
-
-void Util::_toneAlarm_timer_tick() {
-    if(state == 0) {
-        state = state + _toneAlarm.init_tune();
-    } else if (state == 1) {
-        state = state + _toneAlarm.set_note();
-    }
-    if (state == 2) {
-        state = state + _toneAlarm.play();
-    } else if (state == 3) {
-        state = 1;
-    }
-
-    if (_toneAlarm.is_tune_comp()) {
-        state = 0;
-    }
-
-}
-
 void Util::set_hw_rtc(uint64_t time_utc_usec)
 {
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
