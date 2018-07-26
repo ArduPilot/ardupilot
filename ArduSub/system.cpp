@@ -64,7 +64,7 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise notify system
-    notify.init(true);
+    notify.init();
 
     // initialise battery monitor
     battery.init();
