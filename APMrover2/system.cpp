@@ -57,7 +57,7 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise notify system
-    notify.init(false);
+    notify.init();
     notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
