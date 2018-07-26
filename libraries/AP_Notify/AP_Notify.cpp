@@ -212,6 +212,10 @@ void AP_Notify::add_backends(void)
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+                ADD_BACKEND(new AP_ExternalLED()); // despite the name this is a built in set of onboard LED's
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
@@ -295,13 +299,11 @@ void AP_Notify::add_backends(void)
 }
 
 // initialisation
-void AP_Notify::init(bool enable_external_leds)
+void AP_Notify::init(void)
 {
     // clear all flags and events
     memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
-
-    AP_Notify::flags.external_leds = enable_external_leds;
 
     // add all the backends
     add_backends();

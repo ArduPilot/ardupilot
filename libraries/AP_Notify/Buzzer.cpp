@@ -57,11 +57,6 @@ bool Buzzer::init()
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void Buzzer::update()
 {
-    // return immediately if disabled
-    if (!AP_Notify::flags.external_leds) {
-        return;
-    }
-
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz
