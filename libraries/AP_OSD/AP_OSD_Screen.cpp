@@ -378,7 +378,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
     uint8_t pct = battery.capacity_remaining_pct();
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
-    backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYM_BATT_FULL + p, v, SYM_VOLT);
+    backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYM_BATT_FULL + p, (double)v, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
@@ -395,7 +395,7 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP_BattMonitor::battery();
     float amps = battery.current_amps();
-    backend->write(x, y, false, "%2.1f%c", amps, SYM_AMP);
+    backend->write(x, y, false, "%2.1f%c", (double)amps, SYM_AMP);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -556,7 +556,7 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
             fmt = "%4.0f%c";
         }
     }
-    backend->write(x, y, false, fmt, distance_scaled, unit_icon);
+    backend->write(x, y, false, fmt, (double)distance_scaled, unit_icon);
 }
 
 void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
