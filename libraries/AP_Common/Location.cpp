@@ -127,7 +127,7 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
     }
 
     // convert alt to absolute
-    int32_t alt_abs;
+    int32_t alt_abs = 0;
     switch (frame) {
         case ALT_FRAME_ABSOLUTE:
             alt_abs = alt;
@@ -151,9 +151,6 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
         case ALT_FRAME_ABOVE_TERRAIN:
             alt_abs = alt + alt_terr_cm;
             break;
-        default:
-            // unknown conversion to absolute alt, this should never happen
-            return false;
     }
 
     // convert absolute to desired frame
@@ -180,10 +177,8 @@ bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
         case ALT_FRAME_ABOVE_TERRAIN:
             ret_alt_cm = alt_abs - alt_terr_cm;
             return true;
-        default:
-            // should never happen
-            return false;
     }
+    return false;
 }
 
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
