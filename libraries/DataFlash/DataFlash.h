@@ -221,6 +221,8 @@ public:
     float quiet_nanf() const { return nanf("0x4152"); } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
 
+    int8_t getDastaFlashBackendTypes() const { return _params.backend_types; }
+
 protected:
 
     const struct LogStructure *_structures;
