@@ -40,7 +40,7 @@ void Tracker::init_tracker()
 #endif
 
     // initialise notify
-    notify.init(false);
+    notify.init();
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.pre_arm_gps_check = true;
 
