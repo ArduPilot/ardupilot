@@ -78,7 +78,7 @@ void Copter::init_ardupilot()
     winch_init();
 
     // initialise notify system
-    notify.init(true);
+    notify.init();
     notify_flight_mode();
 
     // initialise battery monitor
