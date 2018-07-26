@@ -200,10 +200,6 @@ AP_BattMonitor::read()
         }
     }
 
-    if (get_type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
-        AP_Notify::flags.battery_voltage = voltage();
-    }
-
     DataFlash_Class *df = DataFlash_Class::instance();
     if (df->should_log(_log_battery_bit)) {
         df->Log_Write_Current();
