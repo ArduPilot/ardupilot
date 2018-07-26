@@ -937,6 +937,9 @@ private:
     void userhook_MediumLoop();
     void userhook_SlowLoop();
     void userhook_SuperSlowLoop();
+    void userhook_auxSwitch1(uint8_t ch_flag);
+    void userhook_auxSwitch2(uint8_t ch_flag);
+    void userhook_auxSwitch3(uint8_t ch_flag);
 
 #include "mode.h"
 
