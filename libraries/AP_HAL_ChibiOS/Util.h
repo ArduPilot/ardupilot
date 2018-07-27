@@ -48,7 +48,7 @@ public:
     
 #ifdef HAL_PWM_ALARM
     bool toneAlarm_init() override;
-    void toneAlarm_set_buzzer_tone(float frequency, float volume) override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
 private:
