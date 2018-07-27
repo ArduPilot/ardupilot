@@ -28,6 +28,7 @@ class AutoTestPlane(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestPlane, self).__init__(**kwargs)
         self.binary = binary
@@ -36,6 +37,7 @@ class AutoTestPlane(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -64,7 +66,8 @@ class AutoTestPlane(AutoTest):
                                     defaults_file=defaults_file,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints)
         self.mavproxy = util.start_MAVProxy_SITL(
             'ArduPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')

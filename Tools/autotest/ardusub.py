@@ -25,6 +25,7 @@ class AutoTestSub(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestSub, self).__init__(**kwargs)
         self.binary = binary
@@ -33,6 +34,7 @@ class AutoTestSub(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -58,6 +60,7 @@ class AutoTestSub(AutoTest):
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'ArduSub', options=self.mavproxy_options())

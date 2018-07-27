@@ -190,9 +190,18 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
-def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
-    synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
-               unhide_parameters=False, gdbserver=False,
+def start_SITL(binary,
+               valgrind=False,
+               gdb=False,
+               wipe=False,
+               synthetic_clock=True,
+               home=None,
+               model=None,
+               speedup=1,
+               defaults_file=None,
+               unhide_parameters=False,
+               gdbserver=False,
+               breakpoints=[],
                vicon=False):
     """Launch a SITL instance."""
     cmd = []
@@ -214,10 +223,14 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
             f.write("target extended-remote localhost:3333\nc\n")
+            for breakpoint in breakpoints:
+                f.write("b %s\n" % (breakpoint,))
             f.close()
             run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
     elif gdb:
         f = open("/tmp/x.gdb", "w")
+        for breakpoint in breakpoints:
+            f.write("b %s\n" % (breakpoint,))
         f.write("r\n")
         f.close()
         cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
