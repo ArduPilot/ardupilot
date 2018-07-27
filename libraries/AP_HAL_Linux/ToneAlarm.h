@@ -8,7 +8,7 @@ class ToneAlarm {
 public:
 	ToneAlarm();
 	virtual bool init();
-        virtual void set_buzzer_tone(float frequency, float volume);
+    virtual void set_buzzer_tone(float frequency, float volume, uint32_t duration_ms);
 
 private:
 	int32_t period_fd;

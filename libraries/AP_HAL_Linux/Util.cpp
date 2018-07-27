@@ -17,7 +17,6 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-static int state;
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 ToneAlarm_Disco Util::_toneAlarm;
 #else

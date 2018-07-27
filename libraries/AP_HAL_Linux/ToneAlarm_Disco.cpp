@@ -20,6 +20,7 @@
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
 #include <AP_HAL_Linux/RCOutput_Disco.h>
 #include "ToneAlarm_Disco.h"
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -34,12 +35,12 @@ bool ToneAlarm_Disco::init()
     return true;
 }
 
-void ToneAlarm_Disco::set_buzzer_tone(float frequency, float volume)
+void ToneAlarm_Disco::set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
     if (is_zero(frequency) || is_zero(volume)) {
         bebop_out->play_note(0, 0, 0);
     } else {
-        bebop_out->play_note(TONEALARM_PWM_POWER, (uint16_t)roundf(frequency), 10000);
+        bebop_out->play_note(TONEALARM_PWM_POWER, (uint16_t)roundf(frequency), duration_ms);
     }
 }
 

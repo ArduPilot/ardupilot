@@ -96,7 +96,9 @@ public:
     int get_hw_arm32();
 
     bool toneAlarm_init() override { return _toneAlarm.init(); }
-    void toneAlarm_set_buzzer_tone(float frequency, float volume) override { _toneAlarm.set_buzzer_tone(frequency, volume); }
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {
+        _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
+    }
 
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
