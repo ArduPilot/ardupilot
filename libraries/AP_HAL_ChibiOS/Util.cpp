@@ -153,7 +153,8 @@ bool Util::toneAlarm_init()
     return true;
 }
 
-void Util::toneAlarm_set_buzzer_tone(float frequency, float volume) {
+void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+{
     if (is_zero(frequency) || is_zero(volume)) {
         pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
     } else {
