@@ -36,21 +36,21 @@ void MMLPlayer::play(const char* string)
 void MMLPlayer::stop()
 {
     _playing = false;
-    hal.util->toneAlarm_set_buzzer_tone(0,0);
+    hal.util->toneAlarm_set_buzzer_tone(0,0,0);
 }
 
 void MMLPlayer::start_silence(float duration)
 {
     _note_start_us = AP_HAL::micros();
     _note_duration_us = duration*1e6;
-    hal.util->toneAlarm_set_buzzer_tone(0, 0);
+    hal.util->toneAlarm_set_buzzer_tone(0, 0, 0);
 }
 
 void MMLPlayer::start_note(float duration, float frequency, float volume)
 {
     _note_start_us = AP_HAL::micros();
     _note_duration_us = duration*1e6;
-    hal.util->toneAlarm_set_buzzer_tone(frequency, volume);
+    hal.util->toneAlarm_set_buzzer_tone(frequency, volume, _note_duration_us/1000U);
 }
 
 char MMLPlayer::next_char()
