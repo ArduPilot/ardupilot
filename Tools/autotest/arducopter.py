@@ -55,7 +55,6 @@ class AutoTestCopter(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.log_name = "ArduCopter"
         self.logfile = None
