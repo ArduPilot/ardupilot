@@ -39,7 +39,7 @@ bool ToneAlarm::init()
     return true;
 }
 
-void ToneAlarm::set_buzzer_tone(float frequency, float volume)
+void ToneAlarm::set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
     if (is_zero(frequency) || is_zero(volume)) {
         dprintf(run_fd,"0");
