@@ -399,6 +399,4 @@ void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
         _tone_buf[sizeof(_tone_buf)-1] = 0;
         _sem->give();
     }
-
-    play_string(packet.tune);
 }
