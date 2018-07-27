@@ -131,7 +131,7 @@ void AP_Stats::set_flying(const bool is_flying)
         _flying_ms = 0;
     }
 }
-
+#if !HAL_MINIMIZE_FEATURES
 /*
   get flight distance since boot
  */
@@ -152,6 +152,7 @@ float AP_Stats::get_flight_distance_m(void)
 
     return fltdistance;
 }
+#endif
 
 AP_Stats *AP::stats(void)
 {
