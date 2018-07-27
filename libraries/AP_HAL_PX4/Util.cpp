@@ -290,7 +290,7 @@ bool PX4Util::toneAlarm_init() {
     return true;
 }
 
-void PX4Util::toneAlarm_set_buzzer_tone(float frequency, float volume) {
+void PX4Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {
     if (is_zero(frequency) || is_zero(volume)) {
         write(_tonealarm_fd, "MFP", 4);
     } else {

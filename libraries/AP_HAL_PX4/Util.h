@@ -63,7 +63,7 @@ public:
     bool flash_bootloader() override;
 
     bool toneAlarm_init() override;
-    void toneAlarm_set_buzzer_tone(float frequency, float volume) override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
     
 private:
     int _safety_handle;
