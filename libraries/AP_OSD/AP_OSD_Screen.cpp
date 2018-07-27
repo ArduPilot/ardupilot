@@ -162,6 +162,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(flightdist, "FLTDIST", 29, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: EFF
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(eff, "EFF", 30, AP_OSD_Screen, AP_OSD_Setting),
     AP_GROUPEND
 };
 
@@ -251,6 +254,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
 #define SYM_DIST      0x22
+#define SYM_EFF       0xF2
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -799,6 +803,26 @@ void AP_OSD_Screen::draw_flightdist(uint8_t x, uint8_t y)
     draw_distance(x+1, y, dist);
 }
 
+void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
+{
+    AP_Stats *stats = AP::stats();
+    float dist=0;
+    if (stats) {
+        dist = stats->get_flight_distance_m();
+    }
+    float deltadist = dist - osd->last_dist_m;
+    osd->last_dist_m = dist;
+    deltadist = u_scale(DISTANCE_LONG, deltadist);
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float deltamah = battery.consumed_mah() - osd->last_used_mah;
+    osd->last_used_mah = battery.consumed_mah();
+    if (deltadist>0) {
+        backend->write(x,y, false, "%c%3d%c", SYM_EFF,int(deltamah/deltadist), SYM_MAH);
+    } else {
+        backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -840,4 +864,5 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
     DRAW_SETTING(flightdist);
+    DRAW_SETTING(eff);
 }
