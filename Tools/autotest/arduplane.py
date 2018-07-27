@@ -43,7 +43,6 @@ class AutoTestPlane(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.sitl = None
         self.hasInit = False

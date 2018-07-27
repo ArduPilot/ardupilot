@@ -41,7 +41,6 @@ class AutoTestQuadPlane(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.log_name = "QuadPlane"
         self.logfile = None
