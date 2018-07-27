@@ -72,7 +72,7 @@ public:
         ToneAlarm Driver
     */
     virtual bool toneAlarm_init() { return false;}
-    virtual void toneAlarm_set_buzzer_tone(float frequency, float volume) {}
+    virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
     /*
       return a stream for access to a system shell, if available
