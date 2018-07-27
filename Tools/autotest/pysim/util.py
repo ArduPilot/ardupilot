@@ -1,8 +1,11 @@
 from __future__ import print_function
+
+import atexit
 import math
 import os
 import random
 import re
+import subprocess
 import sys
 import tempfile
 import time
@@ -190,6 +193,10 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
+def kill_screen_gdb():
+    cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
+    subprocess.Popen(cmd)
+
 def start_SITL(binary,
                valgrind=False,
                gdb=False,
@@ -226,14 +233,23 @@ def start_SITL(binary,
             for breakpoint in breakpoints:
                 f.write("b %s\n" % (breakpoint,))
             f.close()
-            run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
+            run_cmd('screen -d -m -S ardupilot-gdbserver '
+                    'bash -c "gdb -x /tmp/x.gdb"')
     elif gdb:
         f = open("/tmp/x.gdb", "w")
         for breakpoint in breakpoints:
             f.write("b %s\n" % (breakpoint,))
         f.write("r\n")
         f.close()
-        cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+        if os.environ.get('DISPLAY'):
+            cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+        else:
+            cmd.extend(['screen',
+                        '-L', '-Logfile', 'gdb.log',
+                        '-d',
+                        '-m',
+                        '-S', 'ardupilot-gdb',
+                        'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
 
     cmd.append(binary)
     if wipe:
@@ -252,7 +268,21 @@ def start_SITL(binary,
         cmd.extend(['--unhide-groups'])
     if vicon:
         cmd.extend(["--uartF=sim:vicon:"])
+
+    if gdb and not os.getenv('DISPLAY'):
+        p = subprocess.Popen(cmd)
+        atexit.register(kill_screen_gdb)
+        # we are expected to return a pexpect wrapped around the
+        # stdout of the ArduPilot binary.  Not going to happen until
+        # AP gets a redirect-stdout-to-filehandle option.  So, in the
+        # meantime, return a dummy:
+        return pexpect.spawn("true", ["true"],
+                             logfile=sys.stdout,
+                             encoding=ENCODING,
+                             timeout=5)
+
     print("Running: %s" % cmd_as_shell(cmd))
+
     first = cmd[0]
     rest = cmd[1:]
     child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
