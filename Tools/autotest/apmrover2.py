@@ -32,7 +32,7 @@ class AutoTestRover(AutoTest):
                  binary,
                  valgrind=False,
                  gdb=False,
-                 speedup=10,
+                 speedup=8,
                  frame=None,
                  params=None,
                  gdbserver=False,
@@ -53,7 +53,6 @@ class AutoTestRover(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.sitl = None
         self.hasInit = False
