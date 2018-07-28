@@ -183,7 +183,7 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz(const uint32_t now)
+void DataFlash_File::periodic_1Hz()
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0) {
@@ -204,7 +204,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
     df_stats_log();
 }
 
-void DataFlash_File::periodic_fullrate(const uint32_t now)
+void DataFlash_File::periodic_fullrate()
 {
     DataFlash_Backend::push_log_blocks();
 }

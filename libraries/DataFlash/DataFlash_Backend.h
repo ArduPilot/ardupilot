@@ -131,8 +131,8 @@ protected:
     DataFlash_Class &_front;
 
     virtual void periodic_10Hz(const uint32_t now);
-    virtual void periodic_1Hz(const uint32_t now);
-    virtual void periodic_fullrate(const uint32_t now);
+    virtual void periodic_1Hz();
+    virtual void periodic_fullrate();
 
     bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;

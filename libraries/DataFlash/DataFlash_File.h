@@ -45,8 +45,8 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void) override;
 #endif
-    void periodic_1Hz(const uint32_t now) override;
-    void periodic_fullrate(const uint32_t now) override;
+    void periodic_1Hz() override;
+    void periodic_fullrate() override;
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const override;
