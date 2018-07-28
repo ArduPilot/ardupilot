@@ -25,7 +25,8 @@ public:
         RSSI_DISABLED           = 0,
         RSSI_ANALOG_PIN         = 1,
         RSSI_RC_CHANNEL_VALUE   = 2,
-        RSSI_RECEIVER           = 3
+        RSSI_RECEIVER           = 3,
+        RSSI_PWM_PIN            = 4
     };
 
     AP_RSSI();
@@ -73,14 +74,30 @@ private:
     // a pin for reading the receiver RSSI voltage. 
     AP_HAL::AnalogSource *rssi_analog_source;
 
+    // PWM input
+    static struct PWMState {
+        uint32_t gpio;              // gpio pin used for reading pwm
+        uint32_t last_gpio;         // last gpio pin used for reading pwm (used to recognise change in pin assignment)
+        uint32_t value;             // last calculated pwm value
+        uint32_t last_reading_ms;   // system time of last read (used for health reporting)
+        uint64_t pulse_start_us;    // system time of start of pulse
+    } pwm_state;
+
     // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
     float read_pin_rssi();
 
     // read the RSSI value from a PWM value on a RC channel
     float read_channel_rssi();
 
-    // Scale and constrain a float rssi value to 0.0 to 1.0 range 
+    // read the PWM value from a pin
+    float read_pwm_pin_rssi();
+
+    // Scale and constrain a float rssi value to 0.0 to 1.0 range
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
+
+    // PWM input handling
+    static uint32_t get_gpio(uint8_t pin_number);
+    static int irq_handler(int irq, void *context);
 };
 
 namespace AP {
