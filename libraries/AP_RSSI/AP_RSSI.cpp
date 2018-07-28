@@ -132,16 +132,16 @@ float AP_RSSI::read_receiver_rssi()
     float receiver_rssi = 0.0f;  
 
     switch (rssi_type) {
-        case RssiType::RSSI_DISABLED :
+        case RssiType::RSSI_DISABLED:
             receiver_rssi = 0.0f;
             break;
-        case RssiType::RSSI_ANALOG_PIN :
+        case RssiType::RSSI_ANALOG_PIN:
             receiver_rssi = read_pin_rssi();
             break;
-        case RssiType::RSSI_RC_CHANNEL_VALUE :
+        case RssiType::RSSI_RC_CHANNEL_VALUE:
             receiver_rssi = read_channel_rssi();
             break;
-        case RssiType::RSSI_RECEIVER : {
+        case RssiType::RSSI_RECEIVER: {
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
                 receiver_rssi = rssi / 255.0;
