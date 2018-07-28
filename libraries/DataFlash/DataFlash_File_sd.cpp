@@ -131,7 +131,7 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz(const uint32_t now)
+void DataFlash_File::periodic_1Hz()
 {
     if (!(_write_fd) || !_initialised || _open_error || _busy) return; // too early
 
@@ -148,7 +148,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
     }
 }
 
-void DataFlash_File::periodic_fullrate(const uint32_t now)
+void DataFlash_File::periodic_fullrate()
 {
     DataFlash_Backend::push_log_blocks();
 }

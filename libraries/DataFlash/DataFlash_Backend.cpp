@@ -49,10 +49,10 @@ DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle
 void DataFlash_Backend::periodic_10Hz(const uint32_t now)
 {
 }
-void DataFlash_Backend::periodic_1Hz(const uint32_t now)
+void DataFlash_Backend::periodic_1Hz()
 {
 }
-void DataFlash_Backend::periodic_fullrate(const uint32_t now)
+void DataFlash_Backend::periodic_fullrate()
 {
 }
 
@@ -60,14 +60,14 @@ void DataFlash_Backend::periodic_tasks()
 {
     uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
-        periodic_1Hz(now);
+        periodic_1Hz();
         _last_periodic_1Hz = now;
     }
     if (now - _last_periodic_10Hz > 100) {
         periodic_10Hz(now);
         _last_periodic_10Hz = now;
     }
-    periodic_fullrate(now);
+    periodic_fullrate();
 }
 
 void DataFlash_Backend::start_new_log_reset_variables()

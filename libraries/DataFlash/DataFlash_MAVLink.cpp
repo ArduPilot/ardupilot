@@ -532,7 +532,7 @@ void DataFlash_MAVLink::periodic_10Hz(const uint32_t now)
     do_resends(now);
     stats_collect();
 }
-void DataFlash_MAVLink::periodic_1Hz(const uint32_t now)
+void DataFlash_MAVLink::periodic_1Hz()
 {
     if (_sending_to_client &&
         _last_response_time + 10000 < _last_send_time) {
@@ -544,7 +544,7 @@ void DataFlash_MAVLink::periodic_1Hz(const uint32_t now)
     stats_log();
 }
 
-void DataFlash_MAVLink::periodic_fullrate(uint32_t now)
+void DataFlash_MAVLink::periodic_fullrate()
 {
     push_log_blocks();
 }
