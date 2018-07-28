@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Stats/AP_Stats.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -157,6 +158,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: FLTDIST
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(flightdist, "FLTDIST", 29, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -245,6 +250,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
+#define SYM_DIST      0x22
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -782,6 +788,17 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+void AP_OSD_Screen::draw_flightdist(uint8_t x, uint8_t y)
+{
+    AP_Stats *stats = AP::stats();
+    float dist=0;
+    if (stats) {
+        dist = stats->get_flight_distance_m();
+    }
+    backend->write(x, y, false, "%c", SYM_DIST);
+    draw_distance(x+1, y, dist);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -822,4 +839,5 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+    DRAW_SETTING(flightdist);
 }

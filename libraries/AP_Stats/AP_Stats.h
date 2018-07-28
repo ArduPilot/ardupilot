@@ -9,13 +9,18 @@
 class AP_Stats
 {
 public:
-
+    // constructor
+    AP_Stats();
+  
     // these variables are periodically written into the actual
     // parameters.  If you add a variable here, make sure to update
     // init() to set initial values from the parameters!
     uint32_t flttime; // seconds in flight (or driving)
     uint32_t runtime; // total wallclock time spent running ArduPilot (seconds)
     uint32_t reset; // last time parameters were reset
+    
+    // variable for total distance flown since boot
+    float fltdistance;
 
     void init();
 
@@ -27,10 +32,25 @@ public:
     void update();
 
     void set_flying(bool b);
+  
+// accessor for is_flying
+    bool get_is_flying(void) {
+        return _flying_ms != 0;
+    }
 
+    // accessor for flight distance. Returns flown distance
+    float get_flight_distance_m(void);
+    
+    // get singleton
+    static AP_Stats *get_singleton(void) {
+        return _singleton;
+    }
+  
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static AP_Stats *_singleton;
 
     struct {
         AP_Int16 bootcount;
@@ -46,8 +66,13 @@ private:
 
     uint64_t _flying_ms;
     uint64_t _last_runtime_ms;
+    uint64_t _last_distance_ms;
 
     void update_flighttime();
     void update_runtime();
 
+};
+
+namespace AP {
+    AP_Stats *stats();
 };
