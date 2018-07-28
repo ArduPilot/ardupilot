@@ -50,7 +50,7 @@ public:
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const override;
-    bool logging_failed() const override;
+    int8_t logging_failed() const override;
 
     bool logging_started(void) const override { return _write_fd != -1; }
 

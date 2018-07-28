@@ -121,7 +121,7 @@ private:
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const override { return true; }
-    bool logging_failed() const override;
+    int8_t logging_failed() const override;
 
     mavlink_channel_t _chan;
     uint8_t _target_system_id;

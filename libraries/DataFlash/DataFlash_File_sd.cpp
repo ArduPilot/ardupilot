@@ -970,7 +970,7 @@ bool DataFlash_File::io_thread_alive() const
     return false;
 }
 
-bool DataFlash_File::logging_failed() const
+int8_t DataFlash_File::logging_failed() const
 {
     bool op=false;
     
@@ -979,17 +979,17 @@ bool DataFlash_File::logging_failed() const
     if (!op &&
         (hal.util->get_soft_armed() ||
          _front.log_while_disarmed())) {
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::SD_NOT_WRITE_FD);
     }
     if (_open_error) {
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::SD_OPEN_ERROR);
     }
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not Good.
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::SD_IO_THREAD_NOT_ALIVE);
     }
 
-    return false;
+    return 0;
 }
 
 

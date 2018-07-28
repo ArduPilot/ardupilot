@@ -117,7 +117,7 @@ public:
 
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const = 0;
-    virtual bool logging_failed() const = 0;
+    virtual int8_t logging_failed() const = 0;
 
     virtual void vehicle_was_disarmed() { };
 

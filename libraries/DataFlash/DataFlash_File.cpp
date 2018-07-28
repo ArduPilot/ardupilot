@@ -1094,21 +1094,21 @@ bool DataFlash_File::io_thread_alive() const
     return (AP_HAL::millis() - _io_timer_heartbeat) < 1000;
 }
 
-bool DataFlash_File::logging_failed() const
+int8_t DataFlash_File::logging_failed() const
 {
     if (!_initialised) {
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::FILE_NOT_INITIALIZED);
     }
     if (_open_error) {
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::FILE_OPEN_ERROR);
     }
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::FILE_IO_THREAD_NOT_ALIVE);
     }
 
-    return false;
+    return 0;
 }
 
 

@@ -51,7 +51,7 @@ public:
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const;
-    bool logging_failed() const;
+    int8_t logging_failed() const;
 
     void vehicle_was_disarmed() override;
 

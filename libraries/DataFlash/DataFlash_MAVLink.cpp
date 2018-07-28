@@ -52,9 +52,13 @@ void DataFlash_MAVLink::Init()
     _initialised = true;
 }
 
-bool DataFlash_MAVLink::logging_failed() const
+int8_t DataFlash_MAVLink::logging_failed() const
 {
-    return !_sending_to_client;
+    if (_sending_to_client == false) {
+        return static_cast<int8_t>(DataFlash_Fail::MAVLINK_SENDING_TO_CLIENT);
+    } else {
+        return 0;
+    }
 }
 
 uint32_t DataFlash_MAVLink::bufferspace_available() {

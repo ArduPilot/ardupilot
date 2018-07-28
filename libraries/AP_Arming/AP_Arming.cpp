@@ -165,10 +165,15 @@ bool AP_Arming::airspeed_checks(bool report)
 
 bool AP_Arming::logging_checks(bool report)
 {
+    const char *fail_detail[9] = {"none", "not backend",
+                                  "MAVLINK not sending to client",
+                                  "File not initialized", "File open error", "File io thread not alive",
+                                  "SD not write FD", "SD open error", "SD io thread not alive"};
+
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (DataFlash_Class::instance()->logging_failed()) {
-            check_failed(ARMING_CHECK_LOGGING, report, "Logging failed");
+        if (int8_t check = DataFlash_Class::instance()->logging_failed()) {
+            check_failed(ARMING_CHECK_LOGGING, report, "Logging failed. %s", fail_detail[check]);
             return false;
         }
         if (!DataFlash_Class::instance()->CardInserted()) {

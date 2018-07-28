@@ -41,6 +41,19 @@ enum DataFlash_Backend_Type {
     DATAFLASH_BACKEND_BOTH = 3,
 };
 
+enum struct DataFlash_Fail {
+    NONE = 0,
+    NOT_BACKEND = 1,
+    MAVLINK_SENDING_TO_CLIENT = 2,
+    FILE_NOT_INITIALIZED = 3,
+    FILE_OPEN_ERROR = 4,
+    FILE_IO_THREAD_NOT_ALIVE = 5,
+    SD_NOT_WRITE_FD = 6,
+    SD_OPEN_ERROR = 7,
+    SD_IO_THREAD_NOT_ALIVE = 8,
+    UNDEFINED = 9,
+};
+
 // fwd declarations to avoid include errors
 class AC_AttitudeControl;
 class AC_PosControl;
@@ -210,7 +223,7 @@ public:
     // typically DataFlash_File.
     bool logging_present() const;
     bool logging_enabled() const;
-    bool logging_failed() const;
+    int8_t logging_failed() const;
 
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }

@@ -160,7 +160,7 @@ public:
     uint8_t     ReadStatus();
 
     bool logging_enabled() const { return true; }
-    bool logging_failed() const  { return false; };
+    int8_t logging_failed() const  { return 0; };
     
     void stop_logging(void) { log_write_started = false; }
     

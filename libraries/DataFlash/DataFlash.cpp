@@ -381,18 +381,21 @@ bool DataFlash_Class::logging_enabled() const
     }
     return false;
 }
-bool DataFlash_Class::logging_failed() const
+int8_t DataFlash_Class::logging_failed() const
 {
+    if (_params.backend_types == DATAFLASH_BACKEND_NONE) {
+        return 0;
+    }
     if (_next_backend < 1) {
         // we should not have been called!
-        return true;
+        return static_cast<int8_t>(DataFlash_Fail::NOT_BACKEND);
     }
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i]->logging_failed()) {
-            return true;
+        if (int8_t check = backends[i]->logging_failed()) {
+            return check;
         }
     }
-    return false;
+    return 0;
 }
 
 void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
