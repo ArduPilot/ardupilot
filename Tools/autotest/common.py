@@ -345,7 +345,7 @@ class AutoTest(ABC):
         for chan in range(1, 16):
             self.mavproxy.send('rc %u 1500\n' % chan)
 
-    def set_rc(self, chan, pwm, timeout=5):
+    def set_rc(self, chan, pwm, timeout=20):
         """Setup a simulated RC control to a PWM value"""
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
