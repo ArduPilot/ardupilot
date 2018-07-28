@@ -46,8 +46,8 @@ public:
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
 
-    void periodic_1Hz(const uint32_t now) override;
-    void periodic_fullrate(const uint32_t now);
+    void periodic_1Hz() override;
+    void periodic_fullrate();
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const;

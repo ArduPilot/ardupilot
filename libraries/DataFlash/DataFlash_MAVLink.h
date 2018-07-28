@@ -156,8 +156,8 @@ private:
     struct dm_block *next_block();
 
     void periodic_10Hz(uint32_t now) override;
-    void periodic_1Hz(uint32_t now) override;
-    void periodic_fullrate(uint32_t now) override;
+    void periodic_1Hz() override;
+    void periodic_fullrate() override;
     
     void stats_init();
     void stats_reset();
