@@ -2,6 +2,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const extern AP_HAL::HAL& hal;
 
@@ -41,6 +42,14 @@ const AP_Param::GroupInfo AP_Stats::var_info[] = {
 
     AP_GROUPEND
 };
+
+AP_Stats *AP_Stats::_singleton;
+
+// constructor
+AP_Stats::AP_Stats(void)
+{
+    _singleton = this;
+}
 
 void AP_Stats::copy_variables_from_parameters()
 {
@@ -121,4 +130,31 @@ void AP_Stats::set_flying(const bool is_flying)
         update_flighttime();
         _flying_ms = 0;
     }
+}
+#if !HAL_MINIMIZE_FEATURES
+/*
+  get flight distance since boot
+ */
+float AP_Stats::get_flight_distance_m(void)
+{
+    update_flighttime();
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed = v.length();
+    if (_flying_ms){
+    uint64_t time = _flying_ms - _last_distance_ms;
+    _last_distance_ms = _flying_ms;
+    float delta = (time * speed)/1000.0; //meters
+    fltdistance += delta;
+    }
+    else
+    _last_distance_ms=AP_HAL::millis();
+
+    return fltdistance;
+}
+#endif
+
+AP_Stats *AP::stats(void)
+{
+    return AP_Stats::get_singleton();
 }

@@ -101,6 +101,8 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting flightdist{false,22,11};
+    AP_OSD_Setting eff{false,22,10};
 
     bool check_option(uint32_t option);
 
@@ -150,6 +152,8 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+    void draw_flightdist(uint8_t x, uint8_t y);
+    void draw_eff(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -210,6 +214,9 @@ public:
     AP_Int8 units;
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
+
+    float last_used_mah;
+    float last_dist_m;
 
 private:
     void osd_thread();
