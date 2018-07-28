@@ -14,8 +14,10 @@
  */
 
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <RC_Channel/RC_Channel.h>
-#include <utility> 
+#include <utility>
+#include <board_config.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -29,20 +31,21 @@ extern const AP_HAL::HAL& hal;
 #define BOARD_RSSI_ANA_PIN_HIGH 5.0f
 #endif
 
+AP_RSSI::PWMState AP_RSSI::pwm_state;
 
 const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: RSSI Type
     // @Description: Radio Receiver RSSI type. If your radio receiver supports RSSI of some kind, set it here, then set its associated RSSI_XXXXX parameters, if any.
-    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol
+    // @Values: 0:Disabled,1:AnalogPin,2:RCChannelPwmValue,3:ReceiverProtocol,4:PWMInputPin
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 0, AP_RSSI, rssi_type,  BOARD_RSSI_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     // @Param: ANA_PIN
-    // @DisplayName: Receiver RSSI analog sensing pin
-    // @Description: This selects an analog pin where the receiver RSSI voltage will be read.
-    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,103:Pixhawk SBUS,15:Pixhawk2 ADC
+    // @DisplayName: Receiver RSSI sensing pin
+    // @Description: pin used to read the RSSI voltage or pwm value
+    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 
@@ -72,8 +75,8 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     AP_GROUPINFO("CHANNEL", 4, AP_RSSI, rssi_channel,  0),
 
     // @Param: CHAN_LOW
-    // @DisplayName: Receiver RSSI PWM low value
-    // @Description: This is the PWM value in microseconds that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the weakest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a lower value than RSSI_CHAN_HIGH.
+    // @DisplayName: RSSI PWM low value
+    // @Description: PWM value that the radio receiver will put on the RSSI_CHANNEL or RSSI_ANA_PIN when the signal strength is the weakest. Some radio receivers output inverted values so this value may be lower than RSSI_CHAN_HIGH
     // @Units: PWM
     // @Range: 0 2000
     // @User: Standard
@@ -81,7 +84,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: CHAN_HIGH
     // @DisplayName: Receiver RSSI PWM high value
-    // @Description: This is the PWM value in microseconds that the radio receiver will put on the RSSI_CHANNEL when the signal strength is the strongest. Since some radio receivers put out inverted values from what you might otherwise expect, this isn't necessarily a higher value than RSSI_CHAN_LOW.
+    // @Description: PWM value that the radio receiver will put on the RSSI_CHANNEL or RSSI_ANA_PIN when the signal strength is the strongest. Some radio receivers output inverted values so this value may be higher than RSSI_CHAN_LOW
     // @Units: PWM
     // @Range: 0 2000
     // @User: Standard
@@ -148,6 +151,9 @@ float AP_RSSI::read_receiver_rssi()
             }
             break;
         }
+        case RssiType::RSSI_PWM_PIN:
+            receiver_rssi = read_pwm_pin_rssi();
+            break;
         default :   
             receiver_rssi = 0.0f;
             break;
@@ -183,6 +189,49 @@ float AP_RSSI::read_channel_rssi()
     return channel_rssi;    
 }
 
+// read the PWM value from a pin
+float AP_RSSI::read_pwm_pin_rssi()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    // check if pin has changed and initialise gpio event callback
+    pwm_state.gpio = get_gpio(rssi_analog_pin);
+    if (pwm_state.gpio != pwm_state.last_gpio) {
+
+        // remove old gpio event callback if present
+        if (pwm_state.last_gpio != 0) {
+            stm32_gpiosetevent(pwm_state.last_gpio, false, false, false, nullptr);
+            pwm_state.last_gpio = 0;
+        }
+
+        // install interrupt handler on rising or falling edge of gpio
+        if (pwm_state.gpio != 0) {
+            stm32_gpiosetevent(pwm_state.gpio, true, true, false, irq_handler);
+            pwm_state.last_gpio = pwm_state.gpio;
+        }
+    }
+
+    // disable interrupts temporarily
+    irqstate_t istate = irqsave();
+
+    // check for timeout
+    float ret;
+    if ((pwm_state.last_reading_ms == 0) || (AP_HAL::millis() - pwm_state.last_reading_ms > 1000)) {
+        pwm_state.value = 0;
+        ret = 0;
+    } else {
+        // convert pwm value to rssi value
+        ret = scale_and_constrain_float_rssi(pwm_state.value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+    }
+
+    // restore interrupts
+    irqrestore(istate);
+
+    return ret;
+#else
+    return 0.0f;
+#endif
+}
+
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
 float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range)
 {    
@@ -211,6 +260,58 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
     // value retrieved falls outside the user-supplied range.
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
+}
+
+// get gpio id from pin number
+uint32_t AP_RSSI::get_gpio(uint8_t pin_number)
+{
+#ifdef GPIO_GPIO0_INPUT
+    switch (pin_number) {
+    case 50:
+        return GPIO_GPIO0_INPUT;
+    case 51:
+        return GPIO_GPIO1_INPUT;
+    case 52:
+        return GPIO_GPIO2_INPUT;
+    case 53:
+        return GPIO_GPIO3_INPUT;
+    case 54:
+        return GPIO_GPIO4_INPUT;
+    case 55:
+        return GPIO_GPIO5_INPUT;
+    }
+#endif
+    return 0;
+}
+
+// interrupt handler for reading pwm value
+int AP_RSSI::irq_handler(int irq, void *context)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    // sanity check
+    if (pwm_state.gpio == 0) {
+        return 0;
+    }
+
+    // capture time
+    uint64_t now = AP_HAL::micros64();
+
+    // read value of pin
+    bool pin_high = stm32_gpioread(pwm_state.gpio);
+
+    // calculate pwm value
+    if (pin_high) {
+        pwm_state.pulse_start_us = now;
+    } else {
+        if (pwm_state.pulse_start_us != 0) {
+            pwm_state.value = now - pwm_state.pulse_start_us;
+        }
+        pwm_state.pulse_start_us = 0;
+        pwm_state.last_reading_ms = AP_HAL::millis();
+    }
+#endif
+
+    return 0;
 }
 
 AP_RSSI *AP_RSSI::_s_instance = nullptr;
