@@ -386,6 +386,7 @@ void Plane::set_servos_controlled(void)
             constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
     }
 
+#if SOARING_ENABLED == ENABLED
     // suppress throttle when soaring is active
     if ((control_mode == FLY_BY_WIRE_B || control_mode == CRUISE ||
         control_mode == AUTO || control_mode == LOITER) &&
@@ -393,6 +394,7 @@ void Plane::set_servos_controlled(void)
         g2.soaring_controller.get_throttle_suppressed()) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
     }
+#endif
 }
 
 /*
