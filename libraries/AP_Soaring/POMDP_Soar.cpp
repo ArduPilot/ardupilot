@@ -239,9 +239,10 @@ void POMDSoarAlgorithm::init_actions(POMDP_Mode mode)
 
 void POMDSoarAlgorithm::init_thermalling()
 {
-    float ground_course = radians(_sc->_ahrs.get_gps().ground_course());
-    float head_sin = sinf(ground_course);
-    float head_cos = cosf(ground_course);
+    Vector2f ground_vector = _sc->_ahrs.groundspeed_vector();
+    float head_sin = ground_vector.y / ground_vector.length();
+    float head_cos = ground_vector.x / ground_vector.length();
+
     float xprod = _sc->_ekf.X[3] * head_cos - _sc->_ekf.X[2] * head_sin;
     _sign = xprod <= 0 ? -1.0 : 1.0;
     _pomdp_roll_cmd = pomdp_roll1 * _sign;
@@ -477,7 +478,7 @@ void POMDSoarAlgorithm::update_thermalling(const Location &current_loc)
         float trP = _sc->_ekf.P(0, 0) / n[0] + _sc->_ekf.P(1, 1) / n[1] + _sc->_ekf.P(2, 2) / n[2] + _sc->_ekf.P(3, 3) / n[3];
 
         // Update the correct mode (exploit vs explore) based on EKF covariance trace
-        _pomdp_mode = trP < pomdp_pth && pomdp_pth > 0.0f ? POMPD_MODE_EXPLOIT : POMPD_MODE_EXPLORE;
+        _pomdp_mode = trP < pomdp_pth && pomdp_pth > 0.0f ? POMDP_MODE_EXPLOIT : POMDP_MODE_EXPLORE;
         
         // Initialise actions accordingly.
         init_actions(_pomdp_mode);

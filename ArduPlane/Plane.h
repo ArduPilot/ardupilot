@@ -1033,8 +1033,7 @@ private:
     void update_soaring();
     void soaring_policy_computation();
 #endif
-    
-    
+
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();

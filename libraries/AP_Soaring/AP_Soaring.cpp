@@ -198,7 +198,6 @@ bool SoaringController::check_cruise_criteria()
     if (_pomdsoar.pomdp_on && (exit_mode == 1 || exit_mode == 2)) {
         thermalability = _pomdsoar.assess_thermalability(uint8_t(exit_mode));
     } else {
-        _loiter_rad = _aparm.loiter_radius;
         thermalability = (_ekf.X[0] * expf(-powf(_loiter_rad / _ekf.X[1], 2))) - EXPECTED_THERMALLING_SINK;
     }
 
@@ -230,9 +229,10 @@ void SoaringController::init_ekf()
     const MatrixN<float,4> q{init_q};
     const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE, INITIAL_RADIUS_COVARIANCE, INITIAL_POSITION_COVARIANCE, INITIAL_POSITION_COVARIANCE};
     const MatrixN<float,4> p{init_p};
-    float ground_course = radians(_ahrs.get_gps().ground_course());
-    float head_sin = sinf(ground_course); //sinf(_ahrs.yaw);
-    float head_cos = cosf(ground_course); //cosf(_ahrs.yaw);
+    
+    Vector2f ground_vector = _ahrs.groundspeed_vector();
+    float head_sin = ground_vector.y / ground_vector.length();
+    float head_cos = ground_vector.x / ground_vector.length();
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
@@ -442,7 +442,7 @@ float SoaringController::get_aspd() const
 
     if (!_ahrs.airspeed_estimate(&aspd))
     {
-        aspd = 0.5f*(_aparm.airspeed_min + _aparm.airspeed_max);
+        aspd = _spdHgt.get_target_airspeed();
     }
 
     return aspd;
