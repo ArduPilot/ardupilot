@@ -794,7 +794,7 @@ void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = u_scale(SPEED,v.length());
-    if (speed > 1.0){
+    if (speed > 2.0){
     backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000*battery.current_amps()/speed),SYM_MAH);
     } else {
     backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
