@@ -221,7 +221,7 @@ private:
     AP_AHRS_DCM ahrs;
 #endif
 
-    AP_TECS TECS_controller{ahrs, aparm, landing, g2.soaring_controller};
+    AP_TECS TECS_controller{ahrs, aparm, landing};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
@@ -1029,7 +1029,9 @@ private:
 #endif
     void accel_cal_update(void);
     void update_soft_armed();
+#if SOARING_ENABLED == ENABLED
     void update_soaring();
+#endif
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);

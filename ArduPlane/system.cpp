@@ -381,9 +381,11 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_navigation_mode = false;
         cruise_state.locked_heading = false;
         cruise_state.lock_timer_ms = 0;
-        
+
+#if SOARING_ENABLED == ENABLED
         // for ArduSoar soaring_controller
         g2.soaring_controller.init_cruising();
+#endif
         
         set_target_altitude_current();
         break;
@@ -392,9 +394,11 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         throttle_allows_nudging = false;
         auto_throttle_mode = true;
         auto_navigation_mode = false;
-        
+
+#if SOARING_ENABLED == ENABLED
         // for ArduSoar soaring_controller
         g2.soaring_controller.init_cruising();
+#endif
 
         set_target_altitude_current();
         break;
@@ -419,8 +423,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         next_WP_loc = prev_WP_loc = current_loc;
         // start or resume the mission, based on MIS_AUTORESET
         mission.start_or_resume();
-		
+
+#if SOARING_ENABLED == ENABLED
         g2.soaring_controller.init_cruising();
+#endif
         break;
 
     case RTL:
@@ -436,12 +442,14 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         do_loiter_at_location();
-		
+
+#if SOARING_ENABLED == ENABLED		
         if (g2.soaring_controller.is_active() &&
             g2.soaring_controller.suppress_throttle()) {
 			g2.soaring_controller.init_thermalling();
 			g2.soaring_controller.get_target(next_WP_loc); // ahead on flight path
 		}
+#endif
 		
         break;
 

@@ -378,3 +378,10 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+#ifndef SOARING_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define SOARING_ENABLED DISABLED
+#else
+ #define SOARING_ENABLED ENABLED
+#endif
+#endif
