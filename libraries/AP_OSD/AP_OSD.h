@@ -101,6 +101,7 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting dist{false, 0, 0};
 
     bool check_option(uint32_t option);
 
@@ -150,6 +151,7 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+    void draw_dist(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -211,17 +213,20 @@ public:
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
+    uint32_t last_update_ms;
+    float last_distance_m;
+
 private:
     void osd_thread();
     void update_osd();
     void update_current_screen();
     void next_screen();
     AP_OSD_Backend *backend;
-    uint32_t last_update_ms;
+    uint32_t last_switch_ms;
 
     //variables for screen switching
     uint8_t current_screen;
     uint16_t previous_channel_value;
     bool switch_debouncer;
-    uint32_t last_switch_ms;
+    
 };
