@@ -1140,9 +1140,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
     
+#if SOARING_ENABLED == ENABLED
     // @Group: SOAR_
     // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
     AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
+#endif
   
     // @Param: RUDD_DT_GAIN
     // @DisplayName: rudder differential thrust gain
@@ -1179,8 +1181,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 };
 
 ParametersG2::ParametersG2(void) :
-    ice_control(plane.rpm_sensor, plane.ahrs),
-    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+    ice_control(plane.rpm_sensor, plane.ahrs)
+#if SOARING_ENABLED == ENABLED
+    ,soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
