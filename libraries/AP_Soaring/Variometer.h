@@ -38,7 +38,7 @@ public:
     bool new_data;
 
     void update(const float polar_K, const float polar_CD0, const float polar_B);
-    float correct_netto_rate(float climb_rate, float phi, float aspd, const float polar_K, const float polar_CD0, const float polar_B);
+    float correct_netto_rate(float climb_rate, float phi, float aspd, const float polar_K, const float polar_CD0, const float polar_B) const;
 
 };
 

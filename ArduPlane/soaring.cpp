@@ -23,7 +23,7 @@ void Plane::update_soaring() {
     case FLY_BY_WIRE_B:
     case CRUISE:
         if (!g2.soaring_controller.suppress_throttle()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
+            gcs().send_text(MAV_SEVERITY_INFO, "Out of allowable altitude range, exiting soaring.");
             set_mode(RTL, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
         }
         break;
@@ -61,6 +61,8 @@ void Plane::update_soaring() {
 
         if (g2.soaring_controller.check_cruise_criteria()) {
             // Exit as soon as thermal state estimate deteriorates
+            g2.soaring_controller.stop_computation();
+
             switch (previous_mode) {
             case FLY_BY_WIRE_B:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
@@ -94,6 +96,11 @@ void Plane::update_soaring() {
         // nothing to do
         break;
     }
+}
+
+void Plane::soaring_policy_computation()
+{
+    g2.soaring_controller.soaring_policy_computation();
 }
 
 #endif // SOARING_ENABLED

@@ -44,6 +44,10 @@ public:
     AP_Float &kI(void) { return gains.I; }
     AP_Float &kD(void) { return gains.D; }
     AP_Float &kFF(void) { return gains.FF; }
+    AP_Float &tau(void) { return gains.tau; }
+    AP_Int16 &rmax(void) { return gains.rmax; }
+    AP_Int16 &imax(void) { return gains.imax; }
+    AP_AutoTune::ATGains &get_gains(void) { return gains; }
 
 private:
     const AP_Vehicle::FixedWing &aparm;

@@ -55,7 +55,7 @@ float Variometer::correct_netto_rate(float climb_rate,
                                      float aspd,
                                      const float polar_K,
                                      const float polar_CD0,
-                                     const float polar_B)
+                                     const float polar_B) const
 {
     // Remove aircraft sink rate
     float CL0;  // CL0 = 2*W/(rho*S*V^2)
