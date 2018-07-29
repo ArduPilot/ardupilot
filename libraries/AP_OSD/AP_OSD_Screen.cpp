@@ -795,7 +795,8 @@ void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     Vector2f v = ahrs.groundspeed_vector();
     float speed = v.length();
-    if (delta > 500 && speed > 1.0) {
+    if (delta > 500) {
+        if (speed < 2.0) speed = 0.0;
         float dist_m = (speed * delta)/1000.0;
         osd->last_distance_m += dist_m;
         osd->last_update_ms = now;
