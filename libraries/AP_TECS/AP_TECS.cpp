@@ -761,11 +761,6 @@ void AP_TECS::_detect_bad_descent(void)
     {
         _flags.badDescent = false;
     }
-
-    // when soaring is active we never trigger a bad descent
-    if (_soaring_controller.is_active() && _soaring_controller.get_throttle_suppressed()) {
-        _flags.badDescent = false;        
-    }
 }
 
 void AP_TECS::_update_pitch(void)
@@ -946,7 +941,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
-                                    float load_factor)
+                                    float load_factor,
+                                    bool soaring_active)
 {
     // Calculate time in seconds since last update
     uint64_t now = AP_HAL::micros64();
@@ -1071,6 +1067,11 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
+
+    // when soaring is active we never trigger a bad descent
+    if (soaring_active) {
+        _flags.badDescent = false;        
+    }
 
     // Calculate pitch demand
     _update_pitch();
