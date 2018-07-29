@@ -10,8 +10,9 @@ import time
 
 import pexpect
 from pymavlink import mavutil
+from pymavlink import mavextra
 
-from pysim import util
+from pysim import util, rotmat
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException
@@ -270,9 +271,11 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # switch back to stabilize mode
-        self.set_rc(3, 1500)
         self.mavproxy.send('switch 6\n')
         self.wait_mode('STABILIZE')
+
+        # increase throttle because we're about to pitch:
+        self.set_rc(3, 1550)
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
@@ -313,6 +316,9 @@ class AutoTestCopter(AutoTest):
         # save bottom left corner of square (should be near home) as waypoint
         self.progress("Save WP 6")
         self.save_wp()
+
+        # reduce throttle again
+        self.set_rc(3, 1500)
 
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
@@ -1227,6 +1233,244 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_precision_sitl(self):
+        '''use SITL PrecLand backend precision messages to land aircraft'''
+
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_parameter("PLND_ENABLED", 1)
+            self.fetch_parameters()
+            self.set_parameter("PLND_TYPE", 4)
+
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+
+            self.reboot_sitl()
+
+            self.progress("Waiting for location")
+            old_pos = self.mav.location()
+            self.set_rc(3, 1000)
+            self.mavproxy.send('switch 6\n')  # stabilize mode
+            self.mav.wait_heartbeat()
+            self.wait_mode('STABILIZE')
+            self.progress("Waiting reading for arm")
+            self.wait_ready_to_arm()
+
+            self.arm_vehicle()
+            self.set_rc(3, 1800)
+            alt_min = 10
+            self.wait_altitude(alt_min,
+                               (alt_min + 5),
+                               relative=True)
+            self.set_rc(3, 1500)
+            # move away a little
+            self.set_rc(2, 1550)
+            self.wait_distance(5)
+            self.set_rc(2, 1500)
+            self.mavproxy.send('switch 2\n')  # land mode
+            self.mav.motors_disarmed_wait()
+            self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            new_pos = self.mav.location()
+            delta = self.get_distance(old_pos, new_pos)
+            if delta > 1:
+                raise NotAchievedException()
+            self.progress("Landed %u metres from original position" % delta)
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+        self.progress("All done")
+
+        if ex is not None:
+            raise ex
+
+    def earth_to_body(self, vector):
+        m = self.mav.messages["ATTITUDE"]
+        x = rotmat.Vector3(m.roll, m.pitch, m.yaw)
+#        print('r=%f p=%f y=%f' % (m.roll, m.pitch, m.yaw))
+        return vector - x
+
+    def loiter_to_ne(self, x, y, z):
+        dest = rotmat.Vector3(x, y, z)
+        while True:
+            m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
+                                        blocking=True)
+            pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
+            delta_ef = pos - dest
+            dist = math.sqrt(delta_ef.x*delta_ef.x+delta_ef.y*delta_ef.y)
+            self.progress("dist=%f" % (dist,))
+            if dist < 0.1:
+                 break
+            delta_bf = self.earth_to_body(delta_ef)
+            angle_x = math.atan2(delta_bf.x, delta_bf.z)
+            angle_y = math.atan2(delta_bf.y, delta_bf.z)
+            distance = math.sqrt(delta_bf.x*delta_bf.x+
+                                 delta_bf.y*delta_bf.y+
+                                 delta_bf.z*delta_bf.z)
+            self.mav.mav.landing_target_send(
+                0, # time_usec
+                1, # target_num
+                mavutil.mavlink.MAV_FRAME_GLOBAL, # frame; AP ignores
+                angle_x, # angle x (radians)
+                angle_y, # angle y (radians)
+                distance, # distance to target
+                0.01, # size of target in radians, X-axis
+                0.01 # size of target in radians, Y-axis
+            )
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 10:
+            m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
+                                        blocking=True)
+            pos = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
+            delta_ef = pos - dest
+            dist = math.sqrt(delta_ef.x*delta_ef.x+delta_ef.y*delta_ef.y)
+            self.progress("dist=%f" % (dist,))
+
+    def fly_payload_place_mission(self):
+        '''use Companion PrecLand backend precision messages in auto'''
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_parameter("PLND_ENABLED", 1)
+            self.fetch_parameters()
+            # enable companion backend:
+            self.set_parameter("PLND_TYPE", 1)
+
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+
+            self.reboot_sitl()
+
+            # load the mission:
+            global num_wp
+            num_wp = self.load_mission("copter_payload_place.txt")
+            if not num_wp:
+                self.progress("load copter_mission failed")
+                raise NotAchievedException()
+
+            self.progress("Waiting for location")
+            self.mav.location()
+            self.set_rc(3, 1000)
+            self.mavproxy.send('switch 6\n')  # stabilize mode
+            self.mav.wait_heartbeat()
+            self.wait_mode('STABILIZE')
+            self.progress("Waiting reading for arm")
+            self.wait_ready_to_arm()
+
+            # we should be doing precision loiter at this point
+            start = self.mav.recv_match(type='LOCAL_POSITION_NED',
+                                        blocking=True)
+
+            self.arm_vehicle()
+
+            self.mavproxy.send('switch 4\n')  # auto mode
+            self.mav.wait_heartbeat()
+            self.wait_mode('AUTO')
+
+            self.set_rc(3, 1500)
+
+            self.progress("Waiting for gripper text")
+            while True:
+                m = self.mav.recv_match(type='STATUSTEXT', blocking=True)
+                if "Gripper" in m.text:
+                    self.progress("Received gripper text")
+                    break
+
+            # TODO: check for gripper release here
+            self.mav.motors_disarmed_wait()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+        self.progress("All done")
+
+        if ex is not None:
+            raise ex
+
+    def fly_precision_companion(self):
+        '''use Companion PrecLand backend precision messages to loiter'''
+
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_parameter("PLND_ENABLED", 1)
+            self.fetch_parameters()
+            # enable companion backend:
+            self.set_parameter("PLND_TYPE", 1)
+
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+
+            # set up a channel switch to enable precision loiter:
+            self.set_parameter("CH7_OPT", 39)
+
+            self.reboot_sitl()
+
+            self.progress("Waiting for location")
+            self.mav.location()
+            self.set_rc(3, 1000)
+            self.mavproxy.send('switch 6\n')  # stabilize mode
+            self.mav.wait_heartbeat()
+            self.wait_mode('STABILIZE')
+            self.progress("Waiting reading for arm")
+            self.wait_ready_to_arm()
+
+            # we should be doing precision loiter at this point
+            start = self.mav.recv_match(type='LOCAL_POSITION_NED',
+                                        blocking=True)
+
+            self.arm_vehicle()
+            self.set_rc(3, 1800)
+            alt_min = 10
+            self.wait_altitude(alt_min,
+                               (alt_min + 5),
+                               relative=True)
+            self.set_rc(3, 1500)
+            # move away a little
+            self.set_rc(2, 1550)
+            self.wait_distance(5)
+            self.set_rc(2, 1500)
+            self.mavproxy.send('mode loiter\n')
+            self.wait_mode('LOITER')
+
+            # turn precision loiter on:
+            self.set_rc(7, 2000)
+
+            # try to drag aircraft to a position 5 metres north-east-east:
+            self.loiter_to_ne(start.x+5, start.y+10, start.z+10)
+            self.loiter_to_ne(start.x+5, start.y-10, start.z+10)
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+        self.progress("All done")
+
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest ArduCopter in SITL."""
         if not self.hasInit:
@@ -1241,14 +1485,25 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
+            self.run_test("Payload Place Mission",
+                          self.fly_payload_place_mission)
+            self.run_test("Precision Loiter (Companion)",
+                          self.fly_precision_companion)
+            self.run_test("Precision Landing (SITL)",
+                          self.fly_precision_sitl)
+
             self.progress("Waiting for location")
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.mav.wait_heartbeat()
             self.wait_mode('STABILIZE')
+            self.set_rc(3, 1000)
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
+
+            self.mavproxy.send("wp clear\n")
 
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)
