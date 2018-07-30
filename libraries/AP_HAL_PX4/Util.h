@@ -78,5 +78,5 @@ private:
         int fd = -1;
     } _heater;
 
-    int _tonealarm_fd;
+    int _tonealarm_fd = -1;
 };
