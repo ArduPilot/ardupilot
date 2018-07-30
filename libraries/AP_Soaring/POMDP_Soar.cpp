@@ -39,7 +39,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HORI", 4, POMDSoarAlgorithm, pomdp_hori, 4.0),
 
-    // @Param: STEP_T
+    // @Param: STEP
     // @DisplayName:POMDP planning step solve time
     // @Description: The amount of computation time the POMDP solver has for computing the next action
     // @Units: seconds
@@ -55,29 +55,29 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOOP", 6, POMDSoarAlgorithm, pomdp_loop_load, 1),
 
-    // @Param: ROLL1
+    // @Param: RLLMAX
     // @DisplayName: POMDP's maximum commanded roll angle.
     // @Description: Maximum commanded roll angle in the POMDP used by POMDSoar.
     // @Units: degrees
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("ROLL1", 7, POMDSoarAlgorithm, pomdp_roll1, 15),
+    AP_GROUPINFO("RLLMAX", 7, POMDSoarAlgorithm, pomdp_roll1, 15),
 
-    // @Param: ROLL2
+    // @Param: RLLMIN
     // @DisplayName: POMDP's minimum commanded roll angle.
     // @Description: Minimum commanded roll angle in the POMDP used by POMDSoar.
     // @Units: degrees
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("ROLL2", 8, POMDSoarAlgorithm, pomdp_roll2, 45),
+    AP_GROUPINFO("RLLMIN", 8, POMDSoarAlgorithm, pomdp_roll2, 45),
 
-    // @Param: RRATE
+    // @Param: RLLRT
     // @DisplayName: The sailplane UAV's roll rate increment used by POMDSoar
     // @Description: The sailplane UAV's roll rate increment used by POMDSoar.
     // @Units: degrees/second
     // @Range: 0 1000
     // @User: Advanced
-    AP_GROUPINFO("RRATE", 9, POMDSoarAlgorithm, pomdp_roll_rate, 75),
+    AP_GROUPINFO("RLLRT", 9, POMDSoarAlgorithm, pomdp_roll_rate, 75),
 
     // @Param: N_ACT
     // @DisplayName: POMDP number of actions
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("N_ACT", 10, POMDSoarAlgorithm, pomdp_n_actions, 2),
 
-    // @Param: I_MOMENT
+    // @Param: I_MOM
     // @DisplayName: I-moment coefficient
     // @Description: Airframe-specific I-moment coefficient used by POMDSoar to model the trajectory corresponding to a given commanded roll angle.
     // @Units:
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("I_MOM", 11, POMDSoarAlgorithm, I_moment, 0.00257482),
 
-    // @Param: K_AILERON
+    // @Param: K_AIL
     // @DisplayName: Aileron K coefficient
     // @Description: Airframe-specific aileron K coefficient used by POMDSoar to model the trajectory corresponding to a given commanded roll angle.
     // @Units: seconds
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("K_AIL", 12, POMDSoarAlgorithm, k_aileron, 1.44833047),
 
-    // @Param: K_ROLLDAMP
+    // @Param: RLLDMP
     // @DisplayName: Roll dampening K coefficient
     // @Description: Airframe-specific roll-dampening K coefficient used by POMDSoar to model the trajectory corresponding to a given commanded roll angle.
     // @Units:
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RLLDMP", 13, POMDSoarAlgorithm, k_roll_damping, 0.41073589),
 
-    // @Param: ROLL_CLP
+    // @Param: RLLCLP
     // @DisplayName: CLP coefficient
     // @Description: Airframe-specific CLP coefficient used by POMDSoar to model the trajectory corresponding to a given commanded roll angle.
     // @Units:
@@ -143,7 +143,7 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("POLY_C", 17, POMDSoarAlgorithm, poly_c, -2.30292972),
 
-    // @Param: TH
+    // @Param: PTH
     // @DisplayName: POMDSoar's threshold on tr(P) for switching between explore and max-lift modes.
     // @Description: POMDSoar's threshold on the P matrix trace for switching between explore and max-lift modes.
     // @Units:
@@ -167,13 +167,13 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EXT", 20, POMDSoarAlgorithm, pomdp_extend, 0),
 
-    // @Param: PLN
+    // @Param: PLAN
     // @DisplayName: Enable deterministic trajectory planning mode for the POMDP
     // @Description: Enable deterministic trajectory planning mode for the POMDP. 0 = off, 1 on.
     // @Units:
     // @Range: 0 1
     // @User: Advanced
-    AP_GROUPINFO("PLN", 21, POMDSoarAlgorithm, pomdp_plan_mode, 0),
+    AP_GROUPINFO("PLAN", 21, POMDSoarAlgorithm, pomdp_plan_mode, 0),
 
     AP_GROUPEND
 };
