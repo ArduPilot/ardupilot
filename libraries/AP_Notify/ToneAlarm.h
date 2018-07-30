@@ -22,7 +22,7 @@
 
 // wait 2 seconds before assuming a tone is done and continuing the continuous tone
 #define AP_NOTIFY_TONEALARM_MAX_TONE_LENGTH_MS 2000
-#define AP_NOTIFY_TONEALARM_TONE_BUF_SIZE 512
+#define AP_NOTIFY_TONEALARM_TONE_BUF_SIZE 100
 
 class AP_ToneAlarm: public NotifyDevice {
 public:
