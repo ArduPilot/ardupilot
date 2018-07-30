@@ -219,6 +219,7 @@ void POMDSoarAlgorithm::init_actions(POMDP_Mode mode)
                 //gcs().send_text(MAV_SEVERITY_INFO, "Action[%d] %f", i, (double)_roll_cmds[i]);
                 roll -= roll_rate;
             }
+            break;
         }
         case POMDP_MODE_EXPLORE:
         {
@@ -230,6 +231,7 @@ void POMDSoarAlgorithm::init_actions(POMDP_Mode mode)
                 //gcs().send_text(MAV_SEVERITY_INFO, "Action[%d] %f", i, (double)_roll_cmds[i]);
                 roll -= roll_rate;
             }
+            break;
         }
     }
 
