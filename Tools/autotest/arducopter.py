@@ -153,22 +153,70 @@ class AutoTestCopter(AutoTest):
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
 
+    def run_cmd(self,
+                command,
+                p1,
+                p2,
+                p3,
+                p4,
+                p5,
+                p6,
+                p7,
+                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.mav.mav.command_long_send(1,
+                                       1,
+                                       command,
+                                       1, # confirmation
+                                       p1,
+                                       p2,
+                                       p3,
+                                       p4,
+                                       p5,
+                                       p6,
+                                       p7)
+        while True:
+            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
+            print("m: %s" % str(m))
+            if m.command == command:
+                if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                    raise ValueError()
+                break
+
+    def user_takeoff(self, alt_min=30):
+        '''takeoff using mavlink takeoff command'''
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     alt_min # param7
+        )
+        self.progress("Ran command")
+        self.wait_for_alt(alt_min)
+
     def takeoff(self, alt_min=30, takeoff_throttle=1700, arm=False):
         """Takeoff get to 30m altitude."""
+        self.progress("TAKEOFF")
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
         if arm:
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
+        self.wait_for_alt(alt_min=30)
+        self.hover()
+        self.progress("TAKEOFF COMPLETE")
+
+    def wait_for_alt(self, alt_min=30):
+        '''wait for altitude to be reached'''
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         alt = m.relative_alt / 1000.0 # mm -> m
         if alt < alt_min:
             self.wait_altitude(alt_min,
                                (alt_min + 5),
                                relative=True)
-        self.hover()
-        self.progress("TAKEOFF COMPLETE")
 
     def land(self, timeout=60):
         """Land the quad."""
@@ -1223,6 +1271,98 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def guided_achieve_heading(self, heading):
+        tstart = self.get_sim_time()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                     heading, # target angle
+                     10, # degrees/second
+                     1, # -1 is counter-clockwise, 1 clockwise
+                     0, # 1 for relative, 0 for absolute
+                     0, # p5
+                     0, # p6
+                     0, # p7
+        )
+        while True:
+            if self.get_sim_time() - tstart > 200:
+                raise NotAchievedException()
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            self.progress("heading=%f want=%f" % (m.heading, heading))
+            if m.heading == heading:
+                return
+
+    def fly_guided_change_submode(self):
+        '''Ensure we can move around in guided after a takeoff command'''
+
+        self.context_push();
+
+        ex = None
+        try:
+            '''start by disabling GCS failsafe, otherwise we immediately disarm
+            due to (apparently) not receiving traffic from the GCS for
+            too long.  This is probably a function of --speedup'''
+            self.set_parameter("FS_GCS_ENABLE", 0)
+            self.mavproxy.send('mode guided\n')  # stabilize mode
+            self.wait_mode('GUIDED')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            self.user_takeoff(alt_min=10)
+
+            startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                           blocking=True)
+
+            '''yaw through absolute angles using MAV_CMD_CONDITION_YAW'''
+            self.guided_achieve_heading(45)
+            self.guided_achieve_heading(135)
+
+            '''move the vehicle using set_position_target_global_int'''
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time() - tstart > 200:
+                    raise NotAchievedException()
+                # send a position-control command
+                self.mav.mav.set_position_target_global_int_send(
+                    0, # timestamp
+                    1, # target system_id
+                    1, # target component id
+                    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                    0b1111111111111000, # mask specifying use-only-lat-lon-alt
+                    5, # lat
+                    5, # lon
+                    10, # alt
+                    0, # vx
+                    0, # vy
+                    0, # vz
+                    0, # afx
+                    0, # afy
+                    0, # afz
+                    0, # yaw
+                    0, # yawrate
+                )
+                pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True)
+                delta = self.get_distance_int(startpos, pos)
+                self.progress("delta=%f (want >10)" % delta)
+                if delta > 10:
+                    break
+
+            self.progress("Landing")
+            self.mavproxy.send('switch 2\n')  # land mode
+            self.wait_mode('LAND')
+            self.mav.motors_disarmed_wait()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+        self.set_rc(3, 1000)
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+
     def autotest(self):
         """Autotest ArduCopter in SITL."""
         if not self.hasInit:
@@ -1237,6 +1377,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
+            self.fly_guided_change_submode()
+
             self.progress("Waiting for location")
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
