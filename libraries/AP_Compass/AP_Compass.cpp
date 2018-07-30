@@ -586,14 +586,15 @@ void Compass::_probe_external_i2c_compasses(void)
     //external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                               true,ROTATION_ROLL_180),
+                                                               true, HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL),
                     AP_Compass_QMC5883L::name, true);
     }
     
     //internal i2c bus
     FOREACH_I2C_INTERNAL(i) {
         ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                               both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_ROLL_180_YAW_270),
+                                                               both_i2c_external,
+                                                               both_i2c_external?HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL),
                     AP_Compass_QMC5883L::name,both_i2c_external);
     }
     
@@ -933,10 +934,10 @@ void Compass::_detect_backends(void)
                                                            true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
 #elif HAL_COMPASS_DEFAULT == HAL_COMPASS_QMC5883L
     ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, GET_I2C_DEVICE(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                           true,ROTATION_ROLL_180),
+                                                           true, HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL),
                 AP_Compass_QMC5883L::name, true);
     ADD_BACKEND(DRIVER_QMC5883, AP_Compass_QMC5883L::probe(*this, GET_I2C_DEVICE(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
-                                                           false,ROTATION_PITCH_180_YAW_270),
+                                                           false, HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL),
                 AP_Compass_QMC5883L::name, false);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
     ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, GET_I2C_DEVICE(HAL_COMPASS_HMC5843_I2C_BUS, HAL_COMPASS_HMC5843_I2C_ADDR)),
