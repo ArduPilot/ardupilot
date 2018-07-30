@@ -1,6 +1,6 @@
 APMrover2 Release Notes:
 ========================
-Rover 3.4.2-rc1 23-Jul-2018
+Rover 3.4.2 30-Jul-2018 / 3.4.2-rc1 23-Jul-2018
 Changes from 3.4.1:
 1) bug fix to pivot turn logic during missions
 2) dataflash logging improvement to NTUN message
