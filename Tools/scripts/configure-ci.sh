@@ -21,7 +21,7 @@ pushd $HOME
 # PX4 toolchain
 dir=$ARM_ROOT
 if [ ! -d "$HOME/opt/$dir" ]; then
-  wget http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL
+  wget http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL
   tar -xf $ARM_TARBALL -C opt
 fi
 
