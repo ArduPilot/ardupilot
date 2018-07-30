@@ -149,7 +149,7 @@ SoaringController::SoaringController(AP_AHRS &ahrs, AP_SpdHgtControl &spdHgt, co
     _pomdsoar(this, rollController, scaling_speed)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _prev_update_time = AP_HAL::micros64();
+    _prev_update_time_us = AP_HAL::micros();
 }
 
 void SoaringController::get_target(Location &wp)
@@ -172,7 +172,7 @@ bool SoaringController::suppress_throttle()
         _throttle_suppressed = true;
         // Zero the pitch integrator - the nose is currently raised to climb, we need to go back to glide.
         _spdHgt.reset_pitch_I();
-        _cruise_start_time_us = AP_HAL::micros64();
+        _cruise_start_time_ms = AP_HAL::millis();
         // Reset the filtered vario rate - it is currently elevated due to the climb rate and would otherwise take a while to fall again,
         // leading to false positives.
         _vario.filtered_reading = 0;
@@ -184,7 +184,7 @@ bool SoaringController::suppress_throttle()
 bool SoaringController::check_thermal_criteria()
 {
     return (soar_active
-            && ((AP_HAL::micros64() - _cruise_start_time_us) > ((unsigned)min_cruise_s * 1e6))
+            && ((AP_HAL::millis() - _cruise_start_time_ms) > ((unsigned)min_cruise_s * 1e3))
             && _vario.filtered_reading > thermal_vspeed
             && _vario.alt < alt_max
             && _vario.alt > alt_min);
@@ -215,7 +215,7 @@ bool SoaringController::check_cruise_criteria()
 
 bool SoaringController::is_in_thermal_locking_period()
 {
-    return ((AP_HAL::micros64() - _thermal_start_time_us) < ((unsigned)min_thermal_s * 1e6));
+    return ((AP_HAL::millis() - _thermal_start_time_ms) < ((unsigned)min_thermal_s * 1e3));
 }
 
 
@@ -245,8 +245,8 @@ void SoaringController::init_ekf()
 void SoaringController::init_thermalling()
 {
     _ahrs.get_position(_prev_update_location);
-    _prev_update_time = AP_HAL::micros64();
-    _thermal_start_time_us = AP_HAL::micros64();
+    _prev_update_time_us = AP_HAL::micros();
+    _thermal_start_time_ms = AP_HAL::millis();
 
     init_ekf();
 
@@ -258,7 +258,7 @@ void SoaringController::init_thermalling()
 void SoaringController::init_cruising()
 {
     if (is_active() && suppress_throttle()) {
-        _cruise_start_time_us = AP_HAL::micros64();
+        _cruise_start_time_ms = AP_HAL::millis();
         // Start glide. Will be updated on the next loop.
         _throttle_suppressed = true;
     }
@@ -271,8 +271,9 @@ void SoaringController::get_wind_corrected_drift(const Location *current_loc, co
     *dy = diff.y;
 
     // Wind correction
-    *wind_drift_x = wind->x * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
-    *wind_drift_y = wind->y * (AP_HAL::micros64() - _prev_update_time) * 1e-6;
+    uint32_t dt_us = AP_HAL::micros() - _prev_update_time_us;
+    *wind_drift_x = wind->x * dt_us * 1e-6;
+    *wind_drift_y = wind->y * dt_us * 1e-6;
     *dx -= *wind_drift_x;
     *dy -= *wind_drift_y;
 }
@@ -334,7 +335,7 @@ void SoaringController::update_thermalling()
         _ekf.update(_vario.reading,dx, dy);       // update the filter
 
         _prev_update_location = current_loc;      // save for next time
-        _prev_update_time = AP_HAL::micros64();
+        _prev_update_time_us = AP_HAL::micros();
         _vario.new_data = false;
     }
 }

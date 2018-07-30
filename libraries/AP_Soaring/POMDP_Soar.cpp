@@ -261,8 +261,7 @@ void POMDSoarAlgorithm::init_thermalling()
 
     _solver.init_step(pomdp_loop_load, pomdp_n, _sc->_ekf.X, _sc->_ekf.P, _sc->_ekf.Q, _sc->_ekf.R, _weights, false);
     
-    // This assumes that SoaringController updated _thermal_start_time_us right before this call to init_thermalling
-    _prev_pomdp_update_time = _sc->_thermal_start_time_us;
+    _prev_pomdp_update_time = AP_HAL::micros64();
     _prev_pomdp_wp          = _sc->_prev_update_location;
     _pomdp_active      = true;
     _pomdp_mode        = POMDP_MODE_EXPLORE;

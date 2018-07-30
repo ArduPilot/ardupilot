@@ -42,13 +42,13 @@ class SoaringController {
     struct Location _prev_update_location;
 
     // store time thermal was entered for hysteresis
-    uint64_t _thermal_start_time_us;
+    uint32_t _thermal_start_time_ms;
 
     // store time cruise was entered for hysteresis
-    uint64_t _cruise_start_time_us;
+    uint32_t _cruise_start_time_ms;
 
     // store time of last update
-    uint64_t _prev_update_time;
+    uint32_t _prev_update_time_us;
 
     float _loiter_rad;
     bool _throttle_suppressed;
