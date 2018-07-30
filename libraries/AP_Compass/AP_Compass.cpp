@@ -489,13 +489,6 @@ Compass::Compass(void)
     }
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
-
-    // Reset dev_id parameters' cached values to zero. This is here to address a potential
-    // edge case where a previously-detected compass is no longer present, but its dev_id
-    // is loaded from the parameter's stored value.
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-        _state[i].dev_id = 0;
-    }
 }
 
 // Default init method
@@ -1110,7 +1103,6 @@ Compass::save_offsets(uint8_t i)
 {
     _state[i].offset.save();  // save offsets
     _state[i].dev_id.set_and_save(_state[i].detected_dev_id);
-    _state[i].dev_id.save();  // save device id corresponding to these offsets
 }
 
 void
