@@ -151,14 +151,6 @@ const AP_Param::GroupInfo POMDSoarAlgorithm::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PTH", 18, POMDSoarAlgorithm, pomdp_pth, 50),
 
-    // @Param: NORM
-    // @DisplayName: Normalize the P matrix trace when solving the POMDP
-    // @Description: Normalize the trace of the P matrix used for switching between explore and max-lift modes in POMDSoar. 0 = no normalizing, 1 = normalize tr(P)
-    // @Units:
-    // @Range: 0 1
-    // @User: Advanced
-    AP_GROUPINFO("NORM", 19, POMDSoarAlgorithm, pomdp_norm_pth, 0),
-
     // @Param: EXT
     // @DisplayName: Enable action duration extension in POMDSoar's max-lift mode compared to the explore mode
     // @Description: 0 = off, > 1 = multiplicative factor by which to extend action duration in max-lift compared to the explore mode.
@@ -368,19 +360,18 @@ void POMDSoarAlgorithm::update_thermalling(const Location &current_loc)
         _sc->get_relative_position_wrt_home(_pomdp_vecNE);
         
         float heading = _sc->get_yaw();
-        //gcs().send_text(MAV_SEVERITY_INFO, "head %f %f %f", hdx, hdy, wind_corrected_heading);
-        float n[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-        // Normalise the trace of covariance matrix, if required.
-        if (pomdp_norm_pth)
-        {
-            n[0] = fabsf(_sc->_ekf.X[0]) > 0.0f ? fabsf(_sc->_ekf.X[0]) : 1.0f;
-            n[1] = fabsf(_sc->_ekf.X[1]) > 0.0f ? fabsf(_sc->_ekf.X[1]) : 1.0f;
-            n[2] = n[1];
-            n[3] = n[1];
-        }
+        float n[4] = {
+            fabsf(_sc->_ekf.X[0]) > 0.0f ? fabsf(_sc->_ekf.X[0]) : 1.0f,
+            fabsf(_sc->_ekf.X[1]) > 0.0f ? fabsf(_sc->_ekf.X[1]) : 1.0f,
+            fabsf(_sc->_ekf.X[1]) > 0.0f ? fabsf(_sc->_ekf.X[1]) : 1.0f,
+            fabsf(_sc->_ekf.X[1]) > 0.0f ? fabsf(_sc->_ekf.X[1]) : 1.0f
+        };
 
-        float trP = _sc->_ekf.P(0, 0) / n[0] + _sc->_ekf.P(1, 1) / n[1] + _sc->_ekf.P(2, 2) / n[2] + _sc->_ekf.P(3, 3) / n[3];
+        float trP = _sc->_ekf.P(0, 0) / n[0]
+                  + _sc->_ekf.P(1, 1) / n[1]
+                  + _sc->_ekf.P(2, 2) / n[2]
+                  + _sc->_ekf.P(3, 3) / n[3];
 
         // Update the correct mode (exploit vs explore) based on EKF covariance trace
         _pomdp_mode = trP < pomdp_pth && pomdp_pth > 0.0f ? POMDP_MODE_EXPLOIT : POMDP_MODE_EXPLORE;

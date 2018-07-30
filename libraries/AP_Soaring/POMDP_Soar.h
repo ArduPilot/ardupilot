@@ -69,7 +69,6 @@ private:
     AP_Float k_aileron;
     AP_Float k_roll_damping;
     AP_Float c_lp;
-    AP_Int8 pomdp_norm_pth;
     AP_Int8 pomdp_extend;
     AP_Int8 pomdp_plan_mode;
     AP_Float pomdp_pth;
