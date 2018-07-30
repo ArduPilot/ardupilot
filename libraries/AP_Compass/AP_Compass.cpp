@@ -487,6 +487,14 @@ Compass::init()
         hal.scheduler->delay(100);
         read();
     }
+    // set the dev_id to 0 for undetected compasses, to make it easier
+    // for users to see how many compasses are detected. We don't do a
+    // set_and_save() as the user may have temporarily removed the
+    // compass, and we don't want to force a re-cal if they plug it
+    // back in again
+    for (uint8_t i=_compass_count; i<COMPASS_MAX_INSTANCES; i++) {
+        _state[i].dev_id.set(0);
+    }
     return true;
 }
 
