@@ -93,6 +93,9 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 
 bool AP_ToneAlarm::init()
 {
+    if (pNotify->buzzer_enabled() == false) {
+        return false;
+    }
     if (!hal.util->toneAlarm_init()) {
         return false;
     }
