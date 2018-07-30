@@ -419,7 +419,26 @@ class AutoTest(ABC):
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
         dlat = loc2.lat - loc1.lat
-        dlong = loc2.lng - loc1.lng
+        try:
+            dlong = loc2.lng - loc1.lng
+        except AttributeError:
+            dlong = loc2.lon - loc1.lon
+
+        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+    @staticmethod
+    def get_distance_int(loc1, loc2):
+        """Get ground distance between two locations in the normal "int" form
+        - lat/lon multiplied by 1e7"""
+        dlat = loc2.lat - loc1.lat
+        try:
+            dlong = loc2.lng - loc1.lng
+        except AttributeError:
+            dlong = loc2.lon - loc1.lon
+
+        dlat /= 10000000.0
+        dlong /= 10000000.0
+
         return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
@@ -724,6 +743,7 @@ class AutoTest(ABC):
 
     def wait_ready_to_arm(self, timeout=None):
         # wait for EKF checks to pass
+        self.progress("Waiting reading for arm")
         return self.wait_ekf_happy(timeout=timeout)
 
     def wait_ekf_happy(self, timeout=30):
