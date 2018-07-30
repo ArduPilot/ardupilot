@@ -96,7 +96,7 @@ private:
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
 
     // PWM input handling
-    static uint32_t get_gpio(uint8_t pin_number);
+    uint32_t get_gpio(uint8_t pin_number) const;
     static int irq_handler(int irq, void *context);
 };
 
