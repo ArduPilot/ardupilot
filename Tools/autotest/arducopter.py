@@ -1150,9 +1150,7 @@ class AutoTestCopter(AutoTest):
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         print("old_pos=%s" % str(old_pos))
 
-        old_gps_type = self.get_parameter("GPS_TYPE")
-        old_ek2_gps_type = self.get_parameter("EK2_GPS_TYPE")
-        old_serial5_protocol = self.get_parameter("SERIAL5_PROTOCOL")
+        self.context_push();
 
         ex = None
         try:
@@ -1218,9 +1216,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.set_parameter("GPS_TYPE", old_gps_type)
-        self.set_parameter("EK2_GPS_TYPE", old_ek2_gps_type)
-        self.set_parameter("SERIAL5_PROTOCOL", old_serial5_protocol)
+        self.context_pop();
         self.set_rc(3, 1000)
         self.reboot_sitl()
 
