@@ -1,3 +1,25 @@
+Release 3.9.0beta6, 30th July 2018
+----------------------------------
+
+This is the sixth in a series of beta releases for plane 3.9.0. I aims
+to be the final beta.
+
+Changes in this release are:
+
+ - added Q_TAILSIT_THSCMX parameter for tailsitters (thanks to IamPete)
+ - added KakuteF7 bootloader
+ - fixed arming error with trim on unusued RC channels
+ - fixed microSD support on KakureF7 and OmnibusF7V2 (thanks sh83)
+ - fixed VL53L0X rangefinder driver
+ - added Pixhawk1 ChibiOS build
+ - fixed update rate for servos in tailsitters
+ - set COMPASS_AUTO_ROT to 2 for most boards
+ - improved OmnibusF7V2 support
+ - support all external compasses on mini-pix
+ - clear COMPASS_DEV_ID for unused compasses
+
+Happy flying!
+
 Release 3.9.0beta5, 19th July 2018
 ----------------------------------
 
