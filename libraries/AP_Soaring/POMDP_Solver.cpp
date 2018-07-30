@@ -184,13 +184,16 @@ void PomdpSolver::generate_action_paths(float v0, float eas2tas, float psi0, flo
     _prev_action = current_action;
 }
 
-void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int k, int nactions, float* action,
-    float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int j0, int j1)
+void PomdpSolver::generate_action(int i_action, float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int n_steps, float* action,
+    float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int step_start, int step_end)
 {
-    // Plan the possible flight paths.
+    // Plan the possible flight paths. This function will do a specified number of integration steps (step_start->step_end) for specified action i_action.
+
+    // How much faster do we integrate than EKF updates
     const int rate_x = 10;
-    const float g = -9.80665;
-    float dt = t_hori / (k * rate_x);
+    float dt = t_hori / (n_steps * rate_x);
+
+    // Initial variables for a new path.
     float px = 0.0f;
     float py = 0.0f;
     float psi = psi0;
@@ -199,54 +202,61 @@ void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, fl
     float theta_rate = roll_rate0;
     float t = dt;
 
-    if (j0 == 0)
+    int j_step = step_start;
+    if (j_step == 0)
     {
+        // If on first step, initialize path.
         _pid_I = 0;
-        _action_path_x[m][0] = px;
-        _action_path_y[m][0] = py;
-        _action_path_psi[m][0] = psi;
-        _action_path_theta[m][0] = theta;
+        _action_path_x[i_action][0] = px;
+        _action_path_y[i_action][0] = py;
+        _action_path_psi[i_action][0] = psi;
+        _action_path_theta[i_action][0] = theta;
     }
     else {
-        px = _action_path_x[m][j0];
-        py = _action_path_y[m][j0];
-        psi = _action_path_psi[m][j0];
-        theta = _action_path_theta[m][j0];
+        // Otherwise pick up integration results from last update.
+        px = _action_path_x[i_action][j_step];
+        py = _action_path_y[i_action][j_step];
+        psi = _action_path_psi[i_action][j_step];
+        theta = _action_path_theta[i_action][j_step];
         theta_rate = _theta_rate;
         t = _t;
     }
 
-    for (int j = j0; j < k && j < j1; j++)
+    for (j_step = step_start; j_step < n_steps && j_step < step_end; j_step++)
     {	
+        // Loop until we reach specified max index, or number of steps per action.
         for (int i = 0; i < rate_x; i++)
         {
             if (t > t_step)
             {
-                theta_cmd = action[m];
+                theta_cmd = action[i_action];
             }
             else
             {
                 theta_cmd = current_action;
             }
 
+            // Perform numerical integration
             float C_lp = -c_lp * (theta_rate) / (2 * v0);
             float desired_rate = (theta_cmd - theta) / gains.tau;
             float aileron_out = _get_rate_out(dt, v0, eas2tas, theta_rate, desired_rate) / 45.0f;
             float theta_acc = (aileron_out * k_aileron - k_roll_damping * C_lp) / I_moment;
             theta_rate += theta_acc * dt;
             theta += theta_rate * dt;
-            psi -= dt * (g * tanf((theta * M_PI) / 180.0f) / v0);
+            psi -= dt * (GRAVITY_MSS * tanf((theta * M_PI) / 180.0f) / v0);
             px += dt * v0 * sinf(psi);
             py += dt * v0 * cosf(psi);
             t += dt;
         }
 
-        _action_path_x[m][j + 1] = px;
-        _action_path_y[m][j + 1] = py;
-        _action_path_psi[m][j + 1] = psi;
-        _action_path_theta[m][j + 1] = theta;
+        // Save integrated variables
+        _action_path_x[i_action][j_step + 1] = px;
+        _action_path_y[i_action][j_step + 1] = py;
+        _action_path_psi[i_action][j_step + 1] = psi;
+        _action_path_theta[i_action][j_step + 1] = theta;
     }
-        
+
+    //Save other state variables
     _theta_rate = theta_rate;
     _t = t;
     _log_j = 0; //start logging new actions
@@ -327,6 +337,7 @@ float PomdpSolver::sink_polar(float aspd, float poly_a, float poly_b, float poly
 
 void PomdpSolver::inner_loop()
 {
+    // Calculate the total lift and do EKF estimation step for given action and timestep.
     float px1 = _action_path_x[_i_action][_i_step];
     float py1 = _action_path_y[_i_action][_i_step];
     float rx = px1 - _x;
@@ -388,6 +399,9 @@ void PomdpSolver::action_loop()
 
 void PomdpSolver::update()
 {
+    // Main numerically intensive function.
+    // inner_loop() does the work, with the code here keeping track of samples, actions and steps.
+
     _slice_count++;
     _solve_time = AP_HAL::micros64();
     if (_generate_actions)
@@ -399,9 +413,9 @@ void PomdpSolver::update()
             return;
         }
 
-        int j1 = MIN(_i_step + ACTION_GENERATION_STEPS_PER_LOOP, _n_step);
-        generate_action(_i_action, _v0, _eas2tas, _psi0, _roll0, _roll_rate0, _prev_action, _n_step, _n_actions, _actions,
-            _t_step, _t_hori, _I_moment, _k_aileron, _k_roll_damping, _c_lp, _i_step, j1);
+        int end_step = MIN(_i_step + ACTION_GENERATION_STEPS_PER_LOOP, _n_step);
+        generate_action(_i_action, _v0, _eas2tas, _psi0, _roll0, _roll_rate0, _prev_action, _n_step, _actions,
+            _t_step, _t_hori, _I_moment, _k_aileron, _k_roll_damping, _c_lp, _i_step, end_step);
 
         _i_step += ACTION_GENERATION_STEPS_PER_LOOP;
         if (_i_step >= _n_step)
@@ -453,9 +467,9 @@ void PomdpSolver::update()
             {
                 // minimising uncertainty - minimising the trace of final EKF covariance
                 _Q[_i_action] += (_weights[0] * _ekf.P(0,0)
-                         + _weights[1] * _ekf.P(1,1)
-                         + _weights[2] * _ekf.P(2,2)
-                         + _weights[3] * _ekf.P(3,3)) * 1.0 / _n_sample;
+                                + _weights[1] * _ekf.P(1,1)
+                                + _weights[2] * _ekf.P(2,2)
+                                + _weights[3] * _ekf.P(3,3)) * 1.0 / _n_sample;
             }
             _i_step = 0;
 

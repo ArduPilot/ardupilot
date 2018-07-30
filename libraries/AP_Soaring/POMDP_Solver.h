@@ -115,8 +115,8 @@ public:
     void set_polar(float poly_a, float poly_b, float poly_c);
     void generate_action_paths(float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int pomdp_k, int nactions, float* action,
         float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int extend);
-    void generate_action(int m, float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int pomdp_k, int nactions, float* action,
-        float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int j0, int j1);
+    void generate_action(int i_action, float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int pomdp_k, float* action,
+        float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int step_start, int step_end);
     void log_actions(uint64_t thermal_id);
     float sink_polar(float aspd, float poly_a, float poly_b, float poly_c, float roll);
     void init_step(int max_loops, int n,const VectorN<float, 4> &x0, 
