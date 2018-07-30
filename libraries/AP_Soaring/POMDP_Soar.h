@@ -27,7 +27,6 @@ private:
     bool _pomdp_active = false;
     Location _pomdp_wp;
     Location _prev_pomdp_wp;
-    float _sign = 1;
     float _pomdp_radius;
     uint64_t _prev_pomdp_update_time = 0;
     int _prev_pomdp_action = 0;
@@ -38,7 +37,6 @@ private:
     uint64_t _pomp_loop_av_time = 0;
     float _pomdp_roll_cmd = 0;
     Vector2f _pomdp_vecNE;
-    int _m = 0;
     int _j = 0;
     int _n_action_samples;
     bool _new_actions_to_send = false;
@@ -91,7 +89,6 @@ public:
     int get_curr_mode();
     uint64_t get_latest_pomdp_solve_time();
     float get_action();
-    void send_test_out_msg(mavlink_channel_t chan);
     void update_thermalling(const Location &current_loc);
     void run_tests();
     bool ok_to_stop();
