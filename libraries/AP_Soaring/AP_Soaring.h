@@ -105,7 +105,6 @@ public:
     float get_rate() const;
     float get_roll() const;
     float get_eas2tas() const;
-    void get_heading_estimate(float *hdx, float *hdy) const;
-    void get_velocity_estimate(float dt, float *v0) const;
+    float get_yaw() const;
     bool is_controlling_roll();
 };

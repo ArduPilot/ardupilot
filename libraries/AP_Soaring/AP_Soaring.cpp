@@ -229,17 +229,12 @@ void SoaringController::init_ekf()
     const MatrixN<float,4> q{init_q};
     const float init_p[4] = {INITIAL_STRENGTH_COVARIANCE, INITIAL_RADIUS_COVARIANCE, INITIAL_POSITION_COVARIANCE, INITIAL_POSITION_COVARIANCE};
     const MatrixN<float,4> p{init_p};
-    
-    Vector2f ground_vector = _ahrs.groundspeed_vector();
-    float L = ground_vector.length();
-    float head_sin = ground_vector.y / L;
-    float head_cos = ground_vector.x / L;
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
                               INITIAL_THERMAL_RADIUS,
-                              thermal_distance_ahead * head_cos,
-                              thermal_distance_ahead * head_sin };
+                              thermal_distance_ahead * cosf(_ahrs.yaw),
+                              thermal_distance_ahead * sinf(_ahrs.yaw)};
     const VectorN<float,4> xr{init_xr};
 
     // Also reset covariance matrix p so filter is not affected by previous data
@@ -351,22 +346,10 @@ void SoaringController::update_cruising()
 }
 
 
-void SoaringController::get_heading_estimate(float *hdx, float *hdy) const
+float SoaringController::get_yaw() const
 {
-    Vector2f gnd_vel = _ahrs.groundspeed_vector();
-    Vector3f wind = _ahrs.wind_estimate();
-    *hdx = gnd_vel.x - wind.x;
-    *hdy = gnd_vel.y - wind.y;
+    return _ahrs.yaw;
 }
-
-
-void SoaringController::get_velocity_estimate(float dt, float *v0) const
-{
-    float hdx, hdy;
-    get_heading_estimate(&hdx, &hdy);
-    *v0 = sqrtf(hdx * hdx + hdy * hdy);
-}
-
 
 void SoaringController::update_vario()
 {

@@ -463,9 +463,8 @@ void POMDSoarAlgorithm::update_thermalling(const Location &current_loc)
         _pomdp_roll_cmd = _roll_cmds[action];
 
         _sc->get_relative_position_wrt_home(_pomdp_vecNE);
-        float hdx, hdy;
-        _sc->get_heading_estimate(&hdx, &hdy);
-        float wind_corrected_heading = atan2f(hdy, hdx);
+        
+        float heading = _sc->get_yaw();
         //gcs().send_text(MAV_SEVERITY_INFO, "head %f %f %f", hdx, hdy, wind_corrected_heading);
         float n[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
@@ -507,7 +506,7 @@ void POMDSoarAlgorithm::update_thermalling(const Location &current_loc)
             step_w = 1.0f / pomdp_n;
         }
 
-        _solver.generate_action_paths(aspd, eas2tas, wind_corrected_heading, degrees(_sc->get_roll()), degrees(_sc->get_rate()), _pomdp_roll_cmd, pomdp_k, _n_actions, _roll_cmds,
+        _solver.generate_action_paths(aspd, eas2tas, heading, degrees(_sc->get_roll()), degrees(_sc->get_rate()), _pomdp_roll_cmd, pomdp_k, _n_actions, _roll_cmds,
             pomdp_step_t * step_w, pomdp_hori, float(I_moment), float(k_aileron), float(k_roll_damping), float(c_lp), pomdp_extend);
         _m = 0;
         _solver.init_step(pomdp_loop_load, n_samples, _sc->_ekf.X, _sc->_ekf.P, _sc->_ekf.Q, _sc->_ekf.R, _weights, _pomdp_mode==POMDP_MODE_EXPLOIT);
