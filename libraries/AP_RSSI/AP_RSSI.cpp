@@ -17,7 +17,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <RC_Channel/RC_Channel.h>
 #include <utility>
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <board_config.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -44,7 +46,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI sensing pin
-    // @Description: pin used to read the RSSI voltage or pwm value
+    // @Description: Pin used to read the RSSI voltage or PWM value
     // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
@@ -263,7 +265,7 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
 }
 
 // get gpio id from pin number
-uint32_t AP_RSSI::get_gpio(uint8_t pin_number)
+uint32_t AP_RSSI::get_gpio(uint8_t pin_number) const
 {
 #ifdef GPIO_GPIO0_INPUT
     switch (pin_number) {
