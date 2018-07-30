@@ -40,10 +40,9 @@ class PomdpSolver
     float _action_path_psi[MAX_ACTIONS][MAX_ACTION_SAMPLES + 1];
     float _action_path_theta[MAX_ACTIONS][MAX_ACTION_SAMPLES + 1];
     int _prev_action;
-    int _n;
-    int _k;
-    int _nactions;
-    float _inv_n;
+    int _n_sample; // number of samples per action trajectory
+    int _n_step; // number of action steps (_i_step)
+    int _n_actions; // numer of actions (_i_action)
     float _action[MAX_ACTIONS];
     float _t_step;
     float _t_hori;
@@ -54,7 +53,7 @@ class PomdpSolver
     float _chol_p0[4][4];
     float _weights[4];
     float _mean[4] = { 0, 0, 0, 0 };
-    bool _max_lift;
+    bool _mode_exploit;
     float _dt;
     int _k_t_step;
     float _therm_x;
@@ -69,15 +68,14 @@ class PomdpSolver
     float _py0;
     float _px1;
     float _py1;
-    int _i;
-    int _j;
-    int _m;
+    int _i_sample; // Index of the current sample
+    int _i_step;   // Index of the current action step
+    int _i_action; // Index of the current action
     float _w ;
     float _r ;
     float _x ;
     float _y ;
     bool _running = false;
-    int _loop;
     int _max_loops;
     bool _start_sample_loop;
     bool _start_action_loop;
@@ -124,7 +122,7 @@ public:
     void init_step(int max_loops, int n,const VectorN<float, 4> &x0, 
                    const MatrixN<float, 4> &p0, const MatrixN<float, 4> &q0, float r0,
                    float weights[4], bool max_lift);
-    int update();
+    void update();
     int get_best_action() { return _best_action;  }
     float get_action_path_x(int a, int k) { return _action_path_x[a][k]; }
     float get_action_path_y(int a, int k) { return _action_path_y[a][k]; }
@@ -146,6 +144,5 @@ public:
     void update_random_buffer(unsigned n, MatrixN<float, 4> &cov, bool reset);
     void update_test();
     unsigned update_test_counter = 0;
-    int actions_generated() { return _generate_actions ? _m : _nactions; }
-    float samp_count;
+    int actions_generated() { return _generate_actions ? _i_action : _n_actions; }
 };

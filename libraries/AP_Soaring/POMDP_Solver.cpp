@@ -146,19 +146,22 @@ void PomdpSolver::set_polar(float poly_a, float poly_b, float poly_c)
 void PomdpSolver::generate_action_paths(float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int pomdp_k, int nactions, float* action,
     float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int extend)
 {
+    // Initialise planning variables.
     _v0 = v0;
-    int k = int(t_hori * pomdp_k);
+
+    // Determine _k, _t_hori, _t_step
+    _n_step = int(t_hori * pomdp_k);
     _t_hori = t_hori;
     _t_step = t_step;
 
     if (extend > 1)
     {
-        k = int(extend * t_hori * pomdp_k);
+        _n_step = int(extend * t_hori * pomdp_k);
 
-        if (k > MAX_ACTION_SAMPLES)
+        if (_n_step > MAX_ACTION_SAMPLES)
         {
-            k = MAX_ACTION_SAMPLES;
-            _t_hori = k / (float)pomdp_k;
+            _n_step = MAX_ACTION_SAMPLES;
+            _t_hori = _n_step / (float)pomdp_k;
         }
         else
         {
@@ -177,19 +180,17 @@ void PomdpSolver::generate_action_paths(float v0, float eas2tas, float psi0, flo
     _k_roll_damping = k_roll_damping;
     _c_lp = c_lp;
     _extend = extend;
-    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "gact k:%d", k);
-    _k = k;
-    _nactions = nactions;
+    _n_actions = nactions;
     _prev_action = current_action;
 }
 
 void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, float roll0, float roll_rate0, float current_action, int k, int nactions, float* action,
     float t_step, float t_hori, float I_moment, float k_aileron, float k_roll_damping, float c_lp, int j0, int j1)
 {
+    // Plan the possible flight paths.
     const int rate_x = 10;
     const float g = -9.80665;
     float dt = t_hori / (k * rate_x);
-    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "gact %f %f %f %f %f %f", v0, psi0, roll0, roll_rate0, action[0], action[1]);
     float px = 0.0f;
     float py = 0.0f;
     float psi = psi0;
@@ -201,7 +202,6 @@ void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, fl
     if (j0 == 0)
     {
         _pid_I = 0;
-        //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "])", m + 1);
         _action_path_x[m][0] = px;
         _action_path_y[m][0] = py;
         _action_path_psi[m][0] = psi;
@@ -245,11 +245,8 @@ void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, fl
         _action_path_y[m][j + 1] = py;
         _action_path_psi[m][j + 1] = psi;
         _action_path_theta[m][j + 1] = theta;
-        //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%3u j:%2d m:%2d %f %f %f %f", _slice_count, j+1, m, px, py, theta_cmd, t);
-        //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "[%f, %f],", px,py);
     }
         
-    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "a%d = np.array([", m + 1);
     _theta_rate = theta_rate;
     _t = t;
     _log_j = 0; //start logging new actions
@@ -259,9 +256,9 @@ void PomdpSolver::generate_action(int m, float v0, float eas2tas, float psi0, fl
 
 void PomdpSolver::log_actions(uint64_t thermal_id)
 {
-    if (_new_actions && _log_j < _k + 1)
+    if (_new_actions && _log_j < _n_step + 1)
     {
-        for (int m = 0; m < _nactions; m++) 
+        for (int m = 0; m < _n_actions; m++)
         {
             DataFlash_Class::instance()->Log_Write("POMA", "TimeUS,id,m,j,x,y,roll",
                 "QQBBfff",
@@ -286,8 +283,7 @@ void PomdpSolver::init_step(int max_loops, int n,
     const VectorN<float, 4> &x0, const MatrixN<float, 4> &p0, const MatrixN<float, 4> &q0, float r0,
     float weights[4], bool max_lift)
 {
-    _n = n;
-    _inv_n = 1.0f / (float)n;
+    _n_sample = n;
 
     for (int i = 0; i < 4; i++)
     {
@@ -299,18 +295,17 @@ void PomdpSolver::init_step(int max_loops, int n,
     _q0 = q0;
     _r0 = r0;
     cholesky44(_p0.getarray(),_chol_p0);
-    _max_lift = max_lift;
-    _dt = _t_hori / ((float)_k);
+    _mode_exploit = max_lift;
+    _dt = _t_hori / ((float)_n_step);
     _k_t_step = int(_t_step / _dt);
     _therm_x = _x0[3];
     _therm_y = _x0[2];
     _best_action = 0;
-    _i = 0;
-    _j = 0;
-    _m = 0;
+    _i_sample = 0;
+    _i_step   = 0;
+    _i_action = 0;
     _Q[0] = 0;
     _running = true;
-    _loop = 0;
     _max_loops = max_loops;
     _generate_actions = true;
     _start_action_loop = true;
@@ -332,15 +327,15 @@ float PomdpSolver::sink_polar(float aspd, float poly_a, float poly_b, float poly
 
 void PomdpSolver::inner_loop()
 {
-    float px1 = _action_path_x[_m][_j];
-    float py1 = _action_path_y[_m][_j];
+    float px1 = _action_path_x[_i_action][_i_step];
+    float py1 = _action_path_y[_i_action][_i_step];
     float rx = px1 - _x;
     float ry = py1 - _y;
     float z = _w * EXP(-(rx * rx + ry * ry) / (_r * _r));
 
-    if (_max_lift)
+    if (_mode_exploit)
     {
-        _total_lift += z + sink_polar(_v0, _poly_a, _poly_b, _poly_c, _action_path_theta[_m][_j]);
+        _total_lift += z + sink_polar(_v0, _poly_a, _poly_b, _poly_c, _action_path_theta[_i_action][_i_step]);
     }
 
     _ekf.update(z, py1 - _py0, px1 - _px0);
@@ -351,11 +346,11 @@ void PomdpSolver::inner_loop()
 
 void PomdpSolver::sample_loop()
 {
+    // Create the random samples
     float s[4];
-    if (_n > 1)
+    if (_n_sample > 1)
     {
         multivariate_normal(s, _mean, _chol_p0);
-        samp_count++;
         //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Sample: %f %f %f %f", s[0], s[1], s[2], s[3]);
         _w = _x0[0] + s[0];
         _r = _x0[1] + s[1];
@@ -379,16 +374,10 @@ void PomdpSolver::sample_loop()
 
 void PomdpSolver::action_loop()
 {
-    if (_max_lift)
-    {
-        _Q[_m] = 0;
-    }
-    else
-    {
-        _Q[_m] = 0;
-    }
+    _Q[_i_action] = 0;
 
-    if (_n <= 1) {
+    if (_n_sample <= 1) {
+        // Only doing a single action sample
         _s[0][0] = _x0[0];
         _s[0][1] = _x0[1];
         _s[0][2] = 0;
@@ -397,38 +386,36 @@ void PomdpSolver::action_loop()
 }
 
 
-int PomdpSolver::update()
+void PomdpSolver::update()
 {
-    samp_count = 0;
     _slice_count++;
     _solve_time = AP_HAL::micros64();
     if (_generate_actions)
     {
-        if (_m >= _nactions)
+        if (_i_action >= _n_actions)
         {
             _generate_actions = false;
-            _m = 0;
-            return 0;
+            _i_action = 0;
+            return;
         }
 
-        int j1 = MIN(_j + ACTION_GENERATION_STEPS_PER_LOOP, _k);
-        generate_action(_m, _v0, _eas2tas, _psi0, _roll0, _roll_rate0, _prev_action, _k, _nactions, _actions,
-            _t_step, _t_hori, _I_moment, _k_aileron, _k_roll_damping, _c_lp, _j, j1);
-        //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%lluus %3u loop:%6lluus j:%2d m:%2d", _solve_time, _slice_count, AP_HAL::micros64() - _solve_time, _j, _m);
-        _j += ACTION_GENERATION_STEPS_PER_LOOP;
-        if (_j >= _k)
-        {
-            _j = 0;
-            _m++;
+        int j1 = MIN(_i_step + ACTION_GENERATION_STEPS_PER_LOOP, _n_step);
+        generate_action(_i_action, _v0, _eas2tas, _psi0, _roll0, _roll_rate0, _prev_action, _n_step, _n_actions, _actions,
+            _t_step, _t_hori, _I_moment, _k_aileron, _k_roll_damping, _c_lp, _i_step, j1);
 
-            if (_m >= _nactions)
+        _i_step += ACTION_GENERATION_STEPS_PER_LOOP;
+        if (_i_step >= _n_step)
+        {
+            _i_step = 0;
+            _i_action++;
+
+            if (_i_action >= _n_actions)
             {
                 _generate_actions = false;
-                _m = 0;
+                _i_action = 0;
             }
         }
-        
-        return 0;
+        return;
     }
 
     if (_start_action_loop)
@@ -445,54 +432,52 @@ int PomdpSolver::update()
         _start_sample_loop = false;
     }
     
-    _loop = 0;
-    while (_loop < _max_loops)
+    int loop = 0;
+    while (loop < _max_loops)
     {
         // inner loop body
         inner_loop();
-        // GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "%02u loop:%02d i:%02d j:%02d m:%02d ip%03u sp:%03u", _slice_count, _loop, _i, _j, _m, _i_ptr, _s_ptr);
-        _loop++;
-        _j++;
+
+        loop++;
+        _i_step++;
         
-        if (_j >= _k)
+        if (_i_step >= _n_step)
         {
-            if (_max_lift)
+            if (_mode_exploit)
             {
                 // maximizing lift = minimizing the negative of the lift
-                _Q[_m] += - _total_lift; // *_inv_n;
+                // this has already been summed over the action steps in inner loop
+                _Q[_i_action] += - _total_lift;
             }
             else
             {
-                _Q[_m] += (_weights[0] * _ekf.P(0,0)
-                           + _weights[1] * _ekf.P(1,1)
-                           + _weights[2] * _ekf.P(2,2)
-                           + _weights[3] * _ekf.P(3,3)) * 1.0 / _n;
+                // minimising uncertainty - minimising the trace of final EKF covariance
+                _Q[_i_action] += (_weights[0] * _ekf.P(0,0)
+                         + _weights[1] * _ekf.P(1,1)
+                         + _weights[2] * _ekf.P(2,2)
+                         + _weights[3] * _ekf.P(3,3)) * 1.0 / _n_sample;
             }
+            _i_step = 0;
+
+            // Move onto next sample
+            _i_sample++;
             
-            _j = 0;
-            _i++;
-            
-            if (_i >= _n)
+            if (_i_sample >= _n_sample)
             {
-                
-                if (_max_lift && _Q[_m] < _Q[_best_action])
+                if (_Q[_i_action] < _Q[_best_action])
                 {
-                    _best_action = _m;
+                    _best_action = _i_action;
                 }
-                else if (_Q[_m] < _Q[_best_action])
-                {
-                    _best_action = _m;
-                }
+                _i_sample = 0;
+
+                // Move onto the next action
+                _i_action++;
                 
-                _i = 0;
-                _m++;
-                
-                if (_m >= _nactions)
+                if (_i_action >= _n_actions)
                 {
                     _running = false;
-                    //GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "Solver finished: %d %lluus", _slice_count, AP_HAL::micros64() - _solve_time);
                     _solve_time = AP_HAL::micros64();
-                    return samp_count;
+                    return;
                 }
                 
                 action_loop();
@@ -501,8 +486,6 @@ int PomdpSolver::update()
             sample_loop();
         }
     }
-
-    return samp_count;
 }
 
 
@@ -613,11 +596,11 @@ void PomdpSolver::run_loop_test(unsigned n, bool max_lift)
     _r = X[1];
     _y = X[2];
     _x = X[3];
-    _max_lift = max_lift;
-    _m = 0;
-    _j = 0;
-    _action_path_x[_m][_j] = 1.0;
-    _action_path_y[_m][_j] = 2.0;
+    _mode_exploit = max_lift;
+    _i_action = 0;
+    _i_step = 0;
+    _action_path_x[_i_action][_i_step] = 1.0;
+    _action_path_y[_i_action][_i_step] = 2.0;
 
     for (unsigned i = 0; i < n; i++)
     {
