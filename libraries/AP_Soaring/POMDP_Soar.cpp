@@ -242,8 +242,9 @@ void POMDSoarAlgorithm::init_actions(POMDP_Mode mode)
 void POMDSoarAlgorithm::init_thermalling()
 {
     Vector2f ground_vector = _sc->_ahrs.groundspeed_vector();
-    float head_sin = ground_vector.y / ground_vector.length();
-    float head_cos = ground_vector.x / ground_vector.length();
+    float L = ground_vector.length();
+    float head_sin = ground_vector.y / L;
+    float head_cos = ground_vector.x / L;
 
     float xprod = _sc->_ekf.X[3] * head_cos - _sc->_ekf.X[2] * head_sin;
     _sign = xprod <= 0 ? -1.0 : 1.0;

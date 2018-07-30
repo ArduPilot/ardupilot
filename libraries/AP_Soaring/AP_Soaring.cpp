@@ -231,8 +231,9 @@ void SoaringController::init_ekf()
     const MatrixN<float,4> p{init_p};
     
     Vector2f ground_vector = _ahrs.groundspeed_vector();
-    float head_sin = ground_vector.y / ground_vector.length();
-    float head_cos = ground_vector.x / ground_vector.length();
+    float L = ground_vector.length();
+    float head_sin = ground_vector.y / L;
+    float head_cos = ground_vector.x / L;
 
     // New state vector filter will be reset. Thermal location is placed in front of a/c
     const float init_xr[4] = {INITIAL_THERMAL_STRENGTH,
