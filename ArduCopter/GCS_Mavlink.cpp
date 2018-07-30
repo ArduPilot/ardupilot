@@ -928,6 +928,21 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
+        case MAV_CMD_AIRFRAME_CONFIGURATION: {
+            // Param 1: Select which gear, not used in ArduPilot
+            // Param 2: 0 = Deploy, 1 = Retract
+            // For safety, anything other than 1 will deploy
+            switch ((uint8_t)packet.param2) {
+                case 1:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+                    return MAV_RESULT_ACCEPTED;
+                default:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+                    return MAV_RESULT_ACCEPTED;
+            }
+            return MAV_RESULT_FAILED;
+        }
+
         /* Solo user presses Fly button */
     case MAV_CMD_SOLO_BTN_FLY_CLICK: {
         if (copter.failsafe.radio) {
