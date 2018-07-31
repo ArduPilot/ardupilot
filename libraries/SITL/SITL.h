@@ -78,6 +78,12 @@ public:
     static SITL *_singleton;
     static SITL *get_singleton() { return _singleton; }
 
+    enum SITL_RCFail {
+        SITL_RCFail_None = 0,
+        SITL_RCFail_NoPulses = 1,
+        SITL_RCFail_Throttle950 = 2,
+    };
+
     enum GPSType {
         GPS_TYPE_NONE  = 0,
         GPS_TYPE_UBLOX = 1,
