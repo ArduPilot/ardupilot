@@ -65,7 +65,7 @@ class AutoTestQuadPlane(AutoTest):
                                     gdb=self.gdb,
                                     gdbserver=self.gdbserver,
                                     breakpoints=self.breakpoints,
-        )
+                                    )
         self.mavproxy = util.start_MAVProxy_SITL(
             'QuadPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
@@ -161,7 +161,7 @@ class AutoTestQuadPlane(AutoTest):
                              "ArduPlane-Missions/Dalby-OBC2016-fence.txt")
 
             self.run_test("Mission", lambda: self.fly_mission(m, f))
-        except pexpect.TIMEOUT as e:
+        except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
             self.fail_list.append("Failed with timeout")
 
