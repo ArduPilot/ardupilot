@@ -139,7 +139,6 @@ public:
 
     // tunnel output
     void tunnel_send();
-    bool tunnel_flush();
 
     struct tunnel_stats {
         uint32_t retries;
@@ -204,7 +203,6 @@ private:
         UAVCAN_UARTDriver* uart;
         uint32_t last_send_ms;
         bool resend;
-        uavcan::tunnel::Broadcast bdcst_msg;
     } _tunnel;
 
     struct {

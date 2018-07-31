@@ -386,6 +386,7 @@ static void tunnel_broadcast_st_cb(const uavcan::ReceivedDataStructure<uavcan::t
     while (len > 0 && loop_count++ < 3) {
         len -= uart->handle_inbound(&msg.buffer[msg.buffer.size() - len], len);
         if (len > 0) {
+            hal.console->printf("inbound overflow\n", (unsigned)len);
             // couldn't queue it all. We must wait here or else we lose it!
             hal.scheduler->delay_microseconds(100);
             ap_uavcan->_tunnel_stats.intake_failed++;
@@ -566,8 +567,8 @@ bool AP_UAVCAN::try_init(void)
     }
     tunnel_broadcast_array[_uavcan_i] = new uavcan::Publisher<uavcan::tunnel::Broadcast>(*node);
     if (tunnel_broadcast_array[_uavcan_i]) {
-        tunnel_broadcast_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(CAN_PERIODIC_TX_TIMEOUT_MS));
-        tunnel_broadcast_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+        tunnel_broadcast_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+        tunnel_broadcast_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
     }
 
 
@@ -782,35 +783,6 @@ void AP_UAVCAN::do_cyclic(void)
     _tunnel_sem->give();
 }
 
-/*
- *  Transmit all bytes that have been queued in the outbound tunnel object.
- *  returns false if send fails, usually due to UAVCAN tx buffers being full.
- */
-bool AP_UAVCAN::tunnel_flush()
-{
-    if (!tunnel_broadcast_array[_uavcan_i]) {
-        // woah, we're not even configured yet
-        return false;
-    } else if (_tunnel.bdcst_msg.buffer.size() == 0) {
-        _tunnel.resend = false;
-        return true;
-    }
-
-    int32_t result = tunnel_broadcast_array[_uavcan_i]->broadcast(_tunnel.bdcst_msg);
-
-    if (result >= 0) {
-        _tunnel.last_send_ms = AP_HAL::millis();
-        // we're re-using the same msg, so lets make sure to clear it
-        _tunnel.bdcst_msg.buffer.clear();
-        return true;
-    }
-
-    // send failed. Let's quit now and try again on the next cycle
-    _tunnel.resend = true;
-    _tunnel_stats.flush_failed++;
-    return false;
-}
-
 void AP_UAVCAN::tunnel_send()
 {
     if (_tunnel.uart == nullptr) {
@@ -818,81 +790,63 @@ void AP_UAVCAN::tunnel_send()
         return;
     }
 
-    // check for re-send
-    if (_tunnel.resend && tunnel_flush()) {
-        // re-send was successful.
-        _tunnel.resend = false;
-
-        _tunnel_stats.retries++;
-
-        // that's probably enough work for now, if we needed to re-send then
-        // we seem to be on the edge of being able to send successfully so
-        // lets keep the workload light on this cycle.
+    if (!tunnel_broadcast_array[_uavcan_i]) {
+        // not configured yet
         return;
     }
-
+    
     uint32_t avail = _tunnel.uart->tx_available();
-
-    // flush if:
-    // - there's something in the outbound Tx buffer waiting but the CAN frame is not full
-    // - there's no other data that can be queued
-    // - we've timed out
-    if (avail == 0) {
-        if (_tunnel.bdcst_msg.buffer.size() > 0 &&
-            AP_HAL::millis() - _tunnel.last_send_ms >= AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
-            // flush it
-            tunnel_flush();
-            _tunnel_stats.delayed_flushes++;
-        }
-        // we already know there's no tx_pending so there's nothing else to do
+    const uint16_t max_send = 60;
+    if (avail < max_send) {
+        // wait for a full buffer
         return;
     }
 
-    const uint16_t max_buf_capacity = _tunnel.bdcst_msg.buffer.capacity();
-    uint8_t packet_send_count = 0;
-
-    while (avail && packet_send_count++ < AP_UAVCAN_TUNNEL_SENDS_PER_LOOP_MAX) {
-        // attempt to load as many bytes as can fit into bdcst_msg.buffer
-        // if buffer is full, send it. else, wait for timeout then send
-        while (avail && _tunnel.bdcst_msg.buffer.size() < max_buf_capacity) {
-
-            // but if there's no more data to send then we're done and can exit to transmit it
-            const int16_t data = _tunnel.uart->fetch_for_outbound();
-            if (data == -1) {
-                _tunnel_stats.fetch_error_1++;
-                // not initialized
-                break;
-            }
-            if (data == -2) {
-                _tunnel_stats.fetch_error_2++;
-                // mutex locked, try again
-                hal.scheduler->delay_microseconds(100);
-                break;
-            }
-            if (data == -3) {
-                _tunnel_stats.fetch_error_3++;
-                // buffer is empty, nothing else to read
-                break;
-            }
-
-            // make sure we're only sending pure uint8_t values to push_back
-            _tunnel_stats.push_back_count++;
-            avail--;
-            const uint8_t data_byte = data;
-            _tunnel.bdcst_msg.buffer.push_back(data_byte);
-        }
-
-        // transmit buffer is filled to the top, send it!
-        if (_tunnel.bdcst_msg.buffer.size() >= max_buf_capacity) {
-            // Tx packet is full, flush it
-            _tunnel_stats.buffer_at_max_cap++;
-            if (!tunnel_flush()) {
-                // send failed. Let's quit now and try again on the next cycle
-                _tunnel_stats.buffer_at_max_cap_send_fail++;
-                return;
-            }
-        }
+#if 0
+    static uint32_t last_send;
+    uint32_t now = AP_HAL::millis();
+    if (now - last_send < 10) {
+        return;
     }
+    last_send = now;
+#endif
+
+    if (avail > max_send) {
+        avail = max_send;
+    }
+    
+    uavcan::tunnel::Broadcast bdcst_msg;
+
+    while (avail) {
+        // but if there's no more data to send then we're done and can exit to transmit it
+        const int16_t data = _tunnel.uart->fetch_for_outbound();
+        if (data == -1) {
+            _tunnel_stats.fetch_error_1++;
+            // not initialized
+            break;
+        }
+        if (data == -2) {
+            _tunnel_stats.fetch_error_2++;
+            // mutex locked, try again
+            hal.scheduler->delay_microseconds(100);
+            break;
+        }
+        if (data == -3) {
+            _tunnel_stats.fetch_error_3++;
+            // buffer is empty, nothing else to read
+            break;
+        }
+        // make sure we're only sending pure uint8_t values to push_back
+        _tunnel_stats.push_back_count++;
+        avail--;
+        uint8_t data_byte = data;
+        bdcst_msg.buffer.push_back(data_byte);
+    }
+    
+    // Tx packet is full, flush it
+    _tunnel_stats.buffer_at_max_cap++;
+
+    tunnel_broadcast_array[_uavcan_i]->broadcast(bdcst_msg);
 }
 
 bool AP_UAVCAN::led_out_sem_take()
