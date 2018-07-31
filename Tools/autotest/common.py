@@ -659,22 +659,23 @@ class AutoTest(ABC):
             self.mav.recv_match(condition='RC_CHANNELS.chan3_raw==1500',
                                 blocking=True)
 
-    def guided_achieve_heading(self, heading):
+    def reach_heading_mavlink(self, heading, speed=10, direction=1, frame=0, timeout=200):
+        """Direct the vehicle to the target heading with MAV_CMD_CONDITION_YAW."""
         tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
                      heading,  # target angle
-                     10,  # degrees/second
-                     1,  # -1 is counter-clockwise, 1 clockwise
-                     0,  # 1 for relative, 0 for absolute
+                     speed,  # degrees/second
+                     direction,  # -1 is counter-clockwise, 1 clockwise
+                     frame,  # 1 for relative, 0 for absolute
                      0,  # p5
                      0,  # p6
                      0,  # p7
                      )
         while True:
-            if self.get_sim_time() - tstart > 200:
+            if self.get_sim_time() - tstart > timeout:
                 raise NotAchievedException()
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading=%f want=%f" % (m.heading, heading))
+            self.progress("Heading=%f Want=%f" % (m.heading, heading))
             if m.heading == heading:
                 return
 
