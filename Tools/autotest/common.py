@@ -447,9 +447,9 @@ class AutoTest(ABC):
                                        p7)
         while True:
             m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
-            print("m: %s" % str(m))
+            self.progress("ACK received: %s" % str(m))
             if m.command == command:
-                if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                if m.result != want_result:
                     raise ValueError()
                 break
 
