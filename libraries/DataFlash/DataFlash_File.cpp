@@ -186,8 +186,10 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
 void DataFlash_File::periodic_1Hz()
 {
     if (!io_thread_alive()) {
-        if (io_thread_warning_decimation_counter == 0) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat (%s)", last_io_operation);
+        if (io_thread_warning_decimation_counter == 0 && _initialised) {
+            // we don't print this error unless we did initialise. When _initialised is set to true
+            // we register the IO timer callback
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "DataFlash: stuck thread (%s)", last_io_operation);
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;

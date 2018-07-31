@@ -122,6 +122,16 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     AP_GROUPINFO("MAG_ODI",     19, SITL,  mag_offdiag, 0),
     AP_GROUPINFO("MAG_ORIENT",  20, SITL,  mag_orient, 0),
     AP_GROUPINFO("RC_CHANCOUNT",21, SITL,  rc_chancount, 16),
+    // @Group: SPR_
+    // @Path: ./SIM_Sprayer.cpp
+    AP_SUBGROUPINFO(sprayer_sim, "SPR_", 22, SITL, Sprayer),
+    // @Group: GRPS_
+    // @Path: ./SIM_Gripper_Servo.cpp
+    AP_SUBGROUPINFO(gripper_sim, "GRPS_", 23, SITL, Gripper_Servo),
+    // @Group: GRPE_
+    // @Path: ./SIM_Gripper_EPM.cpp
+    AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SITL, Gripper_EPM),
+
     AP_GROUPEND
 };
     

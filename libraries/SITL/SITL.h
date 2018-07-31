@@ -3,6 +3,10 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
+
 class DataFlash_Class;
 
 namespace SITL {
@@ -144,7 +148,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
@@ -206,6 +210,11 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
 };
 
 } // namespace SITL

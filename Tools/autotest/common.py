@@ -263,6 +263,13 @@ class AutoTest(ABC):
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         return m.time_boot_ms * 1.0e-3
 
+    def get_sim_time_cached(self):
+        """Get SITL time."""
+        x = self.mav.messages.get("SYSTEM_TIME", None)
+        if x is None:
+            return self.get_sim_time()
+        return x.time_boot_ms * 1.0e-3
+
     def sim_location(self):
         """Return current simulator location."""
         m = self.mav.recv_match(type='SIMSTATE', blocking=True)
@@ -348,7 +355,7 @@ class AutoTest(ABC):
     def set_rc(self, chan, pwm, timeout=20):
         """Setup a simulated RC control to a PWM value"""
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time_cached() < tstart + timeout:
             self.mavproxy.send('rc %u %u\n' % (chan, pwm))
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
@@ -419,7 +426,26 @@ class AutoTest(ABC):
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
         dlat = loc2.lat - loc1.lat
-        dlong = loc2.lng - loc1.lng
+        try:
+            dlong = loc2.lng - loc1.lng
+        except AttributeError:
+            dlong = loc2.lon - loc1.lon
+
+        return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+
+    @staticmethod
+    def get_distance_int(loc1, loc2):
+        """Get ground distance between two locations in the normal "int" form
+        - lat/lon multiplied by 1e7"""
+        dlat = loc2.lat - loc1.lat
+        try:
+            dlong = loc2.lng - loc1.lng
+        except AttributeError:
+            dlong = loc2.lon - loc1.lon
+
+        dlat /= 10000000.0
+        dlong /= 10000000.0
+
         return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     @staticmethod
@@ -724,6 +750,7 @@ class AutoTest(ABC):
 
     def wait_ready_to_arm(self, timeout=None):
         # wait for EKF checks to pass
+        self.progress("Waiting reading for arm")
         return self.wait_ekf_happy(timeout=timeout)
 
     def wait_ekf_happy(self, timeout=30):
