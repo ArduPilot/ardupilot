@@ -312,7 +312,6 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.send("mode STABILIZE\n")
         self.wait_mode('STABILIZE')
 
-        count = 1
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 2000)
@@ -341,7 +340,6 @@ class AutoTestPlane(AutoTest):
         self.mavproxy.send("mode ACRO\n")
         self.wait_mode('ACRO')
 
-        count = 1
         while count > 0:
             self.progress("Starting roll")
             self.set_rc(1, 1000)
@@ -376,7 +374,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(3, 1700)
         return self.wait_level_flight()
 
-    def test_FBWB(self, count=1, mode='FBWB'):
+    def test_FBWB(self, mode='FBWB'):
         """Fly FBWB or CRUISE mode."""
         self.mavproxy.send("mode %s\n" % mode)
         self.wait_mode(mode)
@@ -440,7 +438,7 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def fly_mission(self, filename, height_accuracy=-1, target_altitude=None):
+    def fly_mission(self, filename):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         self.mavproxy.send('wp load %s\n' % filename)
@@ -500,9 +498,7 @@ class AutoTestPlane(AutoTest):
 
             self.run_test("Mission test",
                           lambda: self.fly_mission(
-                              os.path.join(testdir, "ap1.txt"),
-                              height_accuracy=10,
-                              target_altitude=self.homeloc.alt+100))
+                              os.path.join(testdir, "ap1.txt")))
 
             self.run_test("Log download",
                           lambda: self.log_download(
