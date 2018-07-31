@@ -115,6 +115,9 @@ class AutoTest(ABC):
         self.use_map = use_map
         self.contexts = []
         self.context_push()
+        self.buildlog = None
+        self.copy_tlog = False
+        self.logfile = None
 
     @staticmethod
     def progress(text):
@@ -227,6 +230,20 @@ class AutoTest(ABC):
         self.progress("#")
         self.progress("########## %s  ##########" % description)
         self.progress("#")
+
+    def try_symlink_tlog(self):
+        self.buildlog = self.buildlogs_path(self.log_name + "-test.tlog")
+        self.progress("buildlog=%s" % self.buildlog)
+        if os.path.exists(self.buildlog):
+            os.unlink(self.buildlog)
+        try:
+            os.link(self.logfile, self.buildlog)
+        except OSError as error:
+            self.progress("OSError [%d]: %s" % (error.errno, error.strerror))
+            self.progress("WARN: Failed to create symlink: %s => %s, "
+                          "will copy tlog manually to target location" %
+                          (self.logfile, self.buildlog))
+            self.copy_tlog = True
 
     #################################################
     # GENERAL UTILITIES

@@ -46,8 +46,6 @@ class AutoTestQuadPlane(AutoTest):
 
         self.log_name = "QuadPlane"
         self.logfile = None
-        self.buildlog = None
-        self.copy_tlog = False
 
         self.sitl = None
         self.hasInit = False
@@ -71,17 +69,9 @@ class AutoTestQuadPlane(AutoTest):
         self.mavproxy = util.start_MAVProxy_SITL(
             'QuadPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % logfile)
-
-        buildlog = self.buildlogs_path("QuadPlane-test.tlog")
-        self.progress("buildlog=%s" % buildlog)
-        if os.path.exists(buildlog):
-            os.unlink(buildlog)
-        try:
-            os.link(logfile, buildlog)
-        except Exception:
-            pass
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
 
         self.mavproxy.expect('Received [0-9]+ parameters')
 
