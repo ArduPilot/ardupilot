@@ -57,9 +57,6 @@ class AutoTestCopter(AutoTest):
         self.speedup = speedup
 
         self.log_name = "ArduCopter"
-        self.logfile = None
-        self.buildlog = None
-        self.copy_tlog = False
 
         self.sitl = None
         self.hasInit = False
@@ -103,19 +100,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
-
-        self.buildlog = self.buildlogs_path(self.log_name + "-test.tlog")
-        self.progress("buildlog=%s" % self.buildlog)
-        self.copy_tlog = False
-        if os.path.exists(self.buildlog):
-            os.unlink(self.buildlog)
-        try:
-            os.link(self.logfile, self.buildlog)
-        except Exception:
-            self.progress("WARN: Failed to create symlink: %s => %s, "
-                          "will copy tlog manually to target location" %
-                          (self.logfile, self.buildlog))
-            self.copy_tlog = True
+        self.try_symlink_tlog()
 
         self.progress("WAITING FOR PARAMETERS")
         self.mavproxy.expect('Received [0-9]+ parameters')
