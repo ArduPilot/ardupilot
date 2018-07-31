@@ -92,6 +92,10 @@ void SITL_State::_sitl_setup(const char *home_str)
             gimbal = new SITL::Gimbal(_sitl->state);
         }
 
+        sitl_model->set_sprayer(&_sitl->sprayer_sim);
+        sitl_model->set_gripper_servo(&_sitl->gripper_sim);
+        sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
+
         if (_use_fg_view) {
             fg_socket.connect(_fg_address, _fg_view_port);
         }
@@ -278,7 +282,7 @@ void SITL_State::_output_to_flightgear(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    SITL::Aircraft::sitl_input input;
+    struct sitl_input input;
 
     // check for direct RC input
     _check_rc_input();
@@ -336,7 +340,7 @@ void SITL_State::_fdm_input_local(void)
 /*
   create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
+void SITL_State::_simulator_servos(struct sitl_input &input)
 {
     static uint32_t last_update_usec;
 
