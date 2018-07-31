@@ -17,29 +17,57 @@
 */
 
 #include "SIM_Gripper_Servo.h"
+#include "AP_HAL/AP_HAL.h"
+#include "AP_Math/AP_Math.h"
 #include <stdio.h>
 
 using namespace SITL;
 
+// table of user settable parameters
+const AP_Param::GroupInfo Gripper_Servo::var_info[] = {
+
+    // @Param: ENABLE
+    // @DisplayName: Gripper servo Sim enable/disable
+    // @Description: Allows you to enable (1) or disable (0) the gripper servo simulation
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("ENABLE", 0, Gripper_Servo, gripper_enable, 0),
+
+    // @Param: PIN
+    // @DisplayName: Gripper servo pin
+    // @Description: The pin number that the gripper servo is connected to. (start at 1)
+    // @Range: 0 15
+    // @User: Advanced
+    AP_GROUPINFO("PIN", 1, Gripper_Servo, gripper_servo_pin, -1),
+
+    AP_GROUPEND
+};
+
 /*
   update gripper state
  */
-void Gripper_Servo::update(const Aircraft::sitl_input &input)
+void Gripper_Servo::update(const struct sitl_input &input)
 {
+    const int16_t gripper_pwm = gripper_servo_pin >= 1 ? input.servos[gripper_servo_pin-1] : -1;
+
     const uint64_t now = AP_HAL::micros64();
     const float dt = (now - last_update_us) * 1.0e-6f;
 
     // update gripper position
-
-    float position_demand = (input.servos[gripper_servo]-1000) * 0.001f;
-    if (position_demand < 0) { // never updated
-        position_demand = 0;
+    if (gripper_pwm < 0) {
+        last_update_us = now;
+        return;
     }
 
-    const float position_max_change = position_slew_rate/100.0f * dt;
-    position = constrain_float(position_demand, position-position_max_change, position+position_max_change);
+    float position_demand = (gripper_pwm - 1000) * 0.001f;
+    if (is_negative(position_demand)) { // never updated
+        position_demand = 0.0f;
+    }
 
-    const float jaw_gap = gap*(1.0f-position);
+    const float position_max_change = position_slew_rate / 100.0f * dt;
+    position = constrain_float(position_demand, position - position_max_change, position + position_max_change);
+
+    const float jaw_gap = gap * (1.0f - position);
     if (should_report()) {
         ::fprintf(stderr, "position_demand=%f jaw_gap=%f load=%f\n", position_demand, jaw_gap, load_mass);
         last_report_us = now;
@@ -47,7 +75,7 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     }
 
     if (jaw_gap < 5) {
-        if (aircraft->on_ground()) {
+        if (altitude <= 0.0f) {
             load_mass = 1.0f; // attach the load
         }
     } else if (jaw_gap > 10) {
@@ -55,7 +83,6 @@ void Gripper_Servo::update(const Aircraft::sitl_input &input)
     }
 
     last_update_us = now;
-    return;
 }
 
 bool Gripper_Servo::should_report()
@@ -74,7 +101,7 @@ bool Gripper_Servo::should_report()
 
 float Gripper_Servo::payload_mass() const
 {
-    if (aircraft->hagl() < string_length) {
+    if (altitude < string_length) {
         return 0.0f;
     }
     return load_mass;
