@@ -128,19 +128,29 @@ class AutoTestCopter(AutoTest):
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
 
-    def user_takeoff(self, alt_min=30):
-        '''takeoff using mavlink takeoff command'''
+    def guided_user_takeoff(self, alt_min=30):
+        """Set Guided mode and Takeoff using mavlink takeoff command."""
+        """start by disabling GCS failsafe, otherwise we immediately disarm
+        due to (apparently) not receiving traffic from the GCS for
+        too long.  This is probably a function of --speedup"""
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.set_rc(3, 1000)
+        self.mavproxy.send('mode guided\n')  # stabilize mode
+        self.wait_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("TAKEOFF")
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-                     0, # param1
-                     0, # param2
-                     0, # param3
-                     0, # param4
-                     0, # param5
-                     0, # param6
-                     alt_min # param7
-        )
-        self.progress("Ran command")
+                     0,  # param1
+                     0,  # param2
+                     0,  # param3
+                     0,  # param4
+                     0,  # param5
+                     0,  # param6
+                     alt_min  # param7
+                     )
         self.wait_for_alt(alt_min)
+        self.progress("TAKEOFF COMPLETE")
 
     def takeoff(self, alt_min=30, takeoff_throttle=1700, arm=False):
         """Takeoff get to 30m altitude."""
@@ -153,7 +163,6 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, takeoff_throttle)
         self.wait_for_alt(alt_min=alt_min)
         self.hover()
-        self.progress("TAKEOFF COMPLETE")
 
     def wait_for_alt(self, alt_min=30):
         '''wait for altitude to be reached'''
@@ -1554,16 +1563,7 @@ class AutoTestCopter(AutoTest):
 
         ex = None
         try:
-            '''start by disabling GCS failsafe, otherwise we immediately disarm
-            due to (apparently) not receiving traffic from the GCS for
-            too long.  This is probably a function of --speedup'''
-            self.set_parameter("FS_GCS_ENABLE", 0)
-            self.mavproxy.send('mode guided\n')  # stabilize mode
-            self.wait_mode('GUIDED')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-
-            self.user_takeoff(alt_min=10)
+            self.guided_user_takeoff(alt_min=10)
 
             startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                            blocking=True)
