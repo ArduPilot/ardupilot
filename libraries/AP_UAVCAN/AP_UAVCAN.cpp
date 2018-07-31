@@ -802,15 +802,7 @@ void AP_UAVCAN::tunnel_send()
         return;
     }
 
-#if 0
-    static uint32_t last_send;
     uint32_t now = AP_HAL::millis();
-    if (now - last_send < 10) {
-        return;
-    }
-    last_send = now;
-#endif
-
     if (avail > max_send) {
         avail = max_send;
     }
