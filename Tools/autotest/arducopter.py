@@ -152,35 +152,6 @@ class AutoTestCopter(AutoTest):
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
 
-    def run_cmd(self,
-                command,
-                p1,
-                p2,
-                p3,
-                p4,
-                p5,
-                p6,
-                p7,
-                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.mav.mav.command_long_send(1,
-                                       1,
-                                       command,
-                                       1, # confirmation
-                                       p1,
-                                       p2,
-                                       p3,
-                                       p4,
-                                       p5,
-                                       p6,
-                                       p7)
-        while True:
-            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
-            print("m: %s" % str(m))
-            if m.command == command:
-                if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
-                    raise ValueError()
-                break
-
     def user_takeoff(self, alt_min=30):
         '''takeoff using mavlink takeoff command'''
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
