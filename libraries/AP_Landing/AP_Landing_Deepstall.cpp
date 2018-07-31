@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     AP_GROUPINFO("APP_EXT", 4, AP_Landing_Deepstall, approach_extension, 50),
 
     // @Param: V_DWN
-    // @DisplayName: Deepstall veloicty down
+    // @DisplayName: Deepstall velocity down
     // @Description: The downward velocity of the aircraft while stalled
     // @Range: 0 20
     // @Units: m/s
