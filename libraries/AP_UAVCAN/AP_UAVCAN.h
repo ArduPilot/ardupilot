@@ -140,22 +140,6 @@ public:
     // tunnel output
     void tunnel_send();
 
-    struct tunnel_stats {
-        uint32_t retries;
-        uint32_t fetch_error_1;
-        uint32_t fetch_error_2;
-        uint32_t fetch_error_3;
-        uint32_t buffer_at_max_cap_send_fail;
-        uint32_t delayed_flushes;
-        uint32_t buffer_at_max_cap;
-        uint32_t push_back_count;
-        uint32_t sem_take_fail;
-        uint32_t flush_failed;
-        uint32_t intake_failed;
-    };
-
-    tunnel_stats _tunnel_stats {0};
-
     // protocol tunneling uart interface
     UAVCAN_UARTDriver* get_tunnel_uart();
     AP_SerialManager::SerialProtocol get_tunnel_protocol() { return (AP_SerialManager::SerialProtocol)_tunnel.protocol.get(); }
