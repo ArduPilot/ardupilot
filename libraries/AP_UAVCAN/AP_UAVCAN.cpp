@@ -538,11 +538,11 @@ bool AP_UAVCAN::try_init(void)
     }
 
     act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
-    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
     esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
-    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
 
     rgb_led[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*node);
