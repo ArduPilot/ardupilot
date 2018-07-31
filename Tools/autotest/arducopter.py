@@ -1341,25 +1341,6 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def guided_achieve_heading(self, heading):
-        tstart = self.get_sim_time()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                     heading, # target angle
-                     10, # degrees/second
-                     1, # -1 is counter-clockwise, 1 clockwise
-                     0, # 1 for relative, 0 for absolute
-                     0, # p5
-                     0, # p6
-                     0, # p7
-        )
-        while True:
-            if self.get_sim_time() - tstart > 200:
-                raise NotAchievedException()
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading=%f want=%f" % (m.heading, heading))
-            if m.heading == heading:
-                return
-
     def fly_guided_change_submode(self):
         '''Ensure we can move around in guided after a takeoff command'''
 
