@@ -160,7 +160,7 @@ class AutoTestCopter(AutoTest):
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         alt = m.relative_alt / 1000.0 # mm -> m
         if alt < alt_min:
-            self.wait_altitude(alt_min,
+            self.wait_altitude(alt_min - 1,
                                (alt_min + 5),
                                relative=True)
 
