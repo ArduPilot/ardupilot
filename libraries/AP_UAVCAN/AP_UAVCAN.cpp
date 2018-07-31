@@ -381,17 +381,7 @@ static void tunnel_broadcast_st_cb(const uavcan::ReceivedDataStructure<uavcan::t
         return;
     }
 
-    uint32_t len = msg.buffer.size();
-    uint8_t loop_count = 0;
-    while (len > 0 && loop_count++ < 3) {
-        len -= uart->handle_inbound(&msg.buffer[msg.buffer.size() - len], len);
-        if (len > 0) {
-            hal.console->printf("inbound overflow\n", (unsigned)len);
-            // couldn't queue it all. We must wait here or else we lose it!
-            hal.scheduler->delay_microseconds(100);
-            ap_uavcan->_tunnel_stats.intake_failed++;
-        }
-    }
+    uart->handle_inbound(&msg.buffer[msg.buffer.size()], msg.buffer.size());
 }
 
 static void tunnel_broadcast_st_cb0(const uavcan::ReceivedDataStructure<uavcan::tunnel::Broadcast>& msg)
@@ -785,58 +775,35 @@ void AP_UAVCAN::do_cyclic(void)
 
 void AP_UAVCAN::tunnel_send()
 {
-    if (_tunnel.uart == nullptr) {
-        // the uart is null if the protocol is NONE at boot
+    if (_tunnel.uart == nullptr || !tunnel_broadcast_array[_uavcan_i]) {
+        // the uart is null if the protocol is NONE at boot or not configured yet
         return;
     }
 
-    if (!tunnel_broadcast_array[_uavcan_i]) {
-        // not configured yet
-        return;
-    }
-    
+    uint32_t now = AP_HAL::millis();
+
+    const uint16_t max_send = 60; // 60 is sizeof(msg.buffer) at max capacity per dsdl
     uint32_t avail = _tunnel.uart->tx_available();
-    const uint16_t max_send = 60;
     if (avail < max_send) {
         // wait for a full buffer
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
     if (avail > max_send) {
         avail = max_send;
     }
     
     uavcan::tunnel::Broadcast bdcst_msg;
 
-    while (avail) {
-        // but if there's no more data to send then we're done and can exit to transmit it
-        const int16_t data = _tunnel.uart->fetch_for_outbound();
-        if (data == -1) {
-            _tunnel_stats.fetch_error_1++;
-            // not initialized
+    while (avail--) {
+        int16_t data = _tunnel.uart->fetch_for_outbound();
+        if (data < 0) {
+            // fetch failure: Either not initialized or mutex is locked
             break;
         }
-        if (data == -2) {
-            _tunnel_stats.fetch_error_2++;
-            // mutex locked, try again
-            hal.scheduler->delay_microseconds(100);
-            break;
-        }
-        if (data == -3) {
-            _tunnel_stats.fetch_error_3++;
-            // buffer is empty, nothing else to read
-            break;
-        }
-        // make sure we're only sending pure uint8_t values to push_back
-        _tunnel_stats.push_back_count++;
-        avail--;
-        uint8_t data_byte = data;
-        bdcst_msg.buffer.push_back(data_byte);
+
+        bdcst_msg.buffer.push_back((uint8_t)data);
     }
-    
-    // Tx packet is full, flush it
-    _tunnel_stats.buffer_at_max_cap++;
 
     tunnel_broadcast_array[_uavcan_i]->broadcast(bdcst_msg);
 }

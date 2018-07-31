@@ -50,7 +50,6 @@
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 #define AP_UAVCAN_LED_DELAY_MILLISECONDS 50
 
-#define AP_UAVCAN_TUNNEL_SENDS_PER_LOOP_MAX         20
 #define AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS      10
 
 class AP_UAVCAN {
@@ -218,6 +217,8 @@ private:
     AP_HAL::Semaphore *SRV_sem;
     AP_HAL::Semaphore *_led_out_sem;
     AP_HAL::Semaphore *_tunnel_sem;
+
+    uint32_t _tunnel_last_send;
 
     class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
         SystemClock()
