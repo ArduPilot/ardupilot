@@ -10,7 +10,6 @@ UAVCAN_UARTDriver::UAVCAN_UARTDriver()
 {
     _write_mutex = hal.util->new_semaphore();
     _read_mutex = hal.util->new_semaphore();
-    hal.console->printf("UAVCAN_UARTDriver: constructor\n");
 }
 
 /*
@@ -23,7 +22,6 @@ void UAVCAN_UARTDriver::begin(uint32_t baud)
 
 void UAVCAN_UARTDriver::begin(uint32_t baud, uint16_t rxS, uint16_t txS)
 {
-    hal.console->printf("UAVCAN_UARTDriver: begin %u\n", baud);
     (void)baud; // unused in virtual ports
 
     _initialised = false;
@@ -47,7 +45,6 @@ void UAVCAN_UARTDriver::begin(uint32_t baud, uint16_t rxS, uint16_t txS)
  */
 void UAVCAN_UARTDriver::end()
 {
-    hal.console->printf("UAVCAN_UARTDriver: end\n");
     _initialised = false;
     _readbuf.set_size(0);
     _writebuf.set_size(0);
