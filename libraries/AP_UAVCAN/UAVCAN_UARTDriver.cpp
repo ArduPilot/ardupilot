@@ -1,8 +1,8 @@
 #include "UAVCAN_UARTDriver.h"
 
 
-#define AP_UAVCAN_UARTDRIVER_BUF_SIZE_MIN_TX            (512*4)
-#define AP_UAVCAN_UARTDRIVER_BUF_SIZE_MIN_RX            (512*4)
+#define AP_UAVCAN_UARTDRIVER_BUF_SIZE_MIN_TX            (1024)
+#define AP_UAVCAN_UARTDRIVER_BUF_SIZE_MIN_RX            (512)
 
 extern const AP_HAL::HAL& hal;
 
