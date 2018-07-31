@@ -1414,7 +1414,8 @@ class AutoTestCopter(AutoTest):
             self.set_rc_default()
             self.set_rc(3, 1000)
 
-            self.fly_guided_change_submode()
+            self.run_test("Test submode change",
+                          self.fly_guided_change_submode)
 
             self.progress("Waiting for location")
             self.homeloc = self.mav.location()
