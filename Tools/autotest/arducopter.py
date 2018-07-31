@@ -151,7 +151,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
-        self.wait_for_alt(alt_min=30)
+        self.wait_for_alt(alt_min=alt_min)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
@@ -168,9 +168,9 @@ class AutoTestCopter(AutoTest):
         """Land the quad."""
         self.progress("STARTING LANDING")
         self.mavproxy.send('switch 2\n')  # land mode
-        self.wait_mode('LAND')
+        self.wait_mode('LAND', timeout=timeout)
         self.progress("Entered Landing Mode")
-        self.wait_altitude(-5, 1, relative=True)
+        self.wait_altitude(-5, 1, relative=True, timeout=timeout)
         self.progress("LANDING: ok!")
 
     def hover(self, hover_throttle=1500):
@@ -321,7 +321,7 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def fly_RTL(self, side=60, timeout=250):
+    def fly_RTL(self, timeout=250):
         """Return, land."""
         self.progress("# Enter RTL")
         self.mavproxy.send('switch 3\n')
@@ -406,7 +406,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('STABILIZE')
         raise AutoTestTimeoutException()
 
-    def fly_battery_failsafe(self, timeout=30):
+    def fly_battery_failsafe(self, timeout=300):
         # switch to loiter mode so that we hold position
         self.mavproxy.send('switch 5\n')
         self.wait_mode('LOITER')
@@ -419,7 +419,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('SIM_BATT_VOLTAGE', 10)
 
         # wait for LAND mode. If unsuccessful an exception will be raised
-        self.wait_mode('LAND', 300)
+        self.wait_mode('LAND', timeout=timeout)
 
         # disable battery failsafe
         self.set_parameter('BATT_FS_LOW_ACT', 0)
@@ -553,7 +553,7 @@ class AutoTestCopter(AutoTest):
         raise AutoTestTimeoutException()
 
     # fly_alt_fence_test - fly up until you hit the fence
-    def fly_alt_max_fence_test(self, timeout=180):
+    def fly_alt_max_fence_test(self):
         """Hold loiter position."""
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
@@ -809,7 +809,7 @@ class AutoTestCopter(AutoTest):
     #   fly_simple - assumes the simple bearing is initialised to be
     #   directly north flies a box with 100m west, 15 seconds north,
     #   50 seconds east, 15 seconds south
-    def fly_simple(self, side=50, timeout=120):
+    def fly_simple(self, side=50):
 
         # hold position in loiter
         self.mavproxy.send('switch 5\n')  # loiter mode
@@ -900,7 +900,7 @@ class AutoTestCopter(AutoTest):
         self.hover()
 
     # fly_circle - flies a circle with 20m radius
-    def fly_circle(self, maxaltchange=10, holdtime=36):
+    def fly_circle(self, holdtime=36):
         # hold position in loiter
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
@@ -1143,7 +1143,7 @@ class AutoTestCopter(AutoTest):
 
         return True
 
-    def fly_mission(self, height_accuracy=-1.0, target_altitude=None):
+    def fly_mission(self,):
         """Fly a mission from a file."""
         global num_wp
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
@@ -1685,8 +1685,7 @@ class AutoTestCopter(AutoTest):
 
             # fly the stored mission
             self.run_test("Fly CH7 saved mission",
-                          lambda: self.fly_mission(height_accuracy=0.5,
-                                                   target_altitude=10))
+                          lambda: self.fly_mission)
 
             # Throttle Failsafe
             self.run_test("Test Failsafe",
@@ -1721,7 +1720,7 @@ class AutoTestCopter(AutoTest):
 
             # Fence test
             self.run_test("Test Max Alt Fence",
-                          lambda: self.fly_alt_max_fence_test(180))
+                          lambda: self.fly_alt_max_fence_test)
 
             # Takeoff
             self.run_test("Takeoff to test GPS glitch loiter",
