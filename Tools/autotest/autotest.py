@@ -33,7 +33,7 @@ def buildlogs_dirpath():
 
 
 def buildlogs_path(path):
-    '''return a string representing path in the buildlogs directory'''
+    """return a string representing path in the buildlogs directory"""
     bits = [buildlogs_dirpath()]
     if isinstance(path, list):
         bits.extend(path)

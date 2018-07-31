@@ -587,7 +587,7 @@ class AutoTestPlane(AutoTest):
                           lambda: self.log_download(
                               self.buildlogs_path("ArduPlane-log.bin")))
 
-        except pexpect.TIMEOUT as e:
+        except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
             self.fail_list.append("timeout")
 
