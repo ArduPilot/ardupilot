@@ -55,7 +55,6 @@ public:
 
 private:
     int _led_fd = -1;
-    int _tone_alarm_fd = -1;
     int _gpio_fmu_fd = -1;
     int _gpio_io_fd = -1;
     bool _usb_connected = false;
