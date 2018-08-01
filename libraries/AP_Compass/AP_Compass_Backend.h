@@ -61,8 +61,9 @@ public:
         DEVTYPE_IST8310 = 0x0A,
         DEVTYPE_ICM20948 = 0x0B,
         DEVTYPE_MMC3416 = 0x0C,
-	DEVTYPE_QMC5883L = 0x0D,
-	DEVTYPE_MAG3110  = 0x0E,
+        DEVTYPE_QMC5883L = 0x0D,
+        DEVTYPE_MAG3110  = 0x0E,
+        DEVTYPE_SITL  = 0x0F,
     };
 
 
@@ -92,6 +93,9 @@ protected:
 
     // set dev_id for an instance
     void set_dev_id(uint8_t instance, uint32_t dev_id);
+
+    // save dev_id, used by SITL
+    void save_dev_id(uint8_t instance);
 
     // set external state for an instance
     void set_external(uint8_t instance, bool external);
