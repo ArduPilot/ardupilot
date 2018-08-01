@@ -20,7 +20,6 @@
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
-#define FAILSAFE_EVENT_RC       (1<<2)
 
 //  Logging parameters
 #define LOG_THR_MSG             0x01
