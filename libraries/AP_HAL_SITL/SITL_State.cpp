@@ -185,7 +185,11 @@ void SITL_State::_fdm_input_step(void)
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     while (AP_HAL::micros64() < wait_time_usec) {
-        _fdm_input_step();
+        if (hal.scheduler->in_main_thread()) {
+            _fdm_input_step();
+        } else {
+            usleep(1000);
+        }
     }
 }
 
