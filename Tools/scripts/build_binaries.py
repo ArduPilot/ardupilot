@@ -504,6 +504,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "OMNIBUSF7V2",
                 "sparky2",
                 "omnibusf4pro",
+                "OmnibusNanoV6",
                 "mini-pix",
                 "airbotf4",
                 "revo-mini",
