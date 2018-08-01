@@ -780,8 +780,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(6, packet.chan7_raw, tnow);
         RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
-        rover.failsafe.rc_override_timer = tnow;
-        rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
 
@@ -805,8 +803,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
         RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
 
-        rover.failsafe.rc_override_timer = tnow;
-        rover.failsafe_trigger(FAILSAFE_EVENT_RC, false);
         break;
     }
 
@@ -817,7 +813,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-            rover.last_heartbeat_ms = rover.failsafe.rc_override_timer = AP_HAL::millis();
+            rover.last_heartbeat_ms = AP_HAL::millis();
             rover.failsafe_trigger(FAILSAFE_EVENT_GCS, false);
             break;
         }

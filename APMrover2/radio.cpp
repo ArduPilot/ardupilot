@@ -124,21 +124,16 @@ void Rover::control_failsafe(uint16_t pwm)
         return;
     }
 
-    // Check for failsafe condition based on loss of GCS control
-    if (rc_override_active) {
-        failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
-    } else if (g.fs_throttle_enabled) {
-        bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
-        if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
-            failed = true;
-        }
-        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
+    bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
+    if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
+        failed = true;
     }
+    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
 }
 
 bool Rover::trim_radio()
 {
-    if (failsafe.bits & FAILSAFE_EVENT_RC) {
+    if (!rc().has_valid_input()) {
         // can't trim without valid input
         return false;
     }

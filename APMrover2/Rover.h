@@ -247,16 +247,12 @@ private:
     // This is set to -1 when we need to re-read the switch
     uint8_t oldSwitchPosition;
 
-    // A flag if GCS joystick control is in use
-    bool rc_override_active;
-
     // Failsafe
     // A tracking variable for type of failsafe active
     // Used for failsafe based on loss of RC signal or GCS signal. See
     // FAILSAFE_EVENT_*
     struct {
         uint8_t bits;
-        uint32_t rc_override_timer;
         uint32_t start_time;
         uint8_t triggered;
         uint32_t last_valid_rc_ms;

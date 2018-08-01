@@ -100,9 +100,6 @@ bool RC_Channels_Rover::has_valid_input() const
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
         return false;
     }
-    if (rover.failsafe.bits & FAILSAFE_EVENT_RC) {
-        return false;
-    }
     return true;
 }
 
