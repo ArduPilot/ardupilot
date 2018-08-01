@@ -73,10 +73,69 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: OSD Options
     // @Description: This sets options that change the display
-    // @Bitmask: 0:UseDecimalPack
+    // @Bitmask: 0:UseDecimalPack, 1:InvertedWindPointer, 2:InvertedAHRoll
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 8, AP_OSD, options, OPTION_DECIMAL_PACK),
-    
+
+    // @Param: _FONT
+    // @DisplayName: OSD Font
+    // @Description: This sets which OSD font to use. It is an integer from 0 to the number of fonts available
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("_FONT", 9, AP_OSD, font_num, 0),
+
+    // @Param: _V_OFFSET
+    // @DisplayName: OSD vertical offset
+    // @Description: Sets vertical offset of the osd inside image
+    // @Range: 0 31
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("_V_OFFSET", 10, AP_OSD, v_offset, 16),
+
+    // @Param: _H_OFFSET
+    // @DisplayName: OSD horizontal offset
+    // @Description: Sets horizontal offset of the osd inside image
+    // @Range: 0 63
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("_H_OFFSET", 11, AP_OSD, h_offset, 32),
+
+    // @Param: _W_RSSI
+    // @DisplayName: RSSI warn level (in %)
+    // @Description: Set level at which RSSI item will flash
+    // @Range: 0 99
+    // @User: Standard
+    AP_GROUPINFO("_W_RSSI", 12, AP_OSD, warn_rssi, 30),
+
+    // @Param: _W_NSAT
+    // @DisplayName: NSAT warn level
+    // @Description: Set level at which NSAT item will flash
+    // @Range: 1 30
+    // @User: Standard
+    AP_GROUPINFO("_W_NSAT", 13, AP_OSD, warn_nsat, 9),
+
+    // @Param: _W_BATVOLT
+    // @DisplayName: BAT_VOLT warn level
+    // @Description: Set level at which BAT_VOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_BATVOLT", 14, AP_OSD, warn_batvolt, 10.0f),
+
+    // @Param: _UNITS
+    // @DisplayName: Display Units
+    // @Description: Sets the units to use in displaying items
+    // @Values: 0:Metric,1:Imperial,2:SI,3:Aviation
+    // @User: Standard
+    AP_GROUPINFO("_UNITS", 15, AP_OSD, units, 0),
+
+    // @Param: _MSG_TIME
+    // @DisplayName: Message display duration in seconds
+    // @Description: Sets message duration seconds
+    // @Range: 1 20
+    // @User: Standard
+    AP_GROUPINFO("_MSG_TIME", 16, AP_OSD, msgtime_s, 10),
+
+
     AP_GROUPEND
 };
 
@@ -87,6 +146,9 @@ AP_OSD::AP_OSD()
     AP_Param::setup_object_defaults(this, var_info);
     // default first screen enabled
     screen[0].enabled = 1;
+#ifdef WITH_SITL_OSD
+    osd_type.set_default(2);
+#endif
 }
 
 void AP_OSD::init()
@@ -106,7 +168,6 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started MAX7456 OSD\n");
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
         break;
     }
 
@@ -117,19 +178,20 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started SITL OSD\n");
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_OSD::timer, void));
         break;
     }
 #endif
     }
+    if (backend != nullptr) {
+        // create thread as higher priority than IO
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 512, AP_HAL::Scheduler::PRIORITY_IO, 1);
+    }
 }
 
-void AP_OSD::timer()
+void AP_OSD::osd_thread()
 {
-    uint32_t now = AP_HAL::millis();
-
-    if (now - last_update_ms >= 100) {
-        last_update_ms = now;
+    while (true) {
+        hal.scheduler->delay(100);
         update_osd();
     }
 }
@@ -216,4 +278,3 @@ void AP_OSD::next_screen()
     } while (t != current_screen && !screen[t].enabled);
     current_screen = t;
 }
-

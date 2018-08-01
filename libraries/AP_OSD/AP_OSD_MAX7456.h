@@ -25,7 +25,7 @@ public:
     static AP_OSD_Backend *probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     //draw given text to framebuffer
-    void write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr) override;
+    void write(uint8_t x, uint8_t y, const char* text) override;
 
     //initilize display port and underlying hardware
     bool init() override;
@@ -55,27 +55,26 @@ private:
 
     void transfer_frame();
 
+    bool is_dirty(uint8_t x, uint8_t y);
+
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     uint8_t  video_signal_reg;
     bool initialized;
-    bool font_updated;
+    uint8_t last_font;
+    int8_t last_v_offset;
+    int8_t last_h_offset;
 
     static const uint8_t video_lines_ntsc = 13;
     static const uint8_t video_lines_pal = 16;
     static const uint8_t video_columns = 30;
-    static const uint16_t max_updated_chars = 64; //up to 480
-    static const uint16_t spi_buffer_size = ((max_updated_chars + 1) * 8);
+    static const uint16_t spi_buffer_size = 512;
 
     uint8_t frame[video_lines_pal][video_columns];
 
     //frame already transfered to max
     //used to optimize number of characters updated
     uint8_t shadow_frame[video_lines_pal][video_columns];
-
-    // this assumes at most 32 columns
-    uint8_t attr[video_lines_pal][video_columns];
-    uint8_t shadow_attr[video_lines_pal][video_columns];
 
     uint8_t buffer[spi_buffer_size];
     int buffer_offset;

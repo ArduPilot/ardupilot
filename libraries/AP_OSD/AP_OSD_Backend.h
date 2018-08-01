@@ -30,7 +30,7 @@ public:
     virtual ~AP_OSD_Backend(void) {}
 
     //draw given text to framebuffer
-    virtual void write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr = 0) = 0;
+    virtual void write(uint8_t x, uint8_t y, const char* text) = 0;
 
     //draw formatted text to framebuffer
     virtual void write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...);
@@ -42,16 +42,33 @@ public:
     virtual void flush() = 0;
 
     //clear screen
-    virtual void clear() = 0;
-
-    enum character_attribute_t {
-        BLINK = (1 << 4),
-        INVERT = (1 << 3),
+    //should match hw blink
+    virtual void clear()
+    {
+        blink_phase = (blink_phase+1)%4;
     };
+
+    AP_OSD * get_osd()
+    {
+        return &_osd;
+    }
 
 protected:
     AP_OSD& _osd;
 
+    // get font choice
+    uint8_t get_font_num(void) const
+    {
+        return (uint8_t)_osd.font_num.get();
+    }
+
+    //check option
+    bool check_option(uint32_t option)
+    {
+        return (_osd.options & option) != 0;
+    }
+
+    int8_t blink_phase;
 };
 
 

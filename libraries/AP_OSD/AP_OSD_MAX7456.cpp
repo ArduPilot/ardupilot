@@ -148,14 +148,20 @@ bool AP_OSD_MAX7456::init()
     hal.scheduler->delay(1);
     _dev->read_registers(MAX7456ADD_VM0|MAX7456ADD_READ, &status, 1);
     _dev->get_semaphore()->give();
-    return status == 0;
+    if (status != 0) {
+        return false;
+    }
+    return update_font();
 }
 
 bool AP_OSD_MAX7456::update_font()
 {
     uint32_t font_size;
     uint8_t updated_chars = 0;
-    const uint8_t *font_data = AP_ROMFS::find_file("osd_font.bin", font_size);
+    char fontname[] = "font0.bin";
+    last_font = get_font_num();
+    fontname[4] = last_font + '0';
+    uint8_t *font_data = AP_ROMFS::find_decompress(fontname, font_size);
     if (font_data == nullptr || font_size != NVM_RAM_SIZE * 256) {
         return false;
     }
@@ -167,6 +173,7 @@ bool AP_OSD_MAX7456::update_font()
             //update char inside max7456 NVM
             if (!update_font_char(chr, chr_font_data)) {
                 hal.console->printf("AP_OSD: error during font char update\n");
+                free(font_data);
                 return false;
             }
             updated_chars++;
@@ -176,6 +183,7 @@ bool AP_OSD_MAX7456::update_font()
         hal.console->printf("AP_OSD: updated %d symbols.\n", updated_chars);
     }
     hal.console->printf("AP_OSD: osd font is up to date.\n");
+    free(font_data);
     return true;
 }
 
@@ -329,28 +337,50 @@ void AP_OSD_MAX7456::reinit()
     _dev->write_register(MAX7456ADD_VM1, BLINK_DUTY_CYCLE_50_50 | BLINK_TIME_3 | BACKGROUND_BRIGHTNESS_28);
     _dev->write_register(MAX7456ADD_DMM, DMM_CLEAR_DISPLAY);
 
+    //write osd position
+    int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
+    int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+    _dev->write_register(MAX7456ADD_HOS, hos);
+    _dev->write_register(MAX7456ADD_VOS, vos);
+    last_v_offset = _osd.v_offset;
+    last_h_offset = _osd.h_offset;
+
     // force redrawing all screen
     memset(shadow_frame, 0xFF, sizeof(shadow_frame));
-    memset(shadow_attr, 0xFF, sizeof(shadow_attr));
 
     initialized = true;
 }
 
 void AP_OSD_MAX7456::flush()
 {
-    if (!font_updated) {
+    if (last_font != get_font_num()) {
         update_font();
-        font_updated = true;
     }
+
+    // check for offset changes
+    if (last_v_offset != _osd.v_offset) {
+        int8_t vos = constrain_int16(_osd.v_offset, 0, 31);
+        _dev->get_semaphore()->take_blocking();
+        _dev->write_register(MAX7456ADD_VOS, vos);
+        _dev->get_semaphore()->give();
+        last_v_offset = _osd.v_offset;
+    }
+    if (last_h_offset != _osd.h_offset) {
+        int8_t hos = constrain_int16(_osd.h_offset, 0, 63);
+        _dev->get_semaphore()->take_blocking();
+        _dev->write_register(MAX7456ADD_HOS, hos);
+        _dev->get_semaphore()->give();
+        last_h_offset = _osd.h_offset;
+    }
+
     check_reinit();
     transfer_frame();
 }
 
 void AP_OSD_MAX7456::transfer_frame()
 {
-    uint16_t updated_chars = 0;
-    uint8_t last_attribute = 0xFF;
     uint16_t previous_pos = UINT16_MAX - 1;
+    bool autoincrement = false;
     if (!initialized) {
         return;
     }
@@ -358,67 +388,75 @@ void AP_OSD_MAX7456::transfer_frame()
     buffer_offset = 0;
     for (uint8_t y=0; y<video_lines; y++) {
         for (uint8_t x=0; x<video_columns; x++) {
-
-            if (frame[y][x] == shadow_frame[y][x] && attr[y][x] == shadow_attr[y][x]) {
+            if (!is_dirty(x, y)) {
                 continue;
             }
-            if (updated_chars > max_updated_chars) {
+            //ensure space for 1 char and escape sequence
+            if (buffer_offset >= spi_buffer_size - 32) {
                 break;
             }
             shadow_frame[y][x] = frame[y][x];
-            shadow_attr[y][x] = attr[y][x];
-            uint8_t attribute = attr[y][x] & (DMM_BLINK | DMM_INVERT_PIXEL_COLOR);
             uint8_t chr = frame[y][x];
             uint16_t pos = y * video_columns + x;
-            bool attribute_changed = (attribute != last_attribute);
             bool position_changed = ((previous_pos + 1) != pos);
 
-            if (position_changed) {
+            if (position_changed && autoincrement) {
                 //it is impossible to write to MAX7456ADD_DMAH/MAX7456ADD_DMAL in autoincrement mode
                 //so, exit autoincrement mode
-                if (updated_chars != 0) {
-                    buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
-                    buffer_add_cmd(MAX7456ADD_DMM, 0);
-                }
+                buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
+                buffer_add_cmd(MAX7456ADD_DMM, 0);
+                autoincrement = false;
+            }
+
+            if (!autoincrement) {
                 buffer_add_cmd(MAX7456ADD_DMAH, pos >> 8);
                 buffer_add_cmd(MAX7456ADD_DMAL, pos & 0xFF);
             }
 
-            //update character attributes and (re)enter autoincrement mode
-            if (position_changed || attribute_changed) {
-                buffer_add_cmd(MAX7456ADD_DMM, attribute | DMM_AUTOINCREMENT);
-                last_attribute = attribute;
+            if (!autoincrement && is_dirty(x+1, y)) {
+                //(re)enter autoincrement mode
+                buffer_add_cmd(MAX7456ADD_DMM, DMM_AUTOINCREMENT);
+                autoincrement = true;
             }
 
             buffer_add_cmd(MAX7456ADD_DMDI, chr);
-            updated_chars++;
             previous_pos = pos;
         }
     }
-
-    if (buffer_offset > 0) {
+    if (autoincrement) {
         buffer_add_cmd(MAX7456ADD_DMDI, 0xFF);
         buffer_add_cmd(MAX7456ADD_DMM, 0);
+        autoincrement = false;
+    }
+
+    if (buffer_offset > 0) {
         _dev->get_semaphore()->take_blocking();
         _dev->transfer(buffer, buffer_offset, nullptr, 0);
         _dev->get_semaphore()->give();
     }
 }
 
-void AP_OSD_MAX7456::clear()
+bool AP_OSD_MAX7456::is_dirty(uint8_t x, uint8_t y)
 {
-    memset(frame, ' ', sizeof(frame));
-    memset(attr, 0, sizeof(attr));
+    if (y>=video_lines || x>=video_columns) {
+        return false;
+    }
+    return frame[y][x] != shadow_frame[y][x];
 }
 
-void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text, uint8_t char_attr)
+void AP_OSD_MAX7456::clear()
+{
+    AP_OSD_Backend::clear();
+    memset(frame, ' ', sizeof(frame));
+}
+
+void AP_OSD_MAX7456::write(uint8_t x, uint8_t y, const char* text)
 {
     if (y >= video_lines_pal || text == nullptr) {
         return;
     }
     while ((x < VIDEO_COLUMNS) && (*text != 0)) {
         frame[y][x] = *text;
-        attr[y][x] = char_attr;
         ++text;
         ++x;
     }
