@@ -57,6 +57,7 @@ public:
         DEVTYPE_QMC5883L = 0x0D,
         DEVTYPE_MAG3110  = 0x0E,
         DEVTYPE_SITL  = 0x0F,
+        DEVTYPE_IST8308 = 0x10,
     };
 
 
