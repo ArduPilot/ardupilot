@@ -18,32 +18,12 @@ then
     sh /etc/init.d/rc.error
 fi
 
-# mount binfs so we can find the built-in apps
-if [ -f /bin/reboot ]
-then
-    echo "binfs already mounted"
-else
-    echo "Mounting binfs"
-    if mount -t binfs /dev/null /bin
-    then
-            echo "binfs mounted OK"
-    else
-            sh /etc/init.d/rc.error
-    fi
-fi
-
 set sketch NONE
 if rm /fs/microsd/APM/boot.log
 then
     echo "removed old boot.log"
 fi
 set logfile /fs/microsd/APM/BOOT.LOG
-
-if [ ! -f /bin/ArduPilot ]
-then
-    echo "/bin/ardupilot not found"
-    sh /etc/init.d/rc.error
-fi
 
 if mkdir /fs/microsd/APM > /dev/null
 then
