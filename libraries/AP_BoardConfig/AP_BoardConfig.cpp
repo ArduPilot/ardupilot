@@ -87,7 +87,7 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
 #  ifndef BOARD_SAFETY_OPTION_DEFAULT
 #    define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
 #  endif
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser2_rtscts, 2),
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
@@ -158,7 +158,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
@@ -213,7 +213,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
     // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
@@ -246,7 +246,7 @@ void AP_BoardConfig::init()
 // set default value for BRD_SAFETY_MASK
 void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 {
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     state.ignore_safety_channels.set_default(mask);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     px4_setup_safety_mask();
@@ -256,9 +256,7 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 
 void AP_BoardConfig::init_safety()
 {
-#if AP_FEATURE_SAFETY_BUTTON
     board_init_safety();
-#endif
 }
 
 /*
