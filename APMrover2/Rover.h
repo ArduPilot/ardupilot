@@ -26,7 +26,6 @@
 #include <AC_PID/AC_P.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
-#include <AP_ADC/AP_ADC.h>                          // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
 #include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
 #include <AP_Baro/AP_Baro.h>

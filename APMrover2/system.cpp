@@ -294,7 +294,7 @@ void Rover::notify_mode(const Mode *mode)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
-    const int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
+    const int8_t dpin = pin;
     if (dpin == -1) {
         return 0;
     }
