@@ -26,13 +26,13 @@ private:
 
 class RC_Channels_Rover : public RC_Channels
 {
-    bool has_valid_input() const override;
-
-    int8_t flight_mode_channel_number() const override;
 
 public:
 
+    bool has_valid_input() const override;
+
     RC_Channel_Rover obj_channels[NUM_RC_CHANNELS];
+
     RC_Channel_Rover *channel(const uint8_t chan) override {
         if (chan > NUM_RC_CHANNELS) {
             return nullptr;
@@ -40,4 +40,7 @@ public:
         return &obj_channels[chan];
     }
 
+private:
+
+    int8_t flight_mode_channel_number() const override;
 };
