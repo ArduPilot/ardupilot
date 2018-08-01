@@ -9,8 +9,6 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_MATEKF405
-
 # board ID for firmware load
 APJ_BOARD_ID 125
 
@@ -75,10 +73,16 @@ PC4 BATT_CURRENT_SENS ADC1 SCALE(1)
 PB1 RSSI_ADC_PIN ADC1 SCALE(1)
 
 # define default battery setup
-define HAL_BATT_VOLT_PIN 13
-define HAL_BATT_CURR_PIN 12
+# PC5 - ADC12_CH15
+define HAL_BATT_VOLT_PIN 15
+# PC4 - ADC12_CH14
+define HAL_BATT_CURR_PIN 14
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
+
+#analog rssi pin (also could be used as analog airspeed input)
+# PB1 - ADC12_CH9
+define BOARD_RSSI_ANA_PIN 9
 
 # USART1
 PA9 USART1_TX USART1
@@ -132,13 +136,13 @@ FLASH_RESERVE_START_KB 64
 define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
 define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_180
 
-# there is no compass fitted by default
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
-
-define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
-define HAL_COMPASS_HMC5843_I2C_BUS 0
-define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-define HAL_COMPASS_HMC5843_ROTATION ROTATION_YAW_90
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
 define HAL_BARO_BMP280_BUS 0
@@ -168,4 +172,4 @@ define BOARD_PWM_COUNT_DEFAULT 8
 
 # setup for OSD
 define OSD_ENABLED ENABLED
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin

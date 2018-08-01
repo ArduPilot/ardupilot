@@ -21,7 +21,6 @@ FLASH_RESERVE_START_KB 0
 
 # LEDs
 PB5 LED_BOOTLOADER OUTPUT LOW
-PB4 LED_ACTIVITY OUTPUT LOW
 define HAL_LED_ON 0
 
 # the location where the bootloader will put the firmware

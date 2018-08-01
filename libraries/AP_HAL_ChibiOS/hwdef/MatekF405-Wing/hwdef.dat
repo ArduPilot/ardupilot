@@ -158,20 +158,27 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define HAL_DATAFLASH_FILE_BUFSIZE 8
 define HAL_DATAFLASH_MAV_BUFSIZE 2
+
+# define default battery setup
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 31.7
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
-define HAL_COMPASS_HMC5843_I2C_BUS 1
-define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-define HAL_COMPASS_HMC5843_ROTATION ROTATION_NONE
+#analog rssi pin (also could be used as analog airspeed input)
+# PC5 - ADC12_CH15
+define BOARD_RSSI_ANA_PIN 15
 
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 define OSD_ENABLED ENABLED
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 9
 

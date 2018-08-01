@@ -195,3 +195,5 @@ define HAL_BATT_CURR_SCALE 17.0
 
 # 12 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 12
+
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
