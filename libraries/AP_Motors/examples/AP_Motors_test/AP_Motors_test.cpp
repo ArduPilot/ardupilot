@@ -14,7 +14,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <DataFlash/DataFlash.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_ADC/AP_ADC.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
 #include <Filter/Filter.h>
