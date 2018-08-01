@@ -143,8 +143,8 @@ bool RC_Channels::receiver_bind(const int dsmMode)
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void RC_Channels::read_aux_all()
 {
-    if (in_rc_failsafe()) {
-        // exit immediately during radio failsafe
+    if (!has_valid_input()) {
+        // exit immediately when no RC input
         return;
     }
 
@@ -195,7 +195,8 @@ void RC_Channels::reset_mode_switch()
 
 void RC_Channels::read_mode_switch()
 {
-    if (in_rc_failsafe()) {
+    if (!has_valid_input()) {
+        // exit immediately when no RC input
         return;
     }
     RC_Channel *c = flight_mode_channel();
