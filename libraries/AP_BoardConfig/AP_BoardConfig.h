@@ -15,12 +15,6 @@
 #define AP_FEATURE_BOARD_DETECT 0
 #endif
 
-#if HAL_HAVE_SAFETY_SWITCH
-#define AP_FEATURE_SAFETY_BUTTON 1
-#else
-#define AP_FEATURE_SAFETY_BUTTON 0
-#endif
-
 #ifndef AP_FEATURE_RTSCTS
 #define AP_FEATURE_RTSCTS 0
 #endif
@@ -127,7 +121,7 @@ public:
         return instance?instance->pwm_count.get():4;
     }
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF=1,
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=2,
@@ -156,7 +150,7 @@ private:
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
     
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || AP_FEATURE_SAFETY_BUTTON
+#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || HAL_HAVE_SAFETY_SWITCH
     struct {
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
@@ -190,11 +184,8 @@ private:
 
 #endif // AP_FEATURE_BOARD_DETECT
 
-#if AP_FEATURE_SAFETY_BUTTON
     void board_init_safety(void);
-    void board_setup_safety_mask(void);
-#endif
-    
+
     void board_setup_uart(void);
     void board_setup_sbus(void);
     void board_setup(void);

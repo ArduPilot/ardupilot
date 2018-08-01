@@ -22,12 +22,12 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if AP_FEATURE_SAFETY_BUTTON
 /*
   init safety state
  */
 void AP_BoardConfig::board_init_safety()
 {
+#if HAL_HAVE_SAFETY_SWITCH
     if (state.safety_enable.get() == 0) {
         hal.rcout->force_safety_off();
         hal.rcout->force_safety_no_wait();
@@ -37,8 +37,8 @@ void AP_BoardConfig::board_init_safety()
             hal.scheduler->delay(20);
         }
     }
-}
 #endif
+}
 
 
 #if AP_FEATURE_BOARD_DETECT
