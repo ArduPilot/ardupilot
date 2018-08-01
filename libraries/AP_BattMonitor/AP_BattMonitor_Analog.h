@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_ADC/AP_ADC.h>                 // ArduPilot Mega Analog to Digital Converter Library
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 
