@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "Semaphores.h"
-#include "ToneAlarm.h"
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -48,16 +47,19 @@ public:
     bool get_system_id(char buf[40]) override;
     
 #ifdef HAL_PWM_ALARM
-    bool toneAlarm_init();
-    void toneAlarm_set_tune(uint8_t tone);
-    void _toneAlarm_timer_tick();
-
-    static ToneAlarm& get_ToneAlarm() { return _toneAlarm; }
+    bool toneAlarm_init() override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
 private:
 #ifdef HAL_PWM_ALARM
-    static ToneAlarm _toneAlarm;
+    struct ToneAlarmPwmGroup {
+        pwmchannel_t chan;
+        PWMConfig pwm_cfg;
+        PWMDriver* pwm_drv;
+    };
+
+    static ToneAlarmPwmGroup _toneAlarm_pwm_group;
 #endif
     void* try_alloc_from_ccm_ram(size_t size);
     uint32_t available_memory_in_ccm_ram(void);
