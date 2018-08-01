@@ -300,8 +300,8 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // @Path: ../libraries/RC_Channel/RC_Channels.cpp
-    GOBJECT(rc_channels,     "RC", RC_Channels),
+    // @Path: RC_Channels.cpp
+    GOBJECT(rc_channels,     "RC", RC_Channels_Tracker),
 
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),

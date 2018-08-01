@@ -55,7 +55,6 @@ class AutoTestCopter(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.log_name = "ArduCopter"
         self.logfile = None
@@ -152,35 +151,6 @@ class AutoTestCopter(AutoTest):
         # This flag tells me that I need to copy the data out
         if self.copy_tlog:
             shutil.copy(self.logfile, self.buildlog)
-
-    def run_cmd(self,
-                command,
-                p1,
-                p2,
-                p3,
-                p4,
-                p5,
-                p6,
-                p7,
-                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.mav.mav.command_long_send(1,
-                                       1,
-                                       command,
-                                       1, # confirmation
-                                       p1,
-                                       p2,
-                                       p3,
-                                       p4,
-                                       p5,
-                                       p6,
-                                       p7)
-        while True:
-            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
-            print("m: %s" % str(m))
-            if m.command == command:
-                if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
-                    raise ValueError()
-                break
 
     def user_takeoff(self, alt_min=30):
         '''takeoff using mavlink takeoff command'''
@@ -634,7 +604,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1800)
 
         # wait for fence to trigger
-        self.wait_mode('RTL')
+        self.wait_mode('RTL', timeout=120)
 
         self.progress("Waiting for disarm")
         self.mav.motors_disarmed_wait()
@@ -1298,24 +1268,78 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def guided_achieve_heading(self, heading):
-        tstart = self.get_sim_time()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                     heading, # target angle
-                     10, # degrees/second
-                     1, # -1 is counter-clockwise, 1 clockwise
-                     0, # 1 for relative, 0 for absolute
-                     0, # p5
-                     0, # p6
-                     0, # p7
-        )
-        while True:
-            if self.get_sim_time() - tstart > 200:
-                raise NotAchievedException()
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("heading=%f want=%f" % (m.heading, heading))
-            if m.heading == heading:
-                return
+    def test_setting_modes_via_modeswitch(self):
+        self.context_push();
+        ex = None
+        try:
+            fltmode_ch = 5
+            self.set_parameter("FLTMODE_CH", fltmode_ch)
+            self.set_rc(fltmode_ch, 1000) # PWM for mode1
+            testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
+                         ("FLTMODE2", 13, "SPORT", 1295),
+                         ("FLTMODE3", 6, "RTL", 1425),
+                         ("FLTMODE4", 7, "CIRCLE", 1555),
+                         ("FLTMODE5", 1, "ACRO", 1685),
+                         ("FLTMODE6", 17, "BRAKE", 1815),
+            ]
+            for mode in testmodes:
+                (parm, parm_value, name, pwm) = mode
+                self.set_parameter(parm, parm_value)
+
+            for mode in reversed(testmodes):
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            for mode in testmodes:
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            for mode in reversed(testmodes):
+                (parm, parm_value, name, pwm) = mode
+                self.set_rc(fltmode_ch, pwm)
+                self.wait_mode(name)
+
+            self.mavproxy.send('switch 6\n')
+            self.wait_mode("BRAKE")
+            self.mavproxy.send('switch 5\n')
+            self.wait_mode("ACRO")
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
+    def test_setting_modes_via_auxswitch(self):
+        self.context_push();
+        ex = None
+        try:
+            fltmode_ch = int(self.get_parameter("FLTMODE_CH"))
+            self.set_rc(fltmode_ch, 1000)
+            self.wait_mode("CIRCLE")
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.set_parameter("RC9_OPTION", 18) # land
+            self.set_parameter("RC10_OPTION", 55) # guided
+            self.set_rc(9, 1900)
+            self.wait_mode("LAND")
+            self.set_rc(10, 1900)
+            self.wait_mode("GUIDED")
+            self.set_rc(10, 1000) # this re-polls the mode switch
+            self.wait_mode("CIRCLE")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
 
     def fly_guided_change_submode(self):
         '''Ensure we can move around in guided after a takeoff command'''
@@ -1415,6 +1439,15 @@ class AutoTestCopter(AutoTest):
             self.wait_mode('STABILIZE')
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
+
+            self.run_test("Set modes via modeswitch",
+                          self.test_setting_modes_via_modeswitch)
+
+            self.run_test("Set modes via auxswitch",
+                          self.test_setting_modes_via_auxswitch)
+
+            self.mavproxy.send('switch 6\n')  # stabilize mode
+            self.wait_mode('STABILIZE')
 
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)

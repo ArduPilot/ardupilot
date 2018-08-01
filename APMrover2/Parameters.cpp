@@ -109,13 +109,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(pivot_turn_angle,   "PIVOT_TURN_ANGLE",  60),
 
-    // @Param: CH7_OPTION
-    // @DisplayName: Channel 7 option
-    // @Description: What to do use channel 7 for
-    // @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter,13:Follow
-    // @User: Standard
-    GSCALAR(ch7_option,             "CH7_OPTION",          CH7_OPTION),
-
     // @Param: CRUISE_THROTTLE
     // @DisplayName: Base throttle percentage in auto
     // @Description: The base throttle percentage to use in auto mode. The CRUISE_SPEED parameter controls the target speed, but the rover starts with the CRUISE_THROTTLE setting as the initial estimate for how much throttle is needed to achieve that speed. It then adjusts the throttle based on how fast the rover is actually going.
@@ -209,12 +202,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(rangefinder_debounce,   "RNGFND_DEBOUNCE",    2),
-
-    // @Param: AUX_CH
-    // @DisplayName: Auxiliary switch channel
-    // @Description: RC Channel to use for auxiliary functions including saving waypoints
-    // @User: Advanced
-    GSCALAR(aux_channel,    "AUX_CH",       7),
 
     // @Param: MODE_CH
     // @DisplayName: Mode channel
@@ -451,7 +438,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
-    AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels),
+    AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels_Rover),
 
 #if ADVANCED_FAILSAFE == ENABLED
     // @Group: AFS_

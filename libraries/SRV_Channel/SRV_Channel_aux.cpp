@@ -41,12 +41,12 @@ void SRV_Channel::output_ch(void)
     }
     if (passthrough_from != -1) {
         // we are doing passthrough from input to output for this channel
-        RC_Channel *rc = RC_Channels::rc_channel(passthrough_from);
-        if (rc) {
+        RC_Channel *c = rc().channel(passthrough_from);
+        if (c) {
             if (SRV_Channels::passthrough_disabled()) {
-                output_pwm = rc->get_radio_trim();
+                output_pwm = c->get_radio_trim();
             } else {
-                output_pwm = rc->get_radio_in();
+                output_pwm = c->get_radio_in();
             }
         }
     }
@@ -251,14 +251,11 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
-            if (rc == nullptr) {
+            RC_Channel *c = rc().channel(channels[i].ch_num);
+            if (c == nullptr) {
                 continue;
             }
-            if (do_input_output) {
-                rc->read();
-            }
-            channels[i].set_output_pwm(rc->get_radio_in());
+            channels[i].set_output_pwm(c->get_radio_in());
             if (do_input_output) {
                 channels[i].output_ch();
             }
@@ -274,11 +271,11 @@ SRV_Channels::copy_radio_in_out_mask(uint16_t mask)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if ((1U<<i) & mask) {
-            RC_Channel *rc = RC_Channels::rc_channel(channels[i].ch_num);
-            if (rc == nullptr) {
+            RC_Channel *c = rc().channel(channels[i].ch_num);
+            if (c == nullptr) {
                 continue;
             }
-            channels[i].set_output_pwm(rc->get_radio_in());
+            channels[i].set_output_pwm(c->get_radio_in());
         }
     }
 
@@ -352,11 +349,11 @@ SRV_Channels::set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_C
             uint16_t pwm = ch.get_limit_pwm(limit);
             ch.set_output_pwm(pwm);
             if (ch.function.get() == SRV_Channel::k_manual) {
-                RC_Channel *rc = RC_Channels::rc_channel(ch.ch_num);
-                if (rc != nullptr) {
+                RC_Channel *c = rc().channel(ch.ch_num);
+                if (c != nullptr) {
                     // in order for output_ch() to work for k_manual we
                     // also have to override radio_in
-                    rc->set_radio_in(pwm);
+                    c->set_radio_in(pwm);
                 }
             }
         }

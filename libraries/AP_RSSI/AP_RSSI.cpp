@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AP_RSSI::var_info[] = {
     // @Param: ANA_PIN
     // @DisplayName: Receiver RSSI sensing pin
     // @Description: Pin used to read the RSSI voltage or PWM value
-    // @Values: 0:APM2 A0,1:APM2 A1,13:APM2 A13,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 1, AP_RSSI, rssi_analog_pin,  BOARD_RSSI_ANA_PIN),
 
@@ -186,7 +186,11 @@ float AP_RSSI::read_pin_rssi()
 // read the RSSI value from a PWM value on a RC channel
 float AP_RSSI::read_channel_rssi()
 {
-    uint16_t rssi_channel_value = RC_Channels::get_radio_in(rssi_channel-1);
+    RC_Channel *ch = rc().channel(rssi_channel-1);
+    if (ch == nullptr) {
+        return 0.0f;
+    }
+    uint16_t rssi_channel_value = ch->get_radio_in();
     float channel_rssi = scale_and_constrain_float_rssi(rssi_channel_value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
     return channel_rssi;    
 }

@@ -57,7 +57,7 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise notify system
-    notify.init(false);
+    notify.init();
     notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -146,11 +146,8 @@ void Rover::init_ardupilot()
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
 
-
-    // set the correct flight mode
-    // ---------------------------
-    reset_control_switch();
-    init_aux_switch();
+    // initialise rc channels
+    rc().init();
 
     // disable safety if requested
     BoardConfig.init_safety();
