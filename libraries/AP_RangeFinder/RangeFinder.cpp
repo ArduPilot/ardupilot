@@ -37,6 +37,7 @@
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -57,7 +58,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 1_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[0], "1_",  26, RangeFinder, backend_var_info[0]),
+    AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Group: 2_
@@ -66,7 +67,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 2_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[1], "2_",  28, RangeFinder, backend_var_info[1]),
+    AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -76,7 +77,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 3_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[2], "3_",  30, RangeFinder, backend_var_info[2]),
+    AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -86,7 +87,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 4_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[0], "4_",  32, RangeFinder, backend_var_info[3]),
+    AP_SUBGROUPVARPTR(drivers[0], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 4
@@ -159,6 +160,8 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+    convert_params();
+
     // set orientation defaults
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         params[i].orientation.set_default(orientation_default);
@@ -170,6 +173,112 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
     }
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _singleton = this;
+}
+
+void RangeFinder::convert_params(void) {
+//    if (params[0].type.configured_in_storage()) {
+//        // _params[0]._type will always be configured in storage after conversion is done the first time
+//        return;
+//    }
+
+    const struct ConversionTable {
+        uint8_t old_element;
+        uint8_t new_index;
+        uint8_t instance;
+    }conversionTable[] = {
+            {0, 0, 0},
+            {1, 1, 0},
+            {2, 2, 0},
+            {3, 3, 0},
+            {4, 4, 0},
+            {5, 5, 0},
+            {6, 6, 0},
+            {7, 7, 0},
+            {8, 8, 0},
+            {9, 9, 0},
+            {11, 11, 0},
+            {23, 23, 0},
+            {49, 49, 0},
+            {53, 53, 0},
+            //{57, , 0}, // backend
+
+            {12, 0, 1},
+            {13, 1, 1},
+            {14, 2, 1},
+            {15, 3, 1},
+            {16, 4, 1},
+            {17, 5, 1},
+            {18, 6, 1},
+            {19, 7, 1},
+            {20, 8, 1},
+            {21, 9, 1},
+            {22, 11, 1},
+            {24, 23, 1},
+            {50, 49, 1},
+            {54, 53, 1},
+            //{58, , 1}, // backend
+
+            {25, 0, 2},
+            {26, 1, 2},
+            {27, 2, 2},
+            {28, 3, 2},
+            {29, 4, 2},
+            {30, 5, 2},
+            {31, 6, 2},
+            {32, 7, 2},
+            {33, 8, 2},
+            {34, 9, 2},
+            {35, 11, 2},
+            {36, 23, 2},
+            {51, 49, 2},
+            {55, 53, 2},
+            //{59, , 2}, // backend
+
+            {37, 0, 3},
+            {38, 1, 3},
+            {39, 2, 3},
+            {40, 3, 3},
+            {41, 4, 3},
+            {42, 5, 3},
+            {43, 6, 3},
+            {44, 7, 3},
+            {45, 8, 3},
+            {46, 9, 3},
+            {47, 11, 3},
+            {48, 23, 3},
+            {52, 49, 3},
+            {56, 53, 3},
+            //{60, , 3}, // backend
+    };
+
+    char param_name[17];
+    AP_Param::ConversionInfo info;
+    info.new_name = param_name;
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    info.old_key = 71;
+#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    info.old_key = 53;
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    info.old_key = 35;
+#elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
+    info.old_key = 197;
+#else
+    params[0].type.save(true);
+    return; // no conversion is supported on this platform
+#endif
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
+        info.old_group_element = conversionTable[i].old_element;
+        info.type = (ap_var_type)AP_RangeFinder_Params::var_info[conversionTable[i].new_index].type;
+
+        hal.util->snprintf(param_name, 17, "RNGFND%X_%s", conversionTable[i].instance+1, AP_RangeFinder_Params::var_info[conversionTable[i].new_index].name);
+
+        AP_Param::convert_old_parameter(&info, 1.0f, 0);
+    }
+
+    // force _params[0]._type into storage to flag that conversion has been done
+    params[0].type.save(true);
 }
 
 /*
