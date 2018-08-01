@@ -303,7 +303,8 @@ public:
     void reset_mode_switch();
     virtual void read_mode_switch();
 
-    virtual bool in_rc_failsafe() const = 0;
+    // has_valid_input should be pure-virtual when Plane is converted
+    virtual bool has_valid_input() const { return false; };
 
 private:
     static RC_Channels *_singleton;
