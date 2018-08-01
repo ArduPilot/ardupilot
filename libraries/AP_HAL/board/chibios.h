@@ -20,6 +20,10 @@
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
 
+#ifdef HAL_GPIO_PIN_SAFETY_IN
+#define HAL_HAVE_SAFETY_SWITCH 1
+#endif
+
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 0
 #endif
