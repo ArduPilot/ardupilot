@@ -222,7 +222,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
     _speed = _desc.highspeed;
-    
+
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
@@ -407,7 +407,8 @@ AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(
 
     if (!_bus.thread.is_started()) {
         char name[16];
-        snprintf(name, sizeof(name), "ap-spi-%u", _bus.bus);
+        snprintf(name, sizeof(name), "ap-spi-%u.%u",
+                 _bus.bus, _bus.kernel_cs);
 
         _bus.thread.set_stack_size(AP_LINUX_SENSORS_STACK_SIZE);
         _bus.thread.start(name, AP_LINUX_SENSORS_SCHED_POLICY,
