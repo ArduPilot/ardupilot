@@ -129,8 +129,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (sdef.serial == nullptr) {
         return;
     }
-    uint16_t min_tx_buffer = 4096;
-    uint16_t min_rx_buffer = 1024;
+    uint16_t min_tx_buffer = 1024;
+    uint16_t min_rx_buffer = 512;
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
