@@ -78,11 +78,6 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
     }
 }
 
-int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
-{
-    return -1;
-}
-
 
 uint8_t GPIO::read(uint8_t pin)
 {
@@ -149,7 +144,7 @@ bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 #ifdef GPIOH
         { GPIOH, EXT_MODE_GPIOH },
 #endif
-#ifdef GPIOI
+#if defined(GPIOI) && defined(GPIOI_BASE)
         { GPIOI, EXT_MODE_GPIOI },
 #endif
     };
