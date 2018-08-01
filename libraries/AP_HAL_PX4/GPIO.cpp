@@ -47,11 +47,6 @@ void PX4GPIO::init()
 #endif
 #endif
 #if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-    _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
-    if (_tone_alarm_fd == -1) {
-        AP_HAL::panic("Unable to open " TONEALARM0_DEVICE_PATH);
-    }
-
     _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
     if (_gpio_fmu_fd == -1) {
         AP_HAL::panic("Unable to open GPIO");
@@ -192,15 +187,6 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 #endif
-
-        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
-            if (value == LOW) { // this is inverted 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
-                //::write(_tone_alarm_fd, &user_tune, sizeof(user_tune));
-            } else { 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
-            }
-            break;
 
 #ifdef GPIO_EXT_1
         case PX4_GPIO_EXT_FMU_RELAY1_PIN:

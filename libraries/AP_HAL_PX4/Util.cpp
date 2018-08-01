@@ -15,6 +15,7 @@
 #include <drivers/drv_gpio.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <drivers/drv_tone_alarm.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -265,6 +266,7 @@ void PX4Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_ty
 
 extern "C" {
     int bl_update_main(int argc, char *argv[]);
+    int tone_alarm_main(int argc, char *argv[]);
 };
 
 bool PX4Util::flash_bootloader()
@@ -276,6 +278,36 @@ bool PX4Util::flash_bootloader()
     }
 #endif
     return false;
+}
+
+bool PX4Util::toneAlarm_init()
+{
+    if (!AP_BoardConfig::px4_start_driver(tone_alarm_main, "tone_alarm", "start")) {
+        hal.console->printf("Failed to start tone_alarm\n");
+        return false;
+    }
+    _tonealarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
+    if (_tonealarm_fd == -1) {
+        hal.console->printf("ToneAlarm_PX4: Unable to open " TONEALARM0_DEVICE_PATH);
+        return false;
+    }
+    return true;
+}
+
+void PX4Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+{
+    if (_tonealarm_fd == -1) {
+        return;
+    }
+    if (is_zero(frequency) || is_zero(volume)) {
+        write(_tonealarm_fd, "MFP", 4);
+    } else {
+        unsigned note = constrain_float(roundf(17.3123404906676f*logf(frequency) - 71.3763165622959f), 4, 87); // constraint based on comment in PX4 tonealarm driver - "note value in the range C1 to B7"
+        char tune[20];
+        snprintf(tune, sizeof(tune), "MFMLT32L1N%u", note);
+        tune[sizeof(tune)-1] = '\0';
+        write(_tonealarm_fd, tune, strlen(tune)+1);
+    }
 }
 
 
