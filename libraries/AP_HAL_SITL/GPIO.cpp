@@ -11,11 +11,6 @@ void GPIO::init()
 void GPIO::pinMode(uint8_t pin, uint8_t output)
 {}
 
-int8_t GPIO::analogPinToDigitalPin(uint8_t pin)
-{
-    return pin;
-}
-
 uint8_t GPIO::read(uint8_t pin)
 {
     if (!_sitlState->_sitl) {
