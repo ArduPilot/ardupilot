@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AP_HAL_Linux.h"
-#include <AP_ADC/AP_ADC.h>
+#include <AP_ADC/AP_ADC_ADS1115.h>
 
 #define ADS1115_ADC_MAX_CHANNELS 6
 
