@@ -154,6 +154,7 @@ private:
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
+    uint32_t _total_written;
     
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;

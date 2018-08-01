@@ -25,6 +25,7 @@
 #include "shared_dma.h"
 #include "sdcard.h"
 #include "hwdef/common/usbcfg.h"
+#include "hwdef/common/stm32_util.h"
 
 #include <hwdef.h>
 
@@ -152,7 +153,9 @@ static THD_FUNCTION(main_loop,arg)
 #endif
 
     ChibiOS::Shared_DMA::init();
-    
+
+    peripheral_power_enable();
+        
     hal.uartA->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ

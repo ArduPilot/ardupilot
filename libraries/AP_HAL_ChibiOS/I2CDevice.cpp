@@ -340,7 +340,7 @@ uint32_t I2CDeviceManager::get_bus_mask(void) const
 uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 {
     // assume first bus is internal
-    return 1U;
+    return get_bus_mask() & HAL_I2C_INTERNAL_MASK;
 }
 
 /*
@@ -349,7 +349,7 @@ uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 uint32_t I2CDeviceManager::get_bus_mask_external(void) const
 {
     // assume first bus is internal
-    return get_bus_mask() & 0xFE;
+    return get_bus_mask() & ~HAL_I2C_INTERNAL_MASK;
 }
 
 #endif // HAL_USE_I2C

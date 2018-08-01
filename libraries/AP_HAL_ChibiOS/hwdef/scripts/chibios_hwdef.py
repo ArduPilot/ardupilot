@@ -245,12 +245,8 @@ class generic_pin(object):
             self.type.startswith('UART')) and (
             (self.label.endswith('_TX') or
              self.label.endswith('_RX') or
-             self.label.endswith('_CTS'))):
-            # default RX/TX lines to pullup, to prevent spurious bytes
-            # on disconnected ports. CTS is the exception, which is pulldown
-            if self.label.endswith("CTS"):
-                v = "PULLDOWN"
-            else:
+             self.label.endswith('_CTS') or
+             self.label.endswith('_RTS'))):
                 v = "PULLUP"
         for e in self.extra:
             if e in values:
@@ -934,10 +930,14 @@ def write_GPIO_config(f):
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
-    for l in sorted(bylabel.keys()):
+    last_label = None
+    for l in sorted(list(set(bylabel.keys()))):
         p = bylabel[l]
         label = p.label
         label = label.replace('-', '_')
+        if label == last_label:
+            continue
+        last_label = label
         f.write('#define HAL_GPIO_PIN_%-20s PAL_LINE(GPIO%s,%uU)\n' %
                 (label, p.port, p.pin))
     f.write('\n')
@@ -1153,7 +1153,7 @@ def write_env_py(filename):
 
     # see if board has a defaults.parm file
     defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
-    if os.path.exists(defaults_filename):
+    if os.path.exists(defaults_filename) and not args.bootloader:
         print("Adding defaults.parm")
         env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(defaults_filename)
     
@@ -1161,6 +1161,18 @@ def write_env_py(filename):
     env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(build_flags)
     pickle.dump(env_vars, open(filename, "wb"))
 
+def romfs_add(romfs_filename, filename):
+    '''add a file to ROMFS'''
+    romfs.append((romfs_filename, filename))
+
+def romfs_wildcard(pattern):
+    '''add a set of files to ROMFS by wildcard'''
+    base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+    (pattern_dir, pattern) = os.path.split(pattern)
+    for f in os.listdir(os.path.join(base_path, pattern_dir)):
+        if fnmatch.fnmatch(f, pattern):
+            romfs.append((f, os.path.join(pattern_dir, f)))
+    
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins
@@ -1201,7 +1213,9 @@ def process_line(line):
     if a[0] == 'SPIDEV':
         spidev.append(a[1:])
     if a[0] == 'ROMFS':
-        romfs.append((a[1],a[2]))
+        romfs_add(a[1],a[2])
+    if a[0] == 'ROMFS_WILDCARD':
+        romfs_wildcard(a[1])
     if a[0] == 'undef':
         print("Removing %s" % a[1])
         config.pop(a[1], '')
