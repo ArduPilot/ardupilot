@@ -71,13 +71,7 @@
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
 
-template <typename T, size_t N>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[N]))[N];
-
-template <typename T>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
-
-#define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
+#define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
 // simpler ARRAY_SIZE which can handle zero elements
 #define ARRAY_SIZE_SIMPLE(_arr) (sizeof(_arr)/sizeof(_arr[0]))
