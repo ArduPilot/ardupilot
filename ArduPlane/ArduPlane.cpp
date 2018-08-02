@@ -53,7 +53,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(gcs_data_stream_send,   50,    500),
     SCHED_TASK(update_events,          50,    150),
     SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
-    SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate, 50, 150),
     SCHED_TASK(update_notify,          50,    300),
     SCHED_TASK(read_rangefinder,       50,    100),
@@ -190,16 +189,6 @@ void Plane::update_compass(void)
             DataFlash.Log_Write_Compass();
         }
     }
-}
-
-/*
-  if the compass is enabled then try to accumulate a reading
- */
-void Plane::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }    
 }
 
 /*
