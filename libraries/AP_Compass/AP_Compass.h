@@ -74,10 +74,6 @@ public:
     ///
     bool read();
 
-    /// use spare CPU cycles to accumulate values from the compass if
-    /// possible (this method should also be implemented in the backends)
-    void accumulate();
-
     /// Calculate the tilt-compensated heading_ variables.
     ///
     /// @param dcm_matrix			The current orientation rotation matrix

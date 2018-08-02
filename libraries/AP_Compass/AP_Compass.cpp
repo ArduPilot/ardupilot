@@ -1017,15 +1017,6 @@ void Compass::_detect_backends(void)
     }
 }
 
-void
-Compass::accumulate(void)
-{
-    for (uint8_t i=0; i< _backend_count; i++) {
-        // call accumulate on each of the backend
-        _backends[i]->accumulate();
-    }
-}
-
 bool
 Compass::read(void)
 {

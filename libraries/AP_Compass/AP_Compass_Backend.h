@@ -34,10 +34,6 @@ public:
     // read sensor data
     virtual void read(void) = 0;
 
-    // accumulate a reading from the magnetometer. Optional in
-    // backends
-    virtual void accumulate(void) {};
-
     // callback for UAVCAN messages
     virtual void handle_mag_msg(Vector3f &mag) {};
 
