@@ -327,7 +327,6 @@ private:
     static bool has_new_overrides;
     static AP_Float *override_timeout;
     static AP_Int32 *options;
-    RC_Channel obj_channels[NUM_RC_CHANNELS];
     AP_Float _override_timeout;
     AP_Int32  _options;
 
