@@ -102,17 +102,10 @@ void Copter::init_compass()
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
-  also update initial location used for declination
+  initialise compass's location used for declination
  */
-void Copter::compass_accumulate(void)
+void Copter::init_compass_location()
 {
-    if (!g.compass_enabled) {
-        return;
-    }
-
-    compass.accumulate();
-
     // update initial location used for declination
     if (!ap.compass_init_location) {
         Location loc;
