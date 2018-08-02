@@ -713,7 +713,7 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
             continue;
         }
         SRV_Channel &srv_chan = channels[i];
-        RC_Channel &rc_chan = RC_Channels::channels[i];
+        RC_Channel *rc_chan = rc().channel(i);
         enum {
             FLAG_NONE=0,
             FLAG_IS_REVERSE=1,
@@ -726,10 +726,10 @@ bool SRV_Channels::upgrade_parameters(const uint8_t rc_keys[14], uint16_t aux_ch
             enum ap_var_type type;
             uint8_t flags;
         } mapping[] = {
-            { 0, &srv_chan.servo_min,  &rc_chan.radio_min,  AP_PARAM_INT16, FLAG_NONE },
-            { 1, &srv_chan.servo_trim, &rc_chan.radio_trim, AP_PARAM_INT16, FLAG_NONE },
-            { 2, &srv_chan.servo_max,  &rc_chan.radio_max,  AP_PARAM_INT16, FLAG_NONE },
-            { 3, &srv_chan.reversed,   &rc_chan.reversed,   AP_PARAM_INT8,  FLAG_IS_REVERSE },
+            { 0, &srv_chan.servo_min,  &rc_chan->radio_min,  AP_PARAM_INT16, FLAG_NONE },
+            { 1, &srv_chan.servo_trim, &rc_chan->radio_trim, AP_PARAM_INT16, FLAG_NONE },
+            { 2, &srv_chan.servo_max,  &rc_chan->radio_max,  AP_PARAM_INT16, FLAG_NONE },
+            { 3, &srv_chan.reversed,   &rc_chan->reversed,   AP_PARAM_INT8,  FLAG_IS_REVERSE },
             { 1, &srv_chan.function,   nullptr,             AP_PARAM_INT8,  FLAG_AUX_ONLY },
         };
         bool is_aux = aux_channel_mask & (1U<<i);
