@@ -406,8 +406,8 @@ class AutoTestRover(AutoTest):
         fnoo = [(1, 'MANUAL'),
                 (2, 'MANUAL'),
                 (3, 'RTL'),
-                #                (4, 'AUTO'), // no mission, can't set auto
-                (5, 'RTL'), # non-existant mode, should stay in RTL
+                # (4, 'AUTO'),  # no mission, can't set auto
+                (5, 'RTL'),  # non-existant mode, should stay in RTL
                 (6, 'MANUAL')]
         for (num, expected) in fnoo:
             self.mavproxy.send('switch %u\n' % num)
@@ -415,7 +415,7 @@ class AutoTestRover(AutoTest):
 
     def test_setting_modes_via_modeswitch(self):
         # test setting of modes through mode switch
-        self.context_push();
+        self.context_push()
         ex = None
         try:
             self.set_parameter("MODE_CH", 8)
@@ -436,13 +436,13 @@ class AutoTestRover(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.context_pop();
+        self.context_pop()
 
         if ex is not None:
             raise ex
 
     def test_setting_modes_via_auxswitches(self):
-        self.context_push();
+        self.context_push()
         ex = None
         try:
             self.set_parameter("MODE5", 1)
@@ -474,7 +474,7 @@ class AutoTestRover(AutoTest):
             self.progress("Exception caught")
             ex = e
 
-        self.context_pop();
+        self.context_pop()
 
         if ex is not None:
             raise ex
@@ -573,7 +573,7 @@ class AutoTestRover(AutoTest):
                           self.drive_mission_rover1)
 
             # disabled due to frequent failures in travis. This test needs re-writing
-            #self.run_test("Drive Brake", self.drive_brake)
+            # self.run_test("Drive Brake", self.drive_brake)
 
             self.run_test("Disarm Vehicle", self.disarm_vehicle)
 
@@ -602,7 +602,7 @@ class AutoTestRover(AutoTest):
     #            self.progress("Failed RTL")
     #            failed = True
 
-        except pexpect.TIMEOUT as e:
+        except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
             self.fail_list.append(("*timeout*", None))
 

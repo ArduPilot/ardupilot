@@ -21,6 +21,8 @@ if (sys.version_info[0] >= 3):
 else:
     ENCODING = None
 
+RADIUS_OF_EARTH = 6378100.0  # in meters
+
 def m2ft(x):
     """Meters to feet."""
     return float(x) / 0.3048
@@ -208,6 +210,7 @@ def kill_screen_gdb():
     cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
     subprocess.Popen(cmd)
 
+
 def start_SITL(binary,
                valgrind=False,
                gdb=False,
@@ -297,7 +300,6 @@ def start_SITL(binary,
     first = cmd[0]
     rest = cmd[1:]
     child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
-    delaybeforesend = 0
     pexpect_autoclose(child)
     # give time for parameters to properly setup
     time.sleep(3)
@@ -446,8 +448,6 @@ def BodyRatesToEarthRates(dcm, gyro):
     psiDot   = (q * sin(phi) + r * cos(phi)) / cos(theta)
     return Vector3(phiDot, thetaDot, psiDot)
 
-radius_of_earth = 6378100.0  # in meters
-
 
 def gps_newpos(lat, lon, bearing, distance):
     """Extrapolate latitude/longitude given a heading and distance
@@ -458,7 +458,7 @@ def gps_newpos(lat, lon, bearing, distance):
     lat1 = radians(lat)
     lon1 = radians(lon)
     brng = radians(bearing)
-    dr = distance / radius_of_earth
+    dr = distance / RADIUS_OF_EARTH
 
     lat2 = asin(sin(lat1) * cos(dr) +
                 cos(lat1) * sin(dr) * cos(brng))
@@ -480,7 +480,7 @@ def gps_distance(lat1, lon1, lat2, lon2):
 
     a = math.sin(0.5 * dLat)**2 + math.sin(0.5 * dLon)**2 * math.cos(lat1) * math.cos(lat2)
     c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
-    return radius_of_earth * c
+    return RADIUS_OF_EARTH * c
 
 
 def gps_bearing(lat1, lon1, lat2, lon2):
@@ -539,7 +539,7 @@ class Wind(object):
         return (speed, self.direction)
 
     # Calculate drag.
-    def drag(self, velocity, deltat=None, testing=None):
+    def drag(self, velocity, deltat=None):
         """Return current wind force in Earth frame.  The velocity parameter is
            a Vector3 of the current velocity of the aircraft in earth frame, m/s ."""
         from math import radians
@@ -632,6 +632,7 @@ def constrain(value, minv, maxv):
     if value > maxv:
         value = maxv
     return value
+
 
 if __name__ == "__main__":
     import doctest
