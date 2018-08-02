@@ -422,6 +422,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
 {
     // init channel options
     switch(ch_option) {
+    case RC_OVERRIDE_ENABLE:
+        do_aux_function(ch_option, ch_flag);
+        break;
     // the following functions to not need to be initialised:
     case RELAY:
     case RELAY2:
@@ -486,6 +489,23 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     servorelayevents->do_set_relay(relay, val);
 }
 
+void RC_Channel::do_aux_function_rc_override_enable(const aux_switch_pos_t ch_flag)
+{
+    switch (ch_flag) {
+    case HIGH: {
+        rc().set_gcs_overrides_enabled(true);
+        break;
+    }
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW: {
+        rc().set_gcs_overrides_enabled(false);
+        break;
+    }
+    }
+}
+
 void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
@@ -504,6 +524,11 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
         break;
     case RELAY4:
         do_aux_function_relay(3, ch_flag == HIGH);
+        break;
+
+    case RC_OVERRIDE_ENABLE:
+        // Allow or disallow RC_Override
+        do_aux_function_rc_override_enable(ch_flag);
         break;
 
     default:
