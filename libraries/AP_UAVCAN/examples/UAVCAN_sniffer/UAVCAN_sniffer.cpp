@@ -127,7 +127,7 @@ static struct {
 
 static void count_msg(const char *name)
 {
-    for (uint16_t i=0; i<ARRAY_SIZE_SIMPLE(counters); i++) {
+    for (uint16_t i=0; i<ARRAY_SIZE(counters); i++) {
         if (counters[i].msg_name == name) {
             counters[i].count++;
             break;

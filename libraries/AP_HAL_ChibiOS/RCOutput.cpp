@@ -37,7 +37,7 @@ extern AP_IOMCU iomcu;
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 struct RCOutput::irq_state RCOutput::irq;
 
-#define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
+#define NUM_GROUPS ARRAY_SIZE(pwm_group_list)
 
 // marker for a disabled channel
 #define CHAN_DISABLED 255
