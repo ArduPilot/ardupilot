@@ -123,8 +123,6 @@ bool AP_Compass_UAVCAN::register_uavcan_compass(uint8_t mgr, uint8_t node)
         _sum.zero();
         _count = 0;
 
-        accumulate();
-
         debug_mag_uavcan(2, "AP_Compass_UAVCAN loaded\n\r");
 
         return true;
