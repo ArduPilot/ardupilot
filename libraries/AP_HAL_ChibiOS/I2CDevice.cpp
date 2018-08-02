@@ -160,18 +160,10 @@ I2CDevice::~I2CDevice()
 }
 
 /*
-  allocate DMA channel
+  allocate DMA channel, nothing to do, as we don't keep the bus active between transactions
  */
 void I2CBus::dma_allocate(Shared_DMA *ctx)
 {
-    chMtxLock(&dma_lock);    
-    if (!i2c_started) {
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
-        i2cStart(I2CD[busnum].i2c, &i2ccfg);
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
-        i2c_started = true;
-    }
-    chMtxUnlock(&dma_lock);    
 }
 
 /*
@@ -179,14 +171,6 @@ void I2CBus::dma_allocate(Shared_DMA *ctx)
  */
 void I2CBus::dma_deallocate(Shared_DMA *)
 {
-    chMtxLock(&dma_lock);    
-    if (i2c_started) {
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_READY, "i2cStart state");
-        i2cStop(I2CD[busnum].i2c);
-        osalDbgAssert(I2CD[busnum].i2c->state == I2C_STOP, "i2cStart state");
-        i2c_started = false;
-    }
-    chMtxUnlock(&dma_lock);    
 }
 
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
@@ -250,15 +234,14 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
 
-        // we get the lock inside the retry loop to allow us to give up the DMA channel to an
-        // SPI device on retries
+        // we get the lock and start the bus inside the retry loop to
+        // allow us to give up the DMA channel to an SPI device on
+        // retries
         bus.dma_handle->lock();
 
-        // if we are not using DMA then we may need to start the bus here
-        bus.dma_allocate(bus.dma_handle);
-        
-        bus.i2c_active = true;
+        i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+        
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, MS2ST(timeout_ms));
         } else {
@@ -266,18 +249,12 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                                            recv, recv_len, MS2ST(timeout_ms));
         }
 
+        i2cStop(I2CD[bus.busnum].i2c);
+        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
+        
         bus.dma_handle->unlock();
         
-        bus.i2c_active = false;
-        if (ret != MSG_OK) {
-            //restart the bus
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY || I2CD[bus.busnum].i2c->state == I2C_LOCKED, "i2cStart state");
-            i2cStop(I2CD[bus.busnum].i2c);
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
-            i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-        } else {
-            osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+        if (ret == MSG_OK) {
             bus.bouncebuffer_finish(send, recv, recv_len);
             i2cReleaseBus(I2CD[bus.busnum].i2c);
             return true;
