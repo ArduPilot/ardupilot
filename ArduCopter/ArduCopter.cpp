@@ -117,7 +117,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(three_hz_loop,          3,     75),
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,     75),
-    SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,           accumulate,      50,  90),
 #if PRECISION_LANDING == ENABLED
     SCHED_TASK(update_precland,      400,     50),
@@ -456,6 +455,9 @@ void Copter::one_hz_loop()
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+
+    // init compass location for declination
+    init_compass_location();
 }
 
 // called at 50hz

@@ -137,8 +137,6 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     while (command_ack_start == command_ack_counter && compass.healthy() && motors->armed()) {
         // 50hz loop
         if (millis() - last_run_time < 20) {
-            // grab some compass values
-            compass.accumulate();
             hal.scheduler->delay(5);
             continue;
         }
