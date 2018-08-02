@@ -167,82 +167,16 @@ RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orient
 }
 
 void RangeFinder::convert_params(void) {
-//    if (params[0].type.configured_in_storage()) {
-//        // _params[0]._type will always be configured in storage after conversion is done the first time
-//        return;
-//    }
+    if (params[0].type.configured_in_storage()) {
+        // _params[0]._type will always be configured in storage after conversion is done the first time
+        return;
+    }
 
     struct ConversionTable {
         uint8_t old_element;
         uint8_t new_index;
         uint8_t instance;
     };
-
-//    const struct ConversionTable conversionTable[] = {
-//            {0, 0, 0},
-//            {1, 1, 0},
-//            {2, 2, 0},
-//            {3, 3, 0},
-//            {4, 4, 0},
-//            {5, 5, 0},
-//            {6, 6, 0},
-//            {7, 7, 0},
-//            {8, 8, 0},
-//            {9, 9, 0},
-//            {11, 11, 0},
-//            {23, 23, 0},
-//            {49, 49, 0},
-//            {53, 53, 0},
-//            //{57, , 0}, // backend
-//
-//            {12, 0, 1},
-//            {13, 1, 1},
-//            {14, 2, 1},
-//            {15, 3, 1},
-//            {16, 4, 1},
-//            {17, 5, 1},
-//            {18, 6, 1},
-//            {19, 7, 1},
-//            {20, 8, 1},
-//            {21, 9, 1},
-//            {22, 11, 1},
-//            {24, 23, 1},
-//            {50, 49, 1},
-//            {54, 53, 1},
-//            //{58, , 1}, // backend
-//
-//            {25, 0, 2},
-//            {26, 1, 2},
-//            {27, 2, 2},
-//            {28, 3, 2},
-//            {29, 4, 2},
-//            {30, 5, 2},
-//            {31, 6, 2},
-//            {32, 7, 2},
-//            {33, 8, 2},
-//            {34, 9, 2},
-//            {35, 11, 2},
-//            {36, 23, 2},
-//            {51, 49, 2},
-//            {55, 53, 2},
-//            //{59, , 2}, // backend
-//
-//            {37, 0, 3},
-//            {38, 1, 3},
-//            {39, 2, 3},
-//            {40, 3, 3},
-//            {41, 4, 3},
-//            {42, 5, 3},
-//            {43, 6, 3},
-//            {44, 7, 3},
-//            {45, 8, 3},
-//            {46, 9, 3},
-//            {47, 11, 3},
-//            {48, 23, 3},
-//            {52, 49, 3},
-//            {56, 53, 3},
-//            //{60, , 3}, // backend
-//    };
 
     const struct ConversionTable conversionTable[] = {
             {0, 0, 0}, //0, TYPE 1
@@ -257,63 +191,63 @@ void RangeFinder::convert_params(void) {
             {9, 9, 0}, //9, RMETRIC 1
             {10, 10, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
             {11, 11, 0}, //11, GNDCLEAR 1
-            {12, 12, 0}, //23, ADDR 1
-            {13, 13, 0}, //49, POS 1
-            {14, 14, 0}, //53, ORIENT 1
+            {23, 12, 0}, //23, ADDR 1
+            {49, 13, 0}, //49, POS 1
+            {53, 14, 0}, //53, ORIENT 1
 
-            //{15, 1, 0}, //57, backend 1
+            //{57, 1, 0}, //57, backend 1
 
-            {16, 0, 1}, //12, TYPE 2
-            {17, 1, 1}, //13, PIN 2
-            {18, 2, 1}, //14, SCALING 2
-            {19, 3, 1}, //15, OFFSET 2
-            {20, 4, 1}, //16, FUNCTION 2
-            {21, 5, 1}, //17, MIN_CM 2
-            {22, 6, 1}, //18, MAX_CM 2
-            {23, 7, 2}, //19, STOP_PIN 2
-            {24, 8, 3}, //20, SETTLE 2
-            {25, 9, 3}, //21, RMETRIC 2
-            //{26, 10, 1}, //PWRRNG 2 (previously existed only once for all sensors)
-            {26, 11, 1}, //22, GNDCLEAR 2
-            {27, 12, 1}, //24, ADDR 2
-            {28, 13, 1}, //50, POS 2
-            {29, 14, 1}, //54, ORIENT 2
+            {12, 0, 1}, //12, TYPE 2
+            {13, 1, 1}, //13, PIN 2
+            {14, 2, 1}, //14, SCALING 2
+            {15, 3, 1}, //15, OFFSET 2
+            {16, 4, 1}, //16, FUNCTION 2
+            {17, 5, 1}, //17, MIN_CM 2
+            {18, 6, 1}, //18, MAX_CM 2
+            {19, 7, 2}, //19, STOP_PIN 2
+            {20, 8, 3}, //20, SETTLE 2
+            {21, 9, 3}, //21, RMETRIC 2
+            //{, 10, 1}, //PWRRNG 2 (previously existed only once for all sensors)
+            {22, 11, 1}, //22, GNDCLEAR 2
+            {24, 12, 1}, //24, ADDR 2
+            {50, 13, 1}, //50, POS 2
+            {54, 14, 1}, //54, ORIENT 2
 
-            //{30, 3, 1}, //58, backend 2
+            //{58, 3, 1}, //58, backend 2
 
-            {31, 0, 2}, //25, TYPE 3
-            {32, 1, 2}, //26, PIN 3
-            {33, 2, 2}, //27, SCALING 3
-            {34, 3, 2}, //28, OFFSET 3
-            {35, 4, 2}, //29, FUNCTION 3
-            {36, 5, 2}, //30, MIN_CM 3
-            {37, 6, 2}, //31, MAX_CM 3
-            {38, 7, 2}, //32, STOP_PIN 3
-            {39, 8, 2}, //33, SETTLE 3
-            {40, 9, 2}, //34, RMETRIC 3
-            //{41, 10, 2}, //PWRRNG 3 (previously existed only once for all sensors)
-            {41, 11, 2}, //35, GNDCLEAR 3
-            {42, 12, 2}, //36, ADDR 3
-            {43, 13, 2}, //51, POS 3
-            {44, 14, 2}, //55, ORIENT 3
+            {25, 0, 2}, //25, TYPE 3
+            {26, 1, 2}, //26, PIN 3
+            {27, 2, 2}, //27, SCALING 3
+            {28, 3, 2}, //28, OFFSET 3
+            {29, 4, 2}, //29, FUNCTION 3
+            {30, 5, 2}, //30, MIN_CM 3
+            {31, 6, 2}, //31, MAX_CM 3
+            {32, 7, 2}, //32, STOP_PIN 3
+            {33, 8, 2}, //33, SETTLE 3
+            {34, 9, 2}, //34, RMETRIC 3
+            //{, 10, 2}, //PWRRNG 3 (previously existed only once for all sensors)
+            {35, 11, 2}, //35, GNDCLEAR 3
+            {36, 12, 2}, //36, ADDR 3
+            {51, 13, 2}, //51, POS 3
+            {55, 14, 2}, //55, ORIENT 3
 
-            //{45, 5, 2}, //59, backend 3
+            //{59, 5, 2}, //59, backend 3
 
-            {46, 0, 3}, //37, TYPE 4
-            {47, 1, 3}, //38, PIN 4
-            {48, 2, 3}, //39, SCALING 4
-            {49, 3, 3}, //40, OFFSET 4
-            {50, 4, 3}, //41, FUNCTION 4
-            {51, 5, 3}, //42, MIN_CM 4
-            {52, 6, 3}, //43, MAX_CM 4
-            {53, 7, 3}, //44, STOP_PIN 4
-            {54, 8, 3}, //45, SETTLE 4
-            {55, 9, 3}, //46, RMETRIC 4
-            //{56, 10, 3}, //PWRRNG 4 (previously existed only once for all sensors)
-            {56, 11, 3}, //47, GNDCLEAR 4
-            {57, 12, 3}, //48, ADDR 4
-            {58, 13, 3}, //52, POS 4
-            {59, 14, 3}, //56, ORIENT 4
+            {37, 0, 3}, //37, TYPE 4
+            {38, 1, 3}, //38, PIN 4
+            {39, 2, 3}, //39, SCALING 4
+            {40, 3, 3}, //40, OFFSET 4
+            {41, 4, 3}, //41, FUNCTION 4
+            {42, 5, 3}, //42, MIN_CM 4
+            {43, 6, 3}, //43, MAX_CM 4
+            {44, 7, 3}, //44, STOP_PIN 4
+            {45, 8, 3}, //45, SETTLE 4
+            {46, 9, 3}, //46, RMETRIC 4
+            //{, 10, 3}, //PWRRNG 4 (previously existed only once for all sensors)
+            {47, 11, 3}, //47, GNDCLEAR 4
+            {48, 12, 3}, //48, ADDR 4
+            {52, 13, 3}, //52, POS 4
+            {56, 14, 3}, //56, ORIENT 4
 
             //{60, 7, 3}, //60, backend 4
     };
@@ -343,8 +277,6 @@ void RangeFinder::convert_params(void) {
         info.type = (ap_var_type)AP_RangeFinder_Params::var_info[destination_index].type;
 
         hal.util->snprintf(param_name, 17, "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
-
-        printf("%s[%d/%d]: %d %d\n", info.new_name, i, ARRAY_SIZE(conversionTable), info.old_key, info.old_group_element);
 
         AP_Param::convert_old_parameter(&info, 1.0f, 0);
     }
