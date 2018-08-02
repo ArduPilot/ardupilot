@@ -29,7 +29,7 @@ int16_t cin(unsigned timeout_ms)
     uint8_t b = 0;
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
         if (locked_uart == -1 || locked_uart == i) {
-            if (chnReadTimeout(uarts[i], &b, 1, MS2ST(timeout_ms)) == 1) {
+            if (chnReadTimeout(uarts[i], &b, 1, chTimeMS2I(timeout_ms)) == 1) {
                 last_uart = i;
                 return b;
             }
@@ -43,7 +43,7 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 {
     for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
         if (locked_uart == -1 || locked_uart == i) {
-            if (chnReadTimeout(uarts[i], (uint8_t *)wp, 4, MS2ST(timeout_ms)) == 4) {
+            if (chnReadTimeout(uarts[i], (uint8_t *)wp, 4, chTimeMS2I(timeout_ms)) == 4) {
                 last_uart = i;
                 return 0;
             }
@@ -56,7 +56,7 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 
 void cout(uint8_t *data, uint32_t len)
 {
-    chnWriteTimeout(uarts[last_uart], data, len, MS2ST(100));
+    chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
 }
 
 static uint32_t flash_base_page;
@@ -248,7 +248,7 @@ void uprintf(const char *fmt, ...)
     va_start(ap, fmt);
     uint32_t n = vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
-    chnWriteTimeout(&SDU1, (const uint8_t *)msg, n, MS2ST(100));
+    chnWriteTimeout(&SDU1, (const uint8_t *)msg, n, chTimeMS2I(100));
 #endif
 }
 
