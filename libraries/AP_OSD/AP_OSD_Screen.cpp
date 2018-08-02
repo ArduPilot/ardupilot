@@ -157,6 +157,11 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
 
+     // @Group: DIST
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(dist, "DIST", 29, AP_OSD_Screen, AP_OSD_Setting),
+
+
     AP_GROUPEND
 };
 
@@ -245,6 +250,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
+#define SYM_DIST      0x22
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -782,6 +788,24 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
+{
+    uint32_t now = AP_HAL::millis();
+    uint32_t delta = now - osd->last_update_ms;
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed = v.length();
+    if (delta > 500) {
+        if (speed < 2.0) speed = 0.0;
+        float dist_m = (speed * delta)/1000.0;
+        osd->last_distance_m += dist_m;
+        osd->last_update_ms = now;
+    }
+    backend->write(x, y, false, "%c", SYM_DIST);
+    draw_distance(x+1, y, osd->last_distance_m);
+    
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -822,4 +846,5 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+    DRAW_SETTING(dist);
 }
