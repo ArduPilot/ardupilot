@@ -28,7 +28,6 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
-RC_Channel *RC_Channels::channels;
 bool RC_Channels::has_new_overrides;
 AP_Float *RC_Channels::override_timeout;
 AP_Int32 *RC_Channels::options;
@@ -38,8 +37,6 @@ AP_Int32 *RC_Channels::options;
  */
 RC_Channels::RC_Channels(void)
 {
-    channels = obj_channels;
-
     override_timeout = &_override_timeout;
     options = &_options;
 
@@ -106,8 +103,9 @@ int16_t RC_Channels::get_receiver_rssi(void)
 
 void RC_Channels::clear_overrides(void)
 {
+    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        channels[i].clear_override();
+        _rc.channel(i)->clear_override();
     }
     // we really should set has_new_overrides to true, and rerun read_input from
     // the vehicle code however doing so currently breaks the failsafe system on
@@ -116,16 +114,18 @@ void RC_Channels::clear_overrides(void)
 
 void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
 {
+    RC_Channels &_rc = rc();
     if (chan < NUM_RC_CHANNELS) {
-        channels[chan].set_override(value, timestamp_ms);
+        _rc.channel(chan)->set_override(value, timestamp_ms);
         has_new_overrides = true;
     }
 }
 
 bool RC_Channels::has_active_overrides()
 {
+    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        if (channels[i].has_override()) {
+        if (_rc.channel(i)->has_override()) {
             return true;
         }
     }
