@@ -28,7 +28,7 @@ static struct gpio_entry {
     ioline_t pal_line;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
-#define NUM_PINS ARRAY_SIZE_SIMPLE(_gpio_tab)
+#define NUM_PINS ARRAY_SIZE(_gpio_tab)
 #define PIN_ENABLED(pin) ((pin)<NUM_PINS && _gpio_tab[pin].enabled)
 
 /*
@@ -36,7 +36,7 @@ static struct gpio_entry {
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (pin_num == _gpio_tab[i].pin_num) {
             if (check_enabled && !_gpio_tab[i].enabled) {
                 return NULL;
@@ -56,7 +56,7 @@ void GPIO::init()
 {
     // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
     uint8_t pwm_count = AP_BoardConfig::get_pwm_count();
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(_gpio_tab); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
             g->enabled = g->pwm_num > pwm_count;

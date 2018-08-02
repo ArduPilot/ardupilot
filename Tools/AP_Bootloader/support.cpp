@@ -27,7 +27,7 @@ static uint8_t last_uart;
 int16_t cin(unsigned timeout_ms)
 {
     uint8_t b = 0;
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
         if (locked_uart == -1 || locked_uart == i) {
             if (chnReadTimeout(uarts[i], &b, 1, chTimeMS2I(timeout_ms)) == 1) {
                 last_uart = i;
@@ -41,7 +41,7 @@ int16_t cin(unsigned timeout_ms)
 
 int cin_word(uint32_t *wp, unsigned timeout_ms)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
         if (locked_uart == -1 || locked_uart == i) {
             if (chnReadTimeout(uarts[i], (uint8_t *)wp, 4, chTimeMS2I(timeout_ms)) == 4) {
                 last_uart = i;
@@ -146,14 +146,14 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 
     mcu_des_t des = mcu_descriptions[STM32_UNKNOWN];
 
-    for (int i = 0; i < ARRAY_SIZE_SIMPLE(mcu_descriptions); i++) {
+    for (int i = 0; i < ARRAY_SIZE(mcu_descriptions); i++) {
         if (mcuid == mcu_descriptions[i].mcuid) {
             des = mcu_descriptions[i];
             break;
         }
     }
 
-    for (int i = 0; i < ARRAY_SIZE_SIMPLE(silicon_revs); i++) {
+    for (int i = 0; i < ARRAY_SIZE(silicon_revs); i++) {
         if (silicon_revs[i].revid == revid) {
             des.rev = silicon_revs[i].rev;
         }
@@ -185,7 +185,7 @@ bool check_limit_flash_1M(void)
     uint32_t idcode = (*(uint32_t *)DBGMCU_BASE);
     uint16_t revid = ((idcode & REVID_MASK) >> 16);
 
-    for (int i = 0; i < ARRAY_SIZE_SIMPLE(silicon_revs); i++) {
+    for (int i = 0; i < ARRAY_SIZE(silicon_revs); i++) {
         if (silicon_revs[i].revid == revid) {
             return silicon_revs[i].limit_flash_size_1M;
         }
@@ -342,7 +342,7 @@ void init_uarts(void)
 #if HAL_USE_SERIAL == TRUE
     sercfg.speed = BOOTLOADER_BAUDRATE;
     
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(uarts); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
 #if HAL_USE_SERIAL_USB == TRUE
         if (uarts[i] == (BaseChannel *)&SDU1) {
             continue;

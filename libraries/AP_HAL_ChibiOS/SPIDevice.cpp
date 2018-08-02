@@ -183,7 +183,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
 uint16_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
     uint32_t spi_clock_freq = SPI1_CLOCK;
-    if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE_SIMPLE(bus_clocks)) {
+    if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE(bus_clocks)) {
         spi_clock_freq = bus_clocks[busid-1] / 2;
     }
 
@@ -314,12 +314,12 @@ SPIDeviceManager::get_device(const char *name)
 {
     /* Find the bus description in the table */
     uint8_t i;
-    for (i = 0; i<ARRAY_SIZE_SIMPLE(device_table); i++) {
+    for (i = 0; i<ARRAY_SIZE(device_table); i++) {
         if (strcmp(device_table[i].name, name) == 0) {
             break;
         }
     }
-    if (i == ARRAY_SIZE_SIMPLE(device_table)) {
+    if (i == ARRAY_SIZE(device_table)) {
         printf("SPI: Invalid device name: %s\n", name);
         return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
     }
@@ -366,7 +366,7 @@ void SPIDevice::test_clock_freq(void)
     // time it takes to do the transfer
     uint16_t len = 1024;
     uint8_t *buf = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(spi_devices); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(spi_devices); i++) {
         SPIConfig spicfg {};
         const uint32_t target_freq = 2000000UL;
         // use a clock divisor of 256 for maximum resolution
