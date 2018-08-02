@@ -34,7 +34,7 @@ static const struct I2CInfo {
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-I2CBus I2CDeviceManager::businfo[ARRAY_SIZE_SIMPLE(I2CD)];
+I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 
 #ifndef HAL_I2C_BUS_BASE
 #define HAL_I2C_BUS_BASE 0
@@ -94,7 +94,7 @@ void I2CBus::clear_bus(ioline_t scl_line, uint8_t scl_af)
 // setup I2C buses
 I2CDeviceManager::I2CDeviceManager(void)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE_SIMPLE(I2CD); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(I2CD); i++) {
         businfo[i].busnum = i;
         businfo[i].dma_init();
         /*
@@ -296,7 +296,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t timeout_ms)
 {
     bus -= HAL_I2C_BUS_BASE;
-    if (bus >= ARRAY_SIZE_SIMPLE(I2CD)) {
+    if (bus >= ARRAY_SIZE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
     auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
@@ -308,7 +308,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
 */
 uint32_t I2CDeviceManager::get_bus_mask(void) const
 {
-    return ((1U << ARRAY_SIZE_SIMPLE(I2CD)) - 1) << HAL_I2C_BUS_BASE;
+    return ((1U << ARRAY_SIZE(I2CD)) - 1) << HAL_I2C_BUS_BASE;
 }
 
 /*

@@ -57,7 +57,7 @@ using namespace ChibiOS;
  */
 const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 
-#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(AnalogIn::pin_config)
+#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
 // samples filled in by ADC DMA engine
 adcsample_t *AnalogIn::samples;
