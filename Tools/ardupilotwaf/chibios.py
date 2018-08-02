@@ -215,6 +215,8 @@ def load_env_vars(env):
         else:
             env[k] = v
             print("env set %s=%s" % (k, v))
+    if env.ENABLE_ASSERTS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
@@ -294,6 +296,7 @@ def pre_build(bld):
         bld.get_board().with_uavcan = True
 
 def build(bld):
+
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),

@@ -405,6 +405,13 @@ class chibios(Board):
                 '-g',
             ]
 
+        if cfg.env.ENABLE_ASSERTS:
+            cfg.msg("Enabling ChibiOS asserts", "yes")
+            env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
+            env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
+        else:
+            cfg.msg("Enabling ChibiOS asserts", "no")
+            
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
