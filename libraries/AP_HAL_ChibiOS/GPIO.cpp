@@ -135,10 +135,21 @@ bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
                 return false;
             }
             break;
+    }    
+    if (p) {
+        osalSysLock();
+        palevent_t *pep = pal_lld_get_line_event(line);
+        if (pep->cb) {
+            // the pad is already being used for a callback
+            osalSysUnlock();
+            return false;
+        }
+        osalSysUnlock();
     }
+
     palDisableLineEvent(line);
     palEnableLineEvent(line, chmode);
-    palSetLineCallback(line, pal_interrupt_cb, (void*)p);
+    palSetLineCallback(line, p?pal_interrupt_cb:nullptr, (void*)p);
     return true;
 }
 
