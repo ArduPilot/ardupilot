@@ -266,7 +266,7 @@ void peripheral_power_enable(void)
     uint8_t i;
     for (i=0; i<100; i++) {
         // use a loop as this may be a 16 bit timer
-        chThdSleep(MS2ST(1));
+        chThdSleep(chTimeMS2I(1));
     }
 #ifdef HAL_GPIO_PIN_nVDD_5V_PERIPH_EN
     palWriteLine(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN, 0);

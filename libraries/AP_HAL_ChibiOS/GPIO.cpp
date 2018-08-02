@@ -18,8 +18,6 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_USE_EXT == TRUE
-
 using namespace ChibiOS;
 
 // GPIO pin table from hwdef.dat
@@ -193,4 +191,3 @@ void pal_interrupt_cb(void *arg)
     }
 }
 
-#endif // HAL_USE_EXT
