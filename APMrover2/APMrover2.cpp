@@ -74,7 +74,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200),
     SCHED_TASK(fence_check,            10,    200),
-    SCHED_TASK(compass_accumulate,     50,    200),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
@@ -290,6 +289,9 @@ void Rover::one_second_loop(void)
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         update_home();
     }
+
+    // init compass location for declination
+    init_compass_location();
 
     // update error mask of sensors and subsystems. The mask uses the
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
