@@ -184,6 +184,7 @@ protected:
     void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
     void do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag);
+    void do_aux_function_rc_override_enable(const aux_switch_pos_t ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const aux_switch_pos_t ch_flag);
 
@@ -258,6 +259,7 @@ private:
 
     void reset_mode_switch();
     void read_mode_switch();
+
 };
 
 
@@ -319,6 +321,11 @@ public:
     // has_valid_input should be pure-virtual when Plane is converted
     virtual bool has_valid_input() const { return false; };
 
+    bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
+    void set_gcs_overrides_enabled(bool enable) {
+        _gcs_overrides_enabled = enable;
+    }
+
 private:
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
@@ -334,6 +341,8 @@ private:
     virtual int8_t flight_mode_channel_number() const = 0;
     RC_Channel *flight_mode_channel();
 
+    // Allow override by default at start
+    bool _gcs_overrides_enabled = true;
 };
 
 RC_Channels &rc();
