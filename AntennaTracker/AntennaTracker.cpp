@@ -41,7 +41,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10,   1500),
     SCHED_TASK(gcs_update,             50,   1700),
     SCHED_TASK(gcs_data_stream_send,   50,   3000),
-    SCHED_TASK(compass_accumulate,     50,   1500),
     SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
 #if LOGGING_ENABLED == ENABLED
