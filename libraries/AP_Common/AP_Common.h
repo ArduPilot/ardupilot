@@ -73,9 +73,6 @@
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
-// simpler ARRAY_SIZE which can handle zero elements
-#define ARRAY_SIZE_SIMPLE(_arr) (sizeof(_arr)/sizeof(_arr[0]))
-
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
  * be used for its internal variable.
