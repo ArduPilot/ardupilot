@@ -283,7 +283,7 @@ bool stm32_flash_erasepage(uint32_t page)
     stm32_flash_wait_idle();
 
 #if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
-    dmaBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
+    cacheBufferInvalidate(stm32_flash_getpageaddr(page), stm32_flash_getpagesize(page));
 #endif
         
     stm32_flash_lock();
