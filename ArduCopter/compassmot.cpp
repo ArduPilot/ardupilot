@@ -82,9 +82,6 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     // disable cpu failsafe
     failsafe_disable();
 
-    // initialise compass
-    init_compass();
-
     // default compensation type to use current if possible
     if (battery.has_current()) {
         comp_type = AP_COMPASS_MOT_COMP_CURRENT;
@@ -118,10 +115,6 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     }
 
     // get initial compass readings
-    last_run_time = millis();
-    while ( millis() - last_run_time < 500 ) {
-        compass.accumulate();
-    }
     compass.read();
 
     // store initial x,y,z compass values
@@ -141,7 +134,7 @@ MAV_RESULT Copter::mavlink_compassmot(mavlink_channel_t chan)
     last_send_time = millis();
 
     // main run while there is no user input and the compass is healthy
-    while (command_ack_start == command_ack_counter && compass.healthy(compass.get_primary()) && motors->armed()) {
+    while (command_ack_start == command_ack_counter && compass.healthy() && motors->armed()) {
         // 50hz loop
         if (millis() - last_run_time < 20) {
             // grab some compass values
