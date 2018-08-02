@@ -942,7 +942,6 @@ private:
     void update_compass(void);
     void update_alt(void);
     void afs_fs_check(void);
-    void compass_accumulate(void);
     void compass_cal_update();
     void update_optical_flow(void);
     void one_second_loop(void);
