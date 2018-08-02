@@ -213,7 +213,6 @@ private:
     void read_radio();
     void update_ahrs();
     void update_compass(void);
-    void compass_accumulate(void);
     void accel_cal_update(void);
     void update_GPS(void);
     void init_servos();

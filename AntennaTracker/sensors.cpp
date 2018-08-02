@@ -23,16 +23,6 @@ void Tracker::update_compass(void)
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
- */
-void Tracker::compass_accumulate(void)
-{
-    if (g.compass_enabled) {
-        compass.accumulate();
-    }    
-}
-
-/*
  calibrate compass
 */
 void Tracker::compass_cal_update() {
