@@ -534,6 +534,57 @@ class AutoTestRover(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_rc_overrides(self):
+        self.context_push();
+        ex = None
+        try:
+            self.mavproxy.send('switch 6\n')  # Manual mode
+            self.wait_mode('MANUAL')
+            self.wait_ready_to_arm()
+            self.mavproxy.send('rc 3 1500\n')  # throttle at zero
+            self.arm_vehicle()
+            # start moving forward a little:
+            normal_rc_throttle = 1700
+            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.wait_groundspeed(5, 100)
+            # now override to go backwards:
+            throttle_override = 1400
+            while True:
+                print("Sending throttle of %u" % (throttle_override,))
+                self.mav.mav.rc_channels_override_send(
+                    1, # target system
+                    1, # targe component
+                    65535, # chan1_raw
+                    65535, # chan2_raw
+                    throttle_override, # chan3_raw
+                    65535, # chan4_raw
+                    65535, # chan5_raw
+                    65535, # chan6_raw
+                    65535, # chan7_raw
+                    65535) # chan8_raw
+
+
+                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+                print("%s" % m)
+                if m.chan3_raw == throttle_override:
+                    break
+            # check we revert to normal RC inputs when gcs overrides cease:
+            self.progress("Waiting for RC to revert to normal RC input")
+            while True:
+                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+                print("%s" % m)
+                if m.chan3_raw == normal_rc_throttle:
+                    break
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         if not self.hasInit:
@@ -552,9 +603,9 @@ class AutoTestRover(AutoTest):
             self.mav.wait_gps_fix()
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
+
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
-            self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
             self.arm_vehicle()
 
@@ -590,6 +641,10 @@ class AutoTestRover(AutoTest):
 
             self.run_test("Test ServoRelayEvents",
                           self.test_servorelayevents)
+
+            self.disarm_vehicle()
+
+            self.run_test("Test RC overrides", self.test_rc_overrides)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
