@@ -66,7 +66,7 @@
  * @brief   Time intervals data size.
  * @note    Allowed values are 16, 32 or 64 bits.
  */
-#define CH_CFG_INTERVALS_SIZE               64
+#define CH_CFG_INTERVALS_SIZE               32
 
 /**
  * @brief   Time types data size.
@@ -159,7 +159,9 @@
  * @note    This is not related to the compiler optimization options.
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_OPTIMIZE_SPEED
 #define CH_CFG_OPTIMIZE_SPEED               TRUE
+#endif
 
 /** @} */
 
