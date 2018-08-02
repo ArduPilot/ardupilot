@@ -686,7 +686,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
     uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
-    chVTSet(&tx_timeout, US2ST(timeout_us), handle_tx_timeout, this);
+    chVTSet(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
 }
 
 /*

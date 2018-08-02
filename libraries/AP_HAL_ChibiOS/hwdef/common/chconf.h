@@ -31,13 +31,20 @@
 #include "hwdef.h"
 
 #define _CHIBIOS_RT_CONF_
-#define _CHIBIOS_RT_CONF_VER_5_0_
+#define _CHIBIOS_RT_CONF_VER_5_1_
 /*===========================================================================*/
 /**
  * @name System timers settings
  * @{
  */
 /*===========================================================================*/
+
+#ifdef HAL_CHIBIOS_ENABLE_ASSERTS
+#define CH_DBG_ENABLE_ASSERTS TRUE
+#define CH_DBG_ENABLE_CHECKS TRUE
+#define CH_DBG_SYSTEM_STATE_CHECK TRUE
+#define CH_DBG_ENABLE_STACK_CHECK TRUE
+#endif
 
 /**
  * @brief   System time counter resolution.
@@ -359,7 +366,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_OBJ_FIFOS
 #define CH_CFG_USE_OBJ_FIFOS                TRUE
+#endif
 
 /**
  * @brief   Dynamic Threads APIs.
@@ -390,7 +399,9 @@
  *
  * @note    The default is @p FALSE.
  */
+#ifndef CH_CFG_USE_FACTORY
 #define CH_CFG_USE_FACTORY                  TRUE
+#endif
 
 /**
  * @brief   Maximum length for object names.
