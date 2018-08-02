@@ -1052,7 +1052,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if(msg->sysid != copter.g.sysid_my_gcs) {
             break; // Only accept control from our gcs
         }
-        if (!copter.ap.rc_override_enable) {
+        if (!rc().gcs_overrides_enabled()) {
             if (copter.failsafe.rc_override_active) {  // if overrides were active previously, disable them
                 copter.failsafe.rc_override_active = false;
                 RC_Channels::clear_overrides();
