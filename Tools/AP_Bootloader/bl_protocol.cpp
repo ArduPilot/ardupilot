@@ -130,7 +130,7 @@ volatile unsigned timer[NTIMERS];
  */
 static void sys_tick_handler(void *ctx)
 {
-    chVTSetI(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
@@ -145,7 +145,7 @@ static void sys_tick_handler(void *ctx)
 
 static void delay(unsigned msec)
 {
-    chThdSleep(MS2ST(msec));
+    chThdSleep(chTimeMS2I(msec));
 }
 
 static void
@@ -222,8 +222,8 @@ jump_to_app()
     led_set(LED_OFF);
 
     // resetting the clocks is needed for loading NuttX
-    rccDisableAPB1(~0, 0);
-    rccDisableAPB2(~0, 0);
+    rccDisableAPB1(~0);
+    rccDisableAPB2(~0);
 #if HAL_USE_SERIAL_USB == TRUE    
     rccResetOTG_FS();
     rccResetOTG_HS();
@@ -332,7 +332,7 @@ bootloader(unsigned timeout)
     bool done_get_device = false;
 
     chVTObjectInit(&systick_vt);
-    chVTSet(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
 
     /* if we are working with a timeout, start it running */
     if (timeout) {
