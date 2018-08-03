@@ -27,6 +27,7 @@
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
+#include "SIM_Precland.h"
 
 namespace SITL {
 
@@ -109,10 +110,14 @@ public:
         attitude.from_rotation_matrix(dcm);
     }
 
+    const Location &get_home() const { return home; }
+    float get_home_yaw() const { return home_yaw; }
+
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
+    void set_precland(SIM_Precland *_precland);
 
 protected:
     SITL *sitl;
@@ -261,6 +266,7 @@ private:
     Gripper_Servo *gripper;
     Gripper_EPM *gripper_epm;
     Parachute *parachute;
+    SIM_Precland *precland;
 };
 
 } // namespace SITL
