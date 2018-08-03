@@ -77,7 +77,7 @@ public:
     void       set_control_in(int16_t val) { control_in = val;}
 
     void       clear_override();
-    void       set_override(const uint16_t v, const uint32_t timestamp_us=0);
+    void       set_override(const uint16_t v, const uint32_t timestamp_us);
     bool       has_override() const;
 
     // get control input with zero deadzone
@@ -324,6 +324,9 @@ public:
     bool gcs_overrides_enabled() const { return _gcs_overrides_enabled; }
     void set_gcs_overrides_enabled(bool enable) {
         _gcs_overrides_enabled = enable;
+        if (!_gcs_overrides_enabled) {
+            clear_overrides();
+        }
     }
 
 private:
