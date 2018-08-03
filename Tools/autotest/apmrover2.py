@@ -108,53 +108,7 @@ class AutoTestRover(AutoTest):
     #     self.mav.wait_heartbeat()
     #     self.arm_vehicle()
     #
-    # # TEST ARM RADIO
-    # def test_arm_motors_radio(self):
-    #     """Test Arming motors with radio."""
-    #     self.progress("Test arming motors with radio")
-    #     self.mavproxy.send('switch 6\n')  # stabilize/manual mode
-    #     self.wait_mode('MANUAL')
-    #     self.mavproxy.send('rc 3 1500\n')  # throttle at zero
-    #     self.mavproxy.send('rc 1 2000\n')  # steer full right
-    #     self.mavproxy.expect('APM: Throttle armed')
-    #     self.mavproxy.send('rc 1 1500\n')
-    #
-    #     self.mav.motors_armed_wait()
-    #     self.progress("MOTORS ARMED OK")
-    #     return True
-    #
-    # # TEST DISARM RADIO
-    # def test_disarm_motors_radio(self):
-    #     """Test Disarm motors with radio."""
-    #     self.progress("Test disarming motors with radio")
-    #     self.mavproxy.send('switch 6\n')  # stabilize/manual mode
-    #     self.wait_mode('MANUAL')
-    #     self.mavproxy.send('rc 3 1500\n')  # throttle at zero
-    #     self.mavproxy.send('rc 1 1000\n')  # steer full right
-    #     tstart = self.get_sim_time()
-    #     self.mav.wait_heartbeat()
-    #     timeout = 15
-    #     while self.get_sim_time() < tstart + timeout:
-    #         self.mav.wait_heartbeat()
-    #         if not self.mav.motors_armed():
-    #             disarm_delay = self.get_sim_time() - tstart
-    #             self.progress("MOTORS DISARMED OK WITH RADIO")
-    #             self.mavproxy.send('rc 1 1500\n')  # steer full right
-    #             self.mavproxy.send('rc 4 1500\n')  # yaw full right
-    #             self.progress("Disarm in %ss" % disarm_delay)
-    #             return True
-    #     self.progress("FAILED TO DISARM WITH RADIO")
-    #     return False
-    #
-    # # TEST AUTO DISARM
-    # def test_autodisarm_motors(self):
-    #     """Test Autodisarm motors."""
-    #     self.progress("Test Autodisarming motors")
-    #     self.mavproxy.send('switch 6\n')  # stabilize/manual mode
-    #     #  NOT IMPLEMENTED ON ROVER
-    #     self.progress("MOTORS AUTODISARMED OK")
-    #     return True
-    #
+
     # # TEST RC OVERRIDE
     # # TEST RC OVERRIDE TIMEOUT
     # def test_rtl(self, home, distance_min=5, timeout=250):
@@ -598,6 +552,7 @@ class AutoTestRover(AutoTest):
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
             self.arm_vehicle()
 
             self.run_test("Set modes via mavproxy switch",

@@ -152,6 +152,7 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting reading for arm")
             self.wait_seconds(30)
 
+            self.run_test("Arm features", self.test_arm_feature)
             self.arm_vehicle()
 
             m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
