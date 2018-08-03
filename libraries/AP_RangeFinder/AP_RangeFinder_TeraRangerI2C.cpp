@@ -76,6 +76,7 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
     uint8_t whoami;
     if (!dev->read_registers(TR_WHOAMI, &whoami, 1) ||
         whoami != TR_WHOAMI_VALUE) {
+        dev->get_semaphore()->give();
         return false;
     }
 
