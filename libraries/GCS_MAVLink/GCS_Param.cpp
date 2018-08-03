@@ -213,18 +213,6 @@ void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(msg, &packet);
 
-    /*
-      we reserve some space for sending parameters if the client ever
-      fails to get a parameter due to lack of space
-     */
-    uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
-    reserve_param_space_start_ms = 0;
-    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
-        reserve_param_space_start_ms = AP_HAL::millis();
-        return;
-    }
-    reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
-
     struct pending_param_request req;
     req.chan = chan;
     req.param_index = packet.param_index;
