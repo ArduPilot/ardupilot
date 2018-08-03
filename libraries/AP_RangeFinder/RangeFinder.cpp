@@ -51,7 +51,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 1_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[0], "1_",  26, RangeFinder, backend_var_info[0]),
+    AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Group: 2_
@@ -60,7 +60,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 2_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[1], "2_",  28, RangeFinder, backend_var_info[1]),
+    AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -70,7 +70,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 3_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[2], "3_",  30, RangeFinder, backend_var_info[2]),
+    AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -80,7 +80,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 
     // @Group: 4_
     // @Path: AP_RangeFinder_Wasp.cpp
-    AP_SUBGROUPVARPTR(drivers[0], "4_",  32, RangeFinder, backend_var_info[3]),
+    AP_SUBGROUPVARPTR(drivers[0], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 4
