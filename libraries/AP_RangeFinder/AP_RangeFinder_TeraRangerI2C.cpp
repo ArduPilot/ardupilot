@@ -131,7 +131,7 @@ bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
 }
 
 // Checks for error code and if correct converts to cm
-bool AP_RangeFinder_TeraRangerI2C::check_measure(uint16_t raw_distance, uint16_t &output_distance_cm)
+bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, uint16_t &output_distance_cm)
 {
   // Check for error codes
   if (raw_distance == 0xFFFF) {
@@ -160,7 +160,7 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
     uint16_t _distance_cm = 0;
 
     if (collect_raw(_raw_distance) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if(check_measure(_raw_distance, _distance_cm)){
+        if(process_raw_measure(_raw_distance, _distance_cm)){
             accum.sum += _distance_cm;
             accum.count++;
         }
