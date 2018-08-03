@@ -125,8 +125,8 @@ bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
     if (d[2] != crc_crc8(d, 2)) {
         return false;
     } else {
-         raw_distance = ((uint16_t(d[0]) << 8) | d[1]);
-         return true;
+        raw_distance = ((uint16_t(d[0]) << 8) | d[1]);
+        return true;
     }
 }
 
@@ -135,11 +135,12 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
 {
   // Check for error codes
   if (raw_distance == 0xFFFF) {
-      // Too far away
+      // Too far away is unreliable so we dont enforce max range here
       return false;
   } else if (raw_distance == 0x0000) {
       // Too close
-      return false;
+      output_distance_cm =  state.min_distance_cm;
+      return true;
   } else if (raw_distance == 0x0001) {
       // Unable to measure
       return false;
