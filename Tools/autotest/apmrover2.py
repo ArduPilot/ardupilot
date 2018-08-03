@@ -600,6 +600,9 @@ class AutoTestRover(AutoTest):
         self.context_push();
         ex = None
         try:
+            self.set_parameter("RC12_OPTION", 46)
+            self.reboot_sitl()
+
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.wait_ready_to_arm()
@@ -609,8 +612,12 @@ class AutoTestRover(AutoTest):
             normal_rc_throttle = 1700
             self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
             self.wait_groundspeed(5, 100)
-            # now override to go backwards:
-            throttle_override = 1400
+
+            # allow overrides:
+            self.set_rc(12, 2000)
+
+            # now override to stop:
+            throttle_override = 1500
             while True:
                 print("Sending throttle of %u" % (throttle_override,))
                 self.mav.mav.rc_channels_override_send(
@@ -625,11 +632,42 @@ class AutoTestRover(AutoTest):
                     65535, # chan7_raw
                     65535) # chan8_raw
 
-
-                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
-                print("%s" % m)
-                if m.chan3_raw == throttle_override:
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                want_speed = 2.0
+                print("Speed=%f want=<%f" % (m.groundspeed, want_speed))
+                if m.groundspeed < want_speed:
                     break
+
+            # now override to stop - but set the switch on the RC
+            # transmitter to deny overrides; this should send the
+            # speed back up to 5 metres/second:
+            self.set_rc(12, 1000)
+
+            throttle_override = 1500
+            while True:
+                print("Sending throttle of %u" % (throttle_override,))
+                self.mav.mav.rc_channels_override_send(
+                    1, # target system
+                    1, # targe component
+                    65535, # chan1_raw
+                    65535, # chan2_raw
+                    throttle_override, # chan3_raw
+                    65535, # chan4_raw
+                    65535, # chan5_raw
+                    65535, # chan6_raw
+                    65535, # chan7_raw
+                    65535) # chan8_raw
+
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                want_speed = 5.0
+                print("Speed=%f want=>%f" % (m.groundspeed, want_speed))
+
+                if m.groundspeed > want_speed:
+                    break
+
+            # re-enable RC overrides
+            self.set_rc(12, 2000)
+
             # check we revert to normal RC inputs when gcs overrides cease:
             self.progress("Waiting for RC to revert to normal RC input")
             while True:
@@ -643,6 +681,7 @@ class AutoTestRover(AutoTest):
             ex = e
 
         self.context_pop();
+        self.reboot_sitl()
 
         if ex is not None:
             raise ex
