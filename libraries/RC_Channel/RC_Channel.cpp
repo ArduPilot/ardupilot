@@ -336,9 +336,12 @@ void RC_Channel::clear_override()
 
 bool RC_Channel::has_override() const
 {
+    if (override_value <= 0) {
+        return false;
+    }
     int32_t override_timeout = (int32_t)(*RC_Channels::override_timeout);
-    return (override_value > 0) && ((override_timeout < 0) ||
-                                    ((AP_HAL::millis() - last_override_time) < (uint32_t)(override_timeout * 1000)));
+    return ((override_timeout < 0) ||
+            ((AP_HAL::millis() - last_override_time) < (uint32_t)(override_timeout * 1000)));
 }
 
 //
