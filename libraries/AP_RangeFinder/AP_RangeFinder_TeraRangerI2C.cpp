@@ -110,11 +110,10 @@ bool AP_RangeFinder_TeraRangerI2C::measure()
     return dev->transfer(&cmd, 1, nullptr, 0);
 }
 
-// collect - return last value measured by sensor
+// collect_raw() - return last value measured by sensor
 bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
 {
     uint8_t d[3];
-    uint16_t distance = 0;
 
     // Take range reading
     if (!dev->transfer(nullptr, 0, d, sizeof(d))) {
@@ -135,11 +134,11 @@ bool AP_RangeFinder_TeraRangerI2C::check_measure(uint16_t raw_distance, uint16_t
 {
   // Check for error codes
   if (raw_distance == 0xFFFF) {
-      // too far away
+      // Too far away
       return false;
   }
   if (raw_distance == 0x0000) {
-      // too close
+      // Too close
       return false;
   }
   if (raw_distance == 0x0001) {
