@@ -25,7 +25,6 @@ public:
     enum LandingGearCommand {
         LandingGear_Retract,
         LandingGear_Deploy,
-        LandingGear_Deploy_And_Keep_Deployed,
     };
 
     // Gear command modes
@@ -54,7 +53,6 @@ private:
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
-    bool        _deploy_lock;           // used to force landing gear to remain deployed until another regular Deploy command is received to reduce accidental retraction
     
     /// retract - retract landing gear
     void retract();
