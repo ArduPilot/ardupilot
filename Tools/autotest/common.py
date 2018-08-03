@@ -861,6 +861,19 @@ class AutoTest(ABC):
         self.progress("Failed to get EKF.flags=%u" % required_value)
         raise AutoTestTimeoutException()
 
+    def get_mavlink_connection_going(self):
+        # get a mavlink connection going
+        connection_string = '127.0.0.1:19550'
+        try:
+            self.mav = mavutil.mavlink_connection(connection_string,
+                                                  robust_parsing=True)
+        except Exception as msg:
+            self.progress("Failed to start mavlink connection on %s: %s" %
+                          (connection_string, msg,))
+            raise
+        self.mav.message_hooks.append(self.message_hook)
+        self.mav.idle_hooks.append(self.idle_hook)
+
     def run_test(self, desc, function, interact=False):
         self.progress("#")
         self.progress("########## %s ##########" % (desc))

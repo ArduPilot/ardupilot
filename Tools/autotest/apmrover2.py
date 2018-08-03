@@ -89,17 +89,8 @@ class AutoTestRover(AutoTest):
 
         self.progress("Started simulator")
 
-        # get a mavlink connection going
-        connection_string = '127.0.0.1:19550'
-        try:
-            self.mav = mavutil.mavlink_connection(connection_string,
-                                                  robust_parsing=True)
-        except Exception as msg:
-            self.progress("Failed to start mavlink connection on %s" %
-                          connection_string)
-            raise
-        self.mav.message_hooks.append(self.message_hook)
-        self.mav.idle_hooks.append(self.idle_hook)
+        self.get_mavlink_connection_going()
+
         self.hasInit = True
 
         self.apply_defaultfile_parameters()
