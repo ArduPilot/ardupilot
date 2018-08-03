@@ -25,6 +25,8 @@ public:
         return &obj_channels[chan];
     }
 
+    bool has_valid_input() const override;
+
 protected:
 
     // note that these callbacks are not presently used on Plane:
