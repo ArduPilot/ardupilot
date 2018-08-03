@@ -529,6 +529,24 @@ class AutoTestPlane(AutoTest):
         if ex:
             raise ex
 
+    def test_rc_relay(self):
+        '''test toggling channel 12 toggles relay'''
+        off = self.get_parameter("SIM_PIN_MASK")
+        if off:
+            raise PreconditionFailedException()
+        self.set_rc(12, 2000)
+        self.mav.wait_heartbeat()
+        self.mav.wait_heartbeat()
+        on = self.get_parameter("SIM_PIN_MASK")
+        if not on:
+            raise NotAchievedException()
+        self.set_rc(12, 1000)
+        self.mav.wait_heartbeat()
+        self.mav.wait_heartbeat()
+        off = self.get_parameter("SIM_PIN_MASK")
+        if off:
+            raise NotAchievedException()
+
     def autotest(self):
         """Autotest ArduPlane in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -544,6 +562,13 @@ class AutoTestPlane(AutoTest):
             self.set_rc_default()
             self.set_rc(3, 1000)
             self.set_rc(8, 1800)
+
+            self.set_parameter("RC12_OPTION", 28)
+            self.reboot_sitl() # needed for RC12_OPTION to take effect
+
+            self.run_test("Test Relay RC Channel Option",
+                          self.test_rc_relay)
+
             self.progress("Waiting for GPS fix")
             self.mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
             self.mav.wait_gps_fix()
