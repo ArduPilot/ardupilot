@@ -8,6 +8,7 @@
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
+#include "SIM_Precland.h"
 
 class AP_Logger;
 
@@ -249,6 +250,7 @@ public:
     Gripper_EPM gripper_epm_sim;
 
     Parachute parachute_sim;
+    SIM_Precland precland_sim;
 };
 
 } // namespace SITL
