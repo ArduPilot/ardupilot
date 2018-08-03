@@ -12,6 +12,7 @@ from pysim import util
 
 from common import AutoTest
 from common import NotAchievedException
+from common import PreconditionFailedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -547,6 +548,22 @@ class AutoTestPlane(AutoTest):
         if off:
             raise NotAchievedException()
 
+    def test_rc_option_camera_trigger(self):
+        '''test toggling channel 12 takes picture'''
+        x = self.mav.messages.get("CAMERA_FEEDBACK", None)
+        if x is not None:
+            raise PreconditionFailedException()
+        self.set_rc(12, 2000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 1:
+            x = self.mav.messages.get("CAMERA_FEEDBACK", None)
+            if x is not None:
+                break
+            self.mav.wait_heartbeat()
+        self.set_rc(12, 1000)
+        if x is None:
+            raise NotAchievedException()
+
     def autotest(self):
         """Autotest ArduPlane in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -562,6 +579,12 @@ class AutoTestPlane(AutoTest):
             self.set_rc_default()
             self.set_rc(3, 1000)
             self.set_rc(8, 1800)
+
+            self.set_parameter("RC12_OPTION", 9)
+            self.reboot_sitl() # needed for RC12_OPTION to take effect
+
+            self.run_test("Test RC Option - Camera Trigger",
+                          self.test_rc_option_camera_trigger)
 
             self.set_parameter("RC12_OPTION", 28)
             self.reboot_sitl() # needed for RC12_OPTION to take effect
