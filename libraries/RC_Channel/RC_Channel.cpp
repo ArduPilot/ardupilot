@@ -327,6 +327,12 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
     if (!rc().gcs_overrides_enabled()) {
         return;
     }
+    // this UINT16_MAX stuff should really, really be in the
+    // mavlink packet handling code.  It can be moved once that
+    // code is in the GCS_MAVLink class!
+    if (v == UINT16_MAX) {
+        return;
+    }
     last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
     override_value = v;
     RC_Channels::has_new_overrides = true;
