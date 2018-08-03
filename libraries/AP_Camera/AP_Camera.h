@@ -38,6 +38,7 @@ public:
     {
         AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
+        _singleton = this;
     }
 
     /* Do not allow copies */
