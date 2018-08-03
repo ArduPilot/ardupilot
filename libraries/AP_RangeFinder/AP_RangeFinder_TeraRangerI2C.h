@@ -27,7 +27,7 @@ private:
 
     bool measure(void);
     bool collect_raw(uint16_t &raw_distance);
-    bool check_measure(uint16_t raw_distance, uint16_t &distance_cm);
+    bool process_raw_measure(uint16_t raw_distance, uint16_t &distance_cm);
 
     bool init(void);
     void timer(void);
