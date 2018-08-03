@@ -568,6 +568,9 @@ class AutoTestPlane(AutoTest):
                 self.mav.wait_gps_fix()
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
+            self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
+            self.arm_vehicle()
 
             self.run_test("Flaps", self.fly_flaps)
 

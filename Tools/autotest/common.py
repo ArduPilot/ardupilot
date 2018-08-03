@@ -397,6 +397,13 @@ class AutoTest(ABC):
         self.progress("Failed to send RC commands to channel %s" % str(chan))
         raise SetRCTimeout()
 
+    def set_throttle_zero(self):
+        """Set throttle to zero."""
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:
+            self.set_rc(3, 1500)
+        else:
+            self.set_rc(3, 1000)
+
     def armed(self):
         '''Return true if vehicle is armed and safetyoff'''
         return self.mav.motors_armed()
@@ -414,6 +421,63 @@ class AutoTest(ABC):
         self.mav.motors_disarmed_wait()
         self.progress("DISARMED")
         return True
+
+    def arm_motors_with_rc_input(self):
+        """Arm motors with radio."""
+        self.progress("Arm motors with radio")
+        self.set_throttle_zero()
+        self.mavproxy.send('rc 1 2000\n')
+        tstart = self.get_sim_time()
+        timeout = 15
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                arm_delay = self.get_sim_time() - tstart
+                self.progress("MOTORS ARMED OK WITH RADIO")
+                self.mavproxy.send('rc 1 1500\n')
+                self.progress("Arm in %ss" % arm_delay)  # TODO check arming time
+                return True
+        self.progress("FAILED TO ARM WITH RADIO")
+        self.mavproxy.send('rc 1 1500\n')
+        return False
+
+    def disarm_motors_with_rc_input(self):
+        """Disarm motors with radio."""
+        self.progress("Disarm motors with radio")
+        self.set_throttle_zero()
+        self.mavproxy.send('rc 1 1000\n')
+        tstart = self.get_sim_time()
+        timeout = 15
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                disarm_delay = self.get_sim_time() - tstart
+                self.progress("MOTORS DISARMED OK WITH RADIO")
+                self.mavproxy.send('rc 1 1500\n')
+                self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
+                return True
+        self.progress("FAILED TO DISARM WITH RADIO")
+        self.mavproxy.send('rc 1 1500\n')
+        return False
+
+    def autodisarm_motors(self):
+        """Autodisarm motors."""
+        self.progress("Autodisarming motors")
+        self.set_throttle_zero()
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:  # NOT IMPLEMENTED ON ROVER
+            self.progress("MOTORS AUTODISARMED OK")
+            return True
+        tstart = self.get_sim_time()
+        timeout = 15
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                disarm_delay = self.get_sim_time() - tstart
+                self.progress("MOTORS AUTODISARMED")
+                self.progress("Autodisarm in %ss" % disarm_delay)  # TODO check disarming time
+                return True
+        self.progress("FAILED TO AUTODISARM")
+        return False
 
     def set_parameter(self, name, value, add_to_context=True):
         old_value = self.get_parameter(name)
@@ -907,26 +971,23 @@ class AutoTest(ABC):
         """Initilialize autotest feature."""
         pass
 
-    # def test_common_feature(self):
-    #     """Common feature to test."""
-    #     sucess = True
-    #     # TEST ARMING/DISARM
-    #     if not self.arm_vehicle():
-    #         self.progress("Failed to ARM")
-    #         sucess = False
-    #     if not self.disarm_vehicle():
-    #         self.progress("Failed to DISARM")
-    #         sucess = False
-    #     if not self.test_arm_motors_radio():
-    #         self.progress("Failed to ARM with radio")
-    #         sucess = False
-    #     if not self.test_disarm_motors_radio():
-    #         self.progress("Failed to ARM with radio")
-    #         sucess = False
-    #     if not self.test_autodisarm_motors():
-    #         self.progress("Failed to AUTO DISARM")
-    #         sucess = False
-    #     # TODO: Test failure on arm (with arming check)
+    def test_arm_feature(self):
+        """Common feature to test."""
+        # TEST ARMING/DISARM
+        if not self.arm_vehicle():
+            self.progress("Failed to ARM")
+            raise NotAchievedException()
+        if not self.disarm_vehicle():
+            self.progress("Failed to DISARM")
+            raise NotAchievedException()
+        if not self.arm_motors_with_rc_input():
+            raise NotAchievedException()
+        if not self.disarm_motors_with_rc_input():
+            raise NotAchievedException()
+        if not self.autodisarm_motors():
+            raise NotAchievedException()
+        # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
+
     #     # TEST MISSION FILE
     #     # TODO : rework that to work on autotest server
     #     # self.progress("TEST LOADING MISSION")

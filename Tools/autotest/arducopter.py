@@ -1662,7 +1662,8 @@ class AutoTestCopter(AutoTest):
             self.wait_mode('STABILIZE')
 
             # Arm
-            self.run_test("Arm motors", self.arm_vehicle)
+            self.run_test("Arm features", self.test_arm_feature)
+            self.arm_vehicle()
 
             # Takeoff
             self.run_test("Takeoff to test fly Square",
