@@ -92,7 +92,7 @@ void Copter::failsafe_gcs_check()
 
     // return immediately if gcs failsafe is disabled, gcs has never been connected or we are not overriding rc controls from the gcs and we are not in guided mode
     // this also checks to see if we have a GCS failsafe active, if we do, then must continue to process the logic for recovery from this state.
-    if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!failsafe.rc_override_active && control_mode != GUIDED))) {
+    if ((!failsafe.gcs)&&(g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0 || (!RC_Channels::has_active_overrides() && control_mode != GUIDED))) {
         return;
     }
 
@@ -122,7 +122,6 @@ void Copter::failsafe_gcs_check()
 
     // clear overrides so that RC control can be regained with radio.
     RC_Channels::clear_overrides();
-    failsafe.rc_override_active = false;
 
     if (should_disarm_on_failsafe()) {
         init_disarm_motors();

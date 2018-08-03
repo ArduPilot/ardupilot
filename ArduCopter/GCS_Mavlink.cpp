@@ -1052,13 +1052,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         if(msg->sysid != copter.g.sysid_my_gcs) {
             break; // Only accept control from our gcs
         }
-        if (!rc().gcs_overrides_enabled()) {
-            if (copter.failsafe.rc_override_active) {  // if overrides were active previously, disable them
-                copter.failsafe.rc_override_active = false;
-                RC_Channels::clear_overrides();
-            }
-            break;
-        }
+
         uint32_t tnow = AP_HAL::millis();
 
         mavlink_rc_channels_override_t packet;
@@ -1072,9 +1066,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(5, packet.chan6_raw, tnow);
         RC_Channels::set_override(6, packet.chan7_raw, tnow);
         RC_Channels::set_override(7, packet.chan8_raw, tnow);
-
-        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = RC_Channels::has_active_overrides();
 
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = tnow;
@@ -1109,9 +1100,6 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(uint8_t(copter.rcmap.pitch() - 1), pitch, tnow);
         RC_Channels::set_override(uint8_t(copter.rcmap.throttle() - 1), throttle, tnow);
         RC_Channels::set_override(uint8_t(copter.rcmap.yaw() - 1), yaw, tnow);
-
-        // record that rc are overwritten so we can trigger a failsafe if we lose contact with groundstation
-        copter.failsafe.rc_override_active = RC_Channels::has_active_overrides();
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = tnow;

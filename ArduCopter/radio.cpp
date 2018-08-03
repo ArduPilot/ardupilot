@@ -90,7 +90,7 @@ void Copter::enable_motor_output()
 
 void Copter::read_radio()
 {
-    uint32_t tnow_ms = millis();
+    const uint32_t tnow_ms = millis();
 
     if (rc().read_input()) {
         ap.new_radio_frame = true;
@@ -98,9 +98,10 @@ void Copter::read_radio()
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
-        // flag we must have an rc receiver attached
-        if (!failsafe.rc_override_active) {
-            ap.rc_receiver_present = true;
+        if (!ap.rc_receiver_present) {
+            // RC receiver must be attached if we've just go input and
+            // there are no overrides
+            ap.rc_receiver_present = !RC_Channels::has_active_overrides();
         }
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
@@ -112,7 +113,8 @@ void Copter::read_radio()
     }else{
         uint32_t elapsed = tnow_ms - last_radio_update_ms;
         // turn on throttle failsafe if no update from the RC Radio for 500ms or 2000ms if we are using RC_OVERRIDE
-        if (((!failsafe.rc_override_active && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (failsafe.rc_override_active && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
+        const bool has_active_overrides = RC_Channels::has_active_overrides();
+        if (((!has_active_overrides && (elapsed >= FS_RADIO_TIMEOUT_MS)) || (has_active_overrides && (elapsed >= FS_RADIO_RC_OVERRIDE_TIMEOUT_MS))) &&
             (g.failsafe_throttle && (ap.rc_receiver_present||motors->armed()) && !failsafe.radio)) {
             Log_Write_Error(ERROR_SUBSYSTEM_RADIO, ERROR_CODE_RADIO_LATE_FRAME);
             set_failsafe_radio(true);
