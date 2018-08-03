@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "AC_PrecLand.h"
 #include "AC_PrecLand_Backend.h"
 #include "AC_PrecLand_Companion.h"
