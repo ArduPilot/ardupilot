@@ -183,11 +183,13 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz(const uint32_t now)
+void DataFlash_File::periodic_1Hz()
 {
     if (!io_thread_alive()) {
-        if (io_thread_warning_decimation_counter == 0) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat (%s)", last_io_operation);
+        if (io_thread_warning_decimation_counter == 0 && _initialised) {
+            // we don't print this error unless we did initialise. When _initialised is set to true
+            // we register the IO timer callback
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "DataFlash: stuck thread (%s)", last_io_operation);
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;
@@ -204,7 +206,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
     df_stats_log();
 }
 
-void DataFlash_File::periodic_fullrate(const uint32_t now)
+void DataFlash_File::periodic_fullrate()
 {
     DataFlash_Backend::push_log_blocks();
 }
@@ -579,24 +581,6 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     semaphore->give();
     return true;
 }
-
-/*
-  read a packet. The header bytes have already been read.
-*/
-bool DataFlash_File::ReadBlock(void *pkt, uint16_t size)
-{
-    if (_read_fd == -1 || !_initialised || _open_error) {
-        return false;
-    }
-
-    memset(pkt, 0, size);
-    if (::read(_read_fd, pkt, size) != size) {
-        return false;
-    }
-    _read_offset += size;
-    return true;
-}
-
 
 /*
   find the highest log number

@@ -12,7 +12,6 @@ extern const AP_HAL::HAL& hal;
 
 AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _initialised(false),
     _gimbal(frontend._ahrs)
 {}
 

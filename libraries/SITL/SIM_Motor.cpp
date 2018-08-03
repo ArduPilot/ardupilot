@@ -22,7 +22,7 @@
 using namespace SITL;
 
 // calculate rotational accel and thrust for a motor
-void Motor::calculate_forces(const Aircraft::sitl_input &input,
+void Motor::calculate_forces(const struct sitl_input &input,
                              const float thrust_scale,
                              uint8_t motor_offset,
                              Vector3f &rot_accel,

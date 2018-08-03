@@ -156,8 +156,8 @@ private:
     struct dm_block *next_block();
 
     void periodic_10Hz(uint32_t now) override;
-    void periodic_1Hz(uint32_t now) override;
-    void periodic_fullrate(uint32_t now) override;
+    void periodic_1Hz() override;
+    void periodic_fullrate() override;
     
     void stats_init();
     void stats_reset();
@@ -172,9 +172,6 @@ private:
      * re-opens one */
     uint16_t start_new_log(void) override {
         return 0;
-    }
-    bool ReadBlock(void *pkt, uint16_t size) override {
-        return false;
     }
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_errors;

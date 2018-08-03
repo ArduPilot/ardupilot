@@ -34,7 +34,6 @@
 #include <AP_Baro/AP_Baro.h>        // ArduPilot barometer library
 #include <AP_Compass/AP_Compass.h>     // ArduPilot Mega Magnetometer Library
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_ADC/AP_ADC.h>         // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_InertialSensor/AP_InertialSensor.h> // Inertial Sensor Library
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
@@ -56,7 +55,6 @@
 #include <AP_Notify/AP_Notify.h>      // Notify library
 #include <AP_BattMonitor/AP_BattMonitor.h> // Battery monitor library
 #include <AP_Airspeed/AP_Airspeed.h>
-#include <RC_Channel/RC_Channel.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
@@ -67,6 +65,7 @@
 #include "config.h"
 #include "defines.h"
 
+#include "RC_Channel.h"
 #include "Parameters.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Tracker.h"
@@ -128,7 +127,7 @@ private:
     /**
        antenna control channels
     */
-    RC_Channels rc_channels;
+    RC_Channels_Tracker rc_channels;
     SRV_Channels servo_channels;
 
     LowPassFilterFloat yaw_servo_out_filt;

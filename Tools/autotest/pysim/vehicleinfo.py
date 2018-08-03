@@ -195,6 +195,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
             },
+            "balancebot": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-skid.parm",
+                                            "default_params/balancebot.parm"],
+            },
             "gazebo-rover": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",

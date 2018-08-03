@@ -26,6 +26,7 @@ class AutoTestQuadPlane(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestQuadPlane, self).__init__(**kwargs)
         self.binary = binary
@@ -34,6 +35,7 @@ class AutoTestQuadPlane(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -41,12 +43,9 @@ class AutoTestQuadPlane(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.log_name = "QuadPlane"
         self.logfile = None
-        self.buildlog = None
-        self.copy_tlog = False
 
         self.sitl = None
         self.hasInit = False
@@ -64,21 +63,15 @@ class AutoTestQuadPlane(AutoTest):
                                     defaults_file=defaults_file,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
+        )
         self.mavproxy = util.start_MAVProxy_SITL(
             'QuadPlane', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % logfile)
-
-        buildlog = self.buildlogs_path("QuadPlane-test.tlog")
-        self.progress("buildlog=%s" % buildlog)
-        if os.path.exists(buildlog):
-            os.unlink(buildlog)
-        try:
-            os.link(logfile, buildlog)
-        except Exception:
-            pass
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
 
         self.mavproxy.expect('Received [0-9]+ parameters')
 

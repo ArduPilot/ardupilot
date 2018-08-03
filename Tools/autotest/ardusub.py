@@ -25,6 +25,7 @@ class AutoTestSub(AutoTest):
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestSub, self).__init__(**kwargs)
         self.binary = binary
@@ -33,6 +34,7 @@ class AutoTestSub(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -40,7 +42,6 @@ class AutoTestSub(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.sitl = None
         self.hasInit = False
@@ -51,30 +52,23 @@ class AutoTestSub(AutoTest):
         if self.frame is None:
             self.frame = 'vectored'
 
-        self.apply_parameters_using_sitl()
-
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
                                     home=self.home,
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
+                                    wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'ArduSub', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % logfile)
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
 
-        buildlog = self.buildlogs_path("ArduSub-test.tlog")
-        self.progress("buildlog=%s" % buildlog)
-        if os.path.exists(buildlog):
-            os.unlink(buildlog)
-        try:
-            os.link(logfile, buildlog)
-        except Exception:
-            pass
-
+        self.progress("WAITING FOR PARAMETERS")
         self.mavproxy.expect('Received [0-9]+ parameters')
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
@@ -96,6 +90,9 @@ class AutoTestSub(AutoTest):
         self.mav.message_hooks.append(self.message_hook)
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
+
+        self.apply_defaultfile_parameters()
+
         self.progress("Ready to start testing!")
 
     def dive_manual(self):
@@ -157,7 +154,8 @@ class AutoTestSub(AutoTest):
             self.mav.wait_gps_fix()
 
             # wait for EKF and GPS checks to pass
-            self.mavproxy.expect('IMU0 is using GPS')
+            self.progress("Waiting for ready-to-arm")
+            self.wait_ready_to_arm()
 
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)

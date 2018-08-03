@@ -26,6 +26,11 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define TOSHIBA_LED_BRIGHT  0xFF    // full brightness
+#define TOSHIBA_LED_MEDIUM  0x80    // medium brightness
+#define TOSHIBA_LED_DIM     0x11    // dim
+#define TOSHIBA_LED_OFF     0x00    // off
+
 #define TOSHIBA_LED_I2C_ADDR 0x55    // default I2C bus address
 
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
@@ -34,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
 
 ToshibaLED_I2C::ToshibaLED_I2C(uint8_t bus)
-    : ToshibaLED()
+    : RGBLed(TOSHIBA_LED_OFF, TOSHIBA_LED_BRIGHT, TOSHIBA_LED_MEDIUM, TOSHIBA_LED_DIM)
     , _bus(bus)
 {
 }

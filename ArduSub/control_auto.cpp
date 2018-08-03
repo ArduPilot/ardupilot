@@ -572,7 +572,7 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
 
 // get_auto_heading - returns target heading depending upon auto_yaw_mode
 // 100hz update rate
-float Sub::get_auto_heading(void)
+float Sub::get_auto_heading()
 {
     switch (auto_yaw_mode) {
 

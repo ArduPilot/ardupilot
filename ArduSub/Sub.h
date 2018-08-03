@@ -54,7 +54,6 @@
 #include <AC_PID/AC_PID_2D.h>          // PID library (2-axis)
 #include <AC_AttitudeControl/AC_AttitudeControl_Sub.h> // Attitude control library
 #include <AC_AttitudeControl/AC_PosControl_Sub.h>      // Position control library
-#include <RC_Channel/RC_Channel.h>         // RC Channel Library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>             // Filter library
@@ -82,6 +81,7 @@
 #include "defines.h"
 #include "config.h"
 #include "GCS_Mavlink.h"
+#include "RC_Channel.h"         // RC Channel Library
 #include "Parameters.h"
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
@@ -130,6 +130,7 @@ public:
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Sub;
+    friend class RC_Channels_Sub;
 
     Sub(void);
 
@@ -333,7 +334,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Sub::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-    AP_Arming_Sub arming{ahrs, compass, battery};
+    AP_Arming_Sub arming;
 
     // Altitude
     // The cm/s we are moving up or down based on filtered data - Positive = UP
@@ -601,7 +602,7 @@ private:
     void update_surface_and_bottom_detector();
     void set_surfaced(bool at_surface);
     void set_bottomed(bool at_bottom);
-    bool init_arm_motors(bool arming_from_gcs);
+    bool init_arm_motors(AP_Arming::ArmingMethod method);
     void init_disarm_motors();
     void motors_output();
     Vector3f pv_location_to_vector(const Location& loc);
@@ -700,6 +701,12 @@ private:
     uint16_t get_pilot_speed_dn();
 
     void convert_old_parameters(void);
+    bool handle_do_motor_test(mavlink_command_long_t command);
+    bool init_motor_test();
+    bool verify_motor_test();
+
+    uint32_t last_do_motor_test_fail_ms = 0;
+    uint32_t last_do_motor_test_ms = 0;
 
     bool control_check_barometer();
 

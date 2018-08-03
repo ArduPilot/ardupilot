@@ -90,7 +90,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_optical_flow,  200,    160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_switches,     10,     50),
+    SCHED_TASK(read_aux_all,          10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
 #if TOY_MODE_ENABLED == ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50),
@@ -116,6 +116,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(Copter::ModeSmartRTL, &copter.mode_smartrtl,       save_position,    3, 100),
 #endif
     SCHED_TASK(three_hz_loop,          3,     75),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,     75),
     SCHED_TASK(compass_accumulate,   100,    100),
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,           accumulate,      50,  90),
 #if PRECISION_LANDING == ENABLED
@@ -191,6 +192,12 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100),
 #endif
 };
+
+void Copter::read_aux_all()
+{
+    copter.g2.rc_channels.read_aux_all();
+}
+
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
@@ -269,7 +276,7 @@ void Copter::rc_loop()
     // Read radio and 3-position switch on radio
     // -----------------------------------------
     read_radio();
-    read_control_switch();
+    rc().read_mode_switch();
 }
 
 // throttle_loop - should be run at 50 hz
@@ -308,7 +315,7 @@ void Copter::update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            DataFlash.Log_Write_Compass(compass);
+            DataFlash.Log_Write_Compass();
         }
     }
 }
@@ -406,8 +413,6 @@ void Copter::three_hz_loop()
     sprayer.update();
 #endif
 
-    update_events();
-
     // update ch6 in flight tuning
     tuning();
 }
@@ -438,8 +443,6 @@ void Copter::one_hz_loop()
 
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
-
-    check_usb_mux();
 
     // log terrain data
     terrain_logging();
@@ -563,7 +566,7 @@ void Copter::read_AHRS(void)
     ahrs.update(true);
 }
 
-// read baro and rangefinder altitude at 10hz
+// read baro and log control tuning
 void Copter::update_altitude()
 {
     // read in baro altitude

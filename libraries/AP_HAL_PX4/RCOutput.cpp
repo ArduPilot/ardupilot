@@ -287,6 +287,7 @@ void PX4RCOutput::force_safety_off(void)
 
 void PX4RCOutput::force_safety_pending_requests(void)
 {
+#if HAL_HAVE_SAFETY_SWITCH
     // check if there is a pending saftey_state change. If so (timer != 0) then set it.
     uint32_t now = AP_HAL::millis();
     if (_safety_state_request_last_ms != 0 &&
@@ -327,6 +328,7 @@ void PX4RCOutput::force_safety_pending_requests(void)
             }
         }
     }
+#endif
 }
 
 void PX4RCOutput::force_safety_no_wait(void)

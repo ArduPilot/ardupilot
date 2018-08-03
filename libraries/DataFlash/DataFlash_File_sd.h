@@ -46,8 +46,8 @@ public:
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
 
-    void periodic_1Hz(const uint32_t now) override;
-    void periodic_fullrate(const uint32_t now);
+    void periodic_1Hz() override;
+    void periodic_fullrate();
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const;
@@ -77,11 +77,6 @@ private:
 
     uint16_t _cached_oldest_log;
     uint16_t _last_oldest_log;
-
-    /*
-      read a block
-    */
-    bool ReadBlock(void *pkt, uint16_t size) override;
 
     uint16_t _log_num_from_list_entry(const uint16_t list_entry);
 

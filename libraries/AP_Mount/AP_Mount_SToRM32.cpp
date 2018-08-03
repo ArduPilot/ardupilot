@@ -6,11 +6,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _initialised(false),
-    _sysid(0),
-    _compid(0),
-    _chan(MAVLINK_COMM_0),
-    _last_send(0)
+    _chan(MAVLINK_COMM_0)
 {}
 
 // update mount position - should be called periodically

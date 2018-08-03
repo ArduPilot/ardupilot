@@ -28,6 +28,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
     AP_GROUPEND
 };
 
+#define QUAD_SERVO_MAX_ANGLE 4500
+
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 {
@@ -51,10 +53,8 @@ bool AP_MotorsHeli_Quad::init_outputs()
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        _servo[i] = SRV_Channels::get_channel_for(SRV_Channels::get_motor_function(i), CH_1+i);
-        if (!_servo[i]) {
-            return false;
-        }
+        add_motor_num(CH_1+i);
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), QUAD_SERVO_MAX_ANGLE);
     }
 
     // set rotor servo range
@@ -65,10 +65,10 @@ bool AP_MotorsHeli_Quad::init_outputs()
     return true;
 }
 
-// output_test - spin a motor at the pwm value specified
+// output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -270,7 +270,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
 
     // move the servos
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        rc_write(AP_MOTORS_MOT_1+i, calc_pwm_output_1to1(out[i], _servo[i]));
+        rc_write_angle(AP_MOTORS_MOT_1+i, out[i] * QUAD_SERVO_MAX_ANGLE);
     }
 }
 

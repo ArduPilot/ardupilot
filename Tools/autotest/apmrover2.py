@@ -32,10 +32,11 @@ class AutoTestRover(AutoTest):
                  binary,
                  valgrind=False,
                  gdb=False,
-                 speedup=10,
+                 speedup=8,
                  frame=None,
                  params=None,
                  gdbserver=False,
+                 breakpoints=[],
                  **kwargs):
         super(AutoTestRover, self).__init__(**kwargs)
         self.binary = binary
@@ -44,6 +45,7 @@ class AutoTestRover(AutoTest):
         self.frame = frame
         self.params = params
         self.gdbserver = gdbserver
+        self.breakpoints = breakpoints
 
         self.home = "%f,%f,%u,%u" % (HOME.lat,
                                      HOME.lng,
@@ -51,7 +53,6 @@ class AutoTestRover(AutoTest):
                                      HOME.heading)
         self.homeloc = None
         self.speedup = speedup
-        self.speedup_default = 10
 
         self.sitl = None
         self.hasInit = False
@@ -62,30 +63,23 @@ class AutoTestRover(AutoTest):
         if self.frame is None:
             self.frame = 'rover'
 
-        self.apply_parameters_using_sitl()
-
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
                                     home=self.home,
                                     speedup=self.speedup,
                                     valgrind=self.valgrind,
                                     gdb=self.gdb,
-                                    gdbserver=self.gdbserver)
+                                    gdbserver=self.gdbserver,
+                                    breakpoints=self.breakpoints,
+                                    wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
             'APMrover2', options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
-        logfile = self.mavproxy.match.group(1)
-        self.progress("LOGFILE %s" % logfile)
+        self.logfile = self.mavproxy.match.group(1)
+        self.progress("LOGFILE %s" % self.logfile)
+        self.try_symlink_tlog()
 
-        buildlog = self.buildlogs_path("APMrover2-test.tlog")
-        self.progress("buildlog=%s" % buildlog)
-        if os.path.exists(buildlog):
-            os.unlink(buildlog)
-        try:
-            os.link(logfile, buildlog)
-        except Exception:
-            pass
-
+        self.progress("WAITING FOR PARAMETERS")
         self.mavproxy.expect('Received [0-9]+ parameters')
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
@@ -107,6 +101,9 @@ class AutoTestRover(AutoTest):
         self.mav.message_hooks.append(self.message_hook)
         self.mav.idle_hooks.append(self.idle_hook)
         self.hasInit = True
+
+        self.apply_defaultfile_parameters()
+
         self.progress("Ready to start testing!")
 
     # def reset_and_arm(self):
@@ -323,7 +320,7 @@ class AutoTestRover(AutoTest):
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
-        self.wait_mode('HOLD')
+        self.wait_mode('HOLD', timeout=300)
         self.progress("Mission OK")
 
     def drive_mission_rover1(self):
@@ -460,6 +457,134 @@ class AutoTestRover(AutoTest):
             raise NotAchievedException()
         self.progress("Pin mask changed after relay command")
 
+    def test_setting_modes_via_mavproxy_switch(self):
+        fnoo = [(1, 'MANUAL'),
+                (2, 'MANUAL'),
+                (3, 'RTL'),
+                #                (4, 'AUTO'), // no mission, can't set auto
+                (5, 'RTL'), # non-existant mode, should stay in RTL
+                (6, 'MANUAL')]
+        for (num, expected) in fnoo:
+            self.mavproxy.send('switch %u\n' % num)
+            self.wait_mode(expected)
+
+    def test_setting_modes_via_modeswitch(self):
+        # test setting of modes through mode switch
+        self.context_push();
+        ex = None
+        try:
+            self.set_parameter("MODE_CH", 8)
+            self.set_rc(8, 1000)
+            # mavutil.mavlink.ROVER_MODE_HOLD:
+            self.set_parameter("MODE6", 4)
+            # mavutil.mavlink.ROVER_MODE_ACRO
+            self.set_parameter("MODE5", 1)
+            self.set_rc(8, 1800) # PWM for mode6
+            self.wait_mode("HOLD")
+            self.set_rc(8, 1700) # PWM for mode5
+            self.wait_mode("ACRO")
+            self.set_rc(8, 1800) # PWM for mode6
+            self.wait_mode("HOLD")
+            self.set_rc(8, 1700) # PWM for mode5
+            self.wait_mode("ACRO")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
+
+    def test_setting_modes_via_auxswitches(self):
+        self.context_push();
+        ex = None
+        try:
+            self.set_parameter("MODE5", 1)
+            self.mavproxy.send('switch 5\n')  # acro mode
+            self.wait_mode("ACRO")
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.set_parameter("RC9_OPTION", 53) # steering
+            self.set_parameter("RC10_OPTION", 54) # hold
+            self.set_rc(9, 1900)
+            self.wait_mode("STEERING")
+            self.set_rc(10, 1900)
+            self.wait_mode("HOLD")
+
+            # reset both switches - should go back to ACRO
+            self.set_rc(9, 1000)
+            self.set_rc(10, 1000)
+            self.wait_mode("ACRO")
+
+            self.set_rc(9, 1900)
+            self.wait_mode("STEERING")
+            self.set_rc(10, 1900)
+            self.wait_mode("HOLD")
+
+            self.set_rc(10, 1000) # this re-polls the mode switch
+            self.wait_mode("ACRO")
+            self.set_rc(9, 1000)
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
+
+    def test_rc_overrides(self):
+        self.context_push();
+        ex = None
+        try:
+            self.mavproxy.send('switch 6\n')  # Manual mode
+            self.wait_mode('MANUAL')
+            self.wait_ready_to_arm()
+            self.mavproxy.send('rc 3 1500\n')  # throttle at zero
+            self.arm_vehicle()
+            # start moving forward a little:
+            normal_rc_throttle = 1700
+            self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+            self.wait_groundspeed(5, 100)
+            # now override to go backwards:
+            throttle_override = 1400
+            while True:
+                print("Sending throttle of %u" % (throttle_override,))
+                self.mav.mav.rc_channels_override_send(
+                    1, # target system
+                    1, # targe component
+                    65535, # chan1_raw
+                    65535, # chan2_raw
+                    throttle_override, # chan3_raw
+                    65535, # chan4_raw
+                    65535, # chan5_raw
+                    65535, # chan6_raw
+                    65535, # chan7_raw
+                    65535) # chan8_raw
+
+
+                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+                print("%s" % m)
+                if m.chan3_raw == throttle_override:
+                    break
+            # check we revert to normal RC inputs when gcs overrides cease:
+            self.progress("Waiting for RC to revert to normal RC input")
+            while True:
+                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+                print("%s" % m)
+                if m.chan3_raw == normal_rc_throttle:
+                    break
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         if not self.hasInit:
@@ -478,11 +603,20 @@ class AutoTestRover(AutoTest):
             self.mav.wait_gps_fix()
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
+
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
-            self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
             self.arm_vehicle()
+
+            self.run_test("Set modes via mavproxy switch",
+                          self.test_setting_modes_via_mavproxy_switch)
+
+            self.run_test("Set modes via modeswitch",
+                          self.test_setting_modes_via_modeswitch)
+
+            self.run_test("Set modes via auxswitches",
+                          self.test_setting_modes_via_auxswitches)
 
             self.run_test("Drive an RTL Mission", self.drive_rtl_mission)
 
@@ -492,7 +626,8 @@ class AutoTestRover(AutoTest):
             self.run_test("Drive Mission %s" % "rover1.txt",
                           self.drive_mission_rover1)
 
-            self.run_test("Drive Brake", self.drive_brake)
+            # disabled due to frequent failures in travis. This test needs re-writing
+            #self.run_test("Drive Brake", self.drive_brake)
 
             self.run_test("Disarm Vehicle", self.disarm_vehicle)
 
@@ -506,6 +641,10 @@ class AutoTestRover(AutoTest):
 
             self.run_test("Test ServoRelayEvents",
                           self.test_servorelayevents)
+
+            self.disarm_vehicle()
+
+            self.run_test("Test RC overrides", self.test_rc_overrides)
 
             self.run_test("Download logs", lambda:
                           self.log_download(

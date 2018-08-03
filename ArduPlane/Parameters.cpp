@@ -1096,6 +1096,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Landing/AP_Landing.cpp
     GOBJECT(landing, "LAND_", AP_Landing),
 
+#if OSD_ENABLED
+    // @Group: OSD
+    // @Path: ../libraries/AP_OSD/AP_OSD.cpp
+    GOBJECT(osd, "OSD", AP_OSD),
+#endif
+    
     AP_VAREND
 };
 
@@ -1132,11 +1138,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels.cpp
-    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels),
+    AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels_Plane),
     
+#if SOARING_ENABLED == ENABLED
     // @Group: SOAR_
     // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
     AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
+#endif
   
     // @Param: RUDD_DT_GAIN
     // @DisplayName: rudder differential thrust gain
@@ -1173,8 +1181,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 };
 
 ParametersG2::ParametersG2(void) :
-    ice_control(plane.rpm_sensor, plane.ahrs),
-    soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+    ice_control(plane.rpm_sensor, plane.ahrs)
+#if SOARING_ENABLED == ENABLED
+    ,soaring_controller(plane.ahrs, plane.TECS_controller, plane.aparm)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1272,7 +1282,7 @@ void Plane::load_parameters(void)
 
     uint32_t before = micros();
     // Load all auto-loaded EEPROM variables
-    AP_Param::load_all(false);
+    AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     // setup defaults in SRV_Channels

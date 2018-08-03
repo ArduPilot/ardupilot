@@ -39,7 +39,7 @@ void Copter::arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors->armed()) {
             // reset arming counter if arming fail
-            if (!init_arm_motors(false)) {
+            if (!init_arm_motors(AP_Arming::ArmingMethod::RUDDER)) {
                 arming_counter = 0;
             }
         }
@@ -127,7 +127,7 @@ void Copter::auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(const bool arming_from_gcs, const bool do_arming_checks)
+bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
 
@@ -144,7 +144,7 @@ bool Copter::init_arm_motors(const bool arming_from_gcs, const bool do_arming_ch
     }
 
     // run pre-arm-checks and display failures
-    if (do_arming_checks && !arming.all_checks_passing(arming_from_gcs)) {
+    if (do_arming_checks && !arming.all_checks_passing(method)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
@@ -342,7 +342,7 @@ void Copter::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (check_if_auxsw_mode_used(AUXSW_LOST_COPTER_SOUND)) {
+    if (rc().find_channel_for_option(RC_Channel::aux_func::LOST_COPTER_SOUND)) {
         return;
     }
 

@@ -73,12 +73,12 @@ void SITL_State::_sitl_setup(const char *home_str)
     fprintf(stdout, "Starting SITL input\n");
 
     // find the barometer object if it exists
-    _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
-    _barometer = (AP_Baro *)AP_Param::find_object("GND_");
-    _ins = (AP_InertialSensor *)AP_Param::find_object("INS_");
-    _compass = (Compass *)AP_Param::find_object("COMPASS_");
+    _sitl = AP::sitl();
+    _barometer = AP_Baro::get_instance();
+    _ins = AP_InertialSensor::get_instance();
+    _compass = Compass::get_singleton();
 #if AP_TERRAIN_AVAILABLE
-    _terrain = (AP_Terrain *)AP_Param::find_object("TERRAIN_");
+    _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
 #endif
 
     if (_sitl != nullptr) {
@@ -91,6 +91,10 @@ void SITL_State::_sitl_setup(const char *home_str)
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
         }
+
+        sitl_model->set_sprayer(&_sitl->sprayer_sim);
+        sitl_model->set_gripper_servo(&_sitl->gripper_sim);
+        sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
 
         if (_use_fg_view) {
             fg_socket.connect(_fg_address, _fg_view_port);
@@ -185,7 +189,11 @@ void SITL_State::_fdm_input_step(void)
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     while (AP_HAL::micros64() < wait_time_usec) {
-        _fdm_input_step();
+        if (hal.scheduler->in_main_thread()) {
+            _fdm_input_step();
+        } else {
+            usleep(1000);
+        }
     }
 }
 
@@ -274,7 +282,7 @@ void SITL_State::_output_to_flightgear(void)
  */
 void SITL_State::_fdm_input_local(void)
 {
-    SITL::Aircraft::sitl_input input;
+    struct sitl_input input;
 
     // check for direct RC input
     _check_rc_input();
@@ -332,7 +340,7 @@ void SITL_State::_fdm_input_local(void)
 /*
   create sitl_input structure for sending to FDM
  */
-void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
+void SITL_State::_simulator_servos(struct sitl_input &input)
 {
     static uint32_t last_update_usec;
 

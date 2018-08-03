@@ -162,7 +162,7 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
         if (is_zero(turn_angle_cd)) {
             // if not turning can continue at full speed
             _desired_speed_final = _desired_speed;
-        } else if (rover.use_pivot_steering(turn_angle_cd)) {
+        } else if (rover.use_pivot_steering_at_next_WP(turn_angle_cd)) {
             // pivoting so we will stop
             _desired_speed_final = 0.0f;
         } else {
@@ -252,6 +252,11 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
         throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
     }
 
+    // if vehicle is balance bot, calculate actual throttle required for balancing
+    if (rover.is_balancebot()) {
+        rover.balancebot_pitch_control(throttle_out, rover.arming.is_armed());
+    }
+
     // send to motor
     g2.motors.set_throttle(throttle_out);
 }
@@ -262,6 +267,11 @@ bool Mode::stop_vehicle()
     // call throttle controller and convert output to -100 to +100 range
     bool stopped = false;
     float throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
+
+    // if vehicle is balance bot, calculate actual throttle required for balancing
+    if (rover.is_balancebot()) {
+        rover.balancebot_pitch_control(throttle_out, rover.arming.is_armed());
+    }
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
@@ -425,7 +435,10 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 // calculate steering output to drive towards desired heading
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed)
 {
-    // calculate yaw error (in radians) and pass to steering angle controller
+    // calculate yaw error so it can be used for reporting and slowing the vehicle
+    _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
+
+    // call heading controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
                                                                          rate_max,
                                                                          g2.motors.limit.steer_left,

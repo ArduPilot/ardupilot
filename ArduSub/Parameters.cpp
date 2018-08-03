@@ -640,7 +640,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 /*
   constructor for g2 object
  */
-ParametersG2::ParametersG2(void)
+ParametersG2::ParametersG2()
 #if PROXIMITY_ENABLED == ENABLED
     : proximity(sub.serial_manager)
 #endif
@@ -654,7 +654,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
 };
 
-void Sub::load_parameters(void)
+void Sub::load_parameters()
 {
     if (!AP_Param::check_var_info()) {
         hal.console->printf("Bad var table\n");
@@ -701,7 +701,7 @@ void Sub::load_parameters(void)
     AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
 }
 
-void Sub::convert_old_parameters(void)
+void Sub::convert_old_parameters()
 {
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,

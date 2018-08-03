@@ -1,5 +1,4 @@
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_HAL_SITL.h"
 #include "Scheduler.h"
@@ -31,6 +30,15 @@ Scheduler::Scheduler(SITL_State *sitlState) :
 
 void Scheduler::init()
 {
+    _main_ctx = pthread_self();
+}
+
+bool Scheduler::in_main_thread() const
+{
+    if (!_in_timer_proc && !_in_io_proc && pthread_self() == _main_ctx) {
+        return true;
+    }
+    return false;
 }
 
 void Scheduler::delay_microseconds(uint16_t usec)
@@ -47,13 +55,17 @@ void Scheduler::delay_microseconds(uint16_t usec)
 
 void Scheduler::delay(uint16_t ms)
 {
-    while (ms > 0) {
+    uint32_t start = AP_HAL::millis();
+    uint32_t now = start;
+    do {
         delay_microseconds(1000);
-        ms--;
-        if (_min_delay_cb_ms <= ms) {
-            call_delay_cb();
+        if (_min_delay_cb_ms <= (ms - (now - start))) {
+            if (in_main_thread()) {
+                call_delay_cb();
+            }
         }
-    }
+        now = AP_HAL::millis();
+    } while (now - start < ms);
 }
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -177,6 +189,7 @@ void Scheduler::_run_io_procs()
     hal.uartD->_timer_tick();
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
+    hal.uartG->_timer_tick();
 }
 
 /*
@@ -191,4 +204,34 @@ void Scheduler::stop_clock(uint64_t time_usec)
     }
 }
 
-#endif
+/*
+  trampoline for thread create
+*/
+void *Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+    return nullptr;
+}
+
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+    pthread_t thread {};
+    if (pthread_create(&thread, NULL, thread_create_trampoline, tproc) != 0) {
+        free(tproc);
+        return false;
+    }
+    return true;
+}
+

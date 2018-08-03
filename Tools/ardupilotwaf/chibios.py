@@ -82,10 +82,18 @@ class set_default_parameters(Task.Task):
         defaults.save()
 
 
-class generate_fw(Task.Task):
+class generate_bin(Task.Task):
     color='CYAN'
-    run_str="${OBJCOPY} -O binary ${SRC} ${SRC}.bin && \
-    python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}.bin' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
+    run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class generate_apj(Task.Task):
+    color='CYAN'
+    run_str="python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -102,34 +110,52 @@ class build_abin(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
+class build_intel_hex(Task.Task):
+    '''build an intel hex file for upload with DFU'''
+    color='CYAN'
+    run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
     self.link_task.always_run = True
 
     link_output = self.link_task.outputs[0]
-    self.objcopy_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
-    generate_fw_task = self.create_task('generate_fw',
-                                        src=link_output,
-                                        tgt=self.objcopy_target)
-    generate_fw_task.set_run_after(self.link_task)
+    bin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
+    apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
+
+    generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
+    generate_bin_task.set_run_after(self.link_task)
+
+    generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
+    generate_apj_task.set_run_after(generate_bin_task)
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
         abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
-        abin_task.set_run_after(generate_fw_task)
+        abin_task.set_run_after(generate_apj_task)
+
+    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+    if os.path.exists(bootloader_bin.abspath()) and self.bld.env.HAVE_INTEL_HEX:
+        hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+        hex_task = self.create_task('build_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
+        hex_task.set_run_after(generate_bin_task)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
                                                src=link_output)
         default_params_task.set_run_after(self.link_task)
-        generate_fw_task.set_run_after(default_params_task)
+        generate_bin_task.set_run_after(default_params_task)
     
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw',
-                                src=self.objcopy_target)
-        _upload_task.set_run_after(generate_fw_task)
+        _upload_task = self.create_task('upload_fw', src=apj_target)
+        _upload_task.set_run_after(generate_apj_task)
 
 def setup_can_build(cfg):
     '''enable CAN build. By doing this here we can auto-enable CAN in
@@ -172,6 +198,9 @@ def load_env_vars(env):
     e = pickle.load(open(env_py, 'rb'))
     for k in e.keys():
         v = e[k]
+        if k == 'ROMFS_FILES':
+            env.ROMFS_FILES += v
+            continue
         if k in env:
             if isinstance(env[k], dict):
                 a = v.split('=')
@@ -186,6 +215,8 @@ def load_env_vars(env):
         else:
             env[k] = v
             print("env set %s=%s" % (k, v))
+    if env.ENABLE_ASSERTS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
@@ -265,34 +296,38 @@ def pre_build(bld):
         bld.get_board().with_uavcan = True
 
 def build(bld):
+
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' %s %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
+        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
-        target=['hwdef.h', 'apj.prototype', 'ldscript.ld']
+        target=[bld.bldnode.find_or_declare('hwdef.h'),
+                bld.bldnode.find_or_declare('apj.prototype'),
+                bld.bldnode.find_or_declare('ldscript.ld')]
     )
     
     bld(
         # create the file modules/ChibiOS/include_dirs
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
-        target='modules/ChibiOS/include_dirs'
+        target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
-                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs'),
-                  bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
+                  bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
+    if bld.env.ROMFS_FILES:
+        common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
     ch_task = bld(
         # build libch.a from ChibiOS sources and hwdef.h
         rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' lib -f '${BOARD_MK}'",
         group='dynamic_sources',
         source=common_src,
-        target='modules/ChibiOS/libch.a'
+        target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
     )
     ch_task.name = "ChibiOS_lib"
 

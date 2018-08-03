@@ -37,8 +37,6 @@ public:
     I2CConfig i2ccfg;
     uint8_t busnum;
     uint32_t busclock;
-    bool i2c_started;
-    bool i2c_active;
 
     // we need an additional lock in the dma_allocate and
     // dma_deallocate functions to cope with 3-way contention as we
@@ -127,6 +125,21 @@ public:
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
+
+    /*
+      get mask of bus numbers for all configured I2C buses
+     */
+    uint32_t get_bus_mask(void) const override;
+
+    /*
+      get mask of bus numbers for all configured external I2C buses
+     */
+    uint32_t get_bus_mask_external(void) const override;
+
+    /*
+      get mask of bus numbers for all configured internal I2C buses
+     */
+    uint32_t get_bus_mask_internal(void) const override;
 };
 }
 

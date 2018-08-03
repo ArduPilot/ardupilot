@@ -78,7 +78,7 @@ void Copter::init_ardupilot()
     winch_init();
 
     // initialise notify system
-    notify.init(true);
+    notify.init();
     notify_flight_mode();
 
     // initialise battery monitor
@@ -88,11 +88,6 @@ void Copter::init_ardupilot()
     rssi.init();
     
     barometer.init();
-
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.
-    ap.usb_connected = true;
-    check_usb_mux();
 
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
@@ -108,6 +103,10 @@ void Copter::init_ardupilot()
 #if DEVO_TELEM_ENABLED == ENABLED
     // setup devo
     devo_telemetry.init(serial_manager);
+#endif
+
+#if OSD_ENABLED == ENABLED
+    osd.init();
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -252,10 +251,8 @@ void Copter::init_ardupilot()
 #endif
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
-    // initialise the flight mode and aux switch
-    // ---------------------------
-    reset_control_switch();
-    init_aux_switches();
+    // initialise rc channels including setting mode
+    rc().init();
 
     startup_INS_ground();
 
@@ -415,17 +412,6 @@ void Copter::update_auto_armed()
         }
 #endif // HELI_FRAME
     }
-}
-
-void Copter::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == ap.usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    ap.usb_connected = usb_check;
 }
 
 /*
@@ -623,7 +609,7 @@ void Copter::allocate_motors(void)
 #endif
 
     // reload lines from the defaults file that may now be accessible
-    AP_Param::reload_defaults_file();
+    AP_Param::reload_defaults_file(true);
     
     // now setup some frame-class specific defaults
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {

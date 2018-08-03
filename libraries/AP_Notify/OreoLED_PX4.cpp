@@ -44,11 +44,7 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 OreoLED_PX4::OreoLED_PX4(uint8_t theme): NotifyDevice(),
-    _overall_health(false),
     _oreoled_fd(-1),
-    _send_required(false),
-    _state_desired_semaphore(false),
-    _pattern_override(0),
     _oreo_theme(theme)
 {
     // initialise desired and sent state

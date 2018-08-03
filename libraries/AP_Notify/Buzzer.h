@@ -27,12 +27,7 @@ class Buzzer: public NotifyDevice
 {
 public:
     /// Constructor
-    Buzzer() :
-        _counter(0),
-        _pattern(NONE),
-        _pattern_counter(0),
-        _arming_buzz_start_ms(0)
-    {}
+    Buzzer() {}
 
     /// init - initialise the buzzer
     bool init(void);

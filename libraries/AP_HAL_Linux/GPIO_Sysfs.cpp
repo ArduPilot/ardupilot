@@ -171,11 +171,6 @@ void GPIO_Sysfs::toggle(uint8_t vpin)
     write(vpin, !read(vpin));
 }
 
-int8_t GPIO_Sysfs::analogPinToDigitalPin(uint8_t vpin)
-{
-    return -1;
-}
-
 AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
 {
     assert_vpin(vpin, n_pins, nullptr);

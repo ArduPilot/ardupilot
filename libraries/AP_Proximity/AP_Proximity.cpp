@@ -437,4 +437,17 @@ AP_Proximity::Proximity_Type AP_Proximity::get_type(uint8_t instance) const
     return Proximity_Type_None;
 }
 
+bool AP_Proximity::sensor_present() const
+{
+    return get_status() != Proximity_NotConnected;
+}
+bool AP_Proximity::sensor_enabled() const
+{
+    return _type[primary_instance] != Proximity_Type_None;
+}
+bool AP_Proximity::sensor_failed() const
+{
+    return get_status() != Proximity_Good;
+}
+
 AP_Proximity *AP_Proximity::_singleton;

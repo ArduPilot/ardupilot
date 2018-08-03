@@ -16,8 +16,18 @@
 
 #include "AP_Notify.h"
 
-#if (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && \
+#if (defined(HAL_GPIO_A_LED_PIN) || defined(HAL_GPIO_B_LED_PIN) || \
      defined(HAL_GPIO_C_LED_PIN))
+
+#ifndef HAL_GPIO_A_LED_PIN
+#define HAL_GPIO_A_LED_PIN        -1
+#endif
+#ifndef HAL_GPIO_B_LED_PIN
+#define HAL_GPIO_B_LED_PIN        -1
+#endif
+#ifndef HAL_GPIO_C_LED_PIN
+#define HAL_GPIO_C_LED_PIN        -1
+#endif
 
 extern const AP_HAL::HAL& hal;
 

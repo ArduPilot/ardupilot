@@ -15,12 +15,6 @@
 #define AP_FEATURE_BOARD_DETECT 0
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_GPIO_PIN_SAFETY_IN)
-#define AP_FEATURE_SAFETY_BUTTON 1
-#else
-#define AP_FEATURE_SAFETY_BUTTON 0
-#endif
-
 #ifndef AP_FEATURE_RTSCTS
 #define AP_FEATURE_RTSCTS 0
 #endif
@@ -72,12 +66,10 @@ public:
     static bool px4_start_driver(main_fn_t main_function, const char *name, const char *arguments);
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        BOARD_TYPE_UNKNOWN = -1,
         PX4_BOARD_AUTO     = 0,
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
@@ -100,18 +92,18 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_OLDDRIVERS = 100,
-#endif
     };
-#endif // AP_FEATURE_BOARD_DETECT
 
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint16_t mask);
 
-#if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type get_board_type(void) {
+#if AP_FEATURE_BOARD_DETECT
         return px4_configured_board;
-    }
+#else
+        return BOARD_TYPE_UNKNOWN;
 #endif
+    }
 
     // ask if IOMCU is enabled. This is a uint8_t to allow
     // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
@@ -129,7 +121,7 @@ public:
         return instance?instance->pwm_count.get():4;
     }
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF=1,
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=2,
@@ -158,7 +150,7 @@ private:
     AP_Int16 vehicleSerialNumber;
     AP_Int8 pwm_count;
     
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || AP_FEATURE_SAFETY_BUTTON
+#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM) || HAL_HAVE_SAFETY_SWITCH
     struct {
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
@@ -192,11 +184,8 @@ private:
 
 #endif // AP_FEATURE_BOARD_DETECT
 
-#if AP_FEATURE_SAFETY_BUTTON
     void board_init_safety(void);
-    void board_setup_safety_mask(void);
-#endif
-    
+
     void board_setup_uart(void);
     void board_setup_sbus(void);
     void board_setup(void);

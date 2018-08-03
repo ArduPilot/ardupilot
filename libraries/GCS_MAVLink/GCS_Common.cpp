@@ -606,15 +606,18 @@ void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) 
 }
 
 
-void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
+void GCS_MAVLINK::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
     char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
+    gcs().send_statustext(severity, (1<<chan), text);
+}
+void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
+{
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    send_textv(severity, fmt, arg_list);
     va_end(arg_list);
-    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
-    gcs().send_statustext(severity, (1<<chan), text);
 }
 
 void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
@@ -999,8 +1002,8 @@ void GCS_MAVLINK::send_radio_in()
     uint32_t now = AP_HAL::millis();
     mavlink_status_t *status = mavlink_get_channel_status(chan);
 
-    uint16_t values[18];
-    RC_Channels::get_radio_in(values, 18);
+    uint16_t values[18] = {};
+    rc().get_radio_in(values, 18);
 
     if (status && (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
         // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD implementations
@@ -1766,6 +1769,36 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_climbrate());
 }
 
+void GCS_MAVLINK::zero_rc_outputs()
+{
+    // Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
+    // For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
+    SRV_Channels::cork();
+    for (int i=0; i<NUM_RC_CHANNELS; i++) {
+        hal.rcout->write(i, 0);
+    }
+    SRV_Channels::push();
+}
+
+void GCS_MAVLINK::disable_overrides()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    int px4io_fd = open("/dev/px4io", 0);
+    if (px4io_fd < 0) {
+        return;
+    }
+    // disable OVERRIDES so we don't run the mixer while
+    // rebooting
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
+        hal.console->printf("SET_OVERRIDE_OK failed\n");
+    }
+    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
+        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
+    }
+    close(px4io_fd);
+#endif
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -1774,38 +1807,39 @@ void GCS_MAVLINK::send_vfr_hud()
   motors. That can be dangerous when a preflight reboot is done with
   the pilot close to the aircraft and can also damage the aircraft
  */
-MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet, bool disable_overrides)
+MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param1,1.0f) || is_equal(packet.param1,3.0f)) {
-        if (disable_overrides) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-            // disable overrides while rebooting
-            int px4io_fd = open("/dev/px4io", 0);
-            if (px4io_fd >= 0) {
-                // disable OVERRIDES so we don't run the mixer while
-                // rebooting
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_OK failed\n");
-                }
-                if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-                    hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
-                }
-                close(px4io_fd);
-            }
-#endif
-        }
-
-        // force safety on 
-        hal.rcout->force_safety_on();
-        hal.rcout->force_safety_no_wait();
-        hal.scheduler->delay(200);
-
-        // when packet.param1 == 3 we reboot to hold in bootloader
-        bool hold_in_bootloader = is_equal(packet.param1,3.0f);
-        hal.scheduler->reboot(hold_in_bootloader);
-        return MAV_RESULT_ACCEPTED;
+    if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
+        // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
+        return MAV_RESULT_UNSUPPORTED;
     }
-    return MAV_RESULT_UNSUPPORTED;
+
+    if (should_disable_overrides_on_reboot()) {
+        // disable overrides while rebooting
+        disable_overrides();
+    }
+    if (should_zero_rc_outputs_on_reboot()) {
+        zero_rc_outputs();
+    }
+
+    // send ack before we reboot
+    mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
+    // Notify might want to blink some LEDs:
+    AP_Notify *notify = AP_Notify::instance();
+    if (notify) {
+        AP_Notify::flags.firmware_update = 1;
+        notify->update();
+    }
+    // force safety on
+    hal.rcout->force_safety_on();
+    hal.rcout->force_safety_no_wait();
+    hal.scheduler->delay(200);
+
+    // when packet.param1 == 3 we reboot to hold in bootloader
+    const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
+    hal.scheduler->reboot(hold_in_bootloader);
+
+    return MAV_RESULT_FAILED;
 }
 
 /*
@@ -2284,6 +2318,14 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_common_mission_message(msg);
         break;
 
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+        handle_command_long(msg);
+        break;
+
+    case MAVLINK_MSG_ID_COMMAND_INT:
+        handle_command_int(msg);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg);
         break;
@@ -2453,6 +2495,20 @@ void GCS_MAVLINK::send_simstate() const
 #endif
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
+{
+    if (uint32_t(packet.param5) != 290876) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Magic not set");
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!hal.util->flash_bootloader()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet)
 {
     Compass *compass = get_compass();
@@ -2601,7 +2657,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_l
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &packet)
 {
     AP_Gripper *gripper = AP::gripper();
     if (gripper == nullptr) {
@@ -2633,11 +2689,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(mavlink_command_long_t &packet
     return result;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
+{
+    if (!AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
 
     switch (packet.command) {
+
+    case MAV_CMD_ACCELCAL_VEHICLE_POS:
+        result = handle_command_accelcal_vehicle_pos(packet);
+        break;
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
@@ -2645,6 +2713,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     case MAV_CMD_DO_SEND_BANNER:
         result = handle_command_do_send_banner(packet);
+        break;
+
+    case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+        result = handle_preflight_reboot(packet);
         break;
 
     case MAV_CMD_DO_START_MAG_CAL:
@@ -2675,6 +2747,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
+        break;
+
+    case MAV_CMD_FLASH_BOOTLOADER:
+        result = handle_command_flash_bootloader(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS: {
@@ -2711,6 +2787,35 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_message(mavlink_command_long_t &pack
     }
 
     return result;
+}
+
+void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
+{
+    // decode packet
+    mavlink_command_long_t packet;
+    mavlink_msg_command_long_decode(msg, &packet);
+
+    const MAV_RESULT result = handle_command_long_packet(packet);
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
+{
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+void GCS_MAVLINK::handle_command_int(mavlink_message_t *msg)
+{
+    // decode packet
+    mavlink_command_int_t packet;
+    mavlink_msg_command_int_decode(msg, &packet);
+
+    const MAV_RESULT result = handle_command_int_packet(packet);
+
+    // send ACK or NAK
+    mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 }
 
 bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)

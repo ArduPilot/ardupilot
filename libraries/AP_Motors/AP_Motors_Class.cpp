@@ -33,22 +33,11 @@ AP_Motors *AP_Motors::_instance;
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
-    _roll_in(0.0f),
-    _pitch_in(0.0f),
-    _yaw_in(0.0f),
-    _throttle_in(0.0f),
-    _throttle_avg_max(0.0f),
     _throttle_filter(),
     _spool_desired(DESIRED_SHUT_DOWN),
-    _air_density_ratio(1.0f),
-    _motor_fast_mask(0)
+    _air_density_ratio(1.0f)
 {
     _instance = this;
-    
-    // init other flags
-    _flags.armed = false;
-    _flags.interlock = false;
-    _flags.initialised_ok = false;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
@@ -159,42 +148,6 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
         }
     }
     return mask2;
-}
-
-// convert input in -1 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_1to1(float input, const SRV_Channel *servo)
-{
-    int16_t ret;
-
-    input = constrain_float(input, -1.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = -input;
-    }
-
-    if (input >= 0.0f) {
-        ret = ((input * (servo->get_output_max() - servo->get_trim())) + servo->get_trim());
-    } else {
-        ret = ((input * (servo->get_trim() - servo->get_output_min())) + servo->get_trim());
-    }
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
-}
-
-// convert input in 0 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_0to1(float input, const SRV_Channel *servo)
-{
-    int16_t ret;
-
-    input = constrain_float(input, 0.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = 1.0f-input;
-    }
-
-    ret = input * (servo->get_output_max() - servo->get_output_min()) + servo->get_output_min();
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
 }
 
 /*

@@ -57,8 +57,7 @@ void Rover::init_ardupilot()
 #endif
 
     // initialise notify system
-    notify.init(false);
-    AP_Notify::flags.failsafe_battery = false;
+    notify.init();
     notify_mode(control_mode);
 
     ServoRelayEvents.set_channel_mask(0xFFF0);
@@ -89,7 +88,7 @@ void Rover::init_ardupilot()
     init_compass();
 
     // initialise rangefinder
-    init_rangefinder();
+    rangefinder.init();
 
     // init proximity sensor
     init_proximity();
@@ -147,11 +146,8 @@ void Rover::init_ardupilot()
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
 
-
-    // set the correct flight mode
-    // ---------------------------
-    reset_control_switch();
-    init_aux_switch();
+    // initialise rc channels
+    rc().init();
 
     // disable safety if requested
     BoardConfig.init_safety();
@@ -295,17 +291,13 @@ void Rover::notify_mode(const Mode *mode)
  */
 uint8_t Rover::check_digital_pin(uint8_t pin)
 {
-    const int8_t dpin = hal.gpio->analogPinToDigitalPin(pin);
-    if (dpin == -1) {
-        return 0;
-    }
     // ensure we are in input mode
-    hal.gpio->pinMode(dpin, HAL_GPIO_INPUT);
+    hal.gpio->pinMode(pin, HAL_GPIO_INPUT);
 
     // enable pullup
-    hal.gpio->write(dpin, 1);
+    hal.gpio->write(pin, 1);
 
-    return hal.gpio->read(dpin);
+    return hal.gpio->read(pin);
 }
 
 /*

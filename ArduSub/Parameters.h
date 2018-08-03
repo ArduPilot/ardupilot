@@ -327,7 +327,7 @@ public:
 #endif
 
     // RC input channels
-    RC_Channels rc_channels;
+    RC_Channels_Sub rc_channels;
 
     // control over servo output ranges
     SRV_Channels servo_channels;

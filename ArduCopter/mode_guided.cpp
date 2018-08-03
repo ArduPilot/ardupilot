@@ -39,8 +39,6 @@ struct Guided_Limit {
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
-        // initialise yaw
-        auto_yaw.set_mode_to_default(false);
         // start in position control mode
         pos_control_start();
         return true;
@@ -50,8 +48,8 @@ bool Copter::ModeGuided::init(bool ignore_checks)
 }
 
 
-// guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
+// do_user_takeoff_start - initialises waypoint controller to implement take-off
+bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
 
@@ -73,7 +71,7 @@ bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
     set_throttle_takeoff();
 
     // get initial alt for WP_NAVALT_MIN
-    copter.auto_takeoff_set_start_alt();
+    auto_takeoff_set_start_alt();
 
     return true;
 }
@@ -367,6 +365,15 @@ void Copter::ModeGuided::run()
 //      called by guided_run at 100hz or more
 void Copter::ModeGuided::takeoff_run()
 {
+    auto_takeoff_run();
+    if (wp_nav->reached_wp_destination()) {
+        const Vector3f target = wp_nav->get_wp_destination();
+        set_destination(target);
+    }
+}
+
+void Copter::Mode::auto_takeoff_run()
+{
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         // initialise wpnav targets
@@ -406,7 +413,7 @@ void Copter::ModeGuided::takeoff_run()
     copter.pos_control->update_z_controller();
 
     // call attitude controller
-    copter.auto_takeoff_attitude_run(target_yaw_rate);
+    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // guided_pos_control_run - runs the guided position controller
@@ -766,6 +773,15 @@ int32_t Copter::ModeGuided::wp_bearing() const
         return pos_control->get_bearing_to_target();
         break;
     default:
+        return 0;
+    }
+}
+
+float Copter::ModeGuided::crosstrack_error() const
+{
+    if (mode() == Guided_WP) {
+        return wp_nav->crosstrack_error();
+    } else {
         return 0;
     }
 }

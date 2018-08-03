@@ -189,4 +189,28 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     return dev;
 }
 
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return 0x03;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    return 0x01;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    return 0x02;
+}
+    
 }

@@ -80,7 +80,7 @@ void RCOutput::init()
     chMtxObjectInit(&trigger_mutex);
 
     // setup default output rate of 50Hz
-    set_freq(0xFFFF, 50);
+    set_freq(0xFFFF ^ ((1U<<chan_offset)-1), 50);
 
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     safety_state = AP_HAL::Util::SAFETY_DISARMED;
@@ -169,10 +169,15 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // change frequency on IOMCU
+        uint16_t io_chmask = chmask & 0xFF;
         if (freq_hz > 50) {
-            io_fast_channel_mask = chmask;
+            io_fast_channel_mask |= io_chmask;
+        } else {
+            io_fast_channel_mask &= ~io_chmask;
         }
-        iomcu.set_freq(chmask, freq_hz);
+        if (io_chmask) {
+            iomcu.set_freq(io_fast_channel_mask, freq_hz);
+        }
     }
 #endif
 
@@ -205,9 +210,6 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if (group_freq > 50) {
             fast_channel_mask |= group.ch_mask;
         }
-    }
-    if (chmask != update_mask) {
-        hal.console->printf("RCOutput: Failed to set PWM frequency req %x set %x\n", (unsigned)chmask, (unsigned)update_mask);
     }
 }
 
@@ -1073,7 +1075,7 @@ bool RCOutput::serial_write_byte(uint8_t b)
     send_pulses_DMAR(*serial_group, 10*4*sizeof(uint32_t));
 
     // wait for the event
-    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, MS2ST(2));
+    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(2));
 
     serial_group->in_serial_dma = false;
     
@@ -1165,7 +1167,7 @@ void RCOutput::serial_bit_irq(void)
 */
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
-    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, MS2ST(10)) & serial_event_mask) == 0);
+    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(10)) & serial_event_mask) == 0);
 
     uint16_t byteval = irq.byteval;
 

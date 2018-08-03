@@ -97,6 +97,7 @@
 #define PROTO_GET_CHIP_DES			0x2e    // read chip version In ASCII
 #define PROTO_BOOT					0x30    // boot the application
 #define PROTO_DEBUG					0x31    // emit debug information - format not defined
+#define PROTO_SET_BAUD				0x33    // baud rate on uart
 
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
@@ -129,7 +130,7 @@ volatile unsigned timer[NTIMERS];
  */
 static void sys_tick_handler(void *ctx)
 {
-    chVTSetI(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
@@ -144,7 +145,7 @@ static void sys_tick_handler(void *ctx)
 
 static void delay(unsigned msec)
 {
-    chThdSleep(MS2ST(msec));
+    chThdSleep(chTimeMS2I(msec));
 }
 
 static void
@@ -179,7 +180,11 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
     SCB_DisableICache();
 #endif
 
+    chSysLock();    
+
+    // we set sp as well as msp to avoid an issue with loading NuttX
     asm volatile(
+        "mov sp, %0	\n"
         "msr msp, %0	\n"
         "bx	%1	\n"
         : : "r"(stacktop), "r"(entrypoint) :);
@@ -212,16 +217,20 @@ jump_to_app()
         return;
     }
 
+    flash_set_keep_unlocked(false);
+    
     led_set(LED_OFF);
 
-    /* kill the systick timer */
-    chVTReset(&systick_vt);
-
-    // stop USB driver
-    //cfini();
-
+    // resetting the clocks is needed for loading NuttX
+    rccDisableAPB1(~0);
+    rccDisableAPB2(~0);
+#if HAL_USE_SERIAL_USB == TRUE    
+    rccResetOTG_FS();
+    rccResetOTG_HS();
+#endif
+    
     // disable all interrupt sources
-    //port_disable();
+    port_disable();
 
     /* switch exception handlers to the application */
     *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
@@ -240,19 +249,6 @@ sync_response(void)
 
     cout(data, sizeof(data));
 }
-
-#if defined(TARGET_HW_PX4_FMU_V4)
-static void
-bad_silicon_response(void)
-{
-    uint8_t data[] = {
-        PROTO_INSYNC,			// "in sync"
-        PROTO_BAD_SILICON_REV	// "issue with < Rev 3 silicon"
-    };
-
-    cout(data, sizeof(data));
-}
-#endif
 
 static void
 invalid_response(void)
@@ -296,28 +292,6 @@ cout_word(uint32_t val)
     cout((uint8_t *)&val, 4);
 }
 
-static int
-cin_word(uint32_t *wp, unsigned timeout)
-{
-    union {
-        uint32_t w;
-        uint8_t b[4];
-    } u;
-
-    for (unsigned i = 0; i < 4; i++) {
-        int c = cin(timeout);
-
-        if (c < 0) {
-            return c;
-        }
-
-        u.b[i] = c & 0xff;
-    }
-
-    *wp = u.w;
-    return 0;
-}
-
 static uint32_t
 crc32(const uint8_t *src, unsigned len, unsigned state)
 {
@@ -354,9 +328,11 @@ bootloader(unsigned timeout)
 {
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
     uint32_t	first_word = 0xffffffff;
+    bool done_sync = false;
+    bool done_get_device = false;
 
     chVTObjectInit(&systick_vt);
-    chVTSet(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
 
     /* if we are working with a timeout, start it running */
     if (timeout) {
@@ -404,7 +380,7 @@ bootloader(unsigned timeout)
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
-
+            done_sync = true;
             break;
 
         // get device info
@@ -460,7 +436,7 @@ bootloader(unsigned timeout)
             default:
                 goto cmd_bad;
             }
-
+            done_get_device = true;
             break;
 
         // erase and prepare for programming
@@ -471,10 +447,17 @@ bootloader(unsigned timeout)
         //
         case PROTO_CHIP_ERASE:
 
+            if (!done_sync || !done_get_device) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+            
             /* expect EOC */
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
+
+            flash_set_keep_unlocked(true);
 
             // clear the bootloader LED while erasing - it stops blinking at random
             // and that's confusing
@@ -509,6 +492,11 @@ bootloader(unsigned timeout)
         // readback failure:	INSYNC/FAILURE
         //
         case PROTO_PROG_MULTI:		// program bytes
+            if (!done_sync || !done_get_device) {
+                // lower chance of random data on a uart triggering erase
+                goto cmd_bad;
+            }
+
             // expect count
             led_set(LED_OFF);
 
@@ -553,7 +541,6 @@ bootloader(unsigned timeout)
             }
 
             arg /= 4;
-
             for (int i = 0; i < arg; i++) {
                 // program the word
                 flash_func_write_word(address, flash_buffer.w[i]);
@@ -755,10 +742,43 @@ bootloader(unsigned timeout)
             // XXX reserved for ad-hoc debugging as required
             break;
 
+		case PROTO_SET_BAUD: {
+			/* expect arg then EOC */
+            uint32_t baud = 0;
+
+            if (cin_word(&baud, 100)) {
+                goto cmd_bad;
+            }
+
+			if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+			}
+
+            // send the sync response for this command
+            sync_response();
+
+            delay(5);
+
+            // set the baudrate
+            port_setbaud(baud);
+
+            lock_bl_port();
+            timeout = 0;
+            
+            // this is different to what every other case in this
+            // switch does!  Most go through sync_response down the
+            // bottom, but we need to undertake an action after
+            // returning the response...
+            continue;
+        }
+            
         default:
             continue;
         }
 
+        // we got a good command on this port, lock to the port
+        lock_bl_port();
+        
         // we got a command worth syncing, so kill the timeout because
         // we are probably talking to the uploader
         timeout = 0;
@@ -775,12 +795,5 @@ cmd_fail:
         // send a 'command failed' response but don't kill the timeout - could be garbage
         failure_response();
         continue;
-
-#if defined(TARGET_HW_PX4_FMU_V4)
-bad_silicon:
-        // send the bad silicon response but don't kill the timeout - could be garbage
-        bad_silicon_response();
-        continue;
-#endif
     }
 }

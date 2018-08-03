@@ -50,6 +50,10 @@ bool UARTDriver::_console;
 
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
+    if (_portNumber > ARRAY_SIZE(_sitlState->_uart_path)) {
+        AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
+    }
+
     const char *path = _sitlState->_uart_path[_portNumber];
 
     // default to 1MBit
@@ -94,7 +98,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_baudrate = baudrate;
             _uart_start_connection();
         } else if (strcmp(devtype, "sim") == 0) {
-            ::printf("SIM connection %s:%s\n", args1, args2);
+            ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
             if (!_connected) {
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
@@ -103,6 +107,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             AP_HAL::panic("Invalid device path: %s", path);
         }
         free(s);
+    }
+
+    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
+        _readbuffer.clear();
+        _writebuffer.clear();
     }
 
     _set_nonblocking(_fd);

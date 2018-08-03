@@ -6,8 +6,10 @@ bool ModeGuided::_enter()
     // initialise waypoint speed
     set_desired_speed_to_default();
 
-    // when entering guided mode we set the target as the current location.
-    set_desired_location(rover.current_loc);
+    // set desired location to reasonable stopping point
+    Location stopping_point;
+    calc_stopping_location(_destination);
+    set_desired_location(stopping_point);
 
     return true;
 }
@@ -45,10 +47,9 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
-                calc_throttle(_desired_speed, true, true);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
             } else {
                 stop_vehicle();
-                g2.motors.set_steering(0.0f);
             }
             break;
         }
@@ -70,7 +71,6 @@ void ModeGuided::update()
                 calc_throttle(_desired_speed, true, true);
             } else {
                 stop_vehicle();
-                g2.motors.set_steering(0.0f);
             }
             break;
         }

@@ -352,6 +352,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
 
+    // @Param: TAILSIT_THSCMX
+    // @DisplayName: Maximum control throttle scaling value
+    // @Description: Maximum value of throttle scaling for tailsitter velocity scaling, reduce this value to remove low thorottle D ossilaitons 
+    // @Range: 1 5
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 5),
+	
     AP_GROUPEND
 };
 
@@ -519,16 +526,16 @@ bool QuadPlane::setup(void)
 
     switch (motor_class) {
     case AP_Motors::MOTOR_FRAME_TRI:
-        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsTri::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
-        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsTailsitter::var_info;
         rotation = ROTATION_PITCH_90;
         break;
     default:
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
         break;
     }
@@ -1163,7 +1170,7 @@ bool QuadPlane::assistance_needed(float aspeed)
         return false;
     }
     
-    uint32_t max_angle_cd = 100U*assist_angle;
+    int32_t max_angle_cd = 100U*assist_angle;
     if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
          labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
         // not beyond angle error

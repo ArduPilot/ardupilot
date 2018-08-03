@@ -32,7 +32,8 @@ public:
 										int32_t ptchMinCO_cd,
 										int16_t throttle_nudge,
                                         float hgt_afe,
-										float load_factor) = 0;
+										float load_factor,
+                                        bool soaring_active) = 0;
 
 	// demanded throttle in percentage
 	// should return 0 to 100

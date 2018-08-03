@@ -202,7 +202,7 @@ Frame *Frame::find_frame(const char *name)
 
 // calculate rotational and linear accelerations
 void Frame::calculate_forces(const Aircraft &aircraft,
-                             const Aircraft::sitl_input &input,
+                             const struct sitl_input &input,
                              Vector3f &rot_accel,
                              Vector3f &body_accel)
 {

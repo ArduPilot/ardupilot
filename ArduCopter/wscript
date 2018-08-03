@@ -20,7 +20,6 @@ def build(bld):
             'AP_IRLock',
             'AP_InertialNav',
             'AP_LandingGear',
-            'AP_Menu',
             'AP_Motors',
             'AP_Parachute',
             'AP_RCMapper',
@@ -34,6 +33,7 @@ def build(bld):
             'AP_Winch',
             'AP_Follow',
             'AP_Devo_Telem',
+            'AP_OSD',
         ],
     )
 

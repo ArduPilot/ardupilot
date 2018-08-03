@@ -25,7 +25,6 @@
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      178
 #define APM_RCIN_PRIORITY       177
-#define APM_TONEALARM_PRIORITY   61
 #define APM_UART_PRIORITY        60
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
@@ -92,6 +91,11 @@ public:
       restore interrupt state from disable_interrupts_save()
      */
     void restore_interrupts(void *) override;
+
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
     
 private:
     bool _initialized;
@@ -113,22 +117,23 @@ private:
     thread_t* _rcin_thread_ctx;
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
-    thread_t* _toneAlarm_thread_ctx;
 #if HAL_WITH_UAVCAN
     thread_t* _uavcan_thread_ctx;
 #endif
+#if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;
     binary_semaphore_t _io_semaphore;
+#endif
     static void _timer_thread(void *arg);
     static void _rcin_thread(void *arg);
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
     static void _uart_thread(void *arg);
-    static void _toneAlarm_thread(void *arg);
 #if HAL_WITH_UAVCAN
     static void _uavcan_thread(void *arg);
 #endif
     void _run_timers();
     void _run_io(void);
+    static void thread_create_trampoline(void *ctx);    
 };
 #endif

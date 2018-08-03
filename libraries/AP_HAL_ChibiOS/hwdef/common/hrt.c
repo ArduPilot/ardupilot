@@ -37,7 +37,7 @@ uint64_t hrt_micros()
 	// since we are definitely going to get called atleast once in
 	// a full timer period
 	if (last_micros > micros) {
-        const uint64_t step = ST2US(1ULL<<CH_CFG_ST_RESOLUTION);
+        const uint64_t step = TIME_MAX_SYSTIME;
 		timer_base += step;
 		micros += step;
 	}

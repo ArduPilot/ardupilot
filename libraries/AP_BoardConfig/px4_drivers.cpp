@@ -46,6 +46,7 @@ extern "C" {
  */
 void AP_BoardConfig::px4_setup_pwm()
 {
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_PX4_AEROFC_V1
     /* configure the FMU driver for the right number of PWMs */
     static const struct {
         uint8_t mode_parm;
@@ -88,6 +89,7 @@ void AP_BoardConfig::px4_setup_pwm()
         }
 #endif
     }
+#endif
 }
 
 /*
@@ -95,7 +97,7 @@ void AP_BoardConfig::px4_setup_pwm()
  */
 void AP_BoardConfig::px4_setup_safety_mask()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && HAL_HAVE_SAFETY_SWITCH
     // setup channels to ignore the armed state
     int px4io_fd = open("/dev/px4io", 0);
     if (px4io_fd != -1) {

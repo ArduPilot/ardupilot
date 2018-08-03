@@ -1,5 +1,4 @@
 LIBRARIES += AP_Common
-LIBRARIES += AP_Menu
 LIBRARIES += AP_AdvancedFailsafe
 LIBRARIES += AP_Param
 LIBRARIES += StorageManager
@@ -65,3 +64,4 @@ LIBRARIES += AP_Winch
 LIBRARIES += AP_WheelEncoder
 LIBRARIES += AP_Follow
 LIBRARIES += AP_Devo_Telem
+LIBRARIES += AP_OSD

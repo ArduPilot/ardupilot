@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Speed control brake enable/disable. Allows sending a reversed output to the motors to slow the vehicle.
     // @Values: 0:Disable,1:Enable
     // @User: Standard
-    AP_GROUPINFO("_BRAKE", 4, AR_AttitudeControl, _brake_enable, 0),
+    AP_GROUPINFO("_BRAKE", 4, AR_AttitudeControl, _brake_enable, 1),
 
     // @Param: _STOP_SPEED
     // @DisplayName: Speed control stop speed
@@ -168,6 +168,49 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_DECEL_MAX", 9, AR_AttitudeControl, _throttle_decel_max, 0.00f),
 
+    // @Param: _BAL_P
+    // @DisplayName: Pitch control P gain
+    // @Description: Pitch control P gain for BalanceBots.  Converts the error between the desired pitch (in radians) and actual pitch to a motor output (in the range -1 to +1)
+    // @Range: 0.000 2.000
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _BAL_I
+    // @DisplayName: Pitch control I gain
+    // @Description: Pitch control I gain for BalanceBots.  Corrects long term error between the desired pitch (in radians) and actual pitch
+    // @Range: 0.000 2.000
+    // @User: Standard
+
+    // @Param: _BAL_IMAX
+    // @DisplayName: Pitch control I gain maximum
+    // @Description: Pitch control I gain maximum.  Constrains the maximum motor output (range -1 to +1) that the I term will generate
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _BAL_D
+    // @DisplayName: Pitch control D gain
+    // @Description: Pitch control D gain.  Compensates for short-term change in desired pitch vs actual
+    // @Range: 0.000 0.100
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _BAL_FF
+    // @DisplayName: Pitch control feed forward
+    // @Description: Pitch control feed forward
+    // @Range: 0.000 0.500
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _BAL_FILT
+    // @DisplayName: Pitch control filter frequency
+    // @Description: Pitch control input filter.  Lower values reduce noise but add delay.
+    // @Range: 0.000 100.000
+    // @Increment: 0.1
+    // @Units: Hz
+    // @User: Standard
+    AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
+    
     AP_GROUPEND
 };
 
@@ -175,7 +218,8 @@ AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
     _ahrs(ahrs),
     _steer_angle_p(AR_ATTCONTROL_STEER_ANG_P),
     _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_IMAX, AR_ATTCONTROL_STEER_RATE_FILT, AR_ATTCONTROL_DT, AR_ATTCONTROL_STEER_RATE_FF),
-    _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, AR_ATTCONTROL_THR_SPEED_IMAX, AR_ATTCONTROL_THR_SPEED_FILT, AR_ATTCONTROL_DT)
+    _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, AR_ATTCONTROL_THR_SPEED_IMAX, AR_ATTCONTROL_THR_SPEED_FILT, AR_ATTCONTROL_DT),
+    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, AR_ATTCONTROL_PITCH_THR_IMAX, AR_ATTCONTROL_PITCH_THR_FILT, AR_ATTCONTROL_DT)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -390,8 +434,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
         if ((desired_speed >= 0.0f) && (throttle_out <= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_low = true;
-        }
-        if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
+        } else if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_high = true;
         }
@@ -439,6 +482,44 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         // run speed controller to bring vehicle to stop
         return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle, dt);
     }
+}
+
+// for balancebot
+// return a throttle output from -1 to +1, given a desired pitch angle
+// desired_pitch is in radians
+float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool armed, float dt)
+{
+
+    //reset I term and return if disarmed
+    if (!armed){
+        _pitch_to_throttle_pid.reset_I();
+        return 0.0f;
+    }
+
+    // sanity check dt
+    dt = constrain_float(dt, 0.0f, 1.0f);
+
+    const uint32_t now = AP_HAL::millis();
+
+    // if not called recently, reset input filter
+    if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > (AR_ATTCONTROL_TIMEOUT_MS))) {
+        _pitch_to_throttle_pid.reset_filter();
+    } else {
+        _pitch_to_throttle_pid.set_dt(dt);
+    }
+    _balance_last_ms = now;
+
+    // calculate pitch error
+    const float pitch_error = desired_pitch - _ahrs.pitch;
+
+    // pitch error is given as input to PID contoller
+    _pitch_to_throttle_pid.set_input_filter_all(pitch_error);
+
+    // record desired speed for logging purposes only
+    _pitch_to_throttle_pid.set_desired_rate(desired_pitch);
+
+    // return output of PID controller
+    return constrain_float(_pitch_to_throttle_pid.get_pid(), -1.0f, +1.0f);
 }
 
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success

@@ -67,6 +67,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--enable-asserts',
+        action='store_true',
+        default=False,
+        help='enable OS level asserts.')
+    
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -138,6 +143,10 @@ configuration in order to save typing.
         default=False,
         help="Disable compilation and test execution")
 
+    g.add_option('--enable-sfml', action='store_true',
+                 default=False,
+                 help="Enable SFML graphics library")
+
     g.add_option('--static',
         action='store_true',
         default=False,
@@ -172,6 +181,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
 
     # Allow to differentiate our build from the make build
@@ -291,18 +301,19 @@ def _build_cmd_tweaks(bld):
         bld.options.clear_failed_tests = True
 
 def _build_dynamic_sources(bld):
-    bld(
-        features='mavgen',
-        source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
-        output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
-        name='mavlink',
-        # this below is not ideal, mavgen tool should set this, but that's not
-        # currently possible
-        export_includes=[
+    if not bld.env.BOOTLOADER:
+        bld(
+            features='mavgen',
+            source='modules/mavlink/message_definitions/v1.0/ardupilotmega.xml',
+            output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
+            name='mavlink',
+            # this below is not ideal, mavgen tool should set this, but that's not
+            # currently possible
+            export_includes=[
             bld.bldnode.make_node('libraries').abspath(),
             bld.bldnode.make_node('libraries/GCS_MAVLink').abspath(),
-        ],
-    )
+            ],
+            )
 
     if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(

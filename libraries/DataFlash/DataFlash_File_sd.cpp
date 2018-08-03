@@ -131,7 +131,7 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz(const uint32_t now)
+void DataFlash_File::periodic_1Hz()
 {
     if (!(_write_fd) || !_initialised || _open_error || _busy) return; // too early
 
@@ -148,7 +148,7 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
     }
 }
 
-void DataFlash_File::periodic_fullrate(const uint32_t now)
+void DataFlash_File::periodic_fullrate()
 {
     DataFlash_Backend::push_log_blocks();
 }
@@ -500,24 +500,6 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     semaphore->give();
     return true;
 }
-
-/*
-  read a packet. The header bytes have already been read.
-*/
-bool DataFlash_File::ReadBlock(void *pkt, uint16_t size)
-{
-    if (!(_read_fd) || !_initialised || _open_error) {
-        return false;
-    }
-
-    memset(pkt, 0, size);
-    if (_read_fd.read(pkt, size) != size) {
-        return false;
-    }
-    _read_offset += size;
-    return true;
-}
-
 
 /*
   find the highest log number

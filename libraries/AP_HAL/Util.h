@@ -51,6 +51,9 @@ public:
      */
     virtual uint64_t get_hw_rtc() const;
 
+    // overwrite bootloader (probably with one from ROMFS)
+    virtual bool flash_bootloader() { return false; }
+
     /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
@@ -69,8 +72,7 @@ public:
         ToneAlarm Driver
     */
     virtual bool toneAlarm_init() { return false;}
-    virtual void toneAlarm_set_tune(uint8_t tune) {}
-    virtual void _toneAlarm_timer_tick() {}
+    virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
     /*
       return a stream for access to a system shell, if available

@@ -244,7 +244,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // rotations per minute sensor support
 #ifndef RPM_ENABLED
-# define RPM_ENABLED ENABLED
+ # define RPM_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -310,7 +310,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED ENABLED
+# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -727,4 +727,8 @@
 #else
  #define DEVO_TELEM_ENABLED ENABLED
 #endif
+#endif
+
+#ifndef OSD_ENABLED
+ #define OSD_ENABLED DISABLED
 #endif

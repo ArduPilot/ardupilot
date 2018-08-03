@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-void Sub::init_capabilities(void)
+void Sub::init_capabilities()
 {
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT);
     hal.util->set_capabilities(MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT);

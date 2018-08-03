@@ -60,6 +60,11 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
+    bool flash_bootloader() override;
+
+    bool toneAlarm_init() override;
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
+    
 private:
     int _safety_handle;
     PX4::NSHShellStream _shell_stream;
@@ -72,4 +77,6 @@ private:
         uint32_t last_update_ms;
         int fd = -1;
     } _heater;
+
+    int _tonealarm_fd = -1;
 };

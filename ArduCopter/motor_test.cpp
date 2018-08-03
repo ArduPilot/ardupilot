@@ -8,7 +8,7 @@
 // motor test definitions
 #define MOTOR_TEST_PWM_MIN              800     // min pwm value accepted by the test
 #define MOTOR_TEST_PWM_MAX              2200    // max pwm value accepted by the test
-#define MOTOR_TEST_TIMEOUT_MS_MAX       30000   // max timeout is 30 seconds
+#define MOTOR_TEST_TIMEOUT_SEC          600     // max timeout is 10 minutes (600 seconds)
 
 static uint32_t motor_test_start_ms;        // system time the motor test began
 static uint32_t motor_test_timeout_ms;      // test will timeout this many milliseconds after the motor_test_start_ms
@@ -55,7 +55,7 @@ void Copter::motor_test_output()
                 compass.set_voltage(battery.voltage());
                 compass.per_motor_calibration_update();
                 FALLTHROUGH;
-                
+
             case MOTOR_TEST_THROTTLE_PERCENT:
                 // sanity check motor_test_throttle value
 #if FRAME_CONFIG != HELI_FRAME
@@ -83,7 +83,7 @@ void Copter::motor_test_output()
         // sanity check throttle values
         if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX ) {
             // turn on motor to specified pwm vlaue
-            motors->output_test(motor_test_seq, pwm);
+            motors->output_test_seq(motor_test_seq, pwm);
         } else {
             motor_test_stop();
         }
@@ -135,7 +135,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     // if test has not started try to start it
     if (!ap.motor_test) {
         gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
-        
+
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
            supplied
@@ -165,7 +165,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
 
     // set timeout
     motor_test_start_ms = AP_HAL::millis();
-    motor_test_timeout_ms = MIN(timeout_sec * 1000, MOTOR_TEST_TIMEOUT_MS_MAX);
+    motor_test_timeout_ms = MIN(timeout_sec, MOTOR_TEST_TIMEOUT_SEC) * 1000;
 
     // store required output
     motor_test_seq = motor_seq;
@@ -176,7 +176,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t moto
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
         compass.per_motor_calibration_start();
     }            
-                
+
     // return success
     return MAV_RESULT_ACCEPTED;
 }
@@ -209,7 +209,7 @@ void Copter::motor_test_stop()
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
         compass.per_motor_calibration_end();
     }
-    
+
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
 }

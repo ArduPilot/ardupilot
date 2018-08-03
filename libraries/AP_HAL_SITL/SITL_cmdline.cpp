@@ -17,6 +17,7 @@
 #include <SITL/SIM_Plane.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
+#include <SITL/SIM_BalanceBot.h>
 #include <SITL/SIM_CRRCSim.h>
 #include <SITL/SIM_Gazebo.h>
 #include <SITL/SIM_last_letter.h>
@@ -64,7 +65,8 @@ void SITL_State::_usage(void)
            "\t--uartC device           set device string for UARTC\n"
            "\t--uartD device           set device string for UARTD\n"
            "\t--uartE device           set device string for UARTE\n"
-           "\t--uartF device           set device string for UARTE\n"
+           "\t--uartF device           set device string for UARTF\n"
+           "\t--uartG device           set device string for UARTG\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -97,6 +99,7 @@ static const struct {
     { "singlecopter",       SingleCopter::create },
     { "coaxcopter",         SingleCopter::create },
     { "rover",              SimRover::create },
+    { "balancebot",         BalanceBot::create },
     { "crrcsim",            CRRCSim::create },
     { "jsbsim",             JSBSim::create },
     { "flightaxis",         FlightAxis::create },
@@ -163,6 +166,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTD,
         CMDLINE_UARTE,
         CMDLINE_UARTF,
+        CMDLINE_UARTG,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -195,6 +199,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartD",           true,   0, CMDLINE_UARTD},
         {"uartE",           true,   0, CMDLINE_UARTE},
         {"uartF",           true,   0, CMDLINE_UARTF},
+        {"uartG",           true,   0, CMDLINE_UARTG},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -289,6 +294,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTD:
         case CMDLINE_UARTE:
         case CMDLINE_UARTF:
+        case CMDLINE_UARTG:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
         case CMDLINE_RTSCTS:

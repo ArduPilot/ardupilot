@@ -20,6 +20,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
+#include <SITL/SITL_Input.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
@@ -71,13 +72,14 @@ public:
     uint16_t current2_pin_value;  // pin 14
 
     // paths for UART devices
-    const char *_uart_path[6] {
+    const char *_uart_path[7] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
         "tcp:3",
         "GPS2",
         "tcp:5",
+        "tcp:6",
     };
     
 private:
@@ -133,7 +135,7 @@ private:
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
-    void _simulator_servos(SITL::Aircraft::sitl_input &input);
+    void _simulator_servos(struct sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();

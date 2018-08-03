@@ -2,13 +2,18 @@
 # Matek F405-Wing, developed by David Ingraham
 # Board configuration borrowed from Inav F405SE target
 
-# There is currently an issue with UART Mapping. For now, reference the table below:
-#-----------------------------------------------------------------------------------
-# Serial1 - T3/R3
-# Serial2 - T4/R4
-# Serial3 - T1/R1
-# Serial4 - T5/R5
-# Serial5 - T6/R6
+# Read hwdef/fmuv3/hwdef.dat for more info on these options
+
+# SerialX ports are mapped as printed on the top board
+# R1/T1 -> Serial1
+# R2 -> Sbus (T2 not currently used or available)
+# R3/T3 -> Serial3
+# R4/T4 -> Serial4
+# R5/T5 -> Serial5
+# R6/T6 -> Serial6
+
+# Note: UART4/Serial4, UART5/Serial5, USART6/Serial6 have no DMA on RX (TX always DMA).
+# If sending highspeed serial data (eg. 921600 baud) to the board, use Serial1/Serial3.
 
 #################################################
 ###             MCU CONFIGURATION             ###
@@ -33,7 +38,7 @@ define CH_CFG_ST_RESOLUTION 32
 FLASH_RESERVE_START_KB 64
 FLASH_SIZE_KB 1024
 
-define HAL_STORAGE_SIZE 8192
+define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 1
 
 # board voltage
@@ -43,8 +48,7 @@ STM32_VDD 330U
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs
-UART_ORDER OTG1 USART1 USART3 UART4 UART5 USART6
-
+UART_ORDER OTG1 USART3 USART1 EMPTY UART4 UART5 USART6
 
 #################################################
 ###             PIN DEFINITIONS               ###
@@ -136,7 +140,7 @@ define HAL_BUZZER_OFF 0
 SPIDEV mpu6000 SPI1 DEVID1 MPU_CS MODE3  1*MHZ  4*MHZ
 
 # OSD on SPI
-SPIDEV osd SPI2 DEVID2 OSD_CS MODE0 1*MHZ 4*MHZ
+SPIDEV osd SPI2 DEVID2 OSD_CS MODE0 10*MHZ 10*MHZ
 
 # SD Card on SPI
 SPIDEV sdcard SPI3 DEVID3 SDCARD_CS MODE0 400*KHZ 25*MHZ
@@ -154,17 +158,27 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define HAL_DATAFLASH_FILE_BUFSIZE 8
 define HAL_DATAFLASH_MAV_BUFSIZE 2
+
+# define default battery setup
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 31.7
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
-define HAL_COMPASS_HMC5843_I2C_BUS 1
-define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-define HAL_COMPASS_HMC5843_ROTATION ROTATION_YAW_90
+#analog rssi pin (also could be used as analog airspeed input)
+# PC5 - ADC12_CH15
+define BOARD_RSSI_ANA_PIN 15
 
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+define OSD_ENABLED ENABLED
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 9
 

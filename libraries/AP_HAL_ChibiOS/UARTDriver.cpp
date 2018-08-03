@@ -16,7 +16,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(HAL_NO_UARTDRIVER)
 #include "UARTDriver.h"
 #include "GPIO.h"
 #include <usbcfg.h>
@@ -46,9 +46,6 @@ thread_t *UARTDriver::uart_thread_ctx;
 // table to find UARTDrivers from serial number, used for event handling
 UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 
-// last time we did a 1kHz run of uarts
-uint32_t UARTDriver::last_thread_run_us;
-
 // event used to wake up waiting thread. This event number is for
 // caller threads
 #define EVT_DATA EVENT_MASK(0)
@@ -56,9 +53,7 @@ uint32_t UARTDriver::last_thread_run_us;
 UARTDriver::UARTDriver(uint8_t _serial_num) :
 serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
-_baudrate(57600),
-_in_timer(false),
-_initialised(false)
+_baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many UART drivers");
     uart_drivers[serial_num] = this;
@@ -72,9 +67,11 @@ _initialised(false)
  */
 void UARTDriver::uart_thread(void* arg)
 {
+    uint32_t last_thread_run_us = 0; // last time we did a 1kHz run of uarts
+
     uart_thread_ctx = chThdGetSelfX();
     while (true) {
-        eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
+        eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
         uint32_t now = AP_HAL::micros();
         if (now - last_thread_run_us >= 1000) {
             // run them all if it's been more than 1ms since we ran
@@ -132,8 +129,8 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (sdef.serial == nullptr) {
         return;
     }
-    uint16_t min_tx_buffer = 4096;
-    uint16_t min_rx_buffer = 1024;
+    uint16_t min_tx_buffer = 1024;
+    uint16_t min_rx_buffer = 512;
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
@@ -151,17 +148,25 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
+    while (_in_timer) {
+        hal.scheduler->delay(1);
+    }
     if (rxS != _readbuf.get_size()) {
         _initialised = false;
-        while (_in_timer) {
-            hal.scheduler->delay(1);
-        }
-
         _readbuf.set_size(rxS);
     }
 
+    bool clear_buffers = false;
     if (b != 0) {
+        // clear buffers on baudrate change, but not on the console (which is usually USB)
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
         _baudrate = b;
+    }
+    
+    if (clear_buffers) {
+        _readbuf.clear();
     }
 
     if (rx_bounce_buf == nullptr) {
@@ -176,12 +181,16 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
+    while (_in_timer) {
+        hal.scheduler->delay(1);
+    }
     if (txS != _writebuf.get_size()) {
         _initialised = false;
-        while (_in_timer) {
-            hal.scheduler->delay(1);
-        }
         _writebuf.set_size(txS);
+    }
+
+    if (clear_buffers) {
+        _writebuf.clear();
     }
 
     if (sdef.is_usb) {
@@ -591,7 +600,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
     }
     _wait.n = n;
     _wait.thread_ctx = chThdGetSelfX();
-    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, MS2ST(timeout_ms));
+    eventmask_t mask = chEvtWaitAnyTimeout(EVT_DATA, chTimeMS2I(timeout_ms));
     return (mask & EVT_DATA) != 0;
 }
 
@@ -643,6 +652,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     }
 
     /* TX DMA channel preparation.*/
+    _total_written += tx_len;
     _writebuf.advance(tx_len);
     tx_len = _writebuf.peekbytes(tx_bounce_buf, MIN(n, TX_BOUNCE_BUFSIZE));
     if (tx_len == 0) {
@@ -676,7 +686,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
     uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
-    chVTSet(&tx_timeout, US2ST(timeout_us), handle_tx_timeout, this);
+    chVTSet(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
 }
 
 /*
@@ -703,6 +713,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         }
         if (ret > 0) {
             _last_write_completed_us = AP_HAL::micros();
+            _total_written += ret;
         }
         _writebuf.advance(ret);
         
@@ -742,9 +753,27 @@ void UARTDriver::write_pending_bytes(void)
         if (_first_write_started_us == 0) {
             _first_write_started_us = AP_HAL::micros();
         }
-        if (_last_write_completed_us != 0) {
-            _flow_control = FLOW_CONTROL_ENABLE;
-        } else if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
+        if (sdef.dma_tx) {
+            // when we are using DMA we have a reliable indication that a write
+            // has completed from the DMA completion interrupt
+            if (_last_write_completed_us != 0) {
+                _flow_control = FLOW_CONTROL_ENABLE;
+                return;
+            }
+        } else {
+            // without DMA we need to look at the number of bytes written into the queue versus the
+            // remaining queue space
+            uint32_t space = qSpaceI(&((SerialDriver*)sdef.serial)->oqueue);
+            uint32_t used = SERIAL_BUFFERS_SIZE - space;
+            // threshold is 8 for the GCS_Common code to unstick SiK radios, which
+            // sends 6 bytes with flow control disabled
+            const uint8_t threshold = 8;
+            if (_total_written > used && _total_written - used > threshold) {
+                _flow_control = FLOW_CONTROL_ENABLE;
+                return;
+            }
+        }
+        if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
             hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
             set_flow_control(FLOW_CONTROL_DISABLE);
@@ -859,8 +888,9 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     if (sdef.rts_line == 0 || sdef.is_usb) {
         // no hw flow control available
         return;
-    }
+    }    
 #if HAL_USE_SERIAL == TRUE
+    SerialDriver *sd = (SerialDriver*)(sdef.serial);
     _flow_control = flowcontrol;
     if (!_initialised) {
         // not ready yet, we just set variable for when we call begin
@@ -874,7 +904,13 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
         // disable hardware CTS support
-        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
+        chSysLock();
+        if ((sd->usart->CR3 & (USART_CR3_CTSE | USART_CR3_RTSE)) != 0) {
+            sd->usart->CR1 &= ~USART_CR1_UE;
+            sd->usart->CR3 &= ~(USART_CR3_CTSE | USART_CR3_RTSE);
+            sd->usart->CR1 |= USART_CR1_UE;
+        }
+        chSysUnlock();
         break;
 
     case FLOW_CONTROL_AUTO:
@@ -890,8 +926,15 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         palClearLine(sdef.rts_line);
         _rts_is_active = true;
         // enable hardware CTS support, disable RTS support as we do that in software
-        ((SerialDriver*)(sdef.serial))->usart->CR3 |= USART_CR3_CTSE;
-        ((SerialDriver*)(sdef.serial))->usart->CR3 &= ~USART_CR3_RTSE;
+        chSysLock();
+        if ((sd->usart->CR3 & (USART_CR3_CTSE | USART_CR3_RTSE)) != USART_CR3_CTSE) {
+            // CTSE and RTSE can only be written when uart is disabled
+            sd->usart->CR1 &= ~USART_CR1_UE;
+            sd->usart->CR3 |= USART_CR3_CTSE;
+            sd->usart->CR3 &= ~USART_CR3_RTSE;
+            sd->usart->CR1 |= USART_CR1_UE;
+        }
+        chSysUnlock();
         break;
     }
 #endif // HAL_USE_SERIAL

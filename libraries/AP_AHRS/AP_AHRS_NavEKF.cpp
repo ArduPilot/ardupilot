@@ -291,13 +291,14 @@ void AP_AHRS_NavEKF::update_EKF3(void)
 void AP_AHRS_NavEKF::update_SITL(void)
 {
     if (_sitl == nullptr) {
-        _sitl = (SITL::SITL *)AP_Param::find_object("SIM_");
+        _sitl = AP::sitl();
         if (_sitl == nullptr) {
             return;
         }
     }
 
     const struct SITL::sitl_fdm &fdm = _sitl->state;
+    const AP_InertialSensor &_ins = AP::ins();
 
     if (active_EKF_type() == EKF_TYPE_SITL) {
         roll  = radians(fdm.rollDeg);
@@ -311,14 +312,10 @@ void AP_AHRS_NavEKF::update_SITL(void)
 
         _gyro_drift.zero();
 
-        _gyro_estimate = Vector3f(radians(fdm.rollRate),
-                                  radians(fdm.pitchRate),
-                                  radians(fdm.yawRate));
+        _gyro_estimate = _ins.get_gyro();
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            const Vector3f accel(fdm.xAccel,
-                           fdm.yAccel,
-                           fdm.zAccel);
+            const Vector3f &accel = _ins.get_accel(i);
             _accel_ef_ekf[i] = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
         }
         _accel_ef_ekf_blended = _accel_ef_ekf[0];
@@ -334,9 +331,8 @@ void AP_AHRS_NavEKF::update_SITL(void)
             const float delTime = 0.001f * (timeStamp_ms - _last_body_odm_update_ms);
             _last_body_odm_update_ms = timeStamp_ms;
             timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
-            Vector3f delAng(radians(fdm.rollRate),
-                                       radians(fdm.pitchRate),
-                                       radians(fdm.yawRate));
+            Vector3f delAng = _ins.get_gyro();
+            
             delAng *= delTime;
             // rotate earth velocity into body frame and calculate delta position
             Matrix3f Tbn;
@@ -1050,8 +1046,7 @@ AP_AHRS_NavEKF::EKF_TYPE AP_AHRS_NavEKF::active_EKF_type(void) const
                   accept EKF as healthy to allow arming. Once we reach
                   speed the EKF should get yaw alignment
                 */
-                if (filt_state.flags.pred_horiz_pos_abs &&
-                    filt_state.flags.pred_horiz_pos_rel) {
+                if (filt_state.flags.gps_quality_good) {
                     return ret;
                 }
             }

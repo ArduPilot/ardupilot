@@ -57,10 +57,8 @@ void Gimbal::update(void)
     Matrix3f vehicle_dcm;
     fdm.quaternion.rotation_matrix(vehicle_dcm);
 
-    Vector3f vehicle_gyro = Vector3f(radians(fdm.rollRate),
-                                     radians(fdm.pitchRate),
-                                     radians(fdm.yawRate));
-    Vector3f vehicle_accel_body = Vector3f(fdm.xAccel, fdm.yAccel, fdm.zAccel);
+    const Vector3f &vehicle_gyro = AP::ins().get_gyro();
+    const Vector3f &vehicle_accel_body = AP::ins().get_accel();
 
     // take a copy of the demanded rates to bypass the limiter function for testing
     Vector3f demRateRaw = demanded_angular_rate;

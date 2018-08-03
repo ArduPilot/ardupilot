@@ -58,17 +58,10 @@ void AP_LandingGear::set_position(LandingGearCommand cmd)
 {
     switch (cmd) {
         case LandingGear_Retract:
-            if (!_deploy_lock) {
-                retract();
-            }
+            retract();
             break;
         case LandingGear_Deploy:
             deploy();
-            _deploy_lock = false;
-            break;
-        case LandingGear_Deploy_And_Keep_Deployed:
-            deploy();
-            _deploy_lock = true;
             break;
     }
 }

@@ -1,11 +1,6 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 
-void Plane::init_rangefinder(void)
-{
-    rangefinder.init();
-}
-
 /*
   read the rangefinder and update height estimate
  */
@@ -109,21 +104,6 @@ void Plane::rpm_update(void)
     }
 }
 
-/*
-  update AP_Button
- */
-void Plane::button_update(void)
-{
-    g2.button.update();
-}
-
-/*
-  update AP_ICEngine
- */
-void Plane::ice_update(void)
-{
-    g2.ice_control.update();
-}
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but

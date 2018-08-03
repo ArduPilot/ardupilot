@@ -3,6 +3,10 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
+
 class DataFlash_Class;
 
 namespace SITL {
@@ -108,6 +112,9 @@ public:
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
     AP_Vector3f mag_ofs;  // in mag units
+    AP_Vector3f mag_diag;  // diagonal corrections
+    AP_Vector3f mag_offdiag;  // off-diagonal corrections
+    AP_Int8 mag_orient;   // external compass orientation
     AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
@@ -131,6 +138,7 @@ public:
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
+    AP_Int8  rc_chancount; // channel count
     AP_Int8  baro_disable; // disable simulated barometer
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
@@ -140,7 +148,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+
     // wind control
     enum WindType {
         WIND_TYPE_SQRT = 0,
@@ -202,6 +210,11 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
 };
 
 } // namespace SITL

@@ -23,6 +23,8 @@ void Copter::failsafe_radio_on_event()
         } else {
             if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_RTL) {
                 set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
+            } else if (g.failsafe_throttle == FS_THR_ENABLED_CONTINUE_MISSION) {
+                set_mode_RTL_or_land_with_pause(MODE_REASON_RADIO_FAILSAFE);
             } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL) {
                 set_mode_SmartRTL_or_RTL(MODE_REASON_RADIO_FAILSAFE);
             } else if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND) {
@@ -282,9 +284,3 @@ bool Copter::should_disarm_on_failsafe() {
             return ap.land_complete;
     }
 }
-
-void Copter::update_events()
-{
-    ServoRelayEvents.update_events();
-}
-
