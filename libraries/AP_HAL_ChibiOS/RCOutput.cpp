@@ -68,6 +68,7 @@ void RCOutput::init()
             pwmStart(group.pwm_drv, &group.pwm_cfg);
             group.pwm_started = true;
         }
+        chVTObjectInit(&group.dma_timeout);
     }
 
 #if HAL_WITH_IO_MCU
@@ -777,7 +778,7 @@ void RCOutput::timer_tick(void)
         if (!serial_group &&
             group.current_mode >= MODE_PWM_DSHOT150 &&
             group.current_mode <= MODE_PWM_DSHOT1200 &&
-            now - group.last_dshot_send_us > 900) {
+            now - group.last_dshot_send_us > 400) {
             // do a blocking send now, to guarantee DShot sends at
             // above 1000 Hz. This makes the protocol more reliable on
             // long cables, and also keeps some ESCs happy that don't
@@ -951,6 +952,17 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 }
 
 /*
+  unlock DMA channel after a dshot send completes
+ */
+void RCOutput::dma_unlock(void *p)
+{
+    pwm_group *group = (pwm_group *)p;
+    chSysLockFromISR();
+    group->dma_handle->unlock_from_IRQ();
+    chSysUnlockFromISR();    
+}
+
+/*
   DMA interrupt handler. Used to mark DMA completed for DShot
  */
 void RCOutput::dma_irq_callback(void *p, uint32_t flags)
@@ -962,7 +974,8 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
         // tell the waiting process we've done the DMA
         chEvtSignalI(irq.waiter, serial_event_mask);
     } else {
-        group->dma_handle->unlock_from_IRQ();
+        // this prevents us ever having two dshot pulses too close together
+        chVTSetI(&group->dma_timeout, chTimeUS2I(dshot_min_gap_us), dma_unlock, p);
     }
     chSysUnlockFromISR();
 }
