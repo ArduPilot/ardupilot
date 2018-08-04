@@ -788,9 +788,8 @@ void AP_UAVCAN::tunnel_send()
     }
 
     uint32_t now = AP_HAL::millis();
-    const uavcan::tunnel::Broadcast const_msg;
 
-    if (avail < const_msg.buffer.capacity() &&
+    if (avail < 60 && // 60 == const_msg.buffer.capacity() but there's no way to get a define of it
             now - _tunnel_last_send < AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
         // wait for a full buffer and we haven't waited too long
         return;
@@ -801,6 +800,9 @@ void AP_UAVCAN::tunnel_send()
     while (avail && packets_sent++ < 3) {
 
         uavcan::tunnel::Broadcast bdcst_msg;
+        bdcst_msg.channel_id = 0;       // TODO: implement multiple channels
+        //bdcst_msg.protocol = uavcan::tunnel::Protocol::MAVLINK;
+
         while (avail-- && bdcst_msg.buffer.size() < bdcst_msg.buffer.capacity()) {
             int16_t data = _tunnel.uart->fetch_for_outbound();
             if (data < 0) {
