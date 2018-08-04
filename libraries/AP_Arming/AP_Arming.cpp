@@ -687,10 +687,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
-        if (check_min_max && !channel->min_max_configured()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "RC %s not configured", channel_name);
-            ret = false;
-        }
         if (channel->get_radio_min() > 1300) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             ret = false;
