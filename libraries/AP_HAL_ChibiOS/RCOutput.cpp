@@ -359,7 +359,7 @@ void RCOutput::push_local(void)
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (serial_group == &group) {
+        if (serial_group) {
             continue;
         }
         if (!group.pwm_started) {
@@ -597,7 +597,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         const uint16_t rates[(1 + MODE_PWM_DSHOT1200) - MODE_PWM_DSHOT150] = { 150, 300, 600, 1200 };
         uint32_t rate = rates[uint8_t(group.current_mode - MODE_PWM_DSHOT150)] * 1000UL;
         const uint32_t bit_period = 20;
-        
+
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, bit_period, true)) {
             group.current_mode = MODE_PWM_NONE;
@@ -855,9 +855,16 @@ void RCOutput::fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t 
 {
     const uint32_t DSHOT_MOTOR_BIT_0 = 7 * clockmul;
     const uint32_t DSHOT_MOTOR_BIT_1 = 14 * clockmul;
-    for (uint16_t i = 0; i < 16; i++) {
+    uint16_t i = 0;
+    for (; i < dshot_pre; i++) {
+        buffer[i * stride] = 0;
+    }
+    for (; i < 16 + dshot_pre; i++) {
         buffer[i * stride] = (packet & 0x8000) ? DSHOT_MOTOR_BIT_1 : DSHOT_MOTOR_BIT_0;
         packet <<= 1;
+    }
+    for (; i<dshot_bit_length; i++) {
+        buffer[i * stride] = 0;
     }
 }
 
@@ -882,6 +889,8 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
     }
     
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
+
+    memset((uint8_t *)group.dma_buffer, 0, dshot_buffer_length);
     
     for (uint8_t i=0; i<4; i++) {
         uint8_t chan = group.chan[i];
@@ -895,6 +904,7 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
             
             pwm = constrain_int16(pwm, _esc_pwm_min, _esc_pwm_max);
             uint16_t value = 2000UL * uint32_t(pwm - _esc_pwm_min) / uint32_t(_esc_pwm_max - _esc_pwm_min);
+            //uint32_t value = (chan+1) * 3;
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
@@ -989,10 +999,11 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
   While serial output is active normal output to the channel group is
   suspended.
 */
-bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
+bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t chanmask)
 {
     // account for IOMCU channels
     chan -= chan_offset;
+    chanmask >>= chan_offset;
     pwm_group *new_serial_group = nullptr;
     
     // find the channel group
@@ -1021,9 +1032,17 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
         return false;
     }
 
-    // setup the group for serial output. We ask for a bit width of 1, which gets modified by the 
-    if (!setup_group_DMA(*new_serial_group, baudrate, 10, false)) {
-        return false;
+    // setup the groups for serial output. We ask for a bit width of 1, which gets modified by the
+    // we setup all groups so they all are setup with the right polarity, and to make switching between
+    // channels in blheli pass-thru fast
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        pwm_group &group = pwm_group_list[i];
+        if (group.ch_mask & chanmask) {
+            if (!setup_group_DMA(group, baudrate, 10, false)) {
+                serial_end();
+                return false;
+            }
+        }
     }
 
     serial_group = new_serial_group;
@@ -1281,18 +1300,20 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 void RCOutput::serial_end(void)
 {
     if (serial_group) {
-        pwm_group &group = *serial_group;
-        // restore normal output
-        if (group.pwm_started) {
-            pwmStop(group.pwm_drv);
-            group.pwm_started = false;
-        }
-        set_group_mode(group);
-        set_freq_group(group);
-        irq.waiter = nullptr;
         if (serial_thread == chThdGetSelfX()) {
             chThdSetPriority(serial_priority);
             serial_thread = nullptr;
+        }
+        irq.waiter = nullptr;
+        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+            pwm_group &group = pwm_group_list[i];
+            // restore normal output
+            if (group.pwm_started) {
+                pwmStop(group.pwm_drv);
+                group.pwm_started = false;
+            }
+            set_group_mode(group);
+            set_freq_group(group);
         }
     }
     serial_group = nullptr;
