@@ -487,20 +487,14 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
 // for balancebot
 // return a throttle output from -1 to +1, given a desired pitch angle
 // desired_pitch is in radians
-float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool armed, float dt)
+float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool motor_limit_low, bool motor_limit_high, float dt)
 {
-    // reset I term and return if disarmed
-    if (!armed){
-        _pitch_to_throttle_pid.reset_I();
-        return 0.0f;
-    }
-
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
 
     // if not called recently, reset input filter
     const uint32_t now = AP_HAL::millis();
-    if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > (AR_ATTCONTROL_TIMEOUT_MS))) {
+    if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
         _pitch_to_throttle_pid.reset_filter();
         _pitch_to_throttle_pid.reset_I();
     }
@@ -518,8 +512,23 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool 
     // pitch error is given as input to PID contoller
     _pitch_to_throttle_pid.set_input_filter_all(pitch_error);
 
-    // return output of PID controller
-    return constrain_float(_pitch_to_throttle_pid.get_pid(), -1.0f, +1.0f);
+    // get feed-forward
+    const float ff = _pitch_to_throttle_pid.get_ff(desired_pitch);
+
+    // get p
+    const float p = _pitch_to_throttle_pid.get_p();
+
+    // get i unless non-skid-steering rover at low speed or steering output has hit a limit
+    float i = _pitch_to_throttle_pid.get_integrator();
+    if ((is_negative(pitch_error) && !motor_limit_low) || (is_positive(pitch_error) && !motor_limit_high)) {
+        i = _pitch_to_throttle_pid.get_i();
+    }
+
+    // get d
+    const float d = _pitch_to_throttle_pid.get_d();
+
+    // constrain and return final output
+    return (ff + p + i + d);
 }
 
 // get latest desired pitch in radians for reporting purposes
