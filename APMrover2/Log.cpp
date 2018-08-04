@@ -38,6 +38,11 @@ void Rover::Log_Write_Attitude()
     // log steering rate controller
     DataFlash.Log_Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
     DataFlash.Log_Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
+
+    // log pitch control for balance bots
+    if (is_balancebot()) {
+        DataFlash.Log_Write_PID(LOG_PIDP_MSG, g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info());
+    }
 }
 
 // Write a range finder depth message
