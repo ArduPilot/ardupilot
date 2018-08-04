@@ -388,6 +388,10 @@ private:
     void update_GPS(void);
     void update_current_mode(void);
 
+    // balance_bot.cpp
+    void balancebot_pitch_control(float &throttle);
+    bool is_balancebot() const;
+
     // capabilities.cpp
     void init_capabilities(void);
 
@@ -552,11 +556,6 @@ private:
 public:
     void mavlink_delay_cb();
     void failsafe_check();
-
-    // BalanceBot.cpp
-    void balancebot_pitch_control(float &, bool);
-    bool is_balancebot() const;
-
     void update_soft_armed();
     // Motor test
     void motor_test_output();
