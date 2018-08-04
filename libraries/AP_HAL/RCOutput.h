@@ -137,12 +137,12 @@ public:
       databits. This is used for passthrough ESC configuration and
       firmware flashing
 
-      While serial output is active normal output to this channel is
-      suspended. Output to some other channels (such as those in the
-      same channel timer group) may also be stopped, depending on the
-      implementation
+      While serial output is active normal output to all channels in
+      the chanmask is suspended. Output to some other channels (such
+      as those in the same channel timer groups) may also be stopped,
+      depending on the implementation
      */
-    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate) { return false; }
+    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t chanmask) { return false; }
 
     /*
       write a set of bytes to an ESC, using settings from
