@@ -94,6 +94,9 @@ public:
     // desired_pitch is in radians
     float get_throttle_out_from_pitch(float desired_pitch, bool armed, float dt);
 
+    // get latest desired pitch in radians for reporting purposes
+    float get_desired_pitch() const;
+
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }

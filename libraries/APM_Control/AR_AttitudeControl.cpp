@@ -522,6 +522,17 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool 
     return constrain_float(_pitch_to_throttle_pid.get_pid(), -1.0f, +1.0f);
 }
 
+// get latest desired pitch in radians for reporting purposes
+float AR_AttitudeControl::get_desired_pitch() const
+{
+    // if not called recently, return 0
+    if ((_balance_last_ms == 0) || ((AP_HAL::millis() - _balance_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+        return 0.0f;
+    }
+
+    return _pitch_to_throttle_pid.get_pid_info().desired;
+}
+
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
 bool AR_AttitudeControl::get_forward_speed(float &speed) const
 {
