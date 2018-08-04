@@ -595,7 +595,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
         const uint16_t rates[(1 + MODE_PWM_DSHOT1200) - MODE_PWM_DSHOT150] = { 150, 300, 600, 1200 };
         uint32_t rate = rates[uint8_t(group.current_mode - MODE_PWM_DSHOT150)] * 1000UL;
-        const uint32_t bit_period = 19;
+        const uint32_t bit_period = 20;
         
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, bit_period, true)) {
@@ -745,13 +745,12 @@ void RCOutput::trigger_groups(void)
     }
     osalSysUnlock();
 
-    for (uint8_t i = 0; i < NUM_GROUPS; i++) {
-        pwm_group &group = pwm_group_list[i];
-        if (serial_group == &group) {
-            continue;
-        }
-        if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
-            dshot_send(group, false);
+    if (!serial_group) {
+        for (uint8_t i = 0; i < NUM_GROUPS; i++) {
+            pwm_group &group = pwm_group_list[i];
+            if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
+                dshot_send(group, false);
+            }
         }
     }
     
@@ -775,7 +774,7 @@ void RCOutput::timer_tick(void)
     uint64_t now = AP_HAL::micros64();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (serial_group != &group &&
+        if (!serial_group &&
             group.current_mode >= MODE_PWM_DSHOT150 &&
             group.current_mode <= MODE_PWM_DSHOT1200 &&
             now - group.last_dshot_send_us > 900) {
@@ -991,10 +990,6 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
             continue;
         }
         if (group.ch_mask & (1U<<chan)) {
-            if (serial_group && serial_group != &group) {
-                // we're changing to a new group, end the previous output
-                serial_end();
-            }
             new_serial_group = &group;
             for (uint8_t j=0; j<4; j++) {
                 if (group.chan[j] == chan) {
@@ -1130,6 +1125,11 @@ void RCOutput::serial_bit_irq(void)
             irq.nbits = 1;
             irq.byte_start_tick = now;
             irq.bitmask = 0;
+            // setup a timeout for 11 bits width, so we aren't left
+            // waiting at the end of bytes
+            chSysLockFromISR();
+            chVTSetI(&irq.serial_timeout, irq.bit_time_tick*11, serial_byte_timeout, irq.waiter);
+            chSysUnlockFromISR();
         }
     } else {
         systime_t dt = now - irq.byte_start_tick;
@@ -1156,18 +1156,31 @@ void RCOutput::serial_bit_irq(void)
     
     if (send_signal) {
         chSysLockFromISR();
+        chVTResetI(&irq.serial_timeout);
         chEvtSignalI(irq.waiter, serial_event_mask);
         chSysUnlockFromISR();
     }
 }
 
+/*
+  timeout a byte read
+ */
+void RCOutput::serial_byte_timeout(void *ctx)
+{
+    chSysLockFromISR();
+    irq.timed_out = true;
+    chEvtSignalI((thread_t *)ctx, serial_event_mask);
+    chSysUnlockFromISR();
+}
 
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
 */
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
-    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(10)) & serial_event_mask) == 0);
+    irq.timed_out = false;
+    chVTSet(&irq.serial_timeout, chTimeMS2I(10), serial_byte_timeout, irq.waiter);
+    bool timed_out = ((chEvtWaitAny(serial_event_mask) & serial_event_mask) == 0) || irq.timed_out;
 
     uint16_t byteval = irq.byteval;
 
@@ -1211,6 +1224,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     // assume GPIO mappings for PWM outputs start at 50
     palSetLineMode(line, gpio_mode);
 
+    chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
 
     irq.line = group.pal_lines[group.serial.chan];
