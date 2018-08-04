@@ -93,6 +93,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case SAVE_WP:
     case RESETTOARMEDYAW:
     case AUTO:
+    case AUTOTUNE:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
