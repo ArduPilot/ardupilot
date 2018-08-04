@@ -372,6 +372,7 @@ def run_step(step):
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "frame": opts.frame,
+        "_show_test_timings": opts.show_test_timings,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -644,6 +645,10 @@ if __name__ == "__main__":
                       type='string',
                       default=None,
                       help='specify frame type')
+    parser.add_option("--show-test-timings",
+                      action="store_true",
+                      default=False,
+                      help="show how long each test took to run")
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
