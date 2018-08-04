@@ -158,7 +158,8 @@ private:
         uint32_t rc_frequency;
         bool in_serial_dma;
         uint64_t last_dshot_send_us;
-
+        virtual_timer_t dma_timeout;
+        
         // serial output
         struct {
             // expected time per bit
@@ -277,9 +278,10 @@ private:
     /*
       DShot handling
      */
-    const uint8_t dshot_post = 6;
+    const uint8_t dshot_post = 2;
     const uint16_t dshot_bit_length = 16 + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
+    static const uint16_t dshot_min_gap_us = 100;
     uint32_t dshot_pulse_time_us;
     uint16_t telem_request_mask;
     
@@ -289,6 +291,7 @@ private:
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
     void dshot_send(pwm_group &group, bool blocking);
     static void dma_irq_callback(void *p, uint32_t flags);
+    static void dma_unlock(void *p);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
