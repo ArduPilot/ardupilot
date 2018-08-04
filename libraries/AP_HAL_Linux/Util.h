@@ -70,6 +70,7 @@ public:
      */
     int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
 
+#ifdef DEBUG_PERF
     perf_counter_t perf_alloc(enum perf_counter_type t, const char *name) override
     {
         return Perf::get_instance()->add(t, name);
@@ -89,6 +90,7 @@ public:
     {
         return Perf::get_instance()->count(perf);
     }
+#endif
 
     // create a new semaphore
     AP_HAL::Semaphore *new_semaphore(void) override { return new Semaphore; }

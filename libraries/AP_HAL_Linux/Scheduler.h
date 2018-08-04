@@ -12,7 +12,11 @@
 
 #define AP_LINUX_SENSORS_STACK_SIZE  256 * 1024
 #define AP_LINUX_SENSORS_SCHED_POLICY  SCHED_FIFO
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+#define AP_LINUX_SENSORS_SCHED_PRIO 11
+#else
 #define AP_LINUX_SENSORS_SCHED_PRIO 12
+#endif
 
 namespace Linux {
 
@@ -72,15 +76,15 @@ private:
 
     AP_HAL::Proc _failsafe;
 
-    bool _initialized;
+    bool _initialized = false;
     pthread_barrier_t _initialized_barrier;
 
     AP_HAL::MemberProc _timer_proc[LINUX_SCHEDULER_MAX_TIMER_PROCS];
-    uint8_t _num_timer_procs;
+    uint8_t _num_timer_procs = 0;
     volatile bool _in_timer_proc;
 
     AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_IO_PROCS];
-    uint8_t _num_io_procs;
+    uint8_t _num_io_procs = 0;
 
     SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
     SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
@@ -95,7 +99,7 @@ private:
     void _run_io();
     void _run_uarts();
 
-    uint64_t _stopped_clock_usec;
+    uint64_t _stopped_clock_usec = 0;
     uint64_t _last_stack_debug_msec;
     pthread_t _main_ctx;
 

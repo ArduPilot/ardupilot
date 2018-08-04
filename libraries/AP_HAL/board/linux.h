@@ -75,6 +75,17 @@
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+#define HAL_BOARD_LOG_DIRECTORY "/data/edu/ardupilot/logs"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/data/edu/ardupilot/terrain"
+#define HAL_BOARD_STORAGE_DIRECTORY "/data/edu/ardupilot"
+#define HAL_PARAM_DEFAULTS_PATH "/data/edu/ardupilot/mambo.parm"
+#define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
+#define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_270
+#define HAL_INS_MPU60x0_I2C_BUS 0
+#define HAL_INS_MPU60x0_I2C_ADDR 0x68
+#define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+#define HAL_BARO_DEFAULT HAL_BARO_INPUTEVENT
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"

@@ -598,6 +598,16 @@ class bebop(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
         )
 
+class mambo(linux):
+    toolchain = 'arm-none-linux-gnueabi'
+    
+    def configure_env(self, cfg, env):
+        super(mambo, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_MAMBO',
+        )
+        
 class disco(linux):
     toolchain = 'arm-linux-gnueabihf'
 

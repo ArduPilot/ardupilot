@@ -33,6 +33,7 @@
 #include "RCInput_ZYNQ.h"
 #include "RCOutput_AioPRU.h"
 #include "RCOutput_Bebop.h"
+#include "RCOutput_Mambo.h"
 #include "RCOutput_Disco.h"
 #include "RCOutput_PCA9685.h"
 #include "RCOutput_PRU.h"
@@ -62,20 +63,24 @@ static Util utilInstance;
 
 // 5 serial ports on Linux
 static UARTDriver uartADriver(true);
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
 static UARTDriver uartCDriver(false);
 static UARTDriver uartDDriver(false);
 static UARTDriver uartEDriver(false);
 static UARTDriver uartFDriver(false);
 static UARTDriver uartGDriver(false);
+#endif
 
 static I2CDeviceManager i2c_mgr_instance;
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
 static SPIDeviceManager spi_mgr_instance;
+#endif
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 static SPIUARTDriver uartBDriver;
-#else
+#elif CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
 static UARTDriver uartBDriver(false);
 #endif
 
@@ -188,6 +193,8 @@ static RCOutput_PCA9685 rcoutDriver(i2c_mgr_instance.get_device(1, PCA9685_QUINA
 static RCOutput_ZYNQ rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BLDC_I2C_BUS, HAL_RCOUT_BEBOP_BLDC_I2C_ADDR));
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+static RCOutput_Mambo rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BLDC_I2C_BUS, HAL_RCOUT_DISCO_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
@@ -213,14 +220,22 @@ static Empty::OpticalFlow opticalFlow;
 HAL_Linux::HAL_Linux() :
     AP_HAL::HAL(
         &uartADriver,
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+        0,0,0,0,0,0,
+#else
         &uartBDriver,
         &uartCDriver,
         &uartDDriver,
         &uartEDriver,
         &uartFDriver,
         &uartGDriver,
+#endif
         &i2c_mgr_instance,
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+        0,
+#else
         &spi_mgr_instance,
+#endif
         &analogIn,
         &storageDriver,
         &uartADriver,
@@ -296,6 +311,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'A':
             uartADriver.set_device_path(gopt.optarg);
             break;
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
         case 'B':
             uartBDriver.set_device_path(gopt.optarg);
             break;
@@ -314,6 +330,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'G':
             uartGDriver.set_device_path(gopt.optarg);
             break;
+#endif
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
             break;
@@ -344,9 +361,11 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     rcout->init();
     rcin->init();
     uartA->begin(115200);
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
     uartE->begin(115200);
     uartF->begin(115200);
     uartG->begin(115200);
+#endif
     analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
@@ -376,7 +395,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 
     rcin->teardown();
     I2CDeviceManager::from(i2c_mgr)->teardown();
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
     SPIDeviceManager::from(spi)->teardown();
+#endif
     Scheduler::from(scheduler)->teardown();
 }
 

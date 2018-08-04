@@ -43,6 +43,7 @@
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
+#include "AP_Baro_InputEvent.h"
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -526,6 +527,8 @@ void AP_Baro::init(void)
     ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR)),
                                       AP_Baro_MS56XX::BARO_MS5607));
+#elif HAL_BARO_DEFAULT == HAL_BARO_INPUTEVENT
+    ADD_BACKEND(AP_Baro_InputEvent::probe(*this));
 #elif HAL_BARO_DEFAULT == HAL_BARO_MS5637_I2C
     ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_MS5637_I2C_BUS, HAL_BARO_MS5637_I2C_ADDR)),

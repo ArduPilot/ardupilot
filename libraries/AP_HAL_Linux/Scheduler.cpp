@@ -28,13 +28,21 @@ using namespace Linux;
 extern const AP_HAL::HAL& hal;
 
 #define APM_LINUX_MAX_PRIORITY          20
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+#define APM_LINUX_TIMER_PRIORITY        11
+#else
 #define APM_LINUX_TIMER_PRIORITY        15
+#endif
 #define APM_LINUX_UART_PRIORITY         14
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+#define APM_LINUX_TIMER_RATE            200
+#else
 #define APM_LINUX_TIMER_RATE            1000
+#endif
 #define APM_LINUX_UART_RATE             100
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
@@ -45,7 +53,11 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_IO_RATE               50
 #else
 #define APM_LINUX_RCIN_RATE             100
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MAMBO
+#define APM_LINUX_IO_RATE               20
+#else
 #define APM_LINUX_IO_RATE               50
+#endif
 #endif
 
 #define SCHED_THREAD(name_, UPPER_NAME_)                        \
@@ -72,7 +84,9 @@ void Scheduler::init()
     } sched_table[] = {
         SCHED_THREAD(timer, TIMER),
         SCHED_THREAD(uart, UART),
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
         SCHED_THREAD(rcin, RCIN),
+#endif
         SCHED_THREAD(io, IO),
     };
 
@@ -257,12 +271,14 @@ void Scheduler::_run_uarts()
 {
     // process any pending serial bytes
     hal.uartA->_timer_tick();
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
     hal.uartB->_timer_tick();
     hal.uartC->_timer_tick();
     hal.uartD->_timer_tick();
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+#endif
 }
 
 void Scheduler::_rcin_task()
@@ -332,12 +348,16 @@ void Scheduler::teardown()
 {
     _timer_thread.stop();
     _io_thread.stop();
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
     _rcin_thread.stop();
+#endif
     _uart_thread.stop();
 
     _timer_thread.join();
     _io_thread.join();
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_MAMBO
     _rcin_thread.join();
+#endif
     _uart_thread.join();
 }
 
