@@ -237,6 +237,7 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
+    uint16_t motor_mask;
 
     // when did we last request telemetry?
     uint32_t last_telem_request_us;
