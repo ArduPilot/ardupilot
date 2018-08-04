@@ -489,8 +489,7 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
 // desired_pitch is in radians
 float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool armed, float dt)
 {
-
-    //reset I term and return if disarmed
+    // reset I term and return if disarmed
     if (!armed){
         _pitch_to_throttle_pid.reset_I();
         return 0.0f;
@@ -499,24 +498,25 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool 
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
 
-    const uint32_t now = AP_HAL::millis();
-
     // if not called recently, reset input filter
+    const uint32_t now = AP_HAL::millis();
     if ((_balance_last_ms == 0) || ((now - _balance_last_ms) > (AR_ATTCONTROL_TIMEOUT_MS))) {
         _pitch_to_throttle_pid.reset_filter();
-    } else {
-        _pitch_to_throttle_pid.set_dt(dt);
+        _pitch_to_throttle_pid.reset_I();
     }
     _balance_last_ms = now;
 
     // calculate pitch error
     const float pitch_error = desired_pitch - _ahrs.pitch;
 
-    // pitch error is given as input to PID contoller
-    _pitch_to_throttle_pid.set_input_filter_all(pitch_error);
+    // set PID's dt
+    _pitch_to_throttle_pid.set_dt(dt);
 
     // record desired speed for logging purposes only
     _pitch_to_throttle_pid.set_desired_rate(desired_pitch);
+
+    // pitch error is given as input to PID contoller
+    _pitch_to_throttle_pid.set_input_filter_all(pitch_error);
 
     // return output of PID controller
     return constrain_float(_pitch_to_throttle_pid.get_pid(), -1.0f, +1.0f);
