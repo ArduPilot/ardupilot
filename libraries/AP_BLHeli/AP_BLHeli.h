@@ -76,6 +76,7 @@ private:
     AP_Int16 telem_rate;
     AP_Int8 debug_level;
     AP_Int8 output_type;
+    AP_Int8 control_port;
     
     enum mspState {
         MSP_IDLE=0,
@@ -183,12 +184,33 @@ private:
         uint8_t buf[256+3+8];
         uint8_t crc1;
         uint16_t crc;
-        uint8_t interface_mode;
-        uint8_t deviceInfo[4];
+        bool connected[AP_BLHELI_MAX_ESCS];
+        uint8_t interface_mode[AP_BLHELI_MAX_ESCS];
+        uint8_t deviceInfo[AP_BLHELI_MAX_ESCS][4];
         uint8_t chan;
         uint8_t ack;
     } blheli;
 
+    const uint16_t esc_status_addr = 0xEB00;
+    
+    // protocol reported by ESC in esc_status
+    enum esc_protocol {
+        ESC_PROTOCOL_NONE=0,
+        ESC_PROTOCOL_NORMAL=1,
+        ESC_PROTOCOL_ONESHOT125=2,
+        ESC_PROTOCOL_DSHOT=5,
+    };
+    
+    // ESC status structure at address 0xEB00
+    struct PACKED esc_status {
+        uint8_t unknown[3];
+        enum esc_protocol protocol;
+        uint32_t good_frames;
+        uint32_t bad_frames;
+        uint32_t unknown2;
+    };
+    
+    
     AP_HAL::UARTDriver *uart;
     AP_HAL::UARTDriver *debug_uart;
     AP_HAL::UARTDriver *telem_uart;    
@@ -222,6 +244,7 @@ private:
     static const uint8_t telem_packet_size = 10;
     bool telem_uart_started;
     uint32_t last_telem_byte_read_us;
+    int8_t last_control_port;
 
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
