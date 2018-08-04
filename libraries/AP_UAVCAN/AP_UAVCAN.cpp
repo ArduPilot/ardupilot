@@ -784,10 +784,11 @@ void AP_UAVCAN::tunnel_send()
 
     const uint16_t max_send = 60; // 60 is sizeof(msg.buffer) at max capacity per dsdl
     uint32_t avail = _tunnel.uart->tx_available();
-    if (avail < max_send) {
-        // wait for a full buffer
+    if (avail < max_send && now - _tunnel_last_send < AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
+        // wait for a full buffer and we haven't waited too long
         return;
     }
+    _tunnel_last_send = now;
 
     if (avail > max_send) {
         avail = max_send;
