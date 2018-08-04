@@ -267,7 +267,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
 
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
-        rover.balancebot_pitch_control(throttle_out, rover.arming.is_armed());
+        rover.balancebot_pitch_control(throttle_out);
     }
 
     // send to motor
@@ -283,7 +283,7 @@ bool Mode::stop_vehicle()
 
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
-        rover.balancebot_pitch_control(throttle_out, rover.arming.is_armed());
+        rover.balancebot_pitch_control(throttle_out);
     }
 
     // send to motor

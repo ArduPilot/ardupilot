@@ -7,7 +7,7 @@ void ModeHold::update()
 
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
-        rover.balancebot_pitch_control(throttle, rover.arming.is_armed());
+        rover.balancebot_pitch_control(throttle);
     }
 
     // hold position - stop motors and center steering
