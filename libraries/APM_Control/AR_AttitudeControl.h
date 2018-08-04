@@ -92,7 +92,7 @@ public:
     // for balancebot
     // return a throttle output from -1 to +1 given a desired pitch angle
     // desired_pitch is in radians
-    float get_throttle_out_from_pitch(float desired_pitch, bool armed, float dt);
+    float get_throttle_out_from_pitch(float desired_pitch, bool motor_limit_low, bool motor_limit_high, float dt);
 
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
