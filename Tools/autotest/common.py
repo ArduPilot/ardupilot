@@ -142,10 +142,21 @@ class AutoTest(ABC):
         '''allow subclasses to override SITL streamrate'''
         return 10
 
+    def autotest_connection_hostport(self):
+        '''returns host and port of connection between MAVProxy and autotest,
+        colon-separated'''
+        return "127.0.0.1:19550"
+
+    def autotest_connection_string_from_mavproxy(self):
+        return "tcpin:" + self.autotest_connection_hostport()
+
+    def autotest_connection_string_to_mavproxy(self):
+        return "tcp:" + self.autotest_connection_hostport()
+
     def mavproxy_options(self):
         '''returns options to be passed to MAVProxy'''
         ret = ['--sitl=127.0.0.1:5501',
-               '--out=127.0.0.1:19550',
+               '--out=' + self.autotest_connection_string_from_mavproxy(),
                '--streamrate=%u' % self.sitl_streamrate()]
         if self.viewerip:
             ret.append("--out=%s:14550" % self.viewerip)
@@ -863,7 +874,7 @@ class AutoTest(ABC):
 
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
-        connection_string = '127.0.0.1:19550'
+        connection_string = self.autotest_connection_string_to_mavproxy()
         try:
             self.mav = mavutil.mavlink_connection(connection_string,
                                                   robust_parsing=True)
