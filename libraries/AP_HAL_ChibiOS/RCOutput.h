@@ -100,7 +100,7 @@ public:
       same channel timer group) may also be stopped, depending on the
       implementation
      */
-    bool serial_setup_output(uint8_t chan, uint32_t baudrate) override;
+    bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t motor_mask) override;
 
     /*
       write a set of bytes to an ESC, using settings from
@@ -278,8 +278,10 @@ private:
     /*
       DShot handling
      */
+    // the pre-bit is needed with TIM5, or we can get some corrupt frames
+    const uint8_t dshot_pre = 1;
     const uint8_t dshot_post = 2;
-    const uint16_t dshot_bit_length = 16 + dshot_post;
+    const uint16_t dshot_bit_length = 16 + dshot_pre + dshot_post;
     const uint16_t dshot_buffer_length = dshot_bit_length*4*sizeof(uint32_t);
     static const uint16_t dshot_min_gap_us = 100;
     uint32_t dshot_pulse_time_us;
