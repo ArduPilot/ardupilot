@@ -515,7 +515,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     if (blheli.chan >= num_motors) {
         return false;
     }
-    if (!hal.rcout->serial_setup_output(motor_map[blheli.chan], 19200)) {
+    if (!hal.rcout->serial_setup_output(motor_map[blheli.chan], 19200, motor_mask)) {
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
@@ -1115,7 +1115,7 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
 {
     debug_uart = hal.console;
     uint8_t saved_chan = blheli.chan;
-    if (blheli.buf[0] >= num_motors) {
+    if (chan >= num_motors) {
         debug("bad channel %u", chan);
         return;
     }
@@ -1256,6 +1256,7 @@ void AP_BLHeli::update(void)
             num_motors++;
         }
     }
+    motor_mask = mask;
     debug("ESC: %u motors mask=0x%04x", num_motors, mask);
 
     if (telem_rate > 0) {
