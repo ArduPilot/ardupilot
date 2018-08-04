@@ -259,6 +259,39 @@ void AC_PrecLand::handle_msg(mavlink_message_t* msg)
     }
 }
 
+// send_landing_target - Send LANDING_TARGET mavlink message, called from ArduCopter/GCS_Mavlink.cpp as part of EXTRA3 stream
+void AC_PrecLand::send_landing_target(mavlink_channel_t chan)
+{
+    // If we have the sensor timestamp then set that as time_usec, otherwise return measurement timestamp
+    uint64_t time_usec;
+    if (_last_backend_los_timestamp) {
+        time_usec = _last_backend_los_timestamp;
+    } else {
+        time_usec = _last_backend_los_meas_ms * 1000;
+    }
+
+    // Pack and send the LANDING_TARGET message
+    // Note: TODO are for message fields that do not yet have data members in AC_PrecLand class or are not supported yet
+    // Note: 0 values here are sent in absence of sensible defaults.  They are not correct, but there is no obvious alternative
+    mavlink_msg_landing_target_send(
+        chan,
+        time_usec, // sensor/measurement timestamp in microseconds, either from epoch or since boot
+        0, // TODO: Target ID
+        MAV_FRAME_BODY_NED, // frame
+        _angle_x, // angle_x,
+        _angle_y, // angle_y,
+        _dist, // distance to target, measured from rangefinder or sensor message
+        0, // TODO: size_x,
+        0, // TODO: size_y,
+        _target_pos_rel_out_NE.x, // x,
+        _target_pos_rel_out_NE.y, // y,
+        0, // TODO: z,
+        0, // TODO: q,
+        0, // TODO: type,
+        target_acquired()
+    );
+}
+
 //
 // Private methods
 //
@@ -362,6 +395,10 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
         _last_backend_los_meas_ms = _backend->los_meas_time_ms();
         _backend->get_los_body(target_vec_unit_body);
 
+        // Calculate angular offsets for send_landing_target()
+        _angle_x = -atanf(target_vec_unit_body.x);
+        _angle_y = atanf(target_vec_unit_body.y);
+
         // Apply sensor yaw alignment rotation
         float sin_yaw_align = sinf(radians(_yaw_align*0.01f));
         float cos_yaw_align = cosf(radians(_yaw_align*0.01f));
@@ -388,13 +425,13 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
         bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
-            float dist, alt;
+            float alt;
             if (_backend->distance_to_target() > 0.0f) {
-                dist = _backend->distance_to_target();
-                alt = dist * target_vec_unit_ned.z;
+                _dist = _backend->distance_to_target();
+                alt = _dist * target_vec_unit_ned.z;
             } else {
                 alt = MAX(rangefinder_alt_m, 0.0f);
-                dist = alt / target_vec_unit_ned.z;
+                _dist = alt / target_vec_unit_ned.z;
             }
 
             // Compute camera position relative to IMU
@@ -402,7 +439,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             Vector3f cam_pos_ned = inertial_data_delayed->Tbn * (_cam_offset.get() - accel_body_offset);
 
             // Compute target position relative to IMU
-            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt) + cam_pos_ned;
+            _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*_dist, target_vec_unit_ned.y*_dist, alt) + cam_pos_ned;
             return true;
         }
     }

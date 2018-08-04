@@ -294,6 +294,15 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_LANDING_TARGET:
+#if PRECISION_LANDING == ENABLED
+        CHECK_PAYLOAD_SIZE(LANDING_TARGET);
+        if (copter.precland.enabled()) {
+            copter.precland.send_landing_target(chan);
+        }
+#endif
+        break;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -454,6 +463,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
     MSG_RPM,
     MSG_ESC_TELEMETRY,
+    MSG_LANDING_TARGET,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM

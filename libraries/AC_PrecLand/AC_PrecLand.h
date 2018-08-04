@@ -88,6 +88,9 @@ public:
     // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
+    // send a LANDING_TARGET mavlink message
+    void send_landing_target(mavlink_channel_t chan);
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -118,6 +121,7 @@ private:
     AP_Int8                     _type;              // precision landing sensor type
     AP_Int8                     _bus;               // which sensor bus
     AP_Int8                     _estimator_type;    // precision landing estimator type
+    AP_Float                    _dist;              // Distance to target measured from rangefinder or sensor
     AP_Float                    _lag;               // sensor lag in seconds
     AP_Float                    _yaw_align;         // Yaw angle from body x-axis to sensor x-axis.
     AP_Float                    _land_ofs_cm_x;     // Desired landing position of the camera forward of the target in vehicle body frame
@@ -128,10 +132,12 @@ private:
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
     uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen
+    uint64_t                    _last_backend_los_timestamp; // sensor time target was last seen
 
     PosVelEKF                   _ekf_x, _ekf_y;     // Kalman Filter for x and y axis
     uint32_t                    _outlier_reject_count;  // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
-    
+
+    float                       _angle_x, _angle_y;     // target's angular offset
     Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
 
     Vector2f                    _target_pos_rel_est_NE; // target's position relative to the IMU, not compensated for lag
