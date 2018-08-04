@@ -29,8 +29,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <GCS_MAVLink/GCS.h>
 
-uint32_t RC_Channel::configured_mask;
-
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
     // @DisplayName: RC min PWM
@@ -338,20 +336,6 @@ bool RC_Channel::has_override() const
     int32_t override_timeout = (int32_t)(*RC_Channels::override_timeout);
     return (override_value > 0) && ((override_timeout < 0) ||
                                     ((AP_HAL::millis() - last_override_time) < (uint32_t)(override_timeout * 1000)));
-}
-
-bool RC_Channel::min_max_configured() const
-{
-    if (configured_mask & (1U << ch_in)) {
-        return true;
-    }
-    if (radio_min.configured() && radio_max.configured()) {
-        // once a channel is known to be configured it has to stay
-        // configured due to the nature of AP_Param
-        configured_mask |= (1U<<ch_in);
-        return true;
-    }
-    return false;
 }
 
 //
