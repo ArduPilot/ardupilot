@@ -154,7 +154,8 @@ class AutoTest(ABC):
     """
     def __init__(self,
                  viewerip=None,
-                 use_map=False):
+                 use_map=False,
+                 _show_test_timings=False):
         self.mavproxy = None
         self.mav = None
         self.viewerip = viewerip
@@ -169,6 +170,8 @@ class AutoTest(ABC):
         self.forced_post_test_sitl_reboots = 0
         self.skip_list = []
         self.run_tests_called = False
+        self._show_test_timings = _show_test_timings
+        self.test_timings = dict()
 
     @staticmethod
     def progress(text):
@@ -1524,6 +1527,20 @@ class AutoTest(ABC):
             self.forced_post_test_sitl_reboots += 1
             self.reboot_sitl() # that'll learn it
 
+    def show_test_timings_key_sorter(self, t):
+        (k, v) = t
+        return ((v, k))
+
+    def show_test_timings(self):
+        longest = 0
+        for desc in self.test_timings.keys():
+            if len(desc) > longest:
+                longest = len(desc)
+        for desc, time in sorted(self.test_timings.iteritems(),
+                                 key=self.show_test_timings_key_sorter):
+            fmt = "%" + str(longest) + "s: %.2fs"
+            self.progress(fmt % (desc, time))
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -1535,11 +1552,14 @@ class AutoTest(ABC):
 
         self.context_push()
 
+        start_time = time.time()
+
         try:
             self.check_rc_defaults()
             self.change_mode(self.default_mode())
             test_function()
         except Exception as e:
+            self.test_timings[desc] = time.time() - start_time
             self.progress("Exception caught: %s" % traceback.format_exc(e))
             self.context_pop()
             self.progress('FAILED: "%s": %s (see %s)' %
@@ -1552,6 +1572,7 @@ class AutoTest(ABC):
             tee = None
             self.check_sitl_reset()
             return
+        self.test_timings[desc] = time.time() - start_time
         self.context_pop()
         self.progress('PASSED: "%s"' % prettyname)
         tee.close()
@@ -2103,6 +2124,8 @@ switch value'''
         return []
 
     def post_tests_announcements(self):
+        if self._show_test_timings:
+            self.show_test_timings()
         if self.forced_post_test_sitl_reboots != 0:
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
