@@ -780,30 +780,38 @@ void AP_UAVCAN::tunnel_send()
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
     uint32_t avail = _tunnel.uart->tx_available();
-    uavcan::tunnel::Broadcast bdcst_msg;
 
-    if (avail < bdcst_msg.buffer.capacity() && now - _tunnel_last_send < AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
+    if (!avail) {
+        // nothing to do
+        return;
+    }
+
+    uint32_t now = AP_HAL::millis();
+    const uavcan::tunnel::Broadcast const_msg;
+
+    if (avail < const_msg.buffer.capacity() &&
+            now - _tunnel_last_send < AP_UAVCAN_TUNNEL_SEND_TIMEOUT_FLUSH_MS) {
         // wait for a full buffer and we haven't waited too long
         return;
     }
     _tunnel_last_send = now;
 
-    if (avail > bdcst_msg.buffer.capacity()) {
-        avail = bdcst_msg.buffer.capacity();
-    }
+    uint8_t packets_sent = 0;
+    while (avail && packets_sent++ < 3) {
 
-    while (avail--) {
-        int16_t data = _tunnel.uart->fetch_for_outbound();
-        if (data < 0) {
-            // fetch failure: Either not initialized, mutex is locked, or buffer was empty
-            break;
+        uavcan::tunnel::Broadcast bdcst_msg;
+        while (avail-- && bdcst_msg.buffer.size() < bdcst_msg.buffer.capacity()) {
+            int16_t data = _tunnel.uart->fetch_for_outbound();
+            if (data < 0) {
+                // fetch failure: Either not initialized, mutex is locked, or buffer was empty
+                break;
+            }
+            avail--;
+            bdcst_msg.buffer.push_back((uint8_t)data);
         }
-
-        bdcst_msg.buffer.push_back((uint8_t)data);
+        tunnel_broadcast_array[_uavcan_i]->broadcast(bdcst_msg);
     }
-    tunnel_broadcast_array[_uavcan_i]->broadcast(bdcst_msg);
 
 }
 
