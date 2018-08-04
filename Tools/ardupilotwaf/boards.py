@@ -728,6 +728,16 @@ class bebop(linux):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
         )
 
+class rolling_spider(linux):
+    toolchain = 'arm-linux-gnueabi'
+
+    def configure_env(self, cfg, env):
+        super(rolling_spider, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER',
+        )
+
 class disco(linux):
     toolchain = 'arm-linux-gnueabihf'
 

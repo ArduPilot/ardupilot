@@ -79,6 +79,14 @@
     #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
     #define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+    #define HAL_BOARD_LOG_DIRECTORY "/data/edu/ardupilot/logs"
+    #define HAL_BOARD_TERRAIN_DIRECTORY "/data/edu/ardupilot/terrain"
+    #define HAL_BOARD_STORAGE_DIRECTORY "/data/edu/ardupilot"
+    #define HAL_PARAM_DEFAULTS_PATH "/data/edu/ardupilot/Parrot_Rolling_Spider.param"
+    #define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_YAW_270)
+    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+    #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 0, 0x77, AP_Baro_MS56XX::BARO_MS5607)
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
     #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"

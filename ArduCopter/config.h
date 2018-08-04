@@ -69,6 +69,10 @@
   # define ACCEL_Z_P                            0.30f
 #endif
 
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ROLLING_SPIDER
+  #define ALLOW_ARM_NO_COMPASS
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // PWM control
 // default RC speed in Hz
