@@ -420,9 +420,15 @@ struct PACKED log_Precland {
     float pos_y;
     float vel_x;
     float vel_y;
+    float meas_x;
+    float meas_y;
+    float meas_z;
+    uint32_t last_meas;
+    uint32_t ekf_outcount;
+    uint8_t estimator;
 };
 
-// Write an optical flow packet
+// Write a precision landing entry
 void Copter::Log_Write_Precland()
 {
  #if PRECISION_LANDING == ENABLED
@@ -431,10 +437,12 @@ void Copter::Log_Write_Precland()
         return;
     }
 
+    Vector3f target_pos_meas = Vector3f(0.0f,0.0f,0.0f);
     Vector2f target_pos_rel = Vector2f(0.0f,0.0f);
     Vector2f target_vel_rel = Vector2f(0.0f,0.0f);
     precland.get_target_position_relative_cm(target_pos_rel);
     precland.get_target_velocity_relative_cms(target_vel_rel);
+    precland.get_target_position_measurement_cm(target_pos_meas);
 
     struct log_Precland pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PRECLAND_MSG),
@@ -444,13 +452,19 @@ void Copter::Log_Write_Precland()
         pos_x           : target_pos_rel.x,
         pos_y           : target_pos_rel.y,
         vel_x           : target_vel_rel.x,
-        vel_y           : target_vel_rel.y
+        vel_y           : target_vel_rel.y,
+        meas_x          : target_pos_meas.x,
+        meas_y          : target_pos_meas.y,
+        meas_z          : target_pos_meas.z,
+        last_meas       : precland.last_backend_los_meas_ms(),
+        ekf_outcount    : precland.ekf_outlier_count(),
+        estimator       : precland.estimator_type()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // PRECISION_LANDING == ENABLED
 }
 
-// precision landing logging
+// guided target logging
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -521,7 +535,7 @@ const struct LogStructure Copter::log_structure[] = {
 #endif
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBffff",    "TimeUS,Heal,TAcq,pX,pY,vX,vY", "s--ddmm","F--00BB" },
+      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasUS,EKFOutl,Est", "s--ddmmddms--","F--00BB00BC--" },
 #endif
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
