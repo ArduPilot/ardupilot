@@ -16,8 +16,7 @@
 class AP_Compass_MAG3110 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      enum Rotation = ROTATION_NONE);
 
     static constexpr const char *name = "MAG3110";
@@ -27,7 +26,7 @@ public:
     ~AP_Compass_MAG3110() { }
 
 private:
-    AP_Compass_MAG3110(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Compass_MAG3110(AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     bool init(enum Rotation rotation);
 

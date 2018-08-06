@@ -6,10 +6,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Compass_Backend::AP_Compass_Backend(Compass &compass) :
-    _compass(compass)
+AP_Compass_Backend::AP_Compass_Backend()
+    : _compass(AP::compass())
 {
-    _sem = hal.util->new_semaphore();    
+    _sem = hal.util->new_semaphore();
 }
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)

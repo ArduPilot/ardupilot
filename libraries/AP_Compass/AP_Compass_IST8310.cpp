@@ -75,8 +75,7 @@ static const int16_t IST8310_MIN_VAL_Z  = -IST8310_MAX_VAL_Z;
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -84,7 +83,7 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
         return nullptr;
     }
 
-    AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(compass, std::move(dev), force_external, rotation);
+    AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -93,12 +92,10 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_IST8310::AP_Compass_IST8310(Compass &compass,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_IST8310::AP_Compass_IST8310(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                        bool force_external,
                                        enum Rotation rotation)
-    : AP_Compass_Backend(compass)
-    , _dev(std::move(dev))
+    : _dev(std::move(dev))
     , _rotation(rotation)
     , _force_external(force_external)
 {

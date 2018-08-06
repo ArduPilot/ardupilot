@@ -80,20 +80,18 @@ RUS:
 
 
 
-AP_Compass_MAG3110::AP_Compass_MAG3110(Compass &compass, AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : AP_Compass_Backend(compass)
-    , _dev(std::move(dev))
+AP_Compass_MAG3110::AP_Compass_MAG3110(AP_HAL::OwnPtr<AP_HAL::Device> dev)
+    : _dev(std::move(dev))
 {
 }
 
-AP_Compass_Backend *AP_Compass_MAG3110::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_MAG3110::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_MAG3110 *sensor = new AP_Compass_MAG3110(compass, std::move(dev));
+    AP_Compass_MAG3110 *sensor = new AP_Compass_MAG3110(std::move(dev));
     if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;

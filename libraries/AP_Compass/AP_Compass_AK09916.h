@@ -34,14 +34,12 @@
 class AP_Compass_AK09916 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                      bool force_external = false,
                                      enum Rotation rotation = ROTATION_NONE);
 
     // separate probe function for when behind a ICM20948 IMU
-    static AP_Compass_Backend *probe_ICM20948(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
                                               bool force_external = false,
                                               enum Rotation rotation = ROTATION_NONE);
@@ -56,8 +54,7 @@ private:
         AK09916_ICM20948_I2C,
     } bus_type;
     
-    AP_Compass_AK09916(Compass &compass,
-                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_AK09916(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                        AP_HAL::OwnPtr<AP_HAL::Device> dev_icm,
                        bool force_external,
                        enum Rotation rotation,
