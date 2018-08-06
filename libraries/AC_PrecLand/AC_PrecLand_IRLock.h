@@ -35,6 +35,9 @@ public:
 
     // return true if there is a valid los measurement available
     bool have_los_meas() override;
+    
+    // return target type
+    LANDING_TARGET_TYPE target_type() const override;
 
 private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

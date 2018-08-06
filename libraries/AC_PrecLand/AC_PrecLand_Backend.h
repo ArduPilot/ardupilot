@@ -34,6 +34,9 @@ public:
     // returns distance to target in meters (0 means distance is not known)
     virtual float distance_to_target() { return 0.0f; };
 
+    // returns target type
+    virtual LANDING_TARGET_TYPE target_type() const = 0;
+
     // parses a mavlink message from the companion computer
     virtual void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) {};
 

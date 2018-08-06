@@ -45,4 +45,10 @@ bool AC_PrecLand_SITL::get_los_body(Vector3f& ret) {
     return true;
 }
 
+// return target type
+LANDING_TARGET_TYPE AC_PrecLand_SITL::target_type() const
+{
+    return LANDING_TARGET_TYPE_VISION_OTHER;
+}
+
 #endif

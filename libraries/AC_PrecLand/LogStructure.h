@@ -20,6 +20,7 @@
 // @Field: LastMeasMS: Time when target was last detected
 // @Field: EKFOutl: EKF's outlier count
 // @Field: Est: Type of estimator used
+// @Field: TTy: Landing Target Signaling type according to LANDING_TARGET_TYPE
 
 // precision landing logging
 struct PACKED log_Precland {
@@ -37,8 +38,9 @@ struct PACKED log_Precland {
     uint32_t last_meas;
     uint32_t ekf_outcount;
     uint8_t estimator;
+    uint8_t target_type;
 };
 
 #define LOG_STRUCTURE_FROM_PRECLAND                                     \
     { LOG_PRECLAND_MSG, sizeof(log_Precland),                           \
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" },
+      "PL",    "QBBfffffffIIBB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est,TTy", "s--mmnnmmms---","F--BBBBBBBC---" },

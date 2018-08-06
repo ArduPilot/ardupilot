@@ -55,4 +55,10 @@ bool AC_PrecLand_SITL_Gazebo::have_los_meas() {
     return _have_los_meas;
 }
 
+// return target type
+LANDING_TARGET_TYPE AC_PrecLand_SITL_Gazebo::target_type() const
+{
+    return LANDING_TARGET_TYPE_VISION_FIDUCIAL;
+}
+
 #endif

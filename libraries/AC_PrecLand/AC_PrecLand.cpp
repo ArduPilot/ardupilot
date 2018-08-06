@@ -490,7 +490,8 @@ void AC_PrecLand::Write_Precland()
         meas_z          : target_pos_meas.z,
         last_meas       : last_backend_los_meas_ms(),
         ekf_outcount    : ekf_outlier_count(),
-        estimator       : (uint8_t)_estimator_type
+        estimator       : (uint8_t)_estimator_type,
+        target_type     : (uint8_t)_backend->target_type()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

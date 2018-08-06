@@ -52,4 +52,12 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, u
 
     _los_meas_time_ms = timestamp_ms;
     _have_los_meas = true;
+    
+    _target_type = (LANDING_TARGET_TYPE)packet.type;
+}
+
+// return target type
+LANDING_TARGET_TYPE AC_PrecLand_Companion::target_type() const
+{
+    return _target_type;
 }
