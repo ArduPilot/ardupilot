@@ -648,7 +648,7 @@ public:
 
     // get the VFR_HUD throttle
     int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0).vfr_hud_throttle():0; }
-    
+
 private:
 
     static GCS *_singleton;
@@ -664,6 +664,11 @@ private:
     static const uint8_t _status_capacity = 30;
 #endif
 
+    // a lock for the statustext queue, to make it safe to use send_text()
+    // from multiple threads
+    HAL_Semaphore _statustext_sem;
+
+    // queue of outgoing statustext messages
     ObjectArray<statustext_t> _statustext_queue{_status_capacity};
 
     // true if we are running short on time in our main loop
