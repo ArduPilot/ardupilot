@@ -459,7 +459,7 @@ class AutoTestCopter(AutoTest):
 
         # cut motor 1 to 55% efficiency
         self.progress("Cutting motor 1 to 60% efficiency")
-        self.mavproxy.send('param set SIM_ENGINE_MUL 0.60\n')
+        self.set_parameter("SIM_ENGINE_MUL", 0.60)
 
         while self.get_sim_time() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -477,7 +477,7 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException()
 
         # restore motor 1 to 100% efficiency
-        self.mavproxy.send('param set SIM_ENGINE_MUL 1.0\n')
+        self.set_parameter("SIM_ENGINE_MUL", 1.0)
 
         self.progress("Stability patch and Loiter OK for %us" % holdtime)
 
@@ -488,8 +488,8 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
-        self.mavproxy.send('param set FENCE_ENABLE 1\n')
-        self.mavproxy.send('param set AVOID_ENABLE 0\n')
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.set_parameter("AVOID_ENABLE", 0)
 
         # first east
         self.progress("turn east")
@@ -516,7 +516,7 @@ class AutoTestCopter(AutoTest):
                 pitching_forward = False
                 self.set_rc(2, 1500)
                 # disable fence
-                self.mavproxy.send('param set FENCE_ENABLE 0\n')
+                self.set_parameter("FENCE_ENABLE", 0)
             if alt <= 1 and home_distance < 10:
                 # reduce throttle
                 self.set_rc(3, 1000)
@@ -538,8 +538,8 @@ class AutoTestCopter(AutoTest):
                 return
 
         # disable fence, enable avoidance
-        self.mavproxy.send('param set FENCE_ENABLE 0\n')
-        self.mavproxy.send('param set AVOID_ENABLE 1\n')
+        self.set_parameter("FENCE_ENABLE", 0)
+        self.set_parameter("AVOID_ENABLE", 1)
 
         # reduce throttle
         self.set_rc(3, 1000)
@@ -559,9 +559,9 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
-        self.set_parameter('FENCE_ENABLE', 1)
-        self.set_parameter('AVOID_ENABLE', 0)
-        self.set_parameter('FENCE_TYPE', 1)
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.set_parameter("FENCE_TYPE", 1)
 
         self.change_alt(10)
 
@@ -665,8 +665,8 @@ class AutoTestCopter(AutoTest):
                 if glitch_current >= glitch_num:
                     glitch_current = -1
                     self.progress("Completed Glitches")
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
-                    self.mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
+                    self.set_parameter("SIM_GPS_GLITCH_X", 0)
+                    self.set_parameter("SIM_GPS_GLITCH_Y", 0)
                 else:
                     self.progress("Applying glitch %u" % glitch_current)
                     # move onto the next glitch
@@ -691,8 +691,8 @@ class AutoTestCopter(AutoTest):
         # disable gps glitch
         if glitch_current != -1:
             glitch_current = -1
-            self.mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
-            self.mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
+            self.set_parameter("SIM_GPS_GLITCH_X", 0)
+            self.set_parameter("SIM_GPS_GLITCH_Y", 0)
         if self.use_map:
             self.show_gps_and_sim_positions(False)
 
@@ -779,8 +779,8 @@ class AutoTestCopter(AutoTest):
 
         # turn off glitching
         self.progress("Completed Glitches")
-        self.mavproxy.send('param set SIM_GPS_GLITCH_X 0\n')
-        self.mavproxy.send('param set SIM_GPS_GLITCH_Y 0\n')
+        self.set_parameter("SIM_GPS_GLITCH_X", 0)
+        self.set_parameter("SIM_GPS_GLITCH_Y", 0)
 
         # continue with the mission
         self.wait_waypoint(0, num_wp-1, timeout=500)
@@ -816,7 +816,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LOITER')
 
         # set SIMPLE mode for all flight modes
-        self.mavproxy.send('param set SIMPLE 63\n')
+        self.set_parameter("SIMPLE", 63)
 
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
@@ -852,7 +852,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # restore to default
-        self.mavproxy.send('param set SIMPLE 0\n')
+        self.set_parameter("SIMPLE", 0)
 
         # hover in place
         self.hover()
@@ -871,7 +871,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # set SUPER SIMPLE mode for all flight modes
-        self.mavproxy.send('param set SUPER_SIMPLE 63\n')
+        self.set_parameter("SUPER_SIMPLE", 63)
 
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
@@ -894,7 +894,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # restore simple mode parameters to default
-        self.mavproxy.send('param set SUPER_SIMPLE 0\n')
+        self.set_parameter("SUPER_SIMPLE", 0)
 
         # hover in place
         self.hover()
@@ -912,7 +912,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # set CIRCLE radius
-        self.mavproxy.send('param set CIRCLE_RADIUS 3000\n')
+        self.set_parameter("CIRCLE_RADIUS", 3000)
 
         # fly forward (east) at least 100m
         self.set_rc(2, 1100)
