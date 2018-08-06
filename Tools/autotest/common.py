@@ -427,13 +427,57 @@ class AutoTest(ABC):
 
     def arm_vehicle(self):
         """Arm vehicle with mavlink arm message."""
+        self.progress("Arm motors with MAVLink cmd")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     1,  # ARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     )
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            self.mav.wait_heartbeat()
+            if self.mav.motors_armed():
+                self.progress("Motors ARMED")
+                return True
+        self.progress("Unable to ARM with mavlink")
+        raise AutoTestTimeoutException()
+
+    def disarm_vehicle(self):
+        """Disarm vehicle with mavlink disarm message."""
+        self.progress("Disarm motors with MAVLink cmd")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     0,  # DISARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     )
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                self.progress("Motors DISARMED")
+                return True
+        self.progress("Unable to DISARM with mavlink")
+        raise AutoTestTimeoutException()
+
+    def mavproxy_arm_vehicle(self):
+        """Arm vehicle with mavlink arm message send from MAVProxy."""
+        self.progress("Arm motors with MavProxy")
         self.mavproxy.send('arm throttle\n')
         self.mav.motors_armed_wait()
         self.progress("ARMED")
         return True
 
-    def disarm_vehicle(self):
-        """Disarm vehicle with mavlink disarm message."""
+    def mavproxy_disarm_vehicle(self):
+        """Disarm vehicle with mavlink disarm message send from MAVProxy."""
+        self.progress("Disarm motors with MavProxy")
         self.mavproxy.send('disarm\n')
         self.mav.motors_disarmed_wait()
         self.progress("DISARMED")
@@ -1082,6 +1126,12 @@ class AutoTest(ABC):
             self.progress("Failed to ARM")
             raise NotAchievedException()
         if not self.disarm_vehicle():
+            self.progress("Failed to DISARM")
+            raise NotAchievedException()
+        if not self.mavproxy_arm_vehicle():
+            self.progress("Failed to ARM")
+            raise NotAchievedException()
+        if not self.mavproxy_disarm_vehicle():
             self.progress("Failed to DISARM")
             raise NotAchievedException()
         if not self.arm_motors_with_rc_input():
