@@ -1,3 +1,109 @@
+Release 3.9.0, 6th August 2018
+------------------------------
+
+The ArduPilot development team is delighted to announce a new stable
+release of plane, version 3.9.0.
+
+For those of you who have been testing the 3.9.0beta releases then you
+won't see any surprises here. That are no changes since
+3.9.0beta6. Also, many thanks for testing the betas!
+
+For those of you coming from the last stable 3.8.5 release there are a
+lot of changes. For a start, this is the first release to support both
+the ChibiOS RTOS on STM32 boards and the NuttX RTOS. Previously stable
+releases only used the NuttX RTOS. The ArduPilot project is moving to
+ChibiOS for future releases, and we expect to drop support for the
+NuttX builds for the next major stable release (which will probably be
+called 3.10.0).
+
+When you install the 3.9.0 release on board such as a Pixhawk1, Cube
+or Pixracer you have a choice of which build to use. Choosing ChibiOS
+will give you better performance and some very nice new
+features. Choosing the NuttX (also known as "PX4" builds) will get you
+the same base that we have been using for years.
+
+There are a few features that are in the NuttX build but not yet in
+the ChibiOS build, in particular the ChibiOS build does not yet
+support PWM based rangefinders. That will be fixed in a future
+release.
+
+This release has a lot of new features. Some of the most important
+ones are:
+
+ - DShot support for controlling ESCs
+ - BLHeli pass-thru support for ESC configuration
+ - automatic compass orientation on calibrating compasses
+ - improved VTOL flight code, with improved transition support and loiter
+ - support for Devo telemetry output
+ - new battery monitoring system, with more flexible failsafes
+ - built-in OSD support for boards with a MAX7456 OSD device
+
+In addition, this release supports a lot of new flight boards,
+including:
+
+ - AirbotF4
+ - F4BY
+ - KakuteF4
+ - KakuteF7
+ - MatekF405
+ - MatekF405-Wing
+ - mindpx-v2
+ - mini-pix
+ - Omnibusf4pro
+ - Omnibusf7V2
+ - Pixhawk4 and Pixhawk4-mini
+ - CUAVv5
+ - revo and revo-mini
+ - sparky2
+
+We also now have custom ChibiOS based builds for some existing boards,
+including:
+
+ - CubeBlack
+ - mRoX21
+ - Pixhawk1
+ - Pixracer
+
+This means you now have a lot more choice in selecting a flight board
+to use with ArduPilot.
+
+This release was made possible thanks to contributions from dozens of
+volunteer developers in the dev team. In total there are over 5
+thousand changes since the 3.8.5 release. Special thanks to:
+
+ - Siddharth Purohit
+ - Tom Pittenger
+ - Randy Mackay
+ - Michael du Breuil
+ - Peter Barker
+ - Mark Whitehorn
+ - Paul Riseborough
+ - Francisco Ferreira
+ - Jonathan Challinger
+ - Leonard Hall
+ - Alexander Malishev
+ - Nathan E
+ - Marco Robustini
+ - Luis Vale Gonçalves
+ - night-ghost
+ - Patrick José Pereira
+ - Lucas De Marchi
+ - Eugene Shamaev
+ - Philip Rowse
+ - Amilcar Lucas
+ - Kelly Foster
+ - Fnoop
+ - Pierre Kancir
+ - Stephen Dade
+ - Jaime Machuca
+ - vierfuffzig
+ - Henry Wwurzburg
+ - Malcolm Churn
+ - Holger Steinhaus
+
+We hope you enjoy flying this release as much as we enjoyed making
+it. Happy flying!
+
 Release 3.9.0beta6, 30th July 2018
 ----------------------------------
 
