@@ -359,7 +359,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     bool fence_requires_gps = false;
     #if AC_FENCE == ENABLED
     // if circular or polygon fence is enabled we need GPS
-    fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+    fence_requires_gps = copter.fence.enabled() && (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON));
     #endif
 
     // return true if GPS is not required
