@@ -334,7 +334,7 @@ private:
     uint8_t register_compass(void);
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend, const char *name, bool external);
+    bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
 
