@@ -1852,8 +1852,12 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     // force safety on
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
-    hal.scheduler->delay(200);
 
+    // flush pending parameter writes
+    AP_Param::flush();
+
+    hal.scheduler->delay(200);
+    
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
     hal.scheduler->reboot(hold_in_bootloader);
