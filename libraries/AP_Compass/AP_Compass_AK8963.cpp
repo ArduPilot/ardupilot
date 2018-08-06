@@ -52,10 +52,9 @@ struct PACKED sample_regs {
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_BusDriver *bus,
+AP_Compass_AK8963::AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
                                      enum Rotation rotation)
-    : AP_Compass_Backend(compass)
-    , _bus(bus)
+    : _bus(bus)
     , _rotation(rotation)
 {
 }
@@ -65,8 +64,7 @@ AP_Compass_AK8963::~AP_Compass_AK8963()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe(Compass &compass,
-                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                              enum Rotation rotation)
 {
     if (!dev) {
@@ -77,7 +75,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(Compass &compass,
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus, rotation);
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(bus, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -86,8 +84,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass,
-                                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                                      enum Rotation rotation)
 {
     if (!dev) {
@@ -98,10 +95,10 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass,
     /* Allow MPU9250 to shortcut auxiliary bus and host bus */
     ins.detect_backends();
 
-    return probe(compass, std::move(dev), rotation);
+    return probe(std::move(dev), rotation);
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass, uint8_t mpu9250_instance,
+AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
                                                      enum Rotation rotation)
 {
     AP_InertialSensor &ins = *AP_InertialSensor::get_instance();
@@ -112,7 +109,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(Compass &compass, uint8_t m
         return nullptr;
     }
 
-    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(compass, bus, rotation);
+    AP_Compass_AK8963 *sensor = new AP_Compass_AK8963(bus, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
