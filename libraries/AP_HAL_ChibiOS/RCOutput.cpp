@@ -1271,7 +1271,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
 #endif
     
-    if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, HAL_GPIO_INTERRUPT_BOTH)) {
+    if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
 #if RCOU_SERIAL_TIMING_DEBUG
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
