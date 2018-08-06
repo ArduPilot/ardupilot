@@ -55,4 +55,10 @@ bool AC_PrecLand_SITL_Gazebo::have_los_meas() {
     return _have_los_meas;
 }
 
+// return target type - Will always be 0 (light beacon) for IRLock
+LANDING_TARGET_TYPE AC_PrecLand_SITL_Gazebo::target_type()
+{
+    return LANDING_TARGET_TYPE_LIGHT_BEACON;
+}
+
 #endif

@@ -44,6 +44,12 @@ float AC_PrecLand_Companion::distance_to_target()
     return _distance_to_target;
 }
 
+// return target type
+LANDING_TARGET_TYPE AC_PrecLand_Companion::target_type()
+{
+    return _target_type;
+}
+
 void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
 {
     // parse mavlink message
@@ -59,4 +65,6 @@ void AC_PrecLand_Companion::handle_msg(mavlink_message_t* msg)
 
     _los_meas_time_ms = AP_HAL::millis();
     _have_los_meas = true;
+    
+    _target_type = (LANDING_TARGET_TYPE)packet.type;
 }

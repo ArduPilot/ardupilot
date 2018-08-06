@@ -32,10 +32,14 @@ public:
     // return true if there is a valid los measurement available
     bool have_los_meas() override;
 
+    // return target type
+    LANDING_TARGET_TYPE target_type() override;
+
 private:
 
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
+    LANDING_TARGET_TYPE _target_type;           // LANDING_TARGET_TYPE enum
 };
 
 #endif

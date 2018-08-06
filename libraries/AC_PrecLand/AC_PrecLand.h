@@ -87,6 +87,9 @@ public:
     // returns true when the landing target has been detected
     bool target_acquired();
 
+    // returns target type
+    LANDING_TARGET_TYPE target_type();
+
     // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
@@ -127,6 +130,7 @@ private:
     AP_Float                    _accel_noise;       // accelometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
+    LANDING_TARGET_TYPE         _target_type;       // target type (LANDING_TARGET_TYPE enum)
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
     uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen

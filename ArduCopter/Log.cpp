@@ -426,6 +426,7 @@ struct PACKED log_Precland {
     uint32_t last_meas;
     uint32_t ekf_outcount;
     uint8_t estimator;
+    uint8_t target_type;
 };
 
 // Write a precision landing entry
@@ -458,7 +459,8 @@ void Copter::Log_Write_Precland()
         meas_z          : target_pos_meas.z,
         last_meas       : precland.last_backend_los_meas_ms(),
         ekf_outcount    : precland.ekf_outlier_count(),
-        estimator       : precland.estimator_type()
+        estimator       : precland.estimator_type(),
+        target_type     : precland.target_type()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
  #endif     // PRECISION_LANDING == ENABLED
@@ -535,7 +537,7 @@ const struct LogStructure Copter::log_structure[] = {
 #endif
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasUS,EKFOutl,Est", "s--ddmmddms--","F--00BB00BC--" },
+      "PL",    "QBBfffffffIIBB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,Lst,Ol,Est,Ty", "s--ddmmddms---","F--00BB00BC---" },
 #endif
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },

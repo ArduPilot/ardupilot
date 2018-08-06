@@ -52,3 +52,9 @@ uint32_t AC_PrecLand_IRLock::los_meas_time_ms() {
 bool AC_PrecLand_IRLock::have_los_meas() {
     return _have_los_meas;
 }
+
+// return target type - Will always be 0 (light beacon) for IRLock
+LANDING_TARGET_TYPE AC_PrecLand_IRLock::target_type()
+{
+    return LANDING_TARGET_TYPE_LIGHT_BEACON;
+}

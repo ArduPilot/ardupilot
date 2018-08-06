@@ -54,4 +54,11 @@ bool AC_PrecLand_SITL::get_los_body(Vector3f& ret) {
     return true;
 }
 
+// return target type - SITL doesn't have a particular target type as it always returns home,
+//  so we call it a 'radio beacon' for want of a better type
+LANDING_TARGET_TYPE AC_PrecLand_SITL::target_type()
+{
+    return LANDING_TARGET_TYPE_RADIO_BEACON;
+}
+
 #endif

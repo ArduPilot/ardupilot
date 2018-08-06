@@ -34,6 +34,9 @@ public:
     // returns distance to target in meters (0 means distance is not known)
     float distance_to_target() override;
 
+    // returns target type
+    LANDING_TARGET_TYPE target_type() override;
+
     // parses a mavlink message from the companion computer
     void handle_msg(mavlink_message_t* msg) override;
 
@@ -44,4 +47,6 @@ private:
     Vector3f            _los_meas_body;         // unit vector in body frame pointing towards target
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
+    
+    LANDING_TARGET_TYPE _target_type;           // LANDING_TARGET_TYPE enum
 };

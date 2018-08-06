@@ -199,8 +199,14 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     // update estimator of target position
     if (_backend != nullptr && _enabled) {
         _backend->update();
+        _target_type = _backend->target_type();
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
     }
+}
+
+LANDING_TARGET_TYPE AC_PrecLand::target_type()
+{
+    return _backend->target_type();
 }
 
 bool AC_PrecLand::target_acquired()
