@@ -476,12 +476,12 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         // update last time we thought we were stopped
         _stop_last_ms = now;
         return 0.0f;
-    } else {
-        // clear stopped system time
-        _stop_last_ms = 0;
-        // run speed controller to bring vehicle to stop
-        return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle, dt);
     }
+
+    // clear stopped system time
+    _stop_last_ms = 0;
+    // run speed controller to bring vehicle to stop
+    return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle, dt);
 }
 
 // for balancebot
