@@ -26,6 +26,7 @@ static struct gpio_entry {
     bool enabled;
     uint8_t pwm_num;
     ioline_t pal_line;
+    AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE(_gpio_tab)
@@ -48,6 +49,7 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
 }
 
 static void pal_interrupt_cb(void *arg);
+static void pal_interrupt_cb_functor(void *arg);
 
 GPIO::GPIO()
 {}
@@ -115,19 +117,56 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 extern const AP_HAL::HAL& hal;
 
 /* 
+   Attach an interrupt handler to a GPIO pin number. The pin number
+   must be one specified with a GPIO() marker in hwdef.dat
+ */
+bool GPIO::attach_interrupt(uint8_t pin,
+                            irq_handler_fn_t fn,
+                            INTERRUPT_TRIGGER_TYPE mode)
+{
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
+    if (!g) {
+        return false;
+    }
+    if (!_attach_interrupt(g->pal_line,
+                           palcallback_t(fn?pal_interrupt_cb_functor:nullptr),
+                           g,
+                           mode)) {
+        return false;
+    }
+    g->fn = fn;
+    return true;
+}
+
+/*
    Attach an interrupt handler to ioline_t
  */
 bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
 {
+    return _attach_interrupt(line, palcallback_t(p?pal_interrupt_cb:nullptr), (void*)p, mode);
+}
+
+bool GPIO::attach_interrupt(uint8_t pin,
+                            AP_HAL::Proc proc,
+                            INTERRUPT_TRIGGER_TYPE mode) {
+    struct gpio_entry *g = gpio_by_pin_num(pin, false);
+    if (!g) {
+        return false;
+    }
+    return _attach_interrupt(g->pal_line, proc, mode);
+}
+
+bool GPIO::_attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode)
+{
     uint32_t chmode = 0;
     switch(mode) {
-        case HAL_GPIO_INTERRUPT_FALLING:
+        case INTERRUPT_FALLING:
             chmode = PAL_EVENT_MODE_FALLING_EDGE;
             break;
-        case HAL_GPIO_INTERRUPT_RISING:
+        case INTERRUPT_RISING:
             chmode = PAL_EVENT_MODE_RISING_EDGE;
             break;
-        case HAL_GPIO_INTERRUPT_BOTH:
+        case INTERRUPT_BOTH:
             chmode = PAL_EVENT_MODE_BOTH_EDGES;
             break;
         default:
@@ -136,34 +175,25 @@ bool GPIO::_attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode)
             }
             break;
     }    
-    if (p) {
-        osalSysLock();
-        palevent_t *pep = pal_lld_get_line_event(line);
-        if (pep->cb) {
-            // the pad is already being used for a callback
-            osalSysUnlock();
-            return false;
-        }
+
+    osalSysLock();
+    palevent_t *pep = pal_lld_get_line_event(line);
+    if (pep->cb && p != nullptr) {
+        // the pad is already being used for a callback
         osalSysUnlock();
-    }
-
-    palDisableLineEvent(line);
-    palEnableLineEvent(line, chmode);
-    palSetLineCallback(line, p?pal_interrupt_cb:nullptr, (void*)p);
-    return true;
-}
-
-/* 
-   Attach an interrupt handler to a GPIO pin number. The pin number
-   must be one specified with a GPIO() marker in hwdef.dat
- */
-bool GPIO::attach_interrupt(uint8_t pin, AP_HAL::Proc p, uint8_t mode)
-{
-    struct gpio_entry *g = gpio_by_pin_num(pin, false);
-    if (!g) {
         return false;
     }
-    return _attach_interrupt(g->pal_line, p, mode);
+
+    if (!p) {
+        chmode = PAL_EVENT_MODE_DISABLED;
+    }
+
+    palDisableLineEventI(line);
+    palSetLineCallbackI(line, cb, p);
+    palEnableLineEventI(line, chmode);
+    osalSysUnlock();
+
+    return true;
 }
 
 bool GPIO::usb_connected(void)
@@ -200,5 +230,20 @@ void pal_interrupt_cb(void *arg)
     if (arg != nullptr) {
         ((AP_HAL::Proc)arg)();
     }
+}
+
+void pal_interrupt_cb_functor(void *arg)
+{
+    const uint32_t now = AP_HAL::micros();
+
+    struct gpio_entry *g = (gpio_entry *)arg;
+    if (g == nullptr) {
+        // what?
+        return;
+    }
+    if (!(g->fn)) {
+        return;
+    }
+    (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
 }
 
