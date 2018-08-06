@@ -199,6 +199,10 @@ private:
         
         // thread waiting for byte to be read
         thread_t *waiter;
+
+        // timeout for byte read
+        virtual_timer_t serial_timeout;
+        bool timed_out;
     } irq;
 
     
@@ -206,7 +210,7 @@ private:
     struct pwm_group *serial_group;
     thread_t *serial_thread;
     tprio_t serial_priority;
-
+    
     static pwm_group pwm_group_list[];
     uint16_t _esc_pwm_min;
     uint16_t _esc_pwm_max;
@@ -296,6 +300,7 @@ private:
     bool serial_read_byte(uint8_t &b);
     void fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
+    static void serial_byte_timeout(void *ctx);
 
 };
 
