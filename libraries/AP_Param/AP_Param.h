@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
 
 #include "float.h"
@@ -301,14 +302,24 @@ public:
     ///
     void notify() const;
     
-    /// Save the current value of the variable to EEPROM.
+    /// Save the current value of the variable to storage, synchronous API
     ///
     /// @param  force_save     If true then force save even if default
     ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(bool force_save=false);
+    void save_sync(bool force_save=false);
 
+    /// flush all pending parameter saves
+    /// used on reboot
+    static void flush(void);
+    
+    /// Save the current value of the variable to storage, async interface
+    ///
+    /// @param  force_save     If true then force save even if default
+    ///
+    void save(bool force_save=false);
+    
     /// Load the variable from EEPROM.
     ///
     /// @return                True if the variable was loaded successfully.
@@ -608,6 +619,18 @@ private:
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
 
     static bool _hide_disabled_groups;
+
+    // support for background saving of parameters. We pack it to reduce memory for the
+    // queue
+    struct PACKED param_save {
+        AP_Param *param;
+        bool force_save;
+    };
+    static ObjectBuffer<struct param_save> save_queue;
+    static bool registered_save_handler;
+
+    // background function for saving parameters
+    void save_io_handler(void);
 };
 
 /// Template class for scalar variables.
@@ -660,10 +683,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -671,12 +694,12 @@ public:
     /// scan(). This should only be used where we have not set() the
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
-    bool set_and_save_ifchanged(const T &v) {
+    void set_and_save_ifchanged(const T &v) {
         if (v == _value) {
-            return true;
+            return;
         }
         set(v);
-        return save(true);
+        save(true);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -765,10 +788,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = (_value != v);
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Conversion to T returns a reference to the value.
