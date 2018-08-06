@@ -10,12 +10,12 @@ class Mag2Cb;
 
 class AP_Compass_UAVCAN : public AP_Compass_Backend {
 public:
-    AP_Compass_UAVCAN(Compass &compass, AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);
+    AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);
 
     void        read(void) override;
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
-    static AP_Compass_Backend* probe(Compass& _frontend);
+    static AP_Compass_Backend* probe();
 
     static void handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb);
     static void handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Mag2Cb &cb);

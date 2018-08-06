@@ -13,7 +13,7 @@
 
 class AP_Compass_SITL : public AP_Compass_Backend {
 public:
-    AP_Compass_SITL(Compass &);
+    AP_Compass_SITL();
 
     void read(void);
 

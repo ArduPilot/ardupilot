@@ -42,8 +42,7 @@
 class AP_Compass_QMC5883L : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
 									 bool force_external,
                                      enum Rotation rotation = ROTATION_NONE);
 
@@ -52,10 +51,9 @@ public:
     static constexpr const char *name = "QMC5883L";
 
 private:
-    AP_Compass_QMC5883L(Compass &compass,
-                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
-					   bool force_external,
-                       enum Rotation rotation);
+    AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                        bool force_external,
+                        enum Rotation rotation);
 
     void _dump_registers();
     bool _check_whoami();
