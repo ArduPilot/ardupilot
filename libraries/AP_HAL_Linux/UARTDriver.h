@@ -5,6 +5,7 @@
 
 #include "AP_HAL_Linux.h"
 #include "SerialDevice.h"
+#include "Semaphores.h"
 
 namespace Linux {
 
@@ -97,6 +98,8 @@ protected:
 
     virtual int _write_fd(const uint8_t *buf, uint16_t n);
     virtual int _read_fd(uint8_t *buf, uint16_t n);
+
+    Linux::Semaphore _write_mutex;    
 };
 
 }
