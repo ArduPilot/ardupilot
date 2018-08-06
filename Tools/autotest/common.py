@@ -673,20 +673,56 @@ class AutoTest(ABC):
         return bearing
 
     def do_get_autopilot_capabilities(self):
-        self.mavproxy.send("long REQUEST_AUTOPILOT_CAPABILITIES 1\n")
-        m = self.mav.recv_match(type='AUTOPILOT_VERSION',
-                                blocking=True,
-                                timeout=10)
-        if m is None:
-            self.progress("AUTOPILOT_VERSION not received")
-            raise NotAchievedException()
-        self.progress("AUTOPILOT_VERSION received")
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 10:
+            # Cannot use run_cmd otherwise the respond is lost during the wait for ACK
+            self.mav.mav.command_long_send(1,
+                                           1,
+                                           mavutil.mavlink.MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES,
+                                           0,  # confirmation
+                                           1,  # 1: Request autopilot version
+                                           0,
+                                           0,
+                                           0,
+                                           0,
+                                           0,
+                                           0)
+            m = self.mav.recv_match(type='AUTOPILOT_VERSION',
+                                    blocking=True,
+                                    timeout=10)
+            if m is not None:
+                self.progress("AUTOPILOT_VERSION received")
+                return
+        raise AutoTestTimeoutException()
 
     def do_set_mode_via_command_long(self):
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
         custom_mode = 4  # hold
-        start = time.time()
-        while time.time() - start < 5:
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 5:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                         base_mode,
+                         custom_mode,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         )
+            m = self.mav.recv_match(type='HEARTBEAT',
+                                    blocking=True,
+                                    timeout=10)
+            if m is None:
+                raise ErrorException()
+            if m.custom_mode == custom_mode:
+                return
+        raise AutoTestTimeoutException()
+
+    def mavproxy_do_set_mode_via_command_long(self):
+        base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+        custom_mode = 4  # hold
+        start = self.get_sim_time()
+        while self.get_sim_time() - start < 5:
             self.mavproxy.send("long DO_SET_MODE %u %u\n" %
                                (base_mode, custom_mode))
             m = self.mav.recv_match(type='HEARTBEAT',
@@ -696,7 +732,6 @@ class AutoTest(ABC):
                 raise ErrorException()
             if m.custom_mode == custom_mode:
                 return
-            time.sleep(0.1)
         raise AutoTestTimeoutException()
 
     def reach_heading_manual(self, heading):
