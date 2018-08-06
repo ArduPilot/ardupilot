@@ -26,6 +26,7 @@ This provides some support code and variables for MAVLink enabled sketches
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 
+extern const AP_HAL::HAL& hal;
 
 #ifdef MAVLINK_SEPARATE_HELPERS
 // Shut up warnings about missing declarations; TODO: should be fixed on
@@ -38,6 +39,9 @@ This provides some support code and variables for MAVLink enabled sketches
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
+
+// per-channel lock
+static HAL_Semaphore chan_locks[MAVLINK_COMM_NUM_BUFFERS];
 
 mavlink_system_t mavlink_system = {7,1};
 
@@ -133,4 +137,20 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
         return;
     }
     mavlink_comm_port[chan]->write(buf, len);
+}
+
+/*
+  lock a channel for send
+ */
+void comm_send_lock(mavlink_channel_t chan)
+{
+    chan_locks[(uint8_t)chan].take_blocking();
+}
+
+/*
+  unlock a channel
+ */
+void comm_send_unlock(mavlink_channel_t chan)
+{
+    chan_locks[(uint8_t)chan].give();
 }
