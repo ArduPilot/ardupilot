@@ -5,9 +5,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 extern const AP_HAL::HAL& hal;
 
-AP_Compass_SITL::AP_Compass_SITL():
-    _sitl(AP::sitl()),
-    _has_sample(false),
+AP_Compass_SITL::AP_Compass_SITL()
+    : _sitl(AP::sitl())
+    , _has_sample(false)
 {
     if (_sitl != nullptr) {
         _compass._setup_earth_field();
