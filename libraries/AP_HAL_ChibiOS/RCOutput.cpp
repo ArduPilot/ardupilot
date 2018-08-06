@@ -985,7 +985,7 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
         chEvtSignalI(irq.waiter, serial_event_mask);
     } else {
         // this prevents us ever having two dshot pulses too close together
-        chVTSetI(&group->dma_timeout, chTimeUS2I(dshot_min_gap_us), dma_unlock, p);
+        chVTSetI(&group->dma_timeout, US2ST(dshot_min_gap_us), dma_unlock, p);
     }
     chSysUnlockFromISR();
 }
