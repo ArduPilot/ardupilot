@@ -591,7 +591,8 @@ void Compass::_probe_external_i2c_compasses(void)
                     AP_Compass_HMC5843::name, true);
     }
     
-    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_MINDPXV2) {
+    if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_MINDPXV2 &&
+        AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_AEROFC) {
         // internal i2c bus
         FOREACH_I2C_INTERNAL(i) {
             ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_HMC5843_I2C_ADDR),
@@ -675,14 +676,22 @@ void Compass::_probe_external_i2c_compasses(void)
     
     // IST8310 on external and internal bus
     if (AP_BoardConfig::get_board_type() != AP_BoardConfig::PX4_BOARD_FMUV5) {
+        enum Rotation default_rotation;
+
+        if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_AEROFC) {
+            default_rotation = ROTATION_PITCH_180_YAW_90;
+        } else {
+            default_rotation = ROTATION_PITCH_180;
+        }
+
         FOREACH_I2C_EXTERNAL(i) {
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                                  true, ROTATION_PITCH_180), AP_Compass_IST8310::name, true);
+                                                                  true, default_rotation), AP_Compass_IST8310::name, true);
         }
         
         FOREACH_I2C_INTERNAL(i) {
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                                  both_i2c_external, ROTATION_PITCH_180), AP_Compass_IST8310::name, both_i2c_external);
+                                                                  both_i2c_external, default_rotation), AP_Compass_IST8310::name, both_i2c_external);
         }
     }
 #endif // HAL_MINIMIZE_FEATURES
@@ -733,6 +742,7 @@ void Compass::_detect_backends(void)
     case AP_BoardConfig::PX4_BOARD_MINDPXV2: 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
+    case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
         if (_backend_count == COMPASS_MAX_BACKEND ||
             _compass_count == COMPASS_MAX_INSTANCES) {
@@ -745,14 +755,6 @@ void Compass::_detect_backends(void)
                     AP_Compass_BMM150::probe(*this, GET_I2C_DEVICE(0, 0x10)),
                     AP_Compass_BMM150::name, true);
         break;
-        
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#ifdef HAL_COMPASS_IST8310_I2C_BUS
-        ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(*this, GET_I2C_DEVICE(HAL_COMPASS_IST8310_I2C_BUS, HAL_COMPASS_IST8310_I2C_ADDR),
-                                                              true, ROTATION_PITCH_180_YAW_90), AP_Compass_IST8310::name, true);
-#endif
-        break;
-
     case AP_BoardConfig::VRX_BOARD_BRAIN54: {
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5883, AP_Compass_HMC5843::probe(*this, GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
