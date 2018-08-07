@@ -155,11 +155,12 @@ configuration in order to save typing.
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
-        if hasattr(m, '__file__'):
+        if hasattr(m, '__file__') and m.__file__ is not None:
             paths.append(m.__file__)
         elif hasattr(m, '__path__'):
             for p in m.__path__:
-                paths.append(p)
+                if p is not None:
+                    paths.append(p)
 
         for p in paths:
             if p in cfg.files or not os.path.isfile(p):
