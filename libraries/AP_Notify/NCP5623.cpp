@@ -29,6 +29,7 @@ extern const AP_HAL::HAL& hal;
 #define NCP5623_LED_OFF     0x00    // off
 
 #define NCP5623_LED_I2C_ADDR 0x38    // default I2C bus address
+#define NCP5623_C_LED_I2C_ADDR 0x39    // default I2C bus address for the NCP5623C
 
 #define NCP5623_LED_PWM0    0x40    // pwm0 register
 #define NCP5623_LED_PWM1    0x60    // pwm1 register
@@ -62,36 +63,40 @@ bool NCP5623::write_pwm(uint8_t _rgb[3])
 
 bool NCP5623::hw_init(void)
 {
-    // first look for led on external bus
-    _dev = std::move(hal.i2c_mgr->get_device(_bus, NCP5623_LED_I2C_ADDR));
-    if (!_dev) {
-        return false;
-    }
+    uint8_t addrs[] = { NCP5623_LED_I2C_ADDR, NCP5623_C_LED_I2C_ADDR };
+    for (uint8_t i=0; i<ARRAY_SIZE(addrs); i++) {
+        // first look for led on external bus
+        _dev = std::move(hal.i2c_mgr->get_device(_bus, addrs[i]));
+        if (!_dev) {
+            continue;
+        }
 
-    _dev->get_semaphore()->take_blocking();
-    _dev->set_retries(10);
+        _dev->get_semaphore()->take_blocking();
+        _dev->set_retries(10);
 
-    // enable the led
-    bool ret = write(NCP5623_LED_ENABLE, 0x1f);
-    if (!ret) {
+        // enable the led
+        bool ret = write(NCP5623_LED_ENABLE, 0x1f);
+        if (!ret) {
+            _dev->get_semaphore()->give();
+            continue;
+        }
+
+        // update the red, green and blue values to zero
+        uint8_t off[3] = { _led_off, _led_off, _led_off };
+        ret = write_pwm(off);
+
+        _dev->set_retries(1);
+
+        // give back i2c semaphore
         _dev->get_semaphore()->give();
-        return false;
+
+        if (ret) {
+            _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NCP5623::_timer, void));
+        }
+        return true;
     }
 
-    // update the red, green and blue values to zero
-    uint8_t off[3] = { _led_off, _led_off, _led_off };
-    ret = write_pwm(off);
-
-    _dev->set_retries(1);
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
-
-    if (ret) {
-        _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NCP5623::_timer, void));
-    }
-
-    return ret;
+    return false;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
