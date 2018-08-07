@@ -1067,6 +1067,7 @@ struct PACKED log_Performance {
     uint32_t max_time;
     uint32_t mem_avail;
     uint16_t load;
+    uint32_t internal_errors;
 };
 
 struct PACKED log_SRTL {
@@ -1310,7 +1311,7 @@ Format characters in the format string for binary log messages
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-BBBBBBBBB00" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIIH", "TimeUS,NLon,NLoop,MaxT,Mem,Load", "s---b%", "F---0A" }, \
+      "PM",  "QHHIIHI", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntErr", "s---b%-", "F---0A-" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }
 
