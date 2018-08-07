@@ -17,6 +17,7 @@
  # define Debug(fmt, args ...)
 #endif
 
+#include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -148,7 +149,7 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             _current_block = next_block();
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
-                internal_error();
+                AP::internalerror().error(AP_InternalError::error_t::logger_bad_current_block);
                 semaphore.give();
                 return false;
             }
@@ -298,7 +299,6 @@ void AP_Logger_MAVLink::handle_retry(uint32_t seqno)
 
 void AP_Logger_MAVLink::stats_init() {
     _dropped = 0;
-    _internal_errors = 0;
     stats.resends = 0;
     stats_reset();
 }
@@ -330,7 +330,6 @@ void AP_Logger_MAVLink::Write_DF_MAV(AP_Logger_MAVLink &df)
         dropped           : df._dropped,
         retries           : df._blocks_retry.sent_count,
         resends           : df.stats.resends,
-        internal_errors   : df._internal_errors,
         state_free_avg    : (uint8_t)(df.stats.state_free/df.stats.collection_count),
         state_free_min    : df.stats.state_free_min,
         state_free_max    : df.stats.state_free_max,
@@ -354,11 +353,10 @@ void AP_Logger_MAVLink::stats_log()
     }
     Write_DF_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
-    printf("D:%d Retry:%d Resent:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
+    printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            dropped,
            _blocks_retry.sent_count,
            stats.resends,
-           internal_errors,
            stats.state_free_min,
            stats.state_free_max,
            stats.state_free/stats.collection_count,
@@ -403,7 +401,7 @@ void AP_Logger_MAVLink::stats_collect()
     uint8_t sfree = stack_size(_blocks_free);
 
     if (sfree != _blockcount_free) {
-        internal_error();
+        AP::internalerror().error(AP_InternalError::error_t::logger_blockcount_mismatch);
     }
     semaphore.give();
 
@@ -458,7 +456,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
-            internal_error();
+            AP::internalerror().error(AP_InternalError::error_t::logger_dequeue_failure);
         }
     }
     return true;
