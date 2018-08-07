@@ -77,10 +77,10 @@ void AP_WheelEncoder_Quadrature::update(void)
     void *irqstate = hal.scheduler->disable_interrupts_save();
 
     // copy distance and error count so it is accessible to front end
-    _state.distance_count = irq_state.distance_count;
-    _state.total_count = irq_state.total_count;
-    _state.error_count = irq_state.error_count;
-    _state.last_reading_ms = irq_state.last_reading_ms;
+    copy_state_to_frontend(irq_state.distance_count,
+                           irq_state.total_count,
+                           irq_state.error_count,
+                           irq_state.last_reading_ms);
 
     // restore interrupts
     hal.scheduler->restore_interrupts(irqstate);

@@ -44,7 +44,7 @@ private:
 
     struct IrqState {
         uint8_t  phase;             // current phase of encoder (from 0 to 3)
-        int32_t  distance_count;    // distance measured by cumulative steps forward or backwards
+        int32_t  distance_count;    // distance measured by cumulative steps forward or backwards since last update
         uint32_t total_count;       // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t error_count;       // total number of errors reading from sensor (used for sensor quality calcs)
         uint32_t last_reading_ms;   // system time of last update from encoder
