@@ -541,7 +541,7 @@ bool RC_Channels::duplicate_options_exist()
             continue;
         }
         const uint16_t option = c->option.get();
-        if (option > sizeof(auxsw_option_counts)) {
+        if (option >= sizeof(auxsw_option_counts)) {
             continue;
         }
         auxsw_option_counts[option]++;
