@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
+#include "AP_HAL_SITL.h"
 #include "Semaphores.h"
 
 class HALSITL::Util : public AP_HAL::Util {
