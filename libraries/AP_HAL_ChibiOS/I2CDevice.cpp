@@ -17,13 +17,14 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "Util.h"
+
+#if HAL_USE_I2C == TRUE
+
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
 
 #include "ch.h"
 #include "hal.h"
-
-#if HAL_USE_I2C == TRUE
 
 static const struct I2CInfo {
     struct I2CDriver *i2c;

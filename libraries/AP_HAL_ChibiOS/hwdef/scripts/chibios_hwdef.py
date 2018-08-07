@@ -1025,6 +1025,14 @@ def write_hwdef_header(outfilename):
 
 #pragma once
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 ''')
 
     write_mcu_config(f)
