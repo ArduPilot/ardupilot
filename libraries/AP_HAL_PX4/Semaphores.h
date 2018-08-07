@@ -1,9 +1,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include "AP_HAL_PX4.h"
+#include <stdint.h>
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
+#include "AP_HAL_PX4_Namespace.h"
 #include <pthread.h>
 
 class PX4::Semaphore : public AP_HAL::Semaphore {
@@ -17,4 +18,4 @@ public:
 private:
     pthread_mutex_t _lock;
 };
-#endif // CONFIG_HAL_BOARD
+
