@@ -156,6 +156,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: TEMP
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: HDOP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -200,6 +204,8 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
+#define SYM_HDOP_L 0xBD
+#define SYM_HDOP_R 0xBE
 
 #define SYM_HOME 0xBF
 #define SYM_WIND 0x16
@@ -782,6 +788,13 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    float hdp = gps.get_hdop() / 100.0f;
+    backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, hdp);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -813,6 +826,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+    DRAW_SETTING(hdop);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
