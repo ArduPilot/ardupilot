@@ -119,13 +119,14 @@ protected:
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
 
     // output to skid steering channels
-    void output_skid_steering(bool armed, float steering, float throttle);
+    void output_skid_steering(bool armed, float steering, float throttle, float dt);
 
     // output for vectored and custom motors configuration
     void output_custom_config(bool armed, float steering, float throttle, float lateral);
 
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
-    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
+    // dt is the main loop time interval and is required when rate control is required
+    void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
@@ -135,6 +136,9 @@ protected:
 
     // scale a throttle using the _thrust_curve_expo parameter.  throttle should be in the range -100 to +100
     float get_scaled_throttle(float throttle) const;
+
+    // use rate controller to achieve desired throttle
+    float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
 
     // external references
     AP_ServoRelayEvents &_relayEvents;
