@@ -62,7 +62,7 @@ void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
 
     byte_ofs = srxl_state.bit_ofs/10;
     bit_ofs = srxl_state.bit_ofs%10;
-    if (byte_ofs > SRXL_FRAMELEN_MAX) {
+    if (byte_ofs >= SRXL_FRAMELEN_MAX) {
         goto reset;
     }
     // pull in the high bits
