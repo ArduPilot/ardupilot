@@ -49,27 +49,26 @@ bool NCP5623::write(uint8_t reg, uint8_t data)
     return ret;
 }
 
-bool NCP5623::writes(uint8_t *data, uint8_t len)
+bool NCP5623::write_pwm(uint8_t _rgb[3])
 {
-    bool ret = 0;
-    uint8_t reg = data[0];
-    for (uint8_t i = 0; i < (len - 1); i++) {
-        ret = write(reg, data[i + 1]);
-        if (!ret) {
-            return ret;
+    uint8_t reg = NCP5623_LED_PWM0;
+    for (uint8_t i=0; i<3; i++) {
+        if (!write(reg+i*0x20, _rgb[i])) {
+            return false;
         }
-        reg = reg + 0x20;
     }
-    return ret;
+    return true;
 }
 
 bool NCP5623::hw_init(void)
 {
     // first look for led on external bus
     _dev = std::move(hal.i2c_mgr->get_device(_bus, NCP5623_LED_I2C_ADDR));
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+
+    _dev->get_semaphore()->take_blocking();
     _dev->set_retries(10);
 
     // enable the led
@@ -78,9 +77,11 @@ bool NCP5623::hw_init(void)
         _dev->get_semaphore()->give();
         return false;
     }
+
     // update the red, green and blue values to zero
-    uint8_t val[4] = { NCP5623_LED_PWM0, _led_off, _led_off, _led_off };
-    ret = writes(val, sizeof(val));
+    uint8_t off[3] = { _led_off, _led_off, _led_off };
+    ret = write_pwm(off);
+
     _dev->set_retries(1);
 
     // give back i2c semaphore
@@ -96,7 +97,9 @@ bool NCP5623::hw_init(void)
 // set_rgb - set color as a combination of red, green and blue values
 bool NCP5623::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    rgb = { red, green, blue };
+    rgb[0] = red;
+    rgb[1] = green;
+    rgb[2] = blue;
     _need_update = true;
     return true;
 }
@@ -108,8 +111,5 @@ void NCP5623::_timer(void)
     }
     _need_update = false;
 
-    /* 4-bit for each color */
-    uint8_t val[4] = { NCP5623_LED_PWM0, rgb.r, rgb.g, rgb.b };
-
-    writes(val, sizeof(val));
+    write_pwm(rgb);
 }
