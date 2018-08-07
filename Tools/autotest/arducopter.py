@@ -1244,6 +1244,57 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_nav_delay(self):
+        """fly a simple mission that has a delay in it"""
+
+        num_wp = self.load_mission("copter_nav_delay.txt")
+
+        self.mavproxy.send('mode loiter\n')
+        self.mav.wait_heartbeat()
+        self.wait_mode('LOITER')
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+
+        self.context_push();
+
+        ex = None
+        try:
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+            self.set_rc(3, 1600)
+            count_start = -1
+            count_stop = -1
+            tstart = self.get_sim_time()
+            while self.armed(): # we RTL at end of mission
+                now = self.get_sim_time()
+                if now - tstart > 120:
+                    raise AutoTestTimeoutException()
+                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
+                if m.seq == 3:
+                    self.progress("At delay item")
+                    if count_start == -1:
+                        count_start = now
+                if m.seq > 3:
+                    if count_stop == -1:
+                        count_stop = now
+            calculated_delay = count_stop - count_start
+            want_delay = 59 # should reflect what's in the mission file
+            self.progress("Stopped for %u seconds (want >=%u seconds)" %
+                          (calculated_delay, want_delay))
+            if calculated_delay < want_delay:
+                raise NotAchievedException()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.set_rc(3, 1000)
+
+        if ex is not None:
+            raise ex
+
     def test_setting_modes_via_modeswitch(self):
         self.context_push();
         ex = None
@@ -1404,6 +1455,8 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
+            self.run_test("Fly Nav Delay", self.fly_nav_delay)
 
             self.run_test("Test submode change",
                           self.fly_guided_change_submode)
