@@ -43,3 +43,17 @@ int8_t AP_WheelEncoder_Backend::get_pin_b() const
     }
     return _frontend._pinb[_state.instance].get();
 }
+
+// copy state to front end helper function
+void AP_WheelEncoder_Backend::copy_state_to_frontend(int32_t distance_count, uint32_t total_count, uint32_t error_count, uint32_t last_reading_ms)
+{
+    // record distance and time change for calculating rate before previous state is overwritten
+    _state.dt_ms = last_reading_ms - _state.last_reading_ms;
+    _state.dist_count_change = distance_count - _state.distance_count;
+
+    // copy distance and error count so it is accessible to front end
+    _state.distance_count = distance_count;
+    _state.total_count = total_count;
+    _state.error_count = error_count;
+    _state.last_reading_ms = last_reading_ms;
+}

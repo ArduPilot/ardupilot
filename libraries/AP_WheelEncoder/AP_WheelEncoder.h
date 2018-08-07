@@ -48,10 +48,12 @@ public:
     struct WheelEncoder_State {
         uint8_t                instance;        // the instance number of this WheelEncoder
         int32_t                distance_count;  // cumulative number of forward + backwards events received from wheel encoder
-        float                  distance;        // total distance measured
+        float                  distance;        // total distance measured in meters
         uint32_t               total_count;     // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t               error_count;     // total number of errors reading from sensor (used for sensor quality calcs)
         uint32_t               last_reading_ms; // time of last reading
+        int32_t                dist_count_change; // distance count change during the last update (used to calculating rate)
+        uint32_t               dt_ms;             // time change (in milliseconds) for the previous period (used to calculating rate)
     };
 
     // detect and initialise any available rpm sensors
@@ -83,6 +85,9 @@ public:
 
     // get the total distance traveled in meters
     float get_distance(uint8_t instance) const;
+
+    // get the instantaneous rate in radians/second
+    float get_rate(uint8_t instance) const;
 
     // get the total number of sensor reading from the encoder
     uint32_t get_total_count(uint8_t instance) const;
