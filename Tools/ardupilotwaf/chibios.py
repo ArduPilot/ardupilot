@@ -54,7 +54,7 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("python '{}/px_uploader.py' '{}'".format(upload_tools, src))
+        return self.exec_command("{} '{}/px_uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -93,7 +93,7 @@ class generate_bin(Task.Task):
 
 class generate_apj(Task.Task):
     color='CYAN'
-    run_str="python '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
+    run_str="${PYTHON} '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -277,8 +277,9 @@ def configure(cfg):
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
+    python = sys.executable
     try:
-        cmd = "python '{0}' -D '{1}' '{2}' {3}".format(hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION)
+        cmd = "{0} '{1}' -D '{2}' '{3}' {4}".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION)
         ret = subprocess.call(cmd, shell=True)
     except Exception:
         cfg.fatal("Failed to process hwdef.dat")
@@ -300,7 +301,8 @@ def build(bld):
     bld(
         # build hwdef.h and apj.prototype from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="python '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s" % (bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
+        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s" % (
+            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION),
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('apj.prototype'),
