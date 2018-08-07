@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include <utility>
 
@@ -505,7 +506,7 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP_Notify::flags.battery_voltage) ;
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP::battery().voltage()) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 

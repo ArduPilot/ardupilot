@@ -1,5 +1,5 @@
 /*
-  NavioLED I2C driver
+  PCA9685LED I2C driver
 */
 /*
    This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "NavioLED_I2C.h"
+#include "PCA9685LED_I2C.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -25,16 +25,19 @@
 #define NAVIO_LED_OFF    0xFF    // off
 
 #define PCA9685_ADDRESS 0x40
+#define PCA9685_MODE1 0x00
 #define PCA9685_PWM 0x6
+#define PCA9685_MODE_SLEEP          (1 << 4)
+#define PCA9685_MODE_AUTO_INCREMENT (1 << 5)
 
 extern const AP_HAL::HAL& hal;
 
-NavioLED_I2C::NavioLED_I2C() : 
+PCA9685LED_I2C::PCA9685LED_I2C() : 
     RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 }
 
-bool NavioLED_I2C::hw_init()
+bool PCA9685LED_I2C::hw_init()
 {
     _dev = hal.i2c_mgr->get_device(1, PCA9685_ADDRESS);
 
@@ -42,13 +45,36 @@ bool NavioLED_I2C::hw_init()
         return false;
     }
 
-    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&NavioLED_I2C::_timer, void));
+    _dev->get_semaphore()->take_blocking();
+
+    _dev->set_retries(5);
+
+    // read the current mode1 configuration
+    uint8_t mode1 = 0;
+    if (!_dev->read_registers(PCA9685_MODE1, &mode1, sizeof(mode1))) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+
+    // bring the device out of sleep, and enable auto register increment
+    uint8_t new_mode1 = (mode1 | PCA9685_MODE_AUTO_INCREMENT) & ~PCA9685_MODE_SLEEP;
+    const uint8_t config[2] = {PCA9685_MODE1, new_mode1};
+    if (!_dev->transfer(config, sizeof(config), nullptr, 0)) {
+        _dev->get_semaphore()->give();
+        return false;
+    }
+
+    _dev->set_retries(1);
+
+    _dev->get_semaphore()->give();
+
+    _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&PCA9685LED_I2C::_timer, void));
 
     return true;
 }
 
 // set_rgb - set color as a combination of red, green and blue values
-bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
+bool PCA9685LED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     rgb.r = red;
     rgb.g = green;
@@ -57,7 +83,7 @@ bool NavioLED_I2C::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     return true;
 }
 
-void NavioLED_I2C::_timer(void)
+void PCA9685LED_I2C::_timer(void)
 {
     if (!_need_update) {
         return;
