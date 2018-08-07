@@ -556,6 +556,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 23, ParametersG2, AP_Follow),
 
+    // @Param: LOIT_TYPE
+    // @DisplayName: Loiter type
+    // @Descriction: Loiter behaviour when around next to a taget point
+    // @Values: 0:Reverse to target point,1:Always face bow to target point
+    // @User: Standard
+    AP_GROUPINFO("LOIT_TYPE", 24, ParametersG2, loit_type, 0),
+
+
+
     AP_GROUPEND
 };
 

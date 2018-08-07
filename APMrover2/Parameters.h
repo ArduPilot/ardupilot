@@ -238,6 +238,7 @@ public:
     //
     AP_Int8     throttle_cruise;
     AP_Int8     pilot_steer_type;
+    AP_Int8     loit_type;
 
     // failsafe control
     AP_Int8     fs_action;
@@ -351,6 +352,10 @@ public:
 
     // follow mode library
     AP_Follow follow;
+
+    // loiter type
+    AP_Int8 loit_type;
+
 };
 
 extern const AP_Param::Info var_info[];
