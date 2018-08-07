@@ -321,7 +321,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     output_regular(armed, ground_speed, _steering, _throttle);
 
     // output for skid steering style frames
-    output_skid_steering(armed, _steering, _throttle);
+    output_skid_steering(armed, _steering, _throttle, dt);
 
     // output for frames with vectored and custom motor configurations
     output_custom_config(armed, _steering, _throttle, _lateral);
@@ -582,7 +582,7 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
 }
 
 // output to skid steering channels
-void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle)
+void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float throttle, float dt)
 {
     if (!have_skid_steering()) {
         return;
@@ -626,8 +626,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     const float motor_right = throttle_scaled - steering_scaled;
 
     // send pwm value to each motor
-    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left);
-    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right);
+    output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
+    output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
 }
 
 // output for custom configurations
@@ -680,7 +680,7 @@ void AP_MotorsUGV::output_custom_config(bool armed, float steering, float thrott
 }
 
 // output throttle value to main throttle channel, left throttle or right throttle.  throttle should be scaled from -100 to 100
-void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle)
+void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt)
 {
     // sanity check servo function
     if (function != SRV_Channel::k_throttle && function != SRV_Channel::k_throttleLeft && function != SRV_Channel::k_throttleRight && function != SRV_Channel::k_motor1 && function != SRV_Channel::k_motor2 && function != SRV_Channel::k_motor3 && function!= SRV_Channel::k_motor4) {
@@ -689,6 +689,9 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 
     // constrain and scale output
     throttle = get_scaled_throttle(throttle);
+
+    // apply rate control
+    throttle = get_rate_controlled_throttle(function, throttle, dt);
 
     // set relay if necessary
     if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
@@ -792,6 +795,28 @@ float AP_MotorsUGV::get_scaled_throttle(float throttle) const
     const float sign = (throttle < 0.0f) ? -1.0f : 1.0f;
     const float throttle_pct = constrain_float(throttle, -100.0f, 100.0f) / 100.0f;
     return 100.0f * sign * ((_thrust_curve_expo - 1.0f) + safe_sqrt((1.0f - _thrust_curve_expo) * (1.0f - _thrust_curve_expo) + 4.0f * _thrust_curve_expo * fabsf(throttle_pct))) / (2.0f * _thrust_curve_expo);
+}
+
+// use rate controller to achieve desired throttle
+float AP_MotorsUGV::get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt)
+{
+    // require non-zero dt
+    if (!is_positive(dt)) {
+        return throttle;
+    }
+
+    // attempt to rate control left throttle
+    if ((function == SRV_Channel::k_throttleLeft) && rover.get_wheel_rate_control().enabled(0)) {
+        return rover.get_wheel_rate_control().get_rate_controlled_throttle(0, throttle, dt);
+    }
+
+    // rate control right throttle
+    if ((function == SRV_Channel::k_throttleRight) && rover.get_wheel_rate_control().enabled(1)) {
+        return rover.get_wheel_rate_control().get_rate_controlled_throttle(1, throttle, dt);
+    }
+
+    // return throttle unchanged
+    return throttle;
 }
 
 // return true if motors are moving
