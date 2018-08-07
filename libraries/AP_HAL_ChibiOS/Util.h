@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
-#include "Semaphores.h"
+#include "AP_HAL_ChibiOS.h"
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
