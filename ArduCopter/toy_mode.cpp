@@ -715,7 +715,7 @@ void ToyMode::trim_update(void)
     }
     
     uint16_t chan[4];
-    if (RC_Channels::get_radio_in(chan, 4) != 4) {
+    if (rc().get_radio_in(chan, 4) != 4) {
         trim.start_ms = 0;
         return;
     }
