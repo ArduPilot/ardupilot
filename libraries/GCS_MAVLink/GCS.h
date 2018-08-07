@@ -785,6 +785,9 @@ public:
     virtual bool simple_input_active() const { return false; }
     virtual bool supersimple_input_active() const { return false; }
 
+    // returns 16-bits worth of error data to be packed into SYS_STATUS field
+    static uint16_t sys_status_errors1();
+
 protected:
 
     uint32_t control_sensors_present;
