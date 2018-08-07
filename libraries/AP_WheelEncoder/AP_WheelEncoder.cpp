@@ -253,6 +253,23 @@ float AP_WheelEncoder::get_distance(uint8_t instance) const
     return get_delta_angle(instance) * _wheel_radius[instance];
 }
 
+// get the instantaneous rate in radians/second
+float AP_WheelEncoder::get_rate(uint8_t instance) const
+{
+    // for invalid instances return zero
+    if (instance >= WHEELENCODER_MAX_INSTANCES) {
+        return 0.0f;
+    }
+
+    // protect against divide by zero
+    if ((state[instance].dt_ms == 0) || _counts_per_revolution[instance] == 0) {
+        return 0;
+    }
+
+    // calculate delta_angle (in radians) per second
+    return M_2PI * (state[instance].dist_count_change / _counts_per_revolution[instance]) / (state[instance].dt_ms / 1000.0f);
+}
+
 // get the total number of sensor reading from the encoder
 uint32_t AP_WheelEncoder::get_total_count(uint8_t instance) const
 {
