@@ -877,7 +877,8 @@ class AutoTest(ABC):
         connection_string = self.autotest_connection_string_to_mavproxy()
         try:
             self.mav = mavutil.mavlink_connection(connection_string,
-                                                  robust_parsing=True)
+                                                  robust_parsing=True,
+                                                  source_component=250)
         except Exception as msg:
             self.progress("Failed to start mavlink connection on %s: %s" %
                           (connection_string, msg,))
