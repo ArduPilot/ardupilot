@@ -159,3 +159,24 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
+
+/*
+  a method to make semaphores less error prone
+ */
+class WithSemaphore {
+public:
+    WithSemaphore(HAL_Semaphore &mtx) :
+    _mtx(mtx)
+    {
+        _mtx.take_blocking();
+    }
+
+    ~WithSemaphore() {
+        _mtx.give();
+    }
+private:
+    HAL_Semaphore &_mtx;
+};
+
+#define WITH_SEMAPHORE(sem) WithSemaphore _getsem(sem)
+
