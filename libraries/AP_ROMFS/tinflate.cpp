@@ -328,6 +328,9 @@ static int tinf_decode_trees(TINF_DATA *d, TINF_TREE *lt, TINF_TREE *dt)
       switch (sym)
       {
       case 16:
+          if (num == 0) {
+              return TINF_DATA_ERROR;
+          }
          /* copy previous code length 3-6 times (read 2 bits) */
          fill_value = lengths[num - 1];
          lbits = 2;
@@ -398,6 +401,9 @@ static int tinf_inflate_block_data(TINF_DATA *d, TINF_TREE *lt, TINF_TREE *dt)
         d->curlen = tinf_read_bits(d, length_bits[sym], length_base[sym]);
 
         dist = tinf_decode_symbol(d, dt);
+        if (dist < 0) {
+            return dist;
+        }
         /* possibly get more bits from distance code */
         offs = tinf_read_bits(d, dist_bits[dist], dist_base[dist]);
         if (d->dict_ring) {
