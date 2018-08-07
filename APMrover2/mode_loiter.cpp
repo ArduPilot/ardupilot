@@ -36,7 +36,7 @@ void ModeLoiter::update()
         _desired_yaw_cd = get_bearing_cd(rover.current_loc, _destination);
         _yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
         // if destination is behind vehicle, reverse towards it
-        if (fabsf(_yaw_error_cd) > 9000) {
+        if (fabsf(_yaw_error_cd) > 9000 && g2.loit_type == 0) {
             _desired_yaw_cd = wrap_180_cd(_desired_yaw_cd + 18000);
             _yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
             _desired_speed = -_desired_speed;
