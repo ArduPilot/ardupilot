@@ -1295,6 +1295,185 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def get_system_clock_utc(self, time):
+        # this is a copy of ArduPilot's AP_RTC function!
+        # separate time into ms, sec, min, hour and days but all expressed
+        # in milliseconds
+        time_ms = time * 1000
+        ms = time_ms % 1000;
+        sec_ms = (time_ms % (60 * 1000)) - ms;
+        min_ms = (time_ms % (60 * 60 * 1000)) - sec_ms - ms;
+        hour_ms = (time_ms % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
+
+        # convert times as milliseconds into appropriate units
+        sec = sec_ms / 1000;
+        min = min_ms / (60 * 1000);
+        hour = hour_ms / (60 * 60 * 1000);
+        return (hour, min, sec, 0)
+
+
+    def calc_delay(self, seconds):
+        # delay-for-seconds has to be long enough that we're at the
+        # waypoint before that time.  Otherwise we'll try to wait a
+        # day....
+        (hours,
+         mins,
+         secs,
+         ms) = self.get_system_clock_utc(seconds)
+        self.progress("Now is %uh %um %us" % (hours, mins, secs))
+        secs += 17 # add seventeen seconds
+        if secs >= 60:
+            secs %= 60
+            mins += 1 # add sixty seconds
+        mins += 1
+        if mins >= 60:
+            mins %= 60
+            hours += 1
+        if hours >= 24:
+            hours %= 24
+        return (hours, mins, secs, 0)
+
+    def reset_delay_item_seventyseven(self):
+        seq = 3
+        while True:
+            self.progress("Requesting request for seq %u" % (seq,))
+            self.mav.mav.mission_write_partial_list_send(1, # target system
+                                                         1, # target component
+                                                         seq, # start index
+                                                         seq)
+            req = self.mav.recv_match(type='MISSION_REQUEST',
+                                      blocking=True,
+                                      timeout=1)
+            if req is not None and req.seq == seq:
+                if req.get_srcSystem() == 255:
+                    self.progress("Shutup MAVProxy")
+                    continue
+                # notionally this might be in the message cache before
+                # we prompt for it... *shrug*
+                break
+
+        # we have received a request for the item.  Supply it:
+
+        frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+        command = mavutil.mavlink.MAV_CMD_NAV_DELAY
+        # retrieve mission item and check it:
+        tried_set = False
+        while True:
+            st = self.mav.recv_match(type='MISSION_ITEM',
+                                     blocking=True,
+                                     timeout=1)
+            if st is not None:
+                print("Item: %s" % str(st))
+                if (tried_set and
+                    st.seq == 3 and
+                    st.command == command and
+                    st.param2 == hours and
+                    st.param3 == mins and
+                    st.param4 == secs):
+                    return
+                self.progress("Mission mismatch")
+
+                self.mav.mav.mission_write_partial_list_send(1,
+                                                             1,
+                                                             3,
+                                                             3)
+                m = self.mav.messages.get("MISSION_REQUEST", None)
+                if m is not None:
+                    if m.seq == 3:
+                        self.progress("Sending absolute-time mission item")
+
+                        # we have to change out the delay time...
+                        now = self.mav.recv_match(type='SYSTEM_TIME',
+                                                  blocking=True)
+                        if now.time_unix_usec == 0:
+                            raise PreconditionFailedException()
+                        (hours, mins, secs, ms) = self.calc_delay(
+                            now.time_unix_usec/1000000)
+
+                        self.progress("Delay until %uh %um %us" %
+                                      (hours, mins, secs))
+
+                        self.mav.mav.mission_item_send(
+                            1, # target system
+                            1, # target component
+                            seq, # seq
+                            frame, # frame
+                            command, # command
+                            0, # current
+                            1, # autocontinue
+                            0, # p1 (relative seconds)
+                            hours, # p2
+                            mins, # p3
+                            secs, # p4
+                            0, # p5
+                            0, # p6
+                            0) # p7
+                        tried_set = True
+            self.progress("Requesting item")
+            self.mav.mav.mission_request_send(1,
+                                              1,
+                                              3
+            )
+
+    def fly_nav_delay_abstime(self):
+        '''fly a simple mission that has a delay in it'''
+
+        num_wp = self.load_mission("copter_nav_delay.txt")
+
+        self.progress("Starting mission")
+
+        self.mavproxy.send('mode loiter\n')  # stabilize mode
+        self.mav.wait_heartbeat()
+        self.wait_mode('LOITER')
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+
+        self.reset_delay_item_seventyseven()
+        delay_for_seconds = 77
+        reset_at_m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        reset_at = reset_at_m.time_unix_usec/1000000
+
+        self.context_push();
+
+        ex = None
+        try:
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')  # stabilize mode
+            self.wait_mode('AUTO')
+            self.set_rc(3, 1600)
+            count_stop = -1
+            tstart = self.get_sim_time()
+            while self.armed(): # we RTL at end of mission
+                now = self.get_sim_time()
+                if now - tstart > 120:
+                    raise AutoTestTimeoutException()
+                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
+                if m.seq == 3:
+                    self.progress("At delay item")
+                if m.seq > 3:
+                    if count_stop == -1:
+                        count_stop_m = self.mav.recv_match(type='SYSTEM_TIME',
+                                                           blocking=True)
+                        count_stop = count_stop_m.time_unix_usec/1000000
+            print("count_stop=%f reste at %f", count_stop, reset_at)
+            calculated_delay = count_stop - reset_at
+            error = abs(calculated_delay - delay_for_seconds)
+            self.progress("Stopped for %u seconds (want >=%u seconds)" %
+                          (calculated_delay, delay_for_seconds))
+            if error > 2:
+                self.progress("Too far outside expectations")
+                raise NotAchievedException()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.set_rc(3, 1000)
+
+        if ex is not None:
+            raise ex
+
     def test_setting_modes_via_modeswitch(self):
         self.context_push();
         ex = None
@@ -1455,6 +1634,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
+            self.run_test("Fly Nav Delay (AbsTime)",
+                          self.fly_nav_delay_abstime)
 
             self.run_test("Fly Nav Delay", self.fly_nav_delay)
 
