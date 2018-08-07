@@ -83,3 +83,7 @@
  
  
 #define STATS_ENABLED DISABLED // to reduce flash degradation
+
+#include <AP_HAL_F4Light/Semaphores.h>
+#define HAL_Semaphore F4Light::Semaphore
+

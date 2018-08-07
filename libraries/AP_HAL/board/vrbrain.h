@@ -94,3 +94,7 @@
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 1
 #endif
+
+#include <AP_HAL_VRBRAIN/Semaphores.h>
+#define HAL_Semaphore VRBRAIN::Semaphore
+

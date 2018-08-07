@@ -395,3 +395,6 @@
 #ifndef HAL_LINUX_I2C_EXTERNAL_BUS_MASK
 #define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 0xFFFF
 #endif
+
+#include <AP_HAL_Linux/Semaphores.h>
+#define HAL_Semaphore Linux::Semaphore

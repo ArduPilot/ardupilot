@@ -38,6 +38,10 @@
 #define HAL_WITH_RAMTRON 0
 #endif
 
+// allow for static semaphores
+#include <AP_HAL_ChibiOS/Semaphores.h>
+#define HAL_Semaphore ChibiOS::Semaphore
+
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
 #ifndef HAL_BARO_MS5611_SPI_INT_NAME
