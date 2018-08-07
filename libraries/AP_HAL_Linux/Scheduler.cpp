@@ -115,8 +115,7 @@ void Scheduler::_debug_stack()
                 "\ttimer = %zu\n"
                 "\tio    = %zu\n"
                 "\trcin  = %zu\n"
-                "\tuart  = %zu\n"
-                "\ttone  = %zu\n",
+                "\tuart  = %zu\n",
                 _timer_thread.get_stack_usage(),
                 _io_thread.get_stack_usage(),
                 _rcin_thread.get_stack_usage(),
