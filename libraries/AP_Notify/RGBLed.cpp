@@ -83,20 +83,7 @@ void RGBLed::update_colours(void)
         break;
     }
 
-    // slow rate from 50Hz to 10hz
-    counter++;
-    if (counter < 5) {
-        return;
-    }
-
-    // reset counter
-    counter = 0;
-
-    // move forward one step
-    step++;
-    if (step >= 10) {
-        step = 0;
-    }
+    const uint8_t step = (AP_HAL::millis()/100) % 10;
 
     // use dim light when connected through USB
     if (hal.gpio->usb_connected() && brightness > _led_dim) {
