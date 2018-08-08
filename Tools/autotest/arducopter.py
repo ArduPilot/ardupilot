@@ -1333,8 +1333,7 @@ class AutoTestCopter(AutoTest):
             hours %= 24
         return (hours, mins, secs, 0)
 
-    def reset_delay_item_seventyseven(self):
-        seq = 3
+    def reset_delay_item_seventyseven(self, seq):
         while True:
             self.progress("Requesting request for seq %u" % (seq,))
             self.mav.mav.mission_write_partial_list_send(1, # target system
@@ -1434,7 +1433,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Received ack: %s" % str(ack))
 
     def fly_nav_delay_abstime(self):
-        '''fly a simple mission that has a delay in it'''
+        """fly a simple mission that has a delay in it"""
 
         num_wp = self.load_mission("copter_nav_delay.txt")
 
@@ -1446,7 +1445,8 @@ class AutoTestCopter(AutoTest):
         self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()
 
-        self.reset_delay_item_seventyseven()
+        delay_item_seq = 3
+        self.reset_delay_item_seventyseven(delay_item_seq)
         delay_for_seconds = 77
         reset_at_m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         reset_at = reset_at_m.time_unix_usec/1000000
@@ -1467,20 +1467,77 @@ class AutoTestCopter(AutoTest):
                     raise AutoTestTimeoutException()
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
                 self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
-                if m.seq == 3:
+                if m.seq == delay_item_seq:
                     self.progress("At delay item")
-                if m.seq > 3:
+                if m.seq > delay_item_seq:
                     if count_stop == -1:
                         count_stop_m = self.mav.recv_match(type='SYSTEM_TIME',
                                                            blocking=True)
                         count_stop = count_stop_m.time_unix_usec/1000000
-            print("count_stop=%f reste at %f", count_stop, reset_at)
             calculated_delay = count_stop - reset_at
             error = abs(calculated_delay - delay_for_seconds)
             self.progress("Stopped for %u seconds (want >=%u seconds)" %
                           (calculated_delay, delay_for_seconds))
             if error > 2:
                 self.progress("Too far outside expectations")
+                raise NotAchievedException()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.set_rc(3, 1000)
+
+        if ex is not None:
+            raise ex
+
+    def fly_nav_takeoff_delay_abstime(self):
+        """make sure taking off at a specific time works"""
+        num_wp = self.load_mission("copter_nav_delay_takeoff.txt")
+
+        self.progress("Starting mission")
+
+        self.mavproxy.send('mode loiter\n')  # stabilize mode
+        self.mav.wait_heartbeat()
+        self.wait_mode('LOITER')
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+
+        delay_item_seq = 2
+        self.reset_delay_item_seventyseven(delay_item_seq)
+        delay_for_seconds = 77
+        reset_at = self.get_sim_time_cached();
+
+        self.context_push();
+
+        ex = None
+        try:
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')  # stabilize mode
+            self.wait_mode('AUTO')
+            self.set_rc(3, 1600)
+
+            # should not take off for about least 77 seconds
+            tstart = self.get_sim_time()
+            took_off = False
+            while self.armed():
+                now = self.get_sim_time_cached()
+                if now - tstart > 200:
+                    # timeout
+                    break
+                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+                self.progress("%s" % str(m))
+                if m.seq > delay_item_seq:
+                    if not took_off:
+                        took_off = True
+                        delta_time = now - reset_at
+                        if abs(delta_time - delay_for_seconds) > 1:
+                            self.progress("Did not take off on time "
+                                          "measured=%f want=%f" %
+                                          (delta_time, delay_for_seconds))
+                            raise NotAchievedException()
+
+            if not took_off:
                 raise NotAchievedException()
 
         except Exception as e:
@@ -1652,6 +1709,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
+            self.run_test("Fly Nav Delay (takeoff)",
+                          self.fly_nav_takeoff_delay_abstime)
 
             self.run_test("Fly Nav Delay (AbsTime)",
                           self.fly_nav_delay_abstime)
