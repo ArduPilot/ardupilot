@@ -25,6 +25,7 @@
 #define AR_ATTCONTROL_PITCH_THR_D       0.03f
 #define AR_ATTCONTROL_PITCH_THR_IMAX    1.0f
 #define AR_ATTCONTROL_PITCH_THR_FILT    10.0f
+#define AR_ATTCONTROL_BAL_SPEED_FF      1.0f
 #define AR_ATTCONTROL_DT                0.02f
 #define AR_ATTCONTROL_TIMEOUT_MS        200
 
@@ -89,10 +90,10 @@ public:
     // return a throttle output from -1 to +1 to perform a controlled stop.  stopped is set to true once stop has been completed
     float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt, bool &stopped);
 
-    // for balancebot
-    // return a throttle output from -1 to +1 given a desired pitch angle
-    // desired_pitch is in radians
-    float get_throttle_out_from_pitch(float desired_pitch, bool motor_limit_low, bool motor_limit_high, float dt);
+    // balancebot pitch to throttle controller
+    // returns a throttle output from -100 to +100 given a desired pitch angle and vehicle's current speed (from wheel encoders)
+    // desired_pitch is in radians, veh_speed_pct is supplied as a percentage (-100 to +100) of vehicle's top speed
+    float get_throttle_out_from_pitch(float desired_pitch, float veh_speed_pct, bool motor_limit_low, bool motor_limit_high, float dt);
 
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
@@ -137,6 +138,7 @@ private:
     AC_PID   _steer_rate_pid;       // steering rate controller
     AC_PID   _throttle_speed_pid;   // throttle speed controller
     AC_PID   _pitch_to_throttle_pid;// balancebot pitch controller
+    AP_Float _pitch_to_throttle_speed_ff;   // balancebot feed forward from speed
 
     AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
     AP_Float _throttle_decel_max;    // speed/throttle control deceleration maximum in m/s/s. 0 to use ATC_ACCEL_MAX for deceleration
