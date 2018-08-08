@@ -78,6 +78,11 @@ uint32_t micros() {
     return F4Light::Scheduler::_micros();
 }
 
+uint16_t millis16()
+{
+    return millis64() & 0xFFFF;
+}
+
 uint64_t micros64(){
     return F4Light::Scheduler::_micros64();
 }
