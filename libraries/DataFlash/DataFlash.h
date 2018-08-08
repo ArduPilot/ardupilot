@@ -158,11 +158,11 @@ public:
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
         float desired;
+        float actual;
         float P;
         float I;
         float D;
         float FF;
-        float AFF;
     };
 
     void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
