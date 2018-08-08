@@ -394,7 +394,7 @@ void AP_UAVCAN::SRV_push_servos()
 
     SRV_sem->give();
 
-    _SRV_armed = hal.util->get_soft_armed() && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+    _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 }
 
 
