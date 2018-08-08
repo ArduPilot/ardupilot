@@ -251,7 +251,6 @@ public:
     // start RTL (within auto)
     void start_RTL();
 
-
 protected:
 
     bool _enter() override;
