@@ -65,6 +65,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <APM_Control/AR_AttitudeControl.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <DataFlash/DataFlash.h>
@@ -565,6 +566,7 @@ public:
 
     // frame type
     uint8_t get_frame_type() { return g2.frame_type.get(); }
+    AP_WheelRateControl& get_wheel_rate_control() { return g2.wheel_rate_control; }
 };
 
 extern const AP_HAL::HAL& hal;
