@@ -345,31 +345,39 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
 
     switch (motor_seq) {
         case MOTOR_TEST_THROTTLE: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) {
+                output_throttle(SRV_Channel::k_motor1, pct);
             }
-            output_throttle(SRV_Channel::k_throttle, pct);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
+                output_throttle(SRV_Channel::k_throttle, pct);
+            }
             break;
         }
         case MOTOR_TEST_STEERING: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) {
+                output_throttle(SRV_Channel::k_motor2, pct);
             }
-            SRV_Channels::set_output_scaled(SRV_Channel::k_steering, pct * 45.0f);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_steering, pct * 45.0f);
+            }
             break;
         }
         case MOTOR_TEST_THROTTLE_LEFT: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
+                output_throttle(SRV_Channel::k_motor3, pct);
             }
-            output_throttle(SRV_Channel::k_throttleLeft, pct);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
+                output_throttle(SRV_Channel::k_throttleLeft, pct);
+            }
             break;
         }
         case MOTOR_TEST_THROTTLE_RIGHT: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor4)) {
+                output_throttle(SRV_Channel::k_motor4, pct);
             }
-            output_throttle(SRV_Channel::k_throttleRight, pct);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+                output_throttle(SRV_Channel::k_throttleRight, pct);
+            }
             break;
         }
         default:
@@ -391,31 +399,39 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
     }
     switch (motor_seq) {
         case MOTOR_TEST_THROTTLE: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor1)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_motor1, pwm);
             }
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, pwm);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttle)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, pwm);
+            }
             break;
         }
         case MOTOR_TEST_STEERING: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor2)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_motor2, pwm);
             }
-            SRV_Channels::set_output_pwm(SRV_Channel::k_steering, pwm);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_steering, pwm);
+            }
             break;
         }
         case MOTOR_TEST_THROTTLE_LEFT: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor3)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_motor3, pwm);
             }
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm);
+            }
             break;
         }
         case MOTOR_TEST_THROTTLE_RIGHT: {
-            if (!SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
-                return false;
+            if (SRV_Channels::function_assigned(SRV_Channel::k_motor4)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_motor4, pwm);
             }
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
+            if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
+            }
             break;
         }
         default:
