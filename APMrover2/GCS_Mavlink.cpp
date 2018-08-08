@@ -217,9 +217,9 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     if (g.gcs_pid_mask & 4) {
         pid_info = &g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
-                                    pid_info->desired,
-                                    ahrs.pitch,
-                                    0,
+                                    degrees(pid_info->desired),
+                                    degrees(ahrs.pitch),
+                                    pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
                                     pid_info->D);
