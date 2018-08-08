@@ -76,8 +76,9 @@ public:
     float       get_integrator() const { return _integrator; }
     void        set_integrator(float i) { _integrator = i; }
 
-    // set the designed rate (for logging purposes)
+    // set the desired and actual rates (for logging purposes)
     void        set_desired_rate(float desired) { _pid_info.desired = desired; }
+    void        set_actual_rate(float actual) { _pid_info.actual = actual; }
 
     const       DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
 
