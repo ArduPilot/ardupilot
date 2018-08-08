@@ -1589,11 +1589,11 @@ void DataFlash_Class::Log_Write_PID(uint8_t msg_type, const PID_Info &info)
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
         desired         : info.desired,
+        actual          : info.actual,
         P               : info.P,
         I               : info.I,
         D               : info.D,
-        FF              : info.FF,
-        AFF             : info.AFF
+        FF              : info.FF
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

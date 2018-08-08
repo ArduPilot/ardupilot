@@ -665,11 +665,11 @@ struct PACKED log_PID {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     float   desired;
+    float   actual;
     float   P;
     float   I;
     float   D;
     float   FF;
-    float   AFF;
 };
 
 struct PACKED log_Current {
@@ -1125,7 +1125,7 @@ struct PACKED log_DSTL {
 #define MAG_UNITS "sGGGGGGGGG-s"
 #define MAG_MULTS "FCCCCCCCCC-F"
 
-#define PID_LABELS "TimeUS,Des,P,I,D,FF,AFF"
+#define PID_LABELS "TimeUS,Des,Act,P,I,D,FF"
 #define PID_FMT    "Qffffff"
 #define PID_UNITS  "s------"
 #define PID_MULTS  "F------"
