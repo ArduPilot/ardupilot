@@ -414,6 +414,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             }
         break;
     case RangeFinder_TYPE_9xVL53L0X:
+        //detect 0x20
+        //set address
         if (params[instance].address) {
             if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance], params[instance],
                                                              hal.i2c_mgr->get_device(1, params[instance].address)))) {
