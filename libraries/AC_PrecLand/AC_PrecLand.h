@@ -59,11 +59,23 @@ public:
     // returns time of last update
     uint32_t last_update_ms() const { return _last_update_ms; }
 
+    // returns time of last time target was seen
+    uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
+
+    // returns estimator type
+    uint8_t estimator_type() const { return _estimator_type; }
+
+    // returns ekf outlier count
+    uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
+
     // give chance to driver to get updates from sensor, should be called at 400hz
     void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
     bool get_target_position_cm(Vector2f& ret);
+
+    // returns target relative position as 3D vector
+    void get_target_position_measurement_cm(Vector3f& ret);
 
     // returns target position relative to vehicle
     bool get_target_position_relative_cm(Vector2f& ret);
