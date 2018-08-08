@@ -44,6 +44,11 @@ uint32_t millis()
     return millis64() & 0xFFFFFFFF;
 }
 
+uint16_t millis16()
+{
+    return millis64() & 0xFFFF;
+}
+
 uint64_t micros64()
 {
     const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);
