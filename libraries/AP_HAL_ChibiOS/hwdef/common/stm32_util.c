@@ -110,7 +110,7 @@ void memory_flush_all(void)
  */
 void stm32_set_utc_usec(uint64_t time_utc_usec)
 {
-    uint64_t now = hrt_micros();
+    uint64_t now = hrt_micros64();
     if (now <= time_utc_usec) {
         utc_time_offset = time_utc_usec - now;
     }
@@ -121,7 +121,7 @@ void stm32_set_utc_usec(uint64_t time_utc_usec)
 */
 uint64_t stm32_get_utc_usec()
 {
-    return hrt_micros() + utc_time_offset;
+    return hrt_micros64() + utc_time_offset;
 }
 
 struct utc_tm {
