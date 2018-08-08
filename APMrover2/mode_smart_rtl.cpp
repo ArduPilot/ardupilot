@@ -64,8 +64,8 @@ void ModeSmartRTL::update()
                 _load_point = true;
             }
             // continue driving towards destination
-            calc_steering_to_waypoint(_origin, _destination);
-            calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, false);
+            calc_steering_to_waypoint(_origin, _destination, _reversed);
+            calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
             break;
 
         case SmartRTL_StopAtHome:
@@ -73,8 +73,8 @@ void ModeSmartRTL::update()
             _reached_destination = true;
             if (rover.is_boat()) {
                 // boats attempt to hold position at home
-                calc_steering_to_waypoint(rover.current_loc, _destination);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, false);
+                calc_steering_to_waypoint(rover.current_loc, _destination, _reversed);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
             } else {
                 // rovers stop
                 stop_vehicle();
