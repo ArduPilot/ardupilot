@@ -300,15 +300,13 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
             return false;
-        }else{
-            // if found a "navigation" command then return it
-            if (is_nav_cmd(cmd)) {
-                return true;
-            }else{
-                // move on in list
-                cmd_index++;
-            }
         }
+        // if found a "navigation" command then return it
+        if (is_nav_cmd(cmd)) {
+            return true;
+        }
+        // move on in list
+        cmd_index++;
     }
 
     // if we got this far we did not find a navigation command
