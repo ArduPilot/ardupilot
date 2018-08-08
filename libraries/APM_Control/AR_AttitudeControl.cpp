@@ -210,7 +210,15 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
-    
+
+    // @Param: _BAL_SPD_FF
+    // @DisplayName: Pitch control feed forward from speed
+    // @Description: Pitch control feed forward from speed
+    // @Range: 0.0 10.0
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_BAL_SPD_FF", 11, AR_AttitudeControl, _pitch_to_throttle_speed_ff, AR_ATTCONTROL_BAL_SPEED_FF),
+
     AP_GROUPEND
 };
 
@@ -484,10 +492,10 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
     return get_throttle_out_speed(desired_speed_limited, motor_limit_low, motor_limit_high, cruise_speed, cruise_throttle, dt);
 }
 
-// for balancebot
-// return a throttle output from -1 to +1, given a desired pitch angle
-// desired_pitch is in radians
-float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool motor_limit_low, bool motor_limit_high, float dt)
+// balancebot pitch to throttle controller
+// returns a throttle output from -100 to +100 given a desired pitch angle and vehicle's current speed (from wheel encoders)
+// desired_pitch is in radians, veh_speed_pct is supplied as a percentage (-100 to +100) of vehicle's top speed
+float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, float vehicle_speed_pct, bool motor_limit_low, bool motor_limit_high, float dt)
 {
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
@@ -527,8 +535,11 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, bool 
     // get d
     const float d = _pitch_to_throttle_pid.get_d();
 
+    // add feed forward from speed
+    const float spd_ff = vehicle_speed_pct * 0.01f * _pitch_to_throttle_speed_ff;
+
     // constrain and return final output
-    return (ff + p + i + d);
+    return (ff + p + i + d + spd_ff);
 }
 
 // get latest desired pitch in radians for reporting purposes
