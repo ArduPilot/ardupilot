@@ -35,8 +35,9 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     AP_GROUPINFO("_CPR",     1, AP_WheelEncoder, _counts_per_revolution[0], WHEELENCODER_CPR_DEFAULT),
 
     // @Param: _RADIUS
-    // @DisplayName: Wheel radius in meters
-    // @Description: Wheel radius in meters
+    // @DisplayName: Wheel radius
+    // @Description: Wheel radius
+    // @Units: m
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("_RADIUS",  2, AP_WheelEncoder, _wheel_radius[0], WHEELENCODER_RADIUS_DEFAULT),
@@ -46,21 +47,21 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Description: X position of the center of the wheel in body frame. Positive X is forward of the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: _POS_Y
     // @DisplayName: Wheel's Y position offset
     // @Description: Y position of the center of the wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: _POS_Z
     // @DisplayName: Wheel's Z position offset
     // @Description: Z position of the center of the wheel in body frame. Positive Z is down from the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("_POS",     3, AP_WheelEncoder, _pos_offset[0], 0.0f),
 
     // @Param: _PINA
@@ -93,8 +94,9 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     AP_GROUPINFO("2_CPR",     7, AP_WheelEncoder, _counts_per_revolution[1], WHEELENCODER_CPR_DEFAULT),
 
     // @Param: 2_RADIUS
-    // @DisplayName: Wheel2's radius in meters
-    // @Description: Wheel2's radius in meters
+    // @DisplayName: Wheel2's radius
+    // @Description: Wheel2's radius
+    // @Units: m
     // @Increment: 0.001
     // @User: Standard
     AP_GROUPINFO("2_RADIUS", 8, AP_WheelEncoder, _wheel_radius[1], WHEELENCODER_RADIUS_DEFAULT),
@@ -104,21 +106,21 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
     // @Description: X position of the center of the second wheel in body frame. Positive X is forward of the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: 2_POS_Y
     // @DisplayName: Wheel2's Y position offset
     // @Description: Y position of the center of the second wheel in body frame. Positive Y is to the right of the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
 
     // @Param: 2_POS_Z
     // @DisplayName: Wheel2's Z position offset
     // @Description: Z position of the center of the second wheel in body frame. Positive Z is down from the origin.
     // @Units: m
     // @Increment: 0.01
-    // @User: Advanced
+    // @User: Standard
     AP_GROUPINFO("2_POS",    9, AP_WheelEncoder, _pos_offset[1], 0.0f),
 
     // @Param: 2_PINA
