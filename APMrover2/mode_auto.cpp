@@ -140,14 +140,6 @@ void ModeAuto::start_RTL()
     }
 }
 
-// execute the mission in reverse (i.e. backing up)
-void ModeAuto::set_reversed(bool value)
-{
-    if (_reversed != value) {
-        _reversed = value;
-    }
-}
-
 /*
     check for triggering of start of auto mode
 */
