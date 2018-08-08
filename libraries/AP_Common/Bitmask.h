@@ -102,13 +102,24 @@ public:
         return sum;
     }
 
+    // return first bit set, or -1 if none set
+    int16_t first_set() const {
+        for (uint16_t i=0; i<numwords; i++) {
+            if (bits[i] == 0) {
+                continue;
+            }
+            return i*32 + __builtin_ffs(bits[i]) - 1;
+        }
+        return -1;
+    }
+
     // return number of bits available
     uint16_t size() const {
         return numbits;
     }
 
 private:
-    uint16_t numbits;
-    uint16_t numwords;
+    const uint16_t numbits;
+    const uint16_t numwords;
     uint32_t *bits;
 };
