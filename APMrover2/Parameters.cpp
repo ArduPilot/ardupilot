@@ -575,6 +575,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
     AP_SUBGROUPINFO(sprayer, "SPRAY_", 26, ParametersG2, AC_Sprayer),
 
+    // @Group: WRC
+    // @Path: ../libraries/AP_WheelEncoder/AP_WheelRateControl.cpp
+    AP_SUBGROUPINFO(wheel_rate_control, "WRC", 27, ParametersG2, AP_WheelRateControl),
+
     AP_GROUPEND
 };
 
@@ -599,6 +603,7 @@ ParametersG2::ParametersG2(void)
 #endif
     beacon(rover.serial_manager),
     motors(rover.ServoRelayEvents),
+    wheel_rate_control(wheel_encoder),
     attitude_control(rover.ahrs),
     smart_rtl(),
     fence(rover.ahrs),
