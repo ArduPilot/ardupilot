@@ -66,6 +66,14 @@ void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 // _scheduled_update - updates _red, _green, _blue according to notify flags
 void RGBLed::update_colours(void)
 {
+    // constant update rate of 10hz
+    const uint16_t now = AP_HAL::millis16();
+    const uint16_t delta = now - last_update_ms;
+    if (delta < 100) {
+        return;
+    }
+    last_update_ms = now;
+
     uint8_t brightness = _led_bright;
 
     switch (pNotify->_rgb_led_brightness) {
@@ -82,15 +90,6 @@ void RGBLed::update_colours(void)
         brightness = _led_bright;
         break;
     }
-
-    // slow rate from 50Hz to 10hz
-    counter++;
-    if (counter < 5) {
-        return;
-    }
-
-    // reset counter
-    counter = 0;
 
     // move forward one step
     step++;

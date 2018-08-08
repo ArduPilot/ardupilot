@@ -50,7 +50,7 @@ protected:
     virtual void update_override();
     
     // meta-data common to all hw devices
-    uint8_t counter;
+    uint16_t last_update_ms;
     uint8_t step;
     uint8_t _red_des, _green_des, _blue_des;     // color requested by timed update
     uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
