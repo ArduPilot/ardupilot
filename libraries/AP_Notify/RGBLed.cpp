@@ -66,14 +66,6 @@ void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 // _scheduled_update - updates _red, _green, _blue according to notify flags
 void RGBLed::update_colours(void)
 {
-    // constant update rate of 10hz
-    const uint16_t now = AP_HAL::millis16();
-    const uint16_t delta = now - last_update_ms;
-    if (delta < 100) {
-        return;
-    }
-    last_update_ms = now;
-
     uint8_t brightness = _led_bright;
 
     switch (pNotify->_rgb_led_brightness) {
@@ -91,11 +83,7 @@ void RGBLed::update_colours(void)
         break;
     }
 
-    // move forward one step
-    step++;
-    if (step >= 10) {
-        step = 0;
-    }
+    const uint8_t step = (AP_HAL::millis()/100) % 10;
 
     // use dim light when connected through USB
     if (hal.gpio->usb_connected() && brightness > _led_dim) {
