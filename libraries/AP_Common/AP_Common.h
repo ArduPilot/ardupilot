@@ -27,6 +27,9 @@
 // used to pack structures
 #define PACKED __attribute__((__packed__))
 
+// used to weaken symbols
+#define WEAK __attribute__((__weak__))
+
 // used to mark a function that may be unused in some builds
 #define UNUSED_FUNCTION __attribute__((unused))
 
