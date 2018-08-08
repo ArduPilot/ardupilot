@@ -693,6 +693,13 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
+    case MAV_CMD_DO_SET_REVERSE:
+        // param1 : Direction (0=Forward, 1=Reverse)
+        if(!rover.control_mode->set_reversed(packet.param1)) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+
     case MAV_CMD_DO_SET_HOME:
     {
         // param1 : use current (1=use current location, 0=use specified location)
