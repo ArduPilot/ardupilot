@@ -53,4 +53,8 @@ private:
     const uint16_t action_time = 3000; // ms; time to grab or release
 
     bool has_state_pwm(const uint16_t pwm) const;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    bool is_releasing;
+    bool is_released;
+#endif
 };
