@@ -171,8 +171,8 @@ public:
     int fd = -1;
     uint16_t bus;
     uint16_t subdev;
-    uint8_t ref;
     int16_t last_mode = -1;
+    uint8_t ref;
 };
 
 SPIBus::~SPIBus()
@@ -222,7 +222,7 @@ SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
     _speed = _desc.highspeed;
-    
+
     if (_desc.cs_pin != SPI_CS_KERNEL) {
         _cs = hal.gpio->channel(_desc.cs_pin);
         if (!_cs) {
@@ -466,7 +466,8 @@ SPIDeviceManager::get_device(const char *name)
     return dev;
 }
 
-uint8_t SPIDeviceManager::get_count() {
+uint8_t SPIDeviceManager::get_count()
+{
    return _n_device_desc;
 }
 
@@ -483,7 +484,9 @@ SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
     if (!dev) {
         return nullptr;
     }
+
     b.ref++;
+
     return dev;
 }
 
