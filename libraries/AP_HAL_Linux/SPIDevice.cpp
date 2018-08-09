@@ -164,13 +164,13 @@ public:
     void start_cb() override;
     void end_cb() override;
 
-    int open(uint16_t bus_, uint16_t kernel_cs_);
+    bool open(uint16_t bus, uint16_t subdev);
 
     PollerThread thread;
     Semaphore sem;
     int fd = -1;
     uint16_t bus;
-    uint16_t kernel_cs;
+    uint16_t subdev;
     uint8_t ref;
     int16_t last_mode = -1;
 };
@@ -193,7 +193,7 @@ void SPIBus::end_cb()
 }
 
 
-int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
+int SPIBus::open(uint16_t bus_, uint16_t subdev_)
 {
     char path[sizeof("/dev/spidevXXXXX.XXXXX")];
 
@@ -201,7 +201,7 @@ int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
         return -EBUSY;
     }
 
-    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, kernel_cs_);
+    snprintf(path, sizeof(path), "/dev/spidev%u.%u", bus_, subdev_);
     fd = ::open(path, O_RDWR | O_CLOEXEC);
     if (fd < 0) {
         AP_HAL::panic("SPI: unable to open SPI bus %s: %s",
@@ -209,7 +209,7 @@ int SPIBus::open(uint16_t bus_, uint16_t kernel_cs_)
     }
 
     bus = bus_;
-    kernel_cs = kernel_cs_;
+    subdev = subdev_;
 
     return fd;
 }
@@ -445,7 +445,7 @@ SPIDeviceManager::get_device(const char *name)
     /* Find if bus is already open */
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
         if (_buses[i]->bus == desc->bus &&
-            _buses[i]->kernel_cs == desc->subdev) {
+            _buses[i]->subdev == desc->subdev) {
             return _create_device(*_buses[i], *desc);
         }
     }
@@ -494,7 +494,7 @@ void SPIDeviceManager::_unregister(SPIBus &b)
     }
 
     for (auto it = _buses.begin(); it != _buses.end(); it++) {
-        if ((*it)->bus == b.bus && (*it)->kernel_cs == b.kernel_cs) {
+        if ((*it)->bus == b.bus && (*it)->subdev == b.subdev) {
             _buses.erase(it);
             delete &b;
             break;
