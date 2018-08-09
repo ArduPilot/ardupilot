@@ -29,6 +29,7 @@
 
 extern const AP_HAL::HAL &hal;
 
+//<orientation, channel>. -1 no channel
 const std::map<int,int> AP_RangeFinder_9xVL53L0X::channel_mapping {
 	{0, 0},   // Forward
 	{1, 1},   // Forward-Right

@@ -28,19 +28,6 @@ public:
 	static bool set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation);
 
 private:
-	//<orientation, channel>. -1 no channel
-// 	static const std::map<int,int> channel_mapping = {
-// 		{0, 0},   // Forward
-// 		{1, 1},   // Forward-Right
-// 		{2, 2},   // Right
-// 		{3, 3},   // Back-Right
-// 		{4, 4},   // Back
-// 		{5, 5},   // Back-Left
-// 		{6, 6},   // Left
-// 		{7, 7},   // Forward-Left
-// 		{24, -1}, // Up
-// 		{25, -1}  // Down
-// 	};
 	static const std::map<int,int> channel_mapping;
 
 	static AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t address);
@@ -50,16 +37,3 @@ private:
     static void _write_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value);
 	static uint8_t _read_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg);
 };
-
-// const std::map<int,int> AP_RangeFinder_9xVL53L0X::channel_mapping {
-// 	{0, 0},   // Forward
-// 	{1, 1},   // Forward-Right
-// 	{2, 2},   // Right
-// 	{3, 3},   // Back-Right
-// 	{4, 4},   // Back
-// 	{5, 5},   // Back-Left
-// 	{6, 6},   // Left
-// 	{7, 7},   // Forward-Left
-// 	{24, -1}, // Up
-// 	{25, -1}  // Down
-// };
