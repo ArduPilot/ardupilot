@@ -29,8 +29,21 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>& AP_RangeFinder_9xVL53L0X::get_device(uint8_t address) {
-	AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev = hal.i2c_mgr->get_device(1, address)
+const std::map<int,int> AP_RangeFinder_9xVL53L0X::channel_mapping {
+	{0, 0},   // Forward
+	{1, 1},   // Forward-Right
+	{2, 2},   // Right
+	{3, 3},   // Back-Right
+	{4, 4},   // Back
+	{5, 5},   // Back-Left
+	{6, 6},   // Left
+	{7, 7},   // Forward-Left
+	{24, -1}, // Up
+	{25, -1}  // Down
+};
+
+AP_HAL::OwnPtr<AP_HAL::I2CDevice> AP_RangeFinder_9xVL53L0X::get_device(uint8_t address) {
+	AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev = hal.i2c_mgr->get_device(1, address);
 	
 	if(!dev){
 		dev = hal.i2c_mgr->get_device(0, address);
@@ -40,12 +53,12 @@ AP_HAL::OwnPtr<AP_HAL::I2CDevice>& AP_RangeFinder_9xVL53L0X::get_device(uint8_t 
 }
 
 bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uint8_t orientation) {
-	AP_HAL::OwnPtr<AP_HAL::I2CDevice> &temp_dev = get_device(temp_addr);
-	AP_HAL::OwnPtr<AP_HAL::I2CDevice> &mux_dev = get_device(MUX_ADDR);
-	AP_HAL::OwnPtr<AP_HAL::I2CDevice> &def_dev = get_device(SENSOR_DEFAULT_ADDR);
+	AP_HAL::OwnPtr<AP_HAL::I2CDevice> temp_dev = get_device(temp_addr);
+	AP_HAL::OwnPtr<AP_HAL::I2CDevice> mux_dev = get_device(MUX_ADDR);
+	AP_HAL::OwnPtr<AP_HAL::I2CDevice> def_dev = get_device(SENSOR_DEFAULT_ADDR);
 	
 	uint8_t pin_state = 0;
-	uint8_t pin = channel_mapping[orientation];
+	int pin = channel_mapping.find(orientation)->second;
 	bool new_default = false;
 	bool default_used = false;
 	
@@ -58,7 +71,7 @@ bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	_write_register(mux_dev, MUX_CONFIG_REG, MUX_CONFIG_VAL);
 	
 	//read pin states
-	pin_state = _read_register();
+	pin_state = _read_register(mux_dev, MUX_OUTPUT_PORT_REG);
 	
 	//disable only target pin
 	if(pin >= 0) {
@@ -112,8 +125,8 @@ bool AP_RangeFinder_9xVL53L0X::is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
 
 bool AP_RangeFinder_9xVL53L0X::is_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
     uint8_t v1, v2;
-    v1 = _read_register(0xC0);
-    v2 = _read_register(0xC1);
+    v1 = _read_register(_dev, 0xC0);
+    v2 = _read_register(_dev, 0xC1);
     if (v1 != 0xEE ||
         v2 != 0xAA) {
         return false;
