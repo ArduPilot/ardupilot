@@ -37,6 +37,8 @@
 #include "Thread.h"
 #include "Util.h"
 
+#define DEBUG 0
+
 namespace Linux {
 
 static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
@@ -295,8 +297,8 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
-    int r;
-    if (_bus.last_mode == _desc.mode) {
+#if DEBUG
+    if (_desc.mode == _bus.last_mode) {
         /*
           the mode in the kernel is not tied to the file descriptor,
           so there is a chance some other process has changed it since
@@ -316,6 +318,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
             _bus.last_mode = -1;
         }
     }
+#endif
+
+    int r;
     if (_desc.mode != _bus.last_mode) {
         r = ioctl(fd, SPI_IOC_WR_MODE, &_desc.mode);
         if (r < 0) {
