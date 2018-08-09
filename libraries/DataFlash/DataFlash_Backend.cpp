@@ -313,8 +313,54 @@ bool DataFlash_Backend::StartNewLogOK() const
     return true;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+void DataFlash_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
+                                                       uint16_t size)
+{
+    // just check the first few packets to avoid too much overhead
+    // (finding the structures is expensive)
+    static uint16_t count = 0;
+    if (count > 65534) {
+        return;
+    }
+    count++;
+
+    // we assume here that we ever WritePrioritisedBlock for a single
+    // message.  If this assumption becomes false we can't do these
+    // checks.
+    if (size < 3) {
+        AP_HAL::panic("Short prioritised block");
+    }
+    if (((uint8_t*)pBuffer)[0] != HEAD_BYTE1 ||
+        ((uint8_t*)pBuffer)[1] != HEAD_BYTE2) {
+        AP_HAL::panic("Not passed a message");
+    }
+    const uint8_t type = ((uint8_t*)pBuffer)[2];
+    uint8_t type_len;
+    const struct LogStructure *s = _front.structure_for_msg_type(type);
+    if (s == nullptr) {
+        const struct DataFlash_Class::log_write_fmt *t = _front.log_write_fmt_for_msg_type(type);
+        if (t == nullptr) {
+            AP_HAL::panic("No structure for msg_type=%u", type);
+        }
+        type_len = t->msg_len;
+    } else {
+        type_len = s->msg_len;
+    }
+    if (type_len != size) {
+        char name[5] = {}; // get a null-terminated string
+        memcpy(name, s->name, 4);
+        AP_HAL::panic("Size mismatch for %u (%s) (expected=%u got=%u)\n",
+                      type, name, type_len, size);
+    }
+}
+#endif
+
 bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    validate_WritePrioritisedBlock(pBuffer, size);
+#endif
     if (!ShouldLog(is_critical)) {
         return false;
     }
