@@ -802,6 +802,30 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     return f;
 }
 
+const struct LogStructure *DataFlash_Class::structure_for_msg_type(const uint8_t msg_type)
+{
+    for (uint16_t i=0; i<_num_types;i++) {
+        const struct LogStructure *s = structure(i);
+        if (s->msg_type == msg_type) {
+            // in use
+            return s;
+        }
+    }
+    return nullptr;
+}
+
+const struct DataFlash_Class::log_write_fmt *DataFlash_Class::log_write_fmt_for_msg_type(const uint8_t msg_type) const
+{
+    struct log_write_fmt *f;
+    for (f = log_write_fmts; f; f=f->next) {
+        if (f->msg_type == msg_type) {
+            return f;
+        }
+    }
+    return nullptr;
+}
+
+
 // returns true if the msg_type is already taken
 bool DataFlash_Class::msg_type_in_use(const uint8_t msg_type) const
 {
