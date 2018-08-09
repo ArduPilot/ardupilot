@@ -933,6 +933,7 @@ void Copter::ModeAuto::payload_place_run()
 
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
+        return wp_run();
     case PayloadPlaceStateType_Calibrating_Hover_Start:
     case PayloadPlaceStateType_Calibrating_Hover:
         return payload_place_run_loiter();
@@ -1564,9 +1565,8 @@ bool Copter::ModeAuto::verify_payload_place()
         if (!copter.wp_nav->reached_wp_destination()) {
             return false;
         }
-        // we're there; set loiter target
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
-        FALLTHROUGH;
+        payload_place_start();
+        return false;
     case PayloadPlaceStateType_Calibrating_Hover_Start:
         // hover for 1 second to get an idea of what our hover
         // throttle looks like
