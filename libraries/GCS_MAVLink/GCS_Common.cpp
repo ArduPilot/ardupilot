@@ -1022,7 +1022,7 @@ void GCS_MAVLINK::send_radio_in()
     mavlink_status_t *status = mavlink_get_channel_status(chan);
 
     uint16_t values[18] = {};
-    rc().get_radio_in(values, 18);
+    rc().get_radio_in(values, ARRAY_SIZE(values));
 
     if (status && (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
         // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD implementations
