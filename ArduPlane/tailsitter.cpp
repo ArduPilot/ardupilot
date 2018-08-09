@@ -115,6 +115,74 @@ void QuadPlane::tailsitter_output(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
     
+    // Apply speed scaling to interplate between fixed wing and VTOL outputs based on Airspeed
+    float aspeed;
+    bool have_airspeed = ahrs.airspeed_estimate(&aspeed);
+    if (have_airspeed){
+        // Get plane mode outputs for plane to match VTOL rates	
+        float fw_aileron = 0;
+        float fw_elevator = 0;
+        float fw_rudder = 0;
+        float fw_tilt_left  = 0;
+        float fw_tilt_right = 0;
+    	    
+        if (tailsitter.vectored_forward_gain > 0) {
+            // Thrust vectoring in fixed wing flight
+            fw_aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+            fw_elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+            fw_rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+            fw_tilt_left  = (fw_elevator + fw_aileron) * tailsitter.vectored_forward_gain;
+            fw_tilt_right = (fw_elevator - fw_aileron) * tailsitter.vectored_forward_gain;
+        } else {
+            // Standard fixedwing outputs
+            // No fixed wing yaw contoller so canot stabalise VTOL roll
+            // Get disired rates
+            //float roll_rate = attitude_control->get_rate_roll_pid().get_pid_info().desired * 100; 
+            float pitch_rate = attitude_control->get_rate_pitch_pid().get_pid_info().desired * 100;
+            float yaw_rate = attitude_control->get_rate_yaw_pid().get_pid_info().desired * 100;
+        
+            float speed_scaler = plane.get_speed_scaler();	
+            
+            // Due to refence frame change roll and yaw are swaped
+            fw_aileron = plane.rollController.get_rate_out(-yaw_rate,  speed_scaler);
+            fw_elevator = plane.pitchController.get_rate_out(pitch_rate, speed_scaler);
+            //fw_rudder = plane.yawController.get_rate_out(yaw_rate, speed_scaler);
+        }	
+        //float fw_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+		
+        // Get VTOL mode outputs
+        float VTOL_aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+        float VTOL_elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+        float VTOL_rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+        float VTOL_tilt_left  = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
+        float VTOL_tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight);
+        //float VTOL_throttle_left = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
+        //float VTOL_throttle_right = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+  
+        // Caculate ratio of  gains
+        float VTOL_rato = 0.5f + (aspeed - tailsitter.scaling_speed) * -(1.0f/tailsitter.scaling_range);
+        VTOL_rato = constrain_float(VTOL_rato, 0.0f, 1.0f);
+        float fw_ratio = 1.0f - VTOL_rato;
+
+        // Caculate interpolated outputs
+        float aileron_interp =  VTOL_aileron * VTOL_rato + fw_aileron * fw_ratio;
+        float elevator_interp = VTOL_elevator * VTOL_rato + fw_elevator * fw_ratio;
+        float rudder_interp = VTOL_rudder * VTOL_rato + fw_rudder * fw_ratio;
+        float tilt_left_interp = VTOL_tilt_left * VTOL_rato + fw_tilt_left * fw_ratio;
+        float tilt_right_interp = VTOL_tilt_right * VTOL_rato + fw_tilt_right * fw_ratio;
+        // No fixed wing yaw contoller so just use VTOL all the time
+        //float throttle_left_interp = VTOL_throttle_left * VTOL_rato + fw_throttle * fw_ratio;
+        //float throttle_right_interp = VTOL_throttle_right * VTOL_rato + fw_throttle * fw_ratio;
+        
+        // Set outputs
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron_interp);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator_interp);	 
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_interp);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left_interp);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right_interp);	 
+        //SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left_interp);
+        //SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right_interp);	 		
+	}	
     
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
