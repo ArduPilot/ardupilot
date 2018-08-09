@@ -37,13 +37,19 @@ public:
     void set_alt(float alt) {altitude = alt;};
     static const struct AP_Param::GroupInfo var_info[];
     bool is_enabled() const {return static_cast<bool>(gripper_enable);}
+    bool is_jaw_open() const {return jaw_open;}
 
 private:
+    static constexpr int16_t SIM_GRIPPER_GRAB_PWM_DEFAULT = 2000;
+    static constexpr int16_t SIM_GRIPPER_RELEASE_PWM_DEFAULT = 1000;
     AP_Int8  gripper_enable;  // enable gripper sim
     AP_Int8  gripper_servo_pin;
+    AP_Int16 grab_pwm;              // PWM value sent to Gripper to initiate grabbing the cargo
+    AP_Int16 release_pwm;           // PWM value sent to Gripper to release the cargo
+    AP_Int8 reverse;                // reverse closing direction
     const uint32_t report_interval = 1000000; // microseconds
     uint64_t last_report_us;
-
+    bool jaw_open = false;
     const float gap = 30; // mm
     float altitude;
     float position; // percentage
