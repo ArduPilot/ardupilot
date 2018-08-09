@@ -14,7 +14,7 @@ public:
     // update state
     void update(void) override;
 
-    static void set_addr(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, uint8_t addr);
+    static void set_addr(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &dev, uint8_t addr);
 
 protected:
 
