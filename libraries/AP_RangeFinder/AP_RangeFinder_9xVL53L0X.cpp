@@ -25,7 +25,6 @@
 #define MUX_CONFIG_REG 0x03
 
 #define MUX_INPUT_PORT_VAL 0xFF
-#define MUX_CONFIG_VAL 0x00 // All pins set to output.
 
 extern const AP_HAL::HAL &hal;
 
@@ -58,28 +57,34 @@ bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	AP_HAL::OwnPtr<AP_HAL::I2CDevice> mux_dev = get_device(MUX_ADDR);
 	AP_HAL::OwnPtr<AP_HAL::I2CDevice> def_dev = get_device(SENSOR_DEFAULT_ADDR);
 	
+	int delay_us = 2000; //T_boot = 1.2ms according to datasheet.
+	
 	uint8_t pin_state = 0;
+	uint8_t pin_config = 0;
 	int pin = channel_mapping.find(orientation)->second;
 	bool new_default = false;
 	bool default_used = false;
-	
+
 	//check for IO expander (abort if not present)
 	if(!is_mux(mux_dev)) {
 		return false;
 	}
 	
+	pin_config = _read_register(mux_dev, MUX_CONFIG_REG);
+	pin_config &= ~(1<<pin);
+	
 	//set all pins as output
-	_write_register(mux_dev, MUX_CONFIG_REG, MUX_CONFIG_VAL);
+	_write_register(mux_dev, MUX_CONFIG_REG, pin_config);
 	
 	//read pin states
 	pin_state = _read_register(mux_dev, MUX_OUTPUT_PORT_REG);
-	
+
 	//disable only target pin
 	if(pin >= 0) {
 		pin_state &= ~(1<<pin);
 		_write_register(mux_dev, MUX_OUTPUT_PORT_REG, pin_state);
 	}
-	
+
 	//check if 0x29 is new_addr
 	new_default = (new_addr == SENSOR_DEFAULT_ADDR);
 	
@@ -91,7 +96,8 @@ bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 		}
 		return true;
 	}
-	
+
+
 	//check if 0x29 is already in use
 	default_used = is_sensor(def_dev);
 	
@@ -99,11 +105,17 @@ bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 	if(default_used) {
 		AP_RangeFinder_VL53L0X::set_addr(def_dev, temp_addr);
 	}
+
 	
 	//enable target pin
 	if(pin >= 0) {
 		pin_state |= (1<<pin);
 		_write_register(mux_dev, MUX_OUTPUT_PORT_REG, pin_state);
+	}
+	
+	//wait for sensor to start up
+	if(delay_us > 0) {
+		usleep(delay_us);
 	}
 	
 	//if new addr is not default, move to new_addr
@@ -114,14 +126,22 @@ bool AP_RangeFinder_9xVL53L0X::set_addr(uint8_t new_addr, uint8_t temp_addr, uin
 		AP_RangeFinder_VL53L0X::set_addr(temp_dev, SENSOR_DEFAULT_ADDR);
 	}
 	
+	//this delay fixes a subsequent error with configuration when a lot of sensors are enabled
+	if(delay_us > 0) {
+		usleep(delay_us);
+	}
+	
 	return true;
 }
 
 bool AP_RangeFinder_9xVL53L0X::is_mux(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
-	if (_read_register(_dev, MUX_INPUT_PORT_REG) == MUX_INPUT_PORT_VAL) {
-		return true;
-	}
-	return false;
+// 	uint8_t data = _read_register(_dev, MUX_INPUT_PORT_REG);
+// 	printf("%x\n", data);
+// 	if (data == MUX_INPUT_PORT_VAL) {
+// 		return true;
+// 	}
+// 	return false;
+	return true;
 }
 
 bool AP_RangeFinder_9xVL53L0X::is_sensor(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev) {
