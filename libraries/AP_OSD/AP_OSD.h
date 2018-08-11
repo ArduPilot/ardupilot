@@ -104,6 +104,8 @@ private:
     AP_OSD_Setting hdop{false, 0, 0};
     AP_OSD_Setting waypoint{false, 0, 0};
     AP_OSD_Setting xtrack_error{false, 0, 0};
+    AP_OSD_Setting dist{false,22,11};
+    AP_OSD_Setting stat{false,0,0};
 
     bool check_option(uint32_t option);
 
@@ -156,6 +158,8 @@ private:
     void draw_hdop(uint8_t x, uint8_t y);
     void draw_waypoint(uint8_t x, uint8_t y);
     void draw_xtrack_error(uint8_t x, uint8_t y);
+    void draw_dist(uint8_t x, uint8_t y);
+    void draw_stat(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
@@ -230,15 +234,22 @@ public:
 private:
     void osd_thread();
     void update_osd();
+    void stats();
     void update_current_screen();
     void next_screen();
     AP_OSD_Backend *backend;
-    uint32_t last_update_ms;
-
+    
     //variables for screen switching
     uint8_t current_screen;
     uint16_t previous_channel_value;
     bool switch_debouncer;
     uint32_t last_switch_ms;
     struct NavInfo nav_info;
+
+    uint32_t last_update_ms;
+    float last_distance_m;
+    float max_dist_m;
+    float max_alt_m;
+    float max_speed_mps;
+    float max_current_a;
 };
