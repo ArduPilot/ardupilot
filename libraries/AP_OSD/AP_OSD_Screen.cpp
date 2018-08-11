@@ -169,6 +169,15 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(xtrack_error, "XTRACK", 31, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: DIST
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(dist, "DIST", 32, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: STATS
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(stat, "STATS", 33, AP_OSD_Screen, AP_OSD_Setting),
+
+
     AP_GROUPEND
 };
 
@@ -259,6 +268,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
+#define SYM_DIST      0x22
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -822,6 +832,25 @@ void AP_OSD_Screen::draw_xtrack_error(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%c%4d", SYM_XERR, (int)osd->nav_info.wp_xtrack_error);
 }
 
+void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
+{
+    backend->write(x+2, y, false, "%c%c%c", 0x4d,0x41,0x58);
+    backend->write(x, y+1, false, "%c",SYM_GSPD);
+    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->max_speed_mps), u_icon(SPEED));
+    backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYM_AMP);
+    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
+    backend->write(x, y+4, false, "%c", SYM_HOME);
+    draw_distance(x+1, y+4, osd->max_dist_m); 
+    backend->write(x, y+5, false, "%c", SYM_DIST);
+    draw_distance(x+1, y+5, osd->last_distance_m);  
+}
+
+void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
+{
+    backend->write(x, y, false, "%c", SYM_DIST);
+    draw_distance(x+1, y, osd->last_distance_m);   
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -865,5 +894,8 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+    DRAW_SETTING(dist);
+    DRAW_SETTING(stat);
+
 }
 
