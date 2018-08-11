@@ -110,7 +110,7 @@ void UARTDriver::thread_init(void)
 #endif
 }
 
-
+#ifndef HAL_STDOUT_SERIAL
 /*
   hook to allow printf() to work on hal.console when we don't have a
   dedicated debug console
@@ -120,7 +120,7 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
     hal.console->vprintf(fmt, arg);
     return 1; // wrong length, but doesn't matter for what this is used for
 }
-
+#endif
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
