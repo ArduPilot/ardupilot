@@ -159,6 +159,11 @@ uint32_t millis()
     return hrt_millis32();
 }
 
+uint16_t millis16()
+{
+    return hrt_millis32() & 0xFFFF;
+}
+
 uint64_t micros64()
 {
     return hrt_micros64();
