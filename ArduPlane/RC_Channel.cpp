@@ -33,6 +33,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     switch(ch_option) {
     // the following functions do not need to be initialised:
     case ARMDISARM:
+    case INVERTED:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -57,6 +58,9 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
             plane.disarm_motors();
             break;
         }
+        break;
+    case INVERTED:
+        plane.inverted_flight = (ch_flag == HIGH);
         break;
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);

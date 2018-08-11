@@ -215,7 +215,7 @@ public:
         k_param_pitch_limit_min_cd,
         k_param_airspeed_cruise_cm,
         k_param_RTL_altitude_cm,
-        k_param_inverted_flight_ch,
+        k_param_inverted_flight_ch_unused, // unused
         k_param_min_gndspeed_cm,
         k_param_crosstrack_use_wind, // unused
 
@@ -467,7 +467,6 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 takeoff_flap_percent;  
-    AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
