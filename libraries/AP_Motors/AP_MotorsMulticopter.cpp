@@ -456,6 +456,10 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _spin_up_ratio = 0.0f;
             _throttle_thrust_max = 0.0f;
+
+            // initialise motor failure variables
+            _thrust_boost = false;
+            _thrust_boost_ratio = 0.0f;
             break;
 
         case SPIN_WHEN_ARMED: {
@@ -492,6 +496,10 @@ void AP_MotorsMulticopter::output_logic()
                 _spin_up_ratio += constrain_float(spin_up_armed_ratio-_spin_up_ratio, -spool_step, spool_step);
             }
             _throttle_thrust_max = 0.0f;
+
+            // initialise motor failure variables
+            _thrust_boost = false;
+            _thrust_boost_ratio = 0.0f;
             break;
         }
         case SPOOL_UP:
@@ -521,6 +529,10 @@ void AP_MotorsMulticopter::output_logic()
             } else if (_throttle_thrust_max < 0.0f) {
                 _throttle_thrust_max = 0.0f;
             }
+
+            // initialise motor failure variables
+            _thrust_boost = false;
+            _thrust_boost_ratio = 0.0f;
             break;
 
         case THROTTLE_UNLIMITED:
@@ -542,6 +554,12 @@ void AP_MotorsMulticopter::output_logic()
             // set and increment ramp variables
             _spin_up_ratio = 1.0f;
             _throttle_thrust_max = get_current_limit_max_throttle();
+
+            if (_thrust_boost && !_thrust_balanced) {
+                _thrust_boost_ratio = MIN(1.0, _thrust_boost_ratio+1.0f/(_spool_up_time*_loop_rate));
+            } else {
+                _thrust_boost_ratio = MAX(0.0, _thrust_boost_ratio-1.0f/(_spool_up_time*_loop_rate));
+            }
             break;
 
         case SPOOL_DOWN:
@@ -573,6 +591,8 @@ void AP_MotorsMulticopter::output_logic()
             } else if (is_zero(_throttle_thrust_max)) {
                 _spool_mode = SPIN_WHEN_ARMED;
             }
+
+            _thrust_boost_ratio = MAX(0.0, _thrust_boost_ratio-1.0f/(_spool_up_time*_loop_rate));
             break;
     }
 }

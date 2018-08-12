@@ -95,6 +95,11 @@ public:
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
 
+    // motor failure handling
+    void                set_thrust_boost(bool enable) { _thrust_boost = enable; }
+    bool                get_thrust_boost() const { return _thrust_boost; }
+    virtual uint8_t     get_lost_motor() const { return 0; }
+
     // spool up states
     enum spool_up_down_desired {
         DESIRED_SHUT_DOWN = 0,              // all motors stop
@@ -211,6 +216,11 @@ protected:
     float _yaw_radio_passthrough;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
     AP_Int8             _pwm_type;            // PWM output type
+
+    // motor failure handling
+    bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
+    bool                _thrust_balanced;       // true when output thrust is well balanced
+    float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
 
 private:
     static AP_Motors *_instance;
