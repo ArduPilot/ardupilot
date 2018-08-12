@@ -574,6 +574,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPEND
 };
 
+// These auxiliary channel param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
+// can get them.  These lines can be removed once Rover-3.6-beta testing begins or we improve the source of descriptions for GCSs.
+//
+// @Param: CH7_OPTION
+// @DisplayName: Channel 7 option
+// @Description: What to do use channel 7 for
+// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
+// @User: Standard
+
+// @Param: AUX_CH
+// @DisplayName: Auxiliary switch channel
+// @Description: RC Channel to use for auxiliary functions including saving waypoints
+// @User: Advanced
 
 ParametersG2::ParametersG2(void)
     :
