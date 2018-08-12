@@ -700,6 +700,7 @@ private:
 
     // crash_check.cpp
     void crash_check();
+    void thrust_loss_check();
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
