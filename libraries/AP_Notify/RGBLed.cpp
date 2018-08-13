@@ -62,9 +62,7 @@ void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     _set_rgb(red, green, blue);
 }
 
-
-// _scheduled_update - updates _red, _green, _blue according to notify flags
-void RGBLed::update_colours(void)
+uint8_t RGBLed::get_brightness(void) const
 {
     uint8_t brightness = _led_bright;
 
@@ -83,228 +81,88 @@ void RGBLed::update_colours(void)
         break;
     }
 
-    const uint8_t step = (AP_HAL::millis()/100) % 10;
-
     // use dim light when connected through USB
     if (hal.gpio->usb_connected() && brightness > _led_dim) {
         brightness = _led_dim;
     }
+    return brightness;
+}
 
+// _scheduled_update - updates _red, _green, _blue according to notify flags
+uint32_t RGBLed::get_colour_sequence(void) const
+{
     // initialising pattern
     if (AP_Notify::flags.initialising) {
-        if (step & 1) {
-            // odd steps display red light
-            _red_des = brightness;
-            _blue_des = _led_off;
-            _green_des = _led_off;
-        } else {
-            // even display blue light
-            _red_des = _led_off;
-            _blue_des = brightness;
-            _green_des = _led_off;
-        }
-
-        // exit so no other status modify this pattern
-        return;
+        return sequence_initialising;
     }
-    
+
     // save trim and esc calibration pattern
     if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
-        switch(step) {
-            case 0:
-            case 3:
-            case 6:
-                // red on
-                _red_des = brightness;
-                _blue_des = _led_off;
-                _green_des = _led_off;
-                break;
-
-            case 1:
-            case 4:
-            case 7:
-                // blue on
-                _red_des = _led_off;
-                _blue_des = brightness;
-                _green_des = _led_off;
-                break;
-
-            case 2:
-            case 5:
-            case 8:
-                // green on
-                _red_des = _led_off;
-                _blue_des = _led_off;
-                _green_des = brightness;
-                break;
-
-            case 9:
-                // all off
-                _red_des = _led_off;
-                _blue_des = _led_off;
-                _green_des = _led_off;
-                break;
-        }
-        // exit so no other status modify this pattern
-        return;
+        return sequence_trim_or_esc;
     }
 
     // radio and battery failsafe patter: flash yellow
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
-    if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery ||
-            AP_Notify::flags.ekf_bad || AP_Notify::flags.gps_glitching || AP_Notify::flags.leak_detected) {
-        switch(step) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                // yellow on
-                _red_des = brightness;
-                _blue_des = _led_off;
-                _green_des = brightness;
-                break;
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-                if (AP_Notify::flags.leak_detected) {
-                    // purple if leak detected
-                    _red_des = brightness;
-                    _blue_des = brightness;
-                    _green_des = brightness;
-                } else if (AP_Notify::flags.ekf_bad) {
-                    // red on if ekf bad
-                    _red_des = brightness;
-                    _blue_des = _led_off;
-                    _green_des = _led_off;
-                } else if (AP_Notify::flags.gps_glitching) {
-                    // blue on gps glitch
-                    _red_des = _led_off;
-                    _blue_des = brightness;
-                    _green_des = _led_off;
-                }else{
-                    // all off for radio or battery failsafe
-                    _red_des = _led_off;
-                    _blue_des = _led_off;
-                    _green_des = _led_off;
-                }
-                break;
+    if (AP_Notify::flags.failsafe_radio ||
+        AP_Notify::flags.failsafe_battery ||
+        AP_Notify::flags.ekf_bad ||
+        AP_Notify::flags.gps_glitching ||
+        AP_Notify::flags.leak_detected) {
+
+        if (AP_Notify::flags.leak_detected) {
+            // purple if leak detected
+            return sequence_failsafe_leak;
+        } else if (AP_Notify::flags.ekf_bad) {
+            // red on if ekf bad
+            return sequence_failsafe_ekf;
+        } else if (AP_Notify::flags.gps_glitching) {
+            // blue on gps glitch
+            return sequence_failsafe_gps_glitching;
         }
-        // exit so no other status modify this pattern
-        return;
+        // all off for radio or battery failsafe
+        return sequence_failsafe_radio_or_battery;
     }
 
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
         // solid green if armed with GPS 3d lock
         if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
-            _red_des = _led_off;
-            _blue_des = _led_off;
-            _green_des = brightness;
-        }else{
-            // solid blue if armed with no GPS lock
-            _red_des = _led_off;
-            _blue_des = brightness;
-            _green_des = _led_off;
+            return sequence_armed;
         }
-        return;
-    }else{
-        // double flash yellow if failing pre-arm checks
-        if (!AP_Notify::flags.pre_arm_check) {
-            switch(step) {
-                case 0:
-                case 1:
-                case 4:
-                case 5:
-                    // yellow on
-                    _red_des = brightness;
-                    _blue_des = _led_off;
-                    _green_des = brightness;
-                    break;
-                case 2:
-                case 3:
-                case 6:
-                case 7:
-                case 8:
-                case 9:
-                    // all off
-                    _red_des = _led_off;
-                    _blue_des = _led_off;
-                    _green_des = _led_off;
-                    break;
-            }
-        }else{
-            // fast flashing green if disarmed with GPS 3D lock and DGPS
-            // slow flashing green if disarmed with GPS 3d lock (and no DGPS)
-            // flashing blue if disarmed with no gps lock or gps pre_arm checks have failed
-            bool fast_green = AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS && AP_Notify::flags.pre_arm_gps_check;
-            switch(step) {
-                case 0:
-                    if (fast_green) {
-                        _green_des = brightness;
-                    }
-                    break;
-                case 1:
-                    if (fast_green) {
-                        _green_des = _led_off;
-                    }
-                    break;
-                case 2:
-                    if (fast_green) {
-                        _green_des = brightness;
-                    }
-                    break;
-                case 3:
-                    if (fast_green) {
-                        _green_des = _led_off;
-                    }
-                    break;
-                case 4:
-                    _red_des = _led_off;
-                    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.pre_arm_gps_check) {
-                        // flashing green if disarmed with GPS 3d lock
-                        _blue_des = _led_off;
-                        _green_des = brightness;
-                    }else{
-                        // flashing blue if disarmed with no gps lock
-                        _blue_des = brightness;
-                        _green_des = _led_off;
-                    }
-                    break;
-                case 5:
-                    if (fast_green) {
-                        _green_des = _led_off;
-                    }
-                    break;
-
-                case 6:
-                    if (fast_green) {
-                        _green_des = brightness;
-                    }
-                    break;
-
-                case 7:
-                    if (fast_green) {
-                        _green_des = _led_off;
-                    }
-                    break;
-                case 8:
-                    if (fast_green) {
-                        _green_des = brightness;
-                    }
-                    break;
-                case 9:
-                    // all off
-                    _red_des = _led_off;
-                    _blue_des = _led_off;
-                    _green_des = _led_off;
-                    break;
-            }
-        }
+        // solid blue if armed with no GPS lock
+        return sequence_armed_nogps;
     }
+
+    // double flash yellow if failing pre-arm checks
+    if (!AP_Notify::flags.pre_arm_check) {
+        return sequence_prearm_failing;
+    }
+    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS && AP_Notify::flags.pre_arm_gps_check) {
+        return sequence_disarmed_good_dgps;
+    }
+
+    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.pre_arm_gps_check) {
+        return sequence_disarmed_good_gps;
+    }
+
+    return sequence_disarmed_bad_gps;
+}
+
+// _scheduled_update - updates _red, _green, _blue according to notify flags
+void RGBLed::update_colours(void)
+{
+    const uint8_t brightness = get_brightness();
+
+    const uint32_t current_colour_sequence = get_colour_sequence();
+
+    const uint8_t step = (AP_HAL::millis()/100) % 10;
+
+    const uint8_t colour = current_colour_sequence >> (step*3);
+
+    _red_des = (colour & RED) ? brightness : 0;
+    _green_des = (colour & GREEN) ? brightness : 0;
+    _blue_des = (colour & BLUE) ? brightness : 0;
 }
 
 // update - updates led according to timed_updated.  Should be called
