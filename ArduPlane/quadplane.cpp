@@ -327,8 +327,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: quadplane options
-    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land.
-    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand
+    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the corrent position.
+    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -2096,7 +2096,14 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     }
 
     plane.set_next_WP(cmd.content.location);
-    plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
+    if (options & OPTION_RESPECT_TAKEOFF_FRAME) {
+        if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
+            // we are above the takeoff already, no need to do anything
+            return false;
+        }
+    } else {
+        plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
+    }
     throttle_wait = false;
 
     // set target to current position
