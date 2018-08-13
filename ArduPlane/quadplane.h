@@ -450,6 +450,7 @@ private:
         OPTION_LEVEL_TRANSITION=(1<<0),
         OPTION_ALLOW_FW_TAKEOFF=(1<<1),
         OPTION_ALLOW_FW_LAND=(1<<2),
+        OPTION_RESPECT_TAKEOFF_FRAME=(1<<3),
     };
 
     /*

@@ -244,6 +244,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         }
         break;
 #endif
+
+    default:
+        // unable to use the command, allow the vehicle to try the next command
+        return false;
     }
 
     return true;
