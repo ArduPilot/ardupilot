@@ -281,10 +281,10 @@ void AP_MotorsUGV::set_lateral(float lateral)
     _lateral = constrain_float(lateral, -100.0f, 100.0f);
 }
 
-// set mainsail angle in radians
-void AP_MotorsUGV::set_mainsail(float angle_rad)
+// set mainsail input as a value from 0 to 100
+void AP_MotorsUGV::set_mainsail(float mainsail)
 {
-    _mainsail_rad = angle_rad;
+    _mainsail = mainsail;
 }
 
 // get slew limited throttle
@@ -342,7 +342,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     output_custom_config(armed, _steering, _throttle, _lateral);
 
     // output to mainsail
-    output_mainsail(armed, _mainsail_rad);
+    output_mainsail(_mainsail);
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
@@ -762,19 +762,13 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
 }
 
 // output for sailboat's mainsail
-void AP_MotorsUGV::output_mainsail(bool armed, float mainsail_rad)
+void AP_MotorsUGV::output_mainsail(float mainsail)
 {
     if (!has_sail()) {
         return;
     }
 
-    // when disarmed pull in sail
-    float mainsail_scaled = 0.0f;
-    if (armed) {
-        // limit and scale requested mainsail angle
-        mainsail_scaled = constrain_float(fabsf(mainsail_rad), 0.0f, radians(90)) / radians(90) * 100.0f;
-    }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail, mainsail_scaled);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail, constrain_float(mainsail, 0.0f, 100.0f));
 }
 
 // slew limit throttle for one iteration

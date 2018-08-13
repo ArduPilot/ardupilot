@@ -70,8 +70,8 @@ public:
     // set lateral input as a value from -100 to +100
     void set_lateral(float lateral);
 
-    // set mainsail angle in radians
-    void set_mainsail(float angle_rad);
+    // set mainsail input as a value from 0 to 100
+    void set_mainsail(float mainsail);
 
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
@@ -133,8 +133,8 @@ protected:
     // output throttle (-100 ~ +100) to a throttle channel.  Sets relays if required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle);
 
-    // output for sailboat's mainsail
-    void output_mainsail(bool armed, float mainsail_rad);
+    // output for sailboat's mainsail in the range of 0 to 100
+    void output_mainsail(float mainsail);
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
@@ -167,7 +167,7 @@ protected:
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
-    float   _mainsail_rad;  // requested mainsail angle in radians
+    float   _mainsail;  // requested mainsail input as a value from 0 to 100
 
     // custom config variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
