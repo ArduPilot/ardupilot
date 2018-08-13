@@ -491,7 +491,8 @@ private:
     bool trim_radio();
 
     // sailboat.cpp
-    void sailboat_update_mainsail(bool move_forward);
+    void sailboat_set_mainsail(float mainsail);
+    void sailboat_update_mainsail();
 
     // sensors.cpp
     void init_compass(void);
