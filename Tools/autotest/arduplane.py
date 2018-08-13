@@ -90,11 +90,12 @@ class AutoTestPlane(AutoTest):
 
     def takeoff(self):
         """Takeoff get to 30m altitude."""
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
 
         self.mavproxy.send('switch 4\n')
         self.wait_mode('FBWA')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
         # some rudder to counteract the prop torque
         self.set_rc(4, 1700)
@@ -438,19 +439,113 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def fly_mission(self, filename):
-        """Fly a mission from a file."""
-        self.progress("Flying mission %s" % filename)
+    def wp_load(self, filename):
         self.mavproxy.send('wp load %s\n' % filename)
         self.mavproxy.expect('Flight plan received')
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting [0-9]+ waypoints')
+
+    def fly_mission(self, filename):
+        """Fly a mission from a file."""
+        self.progress("Flying mission %s" % filename)
+        self.wp_load(filename)
         self.mavproxy.send('switch 1\n')  # auto mode
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 7, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=60)
         self.mavproxy.expect("Auto disarmed")
         self.progress("Mission OK")
+
+    def wait_servo_channel_value(self, channel, value, timeout=2):
+        channel_field = "servo%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException()
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                    blocking=True,
+                                    timeout=remaining)
+            m_value = getattr(m, channel_field, None)
+            self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
+                          (channel_field, m_value, value))
+            if m_value is None:
+                raise ValueError() #?
+            if m_value == value:
+                return
+
+    def fly_flaps(self):
+        """Test flaps functionality."""
+        filename = os.path.join(testdir, "flaps.txt")
+        self.context_push()
+        ex = None
+        try:
+            flaps_ch = 5
+            servo_ch = 5
+            self.set_parameter("SERVO%u_FUNCTION" % servo_ch, 3) # flapsauto
+            self.set_parameter("FLAP_IN_CHANNEL", flaps_ch)
+            self.set_parameter("LAND_FLAP_PERCNT", 50)
+            self.set_parameter("LOG_DISARMED", 1)
+            flaps_ch_min = 1000
+            flaps_ch_trim = 1500
+            flaps_ch_max = 2000
+            self.set_parameter("RC%u_MIN" % flaps_ch, flaps_ch_min)
+            self.set_parameter("RC%u_MAX" % flaps_ch, flaps_ch_max)
+            self.set_parameter("RC%u_TRIM" % flaps_ch, flaps_ch_trim)
+
+            servo_ch_min = 1200
+            servo_ch_trim = 1300
+            servo_ch_max = 1800
+            self.set_parameter("SERVO%u_MIN" % servo_ch, servo_ch_min)
+            self.set_parameter("SERVO%u_MAX" % servo_ch, servo_ch_max)
+            self.set_parameter("SERVO%u_TRIM" % servo_ch, servo_ch_trim)
+
+            # check flaps are not deployed:
+            self.set_rc(flaps_ch, flaps_ch_min)
+            self.wait_servo_channel_value(servo_ch, servo_ch_min)
+            # deploy the flaps:
+            self.set_rc(flaps_ch, flaps_ch_max)
+            tstart = self.get_sim_time()
+            self.wait_servo_channel_value(servo_ch, servo_ch_max)
+            tstop = self.get_sim_time_cached()
+            delta_time = tstop - tstart
+            delta_time_min = 0.5
+            delta_time_max = 1.5
+            if delta_time < delta_time_min or delta_time > delta_time_max:
+                self.progress("Flaps Slew not working (%f seconds)" %
+                              (delta_time,))
+                raise NotAchievedException()
+            # undeploy flaps:
+            self.set_rc(flaps_ch, flaps_ch_min)
+            self.wait_servo_channel_value(servo_ch, servo_ch_min)
+
+            self.progress("Flying mission %s" % filename)
+            self.wp_load(filename)
+            self.mavproxy.send('wp set 1\n')
+            self.mavproxy.send('switch 1\n')  # auto mode
+            self.wait_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            while self.armed():
+                m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
+            # flaps should undeploy at the end
+            self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=30)
+
+            # do a short flight in FBWA, watching for flaps
+            # self.mavproxy.send('switch 4\n')
+            # self.wait_mode('FBWA')
+            # self.wait_seconds(10)
+            # self.mavproxy.send('switch 6\n')
+            # self.wait_mode('MANUAL')
+            # self.wait_seconds(10)
+
+            self.progress("Flaps OK")
+        except Exception as e:
+            ex = e
+        self.context_pop()
+        if ex:
+            raise ex
 
     def autotest(self):
         """Autotest ArduPlane in SITL."""
@@ -473,6 +568,8 @@ class AutoTestPlane(AutoTest):
                 self.mav.wait_gps_fix()
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)
+
+            self.run_test("Flaps", self.fly_flaps)
 
             self.run_test("Takeoff", self.takeoff)
 
