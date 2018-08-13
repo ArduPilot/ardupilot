@@ -490,6 +490,9 @@ private:
     void control_failsafe(uint16_t pwm);
     bool trim_radio();
 
+    // sailboat.cpp
+    void sailboat_update_mainsail(bool move_forward);
+
     // sensors.cpp
     void init_compass(void);
     void init_compass_location(void);
