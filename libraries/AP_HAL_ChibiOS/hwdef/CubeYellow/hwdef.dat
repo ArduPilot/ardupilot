@@ -400,6 +400,9 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 # available (in bytes)
 define HAL_STORAGE_SIZE 16384
 
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
+
 # this enables the use of a ramtron device for storage, if one is
 # found on SPI. You must have a ramtron entry in the SPI device table
 
