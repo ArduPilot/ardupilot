@@ -545,7 +545,7 @@ class AutoTest(ABC):
             if m.custom_mode == custom_mode:
                 return
             time.sleep(0.1)
-        return AutoTestTimeoutException()
+        raise AutoTestTimeoutException()
 
     def reach_heading_manual(self, heading):
         """Manually direct the vehicle to the target heading."""
