@@ -44,6 +44,16 @@
 #include <SITL/SITL.h>
 #endif
 
+#if HAL_WITH_UAVCAN
+  #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_Common/AP_Common.h>
+
+  // To be replaced with macro saying if KDECAN library is included
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    #include <AP_KDECAN/AP_KDECAN.h>
+  #endif
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 uint32_t GCS_MAVLINK::last_radio_status_remrssi_ms;
@@ -3248,6 +3258,55 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
+{
+#if HAL_WITH_UAVCAN
+    if (hal.util->get_soft_armed()) {
+        // *preflight*, remember?
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    bool start_stop = is_equal(packet.param1,1.0f) ? true : false;
+    bool result = true;
+    bool can_exists = false;
+    uint8_t num_drivers = AP::can().get_num_drivers();
+
+    for (uint8_t i = 0; i < num_drivers; i++) {
+        switch (AP::can().get_protocol_type(i)) {
+            case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+
+                if (ap_kdecan != nullptr) {
+                    can_exists = true;
+                    result = ap_kdecan->run_enumeration(start_stop) && result;
+                }
+                break;
+#else
+                UNUSED_RESULT(start_stop); // prevent unused variable error
+#endif
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+            case AP_BoardConfig_CAN::Protocol_Type_None:
+            default:
+                break;
+        }
+    }
+
+    MAV_RESULT ack = MAV_RESULT_DENIED;
+    if (can_exists) {
+        ack = result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    }
+
+    return ack;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
+}
+
+
+
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
     return AP::compass().handle_mag_cal_command(packet);
@@ -3397,6 +3456,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
+        break;
+
+    case MAV_CMD_PREFLIGHT_UAVCAN:
+        result = handle_command_preflight_can(packet);
         break;
 
     case MAV_CMD_FLASH_BOOTLOADER:

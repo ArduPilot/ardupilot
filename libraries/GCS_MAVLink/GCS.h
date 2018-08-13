@@ -387,6 +387,8 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro();
 
+    MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
+
     void handle_command_long(mavlink_message_t* msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
