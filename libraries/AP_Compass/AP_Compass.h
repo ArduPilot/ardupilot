@@ -378,6 +378,7 @@ private:
         DRIVER_QMC5883  =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
+        DRIVER_IST8308  = 15,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
