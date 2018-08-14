@@ -95,9 +95,6 @@ void Plane::init_ardupilot()
 
     init_rc_out_main();
     
-    // allow servo set on all channels except first 4
-    ServoRelayEvents.set_channel_mask(0xFFF0);
-
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
