@@ -28,6 +28,19 @@ from pymavlink import mavparm
 from pysim import util, vehicleinfo
 from io import StringIO
 
+MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_Z_IGNORE)
+MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE)
+MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                                        mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE)
+MAVLINK_SET_POS_TYPE_MASK_FORCE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_FORCE_SET
+MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE
+MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
+
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
 expect_list = []
