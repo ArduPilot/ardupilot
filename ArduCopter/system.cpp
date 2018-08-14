@@ -138,9 +138,6 @@ void Copter::init_ardupilot()
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
 
-    // initialise which outputs Servo and Relay events can use
-    ServoRelayEvents.set_channel_mask(~motors->get_motor_mask());
-
     relay.init();
 
     /*
