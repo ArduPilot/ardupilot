@@ -144,6 +144,16 @@ class NotAchievedException(ErrorException):
     pass
 
 
+class YawSpeedNotAchievedException(NotAchievedException):
+    """Thrown when fails to achieve given yaw speed."""
+    pass
+
+
+class SpeedVectorNotAchievedException(NotAchievedException):
+    """Thrown when fails to achieve given speed vector."""
+    pass
+
+
 class PreconditionFailedException(ErrorException):
     """Thrown when a precondition for a test is not met"""
     pass
@@ -4121,6 +4131,34 @@ class AutoTest(ABC):
             return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
 
         self.wait_and_maintain(value_name="Heading", target=heading, current_value_getter=lambda: get_heading_wrapped(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_yaw_speed(self, yaw_speed, accuracy=0.1, timeout=30, **kwargs):
+        """Wait for a given yaw speed in radians per second."""
+        def get_yawspeed(timeout2):
+            msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
+            if msg:
+                return msg.yawspeed
+            raise MsgRcvTimeoutException("Failed to get yaw speed")
+
+        def validator(value2, target2):
+            return math.fabs(value2 - target2) <= accuracy
+
+        self.wait_and_maintain(value_name="YawSpeed", target=yaw_speed, current_value_getter=lambda: get_yawspeed(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
+
+    def wait_speed_vector(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
+        """Wait for a given speed vector."""
+        def get_speed_vector(timeout2):
+            msg = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True, timeout=timeout2)
+            if msg:
+                return Vector3(msg.vx, msg.vy, msg.vz)
+            raise MsgRcvTimeoutException("Failed to get local speed vector")
+
+        def validator(value2, target2):
+            return (math.fabs(value2.x - target2.x) <= accuracy and
+                    math.fabs(value2.y - target2.y) <= accuracy and
+                    math.fabs(value2.z - target2.z) <= accuracy)
+
+        self.wait_and_maintain(value_name="SpeedVector", target=speed_vector, current_value_getter=lambda: get_speed_vector(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
     def wait_distance(self, distance, accuracy=2, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
