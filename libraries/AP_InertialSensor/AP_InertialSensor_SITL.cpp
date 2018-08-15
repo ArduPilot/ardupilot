@@ -164,8 +164,8 @@ void AP_InertialSensor_SITL::timer_update(void)
 
 float AP_InertialSensor_SITL::gyro_drift(void)
 {
-    if (sitl->drift_speed == 0.0f ||
-        sitl->drift_time == 0.0f) {
+    if (is_zero(sitl->drift_speed) ||
+        is_zero(sitl->drift_time)) {
         return 0;
     }
     double period  = sitl->drift_time * 2;
