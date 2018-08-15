@@ -136,6 +136,7 @@ private:
         }
         return ret;
     };
+    uint32_t last_messagewrite_message_sent;
 
     // free-space checks; filling up SD cards under NuttX leads to
     // corrupt filesystems which cause loss of data, failure to gather

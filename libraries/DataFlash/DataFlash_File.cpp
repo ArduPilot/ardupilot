@@ -554,11 +554,15 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // writing format messages out.  It can always get back to us
         // with more messages later, so let's leave room for other
         // things:
-        if (space < non_messagewriter_message_reserved_space()) {
+        const uint32_t now = AP_HAL::millis();
+        const bool must_dribble = (now - last_messagewrite_message_sent) > 100;
+        if (!must_dribble &&
+            space < non_messagewriter_message_reserved_space()) {
             // this message isn't dropped, it will be sent again...
             semaphore->give();
             return false;
         }
+        last_messagewrite_message_sent = now;
     } else {
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space()) {
