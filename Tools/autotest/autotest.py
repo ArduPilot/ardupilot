@@ -142,6 +142,38 @@ def build_examples():
 
     return True
 
+def build_unit_tests():
+    """Build tests."""
+    for target in ['linux']:
+        print("Running build.unit_tests for %s" % target)
+        try:
+            util.build_tests(target)
+        except Exception as e:
+            print("Failed build.unit_tests on board=%s" % target)
+            print(str(e))
+            return False
+
+    return True
+
+def run_unit_test(test):
+    print("Running (%s)" % test)
+    subprocess.check_call([test])
+
+
+def run_unit_tests():
+    binary_dir = util.reltopdir(os.path.join('build',
+                                             'linux',
+                                             'tests',
+                                             ))
+    tests = glob.glob("%s/*" % binary_dir)
+    success = True
+    for test in tests:
+        try:
+            run_unit_test(test)
+        except Exception as e:
+            print("Exception running (%s): %s" % (test, e.message))
+            success = False
+    return success
 
 def param_parse_filepath():
     return util.reltopdir('Tools/autotest/param_metadata/param_parse.py')
@@ -366,6 +398,12 @@ def run_step(step):
 
     if step == 'convertgpx':
         return convert_gpx()
+
+    if step == 'build.unit_tests':
+        return build_unit_tests()
+
+    if step == 'run.unit_tests':
+        return run_unit_tests()
 
     raise RuntimeError("Unknown step %s" % step)
 
@@ -629,6 +667,9 @@ if __name__ == "__main__":
         # 'build.DevRelease',
         'build.Examples',
         'build.Parameters',
+
+        'build.unit_tests',
+        'run.unit_tests',
 
         'build.ArduPlane',
         'defaults.ArduPlane',
