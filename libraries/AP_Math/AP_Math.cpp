@@ -232,7 +232,7 @@ Vector3f rand_vec3f(void)
     Vector3f v = Vector3f(rand_float(),
                           rand_float(),
                           rand_float());
-    if (v.length() != 0.0f) {
+    if (!is_zero(v.length())) {
         v.normalize();
     }
     return v;
