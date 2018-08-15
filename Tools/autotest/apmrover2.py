@@ -251,6 +251,81 @@ class AutoTestRover(AutoTest):
     #         "timed out after %u seconds" % timeout)
     #         return False
 
+    def test_sprayer(self):
+        """Test sprayer functionality."""
+        self.context_push()
+        ex = None
+        try:
+            rc_ch = 5
+            pump_ch = 5
+            spinner_ch = 6
+            pump_ch_min = 1050
+            pump_ch_trim = 1520
+            pump_ch_max = 1950
+            spinner_ch_min = 975
+            spinner_ch_trim = 1510
+            spinner_ch_max = 1975
+
+            self.set_parameter("SPRAY_ENABLE", 1)
+
+            self.set_parameter("SERVO%u_FUNCTION" % pump_ch, 22)
+            self.set_parameter("SERVO%u_MIN" % pump_ch, pump_ch_min)
+            self.set_parameter("SERVO%u_TRIM" % pump_ch, pump_ch_trim)
+            self.set_parameter("SERVO%u_MAX" % pump_ch, pump_ch_max)
+
+            self.set_parameter("SERVO%u_FUNCTION" % spinner_ch, 23)
+            self.set_parameter("SERVO%u_MIN" % spinner_ch, spinner_ch_min)
+            self.set_parameter("SERVO%u_TRIM" % spinner_ch, spinner_ch_trim)
+            self.set_parameter("SERVO%u_MAX" % spinner_ch, spinner_ch_max)
+
+            self.set_parameter("SIM_SPR_ENABLE", 1)
+            self.fetch_parameters()
+            self.set_parameter("SIM_SPR_PUMP", pump_ch)
+            self.set_parameter("SIM_SPR_SPIN", spinner_ch)
+
+            self.set_parameter("RC%u_OPTION" % rc_ch, 15)
+            self.set_parameter("LOG_DISARMED", 1)
+
+            self.reboot_sitl()
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            self.progress("test bootup state - it's zero-output!")
+            self.wait_servo_channel_value(spinner_ch, 0)
+            self.wait_servo_channel_value(pump_ch, 0)
+
+            self.progress("Enable sprayer")
+            self.set_rc(rc_ch, 2000)
+
+            self.progress("Testing zero-speed state")
+            self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+
+            self.progress("Testing turning it off")
+            self.set_rc(rc_ch, 1000)
+            self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+
+            self.progress("Testing turning it back on")
+            self.set_rc(rc_ch, 2000)
+            self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+
+            self.progress("Testing speed-ramping")
+            self.set_rc(3, 1700) # start driving forward
+
+            # this is somewhat empirical...
+            self.wait_servo_channel_value(pump_ch, 1695, timeout=60)
+
+            self.progress("Sprayer OK")
+        except Exception as e:
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex:
+            raise ex
+
     #################################################
     # AUTOTEST ALL
     #################################################
@@ -566,6 +641,9 @@ class AutoTestRover(AutoTest):
 
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
+
+            self.run_test("Test Sprayer", self.test_sprayer)
+
             self.wait_ready_to_arm()
             self.run_test("Arm features", self.test_arm_feature)
             self.arm_vehicle()
