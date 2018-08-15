@@ -240,11 +240,14 @@ bool XPlane::receive_data(void)
                  * input from XPlane10
                  */
                 bool has_magic = ((uint32_t)(data[1] * throttle_magic_scale) % 1000U) == (uint32_t)(throttle_magic * throttle_magic_scale);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
                 if (data[1] < 0 ||
                     data[1] == throttle_sent ||
                     has_magic) {
                     break;
                 }
+#pragma GCC diagnostic pop
                 rcin[2] = data[1];
             }
             break;
@@ -387,7 +390,7 @@ void XPlane::send_data(const struct sitl_input &input)
     if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
         SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
         float flap = (input.servos[flap_chan]-1000)/1000.0;
-        if (flap != last_flap) {
+        if (!is_equal(flap, last_flap)) {
             send_dref("sim/flightmodel/controls/flaprqst", flap);
             send_dref("sim/aircraft/overflow/acf_flap_arm", flap>0?1:0);
         }
