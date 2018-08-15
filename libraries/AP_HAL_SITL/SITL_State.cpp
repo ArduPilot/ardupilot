@@ -432,7 +432,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     } else if (_vehicle == APMrover2) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
-        motors_on = ((input.servos[2] - 1500) / 500.0f) != 0;
+        motors_on = !is_zero(((input.servos[2] - 1500) / 500.0f));
     } else {
         motors_on = false;
         // run checks on each motor
@@ -508,7 +508,7 @@ void SITL_State::set_height_agl(void)
 {
     static float home_alt = -1;
 
-    if (home_alt == -1 && _sitl->state.altitude > 0) {
+    if (is_equal(home_alt, -1.0f) && _sitl->state.altitude > 0) {
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
     }
