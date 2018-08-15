@@ -428,7 +428,7 @@ void FlightAxis::update(const struct sitl_input &input)
                state.m_accelerationBodyAZ_MPS2);
 
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
-    if (state.m_isTouchingGround) {
+    if (!is_zero(state.m_isTouchingGround)) {
         Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
         accel_ef.z -= GRAVITY_MSS;
         accel_body = dcm.transposed() * accel_ef;
@@ -441,7 +441,7 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
     // offset based on first position to account for offset in RF world
-    if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
+    if (position_offset.is_zero() || !is_zero(state.m_resetButtonHasBeenPressed)) {
         position_offset = position;
     }
     position -= position_offset;
@@ -492,7 +492,7 @@ void FlightAxis::update(const struct sitl_input &input)
 void FlightAxis::report_FPS(void)
 {
     if (frame_counter++ % 1000 == 0) {
-        if (last_frame_count_s != 0) {
+        if (!is_zero(last_frame_count_s)) {
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;

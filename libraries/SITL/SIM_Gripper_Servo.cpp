@@ -91,7 +91,7 @@ bool Gripper_Servo::should_report()
         return false;
     }
 
-    if (reported_position != position) {
+    if (!is_equal(reported_position, position)) {
         return true;
     }
 
