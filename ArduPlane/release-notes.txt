@@ -1,3 +1,33 @@
+Release 3.9.1beta1, 15th August 2018
+------------------------------------
+
+This is a the first beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - improved DShot and BLHeli-passthrough support, fixing errors
+   reported by BLHeli32 ESCs and making using BLHeliSuite32 much more
+   reliable
+
+ - new tonealarm system, bringing the tones produced under ChibiOS and
+   Linux HALs in line with tones produced under the HAL_PX4 HAL.
+
+ - added a new LED driver for the NCP5623 LED
+
+ - fixed delay caused by parameter writes in AP_Stats
+
+ - fixed default RSSI input pin on some boards
+
+ - fixed the incorrect display of "no io thread heartbeat" message
+
+ - fixed microSD support on some boards due to running out of DMA
+   capable memory
+
+Given the changes are quite small, I hope to make this a fairly short
+beta cycle. Please test it and report both success and failure.
+
+Happy flying!
+
+
 Release 3.9.0, 6th August 2018
 ------------------------------
 
