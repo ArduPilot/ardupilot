@@ -243,7 +243,7 @@ struct Vector2
         } else {
             const float expected_slope = (seg_end.y-seg_start.y)/expected_run;
             const float intersection_slope = (point.y-seg_start.y)/intersection_run;
-            if (expected_slope != intersection_slope) {
+            if (fabsf(expected_slope - intersection_slope) > FLT_EPSILON) {
                 return false;
             }
         }
