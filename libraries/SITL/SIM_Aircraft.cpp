@@ -259,7 +259,7 @@ void Aircraft::setup_frame_time(float new_rate, float new_speedup)
 /* adjust frame_time calculation */
 void Aircraft::adjust_frame_time(float new_rate)
 {
-    if (rate_hz != new_rate) {
+    if (!is_equal(rate_hz, new_rate)) {
         rate_hz = new_rate;
         frame_time_us = static_cast<uint64_t>(1.0e6f/rate_hz);
         scaled_frame_time_us = frame_time_us/target_speedup;
@@ -421,7 +421,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         }
     }
     
-    if (last_speedup != sitl->speedup && sitl->speedup > 0) {
+    if (!is_equal(last_speedup, float(sitl->speedup)) && sitl->speedup > 0) {
         set_speedup(sitl->speedup);
         last_speedup = sitl->speedup;
     }
