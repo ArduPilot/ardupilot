@@ -1359,61 +1359,79 @@ class AutoTestCopter(AutoTest):
         # retrieve mission item and check it:
         tried_set = False
         while True:
-            st = self.mav.recv_match(type='MISSION_ITEM',
-                                     blocking=True,
-                                     timeout=1)
-            if st is not None:
-                print("Item: %s" % str(st))
-                if (tried_set and
-                    st.seq == 3 and
-                    st.command == command and
-                    st.param2 == hours and
-                    st.param3 == mins and
-                    st.param4 == secs):
-                    return
-                self.progress("Mission mismatch")
-
-                self.mav.mav.mission_write_partial_list_send(1,
-                                                             1,
-                                                             3,
-                                                             3)
-                m = self.mav.messages.get("MISSION_REQUEST", None)
-                if m is not None:
-                    if m.seq == 3:
-                        self.progress("Sending absolute-time mission item")
-
-                        # we have to change out the delay time...
-                        now = self.mav.recv_match(type='SYSTEM_TIME',
-                                                  blocking=True)
-                        if now.time_unix_usec == 0:
-                            raise PreconditionFailedException()
-                        (hours, mins, secs, ms) = self.calc_delay(
-                            now.time_unix_usec/1000000)
-
-                        self.progress("Delay until %uh %um %us" %
-                                      (hours, mins, secs))
-
-                        self.mav.mav.mission_item_send(
-                            1, # target system
-                            1, # target component
-                            seq, # seq
-                            frame, # frame
-                            command, # command
-                            0, # current
-                            1, # autocontinue
-                            0, # p1 (relative seconds)
-                            hours, # p2
-                            mins, # p3
-                            secs, # p4
-                            0, # p5
-                            0, # p6
-                            0) # p7
-                        tried_set = True
             self.progress("Requesting item")
             self.mav.mav.mission_request_send(1,
                                               1,
-                                              3
+                                              seq
             )
+            st = self.mav.recv_match(type='MISSION_ITEM',
+                                     blocking=True,
+                                     timeout=1)
+            if st is None:
+                continue
+
+            print("Item: %s" % str(st))
+            if (tried_set and
+                st.seq == seq and
+                st.command == command and
+                st.param2 == hours and
+                st.param3 == mins and
+                st.param4 == secs):
+                return
+            self.progress("Mission mismatch")
+
+            m = None
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 3:
+                    raise NotAchievedException()
+                self.mav.mav.mission_write_partial_list_send(1,
+                                                             1,
+                                                             seq,
+                                                             seq)
+                m = self.mav.recv_match(type='MISSION_REQUEST',
+                                        blocking=True,
+                                        timeout=1)
+                if m is None:
+                    continue
+                if m.seq != st.seq:
+                    continue
+                break
+
+            self.progress("Sending absolute-time mission item")
+
+            # we have to change out the delay time...
+            now = self.mav.messages["SYSTEM_TIME"]
+            if now is None:
+                raise PreconditionFailedException()
+            if now.time_unix_usec == 0:
+                raise PreconditionFailedException()
+            (hours, mins, secs, ms) = self.calc_delay(
+                now.time_unix_usec/1000000)
+
+            self.progress("Delay until %uh %um %us" %
+                          (hours, mins, secs))
+
+            self.mav.mav.mission_item_send(
+                1, # target system
+                1, # target component
+                seq, # seq
+                frame, # frame
+                command, # command
+                0, # current
+                1, # autocontinue
+                0, # p1 (relative seconds)
+                hours, # p2
+                mins, # p3
+                secs, # p4
+                0, # p5
+                0, # p6
+                0) # p7
+            tried_set = True
+            ack = self.mav.recv_match(type='MISSION_ACK',
+                                      blocking=True,
+                                      timeout=1)
+            self.progress("Received ack: %s" % str(ack))
 
     def fly_nav_delay_abstime(self):
         '''fly a simple mission that has a delay in it'''
