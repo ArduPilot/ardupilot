@@ -256,6 +256,10 @@ class sitl(Board):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
         )
 
+        env.CXXFLAGS += [
+            '-Werror=float-equal'
+        ]
+
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-O3',
