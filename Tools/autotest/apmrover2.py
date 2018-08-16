@@ -413,6 +413,21 @@ class AutoTestRover(AutoTest):
             self.mavproxy.send('switch %u\n' % num)
             self.wait_mode(expected)
 
+    def test_setting_modes_via_mavproxy_mode_command(self):
+        fnoo = [(1, 'ACRO'),
+                (3, 'STEERING'),
+                (4, 'HOLD'),
+        ]
+        for (num, expected) in fnoo:
+            self.mavproxy.send('mode manual\n')
+            self.wait_mode("MANUAL")
+            self.mavproxy.send('mode %u\n' % num)
+            self.wait_mode(expected)
+            self.mavproxy.send('mode manual\n')
+            self.wait_mode("MANUAL")
+            self.mavproxy.send('mode %s\n' % expected)
+            self.wait_mode(expected)
+
     def test_setting_modes_via_modeswitch(self):
         # test setting of modes through mode switch
         self.context_push();
@@ -557,6 +572,9 @@ class AutoTestRover(AutoTest):
 
             self.run_test("Set modes via mavproxy switch",
                           self.test_setting_modes_via_mavproxy_switch)
+
+            self.run_test("Set modes via mavproxy mode command",
+                          self.test_setting_modes_via_mavproxy_mode_command)
 
             self.run_test("Set modes via modeswitch",
                           self.test_setting_modes_via_modeswitch)
