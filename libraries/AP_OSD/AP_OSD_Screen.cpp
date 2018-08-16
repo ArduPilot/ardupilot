@@ -182,6 +182,14 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(flightime, "FLTIME", 34, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Group: CLIMBEFF
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(climbeff, "CLIMBEFF", 35, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: EFF
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -274,6 +282,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_NM        0xF1
 #define SYM_DIST      0x22
 #define SYM_FLY       0x9C
+#define SYM_EFF       0xF2
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -811,6 +820,7 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+
 void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
@@ -862,7 +872,40 @@ void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
     if (stats) {
         uint32_t t = stats->get_flight_time_s();
         backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
+    } 
+}
+
+void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed = u_scale(SPEED,v.length());
+    if (speed > 2.0){
+        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000*battery.current_amps()/speed),SYM_MAH);
+    } else {
+        backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
     }
+}
+
+void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
+{
+    char unit_icon = u_icon(DISTANCE);
+    Vector3f v;
+    float vspd;
+    if (AP::ahrs().get_velocity_NED(v)) {
+        vspd = -v.z;
+    } else {
+        vspd = AP::baro().get_climb_rate();
+    }
+    if (vspd < 0.0) vspd = 0.0;
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float amps = battery.current_amps();
+    if (amps > 0.0) {
+        backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(3.6 * u_scale(VSPEED,vspd)/amps),unit_icon);
+    } else {
+        backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
+    } 
 }
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
@@ -911,6 +954,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(gps_longitude);
     DRAW_SETTING(dist);
     DRAW_SETTING(stat);
-
+    DRAW_SETTING(climbeff);
+    DRAW_SETTING(eff);
 }
 
