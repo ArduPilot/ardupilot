@@ -187,12 +187,12 @@ void AP_Baro_FBM320::timer(void)
     } else {
         int32_t pressure, temperature;
         calculate_PT(value_T, value, pressure, temperature);
-        if (pressure_ok(pressure) && _sem->take_nonblocking()) {
+        if (pressure_ok(pressure) && _sem.take_nonblocking()) {
             pressure_sum += pressure;
             // sum and convert to degrees
             temperature_sum += temperature*0.01;
             count++;
-            _sem->give();
+            _sem.give();
         }
     }
 
@@ -207,9 +207,9 @@ void AP_Baro_FBM320::timer(void)
 // transfer data to the frontend
 void AP_Baro_FBM320::update(void)
 {
-    if (count != 0 && _sem->take_nonblocking()) {
+    if (count != 0 && _sem.take_nonblocking()) {
         if (count == 0) {
-            _sem->give();
+            _sem.give();
             return;
         }
 
@@ -218,6 +218,6 @@ void AP_Baro_FBM320::update(void)
         temperature_sum = 0;
         count=0;
 
-        _sem->give();
+        _sem.give();
     }
 }
