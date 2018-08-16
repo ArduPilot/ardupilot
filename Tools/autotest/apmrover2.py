@@ -379,7 +379,7 @@ class AutoTestRover(AutoTest):
         self.progress("NAV_CONTROLLER_OUTPUT.wp_dist looks good (%u >= %u)" %
                       (m.wp_dist, wp_dist_min,))
 
-        self.wait_mode('HOLD')
+        self.wait_mode('HOLD', timeout=600) # balancebot can take a long time!
 
         pos = self.mav.location()
         home_distance = self.get_distance(HOME, pos)
