@@ -140,15 +140,15 @@ void AP_Baro_BMP280::_timer(void)
 // transfer data to the frontend
 void AP_Baro_BMP280::update(void)
 {
-    if (_sem->take_nonblocking()) {
+    if (_sem.take_nonblocking()) {
         if (!_has_sample) {
-            _sem->give();
+            _sem.give();
             return;
         }
 
         _copy_to_frontend(_instance, _pressure, _temperature);
         _has_sample = false;
-        _sem->give();
+        _sem.give();
     }
 }
 
@@ -165,10 +165,9 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
 
     const float temp = ((float)t) / 100.0f;
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _temperature = temp;
-        _sem->give();
-    }
+    WITH_SEMAPHORE(_sem);
+    
+    _temperature = temp;
 }
 
 // calculate pressure
@@ -199,9 +198,9 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     if (!pressure_ok(press)) {
         return;
     }
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure = press;
-        _has_sample = true;
-        _sem->give();
-    }
+    
+    WITH_SEMAPHORE(_sem);
+    
+    _pressure = press;
+    _has_sample = true;
 }

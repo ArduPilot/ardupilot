@@ -16,7 +16,6 @@ extern const AP_HAL::HAL& hal;
 AP_Baro_UAVCAN::AP_Baro_UAVCAN(AP_Baro &baro) :
     AP_Baro_Backend(baro)
 {
-    _sem_baro = hal.util->new_semaphore();
 }
 
 AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
@@ -31,7 +30,6 @@ AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
     }
 
     ap_uavcan->remove_baro_listener(this);
-    delete _sem_baro;
 
     debug_baro_uavcan(2, _manager, "AP_Baro_UAVCAN destructed\n\r");
 }
@@ -66,22 +64,19 @@ AP_Baro_Backend *AP_Baro_UAVCAN::probe(AP_Baro &baro)
 // Read the sensor
 void AP_Baro_UAVCAN::update(void)
 {
-    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _copy_to_frontend(_instance, _pressure, _temperature);
+    WITH_SEMAPHORE(_sem_baro);
+    _copy_to_frontend(_instance, _pressure, _temperature);
 
-        _frontend.set_external_temperature(_temperature);
-        _sem_baro->give();
-    }
+    _frontend.set_external_temperature(_temperature);
 }
 
 void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 {
-    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure = pressure;
-        _temperature = temperature - C_TO_KELVIN;
-        _last_timestamp = AP_HAL::micros64();
-        _sem_baro->give();
-    }
+    WITH_SEMAPHORE(_sem_baro);
+    
+    _pressure = pressure;
+    _temperature = temperature - C_TO_KELVIN;
+    _last_timestamp = AP_HAL::micros64();
 }
 
 bool AP_Baro_UAVCAN::register_uavcan_baro(uint8_t mgr, uint8_t node)
