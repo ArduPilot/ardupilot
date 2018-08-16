@@ -203,9 +203,9 @@ void AP_Baro_BMP085::_timer(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_sem->take_nonblocking()) {
+    if (_sem.take_nonblocking()) {
         if (!_has_sample) {
-            _sem->give();
+            _sem.give();
             return;
         }
 
@@ -213,7 +213,7 @@ void AP_Baro_BMP085::update(void)
         float pressure = _pressure_filter.getf();
 
         _copy_to_frontend(_instance, pressure, temperature);
-        _sem->give();
+        _sem.give();
     }
 }
 
@@ -312,11 +312,10 @@ void AP_Baro_BMP085::_calculate()
         return;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure_filter.apply(p);
-        _has_sample = true;
-        _sem->give();
-    }
+    WITH_SEMAPHORE(_sem);
+
+    _pressure_filter.apply(p);
+    _has_sample = true;
 }
 
 bool AP_Baro_BMP085::_data_ready()
