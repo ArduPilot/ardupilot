@@ -908,6 +908,21 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
 void
 GCS_MAVLINK::update(uint32_t max_time_us)
 {
+    if (_in_update) {
+        /*
+         * We are currently processing a mavlink packet that triggered another
+         * call to update() - don't let this happen: we will just process it
+         * when this one finishes.
+         *
+         * Notice that this only happens if we are currently handling a
+         * mavlink packet, not from any other places like during
+         * initialization in which delay() calls this method.
+         */
+        return;
+    }
+
+    _in_update = true;
+
     // receive new packets
     mavlink_message_t msg;
     mavlink_status_t status;
@@ -989,7 +1004,8 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         }
     }
 
-    hal.util->perf_end(_perf_update);    
+    hal.util->perf_end(_perf_update);
+    _in_update = false;
 }
 
 
