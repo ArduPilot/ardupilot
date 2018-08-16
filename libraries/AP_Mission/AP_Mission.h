@@ -530,6 +530,7 @@ private:
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
     AP_Int16                _options;    // bitmask options for missions, currently for mission clearing on reboot but can be expanded as required
+    AP_Int16                _startwp;  // Start Mission WP
 
     // pointer to main program functions
     mission_cmd_fn_t        _cmd_start_fn;  // pointer to function which will be called when a new command is started

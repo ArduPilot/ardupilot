@@ -29,6 +29,13 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
+    // @Param: STARTWP
+    // @DisplayName: Mission Start WP
+    // @Description: Specify the start WP of the mission.
+    // @Values: 0: Default Start
+    // @User: Standard
+    AP_GROUPINFO("STARTWP",  3, AP_Mission, _startwp, 0),
+
     AP_GROUPEND
 };
 
@@ -162,8 +169,16 @@ void AP_Mission::reset()
     _flags.nav_cmd_loaded  = false;
     _flags.do_cmd_loaded   = false;
     _flags.do_cmd_all_done = false;
+    switch (_startwp) {
+    case 0:
+    case 1:
     _nav_cmd.index         = AP_MISSION_CMD_INDEX_NONE;
     _do_cmd.index          = AP_MISSION_CMD_INDEX_NONE;
+        break;
+    default:
+        _nav_cmd.index     = _startwp - 1;
+        _do_cmd.index      = _startwp - 1;
+    }
     _prev_nav_cmd_index    = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_wp_index = AP_MISSION_CMD_INDEX_NONE;
     _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
