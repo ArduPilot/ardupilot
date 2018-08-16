@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Group: TEMP
+    // @Group: EFF
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(eff, "EFF", 29, AP_OSD_Screen, AP_OSD_Setting),
 
