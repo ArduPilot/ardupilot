@@ -1768,3 +1768,15 @@ const char *AP_Mission::Mission_Command::type() const {
         return "?";
     }
 }
+
+// singleton instance
+AP_Mission *AP_Mission::_singleton;
+
+namespace AP {
+
+AP_Mission *mission()
+{
+    return AP_Mission::get_singleton();
+}
+
+}

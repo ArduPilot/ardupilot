@@ -291,6 +291,13 @@ public:
         _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
     {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (_singleton != nullptr) {
+            AP_HAL::panic("Mission must be singleton");
+        }
+#endif
+        _singleton = this;
+
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -302,6 +309,11 @@ public:
         _flags.state = MISSION_STOPPED;
         _flags.nav_cmd_loaded = false;
         _flags.do_cmd_loaded = false;
+    }
+
+    // get singleton instance
+    static AP_Mission *get_singleton() {
+        return _singleton;
     }
 
     /* Do not allow copies */
@@ -470,6 +482,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static AP_Mission *_singleton;
+
     static StorageAccess _storage;
 
     struct Mission_Flags {
@@ -562,4 +576,8 @@ private:
     // multi-thread support. This is static so it can be used from
     // const functions
     static HAL_Semaphore_Recursive _rsem;
+};
+
+namespace AP {
+    AP_Mission *mission();
 };
