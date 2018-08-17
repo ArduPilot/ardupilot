@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Range: 0 45
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PITCH_MAX", 15, AP_TECS, _pitch_max, 0),
+    AP_GROUPINFO("PITCH_MAX", 15, AP_TECS, _pitch_max, 15),
 
     // @Param: PITCH_MIN
     // @DisplayName: Minimum pitch in auto flight
