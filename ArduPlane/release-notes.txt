@@ -1,3 +1,43 @@
+Release 3.9.1beta2, 17th August 2018
+------------------------------------
+
+This is a the second beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - increased default buffer sizes in dataflash for some boards
+
+ - fixed a bug with small dataflash buffers
+
+ - updated OSD with new items: hdop, temperature, waypoint, xtrack,
+   flight distance, flighttime, efficiency (thanks to Hwurzburg,
+   vierfuffzig and sh83).
+
+ - reduced memory usage in serial buffers
+
+ - adjusted some default parameters to give a better first flight
+   experience for more users.
+
+The default parameter changes are:
+
+ - RLL2SRV_P from 0.6 to 1.0
+ - RLL2SRV_I from 0.1 to 0.3
+ - RLL2SRV_D from 0.02 to 0.08
+ - PTCH2SRV_P from 0.6 to 1.0
+ - PTCH2SRV_I from 0.1 to 0.3
+ - PTCH2SRV_D from 0.02 to 0.08
+ - TECS_PITCH_MAX from 0 to 15
+ - NAVL1_PERIOD from 20 to 17
+
+The PID parameter changes won't affect anyone who has done some
+tuning, but will make the first flight experience for a new user be a
+lot better for nearly all aircraft. Paul and I decided on the values
+based on experience with users flight logs, plus the experience users
+have had with AUTOTUNE mode.
+
+Please report testing results!
+
+Happy flying
+
 Release 3.9.1beta1, 15th August 2018
 ------------------------------------
 
