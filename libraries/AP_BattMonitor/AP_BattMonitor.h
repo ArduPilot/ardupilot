@@ -77,6 +77,8 @@ public:
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         BatteryFailsafe failsafe;              // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
+        uint32_t    mah_rtl;                   // MAH required to RTL + Specified % remaining
+        uint32_t    sec_rtl;                   // Seconds for a complete RTL
     };
 
     // Return the number of battery monitor instances
@@ -163,6 +165,21 @@ public:
     // get battery resistance estimate in ohms
     float get_resistance() const { return get_resistance(AP_BATT_PRIMARY_INSTANCE); }
     float get_resistance(uint8_t instance) const { return state[instance].resistance; }
+    
+    // MAH to RTL
+    uint32_t mah_rtl(uint8_t instance) const;
+    uint32_t mah_rtl() const { return mah_rtl(AP_BATT_PRIMARY_INSTANCE); }
+    
+    // Seconds to RTL
+    uint32_t sec_rtl(uint8_t instance) const;
+    uint32_t sec_rtl() const { return sec_rtl(AP_BATT_PRIMARY_INSTANCE); }
+
+    // set_rtl_mah
+    void set_rtl_mah(uint8_t instance, uint32_t new_dynamic_mah, uint32_t new_dynamic_sec);
+    
+    /// get_failsafe_low_action - returns battery monitor type
+    uint8_t get_failsafe_low_action() { return get_failsafe_low_action(AP_BATT_PRIMARY_INSTANCE); }
+    uint8_t get_failsafe_low_action(uint8_t instance) { return _params[instance]._failsafe_low_action; }
 
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -309,6 +309,24 @@ int32_t AP_BattMonitor::pack_capacity_mah(uint8_t instance) const
     }
 }
 
+/// RTL MAH
+uint32_t AP_BattMonitor::mah_rtl(uint8_t instance) const {
+    if (instance < _num_instances) {
+        return state[instance].mah_rtl;
+    } else {
+        return 0;
+    }
+}
+
+/// RTL Seconds
+uint32_t AP_BattMonitor::sec_rtl(uint8_t instance) const {
+    if (instance < _num_instances) {
+        return state[instance].sec_rtl;
+    } else {
+        return 0;
+    }
+}
+
 void AP_BattMonitor::check_failsafes(void)
 {
     if (hal.util->get_soft_armed()) {
@@ -418,7 +436,7 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor::check_failsafe(const uint8_t ins
 
     // check capacity if current monitoring is enabled
     if (has_current(instance) && (_params[instance]._low_capacity > 0) &&
-        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._low_capacity)) {
+        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < (_params[instance]._low_capacity + state[instance].mah_rtl))) {
         return BatteryFailsafe_Low;
     }
 
@@ -479,6 +497,13 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
     }
 }
 
+// Called by vehicle code. Sets the RTL energy MAH and seconds state variable
+void AP_BattMonitor::set_rtl_mah(uint8_t instance, uint32_t rtl_total_mah, uint32_t rtl_total_sec)
+{       
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) { instance = AP_BATT_PRIMARY_INSTANCE; }
+    state[instance].mah_rtl = rtl_total_mah;
+    state[instance].sec_rtl = rtl_total_sec;
+}
 
 namespace AP {
 

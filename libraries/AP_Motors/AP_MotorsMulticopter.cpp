@@ -186,8 +186,9 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: CURR_HOVER
     // @DisplayName: Hover current
     // @Description: Current required to hover
-    // @Range: 0 1000
+    // @Range: 0 200000
     // @Units: mAh
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("CURR_HOVER", 40, AP_MotorsMulticopter, _current_hover, 0),
 
@@ -422,8 +423,9 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {
         // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
         _throttle_hover = constrain_float(_throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(get_throttle()-_throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX);
-        if (_current_hover = 0) { _current_hover = (battery.current_amps() * 1000); }
-        _current_hover = _current_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*((battery.current_amps() * 1000) -_current_hover);
+        // read the battery current and track it in MOT_CURR_HOVER
+        if (_current_hover = 0) { _current_hover = (battery.current_amps()) * 1000000; }
+        _current_hover = _current_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC)) * ((battery.current_amps() * 1000000) -_current_hover);
     }
 }
 
