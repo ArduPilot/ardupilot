@@ -160,6 +160,7 @@ public:
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
         FOLLOW       =        57, // follow mode
+        CLEAR_WP     =        58, // clear waypoints
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
@@ -180,6 +181,7 @@ protected:
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
 
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
+    void do_aux_function_clear_wp(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
     void do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
