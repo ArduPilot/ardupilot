@@ -36,4 +36,7 @@ private:
 
     static void _write_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value);
 	static uint8_t _read_register(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg);
+	
+	static bool _write_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &_dev, uint8_t reg, uint8_t value, uint8_t attempts);
+	static bool set_addr_check(AP_HAL::OwnPtr<AP_HAL::I2CDevice> &current_dev, uint8_t new_addr, uint8_t attempts);
 };
