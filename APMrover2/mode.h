@@ -495,8 +495,11 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+    void init_simple_heading();
 
 protected:
+
+    float simple_initial_heading;
 
     // simple type enum used for SIMPLE_TYPE parameter
     enum simple_type {
