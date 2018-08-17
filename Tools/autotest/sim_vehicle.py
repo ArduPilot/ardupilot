@@ -452,8 +452,15 @@ def progress_cmd(what, cmd):
 def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     if not quiet:
         progress_cmd(what, cmd)
-    p = subprocess.Popen(cmd, **kw)
-    ret = os.waitpid(p.pid, 0)
+
+    try:
+        p = subprocess.Popen(cmd, **kw)
+        ret = os.waitpid(p.pid, 0)
+    except Exception as e:
+        print("[%s] An exception has occurred with command: '%s'" % (what, (' ').join(cmd)))
+        print(e)
+        sys.exit(1)
+
     _, sts = ret
     if check and sts != 0:
         progress("(%s) exited with code %d" % (what, sts,))
