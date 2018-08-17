@@ -330,6 +330,14 @@ class AutoTest(ABC):
                             blocking=True)
         self.wait_seconds(1)
 
+    def clear_wp(self):
+        """Trigger RC 8 to clear waypoint."""
+        self.set_rc(8, 1000)
+        self.wait_seconds(0.5)
+        self.set_rc(8, 2000)
+        self.wait_seconds(0.5)
+        self.set_rc(8, 1000)
+
     def log_download(self, filename, timeout=360):
         """Download latest log."""
         self.disarm_vehicle()
@@ -378,6 +386,8 @@ class AutoTest(ABC):
 
     def save_mission_to_file(self, filename):
         """Save a mission to a file"""
+        self.mavproxy.send('wp list\n')
+        self.mavproxy.expect('Requesting [0-9]+ waypoints')
         self.mavproxy.send('wp save %s\n' % filename)
         self.mavproxy.expect('Saved ([0-9]+) waypoints')
         num_wp = int(self.mavproxy.match.group(1))
