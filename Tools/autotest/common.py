@@ -804,9 +804,19 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         self.progress("Waiting for heading %u with accuracy %u" %
                       (heading, accuracy))
-        while self.get_sim_time() < tstart + timeout:
+        last_heading = -1
+        last_print_time = 0
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart >= timeout:
+                break
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("Heading %u" % m.heading)
+            if (last_heading != m.heading or
+                now - last_print_time > 1):
+                self.progress("Heading %u (want %f +- %f)" % (
+                        m.heading, heading, accuracy))
+                last_print_time = now
+            last_heading = heading
             if math.fabs(m.heading - heading) <= accuracy:
                 self.progress("Attained heading %u" % heading)
                 return True
