@@ -109,6 +109,7 @@ enum frame_class {
     FRAME_ROVER = 1,
     FRAME_BOAT = 2,
     FRAME_BALANCEBOT = 3,
+    FRAME_SAILBOAT = 4,
 };
 
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked

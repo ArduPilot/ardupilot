@@ -509,7 +509,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Frame Class
-    // @Values: 0:Undefined,1:Rover,2:Boat,3:BalanceBot
+    // @Values: 0:Undefined,1:Rover,2:Boat,3:BalanceBot,4:Sailboat
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
 

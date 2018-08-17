@@ -556,6 +556,9 @@ public:
     // BalanceBot.cpp
     void balancebot_pitch_control(float &, bool);
     bool is_balancebot() const;
+    
+    // Sailboat.cpp
+    bool is_Sailboat() const;
 
     void update_soft_armed();
     // Motor test
