@@ -13,8 +13,8 @@ from pymavlink import mavutil
 
 from pysim import util
 
-from common import AutoTest
-from common import NotAchievedException, AutoTestTimeoutException
+from common import AutoTest, AutoTestTimeoutException
+from common import NotAchievedException, PreconditionFailedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
