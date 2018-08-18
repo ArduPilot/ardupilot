@@ -74,6 +74,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case MISSION_RESET:
     case ATTCON_FEEDFWD:
     case ATTCON_ACCEL_LIM:
+    case LOST_COPTER_SOUND:
     case MOTOR_ESTOP:
     case MOTOR_INTERLOCK:
     case AVOID_ADSB:
@@ -92,6 +93,18 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case RESETTOARMEDYAW:
     case AUTO:
     case AUTOTUNE:
+    case LAND:
+    case BRAKE:
+    case THROW:
+    case SMART_RTL:
+    case GUIDED:
+    case LANDING_GEAR:
+    case PARACHUTE_RELEASE:
+    case ARMDISARM:
+    case WINCH_CONTROL:
+    case USER_FUNC1:
+    case USER_FUNC2:
+    case USER_FUNC3:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
