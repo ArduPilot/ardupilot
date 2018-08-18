@@ -548,8 +548,8 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
     // todo: this should probably be a matrix that couples yaw as well.
-    _rate_target_ang_vel.x += attitude_error_vector.y * _ahrs.get_gyro().z;
-    _rate_target_ang_vel.y += -attitude_error_vector.x * _ahrs.get_gyro().z;
+    _rate_target_ang_vel.x += constrain_float(attitude_error_vector.y, -M_PI/4, M_PI/4)  * _ahrs.get_gyro().z;
+    _rate_target_ang_vel.y += -constrain_float(attitude_error_vector.x, -M_PI/4, M_PI/4) * _ahrs.get_gyro().z;
 
     ang_vel_limit(_rate_target_ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
