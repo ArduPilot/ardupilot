@@ -357,5 +357,5 @@ bool Rover::disarm_motors(void)
 // this affects whether the vehicle tries to maintain position after reaching waypoints
 bool Rover::is_boat() const
 {
-    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT || is_Sailboat());
+    return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
 }

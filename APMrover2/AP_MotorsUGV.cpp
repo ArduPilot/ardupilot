@@ -170,7 +170,7 @@ void AP_MotorsUGV::setup_servo_output()
     }
 
     // mainsail range from 0 to 100;
-    SRV_Channels::set_range(SRV_Channel::k_mainsail, 100);
+    SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
 }
 
 // config for frames with vectored motors and custom motor configurations
@@ -315,7 +315,7 @@ bool AP_MotorsUGV::have_skid_steering() const
 // true if the vehicle has a mainsail
 bool AP_MotorsUGV::has_sail() const
 {
-    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail);
+    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet);
 }
 
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
@@ -768,7 +768,7 @@ void AP_MotorsUGV::output_mainsail(float mainsail)
         return;
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail, constrain_float(mainsail, 0.0f, 100.0f));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, constrain_float(mainsail, 0.0f, 100.0f));
 }
 
 // slew limit throttle for one iteration

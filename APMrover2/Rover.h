@@ -78,6 +78,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Follow/AP_Follow.h>
+#include <AP_WindVane/AP_WindVane.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
