@@ -2,11 +2,11 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_Buffer/AP_Buffer.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 // declare backend classes
 class AC_PrecLand_Backend;
@@ -25,7 +25,7 @@ class AC_PrecLand
     friend class AC_PrecLand_SITL;
 
 public:
-    AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav);
+    AC_PrecLand();
 
     /* Do not allow copies */
     AC_PrecLand(const AC_PrecLand &other) = delete;
@@ -59,11 +59,23 @@ public:
     // returns time of last update
     uint32_t last_update_ms() const { return _last_update_ms; }
 
+    // returns time of last time target was seen
+    uint32_t last_backend_los_meas_ms() const { return _last_backend_los_meas_ms; }
+
+    // returns estimator type
+    uint8_t estimator_type() const { return _estimator_type; }
+
+    // returns ekf outlier count
+    uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
+
     // give chance to driver to get updates from sensor, should be called at 400hz
     void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
 
     // returns target position relative to the EKF origin
     bool get_target_position_cm(Vector2f& ret);
+
+    // returns target relative position as 3D vector
+    void get_target_position_measurement_cm(Vector3f& ret);
 
     // returns target position relative to vehicle
     bool get_target_position_relative_cm(Vector2f& ret);
@@ -101,10 +113,6 @@ private:
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
-
-    // references to inertial nav and ahrs libraries
-    const AP_AHRS&              _ahrs;
-    const AP_InertialNav&       _inav;
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour

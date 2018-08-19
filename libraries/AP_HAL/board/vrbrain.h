@@ -10,6 +10,8 @@
 #define HAL_BARO_DEFAULT HAL_BARO_VRBRAIN
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_VRBRAIN
 
+#define HAL_HAVE_GETTIME_SETTIME 1
+
 #ifdef CONFIG_ARCH_BOARD_VRBRAIN_V45
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_VRBRAIN_V45
 #define HAL_STORAGE_SIZE            8192
@@ -47,6 +49,7 @@
 #define EXTERNAL_LED_ARMED        29    // Armed LED - AN11
 #define EXTERNAL_LED_MOTOR1       30    // Motor1 LED - AN8
 #define EXTERNAL_LED_MOTOR2       31    // Motor2 LED - AN12
+#define HAL_BUZZER_PIN            32
 
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
@@ -91,3 +94,7 @@
 #ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 1
 #endif
+
+#include <AP_HAL_VRBRAIN/Semaphores.h>
+#define HAL_Semaphore VRBRAIN::Semaphore
+

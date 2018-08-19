@@ -75,10 +75,6 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("mpu6000",    2, 0, SPI_MODE_3, 8, BBB_P9_28,  500*1000, 20*MHZ),
     SPIDesc("mpu9250",    2, 0, SPI_MODE_3, 8, BBB_P9_23,  1*MHZ, 11*MHZ),
 };
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("mpu6000",    0, 0, SPI_MODE_3, 8, SPI_CS_KERNEL, 1*MHZ, 15*MHZ)
-};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("mpu9250",    0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
@@ -101,8 +97,8 @@ SPIDesc SPIDeviceManager::_device[] = {
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("mpu9250",    1, 0, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
-    SPIDesc("ms5611",     1, 1, SPI_MODE_3, 8, SPI_CS_KERNEL,  10*MHZ,10*MHZ),
+    SPIDesc("mpu9250",    2, 1, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
+    SPIDesc("bmp280",     2, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  10*MHZ,10*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
 SPIDesc SPIDeviceManager::_device[] = {
@@ -112,8 +108,8 @@ SPIDesc SPIDeviceManager::_device[] = {
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("mpu9250", 0, 0, SPI_MODE_0, 8, RPI_GPIO_7, 1*MHZ,   11*MHZ),
-    SPIDesc("ublox",   0, 0, SPI_MODE_0, 8, RPI_GPIO_8, 250*KHZ, 5*MHZ),
+    SPIDesc("mpu9250", 0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL, 1*MHZ, 11*MHZ),
+    SPIDesc("ublox",   0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL, 5*MHZ, 5*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
 SPIDesc SPIDeviceManager::_device[] = {

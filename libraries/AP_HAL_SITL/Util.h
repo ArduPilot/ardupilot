@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
+#include "AP_HAL_SITL.h"
 #include "Semaphores.h"
 
 class HALSITL::Util : public AP_HAL::Util {
@@ -28,6 +29,9 @@ public:
     const char* get_custom_defaults_file() const override {
         return sitlState->defaults_path;
     }
+
+    uint64_t get_hw_rtc() const override;
+
 private:
     SITL_State *sitlState;
 };

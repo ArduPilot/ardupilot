@@ -12,17 +12,16 @@ based on: datasheet
 #include "systick.h"
 #include "stm32f4xx_i2c.h"
 #include "stm32f4xx_dma.h"
+#include <boards.h>
 
 
-
+#if defined(I2C1_SDA) && defined(I2C1_SCL)
 static i2c_state i2c1_state IN_CCM;
-static i2c_state i2c2_state IN_CCM;
 
 static const i2c_dev i2c_dev1 = {
     .I2Cx         = I2C1,
-    .gpio_port    = &gpiob,
-    .sda_pin      = 9,
-    .scl_pin      = 8,
+    .sda_pin      = I2C1_SDA,
+    .scl_pin      = I2C1_SCL, // 101 PB8
     .clk       	  = RCC_APB1Periph_I2C1,
     .gpio_af	  = GPIO_AF_I2C1,
     .ev_nvic_line = I2C1_EV_IRQn,
@@ -32,13 +31,15 @@ static const i2c_dev i2c_dev1 = {
 };
 /** I2C1 device */
 const i2c_dev* const _I2C1 = &i2c_dev1;
+#endif
 
+#if defined(I2C2_SDA) && defined(I2C2_SCL)
+static i2c_state i2c2_state IN_CCM;
 
 static const i2c_dev i2c_dev2 = {
     .I2Cx         = I2C2,
-    .gpio_port    = &gpiob,
-    .sda_pin      = 11,
-    .scl_pin      = 10,
+    .sda_pin      = I2C2_SDA,
+    .scl_pin      = I2C2_SCL,
     .clk       	  = RCC_APB1Periph_I2C2,
     .gpio_af	  = GPIO_AF_I2C2,
     .ev_nvic_line = I2C2_EV_IRQn,
@@ -49,6 +50,25 @@ static const i2c_dev i2c_dev2 = {
 
 /** I2C2 device */
 const i2c_dev* const _I2C2 = &i2c_dev2;
+#endif
+
+#if defined(I2C3_SDA) && defined(I2C3_SCL)
+static i2c_state i2c3_state IN_CCM;
+
+static const i2c_dev i2c_dev3 = {
+    .I2Cx         = I2C3,
+    .sda_pin      = I2C3_SDA,
+    .scl_pin      = I2C3_SCL,
+    .clk       	  = RCC_APB1Periph_I2C3,
+    .gpio_af	  = GPIO_AF_I2C3,
+    .ev_nvic_line = I2C3_EV_IRQn,
+    .er_nvic_line = I2C3_ER_IRQn,
+    .state        = &i2c3_state,
+};
+
+/** I2C3 device */
+const i2c_dev* const _I2C3 = &i2c_dev3;
+#endif
 
 
 typedef enum {TX = 0, RX = 1, TXREG = 2} I2C_Dir;
@@ -78,13 +98,21 @@ void i2c_lowLevel_deinit(const i2c_dev *dev){
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // low speed to prevent glitches
 
-    /*!< Configure I2C pins: SCL */
-    GPIO_InitStructure.GPIO_Pin = BIT(dev->scl_pin);
-    GPIO_Init(dev->gpio_port->GPIOx, &GPIO_InitStructure);
+    {
+        const stm32_pin_info *p = &PIN_MAP[dev->scl_pin];
 
-    /*!< Configure I2C pins: SDA */
-    GPIO_InitStructure.GPIO_Pin = BIT(dev->sda_pin);
-    GPIO_Init(dev->gpio_port->GPIOx, &GPIO_InitStructure);
+        /*!< Configure I2C pins: SCL */
+        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
+        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
+    }
+
+    {
+        const stm32_pin_info *p = &PIN_MAP[dev->sda_pin];
+
+        /*!< Configure I2C pins: SDA */
+        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
+        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
+    }
 }
 
 /**
@@ -102,9 +130,6 @@ static inline void i2c_lowLevel_init(const i2c_dev *dev)  {
     RCC_APB1PeriphResetCmd(dev->clk, ENABLE);
     RCC_APB1PeriphResetCmd(dev->clk, DISABLE);
 
-    /* Enable the GPIOs for the SCL/SDA Pins */
-    RCC_AHB1PeriphClockCmd(dev->gpio_port->clk, ENABLE);
-
     memset(dev->state,0,sizeof(i2c_state));
 
 // common configuration
@@ -114,17 +139,28 @@ static inline void i2c_lowLevel_init(const i2c_dev *dev)  {
     GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
     GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
 
-    /* Configure SCL */
-    GPIO_InitStructure.GPIO_Pin = BIT(dev->scl_pin);
-    GPIO_Init(dev->gpio_port->GPIOx, &GPIO_InitStructure);
+    { /* Configure SCL */
+        const stm32_pin_info *p = &PIN_MAP[dev->scl_pin];
 
-    /* Configure SDA */
-    GPIO_InitStructure.GPIO_Pin = BIT(dev->sda_pin);
-    GPIO_Init(dev->gpio_port->GPIOx, &GPIO_InitStructure);
+        /* Enable the GPIOs for the SCL/SDA Pins */
+        RCC_AHB1PeriphClockCmd(p->gpio_device->clk, ENABLE);
 
-    /* Connect GPIO pins to peripheral, SCL must be first! */
-    gpio_set_af_mode(dev->gpio_port, dev->scl_pin, dev->gpio_af);
-    gpio_set_af_mode(dev->gpio_port, dev->sda_pin, dev->gpio_af);
+        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
+        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
+        /* Connect GPIO pins to peripheral, SCL must be first! */
+        gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af);
+    }
+    
+    { /* Configure SDA */
+        const stm32_pin_info *p = &PIN_MAP[dev->sda_pin];
+
+        /* Enable the GPIOs for the SCL/SDA Pins */
+        RCC_AHB1PeriphClockCmd(p->gpio_device->clk, ENABLE);
+
+        GPIO_InitStructure.GPIO_Pin = BIT(p->gpio_bit);
+        GPIO_Init(p->gpio_device->GPIOx, &GPIO_InitStructure);
+        gpio_set_af_mode(p->gpio_device, p->gpio_bit, dev->gpio_af);
+    }
 }
 
 void i2c_init(const i2c_dev *dev, uint16_t address, uint32_t speed)
@@ -176,7 +212,10 @@ void I2C1_EV_IRQHandler(); // to avoid warnings
 void I2C1_ER_IRQHandler();
 void I2C2_EV_IRQHandler();
 void I2C2_ER_IRQHandler();
+void I2C3_EV_IRQHandler();
+void I2C3_ER_IRQHandler();
 
+#if defined(I2C1_SDA) && defined(I2C1_SCL)
 void I2C1_EV_IRQHandler(){                // I2C1 Event                   
     ev_handler(_I2C1, false);
 }
@@ -184,7 +223,9 @@ void I2C1_EV_IRQHandler(){                // I2C1 Event
 void I2C1_ER_IRQHandler(){                // I2C1 Error                   
     ev_handler(_I2C1, true);
 }
+#endif
 
+#if defined(I2C2_SDA) && defined(I2C2_SCL)
 void I2C2_EV_IRQHandler(){                // I2C2 Event                 
     ev_handler(_I2C2, false);
 }
@@ -192,14 +233,26 @@ void I2C2_EV_IRQHandler(){                // I2C2 Event
 void I2C2_ER_IRQHandler(){                // I2C2 Error
     ev_handler(_I2C2, true);
 }
+#endif
 
+#if defined(I2C3_SDA) && defined(I2C3_SCL)
+void I2C3_EV_IRQHandler(){                // I2C2 Event                 
+    ev_handler(_I2C3, false);
+}
 
+void I2C3_ER_IRQHandler(){                // I2C2 Error
+    ev_handler(_I2C3, true);
+}
+#endif
 
 void i2c_master_release_bus(const i2c_dev *dev) {
-    gpio_write_bit(dev->gpio_port, dev->scl_pin, 1);
-    gpio_write_bit(dev->gpio_port, dev->sda_pin, 1);
-    gpio_set_mode(dev->gpio_port, dev->scl_pin, GPIO_OUTPUT_OD_PU);
-    gpio_set_mode(dev->gpio_port, dev->sda_pin, GPIO_OUTPUT_OD_PU);
+    const stm32_pin_info *p_sda = &PIN_MAP[dev->sda_pin];
+    const stm32_pin_info *p_scl = &PIN_MAP[dev->scl_pin];
+
+    gpio_write_bit(p_scl->gpio_device, p_scl->gpio_bit, 1);
+    gpio_write_bit(p_sda->gpio_device, p_sda->gpio_bit, 1);
+    gpio_set_mode(p_scl->gpio_device, p_scl->gpio_bit, GPIO_OUTPUT_OD_PU);
+    gpio_set_mode(p_sda->gpio_device, p_sda->gpio_bit, GPIO_OUTPUT_OD_PU);
 }
 
 
@@ -222,6 +275,9 @@ bool i2c_bus_reset(const i2c_dev *dev) {
 
     uint32_t t=systick_uptime();
 
+    const stm32_pin_info *p_sda = &PIN_MAP[dev->sda_pin];
+    const stm32_pin_info *p_scl = &PIN_MAP[dev->scl_pin];
+
     /*
      * Make sure the bus is free by clocking it until any slaves release the
      * bus.
@@ -229,43 +285,43 @@ bool i2c_bus_reset(const i2c_dev *dev) {
 
 again:
     /* Wait for any clock stretching to finish */
-    while (!gpio_read_bit(dev->gpio_port, dev->scl_pin)) {// device can output 1 so check clock first
+    while (!gpio_read_bit(p_scl->gpio_device, p_scl->gpio_bit)) {// device can output 1 so check clock first
         if(systick_uptime()-t > MAX_I2C_TIME) return false;
         hal_yield(10);
     }
     delay_10us();	// 50kHz
 
-    while (!gpio_read_bit(dev->gpio_port, dev->sda_pin)) {
+    while (!gpio_read_bit(p_sda->gpio_device, p_sda->gpio_bit)) {
         /* Wait for any clock stretching to finish */
-        while (!gpio_read_bit(dev->gpio_port, dev->scl_pin)){
+        while (!gpio_read_bit(p_scl->gpio_device, p_scl->gpio_bit)){
             if(systick_uptime()-t > MAX_I2C_TIME) return false;
             hal_yield(10);
         }
         delay_10us();	// 50kHz
 
         /* Pull low */
-        gpio_write_bit(dev->gpio_port, dev->scl_pin, 0);
+        gpio_write_bit(p_scl->gpio_device, p_scl->gpio_bit, 0);
         delay_10us();
 
         /* Release high again */
-        gpio_write_bit(dev->gpio_port, dev->scl_pin, 1);
+        gpio_write_bit(p_scl->gpio_device, p_scl->gpio_bit, 1);
         delay_10us();
     }
 
     /* Generate start then stop condition */
-    gpio_write_bit(dev->gpio_port, dev->sda_pin, 0);
+    gpio_write_bit(p_sda->gpio_device, p_sda->gpio_bit, 0);
     delay_10us();
-    gpio_write_bit(dev->gpio_port, dev->scl_pin, 0);
+    gpio_write_bit(p_scl->gpio_device, p_scl->gpio_bit, 0);
     delay_10us();
-    gpio_write_bit(dev->gpio_port, dev->scl_pin, 1);
+    gpio_write_bit(p_scl->gpio_device, p_scl->gpio_bit, 1);
     delay_10us();
-    gpio_write_bit(dev->gpio_port, dev->sda_pin, 1);
+    gpio_write_bit(p_sda->gpio_device, p_sda->gpio_bit, 1);
     
     uint32_t rtime = stopwatch_getticks();
     uint32_t dt    = us_ticks * 50; // 50uS
 
     while ((stopwatch_getticks() - rtime) < dt) {
-        if (!gpio_read_bit(dev->gpio_port, dev->scl_pin))  goto again; // any SCL activity after STOP
+        if (!gpio_read_bit(p_scl->gpio_device, p_scl->gpio_bit))  goto again; // any SCL activity after STOP
     }
 
 // we was generating signals on I2C bus, but BUSY flag senses it even when hardware is off

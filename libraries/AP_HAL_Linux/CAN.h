@@ -180,8 +180,6 @@ public:
     CANManager() : AP_HAL::CANManager(this) { _ifaces.reserve(uavcan::MaxCanIfaces); }
     ~CANManager() { }
 
-    void _timer_tick();
-
     //These methods belong to AP_HAL::CANManager
     
     virtual bool begin(uint32_t bitrate, uint8_t can_number) override;
@@ -189,12 +187,7 @@ public:
     virtual void initialized(bool val);
     virtual bool is_initialized();
 
-    AP_UAVCAN *p_uavcan;
-
-    virtual AP_UAVCAN *get_UAVCAN(void) override;
-    virtual void set_UAVCAN(AP_UAVCAN *uavcan) override;
-
-    //These methods belong to ICanDriver (which is an ancestor of AP_HAL::CANManager)
+    //These methods belong to ICanDriver
     
     virtual CAN* getIface(uint8_t iface_index) override;
 

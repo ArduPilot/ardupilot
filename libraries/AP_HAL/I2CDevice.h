@@ -17,6 +17,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <vector>
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"
@@ -75,6 +76,41 @@ public:
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) = 0;
+    /*
+     * Get device by looking up the I2C bus on the buses from @devpaths.
+     *
+     * Each string in @devpaths are possible locations for the bus. How the
+     * strings are implemented are HAL-specific. On Linux this is the info
+     * returned by 'udevadm info -q path /dev/i2c-X'. The first I2C bus
+     * matching a prefix in @devpaths is used to create a I2CDevice object.
+     */
+    virtual OwnPtr<I2CDevice> get_device(std::vector<const char *> devpaths,
+                                         uint8_t address) {
+        // Not implemented
+        return nullptr;
+    }
+
+    /*
+      get mask of bus numbers for all configured I2C buses
+     */
+    virtual uint32_t get_bus_mask(void) const { return 0x0F; }
+
+    /*
+      get mask of bus numbers for all configured external I2C buses
+     */
+    virtual uint32_t get_bus_mask_external(void) const { return 0x0F; }
+
+    /*
+      get mask of bus numbers for all configured internal I2C buses
+     */
+    virtual uint32_t get_bus_mask_internal(void) const { return 0x01; }
 };
 
+/*
+  convenient macros for iterating over I2C bus numbers
+ */
+#define FOREACH_I2C_EXTERNAL(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask_external(), i=0; i<32; i++) if ((1U<<i)&_bmask)
+#define FOREACH_I2C_INTERNAL(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask_internal(), i=0; i<32; i++) if ((1U<<i)&_bmask)
+#define FOREACH_I2C(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask(), i=0; i<32; i++) if ((1U<<i)&_bmask)
+    
 }

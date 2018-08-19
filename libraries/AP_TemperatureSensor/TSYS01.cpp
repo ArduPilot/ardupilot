@@ -13,14 +13,6 @@ static const uint8_t TSYS01_CMD_READ_PROM   = 0xA0;
 static const uint8_t TSYS01_CMD_CONVERT     = 0x40;
 static const uint8_t TSYS01_CMD_READ_ADC    = 0x00;
 
-TSYS01::TSYS01() :
-    _dev(nullptr),
-    _temperature(0),
-    _healthy(false)
-{
-    memset(&_k, 0, sizeof(_k));
-}
-
 bool TSYS01::init()
 {
     _dev = std::move(hal.i2c_mgr->get_device(1, TSYS01_ADDR));

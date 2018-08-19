@@ -83,7 +83,10 @@ public:
 
     // return true if airspeed is enabled
     bool enabled(uint8_t i) const {
-        return param[i].type.get() != TYPE_NONE;
+        if (i < AIRSPEED_MAX_SENSORS) {
+            return param[i].type.get() != TYPE_NONE;
+        }
+        return false;
     }
     bool enabled(void) const { return enabled(primary); }
 
@@ -92,8 +95,7 @@ public:
         state[primary].airspeed = airspeed;
     }
 
-    // return the differential pressure in Pascal for the last
-    // airspeed reading. Used by the calibration code
+    // return the differential pressure in Pascal for the last airspeed reading
     float get_differential_pressure(uint8_t i) const {
         return state[i].last_pressure;
     }
@@ -160,6 +162,7 @@ public:
         TYPE_I2C_MS5525_ADDRESS_1=4,
         TYPE_I2C_MS5525_ADDRESS_2=5,
         TYPE_I2C_SDP3X=6,
+        TYPE_I2C_DLVR=7,
     };
 
     // get current primary sensor
@@ -215,6 +218,8 @@ private:
     uint8_t primary;
     
     void read(uint8_t i);
+    // return the differential pressure in Pascal for the last airspeed reading for the requested instance
+    // returns 0 if the sensor is not enabled
     float get_pressure(uint8_t i);
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);

@@ -133,3 +133,15 @@ void AP_ServoRelayEvents::update_events(void)
         repeat ^= 1;
     }
 }
+
+// singleton instance
+AP_ServoRelayEvents *AP_ServoRelayEvents::_singleton;
+
+namespace AP {
+
+AP_ServoRelayEvents *servorelayevents()
+{
+    return AP_ServoRelayEvents::get_singleton();
+}
+
+}

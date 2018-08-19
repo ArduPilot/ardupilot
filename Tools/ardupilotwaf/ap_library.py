@@ -199,7 +199,7 @@ def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
         return
 
-    if self.env.DISABLE_HEADER_CHECKS:
+    if not self.env.ENABLE_HEADER_CHECKS:
         return
 
     for t in self.compiled_tasks:

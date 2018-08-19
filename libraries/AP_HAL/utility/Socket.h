@@ -39,6 +39,7 @@ public:
     bool bind(const char *address, uint16_t port);
     void reuseaddress();
     void set_blocking(bool blocking);
+    void set_cloexec();
     void set_broadcast(void);
 
     ssize_t send(const void *pkt, size_t size);

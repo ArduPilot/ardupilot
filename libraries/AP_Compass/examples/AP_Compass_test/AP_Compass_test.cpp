@@ -41,8 +41,6 @@ static void loop()
     static float max[COMPASS_MAX_INSTANCES][3];
     static float offset[COMPASS_MAX_INSTANCES][3];
 
-    compass.accumulate();
-
     if ((AP_HAL::micros() - timer) > 100000L) {
         timer = AP_HAL::micros();
         compass.read();

@@ -39,8 +39,6 @@ struct Guided_Limit {
 bool Copter::ModeGuided::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
-        // initialise yaw
-        set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
         // start in position control mode
         pos_control_start();
         return true;
@@ -50,8 +48,8 @@ bool Copter::ModeGuided::init(bool ignore_checks)
 }
 
 
-// guided_takeoff_start - initialises waypoint controller to implement take-off
-bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
+// do_user_takeoff_start - initialises waypoint controller to implement take-off
+bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
 {
     guided_mode = Guided_TakeOff;
 
@@ -67,13 +65,13 @@ bool Copter::ModeGuided::takeoff_start(float final_alt_above_home)
     }
 
     // initialise yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 
     // clear i term when we're taking off
     set_throttle_takeoff();
 
     // get initial alt for WP_NAVALT_MIN
-    copter.auto_takeoff_set_start_alt();
+    auto_takeoff_set_start_alt();
 
     return true;
 }
@@ -95,7 +93,7 @@ void Copter::ModeGuided::pos_control_start()
     wp_nav->set_wp_destination(stopping_point, false);
 
     // initialise yaw
-    set_auto_yaw_mode(copter.get_default_auto_yaw_mode(false));
+    auto_yaw.set_mode_to_default(false);
 }
 
 // initialise guided mode's velocity controller
@@ -140,7 +138,7 @@ void Copter::ModeGuided::posvel_control_start()
     pos_control->set_accel_z(wp_nav->get_accel_z());
 
     // pilot always controls yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // initialise guided mode's angle controller
@@ -161,7 +159,7 @@ void Copter::ModeGuided::angle_control_start()
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
-    guided_angle_state.roll_cd = copter.ahrs.roll_sensor;
+    guided_angle_state.roll_cd = ahrs.roll_sensor;
     guided_angle_state.pitch_cd = ahrs.pitch_sensor;
     guided_angle_state.yaw_cd = ahrs.yaw_sensor;
     guided_angle_state.climb_rate_cms = 0.0f;
@@ -169,7 +167,7 @@ void Copter::ModeGuided::angle_control_start()
     guided_angle_state.use_yaw_rate = false;
 
     // pilot always controls yaw
-    set_auto_yaw_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // guided_set_destination - sets guided mode's target destination
@@ -201,6 +199,14 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
     return true;
+}
+
+bool Copter::ModeGuided::get_wp(Location_Class& destination)
+{
+    if (guided_mode != Guided_WP) {
+        return false;
+    }
+    return wp_nav->get_wp_destination(destination);
 }
 
 // sets guided mode's target from a Location object
@@ -359,6 +365,15 @@ void Copter::ModeGuided::run()
 //      called by guided_run at 100hz or more
 void Copter::ModeGuided::takeoff_run()
 {
+    auto_takeoff_run();
+    if (wp_nav->reached_wp_destination()) {
+        const Vector3f target = wp_nav->get_wp_destination();
+        set_destination(target);
+    }
+}
+
+void Copter::Mode::auto_takeoff_run()
+{
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         // initialise wpnav targets
@@ -398,7 +413,7 @@ void Copter::ModeGuided::takeoff_run()
     copter.pos_control->update_z_controller();
 
     // call attitude controller
-    copter.auto_takeoff_attitude_run(target_yaw_rate);
+    auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // guided_pos_control_run - runs the guided position controller
@@ -417,7 +432,7 @@ void Copter::ModeGuided::pos_control_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -431,15 +446,15 @@ void Copter::ModeGuided::pos_control_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw_mode == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from waypoint controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_yaw_rate_cds());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -461,7 +476,7 @@ void Copter::ModeGuided::vel_control_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -474,8 +489,8 @@ void Copter::ModeGuided::vel_control_run()
         if (!pos_control->get_desired_velocity().is_zero()) {
             set_desired_velocity_with_accel_and_fence_limits(Vector3f(0.0f, 0.0f, 0.0f));
         }
-        if (auto_yaw_mode == AUTO_YAW_RATE) {
-            set_auto_yaw_rate(0.0f);
+        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+            auto_yaw.set_rate(0.0f);
         }
     } else {
         set_desired_velocity_with_accel_and_fence_limits(guided_vel_target_cms);
@@ -485,15 +500,15 @@ void Copter::ModeGuided::vel_control_run()
     pos_control->update_vel_controller_xyz(ekfNavVelGainScaler);
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw_mode == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from velocity controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), get_auto_yaw_rate_cds());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -517,7 +532,7 @@ void Copter::ModeGuided::posvel_control_run()
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -528,8 +543,8 @@ void Copter::ModeGuided::posvel_control_run()
     uint32_t tnow = millis();
     if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
         guided_vel_target_cms.zero();
-        if (auto_yaw_mode == AUTO_YAW_RATE) {
-            set_auto_yaw_rate(0.0f);
+        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+            auto_yaw.set_rate(0.0f);
         }
     }
 
@@ -553,15 +568,15 @@ void Copter::ModeGuided::posvel_control_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (copter.auto_yaw_mode == AUTO_YAW_HOLD) {
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
-    } else if (auto_yaw_mode == AUTO_YAW_RATE) {
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
         // roll & pitch from position-velocity controller, yaw rate from mavlink command or mission item
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), get_auto_yaw_rate_cds());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
     } else {
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -662,9 +677,9 @@ void Copter::ModeGuided::set_desired_velocity_with_accel_and_fence_limits(const 
 void Copter::ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
     if (use_yaw) {
-        set_auto_yaw_look_at_heading(yaw_cd / 100.0f, 0.0f, 0, relative_angle);
+        auto_yaw.set_fixed_yaw(yaw_cd / 100.0f, 0.0f, 0, relative_angle);
     } else if (use_yaw_rate) {
-        set_auto_yaw_rate(yaw_rate_cds);
+        auto_yaw.set_rate(yaw_rate_cds);
     }
 }
 
@@ -758,6 +773,15 @@ int32_t Copter::ModeGuided::wp_bearing() const
         return pos_control->get_bearing_to_target();
         break;
     default:
+        return 0;
+    }
+}
+
+float Copter::ModeGuided::crosstrack_error() const
+{
+    if (mode() == Guided_WP) {
+        return wp_nav->crosstrack_error();
+    } else {
         return 0;
     }
 }

@@ -3,19 +3,12 @@
 #if HAL_WITH_UAVCAN
 
 #include "AP_Baro_UAVCAN.h"
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
-#if HAL_OS_POSIX_IO
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#endif
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_baro_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
+#define debug_baro_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
 /*
   constructor - registers instance at top Baro driver
@@ -28,43 +21,46 @@ AP_Baro_UAVCAN::AP_Baro_UAVCAN(AP_Baro &baro) :
 
 AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
 {
-    if (_initialized) {
-        if (hal.can_mgr[_manager] != nullptr) {
-            AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
-            if (ap_uavcan != nullptr) {
-                ap_uavcan->remove_baro_listener(this);
-                debug_baro_uavcan(2, "AP_Baro_UAVCAN destructed\n\r");
-            }
-        }
+    if (!_initialized) {
+        return;
     }
+
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(_manager);
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    ap_uavcan->remove_baro_listener(this);
+    delete _sem_baro;
+
+    debug_baro_uavcan(2, _manager, "AP_Baro_UAVCAN destructed\n\r");
 }
 
 AP_Baro_Backend *AP_Baro_UAVCAN::probe(AP_Baro &baro)
 {
-    AP_Baro_UAVCAN *sensor = nullptr;
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
 
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    uint8_t freebaro = uavcan->find_smallest_free_baro_node();
-                    if (freebaro != UINT8_MAX) {
-                        sensor = new AP_Baro_UAVCAN(baro);
-                        if (sensor->register_uavcan_baro(i, freebaro)) {
-                            debug_baro_uavcan(2, "AP_Baro_UAVCAN probed, drv: %d, node: %d\n\r", i, freebaro);
-                            return sensor;
-                        } else {
-                            delete sensor;
-                            sensor = nullptr;
-                        }
-                    }
-                }
-            }
+    AP_Baro_UAVCAN *sensor;
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            continue;
+        }
+
+        uint8_t freebaro = ap_uavcan->find_smallest_free_baro_node();
+        if (freebaro == UINT8_MAX) {
+            continue;
+        }
+        sensor = new AP_Baro_UAVCAN(baro);
+        if (sensor->register_uavcan_baro(i, freebaro)) {
+            debug_baro_uavcan(2, i, "AP_Baro_UAVCAN probed, drv: %d, node: %d\n\r", i, freebaro);
+            return sensor;
+        } else {
+            delete sensor;
         }
     }
 
-    return sensor;
+    return nullptr;
 }
 
 // Read the sensor
@@ -82,7 +78,7 @@ void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 {
     if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         _pressure = pressure;
-        _temperature = temperature - 273.15f;
+        _temperature = temperature - C_TO_KELVIN;
         _last_timestamp = AP_HAL::micros64();
         _sem_baro->give();
     }
@@ -90,22 +86,19 @@ void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
 
 bool AP_Baro_UAVCAN::register_uavcan_baro(uint8_t mgr, uint8_t node)
 {
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
+    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(mgr);
+    if (ap_uavcan == nullptr) {
+        return false;
+    }
+    _manager = mgr;
 
-        if (ap_uavcan != nullptr) {
-            _manager = mgr;
+    if (ap_uavcan->register_baro_listener_to_node(this, node)) {
+        _instance = _frontend.register_sensor();
+        debug_baro_uavcan(2, mgr, "AP_Baro_UAVCAN loaded\n\r");
 
-            if (ap_uavcan->register_baro_listener_to_node(this, node))
-            {
-                _instance = _frontend.register_sensor();
-                debug_baro_uavcan(2, "AP_Baro_UAVCAN loaded\n\r");
+        _initialized = true;
 
-                _initialized = true;
-
-                return true;
-            }
-        }
+        return true;
     }
 
     return false;

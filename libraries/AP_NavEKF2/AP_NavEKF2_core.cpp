@@ -13,10 +13,6 @@ extern const AP_HAL::HAL& hal;
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// when the wind estimation first starts with no airspeed sensor,
-// assume 3m/s to start
-#define STARTUP_WIND_SPEED 3.0f
-
 // initial imu bias uncertainty (deg/sec)
 #define INIT_ACCEL_BIAS_UNCERTAINTY 0.5f
 
@@ -91,6 +87,9 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
+    if(!storedExtNav.init(OBS_BUFFER_LENGTH)) {
+        return false;
+    }
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -125,7 +124,7 @@ void NavEKF2_core::InitialiseVariables()
     lastPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
-    lastSynthYawTime_ms = imuSampleTime_ms;
+    lastYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
@@ -277,6 +276,7 @@ void NavEKF2_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    memset(&velPosObs, 0, sizeof(velPosObs));
 
     // range beacon fusion variables
     memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
@@ -317,6 +317,16 @@ void NavEKF2_core::InitialiseVariables()
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
     last_gps_idx = 0;
 
+    // external nav data fusion
+    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    extNavDataToFuse = false;
+    extNavMeasTime_ms = 0;
+    extNavLastPosResetTime_ms = 0;
+    extNavUsedForYaw = false;
+    extNavUsedForPos = false;
+    extNavYawResetRequest = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -326,6 +336,7 @@ void NavEKF2_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
+    storedExtNav.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)

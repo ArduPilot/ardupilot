@@ -76,6 +76,11 @@
 
 #define BOARD_NR_GPIO_PINS      109
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
 
 #define BOARD_I2C_BUS_INT 1  // hardware internal I2C
 
@@ -148,6 +153,7 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 22 // PA8
 
+#define MOTOR_LAYOUT_DEFAULT 0
 
 //#define HAL_CONSOLE uart1Driver // console on radio
 #define HAL_CONSOLE USB_Driver // console on USB

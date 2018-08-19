@@ -20,8 +20,10 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
+#include <SITL/SITL_Input.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
+#include <SITL/SIM_Vicon.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -52,6 +54,10 @@ public:
         return _base_port;
     }
 
+    // create a file desciptor attached to a virtual device; type of
+    // device is given by name parameter
+    int sim_fd(const char *name, const char *arg);
+
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
@@ -62,18 +68,18 @@ public:
     uint16_t airspeed_2_pin_value; // pin 2
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
-
-    // return TCP client address for uartC
-    const char *get_client_address(void) const { return _client_address; }
+    uint16_t voltage2_pin_value;  // pin 15
+    uint16_t current2_pin_value;  // pin 14
 
     // paths for UART devices
-    const char *_uart_path[6] {
+    const char *_uart_path[7] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
         "tcp:3",
         "GPS2",
         "tcp:5",
+        "tcp:6",
     };
     
 private:
@@ -129,7 +135,7 @@ private:
     void _check_rc_input(void);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
-    void _simulator_servos(SITL::Aircraft::sitl_input &input);
+    void _simulator_servos(struct sitl_input &input);
     void _simulator_output(bool synthetic_clock_mode);
     uint16_t _airspeed_sensor(float airspeed);
     uint16_t _ground_sonar();
@@ -142,7 +148,6 @@ private:
     uint16_t _framerate;
     uint8_t _instance;
     uint16_t _base_port;
-    struct sockaddr_in _rcout_addr;
     pid_t _parent_pid;
     uint32_t _update_count;
 
@@ -156,7 +161,6 @@ private:
 
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;
-    uint16_t _rcout_port;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
@@ -167,7 +171,7 @@ private:
     bool _use_rtscts;
     bool _use_fg_view;
     
-    const char *_fdm_address;
+    const char *_fg_address;
 
     // delay buffer variables
     static const uint8_t mag_buffer_length = 250;
@@ -195,6 +199,7 @@ private:
     VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
+    uint32_t wind_start_delay_micros;
 
     // internal SITL model
     SITL::Aircraft *sitl_model;
@@ -206,12 +211,12 @@ private:
     // simulated ADSb
     SITL::ADSB *adsb;
 
+    // simulated vicon system:
+    SITL::Vicon *vicon;
+
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     
-    // TCP address to connect uartC to
-    const char *_client_address;
-
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     const char *_home_str;

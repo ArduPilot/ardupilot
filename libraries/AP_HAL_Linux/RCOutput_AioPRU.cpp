@@ -32,7 +32,7 @@ using namespace Linux;
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error gernerated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated\n");
 }
 void RCOutput_AioPRU::init()
 {
@@ -50,13 +50,13 @@ void RCOutput_AioPRU::init()
 
    close(mem_fd);
 
-   // Reset PRU 1
+   // Reset PRU
    *ctrl = 0;
 
    // Load firmware
    memcpy(iram, PRUcode, sizeof(PRUcode));
 
-   // Start PRU 1
+   // Start PRU
    *ctrl |= 2;
 
    // all outputs default to 50Hz, the top level vehicle code

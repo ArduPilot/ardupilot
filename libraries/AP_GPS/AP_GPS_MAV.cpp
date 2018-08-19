@@ -22,7 +22,6 @@
 AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    _new_data = false;
 }
 
 // Reading does nothing in this class; we simply return whether or not
@@ -122,7 +121,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             Location loc = {};
             loc.lat = packet.lat;
             loc.lng = packet.lon;
-            loc.alt = packet.alt;
+            loc.alt = packet.alt * 0.1f;
             state.location = loc;
             state.location.options = 0;
             state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
@@ -132,12 +131,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t *msg)
             }
             Vector3f vel(packet.vn/100.0f, packet.ve/100.0f, packet.vd/100.0f);
             state.velocity = vel;
+            if (packet.vd != 0) {
+                state.have_vertical_velocity = true;
+            }
             if (packet.cog < 36000) {
                 state.ground_course = packet.cog / 100.0f;
             }
             state.have_speed_accuracy = false;
-            state.have_horizontal_accuracy = 0;
-            state.have_vertical_accuracy = 0;
+            state.have_horizontal_accuracy = false;
+            state.have_vertical_accuracy = false;
             if (packet.satellites_visible < 255) {
                 state.num_sats = packet.satellites_visible;
             }

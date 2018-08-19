@@ -35,7 +35,7 @@ void DataFlash_MAVLink::Init()
 
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
-        _blocks = (struct dm_block *) calloc(_blockcount, sizeof(_blocks[0]));
+        _blocks = (struct dm_block *) calloc(_blockcount, sizeof(struct dm_block));
         if (_blocks != nullptr) {
             break;
         }
@@ -50,10 +50,6 @@ void DataFlash_MAVLink::Init()
     stats_init();
 
     _initialised = true;
-    _logging_started = true; // in actual fact, we throw away
-                             // everything until a client connects.
-                             // This stops calls to start_new_log from
-                             // the vehicles
 }
 
 bool DataFlash_MAVLink::logging_failed() const
@@ -356,7 +352,7 @@ void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
 
 void DataFlash_MAVLink::stats_log()
 {
-    if (!_initialised || !_logging_started) {
+    if (!_initialised) {
         return;
     }
     if (stats.collection_count == 0) {
@@ -401,7 +397,7 @@ uint8_t DataFlash_MAVLink::queue_size(dm_block_queue_t queue)
 
 void DataFlash_MAVLink::stats_collect()
 {
-    if (!_initialised || !_logging_started) {
+    if (!_initialised) {
         return;
     }
     if (!semaphore->take_nonblocking()) {
@@ -476,7 +472,7 @@ bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
 
 void DataFlash_MAVLink::push_log_blocks()
 {
-    if (!_initialised || !_logging_started ||!_sending_to_client) {
+    if (!_initialised || !_sending_to_client) {
         return;
     }
 
@@ -500,7 +496,7 @@ void DataFlash_MAVLink::push_log_blocks()
 
 void DataFlash_MAVLink::do_resends(uint32_t now)
 {
-    if (!_initialised || !_logging_started ||!_sending_to_client) {
+    if (!_initialised || !_sending_to_client) {
         return;
     }
 
@@ -536,7 +532,7 @@ void DataFlash_MAVLink::periodic_10Hz(const uint32_t now)
     do_resends(now);
     stats_collect();
 }
-void DataFlash_MAVLink::periodic_1Hz(const uint32_t now)
+void DataFlash_MAVLink::periodic_1Hz()
 {
     if (_sending_to_client &&
         _last_response_time + 10000 < _last_send_time) {
@@ -548,7 +544,7 @@ void DataFlash_MAVLink::periodic_1Hz(const uint32_t now)
     stats_log();
 }
 
-void DataFlash_MAVLink::periodic_fullrate(uint32_t now)
+void DataFlash_MAVLink::periodic_fullrate()
 {
     push_log_blocks();
 }

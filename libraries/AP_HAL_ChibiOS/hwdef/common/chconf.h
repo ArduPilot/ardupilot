@@ -31,7 +31,7 @@
 #include "hwdef.h"
 
 #define _CHIBIOS_RT_CONF_
-
+#define _CHIBIOS_RT_CONF_VER_5_1_
 /*===========================================================================*/
 /**
  * @name System timers settings
@@ -39,11 +39,28 @@
  */
 /*===========================================================================*/
 
+#if !defined(FALSE)
+#define FALSE                               0
+#endif
+
+#if !defined(TRUE)
+#define TRUE                                1
+#endif
+
+#ifdef HAL_CHIBIOS_ENABLE_ASSERTS
+#define CH_DBG_ENABLE_ASSERTS TRUE
+#define CH_DBG_ENABLE_CHECKS TRUE
+#define CH_DBG_SYSTEM_STATE_CHECK TRUE
+#define CH_DBG_ENABLE_STACK_CHECK TRUE
+#endif
+
 /**
  * @brief   System time counter resolution.
  * @note    Allowed values are 16 or 32 bits.
  */
+#ifndef CH_CFG_ST_RESOLUTION
 #define CH_CFG_ST_RESOLUTION                32
+#endif
 
 /**
  * @brief   System tick frequency.
@@ -52,6 +69,18 @@
  *          in ArduPilot so we get maximum resolution for timing of delays
  */
 #define CH_CFG_ST_FREQUENCY                 1000000
+
+/**
+ * @brief   Time intervals data size.
+ * @note    Allowed values are 16, 32 or 64 bits.
+ */
+#define CH_CFG_INTERVALS_SIZE               32
+
+/**
+ * @brief   Time types data size.
+ * @note    Allowed values are 16 or 32 bits.
+ */
+#define CH_CFG_TIME_TYPES_SIZE              32
 
 /**
  * @brief   Time delta constant for the tick-less mode.
@@ -117,7 +146,9 @@
  *          function becomes the idle thread and must implement an
  *          infinite loop.
  */
+#ifndef CH_CFG_NO_IDLE_THREAD
 #define CH_CFG_NO_IDLE_THREAD               FALSE
+#endif
 
 /** @} */
 
@@ -136,7 +167,9 @@
  * @note    This is not related to the compiler optimization options.
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_OPTIMIZE_SPEED
 #define CH_CFG_OPTIMIZE_SPEED               TRUE
+#endif
 
 /** @} */
 
@@ -154,7 +187,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_TM
 #define CH_CFG_USE_TM                       TRUE
+#endif
 
 /**
  * @brief   Threads registry APIs.
@@ -162,7 +197,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_REGISTRY
 #define CH_CFG_USE_REGISTRY                 TRUE
+#endif
 
 /**
  * @brief   Threads synchronization APIs.
@@ -171,7 +208,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_WAITEXIT
 #define CH_CFG_USE_WAITEXIT                 TRUE
+#endif
 
 /**
  * @brief   Semaphores APIs.
@@ -179,7 +218,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_SEMAPHORES
 #define CH_CFG_USE_SEMAPHORES               TRUE
+#endif
 
 /**
  * @brief   Semaphores queuing mode.
@@ -198,7 +239,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MUTEXES
 #define CH_CFG_USE_MUTEXES                  TRUE
+#endif
 
 /**
  * @brief   Enables recursive behavior on mutexes.
@@ -218,7 +261,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_MUTEXES.
  */
+#ifndef CH_CFG_USE_CONDVARS
 #define CH_CFG_USE_CONDVARS                 TRUE
+#endif
 
 /**
  * @brief   Conditional Variables APIs with timeout.
@@ -228,7 +273,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_CONDVARS.
  */
+#ifndef CH_CFG_USE_CONDVARS_TIMEOUT
 #define CH_CFG_USE_CONDVARS_TIMEOUT         TRUE
+#endif
 
 /**
  * @brief   Events Flags APIs.
@@ -236,7 +283,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_EVENTS
 #define CH_CFG_USE_EVENTS                   TRUE
+#endif
 
 /**
  * @brief   Events Flags APIs with timeout.
@@ -246,7 +295,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_EVENTS.
  */
+#ifndef CH_CFG_USE_EVENTS_TIMEOUT
 #define CH_CFG_USE_EVENTS_TIMEOUT           TRUE
+#endif
 
 /**
  * @brief   Synchronous Messages APIs.
@@ -255,7 +306,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MESSAGES
 #define CH_CFG_USE_MESSAGES                 TRUE
+#endif
 
 /**
  * @brief   Synchronous Messages queuing mode.
@@ -276,7 +329,9 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_SEMAPHORES.
  */
+#ifndef CH_CFG_USE_MAILBOXES
 #define CH_CFG_USE_MAILBOXES                TRUE
+#endif
 
 /**
  * @brief   Core Memory Manager APIs.
@@ -285,7 +340,9 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MEMCORE
 #define CH_CFG_USE_MEMCORE                  TRUE
+#endif
 
 /**
  * @brief   Heap Allocator APIs.
@@ -297,7 +354,9 @@
  *          @p CH_CFG_USE_SEMAPHORES.
  * @note    Mutexes are recommended.
  */
+#ifndef CH_CFG_USE_HEAP
 #define CH_CFG_USE_HEAP                     TRUE
+#endif
 
 /**
  * @brief   Memory Pools Allocator APIs.
@@ -306,7 +365,20 @@
  *
  * @note    The default is @p TRUE.
  */
+#ifndef CH_CFG_USE_MEMPOOLS
 #define CH_CFG_USE_MEMPOOLS                 TRUE
+#endif
+
+/**
+ * @brief  Objects FIFOs APIs.
+ * @details If enabled then the objects FIFOs APIs are included
+ *          in the kernel.
+ *
+ * @note    The default is @p TRUE.
+ */
+#ifndef CH_CFG_USE_OBJ_FIFOS
+#define CH_CFG_USE_OBJ_FIFOS                TRUE
+#endif
 
 /**
  * @brief   Dynamic Threads APIs.
@@ -317,7 +389,61 @@
  * @note    Requires @p CH_CFG_USE_WAITEXIT.
  * @note    Requires @p CH_CFG_USE_HEAP and/or @p CH_CFG_USE_MEMPOOLS.
  */
+#ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC                  TRUE
+#endif
+
+/** @} */
+
+/*===========================================================================*/
+/**
+ * @name Objects factory options
+ * @{
+ */
+/*===========================================================================*/
+
+/**
+ * @brief   Objects Factory APIs.
+ * @details If enabled then the objects factory APIs are included in the
+ *          kernel.
+ *
+ * @note    The default is @p FALSE.
+ */
+#ifndef CH_CFG_USE_FACTORY
+#define CH_CFG_USE_FACTORY                  TRUE
+#endif
+
+/**
+ * @brief   Maximum length for object names.
+ * @details If the specified length is zero then the name is stored by
+ *          pointer but this could have unintended side effects.
+ */
+#define CH_CFG_FACTORY_MAX_NAMES_LENGTH     8
+
+/**
+ * @brief   Enables the registry of generic objects.
+ */
+#define CH_CFG_FACTORY_OBJECTS_REGISTRY     TRUE
+
+/**
+ * @brief   Enables factory for generic buffers.
+ */
+#define CH_CFG_FACTORY_GENERIC_BUFFERS      TRUE
+
+/**
+ * @brief   Enables factory for semaphores.
+ */
+#define CH_CFG_FACTORY_SEMAPHORES           TRUE
+
+/**
+ * @brief   Enables factory for mailboxes.
+ */
+#define CH_CFG_FACTORY_MAILBOXES            TRUE
+
+/**
+ * @brief   Enables factory for objects FIFOs.
+ */
+#define CH_CFG_FACTORY_OBJ_FIFOS            TRUE
 
 /** @} */
 
@@ -333,7 +459,9 @@
  *
  * @note    The default is @p FALSE.
  */
+#ifndef CH_DBG_STATISTICS
 #define CH_DBG_STATISTICS                   TRUE
+#endif
 
 /**
  * @brief   Debug option, system state check.
@@ -407,7 +535,9 @@
  *
  * @note    The default is @p FALSE.
  */
+#ifndef CH_DBG_FILL_THREADS
 #define CH_DBG_FILL_THREADS                 TRUE
+#endif
 
 /**
  * @brief   Debug option, threads profiling.
@@ -430,6 +560,22 @@
 /*===========================================================================*/
 
 /**
+ * @brief   System structure extension.
+ * @details User fields added to the end of the @p ch_system_t structure.
+ */
+#define CH_CFG_SYSTEM_EXTRA_FIELDS                                          \
+  /* Add threads custom fields here.*/
+
+/**
+ * @brief   System initialization hook.
+ * @details User initialization code added to the @p chSysInit() function
+ *          just before interrupts are enabled globally.
+ */
+#define CH_CFG_SYSTEM_INIT_HOOK(tp) {                                       \
+  /* Add threads initialization code here.*/                                \
+}
+
+/**
  * @brief   Threads descriptor structure extension.
  * @details User fields added to the end of the @p thread_t structure.
  */
@@ -438,9 +584,9 @@
 
 /**
  * @brief   Threads initialization hook.
- * @details User initialization code added to the @p chThdInit() API.
+ * @details User initialization code added to the @p _thread_init() function.
  *
- * @note    It is invoked from within @p chThdInit() and implicitly from all
+ * @note    It is invoked from within @p _thread_init() and implicitly from all
  *          the threads creation APIs.
  */
 #define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
@@ -518,12 +664,16 @@
  * @brief   System halt hook.
  * @details This hook is invoked in case to a system halting error before
  *          the system is halted.
+ *
+ * We flush all memory on STM32F7 to allow gdb to access variables currently
+ * in the dcache
  */
-
+#ifndef CH_CFG_SYSTEM_HALT_HOOK
 #define CH_CFG_SYSTEM_HALT_HOOK(reason) do {                               \
-        extern int printf(const char *fmt, ...); \
-        printf(reason); \
+        extern void memory_flush_all(void); \
+        memory_flush_all(); \
 } while(0)
+#endif
 
 /**
  * @brief   Trace hook.

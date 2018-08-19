@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
 	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.6f),
+	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        1.0f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Range: 0 0.1
 	// @Increment: 0.01
 	// @User: User
-	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.02f),
+	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.08f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Range: 0 1.0
 	// @Increment: 0.05
 	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.1f),
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.3f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -192,7 +192,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 }
 
 /*
- Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
  Inputs are: 
  1) demanded bank angle in centi-degrees

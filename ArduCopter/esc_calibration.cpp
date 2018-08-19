@@ -18,7 +18,7 @@ enum ESCCalibrationModes {
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
         // ESC cal not valid for brushed motors
         return;
     }
@@ -27,7 +27,7 @@ void Copter::esc_calibration_startup_check()
     // delay up to 2 second for first radio input
     uint8_t i = 0;
     while ((i++ < 100) && (last_radio_update_ms == 0)) {
-        delay(20);
+        hal.scheduler->delay(20);
         read_radio();
     }
 
@@ -52,7 +52,7 @@ void Copter::esc_calibration_startup_check()
                 // turn on esc calibration notification
                 AP_Notify::flags.esc_calibration = true;
                 // block until we restart
-                while(1) { delay(5); }
+                while(1) { hal.scheduler->delay(5); }
             }
             break;
         case ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
@@ -104,6 +104,17 @@ void Copter::esc_calibration_passthrough()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // wait for safety switch to be pressed
+    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        bool printed_msg = false;
+        if (!printed_msg) {
+            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
+            printed_msg = true;
+        }
+        esc_calibration_notify();
+        hal.scheduler->delay(3);
+    }
+
     // arm motors
     motors->armed(true);
     SRV_Channels::enable_by_mask(motors->get_motor_mask());
@@ -118,7 +129,7 @@ void Copter::esc_calibration_passthrough()
 
         // we run at high rate to make oneshot ESCs happy. Normal ESCs
         // will only see pulses at the RC_SPEED
-        delay(3);
+        hal.scheduler->delay(3);
 
         // pass through to motors
         SRV_Channels::cork();
@@ -132,8 +143,6 @@ void Copter::esc_calibration_passthrough()
 void Copter::esc_calibration_auto()
 {
 #if FRAME_CONFIG != HELI_FRAME
-    bool printed_msg = false;
-
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
@@ -151,46 +160,44 @@ void Copter::esc_calibration_auto()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // wait for safety switch to be pressed
+    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        bool printed_msg = false;
+        if (!printed_msg) {
+            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
+            printed_msg = true;
+        }
+        esc_calibration_notify();
+        hal.scheduler->delay(3);
+    }
+
     // arm and enable motors
     motors->armed(true);
     SRV_Channels::enable_by_mask(motors->get_motor_mask());
     hal.util->set_soft_armed(true);
 
-    // flash LEDs
-    esc_calibration_notify();
-
     // raise throttle to maximum
-    delay(10);
-
-    // wait for safety switch to be pressed
-    while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        if (!printed_msg) {
-            gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
-            printed_msg = true;
-        }
-        SRV_Channels::cork();
-        motors->set_throttle_passthrough_for_esc_calibration(1.0f);
-        SRV_Channels::push();
-        esc_calibration_notify();
-        delay(3);
-    }
+    SRV_Channels::cork();
+    motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+    SRV_Channels::push();
 
     // delay for 5 seconds while outputting pulses
     uint32_t tstart = millis();
     while (millis() - tstart < 5000) {
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
+        SRV_Channels::push();
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
-
-    // reduce throttle to minimum
-    motors->set_throttle_passthrough_for_esc_calibration(0.0f);
 
     // block until we restart
     while(1) {
+        SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(0.0f);
+        SRV_Channels::push();
         esc_calibration_notify();
-        delay(3);
+        hal.scheduler->delay(3);
     }
 #endif // FRAME_CONFIG != HELI_FRAME
 }

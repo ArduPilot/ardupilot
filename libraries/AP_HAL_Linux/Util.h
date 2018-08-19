@@ -36,20 +36,19 @@ public:
      */
     void commandline_arguments(uint8_t &argc, char * const *&argv);
 
-    bool toneAlarm_init();
-    void toneAlarm_set_tune(uint8_t tune);
-
-    void _toneAlarm_timer_tick();
-
     /*
       set system clock in UTC microseconds
      */
-    void set_system_clock(uint64_t time_utc_usec);
+    void set_hw_rtc(uint64_t time_utc_usec) override;
     const char *get_custom_log_directory() const override final { return custom_log_directory; }
     const char *get_custom_terrain_directory() const override final { return custom_terrain_directory; }
+    const char *get_custom_storage_directory() const override final { return custom_storage_directory; }
 
     void set_custom_log_directory(const char *_custom_log_directory) { custom_log_directory = _custom_log_directory; }
     void set_custom_terrain_directory(const char *_custom_terrain_directory) { custom_terrain_directory = _custom_terrain_directory; }
+    void set_custom_storage_directory(const char *_custom_storage_directory) {
+        custom_storage_directory = _custom_storage_directory;
+    }
 
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;
@@ -96,6 +95,11 @@ public:
 
     int get_hw_arm32();
 
+    bool toneAlarm_init() override { return _toneAlarm.init(); }
+    void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override {
+        _toneAlarm.set_buzzer_tone(frequency, volume, duration_ms);
+    }
+
 private:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     static ToneAlarm_Disco _toneAlarm;
@@ -107,6 +111,7 @@ private:
     char *const *saved_argv;
     const char *custom_log_directory = nullptr;
     const char *custom_terrain_directory = nullptr;
+    const char *custom_storage_directory = nullptr;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 };
 

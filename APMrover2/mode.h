@@ -1,7 +1,10 @@
 #pragma once
 
 #include <stdint.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>  // for MAV_SEVERITY
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+
 #include "defines.h"
 
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
@@ -12,6 +15,22 @@ class ModeRTL;
 class Mode
 {
 public:
+
+    // Auto Pilot modes
+    // ----------------
+    enum Number {
+        MANUAL       = 0,
+        ACRO         = 1,
+        STEERING     = 3,
+        HOLD         = 4,
+        LOITER       = 5,
+        FOLLOW       = 6,
+        AUTO         = 10,
+        RTL          = 11,
+        SMART_RTL    = 12,
+        GUIDED       = 15,
+        INITIALISING = 16
+    };
 
     // Constructor
     Mode();
@@ -86,8 +105,8 @@ public:
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     float get_speed_default(bool rtl = false) const;
 
-    // set desired speed
-    void set_desired_speed(float speed) { _desired_speed = speed; }
+    // set desired speed in m/s
+    bool set_desired_speed(float speed);
 
     // restore desired speed to default from parameter values (CRUISE_SPEED or WP_SPEED)
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
@@ -101,9 +120,16 @@ protected:
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
-    // decode pilot steering held in channel_steer, channel_throttle and return in steer_out and throttle_out arguments
-    // steering_out is in the range -4500 ~ +4500, throttle_out is in the range -100 ~ +100
+    // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+    // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+    // throttle_out is in the range -100 ~ +100
     void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+
+    // decode pilot input steering and return steering_out and speed_out (in m/s)
+    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
+
+    // decode pilot lateral movement input and return in lateral_out argument
+    void get_pilot_desired_lateral(float &lateral_out);
 
     // calculate steering output to drive along line from origin to destination waypoint
     void calc_steering_to_waypoint(const struct Location &origin, const struct Location &destination, bool reversed = false);
@@ -112,11 +138,11 @@ protected:
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
-    void calc_steering_to_heading(float desired_heading_cd, bool reversed = false);
+    void calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed = false);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
-    virtual void calc_throttle(float target_speed, bool nudge_allowed = true);
+    virtual void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
 
     // performs a controlled stop. returns true once vehicle has stopped
     bool stop_vehicle();
@@ -139,12 +165,20 @@ protected:
     // calculate vehicle stopping location using current location, velocity and maximum acceleration
     void calc_stopping_location(Location& stopping_loc);
 
+protected:
+
+    // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
+    // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
+    // throttle_out is in the range -100 ~ +100
+    void get_pilot_input(float &steering_out, float &throttle_out);
+
     // references to avoid code churn:
     class AP_AHRS &ahrs;
     class Parameters &g;
     class ParametersG2 &g2;
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
+    class RC_Channel *&channel_lateral;
     class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 
@@ -176,9 +210,9 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
 
-    // acro mode requires a velocity estimate
+    // acro mode requires a velocity estimate for non skid-steer rovers
     bool requires_position() const override { return false; }
-    bool requires_velocity() const override { return true; }
+    bool requires_velocity() const override;
 };
 
 
@@ -194,7 +228,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed, bool nudge_allowed = true);
+    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
@@ -303,6 +337,23 @@ public:
     bool requires_velocity() const override { return false; }
 };
 
+class ModeLoiter : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return LOITER; }
+    const char *name4() const override { return "LOIT"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+protected:
+
+    bool _enter() override;
+};
 
 class ModeManual : public Mode
 {
@@ -321,6 +372,10 @@ public:
     // manual mode does not require position or velocity estimate
     bool requires_position() const override { return false; }
     bool requires_velocity() const override { return false; }
+
+protected:
+
+    void _exit() override;
 };
 
 
@@ -410,4 +465,19 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+};
+
+class ModeFollow : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return FOLLOW; }
+    const char *name4() const override { return "FOLL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+
+    bool _enter() override;
 };

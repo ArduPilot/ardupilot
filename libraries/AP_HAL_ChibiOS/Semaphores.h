@@ -16,26 +16,24 @@
  */
 #pragma once
 
+#include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include "AP_HAL_ChibiOS.h"
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
+#include "AP_HAL_ChibiOS_Namespace.h"
 
 class ChibiOS::Semaphore : public AP_HAL::Semaphore {
 public:
-    Semaphore() {
-        chMtxObjectInit(&_lock);
-    }
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
-    bool check_owner(void) {
-        return _lock.owner == chThdGetSelfX();
-    }
-    void assert_owner(void) {
-        osalDbgAssert(check_owner(), "owner");
-    }
+    Semaphore();
+    bool give() override;
+    bool take(uint32_t timeout_ms) override;
+    bool take_nonblocking() override;
+
+    // methods within HAL_ChibiOS only
+    bool check_owner(void);
+    void assert_owner(void);
 private:
-    mutex_t _lock;
+    // to avoid polluting the global namespace with the 'ch' variable,
+    // we declare the lock as a uint64_t, and cast inside the cpp file
+    uint64_t _lock[2];
 };
-#endif // CONFIG_HAL_BOARD

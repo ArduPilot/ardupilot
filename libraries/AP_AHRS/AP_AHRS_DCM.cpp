@@ -436,6 +436,11 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 
     const AP_GPS &_gps = AP::gps();
 
+    if (_compass && _compass->is_calibrating()) {
+        // don't do any yaw correction while calibrating
+        return;
+    }
+    
     if (AP_AHRS_DCM::use_compass()) {
         /*
           we are using compass for yaw
@@ -1012,6 +1017,7 @@ void AP_AHRS_DCM::set_home(const Location &loc)
 {
     _home = loc;
     _home.options = 0;
+    _home_is_set = true;
 }
 
 //  a relative ground position to home in meters, Down

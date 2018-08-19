@@ -204,7 +204,7 @@ def kill_tasks_psutil(victims):
 def kill_tasks_pkill(victims):
     """Shell out to pkill(1) to kill processed by name"""
     for victim in victims:  # pkill takes a single pattern, so iterate
-        cmd = ["pkill", victim]
+        cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
 
 
@@ -241,7 +241,7 @@ def kill_tasks():
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
         if under_macos() and os.environ.get('DISPLAY'):
-            #use special macos kill routine if Display is on
+            # use special macos kill routine if Display is on
             return kill_tasks_macos()
 
         try:
@@ -317,6 +317,10 @@ def do_build_waf(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+
+    if opts.OSD:
+        cmd_configure.append("--enable-sfml")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -471,21 +475,21 @@ def run_in_terminal_window(autotest, name, cmd):
         out = out.decode('utf-8')
         import re
         p = re.compile('tab 1 of window id (.*)')
-                        
+
         tstart = time.time()
         while time.time() - tstart < 5:
             tabs = p.findall(out)
-            
+
             if len(tabs) > 0:
                 break
 
             time.sleep(0.1)
-        #sleep for extra 2 seconds for application to start
+        # sleep for extra 2 seconds for application to start
         time.sleep(2)
         if len(tabs) > 0:
             windowID.append(tabs[0])
         else:
-            progress("Cannot find %s process terminal" % name )
+            progress("Cannot find %s process terminal" % name)
     else:
         p = subprocess.Popen(runme)
 
@@ -534,7 +538,7 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(delete=False)
+        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
         atexit.register(os.unlink, gdb_commands_file.name)
 
         for breakpoint in opts.breakpoint:
@@ -563,13 +567,26 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         cmd.extend(opts.sitl_instance_args.split(" "))
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
+    path = None
     if "default_params_filename" in stuff:
         paths = stuff["default_params_filename"]
         if not isinstance(paths, list):
             paths = [paths]
         paths = [os.path.join(autotest, x) for x in paths]
+        for x in paths:
+            if not os.path.isfile(x):
+                print("The parameter file (%s) does not exist" % (x,))
+                sys.exit(1)
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
+    if opts.add_param_file:
+        if not os.path.isfile(opts.add_param_file):
+            print("The parameter file (%s) does not exist" %
+                  (opts.add_param_file,))
+            sys.exit(1)
+        path += "," + str(opts.add_param_file)
+        progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+    if path is not None:
         cmd.extend(["--defaults", path])
 
     run_in_terminal_window(autotest, cmd_name, cmd)
@@ -596,14 +613,15 @@ def start_mavproxy(opts, stuff):
         if stuff["sitl-port"]:
             cmd.extend(["--sitl", simout_port])
 
-    ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
-    for port in ports:
-        if os.path.isfile("/ardupilot.vagrant"):
-            # We're running inside of a vagrant guest; forward our
-            # mavlink out to the containing host OS
-            cmd.extend(["--out", "10.0.2.2:" + str(port)])
-        else:
-            cmd.extend(["--out", "127.0.0.1:" + str(port)])
+    if not opts.no_extra_ports:
+        ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
+        for port in ports:
+            if os.path.isfile("/ardupilot.vagrant"):
+                # We're running inside of a vagrant guest; forward our
+                # mavlink out to the containing host OS
+                cmd.extend(["--out", "10.0.2.2:" + str(port)])
+            else:
+                cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -620,9 +638,39 @@ def start_mavproxy(opts, stuff):
     if "extra_mavlink_cmds" in stuff:
         extra_cmd += " " + stuff["extra_mavlink_cmds"]
 
+    # Parsing the arguments to pass to mavproxy, split args on space
+    # and "=" signs and ignore those signs within quotation marks
     if opts.mavproxy_args:
-        # this could be a lot better:
-        cmd.extend(opts.mavproxy_args.split(" "))
+        # It would be great if this could be done with regex
+        mavargs = opts.mavproxy_args.split(" ")
+        # Find the arguments with '=' in them and split them up
+        for i, x in enumerate(mavargs):
+            if '=' in x:
+                mavargs[i] = x.split('=')[0]
+                mavargs.insert(i+1, x.split('=')[1])
+        # Use this flag to tell if parsing character inbetween a pair
+        # of quotation marks
+        inString = False
+        beginStringIndex = []
+        endStringIndex = []
+        # Iterate through the arguments, looking for the arguments
+        # that begin with a quotation mark and the ones that end with
+        # a quotation mark
+        for i, x in enumerate(mavargs):
+            if not inString and x[0] == "\"":
+                beginStringIndex.append(i)
+                mavargs[i] = x[1:]
+                inString = True
+            elif inString and x[-1] == "\"":
+                endStringIndex.append(i)
+                inString = False
+                mavargs[i] = x[:-1]
+        # Replace the list items with one string to be passed into mavproxy
+        for begin, end in zip(beginStringIndex, endStringIndex):
+            replacement = " ".join(mavargs[begin:end+1])
+            mavargs[begin] = replacement
+            mavargs = mavargs[0:begin+1] + mavargs[end+1:]
+        cmd.extend(mavargs)
 
     # compatibility pass-through parameters (for those that don't want
     # to use -C :-)
@@ -826,6 +874,20 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--osd",
+                     action='store_true',
+                     dest='OSD',
+                     default=False,
+                     help="Enable SITL OSD")
+group_sim.add_option("", "--add-param-file",
+                     type='string',
+                     default=None,
+                     help="Add a parameters file to use")
+group_sim.add_option("", "--no-extra-ports",
+                     action='store_true',
+                     dest='no_extra_ports',
+                     default=False,
+                     help="Disable setup of UDP 14550 and 14551 output")
 parser.add_option_group(group_sim)
 
 
@@ -980,10 +1042,7 @@ else:
         do_build_parameters(cmd_opts.vehicle)
 
     if cmd_opts.build_system == "waf":
-        if cmd_opts.debug:
-            binary_basedir = "build/sitl-debug"
-        else:
-            binary_basedir = "build/sitl"
+        binary_basedir = "build/sitl"
         vehicle_binary = os.path.join(find_root_dir(),
                                       binary_basedir,
                                       frame_infos["waf_target"])

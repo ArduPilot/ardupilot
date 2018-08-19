@@ -59,6 +59,9 @@ public:
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
+    // singleton support
+    static AP_Motors *get_instance(void) { return _instance; }
+
     // check initialisation succeeded
     bool                initialised_ok() const { return _flags.initialised_ok; }
 
@@ -103,20 +106,6 @@ public:
 
     enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
     
-    //
-    // voltage, current and air pressure compensation or limiting features - multicopters only
-    //
-    // set_voltage - set voltage to be used for output scaling
-    void                set_voltage(float volts){ _batt_voltage = volts; }
-    void                set_voltage_resting_estimate(float volts) { _batt_voltage_resting_estimate = volts; }
-
-    // set_current - set current to be used for output scaling
-    void                set_current(float current){ _batt_current = current; }
-
-    // get and set battery resistance estimate
-    float               get_batt_resistance() const { return _batt_resistance; }
-    void                set_resistance(float resistance){ _batt_resistance = resistance; }
-
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
 
@@ -147,10 +136,10 @@ public:
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 
-    // output_test - spin a motor at the pwm value specified
+    // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test(uint8_t motor_seq, int16_t pwm) = 0;
+    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -162,13 +151,21 @@ public:
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
-    enum pwm_type { PWM_TYPE_NORMAL=0, PWM_TYPE_ONESHOT=1, PWM_TYPE_ONESHOT125=2, PWM_TYPE_BRUSHED=3 };
+    enum pwm_type { PWM_TYPE_NORMAL     = 0,
+                    PWM_TYPE_ONESHOT    = 1,
+                    PWM_TYPE_ONESHOT125 = 2,
+                    PWM_TYPE_BRUSHED    = 3,
+                    PWM_TYPE_DSHOT150   = 4,
+                    PWM_TYPE_DSHOT300   = 5,
+                    PWM_TYPE_DSHOT600   = 6,
+                    PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
     
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing()=0;
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
+    virtual void        rc_write_angle(uint8_t chan, int16_t angle_cd);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
     virtual uint32_t    rc_map_mask(uint32_t mask) const;
 
@@ -180,12 +177,6 @@ protected:
 
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
-
-    // convert input in -1 to +1 range to pwm output
-    int16_t calc_pwm_output_1to1(float input, const SRV_Channel *servo);
-
-    // convert input in 0 to +1 range to pwm output
-    int16_t calc_pwm_output_0to1(float input, const SRV_Channel *servo);
 
     // flag bitmask
     struct AP_Motors_flags {
@@ -207,21 +198,20 @@ protected:
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
 
-    // battery voltage, current and air pressure compensation variables
-    float               _batt_voltage;          // latest battery voltage reading
-    float               _batt_voltage_resting_estimate; // estimated battery voltage with sag removed
-    float               _batt_current;          // latest battery current reading
-    float               _batt_resistance;       // latest battery resistance estimate in ohms
+    // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
     // mask of what channels need fast output
     uint16_t            _motor_fast_mask;
 
     // pass through variables
-    float _roll_radio_passthrough = 0.0f;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
-    float _pitch_radio_passthrough = 0.0f;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
-    float _throttle_radio_passthrough = 0.0f; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
-    float _yaw_radio_passthrough = 0.0f;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _pitch_radio_passthrough;    // pitch input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
+    float _throttle_radio_passthrough; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
+    float _yaw_radio_passthrough;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
     AP_Int8             _pwm_type;            // PWM output type
+
+private:
+    static AP_Motors *_instance;
 };

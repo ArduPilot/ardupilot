@@ -19,7 +19,7 @@ ARCH_AUR_PKGS="genromfs"
 # (see https://launchpad.net/gcc-arm-embedded/)
 ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
 ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
-ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/PX4-tools/$ARM_TARBALL"
+ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
 ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
@@ -82,8 +82,7 @@ fi
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 (
     cd $SCRIPT_DIR
-    git submodule init
-    git submodule update --recursive
+    git submodule update --init --recursive
 )
 
 echo "Done. Please log out and log in again."

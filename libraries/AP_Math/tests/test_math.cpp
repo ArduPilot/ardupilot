@@ -59,6 +59,8 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_180_YAW_90, 1, -1, -1);
     TEST_ROTATION(ROTATION_ROLL_90_YAW_270, -1, -1, 1);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.4066309f, -1.5839677f, -0.5706992f);
+    TEST_ROTATION(ROTATION_PITCH_315, 0, 1, SQRT_2);
+    TEST_ROTATION(ROTATION_ROLL_90_PITCH_315, 0, -1, SQRT_2);
 
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 }
@@ -126,14 +128,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(250, constrain_float(i, 250, 500));
             EXPECT_EQ(250, constrain_int16(i, 250, 500));
             EXPECT_EQ(250, constrain_int32(i, 250, 500));
+            EXPECT_EQ(250, constrain_int64(i, 250, 500));
         } else if (i > 500) {
             EXPECT_EQ(500, constrain_float(i, 250, 500));
             EXPECT_EQ(500, constrain_int16(i, 250, 500));
             EXPECT_EQ(500, constrain_int32(i, 250, 500));
+            EXPECT_EQ(500, constrain_int64(i, 250, 500));
         } else {
             EXPECT_EQ(i, constrain_float(i, 250, 500));
             EXPECT_EQ(i, constrain_int16(i, 250, 500));
             EXPECT_EQ(i, constrain_int32(i, 250, 500));
+            EXPECT_EQ(i, constrain_int64(i, 250, 500));
         }
     }
 
@@ -143,14 +148,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, -50));
             EXPECT_EQ(-250, constrain_int16(c, -250, -50));
             EXPECT_EQ(-250, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, -50));
         } else if(c > -50) {
             EXPECT_EQ(-50, constrain_float(c, -250, -50));
             EXPECT_EQ(-50, constrain_int16(c, -250, -50));
             EXPECT_EQ(-50, constrain_int32(c, -250, -50));
+            EXPECT_EQ(-50, constrain_int64(c, -250, -50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, -50));
             EXPECT_EQ(c, constrain_int16(c, -250, -50));
             EXPECT_EQ(c, constrain_int32(c, -250, -50));
+            EXPECT_EQ(c, constrain_int64(c, -250, -50));
         }
     }
 
@@ -160,14 +168,17 @@ TEST(MathTest, Constrain)
             EXPECT_EQ(-250, constrain_float(c, -250, 50));
             EXPECT_EQ(-250, constrain_int16(c, -250, 50));
             EXPECT_EQ(-250, constrain_int32(c, -250, 50));
+            EXPECT_EQ(-250, constrain_int64(c, -250, 50));
         } else if(c > 50) {
             EXPECT_EQ(50, constrain_float(c, -250, 50));
             EXPECT_EQ(50, constrain_int16(c, -250, 50));
             EXPECT_EQ(50, constrain_int32(c, -250, 50));
+            EXPECT_EQ(50, constrain_int64(c, -250, 50));
         } else {
             EXPECT_EQ(c, constrain_float(c, -250, 50));
             EXPECT_EQ(c, constrain_int16(c, -250, 50));
             EXPECT_EQ(c, constrain_int32(c, -250, 50));
+            EXPECT_EQ(c, constrain_int64(c, -250, 50));
         }
     }
 

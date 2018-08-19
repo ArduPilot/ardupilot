@@ -194,10 +194,11 @@ bool Sub::mode_has_manual_throttle(control_mode_t mode)
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Sub::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 {
-    if (mode_has_manual_throttle(mode) || mode == ALT_HOLD || mode == POSHOLD || (arming_from_gcs && mode == GUIDED)) {
-        return true;
-    }
-    return false;
+    return (mode_has_manual_throttle(mode)
+        || mode == ALT_HOLD
+        || mode == POSHOLD
+        || (arming_from_gcs&& mode == GUIDED)
+    );
 }
 
 // notify_flight_mode - sets notify object based on flight mode.  Only used for OreoLED notify device

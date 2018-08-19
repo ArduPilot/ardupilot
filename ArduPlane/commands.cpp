@@ -103,25 +103,6 @@ void Plane::set_guided_WP(void)
     loiter_angle_reset();
 }
 
-// run this at setup on the ground
-// -------------------------------
-void Plane::init_home()
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
-
-    ahrs.set_home(gps.location());
-    ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-    Log_Write_Home_And_Origin();
-    gcs().send_home(gps.location());
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-
-    // Save prev loc
-    // -------------
-    next_WP_loc = prev_WP_loc = home;
-}
-
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
@@ -138,39 +119,26 @@ void Plane::update_home()
         // significantly
         return;
     }
-    if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
         if(ahrs.get_position(loc)) {
-            ahrs.set_home(loc);
-            Log_Write_Home_And_Origin();
-            gcs().send_home(loc);
+            plane.set_home(loc);
         }
     }
     barometer.update_calibration();
 }
 
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Plane::set_ekf_origin(const Location& loc)
+void Plane::set_home_persistently(const Location &loc)
 {
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
-    }
+    set_home(loc);
 
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
+    // Save Home to EEPROM
+    mission.write_home_to_storage();
+}
 
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
+void Plane::set_home(const Location &loc)
+{
+    ahrs.set_home(loc);
+    ahrs.Log_Write_Home_And_Origin();
+    gcs().send_home();
 }

@@ -116,6 +116,10 @@ struct PACKED log_Nav_Tuning {
     float   xtrack_error;
     float   xtrack_error_i;
     float   airspeed_error;
+    int32_t target_lat;
+    int32_t target_lng;
+    int32_t target_alt;
+    int32_t target_airspeed;
 };
 
 // Write a navigation tuning packet
@@ -130,7 +134,11 @@ void Plane::Log_Write_Nav_Tuning()
         altitude_error_cm   : (int16_t)altitude_error_cm,
         xtrack_error        : nav_controller->crosstrack_error(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
-        airspeed_error      : airspeed_error
+        airspeed_error      : airspeed_error,
+        target_lat          : next_WP_loc.lat,
+        target_lng          : next_WP_loc.lng,
+        target_alt          : next_WP_loc.alt,
+        target_airspeed     : target_airspeed_cm,
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -272,18 +280,6 @@ void Plane::Log_Write_AETR()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
-void Plane::Log_Write_GPS(uint8_t instance)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_GPS(gps, instance);
-    }
-}
-
-void Plane::Log_Write_IMU()
-{
-    DataFlash.Log_Write_IMU();
-}
-
 void Plane::Log_Write_RC(void)
 {
     DataFlash.Log_Write_RCIN();
@@ -292,42 +288,6 @@ void Plane::Log_Write_RC(void)
         DataFlash.Log_Write_RSSI(rssi);
     }
     Log_Write_AETR();
-}
-
-void Plane::Log_Write_Baro(void)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro();
-    }
-}
-
-// Write a AIRSPEED packet
-void Plane::Log_Write_Airspeed(void)
-{
-    DataFlash.Log_Write_Airspeed(airspeed);
-}
-
-// Write a AOA and SSA packet
-void Plane::Log_Write_AOA_SSA(void)
-{
-    DataFlash.Log_Write_AOA_SSA(ahrs);
-}
-
-// log ahrs home and EKF origin to dataflash
-void Plane::Log_Write_Home_And_Origin()
-{
-#if AP_AHRS_NAVEKF_AVAILABLE
-    // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
-    }
-#endif
-
-    // log ahrs home if set
-    if (ahrs.home_is_set()) {
-        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
-    }
 }
 
 // type and unit information can be found in
@@ -340,7 +300,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhf",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem,Aspd", "sdddd---n", "FBBBB---0" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "Qfcccfff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,XT,XTi,ArspdErr", "smddmmmn", "F0BBB0B0" },
+      "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QffBf",   "TimeUS,Dist,Volt,Cnt,Corr", "smv--", "FB0--" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),
@@ -375,7 +335,7 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
     DataFlash.Log_Write_Rally(rally);
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
@@ -403,12 +363,8 @@ void Plane::Log_Write_Optflow() {}
  #endif
 
 void Plane::Log_Arm_Disarm() {}
-void Plane::Log_Write_GPS(uint8_t instance) {}
-void Plane::Log_Write_IMU() {}
 void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Baro(void) {}
-void Plane::Log_Write_Airspeed(void) {}
-void Plane::Log_Write_Home_And_Origin() {}
+void Plane::Log_Write_Vehicle_Startup_Messages() {}
 
 void Plane::log_init(void) {}
 

@@ -24,9 +24,6 @@ bool ModeAuto::_enter()
     // other initialisation
     auto_triggered = false;
 
-    // initialise reversed to be false
-    set_reversed(false);
-
     // restart mission processing
     mission.start_or_resume();
     return true;
@@ -56,7 +53,7 @@ void ModeAuto::update()
             if (!_reached_destination || (rover.is_boat() && !near_wp)) {
                 // continue driving towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
             } else {
                 // we have reached the destination so stop
                 stop_vehicle();
@@ -69,7 +66,7 @@ void ModeAuto::update()
             if (!_reached_heading) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
-                calc_throttle(_desired_speed, true);
+                calc_throttle(_desired_speed, true, false);
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
@@ -148,7 +145,6 @@ void ModeAuto::set_reversed(bool value)
 {
     if (_reversed != value) {
         _reversed = value;
-        rover.set_reverse(_reversed);
     }
 }
 
@@ -197,12 +193,12 @@ bool ModeAuto::check_trigger(void)
     return false;
 }
 
-void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed)
+void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
 {
     // If not autostarting set the throttle to minimum
     if (!check_trigger()) {
         stop_vehicle();
         return;
     }
-    Mode::calc_throttle(target_speed, nudge_allowed);
+    Mode::calc_throttle(target_speed, nudge_allowed, avoidance_enabled);
 }

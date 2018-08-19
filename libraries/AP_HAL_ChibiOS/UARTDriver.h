@@ -20,11 +20,13 @@
 
 #include "AP_HAL_ChibiOS.h"
 #include "shared_dma.h"
+#include "Semaphores.h"
 
-#define RX_BOUNCE_BUFSIZE 128
-#define TX_BOUNCE_BUFSIZE 64
+#define RX_BOUNCE_BUFSIZE 128U
+#define TX_BOUNCE_BUFSIZE 64U
 
-#define UART_MAX_DRIVERS 7
+// enough for uartA to uartG, plus IOMCU
+#define UART_MAX_DRIVERS 8
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -46,6 +48,14 @@ public:
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
+
+    // lock a port for exclusive use. Use a key of 0 to unlock
+    bool lock_port(uint32_t key) override;
+
+    // write to a locked port. If port is locked and key is not correct then 0 is returned
+    // and write is discarded
+    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    
     struct SerialDef {
         BaseSequentialStream* serial;
         bool is_usb;
@@ -71,6 +81,21 @@ public:
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
+
+    /*
+      return timestamp estimate in microseconds for when the start of
+      a nbytes packet arrived on the uart. This should be treated as a
+      time constraint, not an exact time. It is guaranteed that the
+      packet did not start being received after this time, but it
+      could have been in a system buffer before the returned time.
+
+      This takes account of the baudrate of the link. For transports
+      that have no baudrate (such as USB) the time estimate may be
+      less accurate.
+
+      A return value of zero means the HAL does not support this API
+     */
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override;
     
 private:
     bool tx_bounce_buf_ready;
@@ -79,14 +104,14 @@ private:
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
 
-    // last time we ran the uart thread
-    static uint32_t last_thread_run_us;
-    
     // table to find UARTDrivers from serial number, used for event handling
     static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
 
     // index into uart_drivers table
     uint8_t serial_num;
+
+    // key for a locked port
+    uint32_t lock_key;
     
     uint32_t _baudrate;
     uint16_t tx_len;
@@ -104,13 +129,14 @@ private:
 
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
-    uint8_t rx_bounce_buf[RX_BOUNCE_BUFSIZE];
-    uint8_t tx_bounce_buf[TX_BOUNCE_BUFSIZE];
+    uint8_t *rx_bounce_buf;
+    uint8_t *tx_bounce_buf;
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    mutex_t _write_mutex;
+    Semaphore _write_mutex;
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
+    virtual_timer_t tx_timeout;    
     bool _in_timer;
     bool _blocking_writes;
     bool _initialised;
@@ -119,27 +145,36 @@ private:
     Shared_DMA *dma_handle;
     static const SerialDef _serial_tab[];
 
+    // timestamp for receiving data on the UART, avoiding a lock
+    uint64_t _receive_timestamp[2];
+    uint8_t _receive_timestamp_idx;
+
     // handling of flow control
     enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
-
+    uint32_t _total_written;
+    
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
     
     static void rx_irq_cb(void* sd);
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
+    static void handle_tx_timeout(void *arg);
 
-    void dma_tx_allocate(void);
-    void dma_tx_deallocate(void);
+    void dma_tx_allocate(Shared_DMA *ctx);
+    void dma_tx_deallocate(Shared_DMA *ctx);
     void update_rts_line(void);
 
+    void check_dma_tx_completion(void);
     void write_pending_bytes_DMA(uint32_t n);
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
 
+    void receive_timestamp_update(void);
+    
     void thread_init();
     static void uart_thread(void *);
 };

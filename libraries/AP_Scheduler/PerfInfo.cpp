@@ -18,7 +18,6 @@ void AP::PerfInfo::reset()
     max_time = 0;
     min_time = 0;
     long_running = 0;
-    log_dropped = DataFlash_Class::instance()->num_dropped();
     sigma_time = 0;
     sigmasquared_time = 0;
 }
@@ -94,12 +93,6 @@ uint16_t AP::PerfInfo::get_num_long_running() const
     return long_running;
 }
 
-// get_num_dropped - get number of dropped log messages
-uint32_t AP::PerfInfo::get_num_dropped() const
-{
-    return log_dropped;
-}
-
 // get_avg_time - return average loop time (in microseconds)
 uint32_t AP::PerfInfo::get_avg_time() const
 {
@@ -109,7 +102,7 @@ uint32_t AP::PerfInfo::get_avg_time() const
 // get_stddev_time - return stddev of average loop time (in us)
 uint32_t AP::PerfInfo::get_stddev_time() const
 {
-    return sqrt((sigmasquared_time - (sigma_time*sigma_time)/loop_count) / loop_count);
+    return sqrtf((sigmasquared_time - (sigma_time*sigma_time)/loop_count) / loop_count);
 }
 
 // get_filtered_time - return low pass filtered loop time in seconds

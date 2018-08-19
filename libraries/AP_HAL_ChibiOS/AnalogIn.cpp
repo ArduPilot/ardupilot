@@ -15,6 +15,10 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
+#include "ch.h"
+#include "hal.h"
+
+#if HAL_USE_ADC == TRUE
 
 #include "AnalogIn.h"
 
@@ -22,6 +26,8 @@
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
+
+#include "hwdef/common/stm32_util.h"
 
 #ifndef CHIBIOS_ADC_MAVLINK_DEBUG
 // this allows the first 6 analog channels to be reported by mavlink for debugging purposes
@@ -51,10 +57,10 @@ using namespace ChibiOS;
  */
 const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ANALOG_PINS;
 
-#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE_SIMPLE(AnalogIn::pin_config)
+#define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
 // samples filled in by ADC DMA engine
-adcsample_t AnalogIn::samples[ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS];
+adcsample_t *AnalogIn::samples;
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_count;
 
@@ -67,19 +73,24 @@ AnalogSource::AnalogSource(int16_t pin, float initial_value) :
     _sum_value(0),
     _sum_ratiometric(0)
 {
+    _semaphore = hal.util->new_semaphore();
 }
 
 
 float AnalogSource::read_average() 
 {
-    if (_sum_count == 0) {
-        return _value;
+    if (_semaphore->take(1)) {
+        if (_sum_count == 0) {
+            _semaphore->give();
+            return _value;
+        }
+        _value = _sum_value / _sum_count;
+        _value_ratiometric = _sum_ratiometric / _sum_count;
+        _sum_value = 0;
+        _sum_ratiometric = 0;
+        _sum_count = 0;
+        _semaphore->give();
     }
-    _value = _sum_value / _sum_count;
-    _value_ratiometric = _sum_ratiometric / _sum_count;
-    _sum_value = 0;
-    _sum_ratiometric = 0;
-    _sum_count = 0;
     return _value;
 }
 
@@ -134,13 +145,16 @@ void AnalogSource::set_pin(uint8_t pin)
     if (_pin == pin) {
         return;
     }
-    _pin = pin;
-    _sum_value = 0;
-    _sum_ratiometric = 0;
-    _sum_count = 0;
-    _latest_value = 0;
-    _value = 0;
-    _value_ratiometric = 0;
+    if (_semaphore->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+        _pin = pin;
+        _sum_value = 0;
+        _sum_ratiometric = 0;
+        _sum_count = 0;
+        _latest_value = 0;
+        _value = 0;
+        _value_ratiometric = 0;
+        _semaphore->give();
+    }
 }
 
 /*
@@ -148,20 +162,23 @@ void AnalogSource::set_pin(uint8_t pin)
  */
 void AnalogSource::_add_value(float v, float vcc5V)
 {
-    _latest_value = v;
-    _sum_value += v;
-    if (vcc5V < 3.0f) {
-        _sum_ratiometric += v;
-    } else {
-        // this compensates for changes in the 5V rail relative to the
-        // 3.3V reference used by the ADC.
-        _sum_ratiometric += v * 5.0f / vcc5V;
-    }
-    _sum_count++;
-    if (_sum_count == 254) {
-        _sum_value /= 2;
-        _sum_ratiometric /= 2;
-        _sum_count /= 2;
+    if (_semaphore->take(1)) {
+        _latest_value = v;
+        _sum_value += v;
+        if (vcc5V < 3.0f) {
+            _sum_ratiometric += v;
+        } else {
+            // this compensates for changes in the 5V rail relative to the
+            // 3.3V reference used by the ADC.
+            _sum_ratiometric += v * 5.0f / vcc5V;
+        }
+        _sum_count++;
+        if (_sum_count == 254) {
+            _sum_value /= 2;
+            _sum_ratiometric /= 2;
+            _sum_count /= 2;
+        }
+        _semaphore->give();
     }
 }
 
@@ -197,6 +214,9 @@ void AnalogIn::init()
     if (ADC_GRP1_NUM_CHANNELS == 0) {
         return;
     }
+
+    samples = (adcsample_t *)hal.util->malloc_type(sizeof(adcsample_t)*ADC_DMA_BUF_DEPTH*ADC_GRP1_NUM_CHANNELS, AP_HAL::Util::MEM_DMA_SAFE);
+
     adcStart(&ADCD1, NULL);
     memset(&adcgrpcfg, 0, sizeof(adcgrpcfg));
     adcgrpcfg.circular = true;
@@ -256,6 +276,9 @@ void AnalogIn::_timer_tick(void)
 
     /* read all channels available */
     read_adc(buf_adc);
+
+    // update power status flags
+    update_power_flags();
     
     // match the incoming channels to the currently active pins
     for (uint8_t i=0; i < ADC_GRP1_NUM_CHANNELS; i++) {
@@ -290,7 +313,11 @@ void AnalogIn::_timer_tick(void)
     if (AP_HAL::millis() > 5000 && count++ == 10) {
         count = 0;
         uint16_t adc[6] {};
-        for (uint8_t i=0; i < ADC_GRP1_NUM_CHANNELS; i++) {
+        uint8_t n = ADC_GRP1_NUM_CHANNELS;
+        if (n > 6) {
+            n = 6;
+        }
+        for (uint8_t i=0; i < n; i++) {
             adc[i] = buf_adc[i];
         }
         mavlink_msg_ap_adc_send(MAVLINK_COMM_0, adc[0], adc[1], adc[2], adc[3], adc[4], adc[5]);
@@ -309,4 +336,50 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
     hal.console->printf("Out of analog channels\n");
     return nullptr;
 }
+
+/*
+  update power status flags
+ */
+void AnalogIn::update_power_flags(void)
+{
+    uint16_t flags = 0;
+
+#ifdef HAL_GPIO_PIN_VDD_BRICK_VALID
+    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID)) {
+        flags |= MAV_POWER_STATUS_BRICK_VALID;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VDD_SERVO_VALID
+    if (!palReadLine(HAL_GPIO_PIN_VDD_SERVO_VALID)) {
+        flags |= MAV_POWER_STATUS_SERVO_VALID;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VBUS
+	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+        flags |= MAV_POWER_STATUS_USB_CONNECTED;
+    }
+#endif
+    
+#ifdef HAL_GPIO_PIN_VDD_5V_HIPOWER_OC
+    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_OC)) {
+        flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
+    }    
+#endif
+
+#ifdef HAL_GPIO_PIN_VDD_5V_PERIPH_OC
+    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_PERIPH_OC)) {
+        flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
+    }    
+#endif
+    if (_power_flags != 0 && 
+        _power_flags != flags && 
+        hal.util->get_soft_armed()) {
+        // the power status has changed while armed
+        flags |= MAV_POWER_STATUS_CHANGED;
+    }
+    _power_flags = flags;
+}
+#endif // HAL_USE_ADC
 

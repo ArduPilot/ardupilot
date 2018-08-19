@@ -6,13 +6,14 @@
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
-    channel_steer    = RC_Channels::rc_channel(rcmap.roll()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_aux      = RC_Channels::rc_channel(g.aux_channel-1);
+    channel_steer    = rc().channel(rcmap.roll()-1);
+    channel_throttle = rc().channel(rcmap.throttle()-1);
+    channel_lateral  = rc().channel(rcmap.yaw()-1);
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
     channel_throttle->set_angle(100);
+    channel_lateral->set_angle(100);
 
     // Allow to reconfigure ouput when not armed
     if (!arming.is_armed()) {
@@ -32,6 +33,7 @@ void Rover::init_rc_in()
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
+    channel_lateral->set_default_dead_zone(30);
 }
 
 void Rover::init_rc_out()
@@ -77,7 +79,7 @@ void Rover::rudder_arm_disarm_check()
             // not at full right rudder
             rudder_arm_timer = 0;
         }
-    } else if (!motor_active()) {
+    } else if (!g2.motors.active()) {
         // when armed and motor not active (not moving), full left rudder starts disarming counter
         if (channel_steer->get_control_in() < -4000) {
             const uint32_t now = millis();
@@ -101,15 +103,13 @@ void Rover::rudder_arm_disarm_check()
 
 void Rover::read_radio()
 {
-    if (!hal.rcin->new_input()) {
+    if (!rc().read_input()) {
         // check if we lost RC link
         control_failsafe(channel_throttle->get_radio_in());
         return;
     }
 
     failsafe.last_valid_rc_ms = AP_HAL::millis();
-    // read the RC value
-    RC_Channels::set_pwm_all();
     // check that RC value are valid
     control_failsafe(channel_throttle->get_radio_in());
 
@@ -124,34 +124,27 @@ void Rover::control_failsafe(uint16_t pwm)
         return;
     }
 
-    // Check for failsafe condition based on loss of GCS control
-    if (rc_override_active) {
-        failsafe_trigger(FAILSAFE_EVENT_RC, (millis() - failsafe.rc_override_timer) > 1500);
-    } else if (g.fs_throttle_enabled) {
-        bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
-        if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
-            failed = true;
-        }
-        failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
+    bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
+    if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
+        failed = true;
     }
+    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
 }
 
-void Rover::trim_control_surfaces()
+bool Rover::trim_radio()
 {
-    read_radio();
+    if (!rc().has_valid_input()) {
+        // can't trim without valid input
+        return false;
+    }
+
     // Store control surface trim values
     // ---------------------------------
     if ((channel_steer->get_radio_in() > 1400) && (channel_steer->get_radio_in() < 1600)) {
-        channel_steer->set_radio_trim(channel_steer->get_radio_in());
-        // save to eeprom
-        channel_steer->save_eeprom();
+        channel_steer->set_and_save_radio_trim(channel_steer->get_radio_in());
+    } else {
+        return false;
     }
-}
 
-void Rover::trim_radio()
-{
-    for (uint8_t y = 0; y < 30; y++) {
-        read_radio();
-    }
-    trim_control_surfaces();
+    return true;
 }

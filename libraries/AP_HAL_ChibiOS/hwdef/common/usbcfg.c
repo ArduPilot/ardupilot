@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#pragma GCC optimize("O0")
+// #pragma GCC optimize("O0")
 
 #ifdef HAL_USB_PRODUCT_ID
 
@@ -178,36 +178,51 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
+#define USB_DESC_MAX_STRLEN 100
+static uint8_t vcom_buffers[3][2+2*USB_DESC_MAX_STRLEN];
 
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
+/*
+  check if one string contains another
+ */
+static bool string_contains(const char *haystack, const char *needle)
+{
+    uint8_t needle_len = strlen(needle);
+    while (*haystack) {
+        if (strncmp(haystack, needle, needle_len) == 0) {
+            return true;
+        }
+        haystack++;
+    }
+    return false;
+}
 
 /*
   handle substitution of variables in strings for USB descriptors
  */
-static char *string_substitute(const char *str)
+static void string_substitute(const char *str, char *str2)
 {
     uint8_t new_len = strlen(str);
-    if (strstr(str, "%BOARD%")) {
+    if (string_contains(str, "%BOARD%")) {
         new_len += strlen(HAL_BOARD_NAME) - 7;
     }
-    if (strstr(str, "%SERIAL%")) {
+    if (string_contains(str, "%SERIAL%")) {
         new_len += 24 - 8;
     }
-    char *str2 = malloc(new_len+1);
+    if (new_len+1 > USB_DESC_MAX_STRLEN) {
+        strcpy(str2, str);
+        return;
+    }
     char *p = str2;
     while (*str) {
         char c = *str;
         if (c == '%') {
-            if (strcmp(str, "%BOARD%") == 0) {
+            if (strncmp(str, "%BOARD%", 7) == 0) {
                 memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
                 str += 7;
                 p += strlen(HAL_BOARD_NAME);
                 continue;
             }
-            if (strcmp(str, "%SERIAL%") == 0) {
+            if (strncmp(str, "%SERIAL%", 8) == 0) {
                 const char *hex = "0123456789ABCDEF";
                 const uint8_t *cpu_id = (const uint8_t *)UDID_START;
                 uint8_t i;
@@ -222,19 +237,18 @@ static char *string_substitute(const char *str)
         *p++ = *str++;
     }
     *p = 0;
-    return str2;
 }
 
 
 /*
   dynamically allocate a USB descriptor string
  */
-static void setup_usb_string(USBDescriptor *desc, const char *str)
+static void setup_usb_string(USBDescriptor *desc, const char *str, uint8_t *b)
 {
-    char *str2 = string_substitute(str);
+    char str2[USB_DESC_MAX_STRLEN];
+    string_substitute(str, str2);
     uint8_t len = strlen(str2);
     desc->ud_size = 2+2*len;
-    uint8_t *b = (uint8_t *)calloc(1, desc->ud_size);
     desc->ud_string = (const uint8_t *)b;
     b[0] = USB_DESC_BYTE(desc->ud_size);
     b[1] = USB_DESC_BYTE(USB_DESCRIPTOR_STRING);
@@ -243,9 +257,6 @@ static void setup_usb_string(USBDescriptor *desc, const char *str)
         b[2+i*2] = str2[i];
         b[2+i*2+1] = 0;
     }
-    if (str2 != str) {
-        free(str2);
-    }
 }
 
 /*
@@ -253,9 +264,9 @@ static void setup_usb_string(USBDescriptor *desc, const char *str)
  */
 void setup_usb_strings(void)
 {
-    setup_usb_string(&vcom_strings[1], HAL_USB_STRING_MANUFACTURER);
-    setup_usb_string(&vcom_strings[2], HAL_USB_STRING_PRODUCT);
-    setup_usb_string(&vcom_strings[3], HAL_USB_STRING_SERIAL);
+    setup_usb_string(&vcom_strings[1], HAL_USB_STRING_MANUFACTURER, vcom_buffers[0]);
+    setup_usb_string(&vcom_strings[2], HAL_USB_STRING_PRODUCT, vcom_buffers[1]);
+    setup_usb_string(&vcom_strings[3], HAL_USB_STRING_SERIAL, vcom_buffers[2]);
 }
 
 /*

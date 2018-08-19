@@ -20,6 +20,8 @@
   code to handle sharing of DMA channels between peripherals
  */
 
+#if CH_CFG_USE_SEMAPHORES == TRUE
+
 using namespace ChibiOS;
 
 Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID];
@@ -47,12 +49,12 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
 void Shared_DMA::unregister()
 {
     if (locks[stream_id1].obj == this) {
-        locks[stream_id1].deallocate();
+        locks[stream_id1].deallocate(this);
         locks[stream_id1].obj = nullptr;
     }
 
     if (locks[stream_id2].obj == this) {
-        locks[stream_id2].deallocate();
+        locks[stream_id2].deallocate(this);
         locks[stream_id2].obj = nullptr;
     }
 }
@@ -64,18 +66,18 @@ void Shared_DMA::lock_core(void)
     // deallocation function
     if (stream_id1 != SHARED_DMA_NONE &&
         locks[stream_id1].obj && locks[stream_id1].obj != this) {
-        locks[stream_id1].deallocate();
+        locks[stream_id1].deallocate(locks[stream_id1].obj);
         locks[stream_id1].obj = nullptr;
     }
     if (stream_id2 != SHARED_DMA_NONE &&
         locks[stream_id2].obj && locks[stream_id2].obj != this) {
-        locks[stream_id2].deallocate();
+        locks[stream_id2].deallocate(locks[stream_id2].obj);
         locks[stream_id2].obj = nullptr;
     }
     if ((stream_id1 != SHARED_DMA_NONE && locks[stream_id1].obj == nullptr) ||
         (stream_id2 != SHARED_DMA_NONE && locks[stream_id2].obj == nullptr)) {
         // allocate the DMA channels and put our deallocation function in place
-        allocate();
+        allocate(this);
         if (stream_id1 != SHARED_DMA_NONE) {
             locks[stream_id1].deallocate = deallocate;
             locks[stream_id1].obj = this;
@@ -105,6 +107,12 @@ bool Shared_DMA::lock_nonblock(void)
 {
     if (stream_id1 != SHARED_DMA_NONE) {
         if (chBSemWaitTimeout(&locks[stream_id1].semaphore, 1) != MSG_OK) {
+            chSysDisable();
+            if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
+                locks[stream_id1].obj->contention = true;
+            }
+            chSysEnable();
+            contention = true;
             return false;
         }
     }
@@ -113,6 +121,12 @@ bool Shared_DMA::lock_nonblock(void)
             if (stream_id1 != SHARED_DMA_NONE) {
                 chBSemSignal(&locks[stream_id1].semaphore);
             }
+            chSysDisable();
+            if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
+                locks[stream_id2].obj->contention = true;
+            }
+            chSysEnable();
+            contention = true;
             return false;
         }
     }
@@ -152,7 +166,6 @@ void Shared_DMA::unlock_from_lockzone(void)
 void Shared_DMA::unlock_from_IRQ(void)
 {
     osalDbgAssert(have_lock, "must have lock");
-    chSysLockFromISR();
     if (stream_id2 != SHARED_DMA_NONE) {
         chBSemSignalI(&locks[stream_id2].semaphore);        
     }
@@ -160,7 +173,6 @@ void Shared_DMA::unlock_from_IRQ(void)
         chBSemSignalI(&locks[stream_id1].semaphore);
     }
     have_lock = false;
-    chSysUnlockFromISR();
 }
 
 /*
@@ -173,3 +185,5 @@ void Shared_DMA::lock_all(void)
         chBSemWait(&locks[i].semaphore);
     }
 }
+
+#endif // CH_CFG_USE_SEMAPHORES

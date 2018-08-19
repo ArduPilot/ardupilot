@@ -17,6 +17,7 @@
  *       AP_Motors6DOF.cpp - ArduSub motors library
  */
 
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Motors6DOF.h"
 
@@ -266,6 +267,11 @@ void AP_Motors6DOF::output_to_motors()
     }
 }
 
+float AP_Motors6DOF::get_current_limit_max_throttle()
+{
+    return 1.0f;
+}
+
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
@@ -336,6 +342,43 @@ void AP_Motors6DOF::output_armed_stabilizing()
             if (motor_enabled[i]) {
                 _thrust_rpyt_out[i] = constrain_float(_motor_reverse[i]*(rpy_out[i] + linear_out[i]),-1.0f,1.0f);
             }
+        }
+    }
+
+    const AP_BattMonitor &battery = AP::battery();
+
+	// Current limiting
+    if (_batt_current_max <= 0.0f || !battery.has_current()) {
+        return;
+    }
+
+    float _batt_current = battery.current_amps();
+
+    float _batt_current_delta = _batt_current - _batt_current_last;
+
+    float loop_interval = 1.0f/_loop_rate;
+
+    float _current_change_rate = _batt_current_delta / loop_interval;
+
+    float predicted_current = _batt_current + (_current_change_rate * loop_interval * 5);
+
+    float batt_current_ratio = _batt_current/_batt_current_max;
+
+    float predicted_current_ratio = predicted_current/_batt_current_max;
+    _batt_current_last = _batt_current;
+
+    if (predicted_current > _batt_current_max * 1.5f) {
+        batt_current_ratio = 2.5f;
+    } else if (_batt_current < _batt_current_max && predicted_current > _batt_current_max) {
+        batt_current_ratio = predicted_current_ratio;
+    }
+    _output_limited += (loop_interval/(loop_interval+_batt_current_time_constant)) * (1 - batt_current_ratio);
+
+    _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
+
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            _thrust_rpyt_out[i] *= _output_limited;
         }
     }
 }

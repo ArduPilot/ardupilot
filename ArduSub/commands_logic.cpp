@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#include <AP_RTC/AP_RTC.h>
+
 static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCATION;
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -519,14 +521,14 @@ void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    nav_delay_time_start = millis();
+    nav_delay_time_start = AP_HAL::millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
         nav_delay_time_max = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
-        nav_delay_time_max = hal.util->get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+        nav_delay_time_max = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
@@ -580,16 +582,16 @@ bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // start timer if necessary
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 // verify_surface - returns true if surface procedure has been completed
@@ -648,11 +650,11 @@ bool Sub::verify_loiter_time()
 
     // start our loiter timer
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if loiter timer has run out
-    return (((millis() - loiter_time) / 1000) >= loiter_time_max);
+    return (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max);
 }
 
 // verify_circle - check if we have circled the point enough
@@ -695,16 +697,16 @@ bool Sub::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // start timer if necessary
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 #if NAV_GUIDED == ENABLED
@@ -724,7 +726,7 @@ bool Sub::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Sub::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max,0)) {
+    if (AP_HAL::millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max, 0)) {
         nav_delay_time_max = 0;
         return true;
     }
@@ -737,7 +739,7 @@ bool Sub::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 
 void Sub::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    condition_start = millis();
+    condition_start = AP_HAL::millis();
     condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
@@ -762,7 +764,7 @@ void Sub::do_yaw(const AP_Mission::Mission_Command& cmd)
 
 bool Sub::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
+    if (AP_HAL::millis() - condition_start > (uint32_t)MAX(condition_value, 0)) {
         condition_value = 0;
         return true;
     }
@@ -787,11 +789,7 @@ bool Sub::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    if (labs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200) {
-        return true;
-    } else {
-        return false;
-    }
+    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
 }
 
 /********************************************************************************/

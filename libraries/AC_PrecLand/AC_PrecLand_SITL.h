@@ -14,7 +14,7 @@ class AC_PrecLand_SITL : public AC_PrecLand_Backend
 public:
 
     // Constructor
-    AC_PrecLand_SITL(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state);
+    using AC_PrecLand_Backend::AC_PrecLand_Backend;
 
     // perform any required initialisation of backend
     void init() override;

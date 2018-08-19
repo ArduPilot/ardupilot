@@ -72,15 +72,16 @@ bool Copter::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    const bool home_was_set = ahrs.home_is_set();
+
     // set ahrs home (used for RTL)
     ahrs.set_home(loc);
 
     // init inav and compass declination
-    if (!ahrs.home_is_set()) {
+    if (!home_was_set) {
         // update navigation scalers.  used to offset the shrinking longitude as we go towards the poles
         scaleLongDown = longitude_scale(loc);
         // record home is set
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
         Log_Write_Event(DATA_SET_HOME);
 
 #if MODE_AUTO_ENABLED == ENABLED
@@ -96,44 +97,18 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // lock home position
     if (lock) {
-        ahrs.set_home_status(HOME_SET_AND_LOCKED);
+        ahrs.lock_home();
     }
 
     // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
 
     // send new home and ekf origin to GCS
-    gcs().send_home(loc);
-    gcs().send_ekf_origin(ekf_origin);
+    gcs().send_home();
+    gcs().send_ekf_origin();
 
     // return success
     return true;
-}
-
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Copter::set_ekf_origin(const Location& loc)
-{
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
-    }
-
-    // check EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
-
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
 }
 
 // far_from_EKF_origin - checks if a location is too far from the EKF origin
@@ -148,27 +123,4 @@ bool Copter::far_from_EKF_origin(const Location& loc)
 
     // close enough to origin
     return false;
-}
-
-// checks if we should update ahrs/RTL home position from GPS
-void Copter::set_system_time_from_GPS()
-{
-    // exit immediately if system time already set
-    if (ap.system_time_set) {
-        return;
-    }
-
-    // if we have a 3d lock and valid location
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        // set system clock for log timestamps
-        uint64_t gps_timestamp = gps.time_epoch_usec();
-                
-        hal.util->set_system_clock(gps_timestamp);
-                
-        // update signing timestamp
-        GCS_MAVLINK::update_signing_timestamp(gps_timestamp);
-
-        ap.system_time_set = true;
-        Log_Write_Event(DATA_SYSTEM_TIME_SET);
-    }
 }

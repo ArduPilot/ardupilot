@@ -934,17 +934,10 @@ void Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
 void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-        init_home();
+        set_home_persistently(gps.location());
     } else {
-        ahrs.set_home(cmd.content.location);
-        ahrs.set_home_status(HOME_SET_NOT_LOCKED);
-        Log_Write_Home_And_Origin();
-        gcs().send_home(cmd.content.location);
-        // send ekf origin if set
-        Location ekf_origin;
-        if (ahrs.get_origin(ekf_origin)) {
-            gcs().send_ekf_origin(ekf_origin);
-        }
+        plane.set_home(cmd.content.location);
+        gcs().send_ekf_origin();
     }
 }
 

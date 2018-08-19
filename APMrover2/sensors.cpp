@@ -18,17 +18,10 @@ void Rover::init_compass()
 }
 
 /*
-  if the compass is enabled then try to accumulate a reading
-  also update initial location used for declination
+  initialise compass's location used for declination
  */
-void Rover::compass_accumulate(void)
+void Rover::init_compass_location(void)
 {
-    if (!g.compass_enabled) {
-        return;
-    }
-
-    compass.accumulate();
-
     // update initial location used for declination
     if (!compass_init_location) {
         Location loc;
@@ -37,22 +30,6 @@ void Rover::compass_accumulate(void)
             compass_init_location = true;
         }
     }
-}
-
-void Rover::init_barometer(bool full_calibration)
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
-    if (full_calibration) {
-        barometer.calibrate();
-    } else {
-        barometer.update_calibration();
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-}
-
-void Rover::init_rangefinder(void)
-{
-    rangefinder.init();
 }
 
 // init beacons used for non-gps position estimates
@@ -156,17 +133,19 @@ void Rover::update_wheel_encoder()
     wheel_encoder_last_ekf_update_ms = now;
 }
 
-// read the receiver RSSI as an 8 bit number for MAVLink
-// RC_CHANNELS_SCALED message
-void Rover::read_receiver_rssi(void)
-{
-    receiver_rssi = rssi.read_receiver_rssi_uint8();
-}
-
 // Calibrate compass
 void Rover::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
         compass.compass_cal_update();
+    }
+}
+
+// Save compass offsets
+void Rover::compass_save() {
+    if (g.compass_enabled &&
+        compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
+        !arming.is_armed()) {
+        compass.save_offsets();
     }
 }
 
@@ -244,6 +223,7 @@ void Rover::read_rangefinders(void)
     }
 
     Log_Write_Rangefinder();
+    Log_Write_Depth();
 
     // no object detected - reset after the turn time
     if (obstacle.detected_count >= g.rangefinder_debounce &&
@@ -293,7 +273,8 @@ void Rover::update_sensor_status_flags(void)
                                                          ~MAV_SYS_STATUS_SENSOR_YAW_POSITION &
                                                          ~MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL &
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
-                                                         ~MAV_SYS_STATUS_LOGGING);
+                                                         ~MAV_SYS_STATUS_LOGGING &
+                                                         ~MAV_SYS_STATUS_SENSOR_BATTERY);
     if (control_mode->attitude_stabilized()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // 3D angular rate control
@@ -310,6 +291,10 @@ void Rover::update_sensor_status_flags(void)
     // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
+    }
+
+    if (battery.num_instances() > 0) {
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
     // default to all healthy except compass and gps which we set individually
@@ -337,19 +322,21 @@ void Rover::update_sensor_status_flags(void)
 
     if (rangefinder.num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (g.rangefinder_trigger_cm > 0) {
-            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        }
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         AP_RangeFinder_Backend *s = rangefinder.get_backend(0);
         if (s != nullptr && s->has_data()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
-    if (rover.g2.proximity.get_status() < AP_Proximity::Proximity_Good) {
+    if (rover.g2.proximity.get_status() == AP_Proximity::Proximity_NoData) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
     }
     if (rover.DataFlash.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
+    }
+
+    if (!battery.healthy() || battery.has_failsafed()) {
+        control_sensors_enabled &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
     if (!initialised || ins.calibrating()) {

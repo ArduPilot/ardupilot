@@ -24,7 +24,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Copter class
  */
 Copter::Copter(void)
-    : DataFlash(fwver.fw_string, g.log_bitmask),
+    : DataFlash(g.log_bitmask),
     flight_modes(&g.flight_mode1),
     control_mode(STABILIZE),
     scaleLongDown(1),
@@ -32,7 +32,6 @@ Copter::Copter(void)
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
-    auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
     inertial_nav(ahrs),
     param_loader(var_info),
     flightmode(&mode_stabilize)

@@ -93,7 +93,7 @@ void loop(void)
 
     count++;
     if (count % 10000 == 0) {
-        hal.console->printf("%u ops\n", count);
+        hal.console->printf("%u ops\n", (unsigned)count);
     }
 }
 

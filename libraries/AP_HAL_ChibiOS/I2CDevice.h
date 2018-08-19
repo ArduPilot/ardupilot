@@ -24,11 +24,13 @@
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_I2C == TRUE
+
 #include "Semaphores.h"
 #include "Device.h"
 #include "shared_dma.h"
-
-#if HAL_USE_I2C == TRUE
 
 namespace ChibiOS {
 
@@ -36,11 +38,16 @@ class I2CBus : public DeviceBus {
 public:
     I2CConfig i2ccfg;
     uint8_t busnum;
-    bool i2c_started;
-    bool i2c_active;
+    uint32_t busclock;
+
+    // we need an additional lock in the dma_allocate and
+    // dma_deallocate functions to cope with 3-way contention as we
+    // have two DMA channels that we are handling with the shared_dma
+    // code
+    mutex_t dma_lock;
     
-    void dma_allocate(void);
-    void dma_deallocate(void);    
+    void dma_allocate(Shared_DMA *);
+    void dma_deallocate(Shared_DMA *);
     void dma_init(void);
     static void clear_all(void);
     static void clear_bus(ioline_t scl_line, uint8_t scl_af);
@@ -120,6 +127,21 @@ public:
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
+
+    /*
+      get mask of bus numbers for all configured I2C buses
+     */
+    uint32_t get_bus_mask(void) const override;
+
+    /*
+      get mask of bus numbers for all configured external I2C buses
+     */
+    uint32_t get_bus_mask_external(void) const override;
+
+    /*
+      get mask of bus numbers for all configured internal I2C buses
+     */
+    uint32_t get_bus_mask_internal(void) const override;
 };
 }
 

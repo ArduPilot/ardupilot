@@ -53,8 +53,6 @@ void Sub::init_joystick()
 void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
 {
 
-    int16_t channels[11];
-
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
     float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
     int16_t rpyCenter = 1500;
@@ -93,35 +91,35 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         rollTrim  =  y * rpyScale;
     }
 
-    channels[0] = constrain_int16(pitchTrim + rpyCenter,1100,1900); // pitch
-    channels[1] = constrain_int16(rollTrim  + rpyCenter,1100,1900); // roll
+    uint32_t tnow = AP_HAL::millis();
 
-    channels[2] = constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900); // throttle
-    channels[3] = constrain_int16(r*rpyScale+rpyCenter,1100,1900);                 // yaw
+    RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
+    RC_Channels::set_override(1, constrain_int16(rollTrim  + rpyCenter,1100,1900), tnow); // roll
+
+    RC_Channels::set_override(2, constrain_int16((z+zTrim)*throttleScale+throttleBase,1100,1900), tnow); // throttle
+    RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        channels[4] = constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900); // forward for ROV
-        channels[5] = constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+        RC_Channels::set_override(4, constrain_int16((x+xTrim)*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
+        RC_Channels::set_override(5, constrain_int16((y+yTrim)*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        channels[4] = constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900); // forward for ROV
-        channels[5] = constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900); // lateral for ROV
+        RC_Channels::set_override(4, constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow); // forward for ROV
+        RC_Channels::set_override(5, constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow); // lateral for ROV
     }
 
-    channels[6] = cam_pan;       // camera pan
-    channels[7] = cam_tilt;      // camera tilt
-    channels[8] = lights1;       // lights 1
-    channels[9] = lights2;       // lights 2
-    channels[10] = video_switch; // video switch
+    RC_Channels::set_override(6, cam_pan, tnow);       // camera pan
+    RC_Channels::set_override(7, cam_tilt, tnow);      // camera tilt
+    RC_Channels::set_override(8, lights1, tnow);       // lights 1
+    RC_Channels::set_override(9, lights2, tnow);       // lights 2
+    RC_Channels::set_override(10, video_switch, tnow); // video switch
 
     // Store old x, y, z values for use in input hold logic
     x_last = x;
     y_last = y;
     z_last = z;
-
-    hal.rcin->set_overrides(channels, 11);
 }
 
 void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
@@ -132,11 +130,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         if (motors.armed()) {
             init_disarm_motors();
         } else {
-            init_arm_motors(true);
+            init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
         }
         break;
     case JSButton::button_function_t::k_arm:
-        init_arm_motors(true);
+        init_arm_motors(AP_Arming::ArmingMethod::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
         init_disarm_motors();
@@ -168,9 +166,11 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
+#if MOUNT == ENABLED
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+#endif
         break;
     case JSButton::button_function_t::k_mount_tilt_up:
         cam_tilt = 1900;
@@ -680,17 +680,15 @@ void Sub::default_js_buttons()
 
 void Sub::set_neutral_controls()
 {
-    int16_t channels[11];
+    uint32_t tnow = AP_HAL::millis();
 
     for (uint8_t i = 0; i < 6; i++) {
-        channels[i] = 1500;
+        RC_Channels::set_override(i, 1500, tnow);
     }
 
     for (uint8_t i = 6; i < 11; i++) {
-        channels[i] = 0xffff;
+        RC_Channels::set_override(i, 0xffff, tnow);
     }
-
-    hal.rcin->set_overrides(channels, 10);
 
     // Clear pitch/roll trim settings
     pitchTrim = 0;

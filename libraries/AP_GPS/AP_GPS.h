@@ -22,6 +22,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RTC/AP_RTC.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -55,7 +56,6 @@ class AP_GPS
     friend class AP_GPS_NMEA;
     friend class AP_GPS_NOVA;
     friend class AP_GPS_PX4;
-    friend class AP_GPS_QURT;
     friend class AP_GPS_SBF;
     friend class AP_GPS_SBP;
     friend class AP_GPS_SBP2;
@@ -88,7 +88,6 @@ public:
         GPS_TYPE_UAVCAN = 9,
         GPS_TYPE_SBF   = 10,
         GPS_TYPE_GSOF  = 11,
-        GPS_TYPE_QURT  = 12,
         GPS_TYPE_ERB = 13,
         GPS_TYPE_MAV = 14,
         GPS_TYPE_NOVA = 15
@@ -144,10 +143,10 @@ public:
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
         float horizontal_accuracy;          ///< horizontal RMS accuracy estimate in m
         float vertical_accuracy;            ///< vertical RMS accuracy estimate in m
-        bool have_vertical_velocity:1;      ///< does GPS give vertical velocity? Set to true only once available.
-        bool have_speed_accuracy:1;         ///< does GPS give speed accuracy? Set to true only once available.
-        bool have_horizontal_accuracy:1;    ///< does GPS give horizontal position accuracy? Set to true only once available.
-        bool have_vertical_accuracy:1;      ///< does GPS give vertical position accuracy? Set to true only once available.
+        bool have_vertical_velocity;      ///< does GPS give vertical velocity? Set to true only once available.
+        bool have_speed_accuracy;         ///< does GPS give speed accuracy? Set to true only once available.
+        bool have_horizontal_accuracy;    ///< does GPS give horizontal position accuracy? Set to true only once available.
+        bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
 
         // all the following fields must only all be filled by RTK capable backend drivers
@@ -468,13 +467,13 @@ private:
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
-    uint8_t primary_instance:2;
+    uint8_t primary_instance;
 
     /// number of GPS instances present
-    uint8_t num_instances:2;
+    uint8_t num_instances;
 
     // which ports are locked
-    uint8_t locked_ports:2;
+    uint8_t locked_ports;
 
     // state of auto-detection process, per instance
     struct detect_state {
@@ -482,11 +481,9 @@ private:
         uint8_t current_baud;
         bool auto_detected_baud;
         struct UBLOX_detect_state ublox_detect_state;
-#if !HAL_MINIMIZE_FEATURES
         struct MTK_detect_state mtk_detect_state;
         struct MTK19_detect_state mtk19_detect_state;
         struct SIRF_detect_state sirf_detect_state;
-#endif // !HAL_MINIMIZE_FEATURES
         struct NMEA_detect_state nmea_detect_state;
         struct SBP_detect_state sbp_detect_state;
         struct SBP2_detect_state sbp2_detect_state;
@@ -518,8 +515,8 @@ private:
       in a RTCM data block
      */
     struct rtcm_buffer {
-        uint8_t fragments_received:4;
-        uint8_t sequence:5;
+        uint8_t fragments_received;
+        uint8_t sequence;
         uint8_t fragment_count;
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
@@ -551,12 +548,13 @@ private:
     // calculate the blended state
     void calc_blended_state(void);
 
+    bool should_df_log() const;
+
     // Auto configure types
     enum GPS_AUTO_CONFIG {
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
-
 };
 
 namespace AP {

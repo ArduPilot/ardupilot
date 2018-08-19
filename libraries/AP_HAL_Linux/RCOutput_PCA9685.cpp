@@ -133,7 +133,7 @@ void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
      * different from @freq_hz due to rounding/ceiling. We use ceil() rather
      * than round() so the resulting frequency is never greater than @freq_hz
      */
-    uint8_t prescale = ceil(_osc_clock / (4096 * freq_hz)) - 1;
+    uint8_t prescale = ceilf(_osc_clock / (4096 * freq_hz)) - 1;
     _frequency = _osc_clock / (4096 * (prescale + 1));
 
     /* Write prescale value to match frequency */

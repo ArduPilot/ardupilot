@@ -430,14 +430,14 @@ bool AP_InertialSensor_Revo::_accumulate(uint8_t *samples, uint8_t n_samples)
 }
 
 /*
-  when doing fast sampling the sensor gives us 8k samples/second. Every 2nd accel sample is a duplicate.
+  when doing sensor-rate sampling the sensor gives us 8k samples/second. Every 2nd accel sample is a duplicate.
 
   To filter this we first apply a 1p low pass filter at 188Hz, then we
   average over 8 samples to bring the data rate down to 1kHz. This
   gives very good aliasing rejection at frequencies well above what
   can be handled with 1kHz sample rates.
  */
-bool AP_InertialSensor_Revo::_accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples)
+bool AP_InertialSensor_Revo::_accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples)
 {
     int32_t tsum = 0;
     const int32_t clip_limit = AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS / _accel_scale;
@@ -557,7 +557,7 @@ void AP_InertialSensor_Revo::_read_fifo()
 
 
         if (_fast_sampling) {
-            if (!_accumulate_fast_sampling(rx, 1)) {
+            if (!_accumulate_sensor_rate_sampling(rx, 1)) {
 //                debug("stop at %u of %u", n_samples, bytes_read/MPU_SAMPLE_SIZE);
                 // break;  don't break before all items in queue will be readed
                 continue;

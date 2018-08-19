@@ -191,12 +191,12 @@ def check_package(cfg, env, libname):
 
 @conf
 def check_lttng(cfg, env):
+    if not cfg.options.enable_lttng:
+        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
+        return False
     if cfg.env.STATIC_LINKING:
         # lttng-ust depends on libdl which means it can't be used in a static build
         cfg.msg("Checking for 'lttng-ust':", 'disabled for static build', color='YELLOW')
-        return False
-    if cfg.options.disable_lttng:
-        cfg.msg("Checking for 'lttng-ust':", 'disabled', color='YELLOW')
         return False
 
     return check_package(cfg, env, 'lttng-ust')
@@ -223,3 +223,27 @@ def check_libdl(cfg, env):
     if ret:
         env.LIB += cfg.env['LIB_DL']
     return ret
+
+@conf
+def check_SFML(cfg, env):
+    if not cfg.options.enable_sfml:
+        cfg.msg("Checking for SFML graphics:", 'disabled', color='YELLOW')
+        return False
+    libs = ['sfml-graphics', 'sfml-window','sfml-system']
+    for lib in libs:
+        if not cfg.check(compiler='cxx', lib=lib, mandatory=False,
+                         global_define=True):
+            cfg.fatal("Missing SFML libraries - please install libsfml-dev")
+            return False
+    
+    # see if we need Graphics.hpp or Graphics.h
+    if not cfg.check(compiler='cxx',
+                     fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",
+                     msg="Checking for Graphics.hpp", mandatory=False):
+        if not cfg.check(compiler='cxx', fragment='''#include <SFML/Graphics.h>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_H",
+                         msg="Checking for Graphics.h", mandatory=False):
+            cfg.fatal("Missing SFML headers SFML/Graphics.hpp or SFML/Graphics.h")
+            return False
+    env.LIB += libs
+    return True
+

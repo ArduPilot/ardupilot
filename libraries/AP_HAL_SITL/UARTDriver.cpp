@@ -50,8 +50,15 @@ bool UARTDriver::_console;
 
 void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
+    if (_portNumber > ARRAY_SIZE(_sitlState->_uart_path)) {
+        AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
+    }
+
     const char *path = _sitlState->_uart_path[_portNumber];
 
+    // default to 1MBit
+    _uart_baudrate = 1000000U;
+    
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
@@ -67,6 +74,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcp:0:wait       // tcp listen on use base_port + 0
              tcpclient:192.168.2.15:5762
              uart:/dev/ttyUSB0:57600
+             sim:ParticleSensor_SDS021:
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
@@ -89,10 +97,21 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_path = strdup(args1);
             _uart_baudrate = baudrate;
             _uart_start_connection();
+        } else if (strcmp(devtype, "sim") == 0) {
+            ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
+            if (!_connected) {
+                _connected = true;
+                _fd = _sitlState->sim_fd(args1, args2);
+            }
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
         free(s);
+    }
+
+    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
+        _readbuffer.clear();
+        _writebuffer.clear();
     }
 
     _set_nonblocking(_fd);
@@ -147,7 +166,7 @@ size_t UARTDriver::write(uint8_t c)
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (txspace() <= (ssize_t)size) {
+    if (txspace() <= size) {
         size = txspace();
     }
     if (size <= 0) {
@@ -217,9 +236,17 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             fprintf(stderr, "socket failed - %s\n", strerror(errno));
             exit(1);
         }
+        ret = fcntl(_listen_fd, F_SETFD, FD_CLOEXEC);
+        if (ret == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+            exit(1);
+        }
 
         /* we want to be able to re-use ports quickly */
-        setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+        if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+            fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+            exit(1);
+        }
 
         fprintf(stderr, "bind port %u for %u\n",
                 (unsigned)ntohs(sockaddr.sin_port),
@@ -254,6 +281,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
         setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+        fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
     }
 }
@@ -290,6 +318,11 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     _fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_fd == -1) {
         fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
 
@@ -488,7 +521,32 @@ void UARTDriver::_timer_tick(void)
     }
     if (nread > 0) {
         _readbuffer.write((uint8_t *)buf, nread);
+        _receive_timestamp = AP_HAL::micros64();
     }
+}
+
+/*
+  return timestamp estimate in microseconds for when the start of
+  a nbytes packet arrived on the uart. This should be treated as a
+  time constraint, not an exact time. It is guaranteed that the
+  packet did not start being received after this time, but it
+  could have been in a system buffer before the returned time.
+  
+  This takes account of the baudrate of the link. For transports
+  that have no baudrate (such as USB) the time estimate may be
+  less accurate.
+  
+  A return value of zero means the HAL does not support this API
+*/
+uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
+{
+    uint64_t last_receive_us = _receive_timestamp;
+    if (_uart_baudrate > 0) {
+        // assume 10 bits per byte. 
+        uint32_t transport_time_us = (1000000UL * 10UL / _uart_baudrate) * (nbytes+available());
+        last_receive_us -= transport_time_us;
+    }
+    return last_receive_us;
 }
 
 #endif // CONFIG_HAL_BOARD

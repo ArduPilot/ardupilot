@@ -20,6 +20,7 @@ public:
 
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
+    virtual const char *get_custom_storage_directory() const { return nullptr;  }
 
     // get path to custom defaults file for AP_Param
     virtual const char* get_custom_defaults_file() const {
@@ -41,21 +42,17 @@ public:
     virtual enum safety_state safety_switch_state(void) { return SAFETY_NONE; }
 
     /*
-      set system clock in UTC microseconds
+      set HW RTC in UTC microseconds
      */
-    virtual void set_system_clock(uint64_t time_utc_usec) {}
+    virtual void set_hw_rtc(uint64_t time_utc_usec);
 
     /*
-      get system clock in UTC milliseconds
+      get system clock in UTC microseconds
      */
-    uint64_t get_system_clock_ms() const;
+    virtual uint64_t get_hw_rtc() const;
 
-    /*
-      get system time in UTC hours, minutes, seconds and milliseconds
-     */
-    void get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms) const;
-
-    uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms) const;
+    // overwrite bootloader (probably with one from ROMFS)
+    virtual bool flash_bootloader() { return false; }
 
     /*
       get system identifier (eg. serial number)
@@ -75,8 +72,7 @@ public:
         ToneAlarm Driver
     */
     virtual bool toneAlarm_init() { return false;}
-    virtual void toneAlarm_set_tune(uint8_t tune) {}
-    virtual void _toneAlarm_timer_tick() {}
+    virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
     /*
       return a stream for access to a system shell, if available
@@ -123,4 +119,5 @@ protected:
     // values until the vehicle code has fully started
     bool soft_armed = false;
     uint64_t capabilities = 0;
+
 };

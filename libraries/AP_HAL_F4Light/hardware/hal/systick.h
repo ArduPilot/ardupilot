@@ -77,7 +77,7 @@ void MemManage_Handler(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
 */
-void __attribute__((noreturn)) __error(uint32_t pc, uint32_t num, uint32_t lr);
+void __attribute__((noreturn)) __error(uint32_t pc, uint32_t num, uint32_t lr, uint32_t flag);
 void __attribute__((noreturn)) error_throb(uint32_t num);
 
 

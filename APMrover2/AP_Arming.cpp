@@ -19,34 +19,20 @@ bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
         const RC_Channel *channel = channels[i];
         const char *channel_name = channel_names[i];
         // check if radio has been calibrated
-        if (!channel->min_max_configured()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC %s not configured", channel_name);
-            }
-            return false;
-        }
         if (channel->get_radio_min() > 1300) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio min too high", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio min too high", channel_name);
             return false;
         }
         if (channel->get_radio_max() < 1700) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio max too low", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             return false;
         }
         if (channel->get_radio_trim() < channel->get_radio_min()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio trim below min", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
             return false;
         }
         if (channel->get_radio_trim() > channel->get_radio_max()) {
-            if (display_failure) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: %s radio trim above max", channel_name);
-            }
+            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
             return false;
         }
     }
@@ -77,7 +63,7 @@ bool AP_Arming_Rover::fence_checks(bool report)
 {
     // check fence is initialised
     const char *fail_msg = nullptr;
-    if (!_fence.pre_arm_check(fail_msg)) {
+    if (!rover.g2.fence.pre_arm_check(fail_msg)) {
         if (report && fail_msg != nullptr) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Fence : %s", fail_msg);
         }

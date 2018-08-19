@@ -74,7 +74,7 @@ void Copter::ModeSport::run()
     // State Machine Determination
     if (!motors->armed() || !motors->get_interlock()) {
         sport_state = Sport_MotorStopped;
-    } else if (takeoff_state.running || takeoff_triggered(target_climb_rate)) {
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
         sport_state = Sport_Takeoff;
     } else if (!ap.auto_armed || ap.land_complete) {
         sport_state = Sport_Landed;
@@ -106,8 +106,8 @@ void Copter::ModeSport::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
-        if (!takeoff_state.running) {
-            takeoff_timer_start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             set_land_complete(false);
             // clear i terms
@@ -115,7 +115,7 @@ void Copter::ModeSport::run()
         }
 
         // get take-off adjusted pilot and takeoff climb rates
-        takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -150,10 +150,7 @@ void Copter::ModeSport::run()
         attitude_control->input_euler_rate_roll_pitch_yaw(target_roll_rate, target_pitch_rate, target_yaw_rate);
 
         // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
-        }
+        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);

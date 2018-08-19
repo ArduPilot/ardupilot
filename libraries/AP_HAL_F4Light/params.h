@@ -75,7 +75,7 @@
 
 // common parameters for all boards
 #define F4LIGHT_HAL_VARINFO \
-    AP_GROUPINFO("MOTOR_LAYOUT", 1, AP_Param_Helper, _motor_layout, 0), \
+    AP_GROUPINFO("MOTOR_LAYOUT", 1, AP_Param_Helper, _motor_layout, MOTOR_LAYOUT_DEFAULT), \
     AP_GROUPINFO("SOFTSERIAL",   2, AP_Param_Helper, _use_softserial, 0), \
     AP_GROUPINFO("UART_SBUS",    3, AP_Param_Helper, _uart_sbus, 0), \
     AP_GROUPINFO("SERVO_MASK",   4, AP_Param_Helper, _servo_mask, 0), \

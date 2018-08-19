@@ -91,7 +91,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{"DF AllTypes 0.2", log_bitmask};
+    DataFlash_Class dataflash{log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
@@ -214,7 +214,6 @@ void DataFlashTest_AllTypes::setup(void)
 
     // Test
     hal.scheduler->delay(20);
-    dataflash.ShowDeviceInfo(hal.console);
 
     Log_Write_TypeMessages();
     Log_Write_TypeMessages_Log_Write();

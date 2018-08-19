@@ -69,48 +69,50 @@ Ardupilot is comprised of several parts, vehicles and boards. The list below
 contains the people that regularly contribute to the project and are responsible
 for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
 
-- [Andrew Tridgell](https://github.com/tridge)
+- [Andrew Tridgell](https://github.com/tridge):
   - ***Vehicle***: Plane, AntennaTracker
   - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
-- [Randy Mackay](https://github.com/rmackay9)
+- [Randy Mackay](https://github.com/rmackay9):
   - ***Vehicle***: Copter, AntennaTracker
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
-- [Tom Pittenger](https://github.com/magicrub)
+- [Tom Pittenger](https://github.com/magicrub):
   - ***Vehicle***: Plane
-- [Paul Riseborough](https://github.com/priseborough)
+- [Chris Olson](https://github.com/ChristopherOlson) and [Bill Geyer](https://github.com/bnsgeyer):
+  - ***Vehicle***: TradHeli
+- [Paul Riseborough](https://github.com/priseborough):
   - ***Subsystem***: AP_NavEKF2
   - ***Subsystem***: AP_NavEKF3
-- [Lucas De Marchi](https://github.com/lucasdemarchi)
+- [Lucas De Marchi](https://github.com/lucasdemarchi):
   - ***Subsystem***: Linux
-- [Peter Barker](https://github.com/peterbarker)
+- [Peter Barker](https://github.com/peterbarker):
   - ***Subsystem***: DataFlash
   - ***Subsystem***: Tools
-- [Michael du Breuil](https://github.com/WickedShell)
+- [Michael du Breuil](https://github.com/WickedShell):
   - ***Subsystem***: SMBus Batteries
   - ***Subsystem***: GPS
-- [Francisco Ferreira](https://github.com/oxinarf)
+- [Francisco Ferreira](https://github.com/oxinarf):
   - ***Bug Master***
-- [Matthias Badaire](https://github.com/badzz)
+- [Matthias Badaire](https://github.com/badzz):
   - ***Subsystem***: FRSky
-- [Eugene Shamaev](https://github.com/EShamaev)
+- [Eugene Shamaev](https://github.com/EShamaev):
   - ***Subsystem***: CAN bus
   - ***Subsystem***: UAVCAN
-- [Víctor Mayoral Vilches](https://github.com/vmayoral)
+- [Víctor Mayoral Vilches](https://github.com/vmayoral):
   - ***Board***: PXF, Erle-Brain 2, PXFmini
-- [Mirko Denecke](https://github.com/mirkix)
+- [Mirko Denecke](https://github.com/mirkix):
   - ***Board***: BBBmini, BeagleBone Blue, PocketPilot
-- [Georgii Staroselskii](https://github.com/staroselskii)
+- [Georgii Staroselskii](https://github.com/staroselskii):
   - ***Board***: NavIO
-- [Emile Castelnuovo](https://github.com/emilecastelnuovo)
+- [Emile Castelnuovo](https://github.com/emilecastelnuovo):
   - ***Board***: VRBrain
-- [Julien BERAUD](https://github.com/jberaud)
+- [Julien BERAUD](https://github.com/jberaud):
   - ***Board***: Bebop & Bebop 2
-- [Matt Lawrence](https://github.com/Pedals2Paddles)
+- [Matt Lawrence](https://github.com/Pedals2Paddles):
   - ***Vehicle***: 3DR Solo & Solo based vehicles
-- [Gustavo José de Sousa](https://github.com/guludo)
+- [Gustavo José de Sousa](https://github.com/guludo):
   - ***Subsystem***: Build system
-- [Craig Elder](https://github.com/CraigElder)
+- [Craig Elder](https://github.com/CraigElder):
   - ***Administration***: ArduPilot Technical Community Manager
-- [Jacob Walser](https://github.com/jaxxzer)
+- [Jacob Walser](https://github.com/jaxxzer):
   - ***Vehicle***: Sub

@@ -35,7 +35,6 @@ public:
 
     void update_pre_arm_check();
 
-    uint8_t instance() const { return state.instance; }
     enum Rotation orientation() const { return (Rotation)state.orientation.get(); }
     uint16_t distance_cm() const { return state.distance_cm; }
     uint16_t voltage_mv() const { return state.voltage_mv; }

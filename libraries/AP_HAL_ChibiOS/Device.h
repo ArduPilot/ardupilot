@@ -17,15 +17,19 @@
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
 #include "Semaphores.h"
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
+
 #include "Scheduler.h"
 #include "shared_dma.h"
+#include "hwdef/common/bouncebuffer.h"
 
 namespace ChibiOS {
 
 class DeviceBus {
 public:
-    DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY) :
-        thread_priority(_thread_priority) {}
+    DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY);
 
     struct DeviceBus *next;
     Semaphore semaphore;
@@ -37,7 +41,7 @@ public:
 
     void bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                             uint8_t *&buf_rx, uint16_t rx_len);
-    void bouncebuffer_rx_copy(uint8_t *buf_rx, uint16_t rx_len);
+    void bouncebuffer_finish(const uint8_t *buf_tx, uint8_t *buf_rx, uint16_t rx_len);
     
 private:
     struct callback_info {
@@ -52,10 +56,11 @@ private:
     AP_HAL::Device *hal_device;
 
     // support for bounce buffers for DMA-safe transfers
-    uint8_t *bounce_buffer_tx;
-    uint8_t *bounce_buffer_rx;
-    uint16_t bounce_buffer_tx_size;
-    uint16_t bounce_buffer_rx_size;
+    struct bouncebuffer_t *bounce_buffer_tx;
+    struct bouncebuffer_t *bounce_buffer_rx;
 };
 
 }
+
+#endif // I2C or SPI
+

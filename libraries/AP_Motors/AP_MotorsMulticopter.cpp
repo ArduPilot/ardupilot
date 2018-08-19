@@ -21,6 +21,7 @@
 
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -82,8 +83,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: PWM_TYPE
     // @DisplayName: Output PWM type
-    // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot or brushed motor output
-    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed
+    // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot, brushed or DShot motor output
+    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
@@ -175,6 +176,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // 38 RESERVED for BAT_POW_MAX
     
+    // @Param: BAT_IDX
+    // @DisplayName: Battery compensation index
+    // @Description: Which battery monitor should be used for doing compensation
+    // @Values: 0:First battery, 1:Second battery
+    // @User: Advanced
+    AP_GROUPINFO("BAT_IDX",  39, AP_MotorsMulticopter,  _batt_idx, 0),
+
     AP_GROUPEND
 };
 
@@ -182,16 +190,10 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
     _spool_mode(SHUT_DOWN),
-    _spin_up_ratio(0.0f),
     _lift_max(1.0f),
-    _throttle_limit(1.0f),
-    _throttle_thrust_max(0.0f),
-    _disarm_safety_timer(0)
+    _throttle_limit(1.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // disable all motors by default
-    memset(motor_enabled, false, sizeof(motor_enabled));
 
     // setup battery voltage filtering
     _batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
@@ -265,20 +267,26 @@ void AP_MotorsMulticopter::update_throttle_filter()
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
 float AP_MotorsMulticopter::get_current_limit_max_throttle()
 {
-    // return maximum if current limiting is disabled
-    if (_batt_current_max <= 0) {
+    AP_BattMonitor &battery = AP::battery();
+
+    if (_batt_current_max <= 0 || // return maximum if current limiting is disabled
+        !_flags.armed || // remove throttle limit if disarmed
+        !battery.has_current(_batt_idx)) { // no current monitoring is available
         _throttle_limit = 1.0f;
         return 1.0f;
     }
 
-    // remove throttle limit if disarmed
-    if (!_flags.armed) {
+    float _batt_resistance = battery.get_resistance(_batt_idx);
+
+    if (is_zero(_batt_resistance)) {
         _throttle_limit = 1.0f;
         return 1.0f;
     }
+
+    float _batt_current = battery.current_amps(_batt_idx);
 
     // calculate the maximum current to prevent voltage sag below _batt_voltage_min
-    float batt_current_max = MIN(_batt_current_max, _batt_current + (_batt_voltage-_batt_voltage_min)/_batt_resistance);
+    float batt_current_max = MIN(_batt_current_max, _batt_current + (battery.voltage(_batt_idx)-_batt_voltage_min)/_batt_resistance);
 
     float batt_current_ratio = _batt_current/batt_current_max;
 
@@ -316,7 +324,8 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 {
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
-    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage < 0.25f*_batt_voltage_min)) {
+    float _batt_voltage_resting_estimate = AP::battery().voltage_resting_estimate(_batt_idx);
+    if((_batt_voltage_max <= 0) || (_batt_voltage_min >= _batt_voltage_max) || (_batt_voltage_resting_estimate < 0.25f*_batt_voltage_min)) {
         _batt_voltage_filt.reset(1.0f);
         _lift_max = 1.0f;
         return;

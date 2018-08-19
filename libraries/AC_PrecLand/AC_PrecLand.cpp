@@ -97,19 +97,10 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 // Note that the Vector/Matrix constructors already implicitly zero
 // their values.
 //
-AC_PrecLand::AC_PrecLand(const AP_AHRS& ahrs, const AP_InertialNav& inav) :
-    _ahrs(ahrs),
-    _inav(inav),
-    _last_update_ms(0),
-    _target_acquired(false),
-    _last_backend_los_meas_ms(0),
-    _backend(nullptr)
+AC_PrecLand::AC_PrecLand()
 {
     // set parameters to defaults
     AP_Param::setup_object_defaults(this, var_info);
-
-    // other initialisation
-    _backend_state.healthy = false;
 }
 
 // init - perform any required initialisation of backends
@@ -159,10 +150,19 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
     // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
     _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
-    inertial_data_newest.inertialNavVelocity = _inav.get_velocity()*0.01f;
-    inertial_data_newest.inertialNavVelocityValid = _inav.get_filter_status().flags.horiz_vel;
+    Vector3f curr_vel;
+    nav_filter_status status;
+    if (!_ahrs.get_velocity_NED(curr_vel) || !_ahrs.get_filter_status(status)) {
+        inertial_data_newest.inertialNavVelocityValid = false;
+    } else {
+        inertial_data_newest.inertialNavVelocityValid = status.flags.horiz_vel;
+    }
+    curr_vel.z = -curr_vel.z;  // NED to NEU
+    inertial_data_newest.inertialNavVelocity = curr_vel;
+
     _inertial_history.push_back(inertial_data_newest);
 
     // update estimator of target position
@@ -183,9 +183,19 @@ bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
     if (!target_acquired()) {
         return false;
     }
-    ret.x = _target_pos_rel_out_NE.x*100.0f + _inav.get_position().x;
-    ret.y = _target_pos_rel_out_NE.y*100.0f + _inav.get_position().y;
+    Vector2f curr_pos;
+    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
+        return false;
+    }
+    ret.x = (_target_pos_rel_out_NE.x + curr_pos.x) * 100.0f;   // m to cm
+    ret.y = (_target_pos_rel_out_NE.y  + curr_pos.y) * 100.0f;  // m to cm
     return true;
+}
+
+void AC_PrecLand::get_target_position_measurement_cm(Vector3f& ret)
+{
+    ret = _target_pos_rel_meas_NED*100.0f;
+    return;
 }
 
 bool AC_PrecLand::get_target_position_relative_cm(Vector2f& ret)
@@ -271,7 +281,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 
             // Update if a new LOS measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
-                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
+                float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
                 if (!target_acquired()) {
                     // reset filter state
                     if (inertial_data_delayed.inertialNavVelocityValid) {
@@ -354,7 +364,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             }
 
             // Compute camera position relative to IMU
-            Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());
+            Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
             Vector3f cam_pos_ned = inertial_data_delayed.Tbn * (_cam_offset.get() - accel_body_offset);
 
             // Compute target position relative to IMU
@@ -378,6 +388,8 @@ void AC_PrecLand::run_output_prediction()
         _target_pos_rel_out_NE.x += _target_vel_rel_out_NE.x * inertial_data.dt;
         _target_pos_rel_out_NE.y += _target_vel_rel_out_NE.y * inertial_data.dt;
     }
+
+    const AP_AHRS &_ahrs = AP::ahrs();
 
     const Matrix3f& Tbn = _inertial_history.peek(_inertial_history.size()-1).Tbn;
     Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());

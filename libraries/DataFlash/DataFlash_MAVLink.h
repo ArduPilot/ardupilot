@@ -23,15 +23,19 @@ public:
     // constructor
     DataFlash_MAVLink(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
         DataFlash_Backend(front, writer),
-        _max_blocks_per_send_blocks(8),
-        _blockcount(32) // this may get reduced in Init if allocation fails
+        _max_blocks_per_send_blocks(8)
         ,_perf_packing(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DM_packing"))
-        { }
+        {
+            _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
+            // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
+        }
 
     // initialisation
     void Init() override;
 
-    bool logging_started() const override { return _logging_started; }
+    // in actual fact, we throw away everything until a client connects.
+    // This stops calls to start_new_log from the vehicles
+    bool logging_started() const override { return _initialised; }
 
     void stop_logging() override;
 
@@ -54,14 +58,6 @@ public:
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
     uint16_t get_num_logs(void) override { return 0; }
-    
-    void LogReadProcess(uint16_t log_num,
-                        uint16_t start_page, uint16_t end_page, 
-                        print_mode_fn printMode,
-                        AP_HAL::BetterStream *port) override {}
-    void DumpPageInfo(AP_HAL::BetterStream *port) override {}
-    void ShowDeviceInfo(AP_HAL::BetterStream *port) override {}
-    void ListAvailableLogs(AP_HAL::BetterStream *port) override {}
 
     void push_log_blocks() override;
 
@@ -143,7 +139,6 @@ private:
     
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
-    bool _logging_started;
     uint32_t _last_response_time;
     uint32_t _last_send_time;
     uint8_t _next_block_number_to_resend;
@@ -161,8 +156,8 @@ private:
     struct dm_block *next_block();
 
     void periodic_10Hz(uint32_t now) override;
-    void periodic_1Hz(uint32_t now) override;
-    void periodic_fullrate(uint32_t now) override;
+    void periodic_1Hz() override;
+    void periodic_fullrate() override;
     
     void stats_init();
     void stats_reset();
@@ -177,9 +172,6 @@ private:
      * re-opens one */
     uint16_t start_new_log(void) override {
         return 0;
-    }
-    bool ReadBlock(void *pkt, uint16_t size) override {
-        return false;
     }
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_errors;

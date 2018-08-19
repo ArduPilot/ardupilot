@@ -34,13 +34,6 @@ extern const AP_HAL::HAL& hal;
 
 AP_GPS_ERB::AP_GPS_ERB(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _msg_id(0),
-    _payload_length(0),
-    _payload_counter(0),
-    _fix_count(0),
-    _new_position(0),
-    _new_speed(0),
     next_fix(AP_GPS::NO_FIX)
 {
 }

@@ -20,6 +20,10 @@
 #define AP_MOTORS_HELI_DUAL_SERVO5_POS                60
 #define AP_MOTORS_HELI_DUAL_SERVO6_POS               180
 
+// collective control direction definitions
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_NORMAL        0
+#define AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_REVERSED      1
+
 // rsc function output channel
 #define AP_MOTORS_HELI_DUAL_RSC                     CH_8
 
@@ -54,8 +58,8 @@ public:
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test - spin a motor at the pwm value specified
-    void output_test(uint8_t motor_seq, int16_t pwm) override;
+    // output_test_seq - spin a motor at the pwm value specified
+    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
@@ -124,19 +128,13 @@ protected:
     AP_Int16        _servo4_pos;                    // angular location of swash servo #4
     AP_Int16        _servo5_pos;                    // angular location of swash servo #5
     AP_Int16        _servo6_pos;                    // angular location of swash servo #6
+    AP_Int8         _collective_direction;          // Collective control direction, normal or reversed
     AP_Int16        _swash1_phase_angle;            // phase angle correction for 1st swash.
     AP_Int16        _swash2_phase_angle;            // phase angle correction for 2nd swash.
     AP_Int8         _dual_mode;                     // which dual mode the heli is
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     AP_Float        _yaw_scaler;                    // scaling factor applied to the yaw mixing
-
-    SRV_Channel    *_swash_servo_1;
-    SRV_Channel    *_swash_servo_2;
-    SRV_Channel    *_swash_servo_3;
-    SRV_Channel    *_swash_servo_4;
-    SRV_Channel    *_swash_servo_5;
-    SRV_Channel    *_swash_servo_6;
 
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range

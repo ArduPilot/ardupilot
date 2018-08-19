@@ -35,6 +35,11 @@ static AP_HAL::OwnPtr<AP_HAL::Device> dev;
 #define CMD_SOFT_RESET     0x805D
 #define CMD_READ_ID        0xEFC8
 
+void setup(void);
+void loop(void);
+
+
+#ifdef HAL_INS_MPU60x0_NAME
 static void spi_init()
 {
     // SPI reads have flag 0x80 set
@@ -177,7 +182,7 @@ static void spi_init()
 
     spi_dev->get_semaphore()->give();
 }
-
+#endif
 
 /*
   send a 16 bit command to the baro
@@ -212,6 +217,7 @@ static bool read_calibration_data(void)
     return true;
 }
 
+#ifdef HAL_INS_MPU60x0_NAME
 // initialise baro on i2c
 static void i2c_init(void)
 {
@@ -255,6 +261,7 @@ static void i2c_init(void)
     }
     dev->get_semaphore()->give();
 }
+#endif
 
 void setup()
 {

@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
 
 #include "float.h"
@@ -301,14 +302,24 @@ public:
     ///
     void notify() const;
     
-    /// Save the current value of the variable to EEPROM.
+    /// Save the current value of the variable to storage, synchronous API
     ///
     /// @param  force_save     If true then force save even if default
     ///
     /// @return                True if the variable was saved successfully.
     ///
-    bool save(bool force_save=false);
+    void save_sync(bool force_save=false);
 
+    /// flush all pending parameter saves
+    /// used on reboot
+    static void flush(void);
+    
+    /// Save the current value of the variable to storage, async interface
+    ///
+    /// @param  force_save     If true then force save even if default
+    ///
+    void save(bool force_save=false);
+    
     /// Load the variable from EEPROM.
     ///
     /// @return                True if the variable was loaded successfully.
@@ -323,11 +334,11 @@ public:
     ///
     /// @return                False if any variable failed to load
     ///
-    static bool load_all(bool check_defaults_file=true);
+    static bool load_all();
 
     /// reoad the hal.util defaults file. Called after pointer parameters have been allocated
     ///
-    static void reload_defaults_file(bool panic_on_error=true);
+    static void reload_defaults_file(bool last_pass);
     
     static void load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info);
     
@@ -573,16 +584,16 @@ private:
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
-    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults, bool panic_on_error);
-    static bool read_param_defaults_file(const char *filename);
-    static bool load_defaults_file(const char *filename, bool panic_on_error);
+    static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
+    static bool read_param_defaults_file(const char *filename, bool last_pass);
+    static bool load_defaults_file(const char *filename, bool last_pass);
 #endif
 
     /*
       load defaults from embedded parameters
      */
-    static bool count_embedded_param_defaults(uint16_t &count, bool panic_on_error);
-    static void load_embedded_param_defaults(bool panic_on_error);
+    static bool count_embedded_param_defaults(uint16_t &count);
+    static void load_embedded_param_defaults(bool last_pass);
     
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
@@ -608,6 +619,18 @@ private:
     static const uint8_t        k_EEPROM_revision    = 6; ///< current format revision
 
     static bool _hide_disabled_groups;
+
+    // support for background saving of parameters. We pack it to reduce memory for the
+    // queue
+    struct PACKED param_save {
+        AP_Param *param;
+        bool force_save;
+    };
+    static ObjectBuffer<struct param_save> save_queue;
+    static bool registered_save_handler;
+
+    // background function for saving parameters
+    void save_io_handler(void);
 };
 
 /// Template class for scalar variables.
@@ -660,10 +683,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = fabsf((float)(_value - v)) < FLT_EPSILON;
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Combined set and save, but only does the save if the value if
@@ -671,12 +694,12 @@ public:
     /// scan(). This should only be used where we have not set() the
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
-    bool set_and_save_ifchanged(const T &v) {
+    void set_and_save_ifchanged(const T &v) {
         if (v == _value) {
-            return true;
+            return;
         }
         set(v);
-        return save(true);
+        save(true);
     }
 
     /// Conversion to T returns a reference to the value.
@@ -765,10 +788,10 @@ public:
 
     /// Combined set and save
     ///
-    bool set_and_save(const T &v) {
+    void set_and_save(const T &v) {
         bool force = (_value != v);
         set(v);
-        return save(force);
+        save(force);
     }
 
     /// Conversion to T returns a reference to the value.

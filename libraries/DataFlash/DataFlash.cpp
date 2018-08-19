@@ -15,6 +15,14 @@ DataFlash_Class *DataFlash_Class::_instance;
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef HAL_DATAFLASH_FILE_BUFSIZE 
+#define HAL_DATAFLASH_FILE_BUFSIZE  16
+#endif 
+
+#ifndef HAL_DATAFLASH_MAV_BUFSIZE 
+#define HAL_DATAFLASH_MAV_BUFSIZE  8
+#endif 
+
 const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: DataFlash Backend Storage type
@@ -27,7 +35,7 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @DisplayName: Maximum DataFlash File Backend buffer size (in kilobytes)
     // @Description: The DataFlash_File backend uses a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
     // @User: Standard
-    AP_GROUPINFO("_FILE_BUFSIZE",  1, DataFlash_Class, _params.file_bufsize,       16),
+    AP_GROUPINFO("_FILE_BUFSIZE",  1, DataFlash_Class, _params.file_bufsize,       HAL_DATAFLASH_FILE_BUFSIZE),
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
@@ -50,14 +58,20 @@ const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
 
+    // @Param: _MAV_BUFSIZE
+    // @DisplayName: Maximum DataFlash MAVLink Backend buffer size
+    // @Description: Maximum amount of memory to allocate to DataFlash-over-mavlink
+    // @User: Advanced
+    // @Units: kB
+    AP_GROUPINFO("_MAV_BUFSIZE",  5, DataFlash_Class, _params.mav_bufsize,       HAL_DATAFLASH_MAV_BUFSIZE),
+
     AP_GROUPEND
 };
 
 #define streq(x, y) (!strcmp(x, y))
 
-DataFlash_Class::DataFlash_Class(const char *firmware_string, const AP_Int32 &log_bitmask)
-    : _firmware_string(firmware_string)
-    , _log_bitmask(log_bitmask)
+DataFlash_Class::DataFlash_Class(const AP_Int32 &log_bitmask)
+    : _log_bitmask(log_bitmask)
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_instance != nullptr) {
@@ -82,10 +96,11 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     _structures = structures;
 
 #if defined(HAL_BOARD_LOG_DIRECTORY)
+ #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_File(*this,
                                                          message_writer,
@@ -97,25 +112,30 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             _next_backend++;
         }
     }
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT // restore dataflash logs
+ #elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT 
 
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
 
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
 
-            backends[_next_backend] = new DataFlash_Revo(*this, message_writer);
+  #if defined(BOARD_SDCARD_NAME) || defined(BOARD_DATAFLASH_FATFS)
+            backends[_next_backend] = new DataFlash_File(*this, message_writer, HAL_BOARD_LOG_DIRECTORY);
+  #else
+            backends[_next_backend] = new DataFlash_Revo(*this, message_writer); // restore dataflash logs
+  #endif
         }
 
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_Revo");
+            printf("Unable to open DataFlash_Revo");
         } else {
             _next_backend++;
         }
     }
-#endif
+ #endif
+#endif // HAL_BOARD_LOG_DIRECTORY
 
 #if DATAFLASH_MAVLINK_SUPPORT
     if (_params.backend_types == DATAFLASH_BACKEND_MAVLINK ||
@@ -125,7 +145,7 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             return;
         }
         DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart(_firmware_string);
+            new DFMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
             backends[_next_backend] = new DataFlash_MAVLink(*this,
                                                             message_writer);
@@ -234,14 +254,23 @@ bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure
     bool passed = true;
 
 #if DEBUG_LOG_STRUCTURES
-    Debug("offset=%d ID=%d NAME=%s\n", i, logstructure->msg_type, logstructure->name);
+    Debug("offset=%d ID=%d NAME=%s\n", offset, logstructure->msg_type, logstructure->name);
 #endif
 
-    // names must be null-terminated
-    if (logstructure->name[4] != '\0') {
-        Debug("Message name not NULL-terminated");
-        passed = false;
-    }
+    // fields must be null-terminated
+#define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
+    do {                                                                \
+        if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
+            Debug("Message " fieldname_s " not NULL-terminated or too long"); \
+            passed = false;                                             \
+        }                                                               \
+    } while (false)
+    CHECK_ENTRY(name, "name", LS_NAME_SIZE);
+    CHECK_ENTRY(format, "format", LS_FORMAT_SIZE);
+    CHECK_ENTRY(labels, "labels", LS_LABELS_SIZE);
+    CHECK_ENTRY(units, "units", LS_UNITS_SIZE);
+    CHECK_ENTRY(multipliers, "multipliers", LS_MULTIPLIERS_SIZE);
+#undef CHECK_ENTRY
 
     // ensure each message ID is only used once
     if (seen_ids[logstructure->msg_type]) {
@@ -522,38 +551,6 @@ uint16_t DataFlash_Class::get_num_logs(void) {
     return backends[0]->get_num_logs();
 }
 
-void DataFlash_Class::LogReadProcess(uint16_t log_num,
-                                     uint16_t start_page, uint16_t end_page,
-                                     print_mode_fn printMode,
-                                     AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->LogReadProcess(log_num, start_page, end_page, printMode, port);
-}
-void DataFlash_Class::DumpPageInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->DumpPageInfo(port);
-}
-void DataFlash_Class::ShowDeviceInfo(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ShowDeviceInfo(port);
-}
-void DataFlash_Class::ListAvailableLogs(AP_HAL::BetterStream *port) {
-    if (_next_backend == 0) {
-        // how were we called?!
-        return;
-    }
-    backends[0]->ListAvailableLogs(port);
-}
-
 /* we're started if any of the backends are started */
 bool DataFlash_Class::logging_started(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
@@ -571,11 +568,11 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
         FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_ERASE:
-        /* fall through */
+        FALLTHROUGH;
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
         break;
@@ -583,7 +580,8 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
 }
 
 void DataFlash_Class::periodic_tasks() {
-     FOR_EACH_BACKEND(periodic_tasks());
+    handle_log_send();
+    FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
@@ -633,7 +631,7 @@ uint32_t DataFlash_Class::num_dropped() const
 
 void DataFlash_Class::internal_error() const {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    abort();
+    AP_HAL::panic("Internal DataFlash error");
 #endif
 }
 
@@ -771,29 +769,32 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     log_write_fmts = f;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    char ls_name[LS_NAME_SIZE] = {};
+    char ls_format[LS_FORMAT_SIZE] = {};
+    char ls_labels[LS_LABELS_SIZE] = {};
+    char ls_units[LS_UNITS_SIZE] = {};
+    char ls_multipliers[LS_MULTIPLIERS_SIZE] = {};
     struct LogStructure ls = {
         f->msg_type,
         f->msg_len,
-        "",
-        "",
-        "",
-        "",
-        ""
+        ls_name,
+        ls_format,
+        ls_labels,
+        ls_units,
+        ls_multipliers
     };
-    memcpy((char*)ls.name, f->name, MIN(sizeof(ls.name), strlen(f->name)));
-    memcpy((char*)ls.format, f->fmt, MIN(sizeof(ls.format), strlen(f->fmt)));
-    memcpy((char*)ls.labels, f->labels, MIN(sizeof(ls.labels), strlen(f->labels)));
+    memcpy((char*)ls_name, f->name, MIN(sizeof(ls_name), strlen(f->name)));
+    memcpy((char*)ls_format, f->fmt, MIN(sizeof(ls_format), strlen(f->fmt)));
+    memcpy((char*)ls_labels, f->labels, MIN(sizeof(ls_labels), strlen(f->labels)));
     if (f->units != nullptr) {
-        memcpy((char*)ls.units, f->units, MIN(sizeof(ls.units), strlen(f->units)));
+        memcpy((char*)ls_units, f->units, MIN(sizeof(ls_units), strlen(f->units)));
     } else {
-        memset((char*)ls.units, '\0', sizeof(ls.units));
-        memset((char*)ls.units, '?', strlen(ls.format));
+        memset((char*)ls_units, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     if (f->mults != nullptr) {
-        memcpy((char*)ls.multipliers, f->mults, MIN(sizeof(ls.multipliers), strlen(f->mults)));
+        memcpy((char*)ls_multipliers, f->mults, MIN(sizeof(ls_multipliers), strlen(f->mults)));
     } else {
-        memset((char*)ls.multipliers, '\0', sizeof(ls.multipliers));
-        memset((char*)ls.multipliers, '?', strlen(ls.format));
+        memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     validate_structure(&ls, (int16_t)-1);
 #endif
@@ -834,6 +835,10 @@ int16_t DataFlash_Class::find_free_msg_type() const
     return -1;
 }
 
+/*
+ * It is assumed that logstruct's char* variables are valid strings of
+ * maximum lengths for those fields (given in LogStructure.h e.g. LS_NAME_SIZE)
+ */
 bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
     // find log structure information corresponding to msg_type:
@@ -849,23 +854,23 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
     }
 
     logstruct.msg_type = msg_type;
-    strncpy((char*)logstruct.name, f->name, sizeof(logstruct.name)); /* cast away the "const" (*gulp*) */
-    strncpy((char*)logstruct.format, f->fmt, sizeof(logstruct.format));
-    strncpy((char*)logstruct.labels, f->labels, sizeof(logstruct.labels));
+    strncpy((char*)logstruct.name, f->name, LS_NAME_SIZE);
+    strncpy((char*)logstruct.format, f->fmt, LS_FORMAT_SIZE);
+    strncpy((char*)logstruct.labels, f->labels, LS_LABELS_SIZE);
     if (f->units != nullptr) {
-        strncpy((char*)logstruct.units, f->units, sizeof(logstruct.units));
+        strncpy((char*)logstruct.units, f->units, LS_UNITS_SIZE);
     } else {
-        memset((char*)logstruct.units, '\0', sizeof(logstruct.units));
-        memset((char*)logstruct.units, '?', strlen(logstruct.format));
+        memset((char*)logstruct.units, '\0', LS_UNITS_SIZE);
+        memset((char*)logstruct.units, '?', MIN(LS_UNITS_SIZE,strlen(logstruct.format)));
     }
     if (f->mults != nullptr) {
-        strncpy((char*)logstruct.multipliers, f->mults, sizeof(logstruct.multipliers));
+        strncpy((char*)logstruct.multipliers, f->mults, LS_MULTIPLIERS_SIZE);
     } else {
-        memset((char*)logstruct.multipliers, '\0', sizeof(logstruct.multipliers));
-        memset((char*)logstruct.multipliers, '?', strlen(logstruct.format));
+        memset((char*)logstruct.multipliers, '\0', LS_MULTIPLIERS_SIZE);
+        memset((char*)logstruct.multipliers, '?', MIN(LS_MULTIPLIERS_SIZE, strlen(logstruct.format)));
         // special magic to set units/mults for TimeUS, by far and
         // away the most common first field
-        if (!strncmp(logstruct.labels, "TimeUS,", MIN(strlen(logstruct.labels), strlen("TimeUS,")))) {
+        if (!strncmp(logstruct.labels, "TimeUS,", MIN(LS_LABELS_SIZE, strlen("TimeUS,")))) {
             ((char*)(logstruct.units))[0] = 's';
             ((char*)(logstruct.multipliers))[0] = 'F';
         }
@@ -903,7 +908,11 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
         case 'Z' : len += sizeof(char[64]); break;
         case 'q' : len += sizeof(int64_t); break;
         case 'Q' : len += sizeof(uint64_t); break;
-        default: return -1;
+        default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            AP_HAL::panic("Unknown format specifier (%c)", fmt[i]);
+#endif
+            return -1;
         }
     }
     return len;

@@ -88,61 +88,55 @@ FLASH_IRQHandler:
 
 .thumb_func
 __default_exc:
+    cpsid i                     @ Disable global interrupts
+
+    ldr r1, BFAR                @ for debug, to see what happens
+    ldr r1, [r1]
+    ldr r1, CFSR
+    ldr r1, [r1]
+    ldr r1, HFSR
+    ldr r1, [r1]
+    ldr r1, DFSR
+    ldr r1, [r1]
+    ldr r1, AFSR
+    ldr r1, [r1]
+    ldr r1, SHCSR
+    ldr r1, [r1]
+    ldr r1, MMFAR
+    ldr r1, [r1]
+
+    ldr r2, NVIC_CCR            @ Enable returning to thread mode even if there are
+    mov r1 ,#1                  @ pending exceptions. See flag NONEBASETHRDENA - http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0337e/Cihcbadd.html
+    str r1, [r2]
+
     tst lr, #4
     ite eq
     mrseq r1, msp
     mrsne r1, psp 
  
     ldr r3, [r1, #24]           @ PC of exception - if access to wrong address
-    ldr r1, [r1, #20]           @ LR of exception - if call to wrong address
+    ldr r2, [r1, #20]           @ LR of exception - if call to wrong address
 
-    ldr r2, BFAR                @ for debug, to see what happens
-    ldr r2, [r2]
-    ldr r2, CFSR
-    ldr r2, [r2]
-    ldr r2, HFSR
-    ldr r2, [r2]
-    ldr r2, DFSR
-    ldr r2, [r2]
-    ldr r2, AFSR
-    ldr r2, [r2]
-    ldr r2, SHCSR
-    ldr r2, [r2]
-    ldr r2, MMFAR
-    ldr r2, [r2]
+    str r0, [r1]                @ exception number - to R0
+    str r3, [r1, #4]            @ PC of exception  - to R1
+    str r2, [r1, #8]            @ LR of exception  - to R2
+    str lr, [r1, #12]           @ exception code   - to R3
 
-    mov r12, r1
-    ldr r2, NVIC_CCR            @ Enable returning to thread mode even if there are
-    mov r1 ,#1                  @ pending exceptions. See flag NONEBASETHRDENA - http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0337e/Cihcbadd.html
-    str r1, [r2]
-    cpsid i                     @ Disable global interrupts
-
-    mov r1, #0
-    ldr r2, SYSTICK_CSR         @ Disable systick handler
-    str r1, [r2]
+    mov r3, #0
     ldr r2, MPU_CTRL            @ disable MPU
-    str r1, [r2]
-    
-    ldr r1, CPSR_MASK           @ Set default CPSR
-    mov r2, r12
-    push {r1}                   @                        SP+4
-    ldr r1, TARGET_PC           @ Set target pc
-    push {r1}                   @                        SP+8
-    push {r1}                   @ target LR - the same   SP+12
-    ldr r1, [sp, #12]           @ R0 of interrupted program 
-    push {r1}                   @  will be in R12        SP+16
-    ldr r1, [sp, #28]           @ R3 of interrupted program (12+16)
-    push {r1}                   @  will be in R3
-    push {r2}                   @ R2 - LR
-    push {r3}                   @ R1 - PC of exception
-    push {r0}                   @ R0 - exception code
+    str r3, [r2]
 
-    tst     lr, #4
-    ite eq
-    ldreq r1, EXC_RETURN        @ Return to thread mode with PSP
-    ldrne r1, EXC_RETURN        @ Return to thread mode with MSP
-    mov lr, r1
+    ldr r2, CPSR_MASK           @ Set CPSR to default
+    str r2, [r1,#28]
+
+    ldr r2, TARGET_PC           @ Set target pc
+    str r2, [r1,#24]
+
+    DSB
+    ISB
+    
     bx lr                       @ Exception exit
+
 
 
 .thumb_func

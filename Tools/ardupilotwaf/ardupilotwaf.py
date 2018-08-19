@@ -70,6 +70,12 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Radio',
     'AP_TempCalibration',
     'AP_VisualOdom',
+    'AP_BLHeli',
+    'AP_ROMFS',
+    'AP_Proximity',
+    'AP_Gripper',
+    'AP_RTC',
+    'AC_Sprayer',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -85,6 +91,9 @@ IGNORED_AP_LIBRARIES = [
 
 @conf
 def ap_get_all_libraries(bld):
+    if bld.env.BOOTLOADER:
+        # we don't need the full set of libraries for the bootloader build
+        return ['AP_HAL']
     libraries = []
     for lib_node in bld.srcnode.ant_glob('libraries/*', dir=True, src=False):
         name = lib_node.name
@@ -104,7 +113,6 @@ def ap_common_vehicle_libraries(bld):
 
     if bld.env.DEST_BINFMT == 'pe':
         libraries += [
-            'AP_Proximity',
             'AC_Fence',
         ]
 
@@ -381,6 +389,7 @@ def _select_programs_from_group(bld):
 def options(opt):
     opt.ap_groups = {
         'configure': opt.add_option_group('Ardupilot configure options'),
+        'linux': opt.add_option_group('Linux boards configure options'),
         'build': opt.add_option_group('Ardupilot build options'),
         'check': opt.add_option_group('Ardupilot check options'),
         'clean': opt.add_option_group('Ardupilot clean options'),
@@ -391,18 +400,16 @@ def options(opt):
     g.add_option('--program-group',
         action='append',
         default=[],
-        help='''
-Select all programs that go in <PROGRAM_GROUP>/ for the build. Example: `waf
---program-group examples` builds all examples. The special group "all" selects
-all programs.
+        help='''Select all programs that go in <PROGRAM_GROUP>/ for the build.
+Example: `waf --program-group examples` builds all examples. The
+special group "all" selects all programs.
 ''')
 
     g.add_option('--upload',
         action='store_true',
-        help='''
-Upload applicable targets to a connected device. Not all platforms may support
-this. Example: `waf copter --upload` means "build arducopter and upload it to
-my board".
+        help='''Upload applicable targets to a connected device. Not all
+platforms may support this. Example: `waf copter --upload` means "build
+arducopter and upload it to my board".
 ''')
 
     g = opt.ap_groups['check']
@@ -415,12 +422,12 @@ my board".
 
     g.add_option('--clean-all-sigs',
         action='store_true',
-        help='''
-Clean signatures for all tasks. By default, tasks that scan for implicit
-dependencies (like the compilation tasks) keep the dependency information
-across clean commands, so that that information is changed only when really
-necessary. Also, some tasks that don't really produce files persist their
-signature. This option avoids that behavior when cleaning the build.
+        help='''Clean signatures for all tasks. By default, tasks that scan for
+implicit dependencies (like the compilation tasks) keep the dependency
+information across clean commands, so that that information is changed
+only when really necessary. Also, some tasks that don't really produce
+files persist their signature. This option avoids that behavior when
+cleaning the build.
 ''')
 
 def build(bld):

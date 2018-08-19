@@ -226,9 +226,9 @@ void ToyMode::update()
     bool power_button = false;
     bool left_change = false;
     
-    uint16_t ch5_in = hal.rcin->read(CH_5);
-    uint16_t ch6_in = hal.rcin->read(CH_6);
-    uint16_t ch7_in = hal.rcin->read(CH_7);
+    uint16_t ch5_in = RC_Channels::get_radio_in(CH_5);
+    uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
+    uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
 
     if (copter.failsafe.radio || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
@@ -424,7 +424,7 @@ void ToyMode::update()
         if (throttle_high_counter >= TOY_LAND_ARM_COUNT) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: throttle arm");
             arm_check_compass();
-            if (!copter.init_arm_motors(true) && (flags & FLAG_UPGRADE_LOITER) && copter.control_mode == LOITER) {
+            if (!copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK) && (flags & FLAG_UPGRADE_LOITER) && copter.control_mode == LOITER) {
                 /*
                   support auto-switching to ALT_HOLD, then upgrade to LOITER once GPS available
                  */
@@ -433,7 +433,7 @@ void ToyMode::update()
 #if AC_FENCE == ENABLED
                     copter.fence.enable(false);
 #endif
-                    if (!copter.init_arm_motors(true)) {
+                    if (!copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
                         // go back to LOITER
                         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ALT_HOLD arm failed");
                         set_and_remember_mode(LOITER, MODE_REASON_TMODE);
@@ -625,7 +625,7 @@ void ToyMode::update()
 #if AC_FENCE == ENABLED
             copter.fence.enable(false);
 #endif
-            if (copter.init_arm_motors(true)) {
+            if (copter.init_arm_motors(AP_Arming::ArmingMethod::MAVLINK)) {
                 load_test.running = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Tmode: load_test on");
             } else {
@@ -715,7 +715,7 @@ void ToyMode::trim_update(void)
     }
     
     uint16_t chan[4];
-    if (hal.rcin->read(chan, 4) != 4) {
+    if (rc().get_radio_in(chan, 4) != 4) {
         trim.start_ms = 0;
         return;
     }
@@ -803,7 +803,7 @@ void ToyMode::action_arm(void)
         // we want GPS and checks are passing, arm and enable fence
         copter.fence.enable(true);
 #endif
-        copter.init_arm_motors(false);
+        copter.init_arm_motors(AP_Arming::ArmingMethod::RUDDER);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: GPS arming failed");
@@ -819,7 +819,7 @@ void ToyMode::action_arm(void)
         // non-GPS mode
         copter.fence.enable(false);
 #endif
-        copter.init_arm_motors(false);
+        copter.init_arm_motors(AP_Arming::ArmingMethod::RUDDER);
         if (!copter.motors->armed()) {
             AP_Notify::events.arming_failed = true;
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: non-GPS arming failed");
@@ -956,7 +956,7 @@ void ToyMode::handle_message(mavlink_message_t *msg)
         // immediately update AP_Notify recording flag
         AP_Notify::flags.video_recording = 1;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
         AP_Radio *radio = AP_Radio::instance();
         if (radio) {
             radio->set_wifi_channel(m.value);

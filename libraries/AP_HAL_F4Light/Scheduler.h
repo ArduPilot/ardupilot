@@ -104,6 +104,9 @@ extern "C" {
 
     void switchContext();
     void __do_context_switch();
+    void hal_try_kill_task_or_reboot(uint8_t n);
+    void hal_go_next_task();
+    void hal_stop_multitask();
 
     extern task_t *s_running; // running task 
     extern task_t *next_task; // task to run next
@@ -186,10 +189,8 @@ public:
     inline   uint32_t micros() {    return _micros(); }
     
     inline void register_timer_process(AP_HAL::MemberProc proc) { _register_timer_process(proc, 1000); }
-    inline void suspend_timer_procs(){} // nothing to do in multitask 
-    inline void resume_timer_procs() {}
 
-    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
+    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms) override;
     static void  _register_io_process(Handler h, Revo_IO_Flags flags);
     void          register_io_process(AP_HAL::MemberProc proc) { Revo_handler h = { .mp=proc }; _register_io_process(h.h, IO_PERIODIC); }
 
@@ -338,7 +339,7 @@ public:
         task->active=true;
         _forced_task = task; // force it, to not spent time for  search by priority
         context_switch_isr();
-  } 
+    } 
 #endif
 //]  
 
@@ -391,6 +392,10 @@ public:
     }
 
     static void SVC_Handler(uint32_t * svc_args); // many functions called via SVC for hardware serialization
+    
+    static void _try_kill_task_or_reboot(uint8_t n); // exception occures in armed state - try to kill current task
+    static void _go_next_task();
+    static void _stop_multitask();
 
     static volatile bool need_switch_task;   // should be public for access from C code
 //}
@@ -495,9 +500,7 @@ protected:
 private:
     static AP_HAL::Device::PeriodicHandle _register_timer_task(uint32_t period_us, Handler proc, F4Light::Semaphore *sem);
 
-    static AP_HAL::Proc _delay_cb;
     static void * _delay_cb_handle;
-    static uint16_t _min_delay_cb_ms;
     static bool _initialized;
 
     // ISR functions

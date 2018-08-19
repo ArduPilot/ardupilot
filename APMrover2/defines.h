@@ -13,44 +13,13 @@
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
-// CH 7 control
-enum ch7_option {
-    CH7_DO_NOTHING      = 0,
-    CH7_SAVE_WP         = 1,
-    CH7_LEARN_CRUISE    = 2,
-    CH7_ARM_DISARM      = 3,
-    CH7_MANUAL          = 4,
-    CH7_ACRO            = 5,
-    CH7_STEERING        = 6,
-    CH7_HOLD            = 7,
-    CH7_AUTO            = 8,
-    CH7_RTL             = 9,
-    CH7_SMART_RTL       = 10,
-    CH7_GUIDED          = 11
-};
-
 // HIL enumerations
 #define HIL_MODE_DISABLED 0
 #define HIL_MODE_SENSORS  1
 
-// Auto Pilot modes
-// ----------------
-enum mode {
-    MANUAL       = 0,
-    ACRO         = 1,
-    STEERING     = 3,
-    HOLD         = 4,
-    AUTO         = 10,
-    RTL          = 11,
-    SMART_RTL    = 12,
-    GUIDED       = 15,
-    INITIALISING = 16
-};
-
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
-#define FAILSAFE_EVENT_RC       (1<<2)
 
 //  Logging parameters
 #define LOG_THR_MSG             0x01
@@ -127,13 +96,6 @@ enum mode_reason_t {
     MODE_REASON_FENCE_BREACH,
 };
 
-// values used by the ap.ch7_opt and ap.ch8_opt flags
-enum aux_switch_pos {
-    AUX_SWITCH_LOW,
-    AUX_SWITCH_MIDDLE,
-    AUX_SWITCH_HIGH
-};
-
 enum pilot_steer_type_t {
     PILOT_STEER_TYPE_DEFAULT = 0,
     PILOT_STEER_TYPE_TWO_PADDLES = 1,
@@ -145,7 +107,8 @@ enum pilot_steer_type_t {
 enum frame_class {
     FRAME_UNDEFINED = 0,
     FRAME_ROVER = 1,
-    FRAME_BOAT = 2
+    FRAME_BOAT = 2,
+    FRAME_BALANCEBOT = 3,
 };
 
 #define AUX_SWITCH_PWM_TRIGGER_HIGH 1800   // pwm value above which the ch7 or ch8 option will be invoked

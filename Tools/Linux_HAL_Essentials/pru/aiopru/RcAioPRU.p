@@ -153,12 +153,12 @@
 #endif
 
 #ifdef POCKET
-#define RC_CH_1_PIN r30.t9
-#define RC_CH_2_PIN r30.t11
-#define RC_CH_3_PIN r30.t15
-#define RC_CH_4_PIN r30.t14
-#define RC_CH_5_PIN r30.t10
-#define RC_CH_6_PIN r30.t8
+#define RC_CH_1_PIN r30.t7
+#define RC_CH_2_PIN r30.t4
+#define RC_CH_3_PIN r30.t1
+#define RC_CH_4_PIN r30.t5
+#define RC_CH_5_PIN r30.t2
+#define RC_CH_6_PIN r30.t6
 #endif
 
 // RCOut enable bits

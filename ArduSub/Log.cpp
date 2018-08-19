@@ -5,7 +5,7 @@
 // Code to Write and Read packets from DataFlash log memory
 // Code to interact with the user to dump or erase logs
 
-void Sub::do_erase_logs(void)
+void Sub::do_erase_logs()
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
     DataFlash.EraseAll();
@@ -122,7 +122,7 @@ void Sub::Log_Write_MotBatt()
         time_us         : AP_HAL::micros64(),
         lift_max        : (float)(motors.get_lift_max()),
         bat_volt        : (float)(motors.get_batt_voltage_filt()),
-        bat_res         : (float)(motors.get_batt_resistance()),
+        bat_res         : (float)(battery.get_resistance()),
         th_limit        : (float)(motors.get_throttle_limit())
     };
     DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
@@ -274,28 +274,6 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
     DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-void Sub::Log_Write_Baro(void)
-{
-    if (!ahrs.have_ekf_logging()) {
-        DataFlash.Log_Write_Baro();
-    }
-}
-
-// log EKF origin and ahrs home to dataflash
-void Sub::Log_Write_Home_And_Origin()
-{
-    // log ekf origin if set
-    Location ekf_orig;
-    if (ahrs.get_origin(ekf_orig)) {
-        DataFlash.Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
-    }
-
-    // log ahrs home if set
-    if (ahrs.home_is_set()) {
-        DataFlash.Log_Write_Origin(LogOriginType::ahrs_home, ahrs.get_home());
-    }
-}
-
 // logs when baro or compass becomes unhealthy
 void Sub::Log_Sensor_Health()
 {
@@ -374,12 +352,12 @@ void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
     DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
-    Log_Write_Home_And_Origin();
+    ahrs.Log_Write_Home_And_Origin();
     gps.Write_DataFlash_Log_Startup_messages();
 }
 
 
-void Sub::log_init(void)
+void Sub::log_init()
 {
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
 }
@@ -391,7 +369,6 @@ void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
-void Sub::Log_Write_Startup() {}
 void Sub::Log_Write_Event(uint8_t id) {}
 void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
@@ -399,10 +376,9 @@ void Sub::Log_Write_Data(uint8_t id, int16_t value) {}
 void Sub::Log_Write_Data(uint8_t id, uint16_t value) {}
 void Sub::Log_Write_Data(uint8_t id, float value) {}
 void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
-void Sub::Log_Write_Baro(void) {}
-void Sub::Log_Write_Home_And_Origin() {}
 void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
+void Sub::Log_Write_Vehicle_Startup_Messages() {}
 
 #if OPTFLOW == ENABLED
 void Sub::Log_Write_Optflow() {}

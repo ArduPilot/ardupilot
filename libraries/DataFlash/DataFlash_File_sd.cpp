@@ -46,18 +46,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
     DataFlash_Backend(front, writer),
     _write_fd(File()),
     _read_fd(File()),
-    _read_fd_log_num(0),
-    _read_offset(0),
-    _write_offset(0),
-    _open_error(false),
     _log_directory(log_directory),
-    _cached_oldest_log(0),
-    _last_oldest_log(0),
     _writebuf(0),
-    _writebuf_chunk(4096),
-    _last_write_time(0),
-    has_data(false),
-    _busy(false)
+    _writebuf_chunk(4096)
 {}
 
 
@@ -94,7 +85,7 @@ void DataFlash_File::Init()
         if (!SD.mkdir(_log_directory)) {
             
             printf("Failed to create log directory %s: %s\n", _log_directory, SD.strError(SD.lastError));
-            gcs().send_text(MAV_SEVERITY_WARNING,"Failed to create log directory %s: %s\n", _log_directory, SD.strError(SD.lastError));
+            gcs().send_text(MAV_SEVERITY_WARNING,"Failed to create log directory %s: %s", _log_directory, SD.strError(SD.lastError));
             _log_directory="0:";
         }
     }
@@ -140,7 +131,7 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz(const uint32_t now)
+void DataFlash_File::periodic_1Hz()
 {
     if (!(_write_fd) || !_initialised || _open_error || _busy) return; // too early
 
@@ -151,12 +142,13 @@ void DataFlash_File::periodic_1Hz(const uint32_t now)
         // likely to cause a crash.
 //        _write_fd.close();
         _write_fd.sync();
-        printf("\nLoging stopped\n");
+        printf("\nLoging aborted\n");
+        _open_error = true;
         _initialised = false;
     }
 }
 
-void DataFlash_File::periodic_fullrate(const uint32_t now)
+void DataFlash_File::periodic_fullrate()
 {
     DataFlash_Backend::push_log_blocks();
 }
@@ -312,7 +304,7 @@ void DataFlash_File::Prep_MinSpace()
 #elif defined(BOARD_SDCARD_CS_PIN)
                 if(hal_param_helper->_sd_format){
                     printf("error getting free space, formatting!\n");
-                    gcs().send_text(MAV_SEVERITY_WARNING,"error getting free space, formatting!\n");
+                    gcs().send_text(MAV_SEVERITY_WARNING,"error getting free space, formatting!");
                     SD.format(_log_directory);
                     return;
                 }
@@ -508,24 +500,6 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     semaphore->give();
     return true;
 }
-
-/*
-  read a packet. The header bytes have already been read.
-*/
-bool DataFlash_File::ReadBlock(void *pkt, uint16_t size)
-{
-    if (!(_read_fd) || !_initialised || _open_error) {
-        return false;
-    }
-
-    memset(pkt, 0, size);
-    if (_read_fd.read(pkt, size) != size) {
-        return false;
-    }
-    _read_offset += size;
-    return true;
-}
-
 
 /*
   find the highest log number
@@ -813,13 +787,20 @@ uint16_t DataFlash_File::start_new_log(void)
         // opening failed
         printf("Log open fail for %s: %s\n",fname, SD.strError(SD.lastError));
         free(fname);
-
+        if(SD.lastError == FR_DISK_ERR) {
+                _initialised = false; // no space
+                _open_error = true;   // don't try any more
+                printf("\nLoging aborted\n");
+                return 0xFFFF;
+        }
+        
         log_num++;                          // if not at end - try to open next log
             
         if (log_num >= MAX_LOG_FILES) {
             log_num = 1;
             if(was_ovf) {
                 _initialised = false; // no space
+                _open_error = true;   // don't try any more
                 printf("\nLoging stopped\n");
                 return 0xFFFF;
             }
@@ -851,142 +832,6 @@ uint16_t DataFlash_File::start_new_log(void)
 
     return log_num;
 }
-
-/*
-  Read the log and print it on port
-*/
-void DataFlash_File::LogReadProcess(const uint16_t list_entry,
-                                    uint16_t start_page, uint16_t end_page, 
-                                    print_mode_fn print_mode,
-                                    AP_HAL::BetterStream *port)
-{
-    uint8_t log_step = 0;
-    if (!_initialised || _open_error) {
-        return;
-    }
-
-    const uint16_t log_num = _log_num_from_list_entry(list_entry);
-    if (log_num == 0) {
-        return;
-    }
-
-    if (_read_fd) {
-        _read_fd.close();
-    }
-    char *fname = _log_file_name(log_num);
-    if (fname == nullptr) {
-        return;
-    }
-    _read_fd = SD.open(fname, O_RDONLY);
-    free(fname);
-    if (!(_read_fd)) {
-        return;
-    }
-    _read_fd_log_num = log_num;
-    _read_offset = 0;
-    if (start_page != 0) {
-        if (!_read_fd.seek(start_page * DATAFLASH_PAGE_SIZE)) {
-            _read_fd.close();
-            return;
-        }
-        _read_offset = start_page * DATAFLASH_PAGE_SIZE;
-    }
-
-    uint8_t log_counter = 0;
-
-    while (true) {
-        uint8_t data;
-        if (_read_fd.read(&data, 1) != 1) {
-            // reached end of file
-            break;
-        }
-        _read_offset++;
-
-        // This is a state machine to read the packets
-        switch(log_step) {
-            case 0:
-                if (data == HEAD_BYTE1) {
-                    log_step++;
-                }
-                break;
-
-            case 1:
-                if (data == HEAD_BYTE2) {
-                    log_step++;
-                } else {
-                    log_step = 0;
-                }
-                break;
-
-            case 2:
-                log_step = 0;
-                _print_log_entry(data, print_mode, port);
-                log_counter++;
-                break;
-        }
-        if (_read_offset >= (end_page+1) * DATAFLASH_PAGE_SIZE) {
-            break;
-        }
-    }
-
-    _read_fd.close();
-}
-
-/*
-  this is a lot less verbose than the block interface. Dumping 2Gbyte
-  of logs a page at a time isn't so useful. Just pull the SD card out or mount FC as massStorage
-  and look at it on your PC
- */
-void DataFlash_File::DumpPageInfo(AP_HAL::BetterStream *port)
-{
-    port->printf("DataFlash: num_logs=%u\n", (unsigned)get_num_logs());    
-}
-
-void DataFlash_File::ShowDeviceInfo(AP_HAL::BetterStream *port)
-{
-    port->printf("DataFlash logs stored in %s\n", _log_directory);
-}
-
-
-/*
-  list available log numbers
- */
-void DataFlash_File::ListAvailableLogs(AP_HAL::BetterStream *port)
-{
-    uint16_t num_logs = get_num_logs();
-
-    if (num_logs == 0) {
-        port->printf("\nNo logs\n\n");
-        return;
-    }
-    port->printf("\n%u logs\n", (unsigned)num_logs);
-
-    for (uint16_t i=1; i<=num_logs; i++) {
-        uint16_t log_num = _log_num_from_list_entry(i);
-        char *filename = _log_file_name(log_num);
-
-
-        if (filename != nullptr) {
-            if(file_exists(filename)) {
-                    uint32_t time=_get_log_time(log_num);
-                    struct tm *tm = gmtime((const time_t*)&time);
-                    port->printf("Log %u in %s of size %u %u/%u/%u %u:%u\n",
-                                   (unsigned)i,
-                                   filename,
-                                   (unsigned)_get_log_size(log_num),
-                                   (unsigned)tm->tm_year+1900,
-                                   (unsigned)tm->tm_mon+1,
-                                   (unsigned)tm->tm_mday,
-                                   (unsigned)tm->tm_hour,
-                                   (unsigned)tm->tm_min);
-                
-            }
-            free(filename);
-        }
-    }
-    port->println();    
-}
-
 
 void DataFlash_File::_io_timer(void)
 {
@@ -1033,7 +878,7 @@ void DataFlash_File::_io_timer(void)
     if (nwritten <= 0) {
         FRESULT err=SD.lastError;
         printf("\nLog write %ld bytes fails: %s\n",nbytes, SD.strError(err));
-        gcs().send_text(MAV_SEVERITY_WARNING,"Log write %ld bytes fails: %s\n",nbytes, SD.strError(err));
+        gcs().send_text(MAV_SEVERITY_WARNING,"Log write %ld bytes fails: %s",nbytes, SD.strError(err));
 //        stop_logging();
         _write_fd.close();
 #if defined(BOARD_DATAFLASH_FATFS)
@@ -1055,6 +900,13 @@ void DataFlash_File::_io_timer(void)
                 }
             }
         } else 
+#else
+        if(FR_INT_ERR == err || FR_NO_FILESYSTEM == err || FR_INVALID_OBJECT == err) { // internal error - bad filesystem
+            gcs().send_text(MAV_SEVERITY_INFO, "logging cancelled");
+            _initialised = false;
+            _open_error = true;
+        } else 
+                
 #endif
         {
             _busy = true; // Prep_MinSpace requires a long time and 1s task will kill process

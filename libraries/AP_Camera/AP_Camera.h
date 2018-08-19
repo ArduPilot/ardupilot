@@ -32,20 +32,23 @@ class AP_Camera {
 
 public:
     AP_Camera(AP_Relay *obj_relay, uint32_t _log_camera_bit, const struct Location &_loc, const AP_AHRS &_ahrs)
-        : _trigger_counter(0) // count of number of cycles shutter has been held open
-        , _image_index(0)
-        , log_camera_bit(_log_camera_bit)
+        : log_camera_bit(_log_camera_bit)
         , current_loc(_loc)
         , ahrs(_ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
         _apm_relay = obj_relay;
+        _singleton = this;
     }
 
     /* Do not allow copies */
     AP_Camera(const AP_Camera &other) = delete;
     AP_Camera &operator=(const AP_Camera&) = delete;
 
+    // get singleton instance
+    static AP_Camera *get_singleton() {
+        return _singleton;
+    }
 
     // MAVLink methods
     void            control_msg(const mavlink_message_t* msg);
@@ -73,6 +76,9 @@ public:
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
 private:
+
+    static AP_Camera *_singleton;
+
     AP_Int8         _trigger_type;      // 0:Servo,1:Relay
     AP_Int8         _trigger_duration;  // duration in 10ths of a second that the camera shutter is held open
     AP_Int8         _relay_on;          // relay value to trigger camera
@@ -122,10 +128,14 @@ private:
     // should be called at 50hz from main program
     void trigger_pic_cleanup();
 
-    // check if trigger pin has fired
-    bool check_trigger_pin(void);
+    // check if feedback pin has fired
+    bool check_feedback_pin(void);
 
     // return true if we are using a feedback pin
     bool using_feedback_pin(void) const { return _feedback_pin > 0; }
 
+};
+
+namespace AP {
+    AP_Camera *camera();
 };

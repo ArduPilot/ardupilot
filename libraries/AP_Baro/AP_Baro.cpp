@@ -20,7 +20,9 @@
 #include "AP_Baro.h"
 
 #include <utility>
+#include <stdio.h>
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -38,18 +40,15 @@
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-#include "AP_Baro_qflight.h"
-#endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include "AP_Baro_QURT.h"
-#endif
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
+#ifndef HAL_BARO_FILTER_DEFAULT
+ #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -136,6 +135,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // Slot 12 used to be TEMP3
 #endif
 
+    // @Param: FLTR_RNG
+    // @DisplayName: Range in which sample is accepted
+    // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    AP_GROUPINFO("FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -156,6 +163,8 @@ AP_Baro::AP_Baro()
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Calibrating barometer");
+
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
@@ -222,6 +231,7 @@ void AP_Baro::calibrate(bool save)
     // panic if all sensors are not calibrated
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
             return;
         }
     }
@@ -287,7 +297,7 @@ float AP_Baro::get_EAS2TAS(void)
     // provides a more consistent reading then trying to estimate a complete
     // ISA model atmosphere
     float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
-    _EAS2TAS = safe_sqrt(AIR_DENSITY_SEA_LEVEL / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK)));
+    _EAS2TAS = safe_sqrt(SSL_AIR_DENSITY / ((float)get_pressure() / (ISA_GAS_CONSTANT * tempK)));
     _last_altitude_EAS2TAS = altitude;
     return _EAS2TAS;
 }
@@ -484,6 +494,11 @@ void AP_Baro::init(void)
                                             std::move(hal.i2c_mgr->get_device(1, 0x63)),
                                             std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME))));
         break;
+
+    case AP_BoardConfig::PX4_BOARD_FMUV5:
+        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_NAME))));
+        break;
         
     default:
         break;
@@ -521,12 +536,6 @@ void AP_Baro::init(void)
 #elif HAL_BARO_DEFAULT == HAL_BARO_DPS280_I2C
     ADD_BACKEND(AP_Baro_DPS280::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_DPS280_I2C_BUS, HAL_BARO_DPS280_I2C_ADDR))));
-#elif HAL_BARO_DEFAULT == HAL_BARO_QFLIGHT
-    drivers[0] = new AP_Baro_QFLIGHT(*this);
-    _num_drivers = 1;
-#elif HAL_BARO_DEFAULT == HAL_BARO_QURT
-    drivers[0] = new AP_Baro_QURT(*this);
-    _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_LPS25H
 	ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_LPS25H_I2C_BUS, HAL_BARO_LPS25H_I2C_ADDR))));
@@ -547,6 +556,21 @@ void AP_Baro::init(void)
                                       std::move(hal.spi->get_device(HAL_BARO_LPS22H_NAME))));
 #endif
 
+#if defined(BOARD_I2C_BUS_EXT) && CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
+    ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_MS5611_I2C_ADDR))));
+
+    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR))));
+  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
+    ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP280_I2C_ADDR_ALT))));
+  #endif
+
+    ADD_BACKEND(AP_Baro_BMP085::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(BOARD_I2C_BUS_EXT, HAL_BARO_BMP085_I2C_ADDR))));
+#endif
+
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -558,14 +582,43 @@ void AP_Baro::init(void)
 #else
         ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                           std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_MS5611_I2C_ADDR))));
+
+ #if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT // we don't know which baro user will solder
+
+        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR))));
+  #ifdef HAL_BARO_BMP280_I2C_ADDR_ALT
+        ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP280_I2C_ADDR_ALT))));
+  #endif
+        ADD_BACKEND(AP_Baro_BMP085::probe(*this,
+                                          std::move(hal.i2c_mgr->get_device(_ext_bus, HAL_BARO_BMP085_I2C_ADDR))));
+ #endif                                         
 #endif
     }
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
     }
+#endif
 }
 
+bool AP_Baro::should_df_log() const
+{
+    DataFlash_Class *instance = DataFlash_Class::instance();
+    if (instance == nullptr) {
+        return false;
+    }
+    if (_log_baro_bit == (uint32_t)-1) {
+        return false;
+    }
+    if (!instance->should_log(_log_baro_bit)) {
+        return false;
+    }
+    return true;
+}
 
 /*
   call update on all drivers
@@ -632,6 +685,11 @@ void AP_Baro::update(void)
                 break;
             }
         }
+    }
+
+    // logging
+    if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
+        DataFlash_Class::instance()->Log_Write_Baro();
     }
 }
 

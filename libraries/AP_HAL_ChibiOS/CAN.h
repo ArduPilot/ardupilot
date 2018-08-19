@@ -21,7 +21,7 @@
 
 #if HAL_WITH_UAVCAN
 
-#define UAVCAN_STM32_LOG(fmt, ...)  hal.console->printf("CANManager: " fmt "\n", ##__VA_ARGS__)
+#define CAN_STM32_LOG(fmt, ...)  hal.console->printf("CANManager: " fmt "\n", ##__VA_ARGS__)
 
 #include <uavcan/uavcan.hpp>
 #include <uavcan/time.hpp>
@@ -30,13 +30,9 @@
 #include <uavcan_stm32/clock.hpp>
 #include <uavcan_stm32/can.hpp>
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
-
 #define MAX_NUMBER_OF_CAN_INTERFACES    2
 #define MAX_NUMBER_OF_CAN_DRIVERS       2
 #define CAN_STM32_RX_QUEUE_SIZE         64
-class AP_UAVCAN;
-using namespace uavcan_stm32;
 
 namespace ChibiOS {
 /**
@@ -68,15 +64,9 @@ public:
     bool is_initialized() override;
     void initialized(bool val) override;
 
-    AP_UAVCAN *get_UAVCAN(void) override;
-    void set_UAVCAN(AP_UAVCAN *uavcan) override;
-    void _timer_tick();
-
 private:
-    AP_UAVCAN *p_uavcan;
     bool initialized_;
-    uint32_t bitrate_;
-    CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
+    uavcan_stm32::CanInitHelper<CAN_STM32_RX_QUEUE_SIZE> can_helper;
 };
 
 }

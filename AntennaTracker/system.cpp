@@ -14,8 +14,8 @@ void Tracker::init_tracker()
     serial_manager.init_console();
 
     hal.console->printf("\n\nInit %s\n\nFree RAM: %u\n",
-                        fwver.fw_string,
-                        hal.util->available_memory());
+                        AP::fwversion().fw_string,
+                        (unsigned)hal.util->available_memory());
 
     // Check the EEPROM format version before loading any parameters from EEPROM
     load_parameters();
@@ -40,18 +40,13 @@ void Tracker::init_tracker()
 #endif
 
     // initialise notify
-    notify.init(false);
+    notify.init();
     AP_Notify::flags.pre_arm_check = true;
     AP_Notify::flags.pre_arm_gps_check = true;
-    AP_Notify::flags.failsafe_battery = false;
 
     // init baro before we start the GCS, so that the CLI baro test works
+    barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.init();
-
-    // we start by assuming USB connected, as we initialed the serial
-    // port with SERIAL0_BAUD. check_usb_mux() fixes this if need be.    
-    usb_connected = true;
-    check_usb_mux();
 
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
@@ -79,7 +74,7 @@ void Tracker::init_tracker()
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
 
-    init_barometer(true);
+    barometer.calibrate();
 
     // initialise DataFlash library
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
@@ -157,34 +152,15 @@ void Tracker::set_home(struct Location temp)
 {
     set_home_eeprom(temp);
     current_loc = temp;
-    gcs().send_home(temp);
+
+    // check EKF origin has been set
     Location ekf_origin;
     if (ahrs.get_origin(ekf_origin)) {
-        gcs().send_ekf_origin(ekf_origin);
-    }
-}
-
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Tracker::set_ekf_origin(const Location& loc)
-{
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
+        ahrs.set_home(temp);
     }
 
-    // check EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
-
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
+    gcs().send_home();
+    gcs().send_ekf_origin();
 }
 
 void Tracker::arm_servos()
@@ -235,17 +211,6 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
 
 	// log mode change
 	DataFlash.Log_Write_Mode(control_mode, reason);
-}
-
-void Tracker::check_usb_mux(void)
-{
-    bool usb_check = hal.gpio->usb_connected();
-    if (usb_check == usb_connected) {
-        return;
-    }
-
-    // the user has switched to/from the telemetry port
-    usb_connected = usb_check;
 }
 
 /*

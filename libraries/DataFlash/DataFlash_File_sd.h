@@ -45,16 +45,9 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data);
     uint16_t get_num_logs() override;
     uint16_t start_new_log(void) override;
-    void LogReadProcess(const uint16_t log_num,
-                        uint16_t start_page, uint16_t end_page, 
-                        print_mode_fn print_mode,
-                        AP_HAL::BetterStream *port);
-    void DumpPageInfo(AP_HAL::BetterStream *port);
-    void ShowDeviceInfo(AP_HAL::BetterStream *port);
-    void ListAvailableLogs(AP_HAL::BetterStream *port);
 
-    void periodic_1Hz(const uint32_t now) override;
-    void periodic_fullrate(const uint32_t now);
+    void periodic_1Hz() override;
+    void periodic_fullrate();
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const;
@@ -84,11 +77,6 @@ private:
 
     uint16_t _cached_oldest_log;
     uint16_t _last_oldest_log;
-
-    /*
-      read a block
-    */
-    bool ReadBlock(void *pkt, uint16_t size) override;
 
     uint16_t _log_num_from_list_entry(const uint16_t list_entry);
 

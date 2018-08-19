@@ -48,11 +48,13 @@ uint8_t RCInput::num_channels()
     return _num_channels;
 }
 
+void RCInput::set_num_channels(uint8_t num)
+{
+    _num_channels = num;
+}
+
 uint16_t RCInput::read(uint8_t ch)
 {
-    if (_override[ch]) {
-        return _override[ch];
-    }
     if (ch >= _num_channels) {
         return 0;
     }
@@ -67,39 +69,6 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     }
     return len;
 }
-
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
-{
-    bool res = false;
-    if(len > LINUX_RC_INPUT_NUM_CHANNELS){
-        len = LINUX_RC_INPUT_NUM_CHANNELS;
-    }
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (override < 0) return false; /* -1: no change. */
-    if (channel < LINUX_RC_INPUT_NUM_CHANNELS) {
-        _override[channel] = override;
-        if (override != 0) {
-            rc_input_count++;
-            return true;
-        }
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < LINUX_RC_INPUT_NUM_CHANNELS; i++) {
-       _override[i] = 0;
-    }
-}
-
 
 /*
   process a PPM-sum pulse of the given width
@@ -312,6 +281,14 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
     return;
 reset:
     memset(&dsm_state, 0, sizeof(dsm_state));
+}
+
+void RCInput::_process_pwm_pulse(uint16_t channel, uint16_t width_s0, uint16_t width_s1)
+{
+    if (channel < _num_channels) {
+        _pwm_values[channel] = width_s1; // range: 700usec ~ 2300usec
+        rc_input_count++;
+    }
 }
 
 /*

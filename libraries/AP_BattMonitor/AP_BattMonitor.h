@@ -37,7 +37,17 @@ class AP_BattMonitor
     friend class AP_BattMonitor_UAVCAN;
 
 public:
-    AP_BattMonitor(uint32_t log_battery_bit);
+
+    // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
+    enum BatteryFailsafe {
+        BatteryFailsafe_None = 0,
+        BatteryFailsafe_Low,
+        BatteryFailsafe_Critical
+    };
+
+    FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
+
+    AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
 
     /* Do not allow copies */
     AP_BattMonitor(const AP_BattMonitor &other) = delete;
@@ -53,18 +63,20 @@ public:
 
     // The BattMonitor_State structure is filled in by the backend driver
     struct BattMonitor_State {
-        cells       cell_voltages;      // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
-        float       voltage;            // voltage in volts
-        float       current_amps;       // current in amperes
-        float       consumed_mah;       // total current draw in milliampere.hours since start-up
-        float       consumed_wh;        // total energy consumed in Watt.hours since start-up
-        uint32_t    last_time_micros;   // time when voltage and current was last read
-        uint32_t    low_voltage_start_ms;  // time when voltage dropped below the minimum
-        float       temperature;        // battery temperature in celsius
-        uint32_t    temperature_time;   // timestamp of the last received temperature message
-        float       voltage_resting_estimate; // voltage with sag removed based on current and resistance estimate
-        float       resistance;         // resistance calculated by comparing resting voltage vs in flight voltage
-        bool        healthy;            // battery monitor is communicating correctly
+        cells       cell_voltages;             // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
+        float       voltage;                   // voltage in volts
+        float       current_amps;              // current in amperes
+        float       consumed_mah;              // total current draw in milliamp hours since start-up
+        float       consumed_wh;               // total energy consumed in Wh since start-up
+        uint32_t    last_time_micros;          // time when voltage and current was last read in microseconds
+        uint32_t    low_voltage_start_ms;      // time when voltage dropped below the minimum in milliseconds
+        uint32_t    critical_voltage_start_ms; // critical voltage failsafe start timer in milliseconds
+        float       temperature;               // battery temperature in degrees Celsius
+        uint32_t    temperature_time;          // timestamp of the last received temperature message
+        float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate in Volt
+        float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
+        BatteryFailsafe failsafe;              // stage failsafe the battery is in
+        bool        healthy;                   // battery monitor is communicating correctly
     };
 
     // Return the number of battery monitor instances
@@ -117,9 +129,15 @@ public:
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
  
-    /// exhausted - returns true if the battery's voltage remains below the low_voltage for 10 seconds or remaining capacity falls below min_capacity
-    bool exhausted(uint8_t instance, float low_voltage, float min_capacity_mah);
-    bool exhausted(float low_voltage, float min_capacity_mah) { return exhausted(AP_BATT_PRIMARY_INSTANCE, low_voltage, min_capacity_mah); }
+    /// returns the failsafe state of the battery
+    BatteryFailsafe check_failsafe(const uint8_t instance);
+    void check_failsafes(void); // checks all batteries failsafes
+
+    /// returns true if a battery failsafe has ever been triggered
+    bool has_failsafed(void) const { return _has_triggered_failsafe; };
+
+    /// returns the highest failsafe action that has been triggered
+    int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// get_type - returns battery monitor type
     enum AP_BattMonitor_Params::BattMonitor_Type get_type() { return get_type(AP_BATT_PRIMARY_INSTANCE); }
@@ -162,6 +180,12 @@ private:
     uint8_t     _num_instances;                                     /// number of monitors
 
     void convert_params(void);
+
+    battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;
+    const int8_t *_failsafe_priorities; // array of failsafe priorities, sorted highest to lowest priority, -1 indicates no more entries
+
+    int8_t      _highest_failsafe_priority; // highest selected failsafe action level (used to restrict what actions we move into)
+    bool        _has_triggered_failsafe;  // true after a battery failsafe has been triggered for the first time
 
 };
 

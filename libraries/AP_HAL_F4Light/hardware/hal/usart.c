@@ -34,7 +34,6 @@ static const usart_dev usart1 = {
 const usart_dev * const _USART1 = &usart1;
 
 #if defined(BOARD_USART2_RX_PIN) && defined(BOARD_USART2_RX_PIN)
-
 static ring_buffer usart2_txrb IN_CCM;
 static ring_buffer usart2_rxrb IN_CCM;
 static usart_state u2state IN_CCM;
@@ -95,14 +94,14 @@ const usart_dev * const _UART4 = &uart4;
 #endif
 
 #if defined(BOARD_USART5_RX_PIN) && defined(BOARD_USART5_TX_PIN)
-//static ring_buffer uart5_txrb IN_CCM; - RX-only UART
+static ring_buffer uart5_txrb IN_CCM;
 static ring_buffer uart5_rxrb IN_CCM;
 static usart_state u5state IN_CCM;
 
 static const usart_dev uart5 = {
     .USARTx = UART5,
     .clk = RCC_APB1Periph_UART5,
-    .txrb = NULL,              // RX-only
+    .txrb = &uart5_txrb,  
     .rxrb = &uart5_rxrb,
     .state = &u5state,
     .irq = UART5_IRQn,
@@ -114,6 +113,7 @@ static const usart_dev uart5 = {
 const usart_dev * const _UART5 = &uart5;
 #endif
 
+#if defined(BOARD_USART6_RX_PIN) && defined(BOARD_USART6_TX_PIN)
 static ring_buffer usart6_txrb IN_CCM;
 static ring_buffer usart6_rxrb IN_CCM;
 static usart_state u6state IN_CCM;
@@ -131,11 +131,12 @@ static const usart_dev usart6 =  {
 };
 /** UART6 device */
 const usart_dev * const _USART6 = &usart6;
+#endif
 
 const usart_dev * const UARTS[] = {
     NULL,
     &usart1,
-#if defined(USART2_USED)
+#if defined(BOARD_USART2_RX_PIN) && defined(BOARD_USART2_RX_PIN)
     &usart2,
 #else
     NULL, 
@@ -146,28 +147,35 @@ const usart_dev * const UARTS[] = {
 #else
     NULL,
 #endif
-#if defined(BOARD_USART5_RX_PIN)
+#if defined(BOARD_USART5_RX_PIN) && defined(BOARD_USART5_TX_PIN)
     &uart5,
 #else
     NULL,
 #endif
+#if defined(BOARD_USART6_RX_PIN) && defined(BOARD_USART6_TX_PIN)
     &usart6,
+#else
+    NULL,
+#endif
+    
 };
 
 void usart_foreach(void (*fn)(const usart_dev*))
 {
     fn(_USART1);
-#if defined(USART2_USED)
+#if defined(BOARD_USART2_RX_PIN) && defined(BOARD_USART2_RX_PIN)
     fn(_USART2);
 #endif
     fn(_USART3);
-#if defined( BOARD_USART4_RX_PIN) && defined( BOARD_USART4_TX_PIN)
+#if defined(BOARD_USART4_RX_PIN) && defined(BOARD_USART4_TX_PIN)
     fn(_UART4);
 #endif
-#if defined( BOARD_USART5_RX_PIN)
+#if defined(BOARD_USART5_RX_PIN) && defined(BOARD_USART5_TX_PIN)
     fn(_UART5);
 #endif
+#if defined(BOARD_USART6_RX_PIN) && defined(BOARD_USART6_TX_PIN)
     fn(_USART6);
+#endif
 }
 
 extern uint32_t us_ticks;
@@ -357,7 +365,7 @@ void USART1_IRQHandler(void)
     usart_tx_irq(_USART1);
 }
 
-#if defined(USART2_USED)
+#if defined(BOARD_USART2_RX_PIN) && defined(BOARD_USART2_RX_PIN)
 void USART2_IRQHandler(void)
 {
     usart_rx_irq(_USART2);
@@ -379,7 +387,7 @@ void UART4_IRQHandler(void)
 }
 #endif
 
-#if defined( BOARD_USART5_RX_PIN)
+#if defined( BOARD_USART5_RX_PIN) && defined( BOARD_USART5_TX_PIN)
 void UART5_IRQHandler(void)
 {
     usart_rx_irq(_UART5);
@@ -387,9 +395,10 @@ void UART5_IRQHandler(void)
 }
 #endif
 
+#if defined( BOARD_USART6_RX_PIN) && defined( BOARD_USART6_TX_PIN)
 void USART6_IRQHandler(void)
 {
     usart_rx_irq(_USART6);
     usart_tx_irq(_USART6);
 }
-
+#endif

@@ -3,12 +3,6 @@
 
 void ModeSteering::update()
 {
-    float desired_steering, desired_throttle;
-    get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
-
-    // convert pilot throttle input to desired speed (up to twice the cruise speed)
-    float target_speed = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
-
     // get speed forward
     float speed;
     if (!attitude_control.get_forward_speed(speed)) {
@@ -18,41 +12,42 @@ void ModeSteering::update()
         return;
     }
 
+    float desired_steering, desired_speed;
+    get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
+
+    bool reversed = is_negative(desired_speed);
+
     // determine if pilot is requesting pivot turn
-    bool is_pivot_turning = g2.motors.have_skid_steering() && is_zero(target_speed) && (!is_zero(desired_steering));
+    if (g2.motors.have_skid_steering() && is_zero(desired_speed)) {
+        // pivot turning using turn rate controller
+        // convert pilot steering input to desired turn rate in radians/sec
+        const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
 
-    // In steering mode we control lateral acceleration directly.
-    // For pivot steering vehicles we use the TURN_MAX_G parameter
-    // For regular steering vehicles we use the maximum lateral acceleration at full steering lock for this speed: V^2/R where R is the radius of turn.
-    float max_g_force;
-    if (is_pivot_turning) {
-        max_g_force = g.turn_max_g * GRAVITY_MSS;
+        // run steering turn rate controller and throttle controller
+        const float steering_out = attitude_control.get_steering_out_rate(target_turn_rate,
+                                                                          g2.motors.limit.steer_left,
+                                                                          g2.motors.limit.steer_right,
+                                                                          rover.G_Dt);
+        g2.motors.set_steering(steering_out * 4500.0f);
     } else {
-        max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
+        // In steering mode we control lateral acceleration directly.
+        // For regular steering vehicles we use the maximum lateral acceleration
+        //  at full steering lock for this speed: V^2/R where R is the radius of turn.
+        float max_g_force = speed * speed / MAX(g2.turn_radius, 0.1f);
+        max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
+
+        // convert pilot steering input to desired lateral acceleration
+        float desired_lat_accel = max_g_force * (desired_steering / 4500.0f);
+
+        // reverse target lateral acceleration if backing up
+        if (reversed) {
+            desired_lat_accel = -desired_lat_accel;
+        }
+
+        // run lateral acceleration to steering controller
+        calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
     }
-
-    // constrain to user set TURN_MAX_G
-    max_g_force = constrain_float(max_g_force, 0.1f, g.turn_max_g * GRAVITY_MSS);
-
-    // convert pilot steering input to desired lateral acceleration
-    float desired_lat_accel = max_g_force * (desired_steering / 4500.0f);
-
-    // reverse target lateral acceleration if backing up
-    bool reversed = false;
-    if (is_negative(target_speed)) {
-        reversed = true;
-        desired_lat_accel = -desired_lat_accel;
-    }
-
-    // mark us as in_reverse when using a negative throttle
-    rover.set_reverse(reversed);
-
-    // apply object avoidance to desired speed using half vehicle's maximum acceleration/deceleration
-    rover.g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_accel_max(), ahrs.yaw, target_speed, rover.G_Dt);
-
-    // run lateral acceleration to steering controller
-    calc_steering_from_lateral_acceleration(desired_lat_accel, reversed);
 
     // run speed to throttle controller
-    calc_throttle(target_speed, false);
+    calc_throttle(desired_speed, false, true);
 }

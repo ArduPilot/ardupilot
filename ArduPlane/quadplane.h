@@ -4,6 +4,7 @@
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
+#include <AC_WPNav/AC_Loiter.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -108,6 +109,9 @@ public:
     
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
+
+    // return true if the wp_nav controller is being updated
+    bool using_wp_nav(void) const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -140,6 +144,7 @@ private:
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
+    AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
@@ -268,7 +273,7 @@ private:
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;
-    uint8_t get_mav_type(void) const;
+    MAV_TYPE get_mav_type(void) const;
     
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
@@ -399,6 +404,7 @@ private:
         AP_Float vectored_forward_gain;
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
+        AP_Float throttle_scale_max;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller

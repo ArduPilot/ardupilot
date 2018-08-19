@@ -26,8 +26,8 @@
 class ChibiOS::Shared_DMA
 {
 public:
-    FUNCTOR_TYPEDEF(dma_allocate_fn_t, void);
-    FUNCTOR_TYPEDEF(dma_deallocate_fn_t, void);
+    FUNCTOR_TYPEDEF(dma_allocate_fn_t, void, Shared_DMA *);
+    FUNCTOR_TYPEDEF(dma_deallocate_fn_t, void, Shared_DMA *);
 
     // the use of two stream IDs is for support of peripherals that
     // need both a RX and TX DMA channel
@@ -58,6 +58,10 @@ public:
     //should be called inside the destructor of Shared DMA participants
     void unregister(void);
 
+    // return true if this DMA channel is being actively contended for
+    // by multiple drivers
+    bool has_contention(void) const { return contention; }
+    
     // lock all shared DMA channels. Used on reboot
     static void lock_all(void);
     
@@ -68,12 +72,18 @@ private:
     uint8_t stream_id2;
     bool have_lock;
 
+    // we set the contention flag if two drivers are fighting over a DMA channel.
+    // the UART driver uses this to change its max transmit size to reduce latency
+    bool contention;
+
     // core of lock call, after semaphores gained
     void lock_core(void);
     
     static struct dma_lock {
         // semaphore to ensure only one peripheral uses a DMA channel at a time
+#if CH_CFG_USE_SEMAPHORES == TRUE
         binary_semaphore_t semaphore;
+#endif // CH_CFG_USE_SEMAPHORES
 
         // a de-allocation function that is called to release an existing user
         dma_deallocate_fn_t deallocate;
@@ -82,3 +92,4 @@ private:
         Shared_DMA *obj;
     } locks[SHARED_DMA_MAX_STREAM_ID];
 };
+

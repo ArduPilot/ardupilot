@@ -69,7 +69,7 @@ public:
         pitch_max(_pitch_max)
     {}
 
-    void calculate_forces(const Aircraft::sitl_input &input,
+    void calculate_forces(const struct sitl_input &input,
                           float thrust_scale,
                           uint8_t motor_offset,
                           Vector3f &rot_accel, // rad/sec

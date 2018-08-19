@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#if SOARING_ENABLED == ENABLED
+
 /*
 *  ArduSoar support function
 *
@@ -94,3 +96,4 @@ void Plane::update_soaring() {
     }
 }
 
+#endif // SOARING_ENABLED

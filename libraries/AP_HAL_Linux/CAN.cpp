@@ -31,8 +31,6 @@
 
 #include "CAN.h"
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
-
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -83,7 +81,10 @@ static uavcan::CanFrame makeUavcanFrame(const can_frame& sockcan_frame)
 
 bool CAN::begin(uint32_t bitrate)
 {
-    if (_initialized) return _initialized;
+    if (_initialized) {
+        return _initialized;
+    }
+
     // TODO: Add possibility change bitrate
     _fd = openSocket(HAL_BOARD_CAN_IFACE_NAME);
     if (_fd > 0) {
@@ -458,17 +459,6 @@ void CANManager::IfaceWrapper::updateDownStatusFromPollResult(const pollfd& pfd)
     }
 }
 
-void CANManager::_timer_tick()
-{
-    if (!_initialized) return;
-
-    if (p_uavcan != nullptr) {
-        p_uavcan->do_cyclic();
-    } else {
-        hal.console->printf("p_uavcan is nullptr");
-    }
-}
-
 bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
     if (init(can_number) >= 0) {
@@ -485,16 +475,6 @@ bool CANManager::is_initialized()
 void CANManager::initialized(bool val)
 {
     _initialized = val;
-}
-
-AP_UAVCAN *CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
 }
 
 CAN* CANManager::getIface(uint8_t iface_index)
@@ -537,15 +517,16 @@ int16_t CANManager::select(uavcan::CanSelectMasks& inout_masks,
         IfaceWrapper* pollfd_index_to_iface[uavcan::MaxCanIfaces] = {};
 
         for (unsigned i = 0; i < _ifaces.size(); i++) {
-            if (!_ifaces[i]->isDown()) {
-                pollfds[num_pollfds].fd = _ifaces[i]->getFileDescriptor();
-                pollfds[num_pollfds].events = POLLIN;
-                if (_ifaces[i]->hasReadyTx() || (inout_masks.write & (1U << i))) {
-                    pollfds[num_pollfds].events |= POLLOUT;
-                }
-                pollfd_index_to_iface[num_pollfds] = _ifaces[i].get();
-                num_pollfds++;
+            if (_ifaces[i]->isDown()) {
+                continue;
             }
+            pollfds[num_pollfds].fd = _ifaces[i]->getFileDescriptor();
+            pollfds[num_pollfds].events = POLLIN;
+            if (_ifaces[i]->hasReadyTx() || (inout_masks.write & (1U << i))) {
+                pollfds[num_pollfds].events |= POLLOUT;
+            }
+            pollfd_index_to_iface[num_pollfds] = _ifaces[i].get();
+            num_pollfds++;
         }
 
         if (num_pollfds == 0) {

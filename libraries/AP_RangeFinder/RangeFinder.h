@@ -57,7 +57,11 @@ public:
         RangeFinder_TYPE_MBSER  = 13,
         RangeFinder_TYPE_TRI2C  = 14,
         RangeFinder_TYPE_PLI2CV3= 15,
-        RangeFinder_TYPE_VL53L0X = 16
+        RangeFinder_TYPE_VL53L0X = 16,
+        RangeFinder_TYPE_NMEA = 17,
+        RangeFinder_TYPE_WASP = 18,
+        RangeFinder_TYPE_BenewakeTF02 = 19,
+        RangeFinder_TYPE_BenewakeTFmini = 20
     };
 
     enum RangeFinder_Function {
@@ -76,7 +80,6 @@ public:
 
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
-        uint8_t                instance;    // the instance number of this RangeFinder
         uint16_t               distance_cm; // distance: in cm
         uint16_t               voltage_mv;  // voltage in millivolts,
                                             // if applicable, otherwise 0
@@ -100,8 +103,11 @@ public:
         AP_Int8  address;
         AP_Vector3f pos_offset; // position offset in body frame
         AP_Int8  orientation;
+        const struct AP_Param::GroupInfo *var_info;
     };
 
+    static const struct AP_Param::GroupInfo *backend_var_info[RANGEFINDER_MAX_INSTANCES];
+    
     AP_Int16 _powersave_range;
 
     // parameters for each instance
@@ -158,8 +164,12 @@ public:
      */
     bool pre_arm_check() const;
 
+    static RangeFinder *get_singleton(void) { return _singleton; }
+
 
 private:
+    static RangeFinder *_singleton;
+
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances:3;

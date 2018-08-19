@@ -61,12 +61,22 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
         break;
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();
+        if (stream == nullptr) {
+            return;
+        }
         break;
     default:
         // not supported yet
         return;
     }
-    
+    if (stream == nullptr) {
+        // this is probably very bad
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("stream is nullptr");
+#endif
+        return;
+    }
+
     if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow

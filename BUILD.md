@@ -59,7 +59,6 @@ list some basic and more used commands as example.
     ```sh
     ./waf configure --board bebop --static # Bebop or Bebop2
     ./waf configure --board edge           # emlid edge
-    ./waf configure --board minilure       # minilure linux flight controller
     ./waf configure --board navio2         # emlid navio2
     ./waf configure --board px4-v1         # the very old two layer Pixhawk (almost none exist)
     ./waf configure --board px4-v2         # older Pixhawks that suffer from the 1MB flash limit issue
@@ -312,8 +311,7 @@ Examples:
 
 It's possible to pass the option `--debug` to the `configure` command. That
 will set compiler flags to store debugging information in the binaries so that
-you can use them with `gdb`, for example. The build directory will be set to
-`build/<board>-debug/`. That option might come handy when using SITL.
+you can use them with `gdb`, for example. That option might come handy when using SITL.
 
 ### Build-system wrappers ###
 

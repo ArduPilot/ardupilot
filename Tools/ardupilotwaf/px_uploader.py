@@ -72,8 +72,14 @@ default_ports = [ '/dev/serial/by-id/usb-Ardu*',
                   '/dev/serial/by-id/usb-3D*',
                   '/dev/serial/by-id/usb-APM*',
                   '/dev/serial/by-id/usb-Radio*',
+                  '/dev/serial/by-id/usb-*_3DR_*',
+                  '/dev/serial/by-id/usb-Hex_Technology_Limited*',
+                  '/dev/serial/by-id/usb-Hex_ProfiCNC*',
                   '/dev/tty.usbmodem*']
 
+if "cygwin" in _platform:
+    default_ports += [ '/dev/ttyS*' ]
+    
 # Detect python version
 if sys.version_info[0] < 3:
     runningPython3 = False
@@ -642,7 +648,7 @@ def main():
             # on unix-like platforms use glob to support wildcard ports. This allows
             # the use of /dev/serial/by-id/usb-3D_Robotics on Linux, which prevents the upload from
             # causing modem hangups etc
-            if "linux" in _platform or "darwin" in _platform:
+            if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
                 import glob
                 for pattern in patterns:
                     portlist += glob.glob(pattern)
@@ -664,6 +670,9 @@ def main():
                         # OS X, don't open Windows and Linux ports
                         if "COM" not in port and "ACM" not in port:
                             up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
+                    elif "cygwin" in _platform:
+                        # Cygwin, don't open MAC OS and Win ports, we are more like Linux. Cygwin needs to be before Windows test
+                        up = uploader(port, args.baud_bootloader, baud_flightstack, args.baud_bootloader_flash)
                     elif "win" in _platform:
                         # Windows, don't open POSIX ports
                         if "/" not in port:

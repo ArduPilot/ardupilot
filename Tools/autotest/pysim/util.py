@@ -1,9 +1,13 @@
 from __future__ import print_function
+
+import atexit
 import math
 import os
 import random
 import re
+import subprocess
 import sys
+import tempfile
 import time
 from math import acos, atan2, cos, pi, sqrt
 from subprocess import PIPE, Popen, call, check_call
@@ -130,6 +134,17 @@ def build_examples(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
+def build_tests(board, j=None, debug=False, clean=False):
+    # first configure
+    waf_configure(board, j=j, debug=debug)
+
+    # then clean
+    if clean:
+        waf_clean()
+
+    # then build
+    run_cmd([relwaf(), "tests"], directory=topdir(), checkfail=True, show=True)
+    return True
 
 # list of pexpect children to close on exit
 close_list = []
@@ -189,26 +204,63 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
-def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
-    synthetic_clock=True, home=None, model=None, speedup=1, defaults_file=None,
-               unhide_parameters=False, gdbserver=False):
+def kill_screen_gdb():
+    cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
+    subprocess.Popen(cmd)
+
+def start_SITL(binary,
+               valgrind=False,
+               gdb=False,
+               wipe=False,
+               synthetic_clock=True,
+               home=None,
+               model=None,
+               speedup=1,
+               defaults_file=None,
+               unhide_parameters=False,
+               gdbserver=False,
+               breakpoints=[],
+               vicon=False):
     """Launch a SITL instance."""
     cmd = []
     if valgrind and os.path.exists('/usr/bin/valgrind'):
-        cmd.extend(['valgrind', '-q', '--log-file=%s' % valgrind_log_filepath(binary=binary, model=model)])
+        # we specify a prefix for vgdb-pipe because on Vagrant virtual
+        # machines the pipes are created on the mountpoint for the
+        # shared directory with the host machine.  mmap's,
+        # unsurprisingly, fail on files created on that mountpoint.
+        vgdb_prefix = os.path.join(tempfile.gettempdir(), "vgdb-pipe")
+        log_file = valgrind_log_filepath(binary=binary, model=model)
+        cmd.extend([
+            'valgrind',
+            '--vgdb-prefix=%s' % vgdb_prefix,
+            '-q',
+            '--log-file=%s' % log_file])
     if gdbserver:
         cmd.extend(['gdbserver', 'localhost:3333'])
         if gdb:
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
             f.write("target extended-remote localhost:3333\nc\n")
+            for breakpoint in breakpoints:
+                f.write("b %s\n" % (breakpoint,))
             f.close()
-            run_cmd('screen -d -m -S ardupilot-gdb bash -c "gdb -x /tmp/x.gdb"')
+            run_cmd('screen -d -m -S ardupilot-gdbserver '
+                    'bash -c "gdb -x /tmp/x.gdb"')
     elif gdb:
         f = open("/tmp/x.gdb", "w")
+        for breakpoint in breakpoints:
+            f.write("b %s\n" % (breakpoint,))
         f.write("r\n")
         f.close()
-        cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+        if os.environ.get('DISPLAY'):
+            cmd.extend(['xterm', '-e', 'gdb', '-x', '/tmp/x.gdb', '--args'])
+        else:
+            cmd.extend(['screen',
+                        '-L', '-Logfile', 'gdb.log',
+                        '-d',
+                        '-m',
+                        '-S', 'ardupilot-gdb',
+                        'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
 
     cmd.append(binary)
     if wipe:
@@ -225,7 +277,23 @@ def start_SITL(binary, valgrind=False, gdb=False, wipe=False,
         cmd.extend(['--defaults', defaults_file])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
+    if vicon:
+        cmd.extend(["--uartF=sim:vicon:"])
+
+    if gdb and not os.getenv('DISPLAY'):
+        p = subprocess.Popen(cmd)
+        atexit.register(kill_screen_gdb)
+        # we are expected to return a pexpect wrapped around the
+        # stdout of the ArduPilot binary.  Not going to happen until
+        # AP gets a redirect-stdout-to-filehandle option.  So, in the
+        # meantime, return a dummy:
+        return pexpect.spawn("true", ["true"],
+                             logfile=sys.stdout,
+                             encoding=ENCODING,
+                             timeout=5)
+
     print("Running: %s" % cmd_as_shell(cmd))
+
     first = cmd[0]
     rest = cmd[1:]
     child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)

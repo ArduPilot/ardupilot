@@ -26,13 +26,13 @@ def build(bld):
             'AC_PID',
             'AC_Fence',
             'AC_Avoidance',
-            'AP_Proximity',
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
             'PID',
             'AP_Soaring',
-            'AP_Gripper'
+            'AP_Devo_Telem',
+            'AP_OSD',
         ],
     )
 

@@ -96,3 +96,5 @@ GRTAGS
 GTAGS
 config.mk
 *.apj
+.gdbinit
+/.vscode

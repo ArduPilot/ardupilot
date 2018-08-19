@@ -33,8 +33,11 @@ extern const AP_HAL::HAL& hal;
 
 bool Buzzer::init()
 {
-#if defined(BUZZER_PIN)
-    _pin = BUZZER_PIN;
+    if (pNotify->buzzer_enabled() == false) {
+        return false;
+    }
+#if defined(HAL_BUZZER_PIN)
+    _pin = HAL_BUZZER_PIN;
 #else
     _pin = pNotify->get_buzz_pin();
 #endif
@@ -54,11 +57,6 @@ bool Buzzer::init()
 // update - updates led according to timed_updated.  Should be called at 50Hz
 void Buzzer::update()
 {
-    // return immediately if disabled
-    if (!AP_Notify::flags.external_leds) {
-        return;
-    }
-
     // check for arming failed event
     if (AP_Notify::events.arming_failed) {
         // arming failed buzz

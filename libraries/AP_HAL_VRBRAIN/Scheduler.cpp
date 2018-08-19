@@ -24,11 +24,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#endif
-
 using namespace VRBRAIN;
 
 extern const AP_HAL::HAL& hal;
@@ -90,34 +85,6 @@ void VRBRAINScheduler::init()
     pthread_create(&_storage_thread_ctx, &thread_attr, &VRBRAIN::VRBRAINScheduler::_storage_thread, this);
 }
 
-void VRBRAINScheduler::create_uavcan_thread()
-{
-#if HAL_WITH_UAVCAN
-    pthread_attr_t thread_attr;
-    struct sched_param param;
-
-     //the UAVCAN thread runs at medium priority
-    pthread_attr_init(&thread_attr);
-    pthread_attr_setstacksize(&thread_attr, 8192);
-
-    param.sched_priority = APM_CAN_PRIORITY;
-    (void) pthread_attr_setschedparam(&thread_attr, &param);
-    pthread_attr_setschedpolicy(&thread_attr, SCHED_FIFO);
-
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-        if (hal.can_mgr[i] != nullptr) {
-            if (hal.can_mgr[i]->get_UAVCAN() != nullptr) {
-                _uavcan_thread_arg *arg = new _uavcan_thread_arg;
-                arg->sched = this;
-                arg->uavcan_number = i;
-
-                pthread_create(&_uavcan_thread_ctx, &thread_attr, &VRBRAINScheduler::_uavcan_thread, arg);
-            }
-        }
-    }
-#endif
-}
-
 /**
    delay for a specified number of microseconds using a semaphore wait
  */
@@ -173,33 +140,20 @@ void VRBRAINScheduler::delay_microseconds_boost(uint16_t usec)
 
 void VRBRAINScheduler::delay(uint16_t ms)
 {
-    if (!in_main_thread()) {
-        ::printf("ERROR: delay() from timer process\n");
-        return;
-    }
     perf_begin(_perf_delay);
     uint64_t start = AP_HAL::micros64();
 
     while ((AP_HAL::micros64() - start)/1000 < ms &&
            !_vrbrain_thread_should_exit) {
         delay_microseconds_semaphore(1000);
-        if (_min_delay_cb_ms <= ms) {
-            if (_delay_cb) {
-                _delay_cb();
-            }
+        if (in_main_thread() && _min_delay_cb_ms <= ms) {
+            call_delay_cb();
         }
     }
     perf_end(_perf_delay);
     if (_vrbrain_thread_should_exit) {
         exit(1);
     }
-}
-
-void VRBRAINScheduler::register_delay_callback(AP_HAL::Proc proc,
-                                            uint16_t min_time_ms)
-{
-    _delay_cb = proc;
-    _min_delay_cb_ms = min_time_ms;
 }
 
 void VRBRAINScheduler::register_timer_process(AP_HAL::MemberProc proc)
@@ -239,20 +193,6 @@ void VRBRAINScheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t p
     _failsafe = failsafe;
 }
 
-void VRBRAINScheduler::suspend_timer_procs()
-{
-    _timer_suspended = true;
-}
-
-void VRBRAINScheduler::resume_timer_procs()
-{
-    _timer_suspended = false;
-    if (_timer_event_missed == true) {
-        _run_timers(false);
-        _timer_event_missed = false;
-    }
-}
-
 void VRBRAINScheduler::reboot(bool hold_in_bootloader)
 {
     // disarm motors to ensure they are off during a bootloader upload
@@ -265,22 +205,18 @@ void VRBRAINScheduler::reboot(bool hold_in_bootloader)
     px4_systemreset(hold_in_bootloader);
 }
 
-void VRBRAINScheduler::_run_timers(bool called_from_timer_thread)
+void VRBRAINScheduler::_run_timers()
 {
     if (_in_timer_proc) {
         return;
     }
     _in_timer_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the timer based drivers
-        for (int i = 0; i < _num_timer_procs; i++) {
-            if (_timer_proc[i]) {
-                _timer_proc[i]();
-            }
+    // now call the timer based drivers
+    for (int i = 0; i < _num_timer_procs; i++) {
+        if (_timer_proc[i]) {
+            _timer_proc[i]();
         }
-    } else if (called_from_timer_thread) {
-        _timer_event_missed = true;
     }
 
     // and the failsafe, if one is setup
@@ -311,7 +247,7 @@ void *VRBRAINScheduler::_timer_thread(void *arg)
 
         // run registered timers
         perf_begin(sched->_perf_timers);
-        sched->_run_timers(true);
+        sched->_run_timers();
         perf_end(sched->_perf_timers);
 
         // process any pending RC output requests
@@ -338,12 +274,10 @@ void VRBRAINScheduler::_run_io(void)
     }
     _in_io_proc = true;
 
-    if (!_timer_suspended) {
-        // now call the IO based drivers
-        for (int i = 0; i < _num_io_procs; i++) {
-            if (_io_proc[i]) {
-                _io_proc[i]();
-            }
+    // now call the IO based drivers
+    for (int i = 0; i < _num_io_procs; i++) {
+        if (_io_proc[i]) {
+            _io_proc[i]();
         }
     }
 
@@ -412,36 +346,6 @@ void *VRBRAINScheduler::_storage_thread(void *arg)
     }
     return nullptr;
 }
-
-#if HAL_WITH_UAVCAN
-void *VRBRAINScheduler::_uavcan_thread(void *arg)
-{
-    VRBRAINScheduler *sched = ((_uavcan_thread_arg *) arg)->sched;
-    uint8_t uavcan_number = ((_uavcan_thread_arg *) arg)->uavcan_number;
-
-    char name[15];
-    snprintf(name, sizeof(name), "apm_uavcan:%u", uavcan_number);
-    pthread_setname_np(pthread_self(), name);
-
-    while (!sched->_hal_initialized) {
-        poll(nullptr, 0, 1);
-    }
-
-    while (!_px4_thread_should_exit) {
-        if (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->is_initialized()) {
-            if (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN() != nullptr) {
-                (((VRBRAINCANManager *)hal.can_mgr[uavcan_number])->get_UAVCAN())->do_cyclic();
-            } else {
-                sched->delay_microseconds_semaphore(10000);
-            }
-        } else {
-            sched->delay_microseconds_semaphore(10000);
-        }
-    }
-
-    return nullptr;
-}
-#endif
 
 bool VRBRAINScheduler::in_main_thread() const
 {

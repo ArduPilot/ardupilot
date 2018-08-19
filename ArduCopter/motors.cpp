@@ -39,7 +39,7 @@ void Copter::arm_motors_check()
         // arm the motors and configure for flight
         if (arming_counter == ARM_DELAY && !motors->armed()) {
             // reset arming counter if arming fail
-            if (!init_arm_motors(false)) {
+            if (!init_arm_motors(AP_Arming::ArmingMethod::RUDDER)) {
                 arming_counter = 0;
             }
         }
@@ -127,7 +127,7 @@ void Copter::auto_disarm_check()
 
 // init_arm_motors - performs arming process including initialisation of barometer and gyros
 //  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Copter::init_arm_motors(bool arming_from_gcs)
+bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
 
@@ -144,7 +144,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     }
 
     // run pre-arm-checks and display failures
-    if (!arming.all_checks_passing(arming_from_gcs)) {
+    if (do_arming_checks && !arming.all_checks_passing(method)) {
         AP_Notify::events.arming_failed = true;
         in_arm_motors = false;
         return false;
@@ -155,9 +155,6 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
-
-    // reset battery failsafe
-    set_failsafe_battery(false);
 
     // notify that arming will occur (we do this early to give plenty of warning)
     AP_Notify::flags.armed = true;
@@ -183,7 +180,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
 
         // we have reset height, so arming height is zero
         arming_altitude_m = 0;        
-    } else if (ahrs.home_status() == HOME_SET_NOT_LOCKED) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
 
@@ -201,7 +198,7 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     ahrs.set_correct_centrifugal(true);
     hal.util->set_soft_armed(true);
 
-#if SPRAYER == ENABLED
+#if SPRAYER_ENABLED == ENABLED
     // turn off sprayer's test if on
     sprayer.test_pump(false);
 #endif
@@ -233,6 +230,9 @@ bool Copter::init_arm_motors(bool arming_from_gcs)
     // Start the arming delay
     ap.in_arming_delay = true;
 
+    // assumed armed without a arming, switch. Overridden in switches.cpp
+    ap.armed_with_switch = false;
+    
     // return success
     return true;
 }
@@ -342,7 +342,7 @@ void Copter::lost_vehicle_check()
     static uint8_t soundalarm_counter;
 
     // disable if aux switch is setup to vehicle alarm as the two could interfere
-    if (check_if_auxsw_mode_used(AUXSW_LOST_COPTER_SOUND)) {
+    if (rc().find_channel_for_option(RC_Channel::aux_func::LOST_COPTER_SOUND)) {
         return;
     }
 

@@ -14,6 +14,8 @@
 #include <systemlib/board_serial.h>
 #include <drivers/drv_gpio.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <drivers/drv_tone_alarm.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -96,14 +98,6 @@ enum PX4Util::safety_state PX4Util::safety_switch_state(void)
     return AP_HAL::Util::SAFETY_DISARMED;
 }
 
-void PX4Util::set_system_clock(uint64_t time_utc_usec)
-{
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-}
-
 /*
   display PX4 system identifer - board type and serial number
  */
@@ -133,7 +127,8 @@ bool PX4Util::get_system_id(char buf[40])
              board_type,
              (unsigned)serialid[0], (unsigned)serialid[1], (unsigned)serialid[2], (unsigned)serialid[3], 
              (unsigned)serialid[4], (unsigned)serialid[5], (unsigned)serialid[6], (unsigned)serialid[7], 
-             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]); 
+             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]);
+    buf[39] = 0;
     return true;
 }
 
@@ -268,5 +263,52 @@ void PX4Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_ty
     return free(ptr);
 #endif
 }
+
+extern "C" {
+    int bl_update_main(int argc, char *argv[]);
+    int tone_alarm_main(int argc, char *argv[]);
+};
+
+bool PX4Util::flash_bootloader()
+{
+#if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
+    if (AP_BoardConfig::px4_start_driver(bl_update_main, "bl_update", "/etc/bootloader/fmu_bl.bin")) {
+        hal.console->printf("updated bootloader\n");
+        return true;
+    }
+#endif
+    return false;
+}
+
+bool PX4Util::toneAlarm_init()
+{
+    if (!AP_BoardConfig::px4_start_driver(tone_alarm_main, "tone_alarm", "start")) {
+        hal.console->printf("Failed to start tone_alarm\n");
+        return false;
+    }
+    _tonealarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
+    if (_tonealarm_fd == -1) {
+        hal.console->printf("ToneAlarm_PX4: Unable to open " TONEALARM0_DEVICE_PATH);
+        return false;
+    }
+    return true;
+}
+
+void PX4Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+{
+    if (_tonealarm_fd == -1) {
+        return;
+    }
+    if (is_zero(frequency) || is_zero(volume)) {
+        write(_tonealarm_fd, "MFP", 4);
+    } else {
+        unsigned note = constrain_float(roundf(17.3123404906676f*logf(frequency) - 71.3763165622959f), 4, 87); // constraint based on comment in PX4 tonealarm driver - "note value in the range C1 to B7"
+        char tune[20];
+        snprintf(tune, sizeof(tune), "MFMLT32L1N%u", note);
+        tune[sizeof(tune)-1] = '\0';
+        write(_tonealarm_fd, tune, strlen(tune)+1);
+    }
+}
+
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4

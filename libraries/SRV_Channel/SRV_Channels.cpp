@@ -22,12 +22,23 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "SRV_Channel.h"
 
+#if HAL_WITH_UAVCAN
+#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+AP_BLHeli *SRV_Channels::blheli_ptr;
+#endif
+
+uint16_t SRV_Channels::disabled_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
@@ -122,6 +133,12 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
 
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // @Group: _BLH_
+    // @Path: ../AP_BLHeli/AP_BLHeli.cpp
+    AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
+#endif
+
     AP_GROUPEND
 };
 
@@ -143,6 +160,9 @@ SRV_Channels::SRV_Channels(void)
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
+#if HAL_SUPPORT_RCOUT_SERIAL
+    blheli_ptr = &blheli;
+#endif
 }
 
 /*
@@ -195,7 +215,7 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
  */
 void SRV_Channels::cork()
 {
-	hal.rcout->cork();
+    hal.rcout->cork();
 }
 
 /*
@@ -210,4 +230,21 @@ void SRV_Channels::push()
 
     // give sbus library a chance to update
     sbus_ptr->update();
+
+#if HAL_SUPPORT_RCOUT_SERIAL
+    // give blheli telemetry a chance to update
+    blheli_ptr->update_telemetry();
+#endif
+
+#if HAL_WITH_UAVCAN
+    // push outputs to UAVCAN
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+        if (ap_uavcan == nullptr) {
+            continue;
+        }
+        ap_uavcan->SRV_push_servos();
+    }
+#endif // HAL_WITH_UAVCAN
 }

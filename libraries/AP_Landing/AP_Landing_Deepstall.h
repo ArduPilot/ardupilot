@@ -105,7 +105,7 @@ private:
     bool is_flying_forward(void) const;
     bool is_on_approach(void) const;
     bool terminate(void);
-    void log(void) const;
+    void Log(void) const;
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 

@@ -378,7 +378,7 @@ bool AP_AdvancedFailsafe::should_crash_vehicle(void)
 
 // update GCS based termination
 // returns true if AFS is in the desired termination state
-bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) {
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {
     if (!_enable) {
         gcs().send_text(MAV_SEVERITY_INFO, "AFS not enabled, can't terminate the vehicle");
         return false;
@@ -391,9 +391,9 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate) {
 
     if(should_terminate == is_terminating) {
         if (is_terminating) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Terminating due to GCS request");
+            gcs().send_text(MAV_SEVERITY_INFO, "Terminating due to %s", reason);
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Aborting termination due to GCS request");
+            gcs().send_text(MAV_SEVERITY_INFO, "Aborting termination due to %s", reason);
         }
         return true;
     } else if (should_terminate && _terminate_action != TERMINATE_ACTION_TERMINATE) {

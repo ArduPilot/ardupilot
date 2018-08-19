@@ -6,6 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_HELI_PID.h>
+#include <RC_Channel/RC_Channel.h>
 
 void setup();
 void loop();
@@ -43,11 +44,18 @@ void loop()
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
 
+    RC_Channel *ch = rc().channel(0);
+    if (ch == nullptr) {
+        hal.console->printf("No channel 0?");
+        return;
+    }
+
     // capture radio trim
-    radio_trim = hal.rcin->read(0);
+    radio_trim = ch->get_radio_in();
 
     while (true) {
-        radio_in = hal.rcin->read(0);
+        rc().read_input(); // poll the radio for new values
+        radio_in = ch->get_radio_in();
         error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
         control_P = pid.get_p();

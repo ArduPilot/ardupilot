@@ -1,0 +1,147 @@
+# hw definition file for KakuteF4 hardware
+
+# STATUS:
+# This port is mostly complete. Main missing feature are OSD,
+# dataflash
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 122
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+define STM32_ST_USE_TIMER 4
+define CH_CFG_ST_RESOLUTION 16
+
+FLASH_SIZE_KB 1024
+
+# board voltage
+STM32_VDD 330U
+
+# only one I2C bus
+I2C_ORDER I2C1
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 UART4 USART1 USART6 UART5
+
+# LEDs
+PB5 LED_BLUE OUTPUT LOW GPIO(0)
+
+# buzzer
+PC9 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ON 1
+define HAL_BUZZER_OFF 0
+
+# spi1 bus for IMU
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# spi3 for dataflash and OSD
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PB14 MAX7456_CS CS
+
+# dataflash M25P16
+PB3 M25P16_CS CS
+
+PC4 ICM20689_CS CS
+PC5 ICM20689_DRDY INPUT
+
+# only one I2C bus in normal config
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# rcinput is PB11
+PB11 TIM2_CH4 TIM2 RCININT FLOAT LOW
+
+# analog pins
+PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# define default battery setup
+define HAL_BATT_VOLT_PIN 13
+define HAL_BATT_CURR_PIN 12
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# main port, for telem1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# USART3 for rcinput
+#PB10 USART3_TX USART3
+#PB11 USART3_RX USART3
+PB15 SBUS_INVERT OUTPUT LOW
+
+# USART6
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# UART4 (GPS)
+PA1 UART4_RX UART4 NODMA
+PA0 UART4_TX UART4 NODMA
+
+# UART5 (ESC sensor)
+PD2 UART5_RX UART5
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USB detection
+PA8 VBUS INPUT OPENDRAIN
+
+# debug 
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM out pins. Note that channel order follows the ArduPilot motor
+# order conventions
+PB1 TIM3_CH4 TIM3 PWM(1) GPIO(50)
+PA3 TIM5_CH4 TIM5 PWM(2) GPIO(51)
+PA2 TIM5_CH3 TIM5 PWM(3) GPIO(52)
+PB0 TIM3_CH3 TIM3 PWM(4) GPIO(53)
+
+# PC8 TIM8_CH3 TIM2 GPIO(54) # LED strip
+
+define HAL_STORAGE_SIZE 15360
+define STORAGE_FLASH_PAGE 2
+
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
+
+define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
+define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_180
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# baro is a bmp280 on i2c
+define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
+define HAL_BARO_BMP280_BUS 0
+define HAL_BARO_BMP280_I2C_ADDR 0x76
+
+# SPI devices
+SPIDEV mpu6000   SPI1 DEVID1 ICM20689_CS MODE3 1*MHZ 8*MHZ 
+SPIDEV dataflash SPI3 DEVID1 M25P16_CS   MODE3 1*MHZ 8*MHZ
+SPIDEV osd       SPI3 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
+
+# setup for OSD
+define OSD_ENABLED ENABLED
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# 8 PWM available by default
+define BOARD_PWM_COUNT_DEFAULT 8
+

@@ -14,11 +14,13 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include "RPM_Pin.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <board_config.h>
-#include "RPM_Pin.h"
+#endif
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -49,6 +51,7 @@ void AP_RPM_Pin::irq_handler(uint8_t instance)
     }
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 /*
   interrupt handler for instance 0
  */
@@ -66,11 +69,30 @@ int AP_RPM_Pin::irq_handler1(int irq, void *context)
     irq_handler(1);
     return 0;
 }
+#else // other HALs
+/*
+  interrupt handler for instance 0
+ */
+void AP_RPM_Pin::irq_handler0(void)
+{
+    irq_handler(0);
+}
+
+/*
+  interrupt handler for instance 1
+ */
+void AP_RPM_Pin::irq_handler1(void)
+{
+    irq_handler(1);
+}
+#endif
 
 void AP_RPM_Pin::update(void)
 {
     if (last_pin != get_pin()) {
         last_pin = get_pin();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         uint32_t gpio = 0;
 
 #ifdef GPIO_GPIO0_INPUT
@@ -113,17 +135,21 @@ void AP_RPM_Pin::update(void)
         // for either polarity of pulse, as all we want is the period
         stm32_gpiosetevent(gpio, true, false, false,
                            state.instance==0?irq_handler0:irq_handler1);
+#else // other HALs
+        hal.gpio->attach_interrupt(last_pin, state.instance==0?irq_handler0:irq_handler1,
+                                   HAL_GPIO_INTERRUPT_RISING);
+#endif
     }
 
     if (irq_state[state.instance].dt_count > 0) {
         float dt_avg;
 
         // disable interrupts to prevent race with irq_handler
-        irqstate_t istate = irqsave();
+        void *irqstate = hal.scheduler->disable_interrupts_save();
         dt_avg = irq_state[state.instance].dt_sum / irq_state[state.instance].dt_count;
         irq_state[state.instance].dt_count = 0;
         irq_state[state.instance].dt_sum = 0;
-        irqrestore(istate);
+        hal.scheduler->restore_interrupts(irqstate);
 
         const float scaling = ap_rpm._scaling[state.instance];
         float maximum = ap_rpm._maximum[state.instance];
@@ -154,5 +180,3 @@ void AP_RPM_Pin::update(void)
         state.rate_rpm = 0;
     }
 }
-
-#endif // CONFIG_HAL_BOARD

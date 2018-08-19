@@ -42,7 +42,7 @@ static void show_sizes(void)
         FIFTYTIMES(op); \
     } \
     us_end = AP_HAL::micros(); \
-    hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end - us_start) / (count * 50.0)); \
+    hal.console->printf("%-10s %7.2f usec/call\n", name, double(us_end - us_start) / double(count * 50.0)); \
 } while (0)
 
 volatile float v_f = 1.0;

@@ -182,7 +182,7 @@
 #endif
 
 #ifndef ACRO_YAW_P
-# define ACRO_YAW_P                4.5f
+# define ACRO_YAW_P                3.375f
 #endif
 
 #ifndef ACRO_LEVEL_MAX_ANGLE
@@ -284,11 +284,7 @@
     MASK_LOG_MOTBATT
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// AP_Limits Defaults
-//
-
-// Enable/disable AP_Limits
+// Enable/disable Fence
 #ifndef AC_FENCE
 #define AC_FENCE ENABLED
 #endif

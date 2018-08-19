@@ -70,28 +70,44 @@ void VRBRAINUARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
+    while (_in_timer) {
+        hal.scheduler->delay(1);
+    }
     if (rxS != _readbuf.get_size()) {
         _initialised = false;
-        while (_in_timer) {
-            hal.scheduler->delay(1);
-        }
-
         _readbuf.set_size(rxS);
     }
+
+    bool clear_buffers = false;
+    if (b != 0) {
+        // clear buffers on baudrate change, but not on the console (which is usually USB)
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
+        _baudrate = b;
+    }    
 
     if (b != 0) {
         _baudrate = b;
     }
 
+    if (clear_buffers) {
+        _readbuf.clear();
+    }
+    
     /*
       allocate the write buffer
      */
+    while (_in_timer) {
+        hal.scheduler->delay(1);
+    }
     if (txS != _writebuf.get_size()) {
         _initialised = false;
-        while (_in_timer) {
-            hal.scheduler->delay(1);
-        }
         _writebuf.set_size(txS);
+    }
+
+    if (clear_buffers) {
+        _writebuf.clear();
     }
 
 	if (_fd == -1) {

@@ -100,7 +100,7 @@ public:
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
     bool is_expecting_impact(void) const;
-    void log(void) const;
+    void Log(void) const;
     const DataFlash_Class::PID_Info * get_pid_info(void) const;
 
     // landing altitude offset (meters)

@@ -221,7 +221,7 @@ File SDClass::openRoot(void)
     lastError = f_opendir(&file._d.dir, _fatFs.getRoot());
     file.is_dir = true;
     if(lastError != FR_OK) {
-	file._d.dir.fs = 0;
+	file._d.dir.obj.fs = 0;
     }
     return file;
 }
@@ -265,8 +265,8 @@ uint8_t SDClass::format(const char *filepath){
 File::File()
 {
     _name = NULL;
-     _d.fil.fs = 0;
-     _d.dir.fs = 0;
+     _d.fil.obj.fs = 0;
+     _d.dir.obj.fs = 0;
 }
 
 File::File(const char* fname)
@@ -277,8 +277,8 @@ File::File(const char* fname)
     if(_name == NULL) return;  // no HardFault, just not opened
     
     strcpy(_name, fname);
-    _d.fil.fs = 0;
-    _d.dir.fs = 0;
+    _d.fil.obj.fs = 0;
+    _d.dir.obj.fs = 0;
 }
 
 /** List directory contents to given callback
@@ -493,11 +493,11 @@ void File::close()
 {
     if(_name){
         if(is_dir) {
-            if(_d.dir.fs != 0) {
+            if(_d.dir.obj.fs != 0) {
 	        SD.lastError = f_closedir(&_d.dir);
 	    }
         } else {
-            if(_d.fil.fs != 0) {
+            if(_d.fil.obj.fs != 0) {
 	        /* Flush the file before close */
 	        f_sync(&_d.fil);
 
@@ -576,9 +576,6 @@ uint32_t File::size()
     return f_size(&_d.fil);
 }
 
-File::operator bool() const {
-    return  (_name == NULL)? FALSE : TRUE; // TODO
-}
 
 /**
   * @brief  Write data to the file
@@ -673,9 +670,9 @@ uint8_t File::isDirectory()
     
     
     if (is_dir){
-        if(_d.dir.fs != 0) return TRUE;
+        if(_d.dir.obj.fs != 0) return TRUE;
     } else {
-        if(_d.fil.fs != 0) return FALSE;
+        if(_d.fil.obj.fs != 0) return FALSE;
     }
 
     // if not init get info
@@ -746,7 +743,7 @@ File File::openNextFile(uint8_t mode)
 void File::rewindDirectory(void)
 {
     if(isDirectory()) {
-	if(_d.dir.fs != 0) {
+	if(_d.dir.obj.fs != 0) {
 	    f_closedir(&_d.dir);
 	}
 	f_opendir(&_d.dir, _name);

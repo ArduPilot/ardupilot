@@ -1,6 +1,11 @@
 #pragma once
 
+#include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+
+#include "SIM_Sprayer.h"
+#include "SIM_Gripper_Servo.h"
+#include "SIM_Gripper_EPM.h"
 
 class DataFlash_Class;
 
@@ -41,7 +46,18 @@ public:
         mag_ofs.set(Vector3f(5, 13, -18));
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
+        if (_s_instance != nullptr) {
+            AP_HAL::panic("Too many SITL instances");
+        }
+        _s_instance = this;
     }
+
+    /* Do not allow copies */
+    SITL(const SITL &other) = delete;
+    SITL &operator=(const SITL&) = delete;
+
+    static SITL *_s_instance;
+    static SITL *get_instance() { return _s_instance; }
 
     enum GPSType {
         GPS_TYPE_NONE  = 0,
@@ -90,11 +106,15 @@ public:
     AP_Float gps_noise; // amplitude of the gps altitude error
     AP_Int16 gps_lock_time; // delay in seconds before GPS gets lock
     AP_Int16 gps_alt_offset; // gps alt error
+    AP_Int8  vicon_observation_history_length; // frame delay for vicon messages
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Float mag_error;   // in degrees
     AP_Vector3f mag_mot;  // in mag units per amp
     AP_Vector3f mag_ofs;  // in mag units
+    AP_Vector3f mag_diag;  // diagonal corrections
+    AP_Vector3f mag_offdiag;  // off-diagonal corrections
+    AP_Int8 mag_orient;   // external compass orientation
     AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
@@ -118,17 +138,24 @@ public:
     AP_Float batt_voltage; // battery voltage base
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
+    AP_Int8  rc_chancount; // channel count
     AP_Int8  baro_disable; // disable simulated barometer
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
     AP_Int8  terrain_enable; // enable using terrain for height
-    AP_Int8  pin_mask; // for GPIO emulation
+    AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
-    
+
     // wind control
+    enum WindType {
+        WIND_TYPE_SQRT = 0,
+        WIND_TYPE_NO_LIMIT = 1,
+        WIND_TYPE_COEF = 2,
+    };
+    
     float wind_speed_active;
     float wind_direction_active;
     float wind_dir_z_active;
@@ -137,6 +164,9 @@ public:
     AP_Float wind_turbulance;
     AP_Float gps_drift_alt;
     AP_Float wind_dir_z;
+    AP_Int8  wind_type; // enum WindLimitType
+    AP_Float wind_type_alt;
+    AP_Float wind_type_coef;
 
     AP_Int16  baro_delay; // barometer data delay in ms
     AP_Int16  mag_delay; // magnetometer data delay in ms
@@ -180,6 +210,16 @@ public:
 
     // convert a set of roll rates from body frame to earth frame
     static Vector3f convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro);
+
+    Sprayer sprayer_sim;
+
+    Gripper_Servo gripper_sim;
+    Gripper_EPM gripper_epm_sim;
 };
 
 } // namespace SITL
+
+
+namespace AP {
+    SITL::SITL *sitl();
+};

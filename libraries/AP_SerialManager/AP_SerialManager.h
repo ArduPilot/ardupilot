@@ -26,7 +26,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define SERIALMANAGER_NUM_PORTS 6
+// we have hal.uartA to hal.uartG
+#define SERIALMANAGER_NUM_PORTS 7
 
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
@@ -72,7 +73,6 @@
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_TX     32
 
-
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -98,7 +98,9 @@ public:
         SerialProtocol_Aerotenna_uLanding      = 12, // Ulanding support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
         SerialProtocol_Volz = 14,                    // Volz servo protocol
-        SerialProtocol_Sbus1 = 15
+        SerialProtocol_Sbus1 = 15,
+        SerialProtocol_ESCTelemetry = 16,
+        SerialProtocol_Devo_Telem = 17,
     };
 
     // get singleton instance
@@ -134,9 +136,6 @@ public:
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
-    // set_console_baud - sets the console's baud rate to the rate specified by the protocol
-    void set_console_baud(enum SerialProtocol protocol, uint8_t instance) const;
-
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -144,11 +143,16 @@ private:
     static AP_SerialManager *_instance;
     
     // array of uart info
-    struct {
+    struct UARTState {
         AP_Int8 protocol;
         AP_Int32 baud;
         AP_HAL::UARTDriver* uart;
     } state[SERIALMANAGER_NUM_PORTS];
+
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol
+    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+                                      uint8_t instance) const;
 
     uint32_t map_baudrate(int32_t rate) const;
 

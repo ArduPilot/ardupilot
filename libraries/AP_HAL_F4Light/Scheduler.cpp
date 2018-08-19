@@ -36,9 +36,6 @@ AP_HAL::Proc  Scheduler::_failsafe  IN_CCM= NULL;
 Revo_IO    Scheduler::_io_proc[F4Light_SCHEDULER_MAX_IO_PROCS] IN_CCM;
 uint8_t    Scheduler::_num_io_proc IN_CCM=0;
 
-
-AP_HAL::Proc Scheduler::_delay_cb IN_CCM=NULL;
-uint16_t Scheduler::_min_delay_cb_ms IN_CCM=0;
 void *   Scheduler::_delay_cb_handle IN_CCM=0;
 
 uint32_t Scheduler::timer5_ovf_cnt IN_CCM=0;
@@ -269,8 +266,8 @@ void Scheduler::_delay(uint16_t ms)
     uint32_t now;
 
     while((now=_micros()) - start < dt) {
-        if (_delay_cb && _min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
-            _delay_cb();
+        if (hal.scheduler->_min_delay_cb_ms <= ms) { // MAVlink callback uses 5ms
+            hal.scheduler->call_delay_cb();
             yield(1000 - (_micros() - now)); // to not stop MAVlink callback
         } else {
             yield(dt); // for full time
@@ -355,8 +352,7 @@ void Scheduler::register_delay_callback(AP_HAL::Proc proc, uint16_t min_time_ms)
         init_done=true;
     }
 
-    _delay_cb        = proc;
-    _min_delay_cb_ms = min_time_ms;
+    AP_HAL::Scheduler::register_delay_callback(proc, min_time_ms);
 
 
 /* 
@@ -584,7 +580,7 @@ void Scheduler::_print_stats(){
             if(is_zero(shed_eff)) shed_eff = eff;
             else              shed_eff = shed_eff*(1 - 1/Kf) + eff*(1/Kf);
 
-            printf("\nSched stats:\n  %% of full time: %5.2f  Efficiency %5.3f max loop time %ld\n", (task_time/10.0)/t /* in percent*/ , shed_eff, max_loop_time);
+            printf("\nSched stats: uptime %lds\n  %% of full time: %5.2f  Efficiency %5.3f max loop time %ld\n", t/1000, (task_time/10.0)/t /* in percent*/ , shed_eff, max_loop_time);
             printf("delay times: in main %5.2f including in timer %5.2f",         (delay_time/10.0)/t, (delay_int_time/10.0)/t);
             max_loop_time=0;
 
@@ -751,6 +747,8 @@ task_t* Scheduler::get_empty_task(){
     return NULL;
 }
 
+#endif
+
 void Scheduler::stop_task(void *h){
     if(h) {
         task_t *tp = (task_t *)h ;
@@ -759,7 +757,6 @@ void Scheduler::stop_task(void *h){
         interrupts();
     }
 }
-#endif
 
 
 // task's executor, which calls user's function having semaphore
@@ -931,7 +928,33 @@ static uint16_t next_log_ptr(uint16_t sched_log_ptr){
 }
 #endif
 
+// exception occures in armed state - try to kill current task, or reboot if this is main task
+void Scheduler::_try_kill_task_or_reboot(uint8_t n){
+    task_t  *me = s_running; // current task
+    uint8_t tmp = task_n;
 
+    if(tmp==0 || me->id == 0) { // no tasks yet or in main task
+        board_set_rtc_register(FORCE_APP_RTC_SIGNATURE, RTC_SIGNATURE_REG); // force bootloader to not wait
+        _reboot(false);
+    }
+    stop_task(me); // exclude task from planning
+    task_n = 0;    // printf() can call yield while we now between live and death
+
+    printf("\nTaks %d killed by exception %d!\n",me->id, n);
+
+    task_n = tmp;
+    next_task = get_next_task();
+}
+
+void Scheduler::_go_next_task() {
+    plan_context_switch();    
+
+    while(1);
+}
+
+void Scheduler::_stop_multitask(){
+    task_n = 0;
+}
 
 
 // this function called only from SVC Level ISRs so there is no need to be reentrant
@@ -1279,8 +1302,8 @@ void SVC_Handler(){
         : "=rm" (svc_args) );
 
     Scheduler::SVC_Handler(svc_args);
-    
 }
+
 
 // svc executes on same priority as Timer7 ISR so there is no need to prevent interrupts
 void Scheduler::SVC_Handler(uint32_t * svc_args){
@@ -1421,4 +1444,6 @@ void * hal_register_task(voidFuncPtr task, uint32_t stack) {
 }
 
 bool hal_is_armed() { return hal.util->get_soft_armed();  }
-
+void hal_try_kill_task_or_reboot(uint8_t n) { Scheduler::_try_kill_task_or_reboot(n); }
+void hal_go_next_task() { Scheduler::_go_next_task(); }
+void hal_stop_multitask() { Scheduler::_stop_multitask(); }

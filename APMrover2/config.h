@@ -42,20 +42,6 @@
   #define HIL_MODE HIL_MODE_DISABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-  #define BATTERY_PIN_1     1
-  #define CURRENT_PIN_1     2
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-  #define BATTERY_PIN_1    -1
-  #define CURRENT_PIN_1    -1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-  #define BATTERY_PIN_1    -1
-  #define CURRENT_PIN_1    -1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-  #define BATTERY_PIN_1    -1
-  #define CURRENT_PIN_1    -1
-#endif
-
 #ifndef MAV_SYSTEM_ID
   #define MAV_SYSTEM_ID    1
 #endif
@@ -176,4 +162,12 @@
 
 #ifndef STATS_ENABLED
  # define STATS_ENABLED ENABLED
+#endif
+
+#ifndef DEVO_TELEM_ENABLED
+#if HAL_MINIMIZE_FEATURES
+ #define DEVO_TELEM_ENABLED DISABLED
+#else
+ #define DEVO_TELEM_ENABLED ENABLED
+#endif
 #endif

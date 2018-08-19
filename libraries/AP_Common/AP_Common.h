@@ -71,16 +71,7 @@
 #define LOWBYTE(i) ((uint8_t)(i))
 #define HIGHBYTE(i) ((uint8_t)(((uint16_t)(i))>>8))
 
-template <typename T, size_t N>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[N]))[N];
-
-template <typename T>
-char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
-
-#define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
-
-// simpler ARRAY_SIZE which can handle zero elements
-#define ARRAY_SIZE_SIMPLE(_arr) (sizeof(_arr)/sizeof(_arr[0]))
+#define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
@@ -144,15 +135,6 @@ struct PACKED Location {
     int32_t lng;                                        ///< param 4 - Longitude * 10**7
 };
 
-/*
-  home states. Used to record if user has overridden home position.
-*/
-enum HomeState {
-    HOME_UNSET,                 // home is unset, no GPS positions yet received
-    HOME_SET_NOT_LOCKED,        // home is set to EKF origin or armed location (can be moved)
-    HOME_SET_AND_LOCKED         // home has been set by user, cannot be moved except by user initiated do-set-home command
-};
-
 //@}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -167,10 +149,6 @@ enum HomeState {
   False otherwise.
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
-#include <AP_HAL_QURT/replace.h>
-#endif
 
 /*
   useful debugging macro for SITL

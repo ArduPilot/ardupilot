@@ -10,6 +10,8 @@
 #define HAL_BARO_DEFAULT HAL_BARO_PX4
 #define HAL_COMPASS_DEFAULT HAL_COMPASS_PX4
 
+#define HAL_HAVE_GETTIME_SETTIME 1
+
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V1
 #define HAL_STORAGE_SIZE            8192
@@ -106,15 +108,6 @@
 #define HAL_PX4_HAVE_PWM_INPUT 0
 #endif
 
-/* AP_Radio configuration */
-
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
-// this is the SPI bus for cypress on the skyviper-v2450
-# define CYRF_SPI_PX4_SPI_BUS        2
-# define CYRF_SPI_PX4_SPIDEV_EXT     (spi_dev_e)1
-# define CYRF_IRQ_INPUT (GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTD|GPIO_PIN15)
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-
 /* default values */
 #ifndef HAL_SERIAL0_BAUD_DEFAULT
 #define HAL_SERIAL0_BAUD_DEFAULT 115200
@@ -147,3 +140,6 @@
 #ifndef AP_FEATURE_SBUS_OUT
 #define AP_FEATURE_SBUS_OUT 1
 #endif
+
+#include <AP_HAL_PX4/Semaphores.h>
+#define HAL_Semaphore PX4::Semaphore

@@ -57,6 +57,12 @@ public:
     void send_adsb_vehicle(mavlink_channel_t chan);
 
     void set_stall_speed_cm(const uint16_t stall_speed_cm) { out_state.cfg.stall_speed_cm = stall_speed_cm; }
+    void set_max_speed(int16_t max_speed) {
+        if (!out_state.cfg.was_set_externally) {
+            // convert m/s to knots
+            out_state.cfg.maxAircraftSpeed_knots = (float)max_speed * 1.94384f;
+        }
+    }
 
     void set_is_auto_mode(const bool is_in_auto_mode) { out_state._is_in_auto_mode = is_in_auto_mode; }
     void set_is_flying(const bool is_flying) { out_state.is_flying = is_flying; }
@@ -102,11 +108,17 @@ private:
     void send_configure(const mavlink_channel_t chan);
     void send_dynamic_out(const mavlink_channel_t chan);
 
+    // special helpers for uAvionix workarounds
+    uint32_t get_encoded_icao(void);
+    uint8_t get_encoded_callsign_null_char(void);
+
     // add or update vehicle_list from inbound mavlink msg
     void handle_vehicle(const mavlink_message_t* msg);
 
     // handle ADS-B transceiver report for ping2020
     void handle_transceiver_report(mavlink_channel_t chan, const mavlink_message_t* msg);
+
+    void handle_out_cfg(const mavlink_message_t* msg);
 
     AP_Int8     _enabled;
 
@@ -143,13 +155,18 @@ private:
             int32_t     ICAO_id;
             AP_Int32    ICAO_id_param;
             int32_t     ICAO_id_param_prev = -1; // assume we never send
-            char        callsign[9]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
+            char        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN]; //Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only).
             AP_Int8     emitterType;
             AP_Int8     lengthWidth;  // Aircraft length and width encoding (table 2-35 of DO-282B)
             AP_Int8     gpsLatOffset;
             AP_Int8     gpsLonOffset;
             uint16_t    stall_speed_cm;
             AP_Int8     rfSelect;
+            AP_Int16    squawk_octal_param;
+            uint16_t    squawk_octal;
+            float       maxAircraftSpeed_knots;
+            AP_Int8     rf_capable;
+            bool        was_set_externally;
         } cfg;
 
     } out_state;

@@ -43,9 +43,13 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     // record requested speed
     _speed_hz = speed_hz;
 
-    // we can use a mask of 0xFF here as rc_set_freq masks with actual
-    // motor mask
-    rc_set_freq(0xFF, _speed_hz );
+    uint16_t mask = 0;
+    for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            mask |= 1U << i;
+        }
+    }
+    rc_set_freq(mask, _speed_hz );
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -276,10 +280,10 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 }
 
-// output_test - spin a motor at the pwm value specified
+// output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsMatrix::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -293,6 +297,31 @@ void AP_MotorsMatrix::output_test(uint8_t motor_seq, int16_t pwm)
             rc_write(i, pwm);
         }
     }
+}
+
+// output_test_num - spin a motor connected to the specified output channel
+//  (should only be performed during testing)
+//  If a motor output channel is remapped, the mapped channel is used.
+//  Returns true if motor output is set, false otherwise
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+bool AP_MotorsMatrix::output_test_num(uint8_t output_channel, int16_t pwm)
+{
+    if (!armed()) {
+        return false;
+    }
+
+    // Is channel in supported range?
+    if (output_channel > AP_MOTORS_MAX_NUM_MOTORS -1) {
+        return false;
+    }
+
+    // Is motor enabled?
+    if (!motor_enabled[output_channel]) {
+        return false;
+    }
+
+    rc_write(output_channel, pwm); // output
+    return true;
 }
 
 // add_motor

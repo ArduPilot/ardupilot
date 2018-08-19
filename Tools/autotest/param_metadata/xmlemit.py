@@ -57,6 +57,8 @@ class XmlEmit(Emit):
                         values = (param.__dict__[field]).split(',')
                         for value in values:
                             v = value.split(':')
+                            if len(v) != 2:
+                                raise ValueError("Bad value (%s)" % v)
                             t += '''<value code=%s>%s</value>\n''' % (quoteattr(v[0]), escape(v[1]))  # i.e. numeric value, string label
 
                         t += "</values>\n"

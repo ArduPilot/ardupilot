@@ -15,7 +15,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti
+  USE_CPPOPT = -fno-rtti -std=gnu++11
 endif
 
 # Enable this if you want the linker to remove unused code and data
@@ -49,9 +49,9 @@ ifeq ($(USE_SMART_BUILD),)
   USE_SMART_BUILD = no
 endif
 
-ifeq ($(USE_FATFS),)
-  USE_FATFS = yes
-  FATFS_FLAGS=-DUSE_FATFS
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
+ifeq ($(USE_FATFS),yes)
+include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
 #
@@ -92,10 +92,10 @@ PROJECT = ch
 
 # Imported source files and paths
 # Startup files.
-include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
+include $(CHIBIOS)/$(CHIBIOS_STARTUP_MK)
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/ports/STM32/STM32F4xx/platform.mk
+include $(CHIBIOS)/$(CHIBIOS_PLATFORM_MK)
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -109,26 +109,20 @@ include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
-VARIOUSSRC = $(STREAMSSRC)
-
-VARIOUSINC = $(STREAMSINC)
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CSRC = $(STARTUPSRC) \
-       $(KERNSRC) \
-       $(PORTSRC) \
-       $(OSALSRC) \
-       $(HALSRC) \
-       $(PLATFORMSRC) \
-       $(VARIOUSSRC) \
-       $(FATFSSRC) \
-	   $(HWDEF)/common/stubs.c \
+
+CSRC = $(sort $(ALLCSRC))
+
+CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/board.c \
 	   $(HWDEF)/common/usbcfg.c \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/stdio.c \
-	   $(HWDEF)/common/hrt.c
+	   $(HWDEF)/common/hrt.c \
+	   $(HWDEF)/common/stm32_util.c \
+	   $(HWDEF)/common/bouncebuffer.c
 
 ifeq ($(USE_FATFS),yes)
 CSRC += $(HWDEF)/common/posix.c
@@ -140,7 +134,7 @@ endif
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC = $(CHCPPSRC)
+CPPSRC = $(sort $(ALLCPPSRC))
 
 # C sources to be compiled in ARM mode regardless of the global setting.
 # NOTE: Mixing ARM and THUMB mode enables the -mthumb-interwork compiler
@@ -163,13 +157,11 @@ TCSRC =
 TCPPSRC =
 
 # List ASM source files here
-ASMSRC =
-ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
+ASMSRC = $(ALLASMSRC)
+ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
-         $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(FATFSINC) \
-         $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(VARIOUSINC) $(CHCPPINC) \
-		 $(HWDEF)/common
+         $(ALLINC) $(HWDEF)/common
 
 #
 # Project, sources and paths
@@ -220,6 +212,11 @@ CPPWARN = -Wall -Wextra -Wundef
 
 # List all user C define here, like -D_DEBUG=1
 UDEFS = $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
+
+ifeq ($(ENABLE_ASSERTS),yes)
+ UDEFS += -DHAL_CHIBIOS_ENABLE_ASSERTS
+ ASXFLAGS += -DHAL_CHIBIOS_ENABLE_ASSERTS
+endif
 
 # Define ASM defines here
 UADEFS =

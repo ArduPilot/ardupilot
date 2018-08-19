@@ -45,7 +45,9 @@ public:
 protected:
     const float water_density = 1023.6; // (kg/m^3) At a temperature of 25 °C, salinity of 35 g/kg and 1 atm pressure
 
-    const struct {
+    const class FrameConfig {
+    public:
+        FrameConfig() = default;
         float length = 0.457; // x direction (meters)
         float width  = 0.338; // y direction (meters)
         float height = 0.254; // z direction (meters)

@@ -1,6 +1,24 @@
 #include "Rover.h"
 
 /*
+    work out if we are going to use pivot steering at next waypoint
+*/
+bool Rover::use_pivot_steering_at_next_WP(float yaw_error_cd)
+{
+    // check cases where we clearly cannot use pivot steering
+    if (!g2.motors.have_skid_steering() || g.pivot_turn_angle <= 0) {
+        return false;
+    }
+
+    // if error is larger than pivot_turn_angle then use pivot steering at next WP
+    if (fabsf(yaw_error_cd) * 0.01f > g.pivot_turn_angle) {
+        return true;
+    }
+
+    return false;
+}
+
+/*
     work out if we are going to use pivot steering
 */
 bool Rover::use_pivot_steering(float yaw_error_cd)
@@ -39,6 +57,12 @@ void Rover::set_servos(void)
     if (motor_test) {
         motor_test_output();
     } else {
-        g2.motors.output(arming.is_armed() && hal.util->get_soft_armed(), G_Dt);
+        // get ground speed
+        float speed;
+        if (!g2.attitude_control.get_forward_speed(speed)) {
+            speed = 0.0f;
+        }
+
+        g2.motors.output(arming.is_armed(), speed, G_Dt);
     }
 }

@@ -109,7 +109,7 @@ private:
     void _register_write(uint8_t reg, uint8_t val, bool checked=false);
 
     bool _accumulate(uint8_t *samples, uint8_t n_samples);
-    bool _accumulate_fast_sampling(uint8_t *samples, uint8_t n_samples);
+    bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples);
 
     bool _check_raw_temp(int16_t t2);
 
@@ -149,7 +149,7 @@ private:
 
     /*
       accumulators for fast sampling
-      See description in _accumulate_fast_sampling()
+      See description in _accumulate_sensor_rate_sampling()
     */
     struct {
         Vector3f accel;

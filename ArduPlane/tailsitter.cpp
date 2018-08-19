@@ -118,7 +118,7 @@ void QuadPlane::tailsitter_output(void)
     
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
-        hal.rcin->read(tailsitter.input_mask_chan-1) > 1700) {
+        RC_Channels::get_radio_in(tailsitter.input_mask_chan-1) > 1700) {
         // the user is learning to prop-hang
         if (tailsitter.input_mask & TAILSITTER_MASK_AILERON) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.channel_roll->get_control_in_zero_dz());
@@ -209,13 +209,14 @@ void QuadPlane::tailsitter_speed_scaling(void)
 {
     const float hover_throttle = motors->get_throttle_hover();
     const float throttle = motors->get_throttle();
-    const float scaling_max = 5;
-    float scaling = 1;
+    float scaling;
+
     if (is_zero(throttle)) {
-        scaling = scaling_max;
+        scaling = tailsitter.throttle_scale_max;
     } else {
-        scaling = constrain_float(hover_throttle / throttle, 1/scaling_max, scaling_max);
+        scaling = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
     }
+
     const SRV_Channel::Aux_servo_function_t functions[2] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator};

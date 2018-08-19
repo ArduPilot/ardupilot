@@ -26,7 +26,8 @@
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
 #define LINUX_GPIO_NUM_BANKS 4
 #else
 // disable GPIO
@@ -121,7 +122,6 @@ public:
     GPIO_BBB();
     void    init();
     void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
     uint8_t read(uint8_t pin);
     void    write(uint8_t pin, uint8_t value);
     void    toggle(uint8_t pin);

@@ -348,6 +348,17 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TRANS_DECEL", 1, QuadPlane, transition_decel, 2.0),
 
+    // @Group: LOIT_
+    // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
+    AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
+
+    // @Param: TAILSIT_THSCMX
+    // @DisplayName: Maximum control throttle scaling value
+    // @Description: Maximum value of throttle scaling for tailsitter velocity scaling, reduce this value to remove low thorottle D ossilaitons 
+    // @Range: 1 5
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 5),
+	
     AP_GROUPEND
 };
 
@@ -367,6 +378,11 @@ static const struct defaults_struct defaults_table[] = {
     { "Q_A_RAT_PIT_I",    0.25 },
     { "Q_A_RAT_PIT_FILT", 10.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
+    { "Q_LOIT_ANG_MAX",   15.0 },
+    { "Q_LOIT_ACC_MAX",   250.0 },
+    { "Q_LOIT_BRK_ACCEL", 50.0 },
+    { "Q_LOIT_BRK_JERK",  250 },
+    { "Q_LOIT_SPEED",     500 },
 };
 
 /*
@@ -401,6 +417,10 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 336,  AP_PARAM_FLOAT, "Q_P_ACCZ_IMAX"},   //  Q_AZ_IMAX
     { Parameters::k_param_quadplane, 400,  AP_PARAM_FLOAT, "Q_P_ACCZ_FILT"},   //  Q_AZ_FILT
     { Parameters::k_param_quadplane, 464,  AP_PARAM_FLOAT, "Q_P_ACCZ_FF"},     //  Q_AZ_FF
+    { Parameters::k_param_quadplane, 276,  AP_PARAM_FLOAT, "Q_LOIT_SPEED"},    //  Q_WP_LOIT_SPEED
+    { Parameters::k_param_quadplane, 468,  AP_PARAM_FLOAT, "Q_LOIT_BRK_JERK" },//  Q_WP_LOIT_JERK
+    { Parameters::k_param_quadplane, 532,  AP_PARAM_FLOAT, "Q_LOIT_ACC_MAX" }, //  Q_WP_LOIT_MAXA
+    { Parameters::k_param_quadplane, 596,  AP_PARAM_FLOAT, "Q_LOIT_BRK_ACCEL" },// Q_WP_LOIT_MINA
 };
 
 
@@ -506,16 +526,16 @@ bool QuadPlane::setup(void)
 
     switch (motor_class) {
     case AP_Motors::MOTOR_FRAME_TRI:
-        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsTri::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
-        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsTailsitter::var_info;
         rotation = ROTATION_PITCH_90;
         break;
     default:
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
         break;
     }
@@ -551,6 +571,13 @@ bool QuadPlane::setup(void)
         goto failed;
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
+
+    loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    if (!loiter_nav) {
+        hal.console->printf("%s loiter_nav\n", strUnableToAllocate);
+        goto failed;
+    }
+    AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
     motors->init((AP_Motors::motor_frame_class)frame_class.get(), (AP_Motors::motor_frame_type)frame_type.get());
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
@@ -806,20 +833,8 @@ void QuadPlane::control_hover(void)
 
 void QuadPlane::init_loiter(void)
 {
-    /*
-      calculate stopping point based on Q_TRANS_DECEL. This allows the
-      user to setup for a more or less agressive stop when entering
-      QLOITER
-     */
-    Vector3f stopping_point = inertial_nav.get_position();
-    Vector3f vel = inertial_nav.get_velocity();
-    if (!vel.is_zero()) {
-        vel.z = 0;
-        stopping_point += vel.normalized() * stopping_distance() * 100;
-    }
-
     // initialise loiter
-    wp_nav->init_loiter_target(stopping_point);
+    loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -857,6 +872,9 @@ bool QuadPlane::is_flying(void)
         return true;
     }
     if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
+        return true;
+    }
+    if (in_tailsitter_vtol_transition()) {
         return true;
     }
     return false;
@@ -924,17 +942,17 @@ void QuadPlane::control_loiter()
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control->set_throttle_out_unstabilized(0, true, 0);
         pos_control->relax_alt_hold_controllers(0);
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
         return;
     }
 
 
     if (should_relax()) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     if (millis() - last_loiter_ms > 500) {
-        wp_nav->init_loiter_target();
+        loiter_nav->init_target();
     }
     last_loiter_ms = millis();
 
@@ -946,20 +964,20 @@ void QuadPlane::control_loiter()
     pos_control->set_accel_z(pilot_accel_z);
 
     // process pilot's roll and pitch input
-    wp_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
-                                           plane.channel_pitch->get_control_in(),
-                                           plane.G_Dt);
+    loiter_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
+                                               plane.channel_pitch->get_control_in(),
+                                               plane.G_Dt);
 
     // Update EKF speed limit - used to limit speed when we are using optical flow
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
     
     // run loiter controller
-    wp_nav->update_loiter(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     // nav roll and pitch are controller by loiter controller
-    plane.nav_roll_cd = wp_nav->get_roll();
-    plane.nav_pitch_cd = wp_nav->get_pitch();
+    plane.nav_roll_cd = loiter_nav->get_roll();
+    plane.nav_pitch_cd = loiter_nav->get_pitch();
 
     const uint32_t now = AP_HAL::millis();
     if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
@@ -1152,7 +1170,7 @@ bool QuadPlane::assistance_needed(float aspeed)
         return false;
     }
     
-    uint32_t max_angle_cd = 100U*assist_angle;
+    int32_t max_angle_cd = 100U*assist_angle;
     if ((labs(ahrs.roll_sensor - plane.nav_roll_cd) < max_angle_cd &&
          labs(ahrs.pitch_sensor - plane.nav_pitch_cd) < max_angle_cd)) {
         // not beyond angle error
@@ -1815,7 +1833,7 @@ void QuadPlane::vtol_position_controller(void)
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
             poscontrol.state = QPOS_POSITION2;
-            wp_nav->init_loiter_target();
+            loiter_nav->init_target();
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                                     (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
         }
@@ -2080,7 +2098,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set target to current position
-    wp_nav->init_loiter_target();
+    loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
     pos_control->set_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
@@ -2208,7 +2226,7 @@ bool QuadPlane::verify_vtol_land(void)
     }
 
     if (should_relax()) {
-        wp_nav->loiter_soften_for_landing();
+        loiter_nav->soften_for_landing();
     }
 
     // at land_final_alt begin final landing
@@ -2480,15 +2498,21 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     return true;
 }
 
+// return true if the wp_nav controller is being updated
+bool QuadPlane::using_wp_nav(void) const
+{
+    return plane.control_mode == QLOITER || plane.control_mode == QLAND || plane.control_mode == QRTL;
+}
+
 /*
   return mav_type for heartbeat
  */
-uint8_t QuadPlane::get_mav_type(void) const
+MAV_TYPE QuadPlane::get_mav_type(void) const
 {
     if (mav_type.get() == 0) {
         return MAV_TYPE_FIXED_WING;
     }
-    return uint8_t(mav_type.get());
+    return MAV_TYPE(mav_type.get());
 }
 
 /*

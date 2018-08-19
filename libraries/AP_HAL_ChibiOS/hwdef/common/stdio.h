@@ -13,6 +13,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
 #include "posix.h"
 #include <stdarg.h>
 #include <stdint.h>
@@ -37,6 +40,9 @@ int vsscanf (const char *buf, const char *s, va_list ap);
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *ptr);
+
+extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
+
 #ifdef __cplusplus
 }
 #endif

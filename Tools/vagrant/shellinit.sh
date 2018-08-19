@@ -8,6 +8,7 @@ export BUILDLOGS=/tmp/buildlogs
 
 export APMROOT=/vagrant
 export PATH=$APMROOT/Tools/autotest:$PATH
+export PATH=/usr/lib/ccache:$PATH
 
 cd $APMROOT/ArduCopter
 

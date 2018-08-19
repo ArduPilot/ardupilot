@@ -20,76 +20,157 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
-#define STORAGE_DIR "."
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-#define STORAGE_DIR "/mnt/APM"
-#else
-#define STORAGE_DIR HAL_BOARD_STORAGE_DIRECTORY
-#endif
-
-#define STORAGE_FILE STORAGE_DIR "/" SKETCHNAME ".stg"
+#define STORAGE_FILE SKETCHNAME ".stg"
 
 extern const AP_HAL::HAL& hal;
 
-void Storage::_storage_create(void)
+static inline int is_dir(const char *path)
 {
-    mkdir(STORAGE_DIR, 0777);
-    unlink(STORAGE_FILE);
-    int fd = open(STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
-    if (fd == -1) {
-        AP_HAL::panic("Failed to create " STORAGE_FILE);
+    struct stat st;
+
+    if (stat(path, &st) < 0) {
+        return -errno;
     }
-    for (uint16_t loc=0; loc<sizeof(_buffer); loc += LINUX_STORAGE_MAX_WRITE) {
-        if (write(fd, &_buffer[loc], LINUX_STORAGE_MAX_WRITE) != LINUX_STORAGE_MAX_WRITE) {
-            perror("write");
-            AP_HAL::panic("Error filling " STORAGE_FILE);
-        }
-    }
-    // ensure the directory is updated with the new size
-    fsync(fd);
-    close(fd);
+
+    return S_ISDIR(st.st_mode);
 }
 
-void Storage::_storage_open(void)
+static int mkdir_p(const char *path, int len, mode_t mode)
 {
+    char *start, *end;
+
+    start = strndupa(path, len);
+    end = start + len;
+
+    /*
+     * scan backwards, replacing '/' with '\0' while the component doesn't
+     * exist
+     */
+    for (;;) {
+        int r = is_dir(start);
+        if (r > 0) {
+            end += strlen(end);
+
+            if (end == start + len) {
+                return 0;
+            }
+
+            /* end != start, since it would be caught on the first
+             * iteration */
+            *end = '/';
+            break;
+        } else if (r == 0) {
+            return -ENOTDIR;
+        }
+
+        if (end == start) {
+            break;
+        }
+
+        *end = '\0';
+
+        /* Find the next component, backwards, discarding extra '/'*/
+        while (end > start && *end != '/') {
+            end--;
+        }
+
+        while (end > start && *(end - 1) == '/') {
+            end--;
+        }
+    }
+
+    while (end < start + len) {
+        if (mkdir(start, mode) < 0 && errno != EEXIST) {
+            return -errno;
+        }
+
+        end += strlen(end);
+        *end = '/';
+    }
+
+    return 0;
+}
+
+int Storage::_storage_create(const char *dpath)
+{
+    int dfd = -1;
+
+    mkdir_p(dpath, strlen(dpath), 0777);
+    dfd = open(dpath, O_RDONLY|O_CLOEXEC);
+    if (dfd == -1) {
+        fprintf(stderr, "Failed to open storage directory: %s (%m)\n", dpath);
+        return -1;
+    }
+
+    unlinkat(dfd, dpath, 0);
+    int fd = openat(dfd, STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
+
+    close(dfd);
+
+    if (fd == -1) {
+        fprintf(stderr, "Failed to create storage file %s/%s\n", dpath,
+                STORAGE_FILE);
+        goto fail;
+    }
+
+    // take up all needed space
+    if (ftruncate(fd, sizeof(_buffer)) == -1) {
+        fprintf(stderr, "Failed to set file size to %u kB (%m)\n",
+                sizeof(_buffer) / 1024);
+        goto fail;
+    }
+
+    // ensure the directory is updated with the new size
+    fsync(fd);
+    fsync(dfd);
+
+    close(dfd);
+
+    return fd;
+
+fail:
+    close(dfd);
+    return -1;
+}
+
+void Storage::init()
+{
+    const char *dpath;
+
     if (_initialised) {
         return;
     }
 
     _dirty_mask = 0;
-    int fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
+
+    dpath = hal.util->get_custom_storage_directory();
+    if (!dpath) {
+        dpath = HAL_BOARD_STORAGE_DIRECTORY;
+    }
+
+    int fd = open(dpath, O_RDWR|O_CLOEXEC);
     if (fd == -1) {
-        _storage_create();
-        fd = open(STORAGE_FILE, O_RDWR|O_CLOEXEC);
+        fd = _storage_create(dpath);
         if (fd == -1) {
-            AP_HAL::panic("Failed to open " STORAGE_FILE);
+            AP_HAL::panic("Cannot create storage %s (%m)", dpath);
         }
     }
-    memset(_buffer, 0, sizeof(_buffer));
-    /*
-      we allow a read of size 4096 to cope with the old storage size
-      without forcing users to reset all parameters
-     */
+
     ssize_t ret = read(fd, _buffer, sizeof(_buffer));
-    if (ret == 4096 && ret != sizeof(_buffer)) {
-        if (ftruncate(fd, sizeof(_buffer)) != 0) {
-            AP_HAL::panic("Failed to expand " STORAGE_FILE);
-        }
-        ret = sizeof(_buffer);
-    }
+
     if (ret != sizeof(_buffer)) {
         close(fd);
-        _storage_create();
-        fd = open(STORAGE_FILE, O_RDONLY|O_CLOEXEC);
+        _storage_create(dpath);
+        fd = open(dpath, O_RDONLY|O_CLOEXEC);
         if (fd == -1) {
-            AP_HAL::panic("Failed to open " STORAGE_FILE);
+            AP_HAL::panic("Failed to open %s (%m)", dpath);
         }
         if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            AP_HAL::panic("Failed to read " STORAGE_FILE);
+            AP_HAL::panic("Failed to read %s (%m)", dpath);
         }
     }
-    close(fd);
+
+    _fd = fd;
     _initialised = true;
 }
 
@@ -115,7 +196,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
     }
-    _storage_open();
+    init();
     memcpy(dst, &_buffer[loc], n);
 }
 
@@ -125,7 +206,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
         return;
     }
     if (memcmp(src, &_buffer[loc], n) != 0) {
-        _storage_open();
+        init();
         memcpy(&_buffer[loc], src, n);
         _mark_dirty(loc, n);
     }
@@ -133,15 +214,8 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
 
 void Storage::_timer_tick(void)
 {
-    if (!_initialised || _dirty_mask == 0) {
+    if (!_initialised || _dirty_mask == 0 || _fd == -1) {
         return;
-    }
-
-    if (_fd == -1) {
-        _fd = open(STORAGE_FILE, O_WRONLY|O_CLOEXEC);
-        if (_fd == -1) {
-            return;
-        }
     }
 
     // write out the first dirty set of lines. We don't write more

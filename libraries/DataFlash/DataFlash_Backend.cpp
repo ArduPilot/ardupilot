@@ -49,10 +49,10 @@ DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle
 void DataFlash_Backend::periodic_10Hz(const uint32_t now)
 {
 }
-void DataFlash_Backend::periodic_1Hz(const uint32_t now)
+void DataFlash_Backend::periodic_1Hz()
 {
 }
-void DataFlash_Backend::periodic_fullrate(const uint32_t now)
+void DataFlash_Backend::periodic_fullrate()
 {
 }
 
@@ -60,14 +60,14 @@ void DataFlash_Backend::periodic_tasks()
 {
     uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
-        periodic_1Hz(now);
+        periodic_1Hz();
         _last_periodic_1Hz = now;
     }
     if (now - _last_periodic_10Hz > 100) {
         periodic_10Hz(now);
         _last_periodic_10Hz = now;
     }
-    periodic_fullrate(now);
+    periodic_fullrate();
 }
 
 void DataFlash_Backend::start_new_log_reset_variables()
@@ -146,15 +146,20 @@ void DataFlash_Backend::WriteMoreStartupMessages()
 bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
 {
     // get log structure from front end:
+    char ls_name[LS_NAME_SIZE] = {};
+    char ls_format[LS_FORMAT_SIZE] = {};
+    char ls_labels[LS_LABELS_SIZE] = {};
+    char ls_units[LS_UNITS_SIZE] = {};
+    char ls_multipliers[LS_MULTIPLIERS_SIZE] = {};
     struct LogStructure logstruct = {
         // these will be overwritten, but need to keep the compiler happy:
         0,
         0,
-        "IGNO",
-        "",
-        "",
-        "",
-        ""
+        ls_name,
+        ls_format,
+        ls_labels,
+        ls_units,
+        ls_multipliers
     };
     if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
         // this is a bug; we've been asked to write out the FMT
@@ -353,4 +358,16 @@ bool DataFlash_Backend::ShouldLog(bool is_critical)
     }
     
     return true;
+}
+
+bool DataFlash_Backend::Log_Write_MessageF(const char *fmt, ...)
+{
+    char msg[64] {};
+
+    va_list ap;
+    va_start(ap, fmt);
+    hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    return Log_Write_Message(msg);
 }

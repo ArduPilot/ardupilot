@@ -28,7 +28,7 @@ void Plane::read_control_switch()
     // as a spring loaded trainer switch).
     if (oldSwitchPosition != switchPosition ||
         (g.reset_switch_chan != 0 &&
-         hal.rcin->read(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
 
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the
@@ -45,7 +45,7 @@ void Plane::read_control_switch()
     }
 
     if (g.reset_mission_chan != 0 &&
-        hal.rcin->read(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
+        RC_Channels::get_radio_in(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
         mission.start();
         prev_WP_loc = current_loc;
     }
@@ -55,12 +55,12 @@ void Plane::read_control_switch()
     if (g.inverted_flight_ch != 0) {
         // if the user has configured an inverted flight channel, then
         // fly upside down when that channel goes above INVERTED_FLIGHT_PWM
-        inverted_flight = (control_mode != MANUAL && hal.rcin->read(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
+        inverted_flight = (control_mode != MANUAL && RC_Channels::get_radio_in(g.inverted_flight_ch-1) > INVERTED_FLIGHT_PWM);
     }
 
 #if PARACHUTE == ENABLED
     if (g.parachute_channel > 0) {
-        if (hal.rcin->read(g.parachute_channel-1) >= 1700) {
+        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= 1700) {
             parachute_manual_release();
         }
     }
@@ -69,7 +69,7 @@ void Plane::read_control_switch()
 #if HAVE_PX4_MIXER
     if (g.override_channel > 0) {
         // if the user has configured an override channel then check it
-        bool override_requested = (hal.rcin->read(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
+        bool override_requested = (RC_Channels::get_radio_in(g.override_channel-1) >= PX4IO_OVERRIDE_PWM);
         if (override_requested && !px4io_override_enabled) {
             if (hal.util->get_soft_armed() || (last_mixer_crc != -1)) {
                 px4io_override_enabled = true;
@@ -100,7 +100,7 @@ void Plane::read_control_switch()
 
 uint8_t Plane::readSwitch(void)
 {
-    uint16_t pulsewidth = hal.rcin->read(g.flight_mode_channel - 1);
+    uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
     if (pulsewidth <= 1230) return 0;
     if (pulsewidth <= 1360) return 1;

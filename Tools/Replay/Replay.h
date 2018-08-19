@@ -21,7 +21,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_ADC/AP_ADC.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>
 #include <AP_Buffer/AP_Buffer.h>
@@ -35,7 +34,6 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_InertialNav/AP_InertialNav.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Mission/AP_Mission.h>
@@ -67,11 +65,10 @@ public:
     NavEKF2 EKF2{&ahrs, rng};
     NavEKF3 EKF3{&ahrs, rng};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
-    AP_InertialNav_NavEKF inertial_nav{ahrs};
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
-    DataFlash_Class dataflash{"Replay v0.1", unused};
+    DataFlash_Class dataflash{unused};
 
 private:
     Parameters g;

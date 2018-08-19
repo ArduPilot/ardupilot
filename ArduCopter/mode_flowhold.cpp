@@ -103,9 +103,6 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     quality_filtered = 0;
     flow_pi_xy.reset_I();
     limited = false;
-    
-    // stop takeoff if running
-    copter.takeoff_stop();
 
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 
@@ -247,7 +244,7 @@ void Copter::ModeFlowHold::run()
     
     if (!copter.motors->armed() || !copter.motors->get_interlock()) {
         flowhold_state = FlowHold_MotorStopped;
-    } else if (copter.takeoff_state.running || takeoff_triggered(target_climb_rate)) {
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
         flowhold_state = FlowHold_Takeoff;
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         flowhold_state = FlowHold_Landed;
@@ -307,8 +304,8 @@ void Copter::ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
-        if (!copter.takeoff_state.running) {
-            copter.takeoff_timer_start(constrain_float(copter.g.pilot_takeoff_alt,0.0f,1000.0f));
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
             // indicate we are taking off
             copter.set_land_complete(false);
             // clear i terms
@@ -316,7 +313,7 @@ void Copter::ModeFlowHold::run()
         }
 
         // get take-off adjusted pilot and takeoff climb rates
-        copter.takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -357,10 +354,7 @@ void Copter::ModeFlowHold::run()
         copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
         // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate, copter.pos_control->get_alt_target(), copter.G_Dt);
-        }
+        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate, copter.pos_control->get_alt_target(), copter.G_Dt);
 
         // get avoidance adjusted climb rate
         target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -520,8 +514,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
                                            (double)ins_height,
                                            (double)last_ins_height,
                                            dt_ms);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_0, AP_HAL::millis(), "HEST", height_estimate);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_1, AP_HAL::millis(), "HEST", height_estimate);
+    gcs().send_named_float("HEST", height_estimate);
     delta_velocity_ne.zero();
     last_ins_height = ins_height;
 }

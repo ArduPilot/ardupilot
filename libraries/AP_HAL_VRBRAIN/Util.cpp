@@ -96,14 +96,6 @@ enum VRBRAINUtil::safety_state VRBRAINUtil::safety_switch_state(void)
     return AP_HAL::Util::SAFETY_DISARMED;
 }
 
-void VRBRAINUtil::set_system_clock(uint64_t time_utc_usec)
-{
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);    
-}
-
 /*
   display VRBRAIN system identifer - board type and serial number
  */
@@ -135,7 +127,8 @@ bool VRBRAINUtil::get_system_id(char buf[40])
              board_type,
              (unsigned)serialid[0], (unsigned)serialid[1], (unsigned)serialid[2], (unsigned)serialid[3], 
              (unsigned)serialid[4], (unsigned)serialid[5], (unsigned)serialid[6], (unsigned)serialid[7], 
-             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]); 
+             (unsigned)serialid[8], (unsigned)serialid[9], (unsigned)serialid[10],(unsigned)serialid[11]);
+    buf[39] = 0;
     return true;
 }
 

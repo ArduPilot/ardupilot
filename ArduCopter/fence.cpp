@@ -8,15 +8,17 @@
 // called at 1hz
 void Copter::fence_check()
 {
-    // ignore any fence activity when not armed
-    if(!motors->armed()) {
-        return;
-    }
-
     const uint8_t orig_breaches = fence.get_breaches();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
     const uint8_t new_breaches = fence.check();
+
+    // we still don't do anything when disarmed, but we do check for fence breaches.
+    // fence pre-arm check actually checks if any fence has been breached 
+    // that's not ever going to be true if we don't call check on AP_Fence while disarmed.
+    if (!motors->armed()) {
+        return;
+    }
 
     // if there is a new breach take action
     if (new_breaches) {
@@ -28,13 +30,17 @@ void Copter::fence_check()
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
             if (ap.land_complete || (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio && ((fence.get_breaches() & AC_FENCE_TYPE_ALT_MAX)== 0))){
                 init_disarm_motors();
-            }else{
-                // if we are within 100m of the fence, RTL
-                if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
+
+            } else {
+                // if always land option mode is specified, land
+                if (fence.get_action() == AC_FENCE_ACTION_ALWAYS_LAND) {
+                    set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                } else if (fence.get_breach_distance(new_breaches) <= AC_FENCE_GIVE_UP_DISTANCE) {
                     if (!set_mode(RTL, MODE_REASON_FENCE_BREACH)) {
                         set_mode(LAND, MODE_REASON_FENCE_BREACH);
+                        // if we are within 100m of the fence, RTL
                     }
-                }else{
+                } else {
                     // if more than 100m outside the fence just force a land
                     set_mode(LAND, MODE_REASON_FENCE_BREACH);
                 }

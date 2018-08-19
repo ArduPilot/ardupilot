@@ -33,10 +33,11 @@
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
+  int retval = 0;
+#ifndef HAL_NO_PRINTF
   MemoryStream ms;
   BaseSequentialStream *chp;
   size_t size_wo_nul;
-  int retval;
 
   if (size > 0)
     size_wo_nul = size - 1;
@@ -58,11 +59,18 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
       str[ms.eos] = 0;
 
   /* Return number of bytes that would have been written.*/
+#else
+  (void)str;
+  (void)size;
+  (void)fmt;
+  (void)ap;
+#endif
   return retval;
 }
 
 int snprintf(char *str, size_t size, const char *fmt, ...)
 {
+#ifndef HAL_NO_PRINTF
    va_list arg;
    int done;
  
@@ -71,10 +79,17 @@ int snprintf(char *str, size_t size, const char *fmt, ...)
    va_end (arg);
  
    return done;
+#else
+   (void)str;
+   (void)size;
+   (void)fmt;
+   return 0;
+#endif
 }
 
 int vasprintf(char **strp, const char *fmt, va_list ap)
 {
+#ifndef HAL_NO_PRINTF
     int len = vsnprintf(NULL, 0, fmt, ap);
     if (len <= 0) {
         return -1;
@@ -86,15 +101,27 @@ int vasprintf(char **strp, const char *fmt, va_list ap)
     vsnprintf(buf, len+1, fmt, ap);
     (*strp) = buf;
     return len;
+#else
+    (void)strp;
+    (void)fmt;
+    (void)ap;
+    return 0;
+#endif
 }
 
 int asprintf(char **strp, const char *fmt, ...)
 {
+#ifndef HAL_NO_PRINTF
     va_list ap;
     va_start(ap, fmt);
     int ret = vasprintf(strp, fmt, ap);
     va_end(ap);
     return ret;
+#else
+    (void)strp;
+    (void)fmt;
+    return 0;
+#endif
 }
 
 int vprintf(const char *fmt, va_list arg)
@@ -107,16 +134,24 @@ int vprintf(const char *fmt, va_list arg)
 #endif
 }
 
+// hook to allow for printf() on systems without HAL_STDOUT_SERIAL
+int (*vprintf_console_hook)(const char *fmt, va_list arg) = vprintf;
+
 int printf(const char *fmt, ...)
 {
+#ifndef HAL_NO_PRINTF
    va_list arg;
    int done;
  
    va_start (arg, fmt);
-   done =  vprintf(fmt, arg);
+   done =  vprintf_console_hook(fmt, arg);
    va_end (arg);
  
    return done;
+#else
+   (void)fmt;
+   return 0;
+#endif
 }
 
 //just a stub

@@ -28,6 +28,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
     AP_GROUPEND
 };
 
+#define QUAD_SERVO_MAX_ANGLE 4500
+
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 {
@@ -51,12 +53,10 @@ bool AP_MotorsHeli_Quad::init_outputs()
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        _servo[i] = SRV_Channels::get_channel_for(SRV_Channels::get_motor_function(i), CH_1+i);
-        if (!_servo[i]) {
-            return false;
-        }
+        add_motor_num(CH_1+i);
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), QUAD_SERVO_MAX_ANGLE);
     }
-    
+
     // set rotor servo range
     _rotor.init_servo();
 
@@ -65,10 +65,10 @@ bool AP_MotorsHeli_Quad::init_outputs()
     return true;
 }
 
-// output_test - spin a motor at the pwm value specified
+// output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::output_test(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsHeli_Quad::output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // exit immediately if not armed
     if (!armed()) {
@@ -99,11 +99,15 @@ void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
+    float thrcrv[5];
+    for (uint8_t i = 0; i < 5; i++) {
+        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    }
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical/1000.0f);
-    _rotor.set_idle_output(_rsc_idle_output/1000.0f);
-    _rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f, _rsc_power_high/1000.0f, 0);
+    _rotor.set_critical_speed(_rsc_critical*0.001f);
+    _rotor.set_idle_output(_rsc_idle_output*0.001f);
+    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
 }
 
 // calculate_scalars
@@ -136,7 +140,7 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
     const float angles[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { 45, 225, 315, 135 };
     const bool x_clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
     const float cos45 = cosf(radians(45));
-    
+
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         bool clockwise = x_clockwise[i];
         if (_frame_type == MOTOR_FRAME_TYPE_H) {
@@ -208,19 +212,19 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
-        collective_out = _land_collective_min/1000.0f;
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
+        collective_out = _land_collective_min*0.001f;
         limit.throttle_lower = true;
     }
 
-    float collective_range = (_collective_max - _collective_min) / 1000.0f;
+    float collective_range = (_collective_max - _collective_min)*0.001f;
 
     if (_heliflags.inverted_flight) {
         collective_out = 1 - collective_out;
     }
-    
+
     // feed power estimate into main rotor controller
-    _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
+    _rotor.set_collective(fabsf(collective_out));
 
     // scale collective to -1 to 1
     collective_out = collective_out*2-1;
@@ -263,10 +267,10 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         }
         out[i] += y;
     }
-    
+
     // move the servos
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        rc_write(AP_MOTORS_MOT_1+i, calc_pwm_output_1to1(out[i], _servo[i]));
+        rc_write_angle(AP_MOTORS_MOT_1+i, out[i] * QUAD_SERVO_MAX_ANGLE);
     }
 }
 

@@ -2,8 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_QFLIGHT
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -173,11 +171,6 @@ void GPIO_Sysfs::toggle(uint8_t vpin)
     write(vpin, !read(vpin));
 }
 
-int8_t GPIO_Sysfs::analogPinToDigitalPin(uint8_t vpin)
-{
-    return -1;
-}
-
 AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
 {
     assert_vpin(vpin, n_pins, nullptr);
@@ -244,5 +237,3 @@ fail_snprintf:
     hal.console->printf("GPIO_Sysfs: Unable to export pin %u.\n", pin);
     return false;
 }
-
-#endif

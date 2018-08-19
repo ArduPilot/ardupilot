@@ -3,7 +3,7 @@
 
 extern "C" void __cxa_pure_virtual(void) {
 
-    extern void __error(uint32_t num, uint32_t pc, uint32_t lr);
+    extern void __error(uint32_t num, uint32_t pc, uint32_t lr, uint32_t flag);
 
-    __error(11, 0, 0);
+    __error(11, 0, 0, 0);
 }

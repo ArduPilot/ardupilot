@@ -33,7 +33,11 @@ UART_ORDER OTG1 UART4 USART2
 define HAL_RCINPUT_WITH_AP_RADIO 1
 
 define HAL_GPIO_RADIO_RESET      1 // PB0 GPIO from FMU3
-define HAL_GPIO_RADIO_IRQ       15 // PD15
+
+# setup for radio IRQ on PD15
+undef PD15
+PD15 MPU_DRDY INPUT GPIO(100)
+define HAL_GPIO_RADIO_IRQ       100
 
 # setup defines for ArduCopter config
 define TOY_MODE_ENABLED ENABLED
@@ -54,3 +58,6 @@ undef PA1
 PA1 UART4_RX UART4 NODMA
 
 env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+
+# the web UI uses an abin file for firmware uploads
+env BUILD_ABIN True

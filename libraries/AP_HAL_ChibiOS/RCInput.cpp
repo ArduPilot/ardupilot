@@ -25,6 +25,8 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#include <AP_Math/AP_Math.h>
+
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
@@ -35,7 +37,12 @@ void RCInput::init()
     sig_reader.attach_capture_timer(&RCIN_ICU_TIMER, RCIN_ICU_CHANNEL, STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL);
     rcin_prot.init();
 #endif
-    chMtxObjectInit(&rcin_mutex);
+
+#if HAL_USE_EICU == TRUE
+    sig_reader.init(&RCININT_EICU_TIMER, RCININT_EICU_CHANNEL);
+    rcin_prot.init();
+#endif
+
     _init = true;
 }
 
@@ -44,18 +51,15 @@ bool RCInput::new_input()
     if (!_init) {
         return false;
     }
-    chMtxLock(&rcin_mutex);
+    if (!rcin_mutex.take_nonblocking()) {
+        return false;
+    }
     bool valid = _rcin_timestamp_last_signal != _last_read;
 
-    if (_override_valid) {
-        // if we have RC overrides active, then always consider it valid
-        valid = true;
-    }
     _last_read = _rcin_timestamp_last_signal;
-    _override_valid = false;
-    chMtxUnlock(&rcin_mutex);
+    rcin_mutex.give();
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
         _radio_init = true;
         radio = AP_Radio::instance();
@@ -72,33 +76,18 @@ uint8_t RCInput::num_channels()
     if (!_init) {
         return 0;
     }
-    chMtxLock(&rcin_mutex);
-    uint8_t n = _num_channels;
-    chMtxUnlock(&rcin_mutex);
-    return n;
+    return _num_channels;
 }
 
 uint16_t RCInput::read(uint8_t channel)
 {
-    if (!_init) {
+    if (!_init || (channel >= MIN(RC_INPUT_MAX_CHANNELS, _num_channels))) {
         return 0;
     }
-    if (channel >= RC_INPUT_MAX_CHANNELS) {
-        return 0;
-    }
-    chMtxLock(&rcin_mutex);
-    if (_override[channel]) {
-        uint16_t v = _override[channel];
-        chMtxUnlock(&rcin_mutex);
-        return v;
-    }
-    if (channel >=  _num_channels) {
-        chMtxUnlock(&rcin_mutex);
-        return 0;
-    }
+    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     uint16_t v = _rc_values[channel];
-    chMtxUnlock(&rcin_mutex);
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+    rcin_mutex.give();
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && channel == 0) {
         // hook to allow for update of radio on main thread, for mavlink sends
         radio->update();
@@ -122,53 +111,12 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
-{
-    if (!_init) {
-        return false;
-    }
-
-    bool res = false;
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
-    }
-    return res;
-}
-
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (!_init) {
-        return false;
-    }
-
-    if (override < 0) {
-        return false; /* -1: no change. */
-    }
-    if (channel >= RC_INPUT_MAX_CHANNELS) {
-        return false;
-    }
-    _override[channel] = override;
-    if (override != 0) {
-        _override_valid = true;
-        return true;
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    for (uint8_t i = 0; i < RC_INPUT_MAX_CHANNELS; i++) {
-        set_override(i, 0);
-    }
-}
-
-
 void RCInput::_timer_tick(void)
 {
     if (!_init) {
         return;
     }
-#if HAL_USE_ICU == TRUE
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     uint32_t width_s0, width_s1;
 
     while(sig_reader.read(width_s0, width_s1)) {
@@ -176,36 +124,36 @@ void RCInput::_timer_tick(void)
     }
 
     if (rcin_prot.new_input()) {
-        chMtxLock(&rcin_mutex);
+        rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcin_prot.num_channels();
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = rcin_prot.read(i);
         }
-        chMtxUnlock(&rcin_mutex);
+        rcin_mutex.give();
     }
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us) {
         last_radio_us = radio->last_recv_us();
-        chMtxLock(&rcin_mutex);
+        rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = last_radio_us;
         _num_channels = radio->num_channels();
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = radio->read(i);
         }
-        chMtxUnlock(&rcin_mutex);
+        rcin_mutex.give();
     }
 #endif
 
 #if HAL_WITH_IO_MCU
-    chMtxLock(&rcin_mutex);
+    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
     if (AP_BoardConfig::io_enabled() &&
         iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
         _rcin_timestamp_last_signal = last_iomcu_us;
     }
-    chMtxUnlock(&rcin_mutex);
+    rcin_mutex.give();
 #endif
     
 
@@ -213,9 +161,17 @@ void RCInput::_timer_tick(void)
     // and a timeout for the last valid input to handle failsafe
 }
 
+/*
+  start a bind operation, if supported
+ */
 bool RCInput::rc_bind(int dsmMode)
 {
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_USE_ICU == TRUE
+    // ask AP_RCProtocol to start a bind
+    rcin_prot.start_bind();
+#endif
+    
+#if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         radio->start_recv_bind();
     }

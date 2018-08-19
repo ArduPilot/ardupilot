@@ -191,8 +191,8 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
         // offset and "perfect" slope.
 
         // calculate projected slope with projected alt
-        float new_slope_deg = degrees(atan(slope));
-        float initial_slope_deg = degrees(atan(initial_slope));
+        float new_slope_deg = degrees(atanf(slope));
+        float initial_slope_deg = degrees(atanf(initial_slope));
 
         // is projected slope too steep?
         if (new_slope_deg - initial_slope_deg > slope_recalc_steep_threshold_to_abort) {
@@ -201,7 +201,7 @@ void AP_Landing::type_slope_adjust_landing_slope_for_rangefinder_bump(AP_Vehicle
             alt_offset = rangefinder_state.correction;
             flags.commanded_go_around = true;
             type_slope_flags.has_aborted_due_to_slope_recalc = true; // only allow this once.
-            log();
+            Log();
         }
     }
 }

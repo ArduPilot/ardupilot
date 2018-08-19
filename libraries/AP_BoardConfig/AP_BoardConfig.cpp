@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_BoardConfig.h"
 #include <stdio.h>
+#include <AP_RTC/AP_RTC.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -46,7 +47,9 @@
 #define BOARD_PWM_COUNT_DEFAULT 4
 #define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
+#ifndef BOARD_TYPE_DEFAULT
 #define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
+#endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 # define BOARD_SAFETY_ENABLE_DEFAULT 0
@@ -69,13 +72,32 @@
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
+#ifndef BOARD_PWM_COUNT_DEFAULT
 # define BOARD_PWM_COUNT_DEFAULT 6
+#endif
+#ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_TYPE_DEFAULT
 # define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
+#endif
 #endif
 
 #ifndef HAL_IMU_TEMP_DEFAULT
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
+#endif
+
+#if HAL_HAVE_SAFETY_SWITCH
+#  ifndef BOARD_SAFETY_OPTION_DEFAULT
+#    define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
+#  endif
+#  ifndef BOARD_SAFETY_ENABLE
+#    define BOARD_SAFETY_ENABLE 1
+#  endif
+#endif
+
+#ifndef BOARD_PWM_COUNT_DEFAULT
+#define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -83,15 +105,13 @@ AP_BoardConfig *AP_BoardConfig::instance;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-#if AP_FEATURE_BOARD_DETECT
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
     // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
     // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, state.pwm_count, BOARD_PWM_COUNT_DEFAULT),
-#endif
+    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if AP_FEATURE_RTSCTS
     // @Param: SER1_RTSCTS
@@ -111,7 +131,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser2_rtscts, 2),
 #endif
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
@@ -138,7 +158,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
     // @DisplayName: Channels to which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
@@ -181,7 +201,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 #endif
 
-#ifdef HAL_RCINPUT_WITH_AP_RADIO
+#if HAL_RCINPUT_WITH_AP_RADIO
     // @Group: RADIO
     // @Path: ../AP_Radio/AP_Radio.cpp
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
@@ -192,7 +212,20 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Path: ../libraries/AP_Param_Helper/AP_Param_Helper.cpp
     AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
 #endif
-    
+
+#if HAL_HAVE_SAFETY_SWITCH
+    // @Param: SAFETYOPTION
+    // @DisplayName: Options for safety button behavior
+    // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
+    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed
+    // @User: Standard
+    AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
+#endif
+
+    // @Group: RTC
+    // @Path: ../AP_RTC/AP_RTC.cpp
+    AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+
     AP_GROUPEND
 };
 
@@ -206,12 +239,14 @@ void AP_BoardConfig::init()
     // rebooting
     hal.util->set_imu_target_temp((int8_t *)&_imu_target_temperature);
 #endif
+
+    AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
 }
 
 // set default value for BRD_SAFETY_MASK
 void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 {
-#if AP_FEATURE_SAFETY_BUTTON
+#if HAL_HAVE_SAFETY_SWITCH
     state.ignore_safety_channels.set_default(mask);
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     px4_setup_safety_mask();
@@ -221,9 +256,7 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 
 void AP_BoardConfig::init_safety()
 {
-#if AP_FEATURE_SAFETY_BUTTON
     board_init_safety();
-#endif
 }
 
 /*

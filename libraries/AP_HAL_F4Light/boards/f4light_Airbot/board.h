@@ -95,32 +95,37 @@
 
 #define BOARD_NR_GPIO_PINS      109
 
+#define I2C1_SDA PB9
+#define I2C1_SCL PB8
+
+#define I2C2_SDA PB11
+#define I2C2_SCL PB10
+
 // use soft I2C driver instead hardware
 //#define BOARD_SOFT_I2C2
-#define BOARD_I2C_BUS_INT   1  // hardware internal I2C
-//#define BOARD_I2C_BUS_EXT 1  // external I2C
+//#define BOARD_I2C_BUS_INT   1  // hardware internal I2C
+#define BOARD_I2C_BUS_EXT   1  // external I2C
 #define BOARD_I2C_BUS_SLOW  1 // slow down bus with this number
 
-#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5611_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5611_I2C_ADDR        (0x77)
 
-#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP280_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP280_I2C_ADDR        (0x76)
 
-#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_INT
+#define HAL_BARO_BMP085_BUS             BOARD_I2C_BUS_EXT
 #define HAL_BARO_BMP085_I2C_ADDR        (0x77)
 
-#define HAL_BARO_MS5607_I2C_BUS         BOARD_I2C_BUS_INT
+#define HAL_BARO_MS5607_I2C_BUS         BOARD_I2C_BUS_EXT
 #define HAL_BARO_MS5607_I2C_ADDR        (0x77)
 
 
 #define BOARD_COMPASS_DEFAULT HAL_COMPASS_HMC5843
 //#define BOARD_HMC5883_DRDY_PIN  38  // PB7 - but it not used by driver
 
-#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_INT
+#define HAL_COMPASS_HMC5843_I2C_BUS     BOARD_I2C_BUS_EXT
 #define HAL_COMPASS_HMC5843_I2C_ADDR    (0x1E)
 #define HAL_COMPASS_HMC5843_ROTATION    ROTATION_NONE
-
 
 #define BOARD_INS_DEFAULT HAL_INS_MPU60XX_SPI
 #define BOARD_INS_ROTATION  ROTATION_YAW_180
@@ -151,6 +156,12 @@
 # define BOARD_BATTERY_CURR_PIN     7   // Battery current on A1 (PC1) D7
 # define BOARD_SONAR_SOURCE_ANALOG_PIN 254
 
+# define HAL_BATT_VOLT_PIN      8 // ChibiOS compatible defines
+# define HAL_BATT_CURR_PIN      7
+# define HAL_BATT_VOLT_SCALE    10.1
+# define HAL_BATT_CURR_SCALE    17
+
+
 #define BOARD_USB_DMINUS 108
 
 
@@ -167,6 +178,8 @@
 #define SERVO_PIN_5 48 // PA1
 #define SERVO_PIN_6 22 // PA8
 
+#define MOTOR_LAYOUT_DEFAULT 0
+
 #define HAL_CONSOLE USB_Driver // console on USB
 //#define HAL_CONSOLE uart1Driver // console on radio
 #define HAL_CONSOLE_PORT 0
@@ -181,14 +194,13 @@
 #ifdef USB_MASSSTORAGE
 
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), \
-    AP_GROUPINFO("USB_STORAGE",  31, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("USB_STORAGE",  30, AP_Param_Helper, _usb_storage, 0), \
+    AP_GROUPINFO("DBG_WAYBACK",  31, AP_Param_Helper, _dbg_wayback, 0), 
 
 #else
 
 #define BOARD_HAL_VARINFO \
-    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), \
-
+    AP_GROUPINFO("DBG_WAYBACK",  30, AP_Param_Helper, _dbg_wayback, 0), 
 #endif
 
 

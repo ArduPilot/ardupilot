@@ -97,7 +97,7 @@ public:
     uint32_t position();
     uint32_t size();
     void close();
-    operator bool() const; // is open?
+    inline operator bool() const { return  (_name == NULL)? FALSE : TRUE; } // is open?
 
     char* name(void);
     char* fullname(void) {return _name;};
@@ -119,7 +119,7 @@ public:
 
     void inline sync() { if(!is_dir)  f_sync(&_d.fil); };
 
-    inline uint32_t firstCluster(){ return is_dir ? _d.dir.sclust :  _d.fil.sclust; }
+    inline uint32_t firstCluster(){ return is_dir ? _d.dir.obj.sclust :  _d.fil.obj.sclust; }
 
     static void syncAll();
     static void addOpenFile(FIL *f);

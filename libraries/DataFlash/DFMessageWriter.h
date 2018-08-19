@@ -23,10 +23,6 @@ protected:
 
 class DFMessageWriter_WriteSysInfo : public DFMessageWriter {
 public:
-    DFMessageWriter_WriteSysInfo(const char *firmware_string) :
-        DFMessageWriter(),
-        _firmware_string(firmware_string)
-        { }
 
     void reset();
     void process();
@@ -39,8 +35,6 @@ private:
         ws_blockwriter_stage_system_id
     };
     write_sysinfo_blockwriter_stage stage = ws_blockwriter_stage_init;
-
-    const char *_firmware_string;
 };
 
 class DFMessageWriter_WriteEntireMission : public DFMessageWriter {
@@ -66,8 +60,8 @@ private:
 
 class DFMessageWriter_DFLogStart : public DFMessageWriter {
 public:
-    DFMessageWriter_DFLogStart(const char *firmware_string) :
-        _writesysinfo(firmware_string),
+    DFMessageWriter_DFLogStart() :
+        _writesysinfo(),
         _writeentiremission()
         {
         }

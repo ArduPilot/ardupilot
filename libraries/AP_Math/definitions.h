@@ -36,8 +36,10 @@
 // GPS Specific double precision conversions
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
 static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
 static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
+#endif
 
 #define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))
 
@@ -65,16 +67,23 @@ static const double WGS84_F = ((double)1.0 / WGS84_IF);
 static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 
 // Eccentricity of the Earth
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
 static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
-
-// air density at 15C at sea level in kg/m^3
-#define AIR_DENSITY_SEA_LEVEL    1.225f
+#endif
 
 #define C_TO_KELVIN 273.15f
 
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
 #define ISA_LAPSE_RATE 0.0065f
+
+// Standard Sea Level values
+// Ref: https://en.wikipedia.org/wiki/Standard_sea_level
+#define SSL_AIR_DENSITY         1.225f // kg/m^3
+#define SSL_AIR_PRESSURE 101325.01576f // Pascal
+#define SSL_AIR_TEMPERATURE    288.15f // K
+
+#define INCH_OF_H2O_TO_PASCAL 248.84f
 
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX
