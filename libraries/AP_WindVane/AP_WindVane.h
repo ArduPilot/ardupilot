@@ -47,10 +47,10 @@ public:
     void update();
 
     // get the apparent wind direction in radians
-    float get_apparent_wind_direction_rad();
+    float get_apparent_wind_direction_rad(void);
     
     // get the absolute wind direction in radians
-    float get_absolute_wind_direction_rad();
+    float get_absolute_wind_direction_rad(void);
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
@@ -60,15 +60,15 @@ private:
     static AP_WindVane *_s_instance;
 
     // Wind Vane parameters
-    AP_Int8  _type;             // type of windvane being used
-    AP_Int8  _pin;              // analog or pwm pin connected to sensor
-    AP_Float _analog_volt_low;  // voltage when windvane is pointing at 0 degrees
-    AP_Float _analog_volt_high; // voltage when windvane is pointing at 359 degrees
-    AP_Int16 _pwm_low;          // PWM when 'windvane' is pointing at 0 degrees
-    AP_Int16 _pwm_value;        // PWM when 'windvane' is pointing at 359 degrees
+    AP_Int8 _WindVane_Type;             // type of windvane being used
+    AP_Int8 _WindVane_RC_in_No;         // RC inpout chanel to use
+    AP_Int8 _WindVane_Analog_Pin_No;    // analog pin connected to sensor
+    AP_Float _analog_volt_min;          // mimum voltage read by windvane
+    AP_Float _analog_volt_max;          // maximum voltage read by windvane
+    AP_Float _analog_volt_head;         // Voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle 
 
     // pin for reading analog voltage
-    AP_HAL::AnalogSource *_analog_source;
+    AP_HAL::AnalogSource *windvane_analog_source;
 
     // read the bearing value from an analog pin - returns radians
     float read_analog();

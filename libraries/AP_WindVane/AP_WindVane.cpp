@@ -36,21 +36,48 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Description: Wind Vane type
     // @Values: 0:None (assume head to wind when armed), 1:Manual via RC_IN_channel_x, 2:Analog Pin (Pot)
     // @User: Standard
-    AP_GROUPINFO_FLAGS("TYPE", 0, AP_WindVane, WindVane_Type,  0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 0, AP_WindVane, _WindVane_Type,  0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: RC_IN_NO
     // @DisplayName: RC Input Channel to use as wind angle value
     // @Description: RC Input Channel to use as wind angle value
     // @Range: 0 16
     // @User: Standard
-    AP_GROUPINFO("RC_IN_NO", 1, AP_WindVane, WindVane_RC_in_No,  0),
+    AP_GROUPINFO("RC_IN_NO", 1, AP_WindVane, _WindVane_RC_in_No,  0),
 
     // @Param: ANALOG_PIN
     // @DisplayName: Analog input
     // @Description: Analog input pin to read as Wind vane sensor pot
     // @User: Standard
-    AP_GROUPINFO("ANALOG_PIN", 2, AP_WindVane, WindVane_Analog_Pin_No, WINDVANE_DEFAULT_PIN),   
-
+    AP_GROUPINFO("ANALOG_PIN", 2, AP_WindVane, _WindVane_Analog_Pin_No, WINDVANE_DEFAULT_PIN),   
+   
+    // @Param: ANALOG_V_MIN
+    // @DisplayName: Analog minumum voltage
+    // @Description: Minimum analalog voltage read by windvane 
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO("ANALOG_V_MIN", 3, AP_WindVane, _analog_volt_min, 0.0f),   
+    
+    // @Param: ANALOG_V_MAX
+    // @DisplayName: Analog maximum voltage
+    // @Description: Minimum analalog voltage read by windvane 
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO("ANALOG_V_MAX", 4, AP_WindVane, _analog_volt_max, 3.3f),  
+    
+    // @Param: ANALOG_V_HEAD
+    // @DisplayName: Analog headwind voltage
+    // @Description: Voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle 
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO("ANALOG_V_HEAD", 5, AP_WindVane, _analog_volt_head, 0.0f), 
+    
     AP_GROUPEND
 };
 
@@ -83,7 +110,7 @@ AP_WindVane *AP_WindVane::get_instance()
 // Initialize the Wind Vane object and prepare it for use
 void AP_WindVane::init()
 {
-    // a pin for reading the receiver Wind Vane voltage.
+    // a pin for reading the Wind Vane voltage.
     Wind_Vane_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);    
 }
 
@@ -94,18 +121,18 @@ float AP_WindVane::get_apparent_wind_direction_rad()
     float apparent_angle = 0.0f;  
 
     switch (WindVane_Type) {
-        case WindVaneType::WINDVANE_PWM_PIN:
+        case WindVaneType::WINDVANE_PWM_PIN: // RC input, apparent wind angle must be caculated
             float bearing = read_PWM_bearing();
-            apparent_angle = fabsf(wrap_PI(ahrs.yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed yet
+            apparent_angle = fabsf(wrap_PI(ahrs.yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
             break;
             
         case WindVaneType::WINDVANE_ANALOG_PIN:
             apparent_angle = read_analog();
             break;
             
-        default : // Assume head to wind at home locaiton   
-            float bearing = home_bearing();
-            apparent_angle = fabsf(wrap_PI(ahrs.yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed yet
+        default : // Assume head to wind at home locaiton, apparent wind angle must be caculated
+            float bearing = rover.ahrs.get_home().heading;
+            apparent_angle = fabsf(wrap_PI(ahrs.yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
             break;
     }    
                   
@@ -128,19 +155,19 @@ float AP_WindVane::get_absolute_wind_direction_rad()
             return bearing;
 
         case WindVaneType::WINDVANE_NONE:
-            bearing = home_bearing();
+            bearing =  rover.ahrs.get_home().heading;
             return bearing;
             
         default : // Get apparent wind as read by sensor 
-            apparent_angle = AP_WindVane::get_apparent_wind_direction_rad();
+            float apparent_angle = AP_WindVane::get_apparent_wind_direction_rad();
             break;
     }    
         
-    // Convert
+    // Convert from apparent
     bearing = apparent_to_absolute(apparent_angle, wind_speed, heading, ground_speed)
     
     // Make sure between 0 and 2pi
-    bearing = wrap_PI(bearing);
+    bearing = fabsf(wrap_PI(bearing));
                   
     return bearing;
 }
@@ -155,39 +182,19 @@ float AP_WindVane::read_analog()
     float current_analog_voltage = WindVane_analog_source->voltage_average();
     
     // Caculate Bearing from analog Voltage 
-    // (Use head, Port, Starboard and tail wind calabration values and min max)
     
+    // Assumes voltage increases as windvene moves clockwise, we could get round this with more complex code and calabration 
     
-    /* // This is from the rssi libary to convert from voltage to rssi
-    float rssi_value_range = fabsf(high_rssi_range - low_rssi_range);
-    if (is_zero(rssi_value_range)) {
-        // User range isn't meaningful, return 0 for RSSI (and avoid divide by zero)
-        return 0.0f;   
-    }
-    // Note that user-supplied ranges may be inverted and we accommodate that here. 
-    // (Some radio receivers put out inverted ranges for RSSI-type values).    
-    bool range_is_inverted = (high_rssi_range < low_rssi_range);
-    // Constrain to the possible range - values outside are clipped to ends 
-    current_rssi_value = constrain_float(current_rssi_value, 
-                                        range_is_inverted ? high_rssi_range : low_rssi_range, 
-                                        range_is_inverted ? low_rssi_range : high_rssi_range);    
+    // Not sure about where to write a calabration code, but we just need to rotate the vane a few times and record the min and max voltage and the set it to head to wind to record the offset
+    
+    float voltage_ratio = (current_analog_voltage - _analog_volt_min)/(_analog_volt_max-_analog_volt_min);
+    
+    float bearing_offset = (_analog_volt_head - _analog_volt_min)/(_analog_volt_max-_analog_volt_min);
+        
+    float bearing = (voltage_ratio + bearing_offset) * radians(360);
 
-    if (range_is_inverted)
-    {
-        // Swap values so we can treat them as low->high uniformly in the code that follows
-        current_rssi_value = high_rssi_range + fabsf(current_rssi_value - low_rssi_range);
-        std::swap(low_rssi_range, high_rssi_range);        
-    }
-
-    // Scale the value down to a 0.0 - 1.0 range
-    float rssi_value_scaled = (current_rssi_value - low_rssi_range) / rssi_value_range;
-    // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
-    // value retrieved falls outside the user-supplied range.
-    return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
-    */
-    
-    float bearing = 0.0f
-    
+    bearing = fabsf(wrap_PI(bearing));
+       
     return bearing;
 }
 
@@ -203,20 +210,26 @@ float AP_WindVane::read_PWM_bearing()
     return bearing;    
 }
 
-// Convert from apparent wind angle to absolute angle 
+// Convert from apparent wind angle to true wind absolute angle 
 float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed)
 {
     // https://en.wikipedia.org/wiki/Apparent_wind
-    // I will double check this in matlab, posibly we need a specal case for 180 deg apparent wind
+
+    float bearing = 0.0f;
     
     // Caculate True wind speed (posibly put this in another funciton somewhere)
-    float True_wind_speed = sqrt( apparent_wind_speed^2  + ground_speed^2  - 2 * apparent_wind_speed * ground_speed * cos(apparent_angle)); 
+    float True_wind_speed = sqrt( apparent_wind_speed^2  + ground_speed^2  - 2 * apparent_wind_speed * ground_speed * cosf(apparent_angle)); 
    
-    if{apparent_angle <= Pi()}(
-        float bearing = acos( (apparent_wind_speed * cos(apparent_angle) - ground_speed)/ True_wind_speed);
+    if (is_zero(True_wind_speed)){ // There is no true wind, so return apparent angle, to avoid divide by zero 
+        bearing = apparent_angle;
+    }else if{apparent_angle <= Pi()}(
+        bearing = acosf( (apparent_wind_speed * cosf(apparent_angle) - ground_speed)/ True_wind_speed);
     } else {
-        float bearing = -acos( (apparent_wind_speed * cos(apparent_angle) - ground_speed)/ True_wind_speed);
+        bearing = -acosf( (apparent_wind_speed * cosf(apparent_angle) - ground_speed)/ True_wind_speed);
     }
+    
+    // Make sure between 0 and 2pi
+    bearing = fabsf(wrap_PI(bearing));
     
     return bearing;    
 }
@@ -224,10 +237,8 @@ float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_win
 AP_WindVane *AP_WindVane::_s_instance = nullptr;
 
 namespace AP {
-
-AP_WindVane *WindVane()
-{
-    return AP_WindVane::get_instance();
-}
-
+    AP_WindVane *windvane()
+    {
+        return AP_WindVane::get_instance();
+    }
 };
