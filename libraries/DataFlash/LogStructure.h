@@ -682,6 +682,8 @@ struct PACKED log_Current {
     float    consumed_wh;
     int16_t  temperature; // degrees C * 100
     float    resistance;
+    uint32_t mah_rtl;
+    uint32_t sec_rtl;
 };
 
 struct PACKED log_Current_Cells {
@@ -1135,10 +1137,10 @@ struct PACKED log_DSTL {
 #define QUAT_UNITS  "s????"
 #define QUAT_MULTS  "F????"
 
-#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res"
-#define CURR_FMT    "Qfffffcf"
-#define CURR_UNITS  "svvA?JOw"
-#define CURR_MULTS  "F000?/?0"
+#define CURR_LABELS "TimeUS,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res,CurrRTL,SecRTL"
+#define CURR_FMT    "Qfffffcfee"
+#define CURR_UNITS  "svvA?JOwAs"
+#define CURR_MULTS  "F000?/?000"
 
 #define CURR_CELL_LABELS "TimeUS,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10"
 #define CURR_CELL_FMT    "QfHHHHHHHHHH"
