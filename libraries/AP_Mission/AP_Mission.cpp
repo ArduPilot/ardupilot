@@ -132,6 +132,7 @@ void AP_Mission::resume()
 bool AP_Mission::starts_with_takeoff_cmd()
 {
     Mission_Command cmd = {};
+	Mission_Command cmd2 = {};
     uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
@@ -140,10 +141,13 @@ bool AP_Mission::starts_with_takeoff_cmd()
     if (!get_next_nav_cmd(cmd_index, cmd)) {
         return false;
     }
-    if (cmd.id != MAV_CMD_NAV_TAKEOFF) {
+    if (!get_next_nav_cmd(cmd_index+1, cmd2)) {
         return false;
     }
-    return true;
+    if (cmd.id == MAV_CMD_NAV_TAKEOFF || (cmd.id == MAV_CMD_NAV_DELAY && cmd2.id == MAV_CMD_NAV_TAKEOFF)) {
+        return true;
+    }
+    return false;
 }
 
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
