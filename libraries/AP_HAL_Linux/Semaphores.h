@@ -10,14 +10,17 @@ namespace Linux {
 
 class Semaphore : public AP_HAL::Semaphore {
 public:
-    Semaphore() {
-        pthread_mutex_init(&_lock, nullptr);
-    }
+    Semaphore();
     bool give();
     bool take(uint32_t timeout_ms);
     bool take_nonblocking();
-private:
+protected:
     pthread_mutex_t _lock;
 };
 
+class Semaphore_Recursive : public Semaphore {
+public:
+    Semaphore_Recursive();
+};
+    
 }
