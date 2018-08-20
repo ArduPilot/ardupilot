@@ -1143,7 +1143,7 @@ class AutoTestCopter(AutoTest):
 
         return True
 
-    def fly_mission(self,):
+    def fly_mission(self):
         """Fly a mission from a file."""
         global num_wp
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
@@ -1763,20 +1763,17 @@ class AutoTestCopter(AutoTest):
                 self.progress("save_mission_to_file failed")
 
             # fly the stored mission
-            self.run_test("Fly CH7 saved mission",
-                          lambda: self.fly_mission)
+            self.run_test("Fly CH7 saved mission", self.fly_mission)
 
             # Throttle Failsafe
-            self.run_test("Test Failsafe",
-                          lambda: self.fly_throttle_failsafe)
+            self.run_test("Test Failsafe", self.fly_throttle_failsafe)
 
             # Takeoff
             self.run_test("Takeoff to test battery failsafe",
                           lambda: self.takeoff(10))
 
             # Battery failsafe
-            self.run_test("Fly Battery Failsafe",
-                          lambda: self.fly_battery_failsafe)
+            self.run_test("Fly Battery Failsafe", self.fly_battery_failsafe)
 
             # Takeoff
             self.run_test("Takeoff to test stability patch",
@@ -1787,7 +1784,7 @@ class AutoTestCopter(AutoTest):
                           lambda: self.fly_stability_patch(30))
 
             # RTL
-            self.run_test("RTL after stab patch", lambda: self.fly_RTL)
+            self.run_test("RTL after stab patch", self.fly_RTL)
 
             # Takeoff
             self.run_test("Takeoff to test horizontal fence",
@@ -1798,8 +1795,7 @@ class AutoTestCopter(AutoTest):
                           lambda: self.fly_fence_test(180))
 
             # Fence test
-            self.run_test("Test Max Alt Fence",
-                          lambda: self.fly_alt_max_fence_test)
+            self.run_test("Test Max Alt Fence", self.fly_alt_max_fence_test)
 
             # Takeoff
             self.run_test("Takeoff to test GPS glitch loiter",
