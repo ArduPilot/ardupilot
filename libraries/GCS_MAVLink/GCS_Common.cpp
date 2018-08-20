@@ -2702,11 +2702,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_gripper(const mavlink_command_long_t &
     switch ((uint8_t)packet.param2) {
     case GRIPPER_ACTION_RELEASE:
         gripper->release();
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
         break;
     case GRIPPER_ACTION_GRAB:
         gripper->grab();
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
         break;
     default:
         result = MAV_RESULT_FAILED;
