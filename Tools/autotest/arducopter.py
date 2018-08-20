@@ -376,7 +376,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            alt = m.alt / 1000.0 # mm -> m
+            alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
             self.progress("Alt: %u  HomeDist: %.0f" % (alt, home_distance))
