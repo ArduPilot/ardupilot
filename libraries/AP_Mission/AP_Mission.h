@@ -460,6 +460,12 @@ public:
     // available.
     bool jump_to_landing_sequence(void);
 
+    // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
+    // storage while working with multiple waypoints
+    HAL_Semaphore_Recursive &get_semaphore(void) {
+        return _rsem;
+    }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -551,4 +557,8 @@ private:
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
+
+    // multi-thread support. This is static so it can be used from
+    // const functions
+    static HAL_Semaphore_Recursive _rsem;
 };
