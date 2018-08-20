@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import time
+import pexpect
 
 from pymavlink import mavwp, mavutil
 from pysim import util, vehicleinfo
@@ -480,7 +481,7 @@ class AutoTest(ABC):
         return False
 
     def set_parameter(self, name, value, add_to_context=True):
-        old_value = self.get_parameter(name)
+        old_value = self.get_parameter(name, retry=2)
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
             returned_value = self.get_parameter(name)
@@ -493,10 +494,15 @@ class AutoTest(ABC):
                           % (returned_value, value))
         raise ValueError()
 
-    def get_parameter(self, name):
-        self.mavproxy.send("param fetch %s\n" % name)
-        self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,))
-        return float(self.mavproxy.match.group(1))
+    def get_parameter(self, name, retry=1, timeout=60):
+        for i in range(0, retry):
+            self.mavproxy.send("param fetch %s\n" % name)
+            try:
+                self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/retry)
+                return float(self.mavproxy.match.group(1))
+            except pexpect.TIMEOUT:
+                if i < retry:
+                    continue
 
     def context_get(self):
         return self.contexts[-1]
