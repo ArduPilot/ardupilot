@@ -212,6 +212,8 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
             oldest_index = i;
         }
     }
+    WITH_SEMAPHORE(_rsem);
+    
     if (index == -1) {
         // existing obstacle not found.  See if we can store it anyway:
         if (i <_obstacles_allocated) {
