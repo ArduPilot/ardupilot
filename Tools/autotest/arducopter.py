@@ -1907,6 +1907,9 @@ class AutoTestCopter(AutoTest):
             # wait for disarm
             self.mav.motors_disarmed_wait()
 
+            # Gripper test
+            self.run_test("Test gripper", self.test_gripper)
+
             '''vision position''' # expects vehicle to be disarmed
             self.run_test("Fly Vision Position", self.fly_vision_position)
 
