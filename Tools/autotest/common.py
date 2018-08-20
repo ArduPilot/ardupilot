@@ -970,9 +970,7 @@ class AutoTest(ABC):
         self.mav.idle_hooks.append(self.idle_hook)
 
     def run_test(self, desc, function, interact=False):
-        self.progress("#")
-        self.progress("########## %s ##########" % (desc))
-        self.progress("#")
+        self.start_test(desc)
 
         try:
             function()
@@ -984,6 +982,26 @@ class AutoTest(ABC):
                 self.mavproxy.interact()
             return
         self.progress('PASSED: "%s"' % desc)
+
+    def check_test_syntax(self, test_file):
+        """Check mistake on autotest function syntax."""
+        import re
+        self.start_test("Check for syntax mistake in autotest lambda")
+        if not os.path.isfile(test_file):
+            self.progress("File %s does not exist" % test_file)
+        test_file = test_file.rstrip('c')
+        try:
+            with open(test_file) as f:
+                # check for lambda: test_function without paranthesis
+                faulty_strings = re.findall(r"lambda\s*:\s*\w+.\w+\s*\)", f.read())
+                if faulty_strings:
+                    self.progress("Syntax error in autotest lamda at : ")
+                    print(faulty_strings)
+                    raise ErrorException()
+        except ErrorException:
+            self.progress('FAILED: "%s"' % "Check for syntax mistake in autotest lambda")
+            exit(1)
+        self.progress('PASSED: "%s"' % "Check for syntax mistake in autotest lambda")
 
     @abc.abstractmethod
     def init(self):
