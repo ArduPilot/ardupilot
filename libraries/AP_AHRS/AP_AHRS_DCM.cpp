@@ -49,6 +49,9 @@ AP_AHRS_DCM::reset_gyro_drift(void)
 void
 AP_AHRS_DCM::update(bool skip_ins_update)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     float delta_t;
 
     if (_last_startup_ms == 0) {
@@ -141,6 +144,9 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
 void
 AP_AHRS_DCM::reset(bool recover_eulers)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // reset the integration terms
     _omega_I.zero();
     _omega_P.zero();

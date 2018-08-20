@@ -70,6 +70,9 @@ const Vector3f &AP_AHRS_NavEKF::get_gyro_drift(void) const
 //  should be called if gyro offsets are recalculated
 void AP_AHRS_NavEKF::reset_gyro_drift(void)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // update DCM
     AP_AHRS_DCM::reset_gyro_drift();
 
@@ -80,6 +83,9 @@ void AP_AHRS_NavEKF::reset_gyro_drift(void)
 
 void AP_AHRS_NavEKF::update(bool skip_ins_update)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
@@ -88,7 +94,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     if (_ekf_type == 1) {
         _ekf_type.set(2);
     }
-
 
     update_DCM(skip_ins_update);
 
@@ -366,6 +371,9 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
 
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     AP_AHRS_DCM::reset(recover_eulers);
     _dcm_attitude(roll, pitch, yaw);
     if (_ekf2_started) {
@@ -379,6 +387,9 @@ void AP_AHRS_NavEKF::reset(bool recover_eulers)
 // reset the current attitude, used on new IMU calibration
 void AP_AHRS_NavEKF::reset_attitude(const float &_roll, const float &_pitch, const float &_yaw)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     AP_AHRS_DCM::reset_attitude(_roll, _pitch, _yaw);
     _dcm_attitude(roll, pitch, yaw);
     if (_ekf2_started) {
@@ -1395,6 +1406,9 @@ uint32_t AP_AHRS_NavEKF::getLastPosDownReset(float &posDelta) const
 // If using a range finder for height no reset is performed and it returns false
 bool AP_AHRS_NavEKF::resetHeightDatum(void)
 {
+    // support locked access functions to AHRS data
+    WITH_SEMAPHORE(_rsem);
+    
     switch (ekf_type()) {
 
     case 2:
