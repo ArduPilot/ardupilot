@@ -14,6 +14,7 @@ namespace ChibiOS {
     class RCOutput;
     class Scheduler;
     class Semaphore;
+    class Semaphore_Recursive;
     class SPIBus;
     class SPIDesc;
     class SPIDevice;
