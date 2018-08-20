@@ -47,10 +47,13 @@ public:
     void update();
 
     // get the apparent wind direction in radians
-    float get_apparent_wind_direction_rad(void);
+    float get_apparent_wind_direction_rad();
     
     // get the absolute wind direction in radians
-    float get_absolute_wind_direction_rad(void);
+    float get_absolute_wind_direction_rad();
+    
+    // record home heading
+    void record_home_headng();
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
@@ -60,13 +63,15 @@ private:
     static AP_WindVane *_s_instance;
 
     // Wind Vane parameters
-    AP_Int8 _WindVane_Type;             // type of windvane being used
-    AP_Int8 _WindVane_RC_in_No;         // RC inpout chanel to use
-    AP_Int8 _WindVane_Analog_Pin_No;    // analog pin connected to sensor
+    AP_Int8 _type;             // type of windvane being used
+    AP_Int8 _rc_in_no;         // RC inpout chanel to use
+    AP_Int8 _analog_pin_no;    // analog pin connected to sensor
     AP_Float _analog_volt_min;          // mimum voltage read by windvane
     AP_Float _analog_volt_max;          // maximum voltage read by windvane
     AP_Float _analog_volt_head;         // Voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle 
 
+    float home_heading;
+    
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
 
@@ -74,7 +79,10 @@ private:
     float read_analog();
 
     // read the bearing value from a PWM value on a RC channel - returns radians
-    float read_channel_bearing();
+    float read_PWM_bearing();
+    
+    // Convert from apparent wind angle to true wind absolute angle 
+    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed); 
 
 };
 
