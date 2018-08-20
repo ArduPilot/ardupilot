@@ -91,7 +91,7 @@ void AC_Loiter::init_target(const Vector3f& position)
     sanity_check_params();
 
     // initialise pos controller speed, acceleration
-    _pos_control.set_speed_xy(LOITER_VEL_CORRECTION_MAX);
+    _pos_control.set_speed_xy(_speed_cms);
     _pos_control.set_accel_xy(_accel_cmss);
 
     // initialise desired acceleration and angles to zero to remain on station
@@ -119,7 +119,7 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // initialise pos controller speed and acceleration
-    _pos_control.set_speed_xy(LOITER_VEL_CORRECTION_MAX);
+    _pos_control.set_speed_xy(_speed_cms);
     _pos_control.set_accel_xy(_accel_cmss);
     _pos_control.set_leash_length_xy(LOITER_POS_CORRECTION_MAX);
 
