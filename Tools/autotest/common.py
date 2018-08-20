@@ -962,6 +962,20 @@ class AutoTest(ABC):
         self.progress("Failed to get EKF.flags=%u" % required_value)
         raise AutoTestTimeoutException()
 
+    def wait_text(self, text, timeout=20, the_function=None):
+        """Wait a specific STATUS_TEXT."""
+        self.progress("Waiting for text : %s" % text.lower())
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            if the_function is not None:
+                the_function()
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True)
+            if text.lower() in m.text.lower():
+                self.progress("Received expected text : %s" % m.text.lower())
+                return True
+        self.progress("Failed to received text : %s" % text.lower())
+        raise AutoTestTimeoutException()
+
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         connection_string = self.autotest_connection_string_to_mavproxy()
@@ -1032,6 +1046,91 @@ class AutoTest(ABC):
             raise NotAchievedException()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
+    def test_gripper(self):
+        self.context_push()
+        self.set_parameter("GRIP_ENABLE", 1)
+        self.fetch_parameters()
+        self.set_parameter("GRIP_GRAB", 2000)
+        self.set_parameter("GRIP_RELEASE", 1000)
+        self.set_parameter("GRIP_TYPE", 1)
+        self.set_parameter("SIM_GRPS_ENABLE", 1)
+        self.set_parameter("SIM_GRPS_PIN", 8)
+        self.set_parameter("SERVO8_FUNCTION", 28)
+        self.set_parameter("SERVO8_MIN", 1000)
+        self.set_parameter("SERVO8_MAX", 2000)
+        self.set_parameter("RC9_OPTION", 19)
+        self.reboot_sitl()
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+        self.progress("Test gripper with RC9_OPTION")
+        self.progress("Releasing load")
+        # non strict string matching because of catching text issue....
+        self.wait_text("Gripper load releas", the_function=lambda: self.set_rc(9, 1000))
+        self.progress("Grabbing load")
+        self.wait_text("Gripper load grabb", the_function=lambda: self.set_rc(9, 2000))
+        self.progress("Releasing load")
+        self.wait_text("Gripper load releas", the_function=lambda: self.set_rc(9, 1000))
+        self.progress("Grabbing load")
+        self.wait_text("Gripper load grabb", the_function=lambda: self.set_rc(9, 2000))
+        self.progress("Test gripper with Mavlink cmd")
+        self.progress("Releasing load")
+        self.wait_text("Gripper load releas",
+                       the_function=lambda: self.mav.mav.command_long_send(1,
+                                                                           1,
+                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+                                                                           0,
+                                                                           1,
+                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           ))
+        self.progress("Grabbing load")
+        self.wait_text("Gripper load grabb",
+                       the_function=lambda: self.mav.mav.command_long_send(1,
+                                                                           1,
+                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+                                                                           0,
+                                                                           1,
+                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           ))
+        self.progress("Releasing load")
+        self.wait_text("Gripper load releas",
+                       the_function=lambda: self.mav.mav.command_long_send(1,
+                                                                           1,
+                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+                                                                           0,
+                                                                           1,
+                                                                           mavutil.mavlink.GRIPPER_ACTION_RELEASE,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           ))
+        self.progress("Grabbing load")
+        self.wait_text("Gripper load grabb",
+                       the_function=lambda: self.mav.mav.command_long_send(1,
+                                                                           1,
+                                                                           mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+                                                                           0,
+                                                                           1,
+                                                                           mavutil.mavlink.GRIPPER_ACTION_GRAB,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           0,
+                                                                           ))
+        self.context_pop()
+        self.reboot_sitl()
     #     # TEST MISSION FILE
     #     # TODO : rework that to work on autotest server
     #     # self.progress("TEST LOADING MISSION")
