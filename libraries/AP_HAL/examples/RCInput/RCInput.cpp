@@ -3,11 +3,13 @@
  */
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+AP_BoardConfig BoardConfig;
 
 #define MAX_CHANNELS 16
 
@@ -17,12 +19,14 @@ static uint16_t last_value[MAX_CHANNELS];
 void setup(void)
 {
     hal.console->printf("Starting RCInput test\n");
+    BoardConfig.init();
 }
 
 void loop(void)
 {
     bool changed = false;
     uint8_t nchannels = hal.rcin->num_channels();  // Get the numbers channels detected by RC_INPUT.
+    hal.console->printf("channelnum=%d.\n", nchannels);
     if (nchannels > MAX_CHANNELS) {
         nchannels = MAX_CHANNELS;
     }
