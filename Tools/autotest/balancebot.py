@@ -49,6 +49,7 @@ class AutoTestBalanceBot(AutoTestRover):
 
     def autotest(self):
         """Autotest APMrover2 in SITL."""
+        self.check_test_syntax(test_file=os.path.realpath(__file__))
         if not self.hasInit:
             self.init()
         self.progress("Started simulator")

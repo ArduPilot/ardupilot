@@ -132,6 +132,7 @@ class AutoTestSub(AutoTest):
 
     def autotest(self):
         """Autotest ArduSub in SITL."""
+        self.check_test_syntax(test_file=os.path.realpath(__file__))
         if not self.hasInit:
             self.init()
 
