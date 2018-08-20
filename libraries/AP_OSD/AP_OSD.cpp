@@ -185,7 +185,7 @@ void AP_OSD::init()
     }
     if (backend != nullptr) {
         // create thread as higher priority than IO
-        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 512, AP_HAL::Scheduler::PRIORITY_IO, 1);
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 1024, AP_HAL::Scheduler::PRIORITY_IO, 1);
     }
 }
 
