@@ -131,6 +131,7 @@ class AutoTestQuadPlane(AutoTest):
 
     def autotest(self):
         """Autotest QuadPlane in SITL."""
+        self.check_test_syntax(test_file=os.path.realpath(__file__))
         if not self.hasInit:
             self.init()
 
