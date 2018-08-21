@@ -4,7 +4,6 @@
 To Do List
  ----- short term
  - add calabration code for analog wind Vane
- - add wind speed sensor
  - setup log of relevent sailing varables
  - add sailboat paramiters, ie no go zone, sheeting range, ideal sail aoa
  - auto sheet mode, not sure if acro will work well, may be very tricky to go at a defined speed, depends on wind speed and heading. dead down wind it can be bad to try and slowdown
@@ -17,6 +16,7 @@ To Do List
 
  
  ----- Long term
+ - add wind speed sensor
  - mavlink sailing messages 
  - sailing loiter, boat stays inside loiter circle, more like plane than rover, will carry on sailing but stay close to a point, cant slow down too muc or will lose sterring
  - motor sailing, some boats may also have motor, we need to decide at what point we would be better of just motoring in low wind, or for a tight loiter, or to hit waypoint exactly, or if stuck head to wind, or to reverse ect
@@ -29,9 +29,6 @@ To Do List
  - independednt sheeting for main and jib
  - wing type sails with 'elevator' control 
 */
-
-#define SAILBOAT_WIND_ANGLE_MIN     radians(20) // sailboats can sail as close as 20degrees from wind
-#define SAILBOAT_MAINSAIL_ANGLE_MAX radians(90) // sailboats mainsail can be up to 90degrees
 
 // directly set a mainsail value (used for manual modes)
 void Rover::sailboat_set_mainsail(float mainsail)
@@ -48,18 +45,18 @@ void Rover::sailboat_update_mainsail()
     if (!g2.motors.has_sail()) {
         return;
     }
-
-    // get wind direction from wind vane (direction wind is blowing towards)
-    // temporarily take wind direction from channel6
-    //const float wind_dir_abs = rc().channel(CH_6)->norm_input() * radians(360);
-
-    // convert wind direction to relative angle (in radians)
-    //const float wind_dir_rel = fabsf(wrap_PI(ahrs.yaw - wind_dir_abs));
     
-    float wind_dir_apparent = windvane.get_apparent_wind_direction_rad();
+    // + is wind over stbd side, - is wind over port side, but as the sails are sheeted the same on each side it makes no dirence so take abs
+    float wind_dir_apparent = abs(windvane.get_apparent_wind_direction_rad());
 
-    // linear interpolate mainsail value (0 to 100) from wind angle (20deg ~ 180deg)
-    float mainsail = MAX(0.0f, wind_dir_apparent - SAILBOAT_WIND_ANGLE_MIN) / (radians(180) - SAILBOAT_WIND_ANGLE_MIN) * 100.0f;
+    // set the main sail to the ideal angle to the wind
+    float mainsail_angle = wind_dir_apparent - g2.sail_ideal_angle;
+    
+    // make sure between alowable range
+    mainsail_angle = constrain_float(mainsail_angle, g2.sail_min_angle, g2.sail_max_angle);
+    
+    // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
+    float mainsail = ((mainsail_angle - g2.sail_min_angle)/(g2.sail_max_angle - g2.sail_min_angle)) * 100.0f;
 
     g2.motors.set_mainsail(mainsail);
 }

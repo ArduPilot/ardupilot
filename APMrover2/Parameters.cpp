@@ -409,6 +409,10 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     GOBJECT(button, "BTN_",  AP_Button),
 
+    // @Group: WNDVN_
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    GOBJECT(windvane, "WNDVN_",  AP_WindVane), 
+    
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -571,6 +575,33 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_TYPE", 25, ParametersG2, loit_type, 0),
 
+    // @Param: SAIL_MIN_ANGLE
+    // @DisplayName: Sail min angle
+    // @Description: mainsheet tight, angle between cnterline and boom
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_MIN_ANGLE", 26, ParametersG2, sail_min_angle, 0),
+    
+    // @Param: SAIL_MAX_ANGLE
+    // @DisplayName: Sail max angle
+    // @Description: mainsheet loose,  angle between centerline and boom 
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_MAX_ANGLE", 27, ParametersG2, sail_max_angle, 90),
+    
+    // @Param: SAIL_IDEAL_ANGLE
+    // @DisplayName: Sail ideal angle
+    // @Description: ideal angle between sail and aparent wind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_IDEAL_ANGLE", 28, ParametersG2, sail_ideal_angle, 5),
+    
     AP_GROUPEND
 };
 
@@ -650,6 +681,10 @@ void Rover::load_parameters(void)
 
     if (is_balancebot()) {
         g2.crash_angle.set_default(30);
+    }
+    
+    if (g2.motors.has_sail()) {
+        g2.crash_angle.set_default(0);
     }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,

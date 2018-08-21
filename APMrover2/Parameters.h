@@ -201,7 +201,8 @@ public:
         k_param_barometer,
         k_param_notify,
         k_param_button,
-
+        k_param_windvane,
+        
         k_param_DataFlash = 253,  // Logging Group
 
         // 254,255: reserved
@@ -357,6 +358,12 @@ public:
 
     // loiter type
     AP_Int8 loit_type;
+    
+    // Sailing prarams
+    AP_Float sail_min_angle;
+    AP_Float sail_max_angle;
+    AP_Float sail_ideal_angle;
+    
 };
 
 extern const AP_Param::Info var_info[];

@@ -16,6 +16,7 @@
 #include <AP_WindVane/AP_WindVane.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <board_config.h>
@@ -123,7 +124,7 @@ float AP_WindVane::get_apparent_wind_direction_rad()
     switch (_type) {
         case WindVaneType::WINDVANE_PWM_PIN:{ // RC input, apparent wind angle must be caculated
             float bearing = read_PWM_bearing();
-            apparent_angle = bearing;//fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
+            apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
             break;
         }    
         case WindVaneType::WINDVANE_ANALOG_PIN:{
@@ -132,12 +133,15 @@ float AP_WindVane::get_apparent_wind_direction_rad()
         }    
         default:{ // Assume head to wind at home locaiton, apparent wind angle must be caculated
             float bearing = home_heading;
-            apparent_angle = bearing;//fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
+            apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // This is a aproximation as we are not considering boat speed and wind speed
         }   break;
     }    
                   
     // Make sure between 0 and 2pi
     apparent_angle = fabsf(wrap_PI(apparent_angle));
+              
+    // Set to +- 180 to make symetrical, + is wind over stbd side, - is wind over port side
+    apparent_angle = apparent_angle - radians(180);   
                   
     return apparent_angle;
 }
@@ -178,7 +182,7 @@ float AP_WindVane::get_absolute_wind_direction_rad()
 // Record home heading for use as wind direction if no sensor is fitted
 void AP_WindVane::record_home_headng()
 {
-    home_heading = 0.0f;//AP::ahrs().yaw;
+    home_heading = AP::ahrs().yaw;
 }
 
 // Private
@@ -227,7 +231,7 @@ float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_win
     float bearing = 0.0f;
     
     // Caculate True wind speed (posibly put this in another funciton somewhere)
-    float True_wind_speed = sqrt( pow(apparent_wind_speed,2)  + pow(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(apparent_angle)); 
+    float True_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(apparent_angle)); 
    
     if (is_zero(True_wind_speed)){ // There is no true wind, so return apparent angle, to avoid divide by zero 
         bearing = apparent_angle;
