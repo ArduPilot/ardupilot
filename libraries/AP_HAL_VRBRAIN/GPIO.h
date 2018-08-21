@@ -30,11 +30,6 @@ public:
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n) override;
 
-    /* Interrupt interface: */
-    bool attach_interrupt(uint8_t interrupt_num,
-                          irq_handler_fn_t fn,
-                          INTERRUPT_TRIGGER_TYPE mode) override;
-
     /* return true if USB cable is connected */
     bool usb_connected(void) override;
 
