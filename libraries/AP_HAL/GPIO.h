@@ -49,7 +49,9 @@ public:
     FUNCTOR_TYPEDEF(irq_handler_fn_t, void, uint8_t, bool, uint32_t);
     virtual bool    attach_interrupt(uint8_t pin,
                                      irq_handler_fn_t fn,
-                                     INTERRUPT_TRIGGER_TYPE mode) = 0;
+                                     INTERRUPT_TRIGGER_TYPE mode) {
+        return false;
+    }
 
     virtual bool    attach_interrupt(uint8_t pin,
                                      AP_HAL::Proc proc,
