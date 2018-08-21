@@ -1784,7 +1784,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test stability patch",
-                          lambda: self.takeoff(10))
+                          lambda: self.takeoff(10, arm=True))
 
             # Stability patch
             self.run_test("Fly stability patch",
@@ -1795,7 +1795,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test horizontal fence",
-                          lambda: self.takeoff(10))
+                          lambda: self.takeoff(10, arm=True))
 
             # Fence test
             self.run_test("Test horizontal fence",
@@ -1826,7 +1826,7 @@ class AutoTestCopter(AutoTest):
                           self.fly_gps_glitch_auto_test)
 
             # Takeoff
-            self.run_test("Takeoff to test loiter", lambda: self.takeoff(10))
+            self.run_test("Takeoff to test loiter", lambda: self.takeoff(10, arm=True))
 
             # Loiter for 10 seconds
             self.run_test("Test Loiter for 10 seconds", self.loiter)
