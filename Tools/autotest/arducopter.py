@@ -427,6 +427,7 @@ class AutoTestCopter(AutoTest):
 
         # disable battery failsafe
         self.set_parameter('BATT_FS_LOW_ACT', 0)
+        self.set_parameter('SIM_BATT_VOLTAGE', 13)
 
         self.progress("Successfully entered LAND after battery failsafe")
         self.reboot_sitl()
