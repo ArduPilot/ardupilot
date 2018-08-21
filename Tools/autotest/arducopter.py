@@ -318,6 +318,7 @@ class AutoTestCopter(AutoTest):
         if time_left < 20:
             time_left = 20
         self.wait_altitude(-10, 10, time_left, relative=True)
+        self.set_rc(3, 1500)
         self.save_wp()
 
     # enter RTL mode and wait for the vehicle to disarm
@@ -356,7 +357,8 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # raise throttle slightly to avoid hitting the ground
-        self.set_rc(3, 1600)
+        self.set_rc(3, 1800)
+        self.wait_altitude(20, 25, relative=True)
 
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
@@ -1155,6 +1157,7 @@ class AutoTestCopter(AutoTest):
         # wait here until ready
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
+        self.set_rc(3, 1500)
 
     def fly_vision_position(self):
         '''disable GPS navigation, enable Vicon input'''
