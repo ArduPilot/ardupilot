@@ -590,9 +590,6 @@ private:
     // The instantaneous desired pitch angle.  Hundredths of a degree
     int32_t nav_pitch_cd;
 
-    // we separate out rudder input to allow for RUDDER_ONLY=1
-    int16_t rudder_input;
-
     // the aerodymamic load factor. This is calculated from the demanded
     // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
     float aerodynamic_load_factor = 1.0f;
@@ -909,9 +906,10 @@ private:
     void init_rc_out_aux();
     void rudder_arm_disarm_check();
     void read_radio();
+    int16_t rudder_input(void);
     void control_failsafe();
     bool trim_radio();
-    bool rc_failsafe_active(void);
+    bool rc_failsafe_active(void) const;
     void read_rangefinder(void);
     void read_airspeed(void);
     void rpm_update(void);
