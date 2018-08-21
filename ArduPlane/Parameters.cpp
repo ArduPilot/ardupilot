@@ -1177,6 +1177,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
 #endif
 
+    // @Param: FLIGHT_OPTIONS
+    // @DisplayName: Flight mode options
+    // @Description: Flight mode specific options
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual, Stabilize, Acro)
+    // @User: Advanced
+    AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
+
     AP_GROUPEND
 };
 

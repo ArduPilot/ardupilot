@@ -197,3 +197,7 @@ enum {
     USE_REVERSE_THRUST_FBWB                     = (1<<9),
     USE_REVERSE_THRUST_GUIDED                   = (1<<10),
 };
+
+enum FlightOptions {
+    DIRECT_RUDDER_ONLY = (1 << 0),
+};

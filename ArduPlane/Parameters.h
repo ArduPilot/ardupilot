@@ -544,6 +544,8 @@ public:
     // Payload Gripper
     AP_Gripper gripper;
 #endif
+
+    AP_Int32 flight_options;
 };
 
 extern const AP_Param::Info var_info[];
