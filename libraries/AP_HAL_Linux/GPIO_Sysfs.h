@@ -52,13 +52,6 @@ public:
     /*
      * Currently this function always returns false.
      */
-    bool attach_interrupt(uint8_t interrupt_num,
-                          irq_handler_fn_t p,
-                          INTERRUPT_TRIGGER_TYPE mode) override;
-
-    /*
-     * Currently this function always returns false.
-     */
     bool usb_connected() override;
 
 protected:
