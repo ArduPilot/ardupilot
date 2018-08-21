@@ -1,10 +1,10 @@
 #pragma once
 
-#include <pthread.h>
-
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#include "AP_HAL_Linux.h"
+#include <stdint.h>
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
+#include <pthread.h>
 
 namespace Linux {
 

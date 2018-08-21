@@ -22,6 +22,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_Common/Semaphore.h>
 
 #include "GCS.h"
 
@@ -1281,6 +1282,8 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
     statustext.msg.severity = severity;
     strncpy(statustext.msg.text, text, sizeof(statustext.msg.text));
 
+    WITH_SEMAPHORE(_statustext_sem);
+    
     // The force push will ensure comm links do not block other comm links forever if they fail.
     // If we push to a full buffer then we overwrite the oldest entry, effectively removing the
     // block but not until the buffer fills up.
@@ -1359,6 +1362,7 @@ void GCS::retry_deferred()
             chan(i).retry_deferred();
         }
     }
+    WITH_SEMAPHORE(_statustext_sem);
     service_statustext();
 }
 
@@ -1852,8 +1856,12 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     // force safety on
     hal.rcout->force_safety_on();
     hal.rcout->force_safety_no_wait();
-    hal.scheduler->delay(200);
 
+    // flush pending parameter writes
+    AP_Param::flush();
+
+    hal.scheduler->delay(200);
+    
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
     hal.scheduler->reboot(hold_in_bootloader);

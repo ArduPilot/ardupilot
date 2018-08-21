@@ -272,9 +272,12 @@ private:
 
     // return (possibly allocating) a log_write_fmt for a name
     struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt);
+    const struct log_write_fmt *log_write_fmt_for_msg_type(uint8_t msg_type) const;
 
     // returns true if msg_type is associated with a message
     bool msg_type_in_use(uint8_t msg_type) const;
+
+    const struct LogStructure *structure_for_msg_type(uint8_t msg_type);
 
     // return a msg_type which is not currently in use (or -1 if none available)
     int16_t find_free_msg_type() const;

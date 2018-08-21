@@ -60,8 +60,6 @@ void Rover::init_ardupilot()
     notify.init();
     notify_mode(control_mode);
 
-    ServoRelayEvents.set_channel_mask(0xFFF0);
-
     battery.init();
 
     rssi.init();

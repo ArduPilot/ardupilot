@@ -16,6 +16,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include "Semaphores.h"
+#include "AP_HAL_ChibiOS.h"
 
 #if CH_CFG_USE_MUTEXES == TRUE
 
@@ -23,16 +24,28 @@ extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
+// constructor
+Semaphore::Semaphore()
+{
+    static_assert(sizeof(_lock) >= sizeof(mutex_t), "invalid mutex size");
+#if CH_CFG_USE_MUTEXES == TRUE
+    mutex_t *mtx = (mutex_t *)_lock;
+    chMtxObjectInit(mtx);
+#endif
+}
+
 bool Semaphore::give()
 {
-    chMtxUnlock(&_lock);
+    mutex_t *mtx = (mutex_t *)_lock;
+    chMtxUnlock(mtx);
     return true;
 }
 
 bool Semaphore::take(uint32_t timeout_ms)
 {
+    mutex_t *mtx = (mutex_t *)_lock;
     if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
-        chMtxLock(&_lock);
+        chMtxLock(mtx);
         return true;
     }
     if (take_nonblocking()) {
@@ -50,7 +63,23 @@ bool Semaphore::take(uint32_t timeout_ms)
 
 bool Semaphore::take_nonblocking()
 {
-    return chMtxTryLock(&_lock);
+    mutex_t *mtx = (mutex_t *)_lock;
+    return chMtxTryLock(mtx);
+}
+
+bool Semaphore::check_owner(void)
+{
+    mutex_t *mtx = (mutex_t *)_lock;
+#if CH_CFG_USE_MUTEXES == TRUE
+    return mtx->owner == chThdGetSelfX();
+#else
+    return true;
+#endif
+}
+
+void Semaphore::assert_owner(void)
+{
+    osalDbgAssert(check_owner(), "owner");
 }
 
 #endif // CH_CFG_USE_MUTEXES

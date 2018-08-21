@@ -8,8 +8,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 #if HAL_WITH_UAVCAN
 
@@ -25,6 +23,8 @@
 
 #include "Scheduler.h"
 
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+
 /*
  * FOR INVESTIGATION:
  * AP_HAL::micros64() was called for monotonic time counter
@@ -34,8 +34,6 @@
  */
 
 extern const AP_HAL::HAL& hal;
-
-#include <AP_UAVCAN/AP_UAVCAN.h>
 
 extern "C" {
     static int can1_irq(const int irq, void*);
@@ -174,7 +172,7 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
     const uint8_t max_quanta_per_bit = (target_bitrate >= 1000000) ? 10 : 17;
 
     if (max_quanta_per_bit > (MaxBS1 + MaxBS2)) {
-        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
+        if (AP::can().get_debug_level(self_index_) >= 1) {
             printf("PX4CAN::computeTimings max_quanta_per_bit problem\n\r");
         }
     }
@@ -242,7 +240,7 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
             bs1(arg_bs1), bs2(uint8_t(bs1_bs2_sum - bs1)), sample_point_permill(
                 uint16_t(1000 * (1 + bs1) / (1 + bs1 + bs2)))
         {
-            if (bs1_bs2_sum <= arg_bs1 && (AP_BoardConfig_CAN::get_can_debug() >= 1)) {
+            if (bs1_bs2_sum <= arg_bs1) {
                 AP_HAL::panic("PX4CAN::computeTimings bs1_bs2_sum <= arg_bs1");
             }
         }
@@ -271,13 +269,13 @@ int PX4CAN::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
      * Final validation
      */
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
-        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
+        if (AP::can().get_debug_level(self_index_) >= 1) {
             printf("PX4CAN::computeTimings target_bitrate error\n\r");
         }
         return -ErrLogic;
     }
 
-    if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+    if (AP::can().get_debug_level(self_index_) >= 2) {
         printf("PX4CAN::computeTimings Timings: quanta/bit: %d, sample point location: %.1f%%\n\r",
                int(1 + solution.bs1 + solution.bs2), double(solution.sample_point_permill / 10.0));
     }
@@ -479,7 +477,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
     }
 
     if (!waitMsrINakBitStateChange(true)) {
-        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
+        if (AP::can().get_debug_level(self_index_) >= 1) {
             printf("PX4CAN::init MSR INAK not set\n\r");
         }
         can_->MCR = bxcan::MCR_RESET;
@@ -505,7 +503,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
         can_->MCR = bxcan::MCR_RESET;
         return timings_res;
     }
-    if (AP_BoardConfig_CAN::get_can_debug() >= 2) {
+    if (AP::can().get_debug_level(self_index_) >= 2) {
         printf("PX4CAN::init Timings: presc=%u sjw=%u bs1=%u bs2=%u\n\r", unsigned(timings.prescaler),
                unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
     }
@@ -525,7 +523,7 @@ int PX4CAN::init(const uint32_t bitrate, const OperatingMode mode)
     can_->MCR &= ~bxcan::MCR_INRQ; // Leave init mode
 
     if (!waitMsrINakBitStateChange(false)) {
-        if (AP_BoardConfig_CAN::get_can_debug() >= 1) {
+        if (AP::can().get_debug_level(self_index_) >= 1) {
             printf("PX4CAN::init MSR INAK not cleared\n\r");
         }
         can_->MCR = bxcan::MCR_RESET;
@@ -826,7 +824,7 @@ int32_t PX4CAN::tx_pending()
 
 PX4CANManager::PX4CANManager() :
     AP_HAL::CANManager(this), update_event_(*this), if0_(bxcan::Can[0], nullptr, 0, CAN_STM32_RX_QUEUE_SIZE), if1_(
-    bxcan::Can[1], nullptr, 1, CAN_STM32_RX_QUEUE_SIZE), initialized_(false), p_uavcan(nullptr)
+    bxcan::Can[1], nullptr, 1, CAN_STM32_RX_QUEUE_SIZE), initialized_(false)
 {
     uavcan::StaticAssert<(CAN_STM32_RX_QUEUE_SIZE <= PX4CAN::MaxRxQueueCapacity)>::check();
 
@@ -966,7 +964,7 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
 
     int res = 0;
 
-    if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
+    if (AP::can().get_debug_level(can_number) >= 2) {
         printf("PX4CANManager::init Bitrate %lu mode %d bus %d\n\r", static_cast<unsigned long>(bitrate),
                static_cast<int>(mode), static_cast<int>(can_number));
     }
@@ -977,7 +975,7 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
         _ifaces_num++;
         _ifaces_out_to_in[can_number] = _ifaces_num - 1;
 
-        if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
+        if (AP::can().get_debug_level(can_number) >= 2) {
             printf("PX4CANManager::init First initialization bus %d\n\r", static_cast<int>(can_number));
         }
 
@@ -988,7 +986,7 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
      * CAN1
      */
     if (can_number == 0) {
-        if (AP_BoardConfig_CAN::get_can_debug(0) >= 2) {
+        if (AP::can().get_debug_level(0) >= 2) {
             printf("PX4CANManager::init Initing iface 0...\n\r");
         }
         ifaces[_ifaces_out_to_in[can_number]] = &if0_;               // This link must be initialized first,
@@ -999,7 +997,7 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
      * CAN2
      */
     if (can_number == 1) {
-        if (AP_BoardConfig_CAN::get_can_debug(1) >= 2) {
+        if (AP::can().get_debug_level(1) >= 2) {
             printf("PX4CANManager::init Initing iface 1...\n\r");
         }
         ifaces[_ifaces_out_to_in[can_number]] = &if1_;                          // Same thing here.
@@ -1013,7 +1011,7 @@ int PX4CANManager::init(const uint32_t bitrate, const PX4CAN::OperatingMode mode
         return res;
     }
 
-    if (AP_BoardConfig_CAN::get_can_debug(can_number) >= 2) {
+    if (AP::can().get_debug_level(can_number) >= 2) {
         printf("PX4CANManager::init CAN drv init OK, res = %d\n\r", res);
     }
 
@@ -1074,16 +1072,6 @@ bool PX4CANManager::is_initialized()
 void PX4CANManager::initialized(bool val)
 {
     initialized_ = val;
-}
-
-AP_UAVCAN *PX4CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void PX4CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
 }
 
 /*

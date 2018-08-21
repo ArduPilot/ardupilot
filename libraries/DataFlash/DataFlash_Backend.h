@@ -163,4 +163,6 @@ private:
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
     bool have_logged_armed;
+
+    void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
 };

@@ -17,11 +17,13 @@
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/SPIDevice.h>
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_SPI == TRUE
+
 #include "Semaphores.h"
 #include "Scheduler.h"
 #include "Device.h"
-
-#if HAL_USE_SPI == TRUE
 
 namespace ChibiOS {
 

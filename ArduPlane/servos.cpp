@@ -574,7 +574,6 @@ void Plane::set_servos(void)
         // steering output
         steering_control.rudder = steering_control.steering;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_control.rudder);
 
     // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
     steering_control.ground_steering = false;

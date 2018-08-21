@@ -75,10 +75,24 @@ private:
     void stop_clock(uint64_t time_usec);
 
     static void *thread_create_trampoline(void *ctx);
+    static void check_thread_stacks(void);
     
     bool _initialized;
     uint64_t _stopped_clock_usec;
     uint64_t _last_io_run;
     pthread_t _main_ctx;
+
+    static HAL_Semaphore _thread_sem;
+    struct thread_attr {
+        struct thread_attr *next;
+        AP_HAL::MemberProc *f;
+        pthread_attr_t attr;
+        uint32_t stack_size;
+        void *stack;
+        const uint8_t *stack_min;
+        const char *name;
+    };
+    static struct thread_attr *threads;
+    static const uint8_t stackfill = 0xEB;
 };
 #endif  // CONFIG_HAL_BOARD

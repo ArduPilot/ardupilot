@@ -43,11 +43,7 @@ uavcan::MonotonicTime clock::getMonotonic()
 
 bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    if (can_helper.init(bitrate, CanIface::OperatingMode::NormalMode, can_number) == 0) {
-        bitrate_ = bitrate;
-        initialized_ = true;
-    }
-    return initialized_;
+    return (can_helper.init(bitrate, CanIface::OperatingMode::NormalMode, can_number) == 0);
 }
 
 bool CANManager::is_initialized()
@@ -58,25 +54,6 @@ bool CANManager::is_initialized()
 void CANManager::initialized(bool val)
 {
     initialized_ = val;
-}
-
-AP_UAVCAN *CANManager::get_UAVCAN(void)
-{
-    return p_uavcan;
-}
-
-void CANManager::set_UAVCAN(AP_UAVCAN *uavcan)
-{
-    p_uavcan = uavcan;
-}
-
-void CANManager::_timer_tick()
-{
-    if (!initialized_) return;
-
-    if (p_uavcan != nullptr) {
-        p_uavcan->do_cyclic();
-    }
 }
 
 #endif //HAL_WITH_UAVCAN

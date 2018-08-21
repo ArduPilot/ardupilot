@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 /* PX4 headers */
 #include <drivers/drv_led.h>
 #include <drivers/drv_tone_alarm.h>
@@ -249,8 +251,150 @@ AP_HAL::DigitalSource* PX4GPIO::channel(uint16_t n) {
 }
 
 /* Interrupt interface: */
-bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+AP_HAL::GPIO::irq_handler_fn_t PX4GPIO::pin_handlers[6] = {};
+
+int PX4GPIO::irq_handler_gpio0(int irq, void *context)
 {
+    irq_handler(0);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio1(int irq, void *context)
+{
+    irq_handler(1);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio2(int irq, void *context)
+{
+    irq_handler(2);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio3(int irq, void *context)
+{
+    irq_handler(3);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio4(int irq, void *context)
+{
+    irq_handler(4);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio5(int irq, void *context)
+{
+    irq_handler(5);
+    return 0;
+}
+
+void PX4GPIO::irq_handler(uint8_t handler)
+{
+    const uint32_t now = AP_HAL::micros();
+
+    AP_HAL::GPIO::irq_handler_fn_t &fn = pin_handlers[handler];
+    if (!fn) {
+        return;
+    }
+
+    const uint8_t pin = handler + 50;
+    const bool pin_state = hal.gpio->read(pin);
+
+    fn(pin, pin_state, now);
+}
+
+uint32_t PX4GPIO::pin_to_gpio(uint8_t pin)
+{
+#ifdef GPIO_GPIO0_INPUT
+    switch (pin) {
+    case 50:
+        return GPIO_GPIO0_INPUT;
+    case 51:
+        return GPIO_GPIO1_INPUT;
+    case 52:
+        return GPIO_GPIO2_INPUT;
+    case 53:
+        return GPIO_GPIO3_INPUT;
+    case 54:
+        return GPIO_GPIO4_INPUT;
+    case 55:
+        return GPIO_GPIO5_INPUT;
+    default:
+        return 0;
+    }
+#endif // GPIO_GPIO5_INPUT
+    return 0;
+}
+
+bool PX4GPIO::attach_interrupt(uint8_t pin,
+                               irq_handler_fn_t fn,
+                               INTERRUPT_TRIGGER_TYPE mode)
+{
+    const uint32_t gpio = pin_to_gpio(pin);
+
+    if (gpio == 0) {
+        // failed to map from pin to GPIO INPUT
+        return false;
+    }
+
+    if (pin < 50) {
+        return false;
+    }
+
+    const uint8_t handler_offset = pin - 50;
+    if (handler_offset > ARRAY_SIZE(pin_handlers)) {
+        return false;
+    }
+
+    // bounce attempt if there is already a handler:
+    if (fn && pin_handlers[handler_offset]) {
+        return false;
+    }
+
+    // attach a distinct interrupt handler for each different GPIO
+    int (*handler)(int irq, void *context) = nullptr;
+    switch (gpio) {
+#ifdef GPIO_GPIO0_INPUT
+    case GPIO_GPIO0_INPUT:
+        handler = irq_handler_gpio0;
+        break;
+    case GPIO_GPIO1_INPUT:
+        handler = irq_handler_gpio1;
+        break;
+    case GPIO_GPIO2_INPUT:
+        handler = irq_handler_gpio2;
+        break;
+    case GPIO_GPIO3_INPUT:
+        handler = irq_handler_gpio3;
+        break;
+    case GPIO_GPIO4_INPUT:
+        handler = irq_handler_gpio4;
+        break;
+    case GPIO_GPIO5_INPUT:
+        handler = irq_handler_gpio5;
+        break;
+#endif // GPIO_GPIO5_INPUT
+    default:
+        break;
+    }
+    if (handler == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "No handler for %u", gpio);
+        return false;
+    }
+
+    if (fn) {
+        stm32_gpiosetevent(gpio,
+                           (mode == INTERRUPT_RISING)||(mode==INTERRUPT_BOTH),
+                           (mode == INTERRUPT_FALLING)||(mode==INTERRUPT_BOTH),
+                           false, // event
+                           handler);
+    } else {
+        // removing existing handler
+        stm32_gpiosetevent(gpio,
+                           false, // rising
+                           false, // falling
+                           false, // event
+                           nullptr);
+    }
+
+    pin_handlers[handler_offset] = fn;
+
     return true;
 }
 

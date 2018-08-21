@@ -21,12 +21,12 @@
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_BoardConfig/AP_BoardConfig.h>
+
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_gps_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
+#define debug_gps_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
 AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
@@ -41,11 +41,11 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
     if (ap_uavcan == nullptr) {
         return;
     }
-    
+
     ap_uavcan->remove_gps_listener(this);
     delete _sem_gnss;
-    
-    debug_gps_uavcan(2, "AP_GPS_UAVCAN destructed\n\r");
+
+    debug_gps_uavcan(2, _manager, "AP_GPS_UAVCAN destructed\n\r");
 }
 
 void AP_GPS_UAVCAN::set_uavcan_manager(uint8_t mgr)

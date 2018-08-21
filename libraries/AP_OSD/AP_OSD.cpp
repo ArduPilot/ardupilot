@@ -25,8 +25,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
-
+#include <AP_AHRS/AP_AHRS.h>
 #include <utility>
+#include <AP_Notify/AP_Notify.h>
 
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
@@ -184,7 +185,7 @@ void AP_OSD::init()
     }
     if (backend != nullptr) {
         // create thread as higher priority than IO
-        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 512, AP_HAL::Scheduler::PRIORITY_IO, 1);
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 1024, AP_HAL::Scheduler::PRIORITY_IO, 1);
     }
 }
 
@@ -199,7 +200,7 @@ void AP_OSD::osd_thread()
 void AP_OSD::update_osd()
 {
     backend->clear();
-
+    stats();
     update_current_screen();
 
     screen[current_screen].set_backend(backend);
@@ -207,6 +208,51 @@ void AP_OSD::update_osd()
 
     backend->flush();
 }
+
+//update maximums and totals
+void AP_OSD::stats()
+{
+    uint32_t now = AP_HAL::millis();
+    if (!AP_Notify::flags.armed) {
+        last_update_ms = now;
+        return;
+    }
+
+    // flight distance     
+    uint32_t delta_ms = now - last_update_ms;
+    last_update_ms = now;
+    
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed = v.length();
+    if (speed < 2.0) {
+        speed = 0.0;
+    }
+    float dist_m = (speed * delta_ms)*0.001;
+    last_distance_m += dist_m;
+    
+    // maximum ground speed
+    max_speed_mps = fmaxf(max_speed_mps,speed);
+    
+    // maximum distance
+    Location loc;
+    if (ahrs.get_position(loc) && ahrs.home_is_set()) {
+        const Location &home_loc = ahrs.get_home();
+        float distance = get_distance(home_loc, loc);
+        max_dist_m = fmaxf(max_dist_m, distance);
+    }
+    
+    // maximum altitude
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    alt = -alt;
+    max_alt_m = fmaxf(max_alt_m, alt);
+    // maximum current
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float amps = battery.current_amps();
+    max_current_a = fmaxf(max_current_a, amps);
+}
+
 
 //Thanks to minimosd authors for the multiple osd screen idea
 void AP_OSD::update_current_screen()
@@ -277,4 +323,11 @@ void AP_OSD::next_screen()
         t = (t + 1)%AP_OSD_NUM_SCREENS;
     } while (t != current_screen && !screen[t].enabled);
     current_screen = t;
+}
+
+// set navigation information for display
+void AP_OSD::set_nav_info(NavInfo &navinfo)
+{
+    // do this without a lock for now
+    nav_info = navinfo;
 }

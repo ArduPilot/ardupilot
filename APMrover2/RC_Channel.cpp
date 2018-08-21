@@ -152,7 +152,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
 
                 // save command
                 if (rover.mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", static_cast<uint32_t>(rover.mission.num_commands()));
+                    hal.console->printf("Added waypoint %u", (unsigned)rover.mission.num_commands());
                 }
             }
         }

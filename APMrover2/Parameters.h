@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include "RC_Channel.h"
+#include "AC_Sprayer/AC_Sprayer.h"
 
 // Global parameter class.
 //
@@ -358,12 +359,14 @@ public:
 
     // loiter type
     AP_Int8 loit_type;
-    
+
+    // Sprayer
+    AC_Sprayer sprayer;
+
     // Sailing prarams
     AP_Float sail_min_angle;
     AP_Float sail_max_angle;
     AP_Float sail_ideal_angle;
-    
 };
 
 extern const AP_Param::Info var_info[];

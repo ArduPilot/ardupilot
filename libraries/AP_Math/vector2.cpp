@@ -160,7 +160,7 @@ bool Vector2<T>::segment_intersection(const Vector2<T>& seg1_start, const Vector
         // u = (q - p) * r / (r * s)
         float t = (ss2_ss1 % r2) / r1xr2;
         float u = q_pxr / r1xr2;
-        if ((u >= 0) && (u <= 1) && (t >= 0)) {
+        if ((u >= 0) && (u <= 1) && (t >= 0) && (t <= 1)) {
             // lines intersect
             // t can be any non-negative value because (p, p + r) is a ray
             // u must be between 0 and 1 because (q, q + s) is a line segment

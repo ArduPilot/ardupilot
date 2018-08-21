@@ -101,6 +101,14 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting hdop{false, 0, 0};
+    AP_OSD_Setting waypoint{false, 0, 0};
+    AP_OSD_Setting xtrack_error{false, 0, 0};
+    AP_OSD_Setting dist{false,22,11};
+    AP_OSD_Setting stat{false,0,0};
+    AP_OSD_Setting flightime{false, 23, 10};
+    AP_OSD_Setting climbeff{false,0,0};
+    AP_OSD_Setting eff{false, 22, 10};
 
     bool check_option(uint32_t option);
 
@@ -150,10 +158,19 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+    void draw_hdop(uint8_t x, uint8_t y);
+    void draw_waypoint(uint8_t x, uint8_t y);
+    void draw_xtrack_error(uint8_t x, uint8_t y);
+    void draw_dist(uint8_t x, uint8_t y);
+    void draw_stat(uint8_t x, uint8_t y);
+    void draw_flightime(uint8_t x, uint8_t y);
+    void draw_climbeff(uint8_t x, uint8_t y);
+    void draw_eff(uint8_t x, uint8_t y);
 };
 
 class AP_OSD {
 public:
+    friend class AP_OSD_Screen;
     //constructor
     AP_OSD();
 
@@ -211,17 +228,35 @@ public:
 
     AP_OSD_Screen screen[AP_OSD_NUM_SCREENS];
 
+    struct NavInfo {
+        float wp_distance;
+        int32_t wp_bearing;
+        float wp_xtrack_error;
+        uint16_t wp_number;
+    };
+
+    void set_nav_info(NavInfo &nav_info);
+    
+
 private:
     void osd_thread();
     void update_osd();
+    void stats();
     void update_current_screen();
     void next_screen();
     AP_OSD_Backend *backend;
-    uint32_t last_update_ms;
-
+    
     //variables for screen switching
     uint8_t current_screen;
     uint16_t previous_channel_value;
     bool switch_debouncer;
     uint32_t last_switch_ms;
+    struct NavInfo nav_info;
+
+    uint32_t last_update_ms;
+    float last_distance_m;
+    float max_dist_m;
+    float max_alt_m;
+    float max_speed_mps;
+    float max_current_a;
 };

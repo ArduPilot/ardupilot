@@ -23,12 +23,13 @@ AP_WheelEncoder_Backend::AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint
         _frontend(frontend),
         _state(state) 
 {
+    state.instance = instance;
 }
 
 // return pin.  returns -1 if pin is not defined for this instance
 int8_t AP_WheelEncoder_Backend::get_pin_a() const
 {
-    if (_state.instance > 1) {
+    if (_state.instance >= WHEELENCODER_MAX_INSTANCES) {
         return -1;
     }
     return _frontend._pina[_state.instance].get();
@@ -37,7 +38,7 @@ int8_t AP_WheelEncoder_Backend::get_pin_a() const
 // return pin.  returns -1 if pin is not defined for this instance
 int8_t AP_WheelEncoder_Backend::get_pin_b() const
 {
-    if (_state.instance > 1) {
+    if (_state.instance >= WHEELENCODER_MAX_INSTANCES) {
         return -1;
     }
     return _frontend._pinb[_state.instance].get();

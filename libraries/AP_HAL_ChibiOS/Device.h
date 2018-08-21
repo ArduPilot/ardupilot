@@ -17,6 +17,10 @@
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
 #include "Semaphores.h"
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
+
 #include "Scheduler.h"
 #include "shared_dma.h"
 #include "hwdef/common/bouncebuffer.h"
@@ -57,3 +61,6 @@ private:
 };
 
 }
+
+#endif // I2C or SPI
+

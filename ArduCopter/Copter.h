@@ -552,7 +552,7 @@ private:
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland{ahrs};
+    AC_PrecLand precland;
 #endif
 
     // Pilot Input Management Library
@@ -918,6 +918,10 @@ private:
     void userhook_auxSwitch1(uint8_t ch_flag);
     void userhook_auxSwitch2(uint8_t ch_flag);
     void userhook_auxSwitch3(uint8_t ch_flag);
+
+#if OSD_ENABLED == ENABLED
+    void publish_osd_info();
+#endif
 
 #include "mode.h"
 

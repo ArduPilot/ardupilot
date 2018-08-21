@@ -7,12 +7,11 @@
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_UAVCAN.h"
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_bm_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
+#define debug_bm_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
 
 /// Constructor
 AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
@@ -25,20 +24,18 @@ AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor
 
 void AP_BattMonitor_UAVCAN::init()
 {
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() == 0) {
-        return;
-    }
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
 
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
         AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
         if (ap_uavcan == nullptr) {
             continue;
         }
-        
+
         switch (_type) {
             case UAVCAN_BATTERY_INFO:
                 if (ap_uavcan->register_BM_bi_listener_to_id(this, _params._serial_number)) {
-                    debug_bm_uavcan(2, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number);
+                    debug_bm_uavcan(2, i, "UAVCAN BattMonitor BatteryInfo registered id: %d\n\r", _params._serial_number.get());
                 }
                 break;
         }

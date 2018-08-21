@@ -43,9 +43,6 @@ THD_WORKING_AREA(_timer_thread_wa, 2048);
 THD_WORKING_AREA(_rcin_thread_wa, 512);
 THD_WORKING_AREA(_io_thread_wa, 2048);
 THD_WORKING_AREA(_storage_thread_wa, 2048);
-#if HAL_WITH_UAVCAN
-THD_WORKING_AREA(_uavcan_thread_wa, 4096);
-#endif
 
 Scheduler::Scheduler()
 {
@@ -62,14 +59,6 @@ void Scheduler::init()
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
 
-    // setup the uavcan thread - this will call tasks at 1kHz
-#if HAL_WITH_UAVCAN
-    _uavcan_thread_ctx = chThdCreateStatic(_uavcan_thread_wa,
-                     sizeof(_uavcan_thread_wa),
-                     APM_UAVCAN_PRIORITY,        /* Initial priority.    */
-                     _uavcan_thread,            /* Thread function.     */
-                     this);                     /* Thread parameter.    */
-#endif
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
@@ -286,24 +275,6 @@ void Scheduler::_timer_thread(void *arg)
         hal.rcout->timer_tick();
     }
 }
-#if HAL_WITH_UAVCAN
-void Scheduler::_uavcan_thread(void *arg)
-{
-    Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_uavcan");
-    while (!sched->_hal_initialized) {
-        sched->delay_microseconds(20000);
-    }
-    while (true) {
-        sched->delay_microseconds(300);
-        for (int i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
-            if (AP_UAVCAN::get_uavcan(i) != nullptr) {
-                CANManager::from(hal.can_mgr[i])->_timer_tick();
-            }
-        }
-    }
-}
-#endif
 
 void Scheduler::_rcin_thread(void *arg)
 {

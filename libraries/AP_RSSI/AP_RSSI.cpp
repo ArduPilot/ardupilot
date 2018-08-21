@@ -15,7 +15,9 @@
 
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
+
 #include <utility>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <board_config.h>
@@ -27,13 +29,19 @@ extern const AP_HAL::HAL& hal;
 #define BOARD_RSSI_DEFAULT 1
 #define BOARD_RSSI_ANA_PIN 11
 #define BOARD_RSSI_ANA_PIN_HIGH 3.3f
-#else
-#define BOARD_RSSI_DEFAULT 0
-#define BOARD_RSSI_ANA_PIN 0
-#define BOARD_RSSI_ANA_PIN_HIGH 5.0f
 #endif
 
-AP_RSSI::PWMState AP_RSSI::pwm_state;
+#ifndef BOARD_RSSI_DEFAULT
+#define BOARD_RSSI_DEFAULT 0
+#endif
+
+#ifndef BOARD_RSSI_ANA_PIN
+#define BOARD_RSSI_ANA_PIN 0
+#endif
+
+#ifndef BOARD_RSSI_ANA_PIN_HIGH
+#define BOARD_RSSI_ANA_PIN_HIGH 5.0f
+#endif
 
 const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
@@ -195,44 +203,78 @@ float AP_RSSI::read_channel_rssi()
     return channel_rssi;    
 }
 
+void AP_RSSI::check_pwm_pin_rssi()
+{
+    if (rssi_analog_pin == pwm_state.last_rssi_analog_pin) {
+        return;
+    }
+
+    // detach last one
+    if (pwm_state.last_rssi_analog_pin) {
+        if (!hal.gpio->detach_interrupt(pwm_state.last_rssi_analog_pin)) {
+            gcs().send_text(MAV_SEVERITY_WARNING,
+                            "RSSI: Failed to detach from pin %u",
+                            pwm_state.last_rssi_analog_pin);
+            // ignore this failure or the user may be stuck
+        }
+    }
+
+    pwm_state.last_rssi_analog_pin = rssi_analog_pin;
+
+    if (!rssi_analog_pin) {
+        // don't need to install handler
+        return;
+    }
+
+    // install interrupt handler on rising and falling edge
+    if (!hal.gpio->attach_interrupt(
+            rssi_analog_pin,
+            FUNCTOR_BIND_MEMBER(&AP_RSSI::irq_handler,
+                                void,
+                                uint8_t,
+                                bool,
+                                uint32_t),
+            AP_HAL::GPIO::INTERRUPT_BOTH)) {
+        // failed to attach interrupt
+        gcs().send_text(MAV_SEVERITY_WARNING,
+                        "RSSI: Failed to attach to pin %u",
+                        rssi_analog_pin);
+        return;
+    }
+}
+
 // read the PWM value from a pin
 float AP_RSSI::read_pwm_pin_rssi()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // check if pin has changed and initialise gpio event callback
-    pwm_state.gpio = get_gpio(rssi_analog_pin);
-    if (pwm_state.gpio != pwm_state.last_gpio) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // check if pin has changed and configure interrupt handlers if required:
+    check_pwm_pin_rssi();
 
-        // remove old gpio event callback if present
-        if (pwm_state.last_gpio != 0) {
-            stm32_gpiosetevent(pwm_state.last_gpio, false, false, false, nullptr);
-            pwm_state.last_gpio = 0;
-        }
-
-        // install interrupt handler on rising or falling edge of gpio
-        if (pwm_state.gpio != 0) {
-            stm32_gpiosetevent(pwm_state.gpio, true, true, false, irq_handler);
-            pwm_state.last_gpio = pwm_state.gpio;
-        }
+    if (!pwm_state.last_rssi_analog_pin) {
+        // disabled (either by configuration or failure to attach interrupt)
+        return 0.0f;
     }
 
-    // disable interrupts temporarily
-    irqstate_t istate = irqsave();
+    // disable interrupts and grab state
+    void *irqstate = hal.scheduler->disable_interrupts_save();
+    const uint32_t irq_value_us = pwm_state.irq_value_us;
+    pwm_state.irq_value_us = 0;
+    hal.scheduler->restore_interrupts(irqstate);
 
-    // check for timeout
-    float ret;
-    if ((pwm_state.last_reading_ms == 0) || (AP_HAL::millis() - pwm_state.last_reading_ms > 1000)) {
-        pwm_state.value = 0;
-        ret = 0;
+    const uint32_t now = AP_HAL::millis();
+    if (irq_value_us == 0) {
+        // no reading; check for timeout:
+        if (now - pwm_state.last_reading_ms > 1000) {
+            // no reading for a second - something is broken
+            pwm_state.rssi_value = 0.0f;
+        }
     } else {
-        // convert pwm value to rssi value
-        ret = scale_and_constrain_float_rssi(pwm_state.value, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+        // a new reading - convert pwm value to rssi value
+        pwm_state.rssi_value = scale_and_constrain_float_rssi(irq_value_us, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+        pwm_state.last_reading_ms = now;
     }
 
-    // restore interrupts
-    irqrestore(istate);
-
-    return ret;
+    return pwm_state.rssi_value;
 #else
     return 0.0f;
 #endif
@@ -268,56 +310,19 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
 }
 
-// get gpio id from pin number
-uint32_t AP_RSSI::get_gpio(uint8_t pin_number) const
-{
-#ifdef GPIO_GPIO0_INPUT
-    switch (pin_number) {
-    case 50:
-        return GPIO_GPIO0_INPUT;
-    case 51:
-        return GPIO_GPIO1_INPUT;
-    case 52:
-        return GPIO_GPIO2_INPUT;
-    case 53:
-        return GPIO_GPIO3_INPUT;
-    case 54:
-        return GPIO_GPIO4_INPUT;
-    case 55:
-        return GPIO_GPIO5_INPUT;
-    }
-#endif
-    return 0;
-}
-
 // interrupt handler for reading pwm value
-int AP_RSSI::irq_handler(int irq, void *context)
+void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    // sanity check
-    if (pwm_state.gpio == 0) {
-        return 0;
-    }
-
-    // capture time
-    uint64_t now = AP_HAL::micros64();
-
-    // read value of pin
-    bool pin_high = stm32_gpioread(pwm_state.gpio);
-
-    // calculate pwm value
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (pin_high) {
-        pwm_state.pulse_start_us = now;
+        pwm_state.pulse_start_us = timestamp_us;
     } else {
         if (pwm_state.pulse_start_us != 0) {
-            pwm_state.value = now - pwm_state.pulse_start_us;
+            pwm_state.irq_value_us = timestamp_us - pwm_state.pulse_start_us;
+            pwm_state.pulse_start_us = 0;
         }
-        pwm_state.pulse_start_us = 0;
-        pwm_state.last_reading_ms = AP_HAL::millis();
     }
 #endif
-
-    return 0;
 }
 
 AP_RSSI *AP_RSSI::_s_instance = nullptr;

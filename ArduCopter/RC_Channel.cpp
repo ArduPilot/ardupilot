@@ -68,8 +68,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case FENCE:
     case SUPERSIMPLE_MODE:
     case ACRO_TRAINER:
-    case GRIPPER:
-    case SPRAYER:
     case PARACHUTE_ENABLE:
     case PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
     case RETRACT_MOUNT:
@@ -263,32 +261,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     copter.Log_Write_Event(DATA_ACRO_TRAINER_LIMITED);
                     break;
             }
-#endif
-            break;
-
-        case GRIPPER:
-#if GRIPPER_ENABLED == ENABLED
-            switch(ch_flag) {
-                case LOW:
-                    copter.g2.gripper.release();
-                    copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case HIGH:
-                    copter.g2.gripper.grab();
-                    copter.Log_Write_Event(DATA_GRIPPER_GRAB);
-                    break;
-            }
-#endif
-            break;
-
-        case SPRAYER:
-#if SPRAYER_ENABLED == ENABLED
-            copter.sprayer.run(ch_flag == HIGH);
-            // if we are disarmed the pilot must want to test the pump
-            copter.sprayer.test_pump((ch_flag == HIGH) && !copter.motors->armed());
 #endif
             break;
 

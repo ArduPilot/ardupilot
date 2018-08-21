@@ -515,11 +515,6 @@ void Copter::ModeAutoTune::autotune_attitude_control()
             start_rate = ToDeg(ahrs.get_gyro().x) * 100.0f;
             start_angle = ahrs.roll_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_hz()*2.0f);
-            if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate_filt.reset(start_rate);
-            } else {
-                rotation_rate_filt.reset(0);
-            }
         break;
         case PITCH:
             target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
@@ -527,11 +522,6 @@ void Copter::ModeAutoTune::autotune_attitude_control()
             start_rate = ToDeg(ahrs.get_gyro().y) * 100.0f;
             start_angle = ahrs.pitch_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_hz()*2.0f);
-            if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate_filt.reset(start_rate);
-            } else {
-                rotation_rate_filt.reset(0);
-            }
             break;
         case YAW:
             target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
@@ -539,12 +529,12 @@ void Copter::ModeAutoTune::autotune_attitude_control()
             start_rate = ToDeg(ahrs.get_gyro().z) * 100.0f;
             start_angle = ahrs.yaw_sensor;
             rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
-            if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-                rotation_rate_filt.reset(start_rate);
-            } else {
-                rotation_rate_filt.reset(0);
-            }
             break;
+        }
+        if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+            rotation_rate_filt.reset(start_rate);
+        } else {
+            rotation_rate_filt.reset(0);
         }
         break;
 

@@ -87,6 +87,7 @@ class Board:
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
             '-Wno-trigraphs',
+            '-Werror=return-type',
         ]
 
         if 'clang' in cfg.env.COMPILER_CC:
@@ -130,6 +131,7 @@ class Board:
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
+            '-Werror=return-type',
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Wfatal-errors',

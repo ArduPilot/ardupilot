@@ -7,12 +7,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <stdio.h>
 
-// Constructor
-AC_PrecLand_SITL::AC_PrecLand_SITL(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
-    : AC_PrecLand_Backend(frontend, state)
-{
-}
-
 // init - perform initialisation of this backend
 void AC_PrecLand_SITL::init()
 {
@@ -28,7 +22,7 @@ void AC_PrecLand_SITL::update()
 
     // get new sensor data; we always point home
     Vector3f home;
-    if (! _frontend._ahrs.get_relative_position_NED_home(home)) {
+    if (! AP::ahrs().get_relative_position_NED_home(home)) {
         _state.healthy = false;
         return;
     }
@@ -37,7 +31,7 @@ void AC_PrecLand_SITL::update()
     }
     _state.healthy = true;
 
-    const Matrix3f &body_to_ned = _frontend._ahrs.get_rotation_body_to_ned();
+    const Matrix3f &body_to_ned = AP::ahrs().get_rotation_body_to_ned();
 
     _los_meas_body =  body_to_ned.mul_transpose(-home);
     _los_meas_body /= _los_meas_body.length();

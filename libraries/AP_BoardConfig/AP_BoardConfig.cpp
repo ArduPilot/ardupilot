@@ -160,7 +160,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 #if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
-    // @DisplayName: Channels to which ignore the safety switch state
+    // @DisplayName: Channels which ignore the safety switch state
     // @Description: A bitmask which controls what channels can move while the safety switch has not been pressed
     // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Ch1,1:Ch2,2:Ch3,3:Ch4,4:Ch5,5:Ch6,6:Ch7,7:Ch8,8:Ch9,9:Ch10,10:Ch11,11:Ch12,12:Ch13,13:Ch14

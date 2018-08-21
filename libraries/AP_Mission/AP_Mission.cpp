@@ -137,13 +137,26 @@ bool AP_Mission::starts_with_takeoff_cmd()
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }
 
-    if (!get_next_nav_cmd(cmd_index, cmd)) {
-        return false;
+    // check a maximum of 16 items, remembering that missions can have
+    // loops in them
+    for (uint8_t i=0; i<16; i++, cmd_index++) {
+        if (!get_next_nav_cmd(cmd_index, cmd)) {
+            return false;
+        }
+        switch (cmd.id) {
+        // any of these are considered a takeoff command:
+        case MAV_CMD_NAV_TAKEOFF:
+        case MAV_CMD_NAV_TAKEOFF_LOCAL:
+            return true;
+        // any of these are considered "skippable" when determining if
+        // we "start with a takeoff command"
+        case MAV_CMD_NAV_DELAY:
+            continue;
+        default:
+            return false;
+        }
     }
-    if (cmd.id != MAV_CMD_NAV_TAKEOFF) {
-        return false;
-    }
-    return true;
+    return false;
 }
 
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
@@ -300,15 +313,13 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
             return false;
-        }else{
-            // if found a "navigation" command then return it
-            if (is_nav_cmd(cmd)) {
-                return true;
-            }else{
-                // move on in list
-                cmd_index++;
-            }
         }
+        // if found a "navigation" command then return it
+        if (is_nav_cmd(cmd)) {
+            return true;
+        }
+        // move on in list
+        cmd_index++;
     }
 
     // if we got this far we did not find a navigation command

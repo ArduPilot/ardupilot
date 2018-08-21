@@ -12,7 +12,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Range: 1 60
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 20),
+    AP_GROUPINFO("PERIOD",    0, AP_L1_Control, _L1_period, 17),
 
     // @Param: DAMPING
     // @DisplayName: L1 control damping ratio

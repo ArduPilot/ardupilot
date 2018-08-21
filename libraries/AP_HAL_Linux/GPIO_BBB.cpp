@@ -113,7 +113,9 @@ AP_HAL::DigitalSource* GPIO_BBB::channel(uint16_t n) {
 }
 
 /* Interrupt interface: */
-bool GPIO_BBB::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+bool GPIO_BBB::attach_interrupt(uint8_t interrupt_num,
+                                irq_handler_fn_t fn,
+                                INTERRUPT_TRIGGER_TYPE mode)
 {
     return true;
 }

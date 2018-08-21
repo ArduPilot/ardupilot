@@ -271,8 +271,6 @@ class VRBRAINCANManager: public AP_HAL::CANManager {
     uint8_t _ifaces_num;
     uint8_t _ifaces_out_to_in[CAN_STM32_NUM_IFACES];
 
-    AP_UAVCAN *p_uavcan;
-
 public:
     VRBRAINCANManager();
 
@@ -310,8 +308,5 @@ public:
 
     bool is_initialized() override;
     void initialized(bool val) override;
-
-    AP_UAVCAN *get_UAVCAN(void) override;
-    void set_UAVCAN(AP_UAVCAN *uavcan) override;
 };
 }

@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Stats/AP_Stats.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -156,6 +157,38 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: TEMP
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(temp, "TEMP", 28, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: HDOP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(hdop, "HDOP", 29, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: WAYPOINT
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(waypoint, "WAYPOINT", 30, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: XTRACK
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(xtrack_error, "XTRACK", 31, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: DIST
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(dist, "DIST", 32, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: STATS
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(stat, "STATS", 33, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: FLTIME
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(flightime, "FLTIME", 34, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: CLIMBEFF
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(climbeff, "CLIMBEFF", 35, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Group: EFF
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -200,6 +233,8 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
+#define SYM_HDOP_L 0xBD
+#define SYM_HDOP_R 0xBE
 
 #define SYM_HOME 0xBF
 #define SYM_WIND 0x16
@@ -245,6 +280,9 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_XERR      0xEE
 #define SYM_KN        0xF0
 #define SYM_NM        0xF1
+#define SYM_DIST      0x22
+#define SYM_FLY       0x9C
+#define SYM_EFF       0xF2
 
 void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
 {
@@ -416,7 +454,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     int nsat = gps.num_sats();
-    backend->write(x, y, nsat < osd->warn_nsat , "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
@@ -782,6 +820,94 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, tmp), u_icon(TEMPERATURE));
 }
 
+
+void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    float hdp = gps.get_hdop() / 100.0f;
+    backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, hdp);
+}
+
+void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    int32_t angle = wrap_360_cd(osd->nav_info.wp_bearing - ahrs.yaw_sensor);
+    int32_t interval = 36000 / SYM_ARROW_COUNT;
+    if (osd->nav_info.wp_distance < 2.0f) {
+        //avoid fast rotating arrow at small distances
+        angle = 0;
+    }
+    char arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
+    backend->write(x,y, false, "%c%2u%c",SYM_WPNO, osd->nav_info.wp_number, arrow);
+    draw_distance(x+4, y, osd->nav_info.wp_distance);
+}
+
+void AP_OSD_Screen::draw_xtrack_error(uint8_t x, uint8_t y)
+{
+    backend->write(x, y, false, "%c%4d", SYM_XERR, (int)osd->nav_info.wp_xtrack_error);
+}
+
+void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
+{
+    backend->write(x+2, y, false, "%c%c%c", 0x4d,0x41,0x58);
+    backend->write(x, y+1, false, "%c",SYM_GSPD);
+    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->max_speed_mps), u_icon(SPEED));
+    backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYM_AMP);
+    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
+    backend->write(x, y+4, false, "%c", SYM_HOME);
+    draw_distance(x+1, y+4, osd->max_dist_m); 
+    backend->write(x, y+5, false, "%c", SYM_DIST);
+    draw_distance(x+1, y+5, osd->last_distance_m);  
+}
+
+void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
+{
+    backend->write(x, y, false, "%c", SYM_DIST);
+    draw_distance(x+1, y, osd->last_distance_m);   
+}
+
+void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
+{
+    AP_Stats *stats = AP::stats();
+    if (stats) {
+        uint32_t t = stats->get_flight_time_s();
+        backend->write(x, y, false, "%c%3u:%02u", SYM_FLY, t/60, t%60);
+    } 
+}
+
+void AP_OSD_Screen::draw_eff(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector2f v = ahrs.groundspeed_vector();
+    float speed = u_scale(SPEED,v.length());
+    if (speed > 2.0){
+        backend->write(x, y, false, "%c%3d%c", SYM_EFF,int(1000*battery.current_amps()/speed),SYM_MAH);
+    } else {
+        backend->write(x, y, false, "%c---%c", SYM_EFF,SYM_MAH);
+    }
+}
+
+void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
+{
+    char unit_icon = u_icon(DISTANCE);
+    Vector3f v;
+    float vspd;
+    if (AP::ahrs().get_velocity_NED(v)) {
+        vspd = -v.z;
+    } else {
+        vspd = AP::baro().get_climb_rate();
+    }
+    if (vspd < 0.0) vspd = 0.0;
+    AP_BattMonitor &battery = AP_BattMonitor::battery();
+    float amps = battery.current_amps();
+    if (amps > 0.0) {
+        backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(3.6 * u_scale(VSPEED,vspd)/amps),unit_icon);
+    } else {
+        backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
+    } 
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -797,6 +923,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
     DRAW_SETTING(altitude);
+    DRAW_SETTING(waypoint);
+    DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);
@@ -813,6 +941,8 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+    DRAW_SETTING(hdop);
+    DRAW_SETTING(flightime);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);
@@ -822,4 +952,9 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+    DRAW_SETTING(dist);
+    DRAW_SETTING(stat);
+    DRAW_SETTING(climbeff);
+    DRAW_SETTING(eff);
 }
+

@@ -132,6 +132,7 @@ class AutoTestSub(AutoTest):
 
     def autotest(self):
         """Autotest ArduSub in SITL."""
+        self.check_test_syntax(test_file=os.path.realpath(__file__))
         if not self.hasInit:
             self.init()
 
@@ -140,13 +141,15 @@ class AutoTestSub(AutoTest):
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
             self.mav.wait_heartbeat()
-            self.mavproxy.send('param set FS_GCS_ENABLE 0\n')
+            self.set_parameter("FS_GCS_ENABLE", 0)
             self.progress("Waiting for GPS fix")
             self.mav.wait_gps_fix()
 
             # wait for EKF and GPS checks to pass
             self.progress("Waiting for ready-to-arm")
             self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
+            self.arm_vehicle()
 
             self.homeloc = self.mav.location()
             self.progress("Home location: %s" % self.homeloc)

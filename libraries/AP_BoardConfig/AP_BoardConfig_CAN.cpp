@@ -44,64 +44,63 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
 
 #if MAX_NUMBER_OF_CAN_INTERFACES > 0
     // @Group: P1_
-    // @Path: ../AP_BoardConfig/canbus.cpp
-    AP_SUBGROUPINFO(_var_info_can[0], "P1_", 1, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_if_var_info),
+    // @Path: ../AP_BoardConfig/canbus_interface.cpp
+    AP_SUBGROUPINFO(_interfaces[0], "P1_", 1, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Interface),
 #endif
 
 #if MAX_NUMBER_OF_CAN_INTERFACES > 1
     // @Group: P2_
-    // @Path: ../AP_BoardConfig/canbus.cpp
-    AP_SUBGROUPINFO(_var_info_can[1], "P2_", 2, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_if_var_info),
+    // @Path: ../AP_BoardConfig/canbus_interface.cpp
+    AP_SUBGROUPINFO(_interfaces[1], "P2_", 2, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Interface),
 #endif
 
 #if MAX_NUMBER_OF_CAN_INTERFACES > 2
     // @Group: P3_
-    // @Path: ../AP_BoardConfig/canbus.cpp
-    AP_SUBGROUPINFO(_var_info_can[2], "P3_", 3, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_if_var_info),
+    // @Path: ../AP_BoardConfig/canbus_interface.cpp
+    AP_SUBGROUPINFO(_interfaces[2], "P3_", 3, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Interface),
 #endif
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 0
     // @Group: D1_
     // @Path: ../AP_BoardConfig/canbus_driver.cpp
-    AP_SUBGROUPINFO(_var_info_can_protocol[0], "D1_", 4, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
+    AP_SUBGROUPINFO(_drivers[0], "D1_", 4, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 1
     // @Group: D2_
     // @Path: ../AP_BoardConfig/canbus_driver.cpp
-    AP_SUBGROUPINFO(_var_info_can_protocol[1], "D2_", 5, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
+    AP_SUBGROUPINFO(_drivers[1], "D2_", 5, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
 #if MAX_NUMBER_OF_CAN_DRIVERS > 2
     // @Group: D3_
     // @Path: ../AP_BoardConfig/canbus_driver.cpp
-    AP_SUBGROUPINFO(_var_info_can_protocol[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::CAN_driver_var_info),
+    AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
     AP_GROUPEND
 };
 
-int8_t AP_BoardConfig_CAN::_st_driver_number[MAX_NUMBER_OF_CAN_INTERFACES];
-int8_t AP_BoardConfig_CAN::_st_can_debug[MAX_NUMBER_OF_CAN_INTERFACES];
+AP_BoardConfig_CAN *AP_BoardConfig_CAN::_singleton;
 
-void AP_BoardConfig_CAN::init()
+AP_BoardConfig_CAN::AP_BoardConfig_CAN()
 {
-    for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++)
-    {
-        _st_driver_number[i] = (int8_t) _var_info_can[i]._driver_number;
-        _st_can_debug[i] = (int8_t) _var_info_can[i]._can_debug;
+    AP_Param::setup_object_defaults(this, var_info);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_BoardConfig_CAN must be singleton");
     }
-
-    setup_canbus();
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    _singleton = this;
 }
 
-void AP_BoardConfig_CAN::setup_canbus(void)
+void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
         // Check the driver number assigned to this physical interface
-        uint8_t drv_num = _var_info_can[i]._driver_number;
+        uint8_t drv_num = _interfaces[i]._driver_number_cache = _interfaces[i]._driver_number;
 
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
@@ -118,52 +117,43 @@ void AP_BoardConfig_CAN::setup_canbus(void)
 
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
-                initret &= hal.can_mgr[drv_num - 1]->begin(_var_info_can[i]._can_bitrate, i);
+                initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
             } else {
                 printf("Failed to initialize can interface %d\n\r", i + 1);
             }
         }
     }
 
-    bool any_uavcan_present = false;
-
     if (initret) {
         for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
+            Protocol_Type prot_type = _drivers[i]._protocol_type_cache = (Protocol_Type) _drivers[i]._protocol_type.get();
+
             if (hal.can_mgr[i] == nullptr) {
                 continue;
             }
+
+            _num_drivers = i + 1;
             hal.can_mgr[i]->initialized(true);
             printf("can_mgr %d initialized well\n\r", i + 1);
 
-            if (_var_info_can_protocol[i]._protocol == UAVCAN_PROTOCOL_ENABLE) {
-                _var_info_can_protocol[i]._uavcan = new AP_UAVCAN;
+            if (prot_type == Protocol_Type_UAVCAN) {
+                _drivers[i]._driver = new AP_UAVCAN;
 
-                if (_var_info_can_protocol[i]._uavcan == nullptr) {
+                if (_drivers[i]._driver == nullptr) {
                     AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
                     continue;
                 }
-                
-                AP_Param::load_object_from_eeprom(_var_info_can_protocol[i]._uavcan, AP_UAVCAN::var_info);
 
-                hal.can_mgr[i]->set_UAVCAN(_var_info_can_protocol[i]._uavcan);
-                _var_info_can_protocol[i]._uavcan->set_parent_can_mgr(hal.can_mgr[i]);
+                AP_Param::load_object_from_eeprom(_drivers[i]._driver, AP_UAVCAN::var_info);
 
-                if (_var_info_can_protocol[i]._uavcan->try_init() == true) {
-                    any_uavcan_present = true;
-                } else {
-                    printf("Failed to initialize uavcan interface %d\n\r", i + 1);
-                }
+                _drivers[i]._driver->init(i);
             }
         }
-
-        if (any_uavcan_present) {
-            // start UAVCAN working thread
-            hal.scheduler->create_uavcan_thread();
-
-            // Delay for magnetometer and barometer discovery
-            hal.scheduler->delay(5000);
-        }
     }
+}
+
+AP_BoardConfig_CAN& AP::can() {
+    return *AP_BoardConfig_CAN::get_singleton();
 }
 #endif
 
