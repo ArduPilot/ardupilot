@@ -581,6 +581,11 @@ public:
     AP_Follow follow;
 #endif
 
+#ifdef USER_PARAMS_ENABLED
+    // User custom parameters
+    UserParameters user_parameters;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
