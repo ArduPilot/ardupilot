@@ -1328,6 +1328,28 @@ class AutoTest(ABC):
             if comparator(m_value, value):
                 return
 
+    def wait_rc_channel_value(self, channel, value, timeout=2):
+        """wait for channel to hit value"""
+        channel_field = "chan%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException("Channel never achieved value")
+            m = self.mav.recv_match(type='RC_CHANNELS',
+                                    blocking=True,
+                                    timeout=remaining)
+            if m is None:
+                continue
+            m_value = getattr(m, channel_field)
+            self.progress("RC_CHANNELS.%s=%u want=%u" %
+                          (channel_field, m_value, value))
+            if m_value is None:
+                raise ValueError("message (%s) has no field %s" %
+                                 (str(m), channel_field))
+            if m_value == value:
+                return
+
     def wait_location(self,
                       loc,
                       accuracy=5,
