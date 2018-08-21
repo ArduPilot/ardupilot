@@ -427,6 +427,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('BATT_FS_LOW_ACT', 0)
 
         self.progress("Successfully entered LAND after battery failsafe")
+        self.reboot_sitl()
 
     # fly_stability_patch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
