@@ -14,14 +14,10 @@
  */
 
 #include <AP_RSSI/AP_RSSI.h>
-#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
 
 #include <utility>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <board_config.h>
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -246,7 +242,6 @@ void AP_RSSI::check_pwm_pin_rssi()
 // read the PWM value from a pin
 float AP_RSSI::read_pwm_pin_rssi()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // check if pin has changed and configure interrupt handlers if required:
     check_pwm_pin_rssi();
 
@@ -275,9 +270,6 @@ float AP_RSSI::read_pwm_pin_rssi()
     }
 
     return pwm_state.rssi_value;
-#else
-    return 0.0f;
-#endif
 }
 
 // Scale and constrain a float rssi value to 0.0 to 1.0 range 
@@ -313,7 +305,6 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
 // interrupt handler for reading pwm value
 void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (pin_high) {
         pwm_state.pulse_start_us = timestamp_us;
     } else {
@@ -322,7 +313,6 @@ void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
             pwm_state.pulse_start_us = 0;
         }
     }
-#endif
 }
 
 AP_RSSI *AP_RSSI::_s_instance = nullptr;
