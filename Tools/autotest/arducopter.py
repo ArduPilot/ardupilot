@@ -148,6 +148,8 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
         if arm:
+            self.progress("Waiting reading for arm")
+            self.wait_ready_to_arm()
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
