@@ -681,6 +681,110 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+    def test_throttle_failsafe(self):
+        self.change_mode('MANUAL')
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise PreconditionFailedException()
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise PreconditionFailedException()
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise PreconditionFailedException()
+
+        self.progress("Ensure we know original throttle value")
+        self.wait_rc_channel_value(3, 1000)
+
+        self.set_parameter("THR_FS_VALUE", 960)
+        self.progress("Failing receiver (throttle-to-950)")
+        self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
+        self.wait_mode('CIRCLE') # short failsafe
+        self.wait_mode('RTL') # long failsafe
+        self.progress("Ensure we've had our throttle squashed to 950")
+        self.wait_rc_channel_value(3, 950)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (m.onboard_control_sensors_health & receiver_bit):
+            raise NotAchievedException("Sensor healthy when it shouldn't be")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise NotAchievedException("Receiver not healthy")
+        self.change_mode('MANUAL')
+
+        self.progress("Failing receiver (no-pulses)")
+        self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
+        self.wait_mode('CIRCLE') # short failsafe
+        self.wait_mode('RTL') # long failsafe
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (m.onboard_control_sensors_health & receiver_bit):
+            raise NotAchievedException("Sensor healthy when it shouldn't be")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Testing receiver enabled")
+        if (not (m.onboard_control_sensors_enabled & receiver_bit)):
+            raise NotAchievedException("Receiver not enabled")
+        self.progress("Testing receiver present")
+        if (not (m.onboard_control_sensors_present & receiver_bit)):
+            raise NotAchievedException("Receiver not present")
+        self.progress("Testing receiver health")
+        if (not (m.onboard_control_sensors_health & receiver_bit)):
+            raise NotAchievedException("Receiver not healthy")
+        self.change_mode('MANUAL')
+
     def test_gripper_mission(self):
         self.context_push()
         ex = None
@@ -775,6 +879,10 @@ class AutoTestPlane(AutoTest):
              self.test_rc_option_camera_trigger),
 
             ("TestRCRelay", "Test Relay RC Channel Option", self.test_rc_relay),
+
+            ("ThrottleFailsafe",
+             "Fly throttle failsafe",
+             self.test_throttle_failsafe),
 
             ("TestFlaps", "Flaps", self.fly_flaps),
 
