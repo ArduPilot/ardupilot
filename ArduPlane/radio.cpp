@@ -213,22 +213,33 @@ void Plane::read_radio()
 
     rudder_arm_disarm_check();
 
+    // potentially swap inputs for tailsitters
+    quadplane.tailsitter_check_input();
+
+    // check for transmitter tuning changes
+    tuning.check_input(control_mode);
+}
+
+int16_t Plane::rudder_input(void)
+{
     if (g.rudder_only != 0) {
         // in rudder only mode we discard rudder input and get target
         // attitude from the roll channel.
-        rudder_input = 0;
-    } else if (stick_mixing_enabled()) {
-        rudder_input = channel_rudder->get_control_in();
-    } else {
-        // no stick mixing
-        rudder_input = 0;
+        return 0;
     }
 
-    // potentially swap inputs for tailsitters
-    quadplane.tailsitter_check_input();
+    if ((g2.flight_options & FlightOptions::DIRECT_RUDDER_ONLY) &&
+        !(control_mode == MANUAL || control_mode == STABILIZE || control_mode == ACRO)) {
+        // the user does not want any input except in these modes
+        return 0;
+    }
+
+    if (stick_mixing_enabled()) {
+        return channel_rudder->get_control_in();
+    }
+
+    return 0;
     
-    // check for transmitter tuning changes
-    tuning.check_input(control_mode);
 }
 
 void Plane::control_failsafe()
@@ -342,7 +353,7 @@ bool Plane::trim_radio()
   return true if throttle level is below throttle failsafe threshold
   or RC input is invalid
  */
-bool Plane::rc_failsafe_active(void)
+bool Plane::rc_failsafe_active(void) const
 {
     if (!g.throttle_fs_enabled) {
         return false;
