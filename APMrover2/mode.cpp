@@ -229,9 +229,7 @@ bool Mode::set_desired_speed(float speed)
 // execute the mission in reverse (i.e. backing up)
 void Mode::set_reversed(bool value)
 {
-    if (_reversed != value) {
-        _reversed = value;
-    }
+    _reversed = value;
 }
 
 void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
