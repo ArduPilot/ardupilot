@@ -132,7 +132,7 @@ float AP_WindVane::get_apparent_wind_direction_rad()
         }
         default:
         {   // assume head to wind at home locaiton, apparent wind angle must be calculated
-            float bearing = home_heading;
+            float bearing = _home_heading;
             apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // this is a approximation as we are not considering boat speed and wind speed
         }   break;
     }
@@ -162,7 +162,7 @@ float AP_WindVane::get_absolute_wind_direction_rad()
         }
         case WindVaneType::WINDVANE_NONE:
         {
-            bearing =  home_heading;
+            bearing =  _home_heading;
             return bearing;
         }
         default:
@@ -185,7 +185,7 @@ float AP_WindVane::get_absolute_wind_direction_rad()
 // record home heading for use as wind direction if no sensor is fitted
 void AP_WindVane::record_home_headng()
 {
-    home_heading = AP::ahrs().yaw;
+    _home_heading = AP::ahrs().yaw;
 }
 
 // Private
