@@ -90,18 +90,15 @@ void Plane::init_rc_out_main()
  */
 void Plane::init_rc_out_aux()
 {
-    update_aux();
     SRV_Channels::enable_aux_servos();
 
     SRV_Channels::cork();
     
-    // Initialization of servo outputs
-    SRV_Channels::output_trim_all();
-
     servos_output();
     
     // setup PWM values to send if the FMU firmware dies
-    SRV_Channels::setup_failsafe_trim_all();  
+    // allows any VTOL motors to shut off
+    SRV_Channels::setup_failsafe_trim_all_non_motors();
 }
 
 /*
