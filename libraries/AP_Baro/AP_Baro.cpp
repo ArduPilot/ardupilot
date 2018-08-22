@@ -507,9 +507,8 @@ void AP_Baro::init(void)
     drivers[0] = new AP_Baro_HIL(*this);
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
-    drivers[0] = new AP_Baro_BMP085(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_BMP085::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_I2C
     ADD_BACKEND(AP_Baro_BMP280::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP280_BUS, HAL_BARO_BMP280_I2C_ADDR))));
