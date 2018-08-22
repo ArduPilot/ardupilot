@@ -17,13 +17,13 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
         gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
-        return true;
+        return false;
     }
 
     // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
     if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
         gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
-        return true;
+        return false;
     }
 
     switch (cmd.id) {
@@ -153,8 +153,8 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
     default:
-        // do nothing with unrecognized MAVLink messages
-        break;
+        // unable to use the command, allow the vehicle to try the next command
+        return false;
     }
 
     // always return success
