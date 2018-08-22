@@ -78,7 +78,7 @@ private:
     AP_Float _analog_volt_head;         // voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle
 
     static AP_WindVane *_s_instance;
-    float home_heading;
+    float _home_heading;
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
