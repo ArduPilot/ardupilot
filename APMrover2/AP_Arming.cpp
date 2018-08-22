@@ -53,9 +53,6 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
-    // Save home heading for use in sail vehicles
-    rover.windvane.record_home_headng();
-
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
