@@ -330,6 +330,9 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
     // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
     g2.smart_rtl.set_home(true);
 
+    // save home heading for use in sail vehicles
+    rover.windvane.record_home_headng();
+
     change_arm_state();
     return true;
 }
