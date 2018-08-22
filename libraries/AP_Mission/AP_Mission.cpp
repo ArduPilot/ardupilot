@@ -118,16 +118,16 @@ void AP_Mission::resume()
     // re-entering AUTO mode and the nav_cmd callback needs to be run
     // to setup the current target waypoint
 
-    // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
-    //      update will take care of finding and starting the nav command
-    if (_flags.nav_cmd_loaded) {
-        _cmd_start_fn(_nav_cmd);
+    if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
+        // restart the active do command, which will also load the nav command for us
+        set_current_cmd(_do_cmd.index);
+    } else if (_flags.nav_cmd_loaded) {
+        // restart the active nav command
+        set_current_cmd(_nav_cmd.index);
     }
 
-    // restart active do command
-    if (_flags.do_cmd_loaded && _do_cmd.index != AP_MISSION_CMD_INDEX_NONE) {
-        _cmd_start_fn(_do_cmd);
-    }
+    // Note: if there is no active command then the mission must have been stopped just after the previous nav command completed
+    //      update will take care of finding and starting the nav command
 }
 
 /// check mission starts with a takeoff command
@@ -415,46 +415,11 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         return true;
     }
 
-    // the state must be MISSION_RUNNING
-    // search until we find next nav command or reach end of command list
-    while (!_flags.nav_cmd_loaded) {
-        // get next command
-        if (!get_next_cmd(index, cmd, true)) {
-            // if we run out of nav commands mark mission as complete
-            complete();
-            // return true because we did what was requested
-            // which was apparently to jump to a command at the end of the mission
-            return true;
-        }
-
-        // check if navigation or "do" command
-        if (is_nav_cmd(cmd)) {
-            // save previous nav command index
-            _prev_nav_cmd_id = _nav_cmd.id;
-            _prev_nav_cmd_index = _nav_cmd.index;
-            // save separate previous nav command index if it contains lat,long,alt
-            if (!(cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
-                _prev_nav_cmd_wp_index = _nav_cmd.index;
-            }
-            // set current navigation command and start it
-            _nav_cmd = cmd;
-            _flags.nav_cmd_loaded = true;
-            _cmd_start_fn(_nav_cmd);
-        }else{
-            // set current do command and start it (if not already set)
-            if (!_flags.do_cmd_loaded) {
-                _do_cmd = cmd;
-                _flags.do_cmd_loaded = true;
-                _cmd_start_fn(_do_cmd);
-            }
-        }
-        // move onto next command
-        index = cmd.index+1;
-    }
-
-    // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
-    if (!_flags.do_cmd_loaded) {
-        _flags.do_cmd_all_done = true;
+    // the state must be MISSION_RUNNING, allow advance_current_nav_cmd() to manage starting the item
+    if (!advance_current_nav_cmd(index)) {
+        // on failure set mission complete
+        complete();
+        return false;
     }
 
     // if we got this far we must have successfully advanced the nav command
@@ -1395,7 +1360,7 @@ void AP_Mission::complete()
 ///     do command will also be loaded
 ///     accounts for do-jump commands
 //      returns true if command is advanced, false if failed (i.e. mission completed)
-bool AP_Mission::advance_current_nav_cmd()
+bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 {
     Mission_Command cmd;
     uint16_t cmd_index;
@@ -1416,7 +1381,7 @@ bool AP_Mission::advance_current_nav_cmd()
     _flags.do_cmd_all_done = false;
 
     // get starting point for search
-    cmd_index = _nav_cmd.index;
+    cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
