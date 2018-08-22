@@ -1411,8 +1411,9 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
-            _flags.nav_cmd_loaded = true;
-            _cmd_start_fn(_nav_cmd);
+            if (_cmd_start_fn(_nav_cmd)) {
+                _flags.nav_cmd_loaded = true;
+            }
         }else{
             // set current do command and start it (if not already set)
             if (!_flags.do_cmd_loaded) {
