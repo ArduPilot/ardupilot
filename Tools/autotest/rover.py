@@ -5520,6 +5520,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Upload/Download of items in different frames",
              self.test_mission_frames),
 
+            ("SetpointGlobalPos",
+             "Test setpoint global position",
+             lambda: self.test_set_position_global_int()),
+
+            ("SetpointGlobalVel",
+             "Test setpoint gloabl velocity",
+             lambda: self.test_set_velocity_global_int()),
+
             ("AccelCal",
              "Accelerometer Calibration testing",
              self.accelcal),
