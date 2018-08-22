@@ -6721,6 +6721,228 @@ Also, ignores heartbeats not from our target system'''
         self.context_pop()
         self.reboot_sitl()
 
+    def test_set_position_global_int(self, timeout=100):
+        """Test set position message in guided mode."""
+        # Disable heading and yaw test on rover type
+        if self.is_rover():
+            test_alt = False
+            test_heading = False
+            test_yaw_rate = False
+        else:
+            test_alt = True
+            test_heading = True
+            test_yaw_rate = True
+
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        if self.is_copter() or self.is_heli():
+            self.user_takeoff(alt_min=50)
+
+        targetpos = self.mav.location()
+        wp_accuracy = None
+        if self.is_copter() or self.is_heli():
+            wp_accuracy = self.get_parameter("WPNAV_RADIUS", attempts=2)
+            wp_accuracy = wp_accuracy * 0.01  # cm to m
+        if self.is_plane() or self.is_rover():
+            wp_accuracy = self.get_parameter("WP_RADIUS", attempts=2)
+        if wp_accuracy is None:
+            raise ValueError()
+
+        def to_alt_frame(alt, mav_frame):
+            if mav_frame in ["MAV_FRAME_GLOBAL_RELATIVE_ALT",
+                             "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT",
+                             "MAV_FRAME_GLOBAL_TERRAIN_ALT",
+                             "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT"]:
+                home = self.home_position_as_mav_location()
+                return alt - home.alt
+            else:
+                return alt
+
+        def send_target_position(lat, lng, alt, mav_frame):
+            self.mav.mav.set_position_target_global_int_send(
+                0,  # timestamp
+                self.sysid_thismav(),  # target system_id
+                1,  # target component id
+                mav_frame,
+                MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                int(lat * 1.0e7),  # lat
+                int(lng * 1.0e7),  # lon
+                alt,  # alt
+                0,  # vx
+                0,  # vy
+                0,  # vz
+                0,  # afx
+                0,  # afy
+                0,  # afz
+                0,  # yaw
+                0,  # yawrate
+            )
+
+        for frame_name, frame in MAV_FRAMES.items():
+            self.start_test("Testing Set Position in %s" % frame_name)
+            self.start_subtest("Changing Latitude")
+            targetpos.lat += 0.0001
+            if test_alt:
+                targetpos.alt += 5
+            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                               target_altitude=(targetpos.alt if test_alt else None),
+                               height_accuracy=2, minimum_duration=2)
+
+            self.start_subtest("Changing Longitude")
+            targetpos.lng += 0.0001
+            if test_alt:
+                targetpos.alt -= 5
+            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                               target_altitude=(targetpos.alt if test_alt else None),
+                               height_accuracy=2, minimum_duration=2)
+
+            self.start_subtest("Revert Latitude")
+            targetpos.lat -= 0.0001
+            if test_alt:
+                targetpos.alt += 5
+            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                               target_altitude=(targetpos.alt if test_alt else None),
+                               height_accuracy=2, minimum_duration=2)
+
+            self.start_subtest("Revert Longitude")
+            targetpos.lng -= 0.0001
+            if test_alt:
+                targetpos.alt -= 5
+            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                               target_altitude=(targetpos.alt if test_alt else None),
+                               height_accuracy=2, minimum_duration=2)
+
+            if test_heading:
+                self.start_test("Testing Yaw targetting in %s" % frame_name)
+                self.start_subtest("Changing Latitude and Heading")
+                targetpos.lat += 0.0001
+                if test_alt:
+                    targetpos.alt += 5
+                self.mav.mav.set_position_target_global_int_send(
+                    0,  # timestamp
+                    self.sysid_thismav(),  # target system_id
+                    1,  # target component id
+                    frame,
+                    MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
+                    MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                    MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                    MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                    int(targetpos.lat * 1.0e7),  # lat
+                    int(targetpos.lng * 1.0e7),  # lon
+                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    0,  # vx
+                    0,  # vy
+                    0,  # vz
+                    0,  # afx
+                    0,  # afy
+                    0,  # afz
+                    math.radians(42),  # yaw
+                    0,  # yawrate
+                )
+                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                                   target_altitude=(targetpos.alt if test_alt else None),
+                                   height_accuracy=2, minimum_duration=2)
+                self.wait_heading(42, minimum_duration=5, timeout=timeout)
+
+                self.start_subtest("Revert Latitude and Heading")
+                targetpos.lat -= 0.0001
+                if test_alt:
+                    targetpos.alt -= 5
+                self.mav.mav.set_position_target_global_int_send(
+                    0,  # timestamp
+                    self.sysid_thismav(),  # target system_id
+                    1,  # target component id
+                    frame,
+                    MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
+                    MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                    MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                    MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                    int(targetpos.lat * 1.0e7),  # lat
+                    int(targetpos.lng * 1.0e7),  # lon
+                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    0,  # vx
+                    0,  # vy
+                    0,  # vz
+                    0,  # afx
+                    0,  # afy
+                    0,  # afz
+                    math.radians(0),  # yaw
+                    0,  # yawrate
+                )
+                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                                   target_altitude=(targetpos.alt if test_alt else None),
+                                   height_accuracy=2, minimum_duration=2)
+                self.wait_heading(0, minimum_duration=5, timeout=timeout)
+
+            if test_yaw_rate:
+                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+
+                def send_yaw_rate(rate, target=None):
+                    self.mav.mav.set_position_target_global_int_send(
+                        0,  # timestamp
+                        self.sysid_thismav(),  # target system_id
+                        1,  # target component id
+                        frame,
+                        MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        int(targetpos.lat * 1.0e7),  # lat
+                        int(targetpos.lng * 1.0e7),  # lon
+                        to_alt_frame(targetpos.alt, frame_name),  # alt
+                        0,  # vx
+                        0,  # vy
+                        0,  # vz
+                        0,  # afx
+                        0,  # afy
+                        0,  # afz
+                        0,  # yaw
+                        rate,  # yawrate in rad/s
+                    )
+
+                self.start_subtest("Changing Latitude and Yaw rate")
+                target_rate = 1.0  # in rad/s
+                targetpos.lat += 0.0001
+                if test_alt:
+                    targetpos.alt += 5
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(
+                                        target_rate, None), minimum_duration=5)
+                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                                   target_altitude=(targetpos.alt if test_alt else None),
+                                   height_accuracy=2)
+
+                self.start_subtest("Revert Latitude and invert Yaw rate")
+                target_rate = -1.0
+                targetpos.lat -= 0.0001
+                if test_alt:
+                    targetpos.alt -= 5
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(
+                                        target_rate, None), minimum_duration=5)
+                self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                                   target_altitude=(targetpos.alt if test_alt else None),
+                                   height_accuracy=2)
+                self.start_subtest("Changing Yaw rate to zero")
+                target_rate = 0.0
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(
+                                        target_rate, None), minimum_duration=5)
+        self.start_test("Getting back to home and disarm")
+        self.do_RTL(distance_min=0, distance_max=wp_accuracy)
+        self.disarm_vehicle()
+
     def is_copter(self):
         return False
 
