@@ -163,7 +163,7 @@ public:
     ///     sets target roll angle, pitch angle and I terms based on vehicle current lean angles
     ///     should be called once whenever significant changes to the position target are made
     ///     this does not update the xy target
-    void init_xy_controller(bool reset_I = true);
+    void init_xy_controller();
 
     /// set_accel_xy - set horizontal acceleration in cm/s/s
     ///     leash length will be recalculated the next time update_xy_controller() is called
