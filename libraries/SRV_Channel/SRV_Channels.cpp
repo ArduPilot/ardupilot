@@ -178,17 +178,12 @@ void SRV_Channels::save_trim(void)
     trimmed_mask = 0;
 }
 
-void SRV_Channels::output_trim_all(void)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        channels[i].set_output_pwm(channels[i].servo_trim);
-    }
-}
-
-void SRV_Channels::setup_failsafe_trim_all(void)
+void SRV_Channels::setup_failsafe_trim_all_non_motors(void)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim);
+        if (!SRV_Channel::is_motor(channels[i].get_function())) {
+            hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim);
+        }
     }
 }
 
