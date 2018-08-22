@@ -123,15 +123,12 @@ void AC_Loiter::init_target()
     _pos_control.set_accel_xy(_accel_cmss);
     _pos_control.set_leash_length_xy(LOITER_POS_CORRECTION_MAX);
 
-    // initialise desired acceleration based on the current velocity and the artificial drag
-    float pilot_acceleration_max = GRAVITY_MSS*100.0f * tanf(radians(get_angle_max_cd()*0.01f));
-    _predicted_accel.x = pilot_acceleration_max*curr_vel.x/_speed_cms;
-    _predicted_accel.y = pilot_acceleration_max*curr_vel.y/_speed_cms;
-    _desired_accel = _predicted_accel;
-    // this should be the current roll and pitch angle.
-    _predicted_euler_angle.x = radians(_attitude_control.get_att_target_euler_cd().x*0.01f);
-    _predicted_euler_angle.y = radians(_attitude_control.get_att_target_euler_cd().y*0.01f);
-
+    _predicted_accel = _desired_accel;
+    // update angle targets that will be passed to stabilize controller
+    float roll_cd, pitch_cd;
+    _pos_control.accel_to_lean_angles(_predicted_accel.x, _predicted_accel.y, roll_cd, pitch_cd);
+    _predicted_euler_angle.x = radians(roll_cd*0.01);
+    _predicted_euler_angle.y = radians(pitch_cd*0.01);
     // set target position
     _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
 
@@ -160,6 +157,15 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
     const float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
     const float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
 
+    // convert our desired attitude to an acceleration vector assuming we are hovering
+    const float pilot_cos_pitch_target = constrain_float(cosf(euler_pitch_angle), 0.5f, 1.0f);
+    const float pilot_accel_rgt_cms = GRAVITY_MSS*100.0f * tanf(euler_roll_angle)/pilot_cos_pitch_target;
+    const float pilot_accel_fwd_cms = -GRAVITY_MSS*100.0f * tanf(euler_pitch_angle);
+
+    // rotate acceleration vectors input to lat/lon frame
+    _desired_accel.x = (pilot_accel_fwd_cms*_ahrs.cos_yaw() - pilot_accel_rgt_cms*_ahrs.sin_yaw());
+    _desired_accel.y = (pilot_accel_fwd_cms*_ahrs.sin_yaw() + pilot_accel_rgt_cms*_ahrs.cos_yaw());
+
     // difference between where we think we should be and where we want to be
     Vector2f angle_error(wrap_PI(euler_roll_angle - _predicted_euler_angle.x), wrap_PI(euler_pitch_angle - _predicted_euler_angle.y));
 
@@ -169,19 +175,12 @@ void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float 
     // update our predicted attitude based on our predicted angular velocity
     _predicted_euler_angle += _predicted_euler_rate * dt;
 
-    // convert our desired attitude to an acceleration vector assuming we are hovering
-    const float pilot_cos_pitch_target = cosf(euler_pitch_angle);
-    const float pilot_accel_rgt_cms = GRAVITY_MSS*100.0f * tanf(euler_roll_angle)/pilot_cos_pitch_target;
-    const float pilot_accel_fwd_cms = -GRAVITY_MSS*100.0f * tanf(euler_pitch_angle);
-
     // convert our predicted attitude to an acceleration vector assuming we are hovering
     const float pilot_predicted_cos_pitch_target = cosf(_predicted_euler_angle.y);
     const float pilot_predicted_accel_rgt_cms = GRAVITY_MSS*100.0f * tanf(_predicted_euler_angle.x)/pilot_predicted_cos_pitch_target;
     const float pilot_predicted_accel_fwd_cms = -GRAVITY_MSS*100.0f * tanf(_predicted_euler_angle.y);
 
     // rotate acceleration vectors input to lat/lon frame
-    _desired_accel.x = (pilot_accel_fwd_cms*_ahrs.cos_yaw() - pilot_accel_rgt_cms*_ahrs.sin_yaw());
-    _desired_accel.y = (pilot_accel_fwd_cms*_ahrs.sin_yaw() + pilot_accel_rgt_cms*_ahrs.cos_yaw());
     _predicted_accel.x = (pilot_predicted_accel_fwd_cms*_ahrs.cos_yaw() - pilot_predicted_accel_rgt_cms*_ahrs.sin_yaw());
     _predicted_accel.y = (pilot_predicted_accel_fwd_cms*_ahrs.sin_yaw() + pilot_predicted_accel_rgt_cms*_ahrs.cos_yaw());
 }
