@@ -7,9 +7,8 @@ bool ModeGuided::_enter()
     set_desired_speed_to_default();
 
     // set desired location to reasonable stopping point
-    Location stopping_point;
     calc_stopping_location(_destination);
-    set_desired_location(stopping_point);
+    set_desired_location(_destination);
 
     return true;
 }
