@@ -70,8 +70,9 @@ private:
     AP_Float _analog_volt_max;          // maximum voltage read by windvane
     AP_Float _analog_volt_head;         // Voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle 
 
-    float home_heading;
-    
+    static AP_WindVane *_s_instance;
+    float _home_heading;
+
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
 
