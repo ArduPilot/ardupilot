@@ -31,8 +31,8 @@ void ModeRTL::update()
     // determine if we should keep navigating
     if (!_reached_destination || (rover.is_boat() && !near_wp)) {
         // continue driving towards destination
-        calc_steering_to_waypoint(_reached_destination ? rover.current_loc :_origin, _destination);
-        calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, false);
+        calc_steering_to_waypoint(_reached_destination ? rover.current_loc :_origin, _destination, _reversed);
+        calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
     } else {
         // we've reached destination so stop
         stop_vehicle();

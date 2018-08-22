@@ -112,6 +112,9 @@ public:
     // rtl argument should be true if called from RTL or SmartRTL modes (handled here to avoid duplication)
     void set_desired_speed_to_default(bool rtl = false);
 
+    // execute the mission in reverse (i.e. backing up)
+    void set_reversed(bool value);
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -194,6 +197,7 @@ protected:
     float _desired_speed_final; // desired speed in m/s when we reach the destination
     float _speed_error;         // ground speed error in m/s
     uint32_t last_steer_to_wp_ms;   // system time of last call to calc_steering_to_waypoint
+    bool _reversed;             // execute the mission by backing up
 };
 
 
@@ -247,9 +251,6 @@ public:
     // start RTL (within auto)
     void start_RTL();
 
-    // execute the mission in reverse (i.e. backing up)
-    void set_reversed(bool value);
-
 protected:
 
     bool _enter() override;
@@ -272,7 +273,6 @@ private:
     bool auto_triggered;
 
     bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
-    bool _reversed;             // execute the mission by backing up
 };
 
 
