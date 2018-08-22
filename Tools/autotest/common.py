@@ -6943,6 +6943,292 @@ Also, ignores heartbeats not from our target system'''
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
+    def test_set_velocity_global_int(self, timeout=30):
+        """Test set position message in guided mode."""
+        # Disable heading and yaw rate test on rover type
+        if self.is_rover():
+            test_vz = False
+            test_heading = False
+            test_yaw_rate = False
+        else:
+            test_vz = True
+            test_heading = True
+            test_yaw_rate = True
+
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        if self.is_copter() or self.is_heli():
+            self.user_takeoff(alt_min=50)
+
+        target_speed = Vector3(1.0, 0.0, 0.0)
+
+        wp_accuracy = None
+        if self.is_copter() or self.is_heli():
+            wp_accuracy = self.get_parameter("WPNAV_RADIUS", attempts=2)
+            wp_accuracy = wp_accuracy * 0.01  # cm to m
+        if self.is_plane() or self.is_rover():
+            wp_accuracy = self.get_parameter("WP_RADIUS", attempts=2)
+        if wp_accuracy is None:
+            raise ValueError()
+
+        def send_speed_vector(vector, mav_frame):
+            self.mav.mav.set_position_target_global_int_send(
+                0,  # timestamp
+                self.sysid_thismav(),  # target system_id
+                1,  # target component id
+                mav_frame,
+                MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE |
+                MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                0,
+                0,
+                0,
+                vector.x,  # vx
+                vector.y,  # vy
+                vector.z,  # vz
+                0,  # afx
+                0,  # afy
+                0,  # afz
+                0,  # yaw
+                0,  # yawrate
+            )
+
+        for frame_name, frame in MAV_FRAMES.items():
+            self.start_test("Testing Set Velocity in %s" % frame_name)
+            self.start_subtest("Changing Vx speed")
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Add Vy speed")
+            target_speed.y = 1.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Add Vz speed")
+            if test_vz:
+                target_speed.z = 1.0
+            else:
+                target_speed.z = 0.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Invert Vz speed")
+            if test_vz:
+                target_speed.z = -1.0
+            else:
+                target_speed.z = 0.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Invert Vx speed")
+            target_speed.x = -1.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Invert Vy speed")
+            target_speed.y = -1.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            self.start_subtest("Set Speed to zero")
+            target_speed.x = 0.0
+            target_speed.y = 0.0
+            target_speed.z = 0.0
+            self.wait_speed_vector(target_speed, timeout=timeout,
+                                   called_function=lambda plop, empty: send_speed_vector(target_speed, frame), minimum_duration=2)
+
+            if test_heading:
+                self.start_test("Testing Yaw targetting in %s" % frame_name)
+
+                def send_yaw_target(yaw, mav_frame):
+                    self.mav.mav.set_position_target_global_int_send(
+                        0,  # timestamp
+                        self.sysid_thismav(),  # target system_id
+                        1,  # target component id
+                        mav_frame,
+                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                        MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                        0,
+                        0,
+                        0,
+                        0,  # vx
+                        0,  # vy
+                        0,  # vz
+                        0,  # afx
+                        0,  # afy
+                        0,  # afz
+                        math.radians(yaw),  # yaw
+                        0,  # yawrate
+                    )
+
+                target_speed.x = 1.0
+                target_speed.y = 1.0
+                if test_vz:
+                    target_speed.z = -1.0
+                else:
+                    target_speed.z = 0.0
+
+                def send_yaw_target_vel(yaw, vector, mav_frame):
+                    self.mav.mav.set_position_target_global_int_send(
+                        0,  # timestamp
+                        self.sysid_thismav(),  # target system_id
+                        1,  # target component id
+                        mav_frame,
+                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                        MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE,
+                        0,
+                        0,
+                        0,
+                        vector.x,  # vx
+                        vector.y,  # vy
+                        vector.z,  # vz
+                        0,  # afx
+                        0,  # afy
+                        0,  # afz
+                        math.radians(yaw),  # yaw
+                        0,  # yawrate
+                    )
+
+                self.start_subtest("Target a fixed Heading")
+                target_yaw = 42.0
+                self.wait_heading(target_yaw, minimum_duration=5, timeout=timeout,
+                                  called_function=lambda plop, empty: send_yaw_target(target_yaw, frame))
+
+                self.start_subtest("Set target Heading")
+                target_yaw = 0.0
+                self.wait_heading(target_yaw, minimum_duration=5, timeout=timeout,
+                                  called_function=lambda plop, empty: send_yaw_target(target_yaw, frame))
+
+                self.start_subtest("Add Vx, Vy, Vz speed and target a fixed Heading")
+                target_yaw = 42.0
+                self.wait_heading(target_yaw, minimum_duration=5, timeout=timeout,
+                                  called_function=lambda plop, empty: send_yaw_target_vel(target_yaw, target_speed, frame))
+                self.wait_speed_vector(target_speed,
+                                       called_function=lambda plop, empty: send_yaw_target_vel(target_yaw, target_speed, frame))
+
+                self.start_subtest("Stop Vx, Vy, Vz speed and target zero Heading")
+                target_yaw = 0.0
+                target_speed.x = 0.0
+                target_speed.y = 0.0
+                target_speed.z = 0.0
+                self.wait_heading(target_yaw, minimum_duration=5, timeout=timeout,
+                                  called_function=lambda plop, empty: send_yaw_target_vel(target_yaw, target_speed, frame))
+                self.wait_speed_vector(target_speed, timeout=timeout,
+                                       called_function=lambda plop, empty: send_yaw_target_vel(target_yaw, target_speed, frame), minimum_duration=2)
+
+            if test_yaw_rate:
+                self.start_test("Testing Yaw Rate targetting in %s" % frame_name)
+
+                def send_yaw_rate(rate, mav_frame):
+                    self.mav.mav.set_position_target_global_int_send(
+                        0,  # timestamp
+                        self.sysid_thismav(),  # target system_id
+                        1,  # target component id
+                        mav_frame,
+                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        0,
+                        0,
+                        0,
+                        0,  # vx
+                        0,  # vy
+                        0,  # vz
+                        0,  # afx
+                        0,  # afy
+                        0,  # afz
+                        0,  # yaw
+                        rate,  # yawrate in rad/s
+                    )
+
+                target_speed.x = 1.0
+                target_speed.y = 1.0
+                if test_vz:
+                    target_speed.z = -1.0
+                else:
+                    target_speed.z = 0.0
+
+                def send_yaw_rate_vel(rate, vector, mav_frame):
+                    self.mav.mav.set_position_target_global_int_send(
+                        0,  # timestamp
+                        self.sysid_thismav(),  # target system_id
+                        1,  # target component id
+                        mav_frame,
+                        MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE |
+                        MAVLINK_SET_POS_TYPE_MASK_FORCE |
+                        MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE,
+                        0,
+                        0,
+                        0,
+                        vector.x,  # vx
+                        vector.y,  # vy
+                        vector.z,  # vz
+                        0,  # afx
+                        0,  # afy
+                        0,  # afz
+                        0,  # yaw
+                        rate,  # yawrate in rad/s
+                    )
+
+                self.start_subtest("Set Yaw rate")
+                target_rate = 1.0
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(target_rate, frame), minimum_duration=2)
+
+                self.start_subtest("Invert Yaw rate")
+                target_rate = -1.0
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(target_rate, frame), minimum_duration=2)
+
+                self.start_subtest("Stop Yaw rate")
+                target_rate = 0.0
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate(target_rate, frame), minimum_duration=2)
+
+                self.start_subtest("Set Yaw Rate and Vx, Vy, Vz speed")
+                target_rate = 1.0
+                self.wait_yaw_speed(target_rate,
+                                    called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+                self.wait_speed_vector(target_speed, timeout=timeout,
+                                       called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+
+                target_rate = -1.0
+                target_speed.x = -1.0
+                target_speed.y = -1.0
+                if test_vz:
+                    target_speed.z = 1.0
+                else:
+                    target_speed.z = 0.0
+                self.start_subtest("Invert Vx, Vy, Vz speed")
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+                self.wait_speed_vector(target_speed, timeout=timeout,
+                                       called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+
+                target_rate = 0.0
+                target_speed.x = 0.0
+                target_speed.y = 0.0
+                target_speed.z = 0.0
+                self.start_subtest("Stop Yaw rate and all speed")
+                self.wait_yaw_speed(target_rate, timeout=timeout,
+                                    called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+                self.wait_speed_vector(target_speed, timeout=timeout,
+                                       called_function=lambda plop, empty: send_yaw_rate_vel(target_rate, target_speed, frame), minimum_duration=2)
+        self.start_test("Getting back to home and disarm")
+        self.do_RTL(distance_min=0, distance_max=wp_accuracy)
+        self.disarm_vehicle()
+
     def is_copter(self):
         return False
 
