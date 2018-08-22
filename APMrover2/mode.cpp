@@ -42,7 +42,14 @@ bool Mode::enter()
         }
     }
 
-    return _enter();
+    bool ret = _enter();
+
+    // initialisation common to all modes
+    if (ret) {
+        set_reversed(false);
+    }
+
+    return ret;
 }
 
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
