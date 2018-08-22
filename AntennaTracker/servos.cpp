@@ -16,7 +16,6 @@ void Tracker::init_servos()
     // pitch range is +/- (PITCH_MIN/MAX parameters/2) converted to centi-degrees
     SRV_Channels::set_angle(SRV_Channel::k_tracker_pitch, (-g.pitch_min+g.pitch_max) * 100/2);
 
-    SRV_Channels::output_trim_all();
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
     
