@@ -534,8 +534,8 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
     default:
-        // do nothing with unrecognized MAVLink messages
-        break;
+        // unable to use the command, allow the vehicle to try the next command
+        return false;
     }
 
     // always return success
