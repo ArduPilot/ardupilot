@@ -79,6 +79,7 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_WindVane/AP_WindVane.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -172,6 +173,7 @@ private:
     AP_InertialSensor ins;
     RangeFinder rangefinder{serial_manager, ROTATION_NONE};
     AP_Button button;
+    AP_WindVane windvane;
 
     // flight modes convenience array
     AP_Int8 *modes;
@@ -505,6 +507,11 @@ private:
     void read_radio();
     void control_failsafe(uint16_t pwm);
     bool trim_radio();
+
+    // sailboat.cpp
+    void sailboat_set_mainsail(float mainsail);
+    void sailboat_update_mainsail();
+    float sailboat_VMG(float target_heading);
 
     // sensors.cpp
     void init_compass(void);
