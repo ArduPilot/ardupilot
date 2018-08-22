@@ -312,11 +312,8 @@ public:
         flags.k_throttle_reversible = true;
     }
 
-    // set all outputs to the TRIM value
-    static void output_trim_all(void);
-
     // setup IO failsafe for all channels to trim
-    static void setup_failsafe_trim_all(void);
+    static void setup_failsafe_trim_all_non_motors(void);
 
     // set output for all channels matching the given function type, allow radio_trim to center servo
     static void set_output_pwm_trimmed(SRV_Channel::Aux_servo_function_t function, int16_t value);
