@@ -487,10 +487,11 @@ private:
     void complete();
 
     /// advance_current_nav_cmd - moves current nav command forward
+    //      starting_index is used to set the index from which searching will begin, leave as 0 to search from the current navigation target
     ///     do command will also be loaded
     ///     accounts for do-jump commands
     //      returns true if command is advanced, false if failed (i.e. mission completed)
-    bool advance_current_nav_cmd();
+    bool advance_current_nav_cmd(uint16_t starting_index = 0);
 
     /// advance_current_do_cmd - moves current do command forward
     ///     accounts for do-jump commands
