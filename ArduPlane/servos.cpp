@@ -227,10 +227,6 @@ void Plane::dspoiler_update(void)
  */
 void Plane::set_servos_idle(void)
 {
-    if (auto_state.idle_wiggle_stage == 0) {
-        SRV_Channels::output_trim_all();
-        return;
-    }
     int16_t servo_value = 0;
     // move over full range for 2 seconds
     auto_state.idle_wiggle_stage += 2;
