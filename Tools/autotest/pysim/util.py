@@ -326,6 +326,8 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
         aircraft = 'test.%s' % atype
     cmd += ' --aircraft=%s' % aircraft
     cmd += ' ' + ' '.join(options)
+    cmd += ' --default-modules log,wp,param,arm,mode,rc,cmdlong,output'
+    cmd += ' --non-interactive'
     ret = pexpect.spawn(cmd, logfile=logfile, encoding=ENCODING, timeout=60)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
