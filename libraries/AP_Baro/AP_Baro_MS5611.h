@@ -10,8 +10,16 @@
 #define HAL_BARO_MS5611_I2C_ADDR 0x77
 #endif
 
+#ifndef HAL_BARO_MS5607_I2C_ADDR
+#define HAL_BARO_MS5607_I2C_ADDR 0x77
+#endif
+
 #ifndef HAL_BARO_MS5837_I2C_ADDR
 #define HAL_BARO_MS5837_I2C_ADDR 0x76
+#endif
+
+#ifndef HAL_BARO_MS5637_I2C_ADDR
+#define HAL_BARO_MS5637_I2C_ADDR 0x76
 #endif
 
 class AP_Baro_MS56XX : public AP_Baro_Backend

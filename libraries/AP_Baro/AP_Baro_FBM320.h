@@ -6,6 +6,14 @@
 
 #include "AP_Baro_Backend.h"
 
+#ifndef HAL_BARO_FBM320_I2C_ADDR
+ #define HAL_BARO_FBM320_I2C_ADDR  0x6C
+#endif
+#ifndef HAL_BARO_FBM320_I2C_ADDR2
+ #define HAL_BARO_FBM320_I2C_ADDR2 0x6D
+#endif
+
+
 class AP_Baro_FBM320 : public AP_Baro_Backend {
 public:
     AP_Baro_FBM320(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
