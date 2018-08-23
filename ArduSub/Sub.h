@@ -490,7 +490,7 @@ private:
 #endif
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
-    void gcs_check_input(void);
+    void gcs_update(void);
     void do_erase_logs(void);
     void Log_Write_Optflow();
     void Log_Write_Control_Tuning();
