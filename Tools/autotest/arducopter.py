@@ -142,12 +142,12 @@ class AutoTestCopter(AutoTest):
         self.progress("Ran command")
         self.wait_for_alt(alt_min)
 
-    def takeoff(self, alt_min=30, takeoff_throttle=1700, arm=False):
+    def takeoff(self, alt_min=30, takeoff_throttle=1700):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
-        if arm:
+        if not self.armed():
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm()
             self.set_rc(3, 1000)
@@ -1205,7 +1205,7 @@ class AutoTestCopter(AutoTest):
                 if self.get_sim_time() - tstart > 10:
                     raise AutoTestTimeoutException()
 
-            self.takeoff(arm=True)
+            self.takeoff()
             self.set_rc(1, 1600)
             tstart = self.get_sim_time()
             while True:
@@ -1717,7 +1717,6 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
-
             self.run_test("Fly Nav Delay (takeoff)",
                           self.fly_nav_takeoff_delay_abstime)
 
@@ -1785,7 +1784,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test stability patch",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             # Stability patch
             self.run_test("Fly stability patch",
@@ -1796,11 +1795,15 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test horizontal fence",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             # Fence test
             self.run_test("Test horizontal fence",
                           lambda: self.fly_fence_test(180))
+
+            # Takeoff
+            self.run_test("Takeoff to test Max Alt fence",
+                          lambda: self.takeoff(10))
 
             # Fence test
             self.run_test("Test Max Alt Fence", self.fly_alt_max_fence_test)
@@ -1827,7 +1830,7 @@ class AutoTestCopter(AutoTest):
                           self.fly_gps_glitch_auto_test)
 
             # Takeoff
-            self.run_test("Takeoff to test loiter", lambda: self.takeoff(10, arm=True))
+            self.run_test("Takeoff to test loiter", lambda: self.takeoff(10))
 
             # Loiter for 10 seconds
             self.run_test("Test Loiter for 10 seconds", self.loiter)
@@ -1844,7 +1847,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test fly SIMPLE mode",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             # Simple mode
             self.run_test("Fly in SIMPLE mode", self.fly_simple)
@@ -1854,7 +1857,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test circle in SUPER SIMPLE mode",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             # Fly a circle in super simple mode
             self.run_test("Fly a circle in SUPER SIMPLE mode",
@@ -1865,7 +1868,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test CIRCLE mode",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             # Circle mode
             self.run_test("Fly CIRCLE mode", self.fly_circle)
@@ -1880,7 +1883,7 @@ class AutoTestCopter(AutoTest):
 
             # Takeoff
             self.run_test("Takeoff to test motor failure",
-                          lambda: self.takeoff(10, arm=True))
+                          lambda: self.takeoff(10))
 
             self.run_test("Fly motor failure test",
                           self.fly_motor_fail)
