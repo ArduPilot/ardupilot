@@ -197,6 +197,20 @@ private:
 
     uint32_t _log_baro_bit = -1;
 
+    // bitmask values for GND_PROBE_EXT
+    enum {
+        PROBE_BMP085=(1<<0),
+        PROBE_BMP280=(1<<1),
+        PROBE_MS5611=(1<<2),
+        PROBE_MS5607=(1<<3),
+        PROBE_MS5637=(1<<4),
+        PROBE_FBM320=(1<<5),
+        PROBE_DPS280=(1<<6),
+        PROBE_LPS25H=(1<<7),
+        PROBE_KELLER=(1<<8),
+        PROBE_MS5837=(1<<9),
+    };
+    
     struct sensor {
         baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
@@ -229,7 +243,9 @@ private:
     uint32_t                            _last_notify_ms;
 
     bool _add_backend(AP_Baro_Backend *backend);
+    void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
+    AP_Int32                           _baro_probe_ext;
 };
 
 namespace AP {

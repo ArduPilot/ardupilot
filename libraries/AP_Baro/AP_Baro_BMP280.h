@@ -7,7 +7,10 @@
 #include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_BMP280_I2C_ADDR
- #define HAL_BARO_BMP280_I2C_ADDR (0x76)
+ #define HAL_BARO_BMP280_I2C_ADDR  (0x76)
+#endif
+#ifndef HAL_BARO_BMP280_I2C_ADDR2
+ #define HAL_BARO_BMP280_I2C_ADDR2 (0x77)
 #endif
 
 class AP_Baro_BMP280 : public AP_Baro_Backend
