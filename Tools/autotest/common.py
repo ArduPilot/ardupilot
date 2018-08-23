@@ -7,6 +7,7 @@ import shutil
 import sys
 import time
 import pexpect
+import fnmatch
 
 from pymavlink import mavwp, mavutil
 from pysim import util, vehicleinfo
@@ -482,6 +483,21 @@ class AutoTest(ABC):
         self.progress("FAILED TO AUTODISARM")
         return False
 
+    @staticmethod
+    def should_fetch_all_for_parameter_change(param_name):
+        if fnmatch.fnmatch(param_name, "*_ENABLE") or fnmatch.fnmatch(param_name, "*_ENABLED"):
+            return True
+        if param_name in ["ARSPD_TYPE",
+                          "ARSPD2_TYPE",
+                          "BATT2_MONITOR",
+                          "CAN_DRIVER",
+                          "COMPASS_PMOT_EN",
+                          "OSD_TYPE",
+                          "RSSI_TYPE",
+                          "WENC_TYPE"]:
+            return True
+        return False
+
     def set_parameter(self, name, value, add_to_context=True):
         """Set parameters from vehicle."""
         old_value = self.get_parameter(name, retry=2)
@@ -492,6 +508,8 @@ class AutoTest(ABC):
                 # yes, exactly equal.
                 if add_to_context:
                     self.context_get().parameters.append((name, old_value))
+                if self.should_fetch_all_for_parameter_change(name.upper()) and value == 1:
+                    self.fetch_parameters()
                 return
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
                           % (returned_value, value))
