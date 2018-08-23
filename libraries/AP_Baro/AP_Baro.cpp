@@ -613,7 +613,7 @@ void AP_Baro::init(void)
     _probe_i2c_barometers();
 #endif
     
-#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT // most boards requires external baro
+#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
