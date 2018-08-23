@@ -185,6 +185,7 @@ class AutoTest(ABC):
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
+        self.fetch_parameters()
 
     def fetch_parameters(self):
         self.mavproxy.send("param fetch\n")
