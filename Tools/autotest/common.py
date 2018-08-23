@@ -221,6 +221,20 @@ class AutoTest(ABC):
     def vehicleinfo_key(self):
         return self.log_name
 
+    def repeatedly_apply_parameter_file(self, filepath):
+        '''keep applying a parameter file until no parameters changed'''
+        for i in range(0, 3):
+            self.mavproxy.send("param load %s\n" % filepath)
+            while True:
+                line = self.mavproxy.readline()
+                match = re.match(".*Loaded [0-9]+ parameters.*changed ([0-9]+)",
+                                 line)
+                if match is not None:
+                    if int(match.group(1)) == 0:
+                        return
+                    break
+        raise NotAchievedException()
+
     def apply_defaultfile_parameters(self):
         """Apply parameter file."""
         # setup test parameters
@@ -231,8 +245,7 @@ class AutoTest(ABC):
         if not isinstance(self.params, list):
             self.params = [self.params]
         for x in self.params:
-            self.mavproxy.send("param load %s\n" % os.path.join(testdir, x))
-            self.mavproxy.expect('Loaded [0-9]+ parameters')
+            self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
         self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
