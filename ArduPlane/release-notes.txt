@@ -1,3 +1,21 @@
+Release 3.9.1beta3, 23rd August 2018
+------------------------------------
+
+This is the third beta for the 3.9.1 release, which is a minor
+update over 3.9.0. This release includes the following changes:
+
+ - fixed a critical safety issue found by Oliver Volkmann, and fixed
+   by Michael du Breuil. The problem could lead to quadplane motors
+   starting on reboot
+
+ - fixed a bug where RC failsafe could lead rudder input stuck at the
+   last rudder input value in some modes. Thanks to Michael du Breuil
+   for the fix
+
+ - raised OSD thread stack size to 1024 (needed for new OSD items)
+
+Thanks to everyone who is testing the 3.9.1beta series!
+
 Release 3.9.1beta2, 17th August 2018
 ------------------------------------
 
