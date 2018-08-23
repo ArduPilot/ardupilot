@@ -356,6 +356,12 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
+#if AC_RALLY == ENABLED
+    // @Group: RALLY_
+    // @Path: AP_Rally.cpp,../libraries/AP_Rally/AP_Rally.cpp
+    GOBJECT(rally,      "RALLY_",   AP_Rally_Rover),
+#endif
+
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming),

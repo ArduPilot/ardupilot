@@ -6,15 +6,14 @@ bool ModeRTL::_enter()
     // refuse RTL if home has not been set
     if (!AP::ahrs().home_is_set()) {
         return false;
+        } else {
+        // initialise waypoint speed
+        set_desired_speed_to_default(true);
+        return_target = rover.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt);
+        // set destination
+        set_desired_location(return_target);
+        return true;
     }
-
-    // initialise waypoint speed
-    set_desired_speed_to_default(true);
-
-    // set destination
-    set_desired_location(rover.home);
-
-    return true;
 }
 
 void ModeRTL::update()
