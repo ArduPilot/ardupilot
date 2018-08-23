@@ -7,7 +7,10 @@
 #include "AP_Baro_Backend.h"
 
 #define HAL_BARO_LPS25H_I2C_BUS 0
-#define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+
+#ifndef HAL_BARO_LPS25H_I2C_ADDR
+# define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+#endif
 
 
 class AP_Baro_LPS2XH : public AP_Baro_Backend
