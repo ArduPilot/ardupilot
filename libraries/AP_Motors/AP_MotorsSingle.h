@@ -47,7 +47,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t    get_motor_mask();
+    uint16_t            get_motor_mask() override;
 
 protected:
     // output - sends commands to the motors
