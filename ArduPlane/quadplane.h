@@ -84,7 +84,7 @@ public:
     float get_weathervane_yaw_rate_cds(void);
 
     // see if we are flying from vtol point of view
-    bool is_flying_vtol(void);
+    bool is_flying_vtol(void) const;
 
     // return true when tailsitter frame configured
     bool is_tailsitter(void) const;
@@ -168,13 +168,13 @@ private:
     void hold_stabilize(float throttle_in);    
 
     // get pilot desired yaw rate in cd/s
-    float get_pilot_input_yaw_rate_cds(void);
+    float get_pilot_input_yaw_rate_cds(void) const;
 
     // get overall desired yaw rate in cd/s
     float get_desired_yaw_rate_cds(void);
     
     // get desired climb rate in cm/s
-    float get_pilot_desired_climb_rate_cms(void);
+    float get_pilot_desired_climb_rate_cms(void) const;
 
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
@@ -198,15 +198,15 @@ private:
     void init_qrtl(void);
     void control_qrtl(void);
     
-    float assist_climb_rate_cms(void);
+    float assist_climb_rate_cms(void) const;
 
     // calculate desired yaw rate for assistance
-    float desired_auto_yaw_rate_cds(void);
+    float desired_auto_yaw_rate_cds(void) const;
 
     bool should_relax(void);
     void motors_output(void);
     void Log_Write_QControl_Tuning();
-    float landing_descent_rate_cms(float height_above_ground);
+    float landing_descent_rate_cms(float height_above_ground) const;
     
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
