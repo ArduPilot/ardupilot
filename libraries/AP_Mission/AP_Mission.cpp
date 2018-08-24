@@ -346,10 +346,8 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    uint16_t cmd_index = start_index;
-
     // search until the end of the mission command list
-    while(cmd_index < (unsigned)_cmd_total) {
+    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
         // get next command
         if (!get_next_cmd(cmd_index, cmd, false)) {
             // no more commands so return failure
@@ -359,8 +357,6 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (is_nav_cmd(cmd)) {
             return true;
         }
-        // move on in list
-        cmd_index++;
     }
 
     // if we got this far we did not find a navigation command
