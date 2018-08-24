@@ -106,14 +106,20 @@ void AP_MotorsSingle::output_to_motors()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsSingle::get_motor_mask()
 {
-    uint32_t mask =
+    uint32_t motor_mask =
         1U << AP_MOTORS_MOT_1 |
         1U << AP_MOTORS_MOT_2 |
         1U << AP_MOTORS_MOT_3 |
         1U << AP_MOTORS_MOT_4 |
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6;
-    return rc_map_mask(mask);
+
+    uint16_t mask = rc_map_mask(motor_mask);
+
+    // add parent's mask
+    mask |= AP_MotorsMulticopter::get_motor_mask();
+
+    return mask;
 }
 
 // sends commands to the motors
