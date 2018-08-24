@@ -109,10 +109,16 @@ void AP_MotorsTri::output_to_motors()
 uint16_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    return rc_map_mask((1U << AP_MOTORS_MOT_1) |
-                       (1U << AP_MOTORS_MOT_2) |
-                       (1U << AP_MOTORS_MOT_4) |
-                       (1U << AP_MOTORS_CH_TRI_YAW));
+    uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
+                          (1U << AP_MOTORS_MOT_2) |
+                          (1U << AP_MOTORS_MOT_4) |
+                          (1U << AP_MOTORS_CH_TRI_YAW);
+    uint16_t mask = rc_map_mask(motor_mask);
+
+    // add parent's mask
+    mask |= AP_MotorsMulticopter::get_motor_mask();
+
+    return mask;
 }
 
 // output_armed - sends commands to the motors
