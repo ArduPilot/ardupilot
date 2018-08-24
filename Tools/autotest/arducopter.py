@@ -1533,12 +1533,13 @@ class AutoTestCopter(AutoTest):
                     # timeout
                     break
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
+                now = self.get_sim_time_cached()
                 self.progress("%s" % str(m))
                 if m.seq > delay_item_seq:
                     if not took_off:
                         took_off = True
                         delta_time = now - reset_at
-                        if abs(delta_time - delay_for_seconds) > 1:
+                        if abs(delta_time - delay_for_seconds) > 2:
                             self.progress("Did not take off on time "
                                           "measured=%f want=%f" %
                                           (delta_time, delay_for_seconds))
