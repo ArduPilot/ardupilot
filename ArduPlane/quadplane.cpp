@@ -483,7 +483,7 @@ bool QuadPlane::setup(void)
     }
     
     if (hal.util->available_memory() <
-        4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav)) {
+        4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav) + sizeof(*ahrs_view) + sizeof(*loiter_nav)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Not enough memory for quadplane");
         goto failed;
     }
@@ -883,23 +883,25 @@ bool QuadPlane::is_flying(void)
 // crude landing detector to prevent tipover
 bool QuadPlane::should_relax(void)
 {
+    const uint32_t tnow = millis();
+
     bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
     if (motors->get_throttle() < 0.01f) {
         motor_at_lower_limit = true;
     }
+
     if (!motor_at_lower_limit) {
         landing_detect.lower_limit_start_ms = 0;
+        return false;
+    } else if (landing_detect.lower_limit_start_ms == 0) {
+        landing_detect.lower_limit_start_ms = tnow;
     }
-    if (motor_at_lower_limit && landing_detect.lower_limit_start_ms == 0) {
-        landing_detect.lower_limit_start_ms = millis();
-    }
-    bool relax_loiter = landing_detect.lower_limit_start_ms != 0 &&
-        (millis() - landing_detect.lower_limit_start_ms) > 1000;
-    return relax_loiter;
+
+    return (tnow - landing_detect.lower_limit_start_ms) > 1000;
 }
 
 // see if we are flying in vtol
-bool QuadPlane::is_flying_vtol(void)
+bool QuadPlane::is_flying_vtol(void) const
 {
     if (!available()) {
         return false;
@@ -926,7 +928,7 @@ bool QuadPlane::is_flying_vtol(void)
   smooth out descent rate for landing to prevent a jerk as we get to
   land_final_alt. 
  */
-float QuadPlane::landing_descent_rate_cms(float height_above_ground)
+float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 {
     float ret = linear_interpolate(land_speed_cms, wp_nav->get_speed_down(),
                                    height_above_ground,
@@ -951,10 +953,11 @@ void QuadPlane::control_loiter()
         loiter_nav->soften_for_landing();
     }
 
-    if (millis() - last_loiter_ms > 500) {
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_loiter_ms > 500) {
         loiter_nav->init_target();
     }
-    last_loiter_ms = millis();
+    last_loiter_ms = now;
 
     // motors use full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -979,7 +982,6 @@ void QuadPlane::control_loiter()
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
 
-    const uint32_t now = AP_HAL::millis();
     if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
         // we limit pitch during initial transition
         float pitch_limit_cd = linear_interpolate(loiter_initial_pitch_cd, aparm.angle_max,
@@ -1021,7 +1023,7 @@ void QuadPlane::control_loiter()
 /*
   get pilot input yaw rate in cd/s
  */
-float QuadPlane::get_pilot_input_yaw_rate_cds(void)
+float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
     if (plane.channel_throttle->get_control_in() <= 0 && !plane.auto_throttle_mode) {
         // the user may be trying to disarm
@@ -1056,7 +1058,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
 }
 
 // get pilot desired climb rate in cm/s
-float QuadPlane::get_pilot_desired_climb_rate_cms(void)
+float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
 {
     if (plane.failsafe.rc_failsafe || plane.failsafe.throttle_counter > 0) {
         // descend at 0.5m/s for now
@@ -1094,7 +1096,7 @@ void QuadPlane::set_armed(bool armed)
 /*
   estimate desired climb rate for assistance (in cm/s)
  */
-float QuadPlane::assist_climb_rate_cms(void)
+float QuadPlane::assist_climb_rate_cms(void) const
 {
     float climb_rate;
     if (plane.auto_throttle_mode) {
@@ -1119,7 +1121,7 @@ float QuadPlane::assist_climb_rate_cms(void)
 /*
   calculate desired yaw rate for assistance
  */
-float QuadPlane::desired_auto_yaw_rate_cds(void)
+float QuadPlane::desired_auto_yaw_rate_cds(void) const
 {
     float aspeed;
     if (!ahrs.airspeed_estimate(&aspeed) || aspeed < plane.aparm.airspeed_min) {
@@ -2371,12 +2373,13 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         weathervane.last_output = 0;
         return 0;
     }
+    const uint32_t tnow = millis();
     if (plane.channel_rudder->get_control_in() != 0) {
-        weathervane.last_pilot_input_ms = AP_HAL::millis();
+        weathervane.last_pilot_input_ms = tnow;
         weathervane.last_output = 0;
         return 0;
     }
-    if (AP_HAL::millis() - weathervane.last_pilot_input_ms < 3000) {
+    if (tnow - weathervane.last_pilot_input_ms < 3000) {
         weathervane.last_output = 0;
         return 0;
     }
