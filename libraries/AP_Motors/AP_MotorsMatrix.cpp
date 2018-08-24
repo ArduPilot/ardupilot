@@ -122,13 +122,18 @@ void AP_MotorsMatrix::output_to_motors()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint16_t AP_MotorsMatrix::get_motor_mask()
 {
-    uint16_t mask = 0;
+    uint16_t motor_mask = 0;
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            mask |= 1U << i;
+            motor_mask |= 1U << i;
         }
     }
-    return rc_map_mask(mask);
+    uint16_t mask = rc_map_mask(motor_mask);
+
+    // add parent's mask
+    mask |= AP_MotorsMulticopter::get_motor_mask();
+
+    return mask;
 }
 
 // output_armed - sends commands to the motors
