@@ -52,6 +52,7 @@ public:
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
     virtual float       get_throttle_hover() const { return _throttle_hover; }
+    virtual float       get_current_hover() const { return _current_hover; }
 
     // spool up states
     enum spool_up_down_mode {
@@ -162,6 +163,7 @@ protected:
     AP_Int16            _pwm_min;               // minimum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's min pwm used)
     AP_Int16            _pwm_max;               // maximum PWM value that will ever be output to the motors (if 0, vehicle's throttle input channel's max pwm used)
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
+    AP_Int32            _current_hover;         // estimated current required to hover
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
 

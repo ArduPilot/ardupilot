@@ -94,6 +94,7 @@ public:
     float               get_forward() const { return _forward_in; }
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
+    virtual float       get_current_hover() const = 0;
 
     // spool up states
     enum spool_up_down_desired {

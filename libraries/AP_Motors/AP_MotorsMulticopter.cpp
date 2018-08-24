@@ -182,6 +182,14 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Values: 0:First battery, 1:Second battery
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX",  39, AP_MotorsMulticopter,  _batt_idx, 0),
+    
+    // @Param: CURR_HOVER
+    // @DisplayName: Hover current
+    // @Description: Current required to hover
+    // @Range: 0 1000
+    // @Units: mAh
+    // @User: Advanced
+    AP_GROUPINFO("CURR_HOVER", 40, AP_MotorsMulticopter, _current_hover, 0),
 
     AP_GROUPEND
 };
@@ -410,9 +418,12 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
 // update the throttle input filter.  should be called at 100hz
 void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
+    AP_BattMonitor &battery = AP::battery();
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {
         // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
         _throttle_hover = constrain_float(_throttle_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*(get_throttle()-_throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX);
+        if (_current_hover = 0) { _current_hover = (battery.current_amps() * 1000); }
+        _current_hover = _current_hover + (dt/(dt+AP_MOTORS_THST_HOVER_TC))*((battery.current_amps() * 1000) -_current_hover);
     }
 }
 
@@ -623,5 +634,6 @@ void AP_MotorsMulticopter::save_params_on_disarm()
     // save hover throttle
     if (_throttle_hover_learn == HOVER_LEARN_AND_SAVE) {
         _throttle_hover.save();
+        _current_hover.save();
     }
 }
