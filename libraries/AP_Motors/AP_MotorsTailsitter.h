@@ -27,7 +27,7 @@ public:
     void output_to_motors();
 
     // return 0 motor mask
-    uint16_t get_motor_mask() { return 0; }
+    uint16_t get_motor_mask() override { return 0; }
 
 protected:
     // calculate motor outputs
