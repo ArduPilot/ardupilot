@@ -34,8 +34,8 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
-    if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK) &&
-        rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
+    if (RC_Channels::find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK) &&
+        RC_Channels::find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
         check_failed(ARMING_CHECK_NONE, display_failure, "Interlock/E-Stop Conflict");
         return false;
     }
@@ -161,7 +161,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
 
         // ensure all rc channels have different functions
-        if (rc().duplicate_options_exist()) {
+        if (RC_Channels::duplicate_options_exist()) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Duplicate Aux Switch Options");
             return false;
         }
@@ -205,7 +205,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
         // Inverted flight feature disabled for Heli Single and Dual frames
         if (copter.g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
-            rc().find_channel_for_option(RC_Channel::aux_func_t::INVERTED) != nullptr) {
+            RC_Channels::find_channel_for_option(RC_Channel::aux_func_t::INVERTED) != nullptr) {
             if (display_failure) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Inverted flight option not supported");
             }
@@ -558,10 +558,10 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
-    if (!rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
+    if (!RC_Channels::find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
         copter.set_motor_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
-    } else if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP) && copter.ap.motor_emergency_stop){
+    } else if (RC_Channels::find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP) && copter.ap.motor_emergency_stop){
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Emergency Stopped");
         return false;
     }

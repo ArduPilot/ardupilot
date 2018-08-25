@@ -249,7 +249,7 @@ void Copter::init_ardupilot()
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise rc channels including setting mode
-    rc().init();
+    RC_Channels::init();
 
     startup_INS_ground();
 

@@ -34,8 +34,8 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         AP_Notify::events.user_mode_change = 1;
     }
 
-    if (!rc().find_channel_for_option(SIMPLE_MODE) &&
-        !rc().find_channel_for_option(SUPERSIMPLE_MODE)) {
+    if (!RC_Channels::find_channel_for_option(SIMPLE_MODE) &&
+        !RC_Channels::find_channel_for_option(SUPERSIMPLE_MODE)) {
         // if none of the Aux Switches are set to Simple or Super Simple Mode then
         // set Simple Mode using stored parameters from EEPROM
         if (BIT_IS_SET(copter.g.super_simple, new_pos)) {
@@ -113,7 +113,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
         // return to flight mode switch's flight mode if we are currently
         // in this mode
         if (copter.control_mode == mode) {
-            rc().reset_mode_switch();
+            RC_Channels::reset_mode_switch();
         }
     }
 }
