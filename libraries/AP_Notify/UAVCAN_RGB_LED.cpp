@@ -24,8 +24,6 @@
 
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
 #define LED_OFF 0
 #define LED_FULL_BRIGHT 255
 #define LED_MEDIUM ((LED_FULL_BRIGHT / 5) * 4)
