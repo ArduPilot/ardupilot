@@ -268,7 +268,7 @@ public:
     // constructor
     RC_Channels(void);
 
-    void init(void);
+    static void init(void);
 
     // get singleton instance
     static RC_Channels *get_singleton() {
@@ -292,26 +292,27 @@ public:
 
     virtual RC_Channel *channel(uint8_t chan) = 0;
 
-    uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
+    static uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
                                                                               // returns the number of valid channels
 
     static uint8_t get_valid_channel_count(void);                      // returns the number of valid channels in the last read
     static int16_t get_receiver_rssi(void);                            // returns [0, 255] for receiver RSSI (0 is no link) if present, otherwise -1
-    bool read_input(void);                                      // returns true if new input has been read in
+    static bool read_input(void);                                      // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
     static bool receiver_bind(const int dsmMode);                      // puts the reciever in bind mode if present, returns true if success
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
-    class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
-    bool duplicate_options_exist();
+    static class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
+    static bool duplicate_options_exist();
 
-    void init_aux_all();
+    static void init_aux_all();
     virtual void read_aux_all();
 
     // mode switch handling
-    void reset_mode_switch();
+    static void reset_mode_switch();
     virtual void read_mode_switch();
+    static void ori_read_mode_switch();
 
     // has_valid_input should be pure-virtual when Plane is converted
     virtual bool has_valid_input() const { return false; };
@@ -329,8 +330,6 @@ private:
 
     // flight_mode_channel_number must be overridden:
     virtual int8_t flight_mode_channel_number() const = 0;
-    RC_Channel *flight_mode_channel();
+    static RC_Channel *flight_mode_channel();
 
 };
-
-RC_Channels &rc();

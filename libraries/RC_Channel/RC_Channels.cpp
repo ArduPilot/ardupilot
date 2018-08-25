@@ -53,7 +53,7 @@ void RC_Channels::init(void)
 {
     // setup ch_in on channels
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channel(i)->ch_in = i;
+        _singleton->channel(i)->ch_in = i;
     }
 
     init_aux_all();
@@ -65,7 +65,7 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 
     const uint8_t read_channels = MIN(num_channels, NUM_RC_CHANNELS);
     for (uint8_t i = 0; i < read_channels; i++) {
-        chans[i] = channel(i)->get_radio_in();
+        chans[i] = _singleton->channel(i)->get_radio_in();
     }
 
     return read_channels;
@@ -82,7 +82,7 @@ bool RC_Channels::read_input(void)
 
     bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        success |= channel(i)->update();
+        success |= _singleton->channel(i)->update();
     }
 
     return success;
@@ -100,9 +100,8 @@ int16_t RC_Channels::get_receiver_rssi(void)
 
 void RC_Channels::clear_overrides(void)
 {
-    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        _rc.channel(i)->clear_override();
+        _singleton->channel(i)->clear_override();
     }
     // we really should set has_new_overrides to true, and rerun read_input from
     // the vehicle code however doing so currently breaks the failsafe system on
@@ -111,18 +110,16 @@ void RC_Channels::clear_overrides(void)
 
 void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
 {
-    RC_Channels &_rc = rc();
     if (chan < NUM_RC_CHANNELS) {
-        _rc.channel(chan)->set_override(value, timestamp_ms);
+        _singleton->channel(chan)->set_override(value, timestamp_ms);
         has_new_overrides = true;
     }
 }
 
 bool RC_Channels::has_active_overrides()
 {
-    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        if (_rc.channel(i)->has_override()) {
+        if (_singleton->channel(i)->has_override()) {
             return true;
         }
     }
@@ -157,7 +154,7 @@ void RC_Channels::read_aux_all()
 void RC_Channels::init_aux_all()
 {
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        RC_Channel *c = channel(i);
+        RC_Channel *c = _singleton->channel(i);
         if (c == nullptr) {
             continue;
         }
@@ -171,14 +168,14 @@ void RC_Channels::init_aux_all()
 //
 RC_Channel *RC_Channels::flight_mode_channel()
 {
-    const int8_t num = flight_mode_channel_number();
+    const int8_t num = _singleton->flight_mode_channel_number();
     if (num <= 0) {
         return nullptr;
     }
     if (num >= NUM_RC_CHANNELS) {
         return nullptr;
     }
-    return channel(num-1);
+    return _singleton->channel(num-1);
 }
 
 void RC_Channels::reset_mode_switch()
@@ -192,17 +189,21 @@ void RC_Channels::reset_mode_switch()
 
 void RC_Channels::read_mode_switch()
 {
-    if (!has_valid_input()) {
+    ori_read_mode_switch();
+}
+
+void RC_Channels::ori_read_mode_switch()
+{
+    if (!_singleton->has_valid_input()) {
         // exit immediately when no RC input
         return;
     }
-    RC_Channel *c = flight_mode_channel();
+    RC_Channel *c = _singleton->flight_mode_channel();
     if (c == nullptr) {
         return;
     }
     c->read_mode_switch();
 }
-
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;

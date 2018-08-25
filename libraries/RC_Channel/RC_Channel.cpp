@@ -567,7 +567,7 @@ RC_Channel::aux_switch_pos_t RC_Channel::read_3pos_switch() const
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::aux_func_t option)
 {
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        RC_Channel *c = channel(i);
+        RC_Channel *c = _singleton->channel(i);
         if (c == nullptr) {
             // odd?
             continue;
@@ -584,7 +584,7 @@ bool RC_Channels::duplicate_options_exist()
 {
     uint8_t auxsw_option_counts[256] = {};
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        const RC_Channel *c = channel(i);
+        const RC_Channel *c = _singleton->channel(i);
         if (c == nullptr) {
             // odd?
             continue;

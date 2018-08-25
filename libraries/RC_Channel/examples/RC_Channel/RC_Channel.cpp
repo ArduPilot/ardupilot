@@ -119,30 +119,30 @@ void setup()
     print_radio_values();
 
     // set type of output, symmetrical angles or a number range;
-    rc().channel(CH_1)->set_angle(4500);
-    rc().channel(CH_1)->set_default_dead_zone(80);
+    RC_Channels::rc_channel(CH_1)->set_angle(4500);
+    RC_Channels::rc_channel(CH_1)->set_default_dead_zone(80);
 
-    rc().channel(CH_2)->set_angle(4500);
-    rc().channel(CH_2)->set_default_dead_zone(80);
+    RC_Channels::rc_channel(CH_2)->set_angle(4500);
+    RC_Channels::rc_channel(CH_2)->set_default_dead_zone(80);
 
-    rc().channel(CH_3)->set_range(1000);
-    rc().channel(CH_3)->set_default_dead_zone(20);
+    RC_Channels::rc_channel(CH_3)->set_range(1000);
+    RC_Channels::rc_channel(CH_3)->set_default_dead_zone(20);
 
-    rc().channel(CH_4)->set_angle(6000);
-    rc().channel(CH_4)->set_default_dead_zone(500);
+    RC_Channels::rc_channel(CH_4)->set_angle(6000);
+    RC_Channels::rc_channel(CH_4)->set_default_dead_zone(500);
 
-    rc().channel(CH_5)->set_range(1000);
+    RC_Channels::rc_channel(CH_5)->set_range(1000);
 
-    rc().channel(CH_6)->set_range(800);
+    RC_Channels::rc_channel(CH_6)->set_range(800);
 
-    rc().channel(CH_7)->set_range(1000);
+    RC_Channels::rc_channel(CH_7)->set_range(1000);
 
-    rc().channel(CH_8)->set_range(1000);
+    RC_Channels::rc_channel(CH_8)->set_range(1000);
 }
 
 void loop()
 {
-    rc().read_input();
+    RC_Channels::read_input();
     print_pwm();
     
     hal.scheduler->delay(20);
@@ -151,7 +151,7 @@ void loop()
 static void print_pwm(void)
 {
     for (int i=0; i<NUM_CHANNELS; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc().channel(i)->get_control_in());
+	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)RC_Channels::rc_channel(i)->get_control_in());
     }
     hal.console->printf("\n");
 }
@@ -162,8 +162,8 @@ static void print_radio_values()
     for (int i=0; i<NUM_CHANNELS; i++) {
 	     hal.console->printf("CH%u: %u|%u\n",
 			  (unsigned)i+1,
-              (unsigned)rc().channel(i)->get_radio_min(),
-			  (unsigned)rc().channel(i)->get_radio_max());
+              (unsigned)RC_Channels::rc_channel(i)->get_radio_min(),
+			  (unsigned)RC_Channels::rc_channel(i)->get_radio_max());
     }
 }
 
