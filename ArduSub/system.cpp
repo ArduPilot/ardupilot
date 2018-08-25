@@ -88,7 +88,7 @@ void Sub::init_ardupilot()
     gcs().set_dataflash(&DataFlash);
 
     // initialise rc channels including setting mode
-    rc().init();
+    RC_Channels::init();
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
