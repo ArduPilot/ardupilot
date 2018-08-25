@@ -389,9 +389,7 @@ bool AP_Arming::gps_checks(bool report)
         if (AP::ahrs().get_position(ahrs_loc)) {
             const float distance = location_diff(gps_loc, ahrs_loc).length();
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
-                if (report) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: GPS and AHRS differ by %4.1fm", (double)distance);
-                }
+                check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
                 return false;
             }
         }
@@ -400,10 +398,11 @@ bool AP_Arming::gps_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
+            check_failed(ARMING_CHECK_GPS_CONFIG,
+                         report,
+                         "GPS %d failing configuration checks",
+                         first_unconfigured + 1);
             if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL,
-                                                 "PreArm: GPS %d failing configuration checks",
-                                                  first_unconfigured + 1);
                 gps.broadcast_first_configuration_failure_reason();
             }
             return false;
@@ -427,7 +426,7 @@ bool AP_Arming::battery_checks(bool report)
 
         for (uint8_t i = 0; i < _battery.num_instances(); i++) {
             if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
-                check_failed(ARMING_CHECK_BATTERY, report, "PreArm: Battery %d voltage %.1f below minimum %.1f",
+                check_failed(ARMING_CHECK_BATTERY, report, "Battery %d voltage %.1f below minimum %.1f",
                             i+1,
                             (double)_battery.voltage(i),
                              (double)_min_voltage[i]);
@@ -467,15 +466,11 @@ bool AP_Arming::rc_calibration_checks(bool report)
         }
         const uint16_t trim = ch->get_radio_trim();
         if (ch->get_radio_min() > trim) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d minimum is greater than trim", i + 1);
-            }
+            check_failed(ARMING_CHECK_RC, report, "RC%d minimum is greater than trim", i + 1);
             check_passed = false;
         }
         if (ch->get_radio_max() < trim) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: RC%d maximum is less than trim", i + 1);
-            }
+            check_failed(ARMING_CHECK_RC, report, "RC%d maximum is less than trim", i + 1);
             check_passed = false;
         }
     }
@@ -512,15 +507,11 @@ bool AP_Arming::servo_checks(bool report) const
 
         const uint16_t trim = ch->get_trim();
         if (ch->get_output_min() > trim) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: SERVO%d minimum is greater than trim", i + 1);
-            }
+            check_failed(ARMING_CHECK_NONE, report, "SERVO%d minimum is greater than trim", i + 1);
             check_passed = false;
         }
         if (ch->get_output_max() < trim) {
-            if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: SERVO%d maximum is less than trim", i + 1);
-            }
+            check_failed(ARMING_CHECK_NONE, report, "SERVO%d maximum is less than trim", i + 1);
             check_passed = false;
         }
     }
