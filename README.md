@@ -116,7 +116,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Administration***: ArduPilot Technical Community Manager
 - [Jacob Walser](https://github.com/jaxxzer):
   - ***Vehicle***: Sub
-- [Pierre Khancyr](https://github.com/khancyr):
+- [Pierre Kancir](https://github.com/khancyr):
   - ***Subsystem***: Copter SITL, Rover SITL
 - [Leonard Hall](https://github.com/lthall):
   - ***Subsystem***: Copter attitude control and navigation
