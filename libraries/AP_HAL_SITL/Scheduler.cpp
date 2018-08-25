@@ -263,8 +263,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     if (!a->f) {
         goto failed;
     }
-    a->stack = memalign(4096, alloc_stack);
-    if (!a->stack) {
+    if (posix_memalign(&(a->stack), 4096, alloc_stack)) {
         goto failed;
     }
     memset(a->stack, stackfill, alloc_stack);
