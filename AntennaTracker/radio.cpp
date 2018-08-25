@@ -4,5 +4,5 @@
 
 void Tracker::read_radio()
 {
-    rc().read_input();
+    RC_Channels::read_input();
 }
