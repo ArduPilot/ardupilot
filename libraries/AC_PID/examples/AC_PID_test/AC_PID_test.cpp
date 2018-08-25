@@ -44,7 +44,7 @@ void loop()
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid.kP(), (double)pid.kI(), (double)pid.kD(), (double)pid.imax());
 
-    RC_Channel *ch = rc().channel(0);
+    RC_Channel *ch = RC_Channels::rc_channel(0);
     if (ch == nullptr) {
         hal.console->printf("No channel 0?");
         return;
@@ -54,7 +54,7 @@ void loop()
     radio_trim = ch->get_radio_in();
 
     while (true) {
-        rc().read_input(); // poll the radio for new values
+        RC_Channels::read_input(); // poll the radio for new values
         radio_in = ch->get_radio_in();
         error = radio_in - radio_trim;
         pid.set_input_filter_all(error);
