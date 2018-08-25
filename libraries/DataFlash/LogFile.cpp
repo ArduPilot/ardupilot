@@ -199,7 +199,7 @@ void DataFlash_Class::Log_Write_RFND(const RangeFinder &rangefinder)
 void DataFlash_Class::Log_Write_RCIN(void)
 {
     uint16_t values[14] = {};
-    rc().get_radio_in(values, ARRAY_SIZE(values));
+    RC_Channels::get_radio_in(values, ARRAY_SIZE(values));
     struct log_RCIN pkt = {
         LOG_PACKET_HEADER_INIT(LOG_RCIN_MSG),
         time_us       : AP_HAL::micros64(),
