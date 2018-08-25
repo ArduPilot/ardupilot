@@ -85,7 +85,7 @@ void Plane::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
-    rc().init();
+    RC_Channels::init();
 
     relay.init();
 
