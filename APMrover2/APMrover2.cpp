@@ -45,10 +45,10 @@ Rover rover;
 const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,    200),
-    SCHED_TASK(ahrs_update,            50,   1500),
+    SCHED_TASK(ahrs_update,           400,    400),
     SCHED_TASK(read_rangefinders,      50,    200),
-    SCHED_TASK(update_current_mode,    50,    200),
-    SCHED_TASK(set_servos,             50,    200),
+    SCHED_TASK(update_current_mode,   400,    200),
+    SCHED_TASK(set_servos,            400,    200),
     SCHED_TASK(update_GPS,             50,    300),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
@@ -77,14 +77,14 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
-    SCHED_TASK_CLASS(AC_Sprayer,              &rover.g2.sprayer,           update,      3,  90),
+    SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,           update,      3,  90),
     SCHED_TASK(compass_cal_update,     50,    200),
     SCHED_TASK(compass_save,           0.1,   200),
     SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
 #endif
-    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,       50,  200),
+    SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
     SCHED_TASK_CLASS(AP_Button,           &rover.button,           update,          5,  200),
 #if STATS_ENABLED == ENABLED
