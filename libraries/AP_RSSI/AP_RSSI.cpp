@@ -194,7 +194,7 @@ float AP_RSSI::read_pin_rssi()
 // read the RSSI value from a PWM value on a RC channel
 float AP_RSSI::read_channel_rssi()
 {
-    RC_Channel *ch = rc().channel(rssi_channel-1);
+    RC_Channel *ch = RC_Channels::rc_channel(rssi_channel-1);
     if (ch == nullptr) {
         return 0.0f;
     }
