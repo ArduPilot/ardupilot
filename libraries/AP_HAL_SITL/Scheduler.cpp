@@ -5,7 +5,11 @@
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
+#if defined (__clang__)
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include <AP_Common/Semaphore.h>
 
 using namespace HALSITL;
@@ -263,7 +267,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     if (!a->f) {
         goto failed;
     }
-    a->stack = memalign(4096, alloc_stack);
+    posix_memalign(&a->stack, 4096, alloc_stack);
     if (!a->stack) {
         goto failed;
     }
