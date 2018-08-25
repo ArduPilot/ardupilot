@@ -386,8 +386,6 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
 // set_current_cmd - jumps to command specified by index
 bool AP_Mission::set_current_cmd(uint16_t index)
 {
-    Mission_Command cmd;
-
     // sanity check index and that we have a mission
     if (index >= (unsigned)_cmd_total || _cmd_total == 1) {
         return false;
@@ -419,6 +417,7 @@ bool AP_Mission::set_current_cmd(uint16_t index)
         // search until we find next nav command or reach end of command list
         while (!_flags.nav_cmd_loaded) {
             // get next command
+            Mission_Command cmd;
             if (!get_next_cmd(index, cmd, true)) {
                 _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
                 return false;
@@ -1459,9 +1458,6 @@ void AP_Mission::complete()
 //      returns true if command is advanced, false if failed (i.e. mission completed)
 bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 {
-    Mission_Command cmd;
-    uint16_t cmd_index;
-
     // exit immediately if we're not running
     if (_flags.state != MISSION_RUNNING) {
         return false;
@@ -1478,7 +1474,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     _flags.do_cmd_all_done = false;
 
     // get starting point for search
-    cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
+    uint16_t cmd_index = starting_index > 0 ? starting_index - 1 : _nav_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         // start from beginning of the mission command list
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
@@ -1493,6 +1489,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     // search until we find next nav command or reach end of command list
     while (!_flags.nav_cmd_loaded) {
         // get next command
+        Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
             return false;
         }
@@ -1541,21 +1538,18 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
 ///     accounts for do-jump commands
 void AP_Mission::advance_current_do_cmd()
 {
-    Mission_Command cmd;
-    uint16_t cmd_index;
-
     // exit immediately if we're not running or we've completed all possible "do" commands
     if (_flags.state != MISSION_RUNNING || _flags.do_cmd_all_done) {
         return;
     }
 
     // get starting point for search
-    cmd_index = _do_cmd.index;
+    uint16_t cmd_index = _do_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
         cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
     }else{
         // start from one position past the current do command
-        cmd_index++;
+        cmd_index = _do_cmd.index + 1;
     }
 
     // check if we've reached end of mission
@@ -1566,6 +1560,7 @@ void AP_Mission::advance_current_do_cmd()
     }
 
     // find next do command
+    Mission_Command cmd;
     if (get_next_do_cmd(cmd_index, cmd)) {
         // set current do command and start it
         _do_cmd = cmd;
