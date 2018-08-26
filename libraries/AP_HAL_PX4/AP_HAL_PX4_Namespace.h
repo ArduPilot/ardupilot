@@ -15,6 +15,7 @@ namespace PX4 {
     class PX4I2CDriver;
     class PX4_I2C;
     class Semaphore;
+    class Semaphore_Recursive;
     class PX4CAN;
     class PX4CANManager;
 }

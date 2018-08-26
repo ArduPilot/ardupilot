@@ -26,5 +26,5 @@ private:
 
     bool _initialized;
 
-    AP_HAL::Semaphore *_sem_baro;
+    HAL_Semaphore _sem_baro;
 };

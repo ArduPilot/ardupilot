@@ -50,6 +50,10 @@
  #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
 #endif
 
+#ifndef HAL_BARO_PROBE_EXT_DEFAULT
+ #define HAL_BARO_PROBE_EXT_DEFAULT 0
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -143,6 +147,15 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
+#ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
+    // @Param: PROBE_EXT
+    // @DisplayName: External barometers to probe
+    // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types
+    // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller
+    // @User: Advanced
+    AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -507,9 +520,8 @@ void AP_Baro::init(void)
     drivers[0] = new AP_Baro_HIL(*this);
     _num_drivers = 1;
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP085
-    drivers[0] = new AP_Baro_BMP085(*this,
-        std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR)));
-    _num_drivers = 1;
+    ADD_BACKEND(AP_Baro_BMP085::probe(*this,
+                                      std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP085_BUS, HAL_BARO_BMP085_I2C_ADDR))));
 #elif HAL_BARO_DEFAULT == HAL_BARO_BMP280_I2C
     ADD_BACKEND(AP_Baro_BMP280::probe(*this,
                                       std::move(hal.i2c_mgr->get_device(HAL_BARO_BMP280_BUS, HAL_BARO_BMP280_I2C_ADDR))));
@@ -597,12 +609,93 @@ void AP_Baro::init(void)
 #endif
     }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT // most boards requires external baro
+#ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
+    _probe_i2c_barometers();
+#endif
+    
+#if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::sensor_config_error("Baro: unable to initialise driver");
     }
 #endif
+}
+
+/*
+  probe all the i2c barometers enabled with GND_PROBE_EXT. This is
+  used on boards without a builtin barometer
+ */
+void AP_Baro::_probe_i2c_barometers(void)
+{
+    uint32_t probe = _baro_probe_ext.get();
+    if (probe & PROBE_BMP085) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_BMP085::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_BMP085_I2C_ADDR))));
+        }
+    }
+    if (probe & PROBE_BMP280) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_BMP280_I2C_ADDR))));
+            ADD_BACKEND(AP_Baro_BMP280::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_BMP280_I2C_ADDR2))));
+        }
+    }
+    if (probe & PROBE_MS5611) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5611_I2C_ADDR))));
+        }
+    }
+    if (probe & PROBE_MS5607) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5607_I2C_ADDR)),
+                                              AP_Baro_MS56XX::BARO_MS5607));
+        }
+    }
+    if (probe & PROBE_MS5637) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5637_I2C_ADDR)),
+                                              AP_Baro_MS56XX::BARO_MS5637));
+        }
+    }
+    if (probe & PROBE_FBM320) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_FBM320::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_FBM320_I2C_ADDR))));
+            ADD_BACKEND(AP_Baro_FBM320::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_FBM320_I2C_ADDR2))));
+        }
+    }
+    if (probe & PROBE_DPS280) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_DPS280::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_DPS280_I2C_ADDR))));
+            ADD_BACKEND(AP_Baro_DPS280::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_DPS280_I2C_ADDR2))));
+        }
+    }
+    if (probe & PROBE_LPS25H) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_LPS25H_I2C_ADDR))));
+        }
+    }
+    if (probe & PROBE_LPS25H) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
+                                                std::move(hal.i2c_mgr->get_device(i, HAL_BARO_KELLERLD_I2C_ADDR))));
+        }
+    }
+    if (probe & PROBE_MS5837) {
+        FOREACH_I2C_EXTERNAL(i) {
+            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
+        }
+    }
 }
 
 bool AP_Baro::should_df_log() const

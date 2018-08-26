@@ -8,9 +8,28 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+// construct a semaphore
+Semaphore::Semaphore()
+{
+    pthread_mutex_init(&_lock, nullptr);
+}
+
+// construct a recursive semaphore (allows a thread to take it more than once)
+Semaphore_Recursive::Semaphore_Recursive()
+{
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&_lock, &attr);
+}
+
+
 bool Semaphore::give()
 {
-    return pthread_mutex_unlock(&_lock) == 0;
+    if (pthread_mutex_unlock(&_lock) != 0) {
+        AP_HAL::panic("Bad semaphore usage");
+    }
+    return true;
 }
 
 bool Semaphore::take(uint32_t timeout_ms)

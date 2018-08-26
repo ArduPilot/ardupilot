@@ -24,3 +24,5 @@
 // allow for static semaphores
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
+#define HAL_Semaphore_Recursive HALSITL::Semaphore_Recursive
+

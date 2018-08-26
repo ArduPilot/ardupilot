@@ -34,7 +34,7 @@
 
 - Developer discussion: <http://discuss.ardupilot.org>
 
-- Developer email group: drones-discuss@googlegroups.com. Deprecated November 2016. Included for historical reference.
+- Developer chat: <https://gitter.im/ArduPilot/ardupilot>
 
 ## Contributors ##
 
@@ -73,7 +73,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Vehicle***: Plane, AntennaTracker
   - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
 - [Randy Mackay](https://github.com/rmackay9):
-  - ***Vehicle***: Copter, AntennaTracker
+  - ***Vehicle***: Copter, Rover, AntennaTracker
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
 - [Tom Pittenger](https://github.com/magicrub):
@@ -106,7 +106,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Board***: NavIO
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo):
   - ***Board***: VRBrain
-- [Julien BERAUD](https://github.com/jberaud):
+- [Julien Beraud](https://github.com/jberaud):
   - ***Board***: Bebop & Bebop 2
 - [Matt Lawrence](https://github.com/Pedals2Paddles):
   - ***Vehicle***: 3DR Solo & Solo based vehicles
@@ -116,3 +116,7 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Administration***: ArduPilot Technical Community Manager
 - [Jacob Walser](https://github.com/jaxxzer):
   - ***Vehicle***: Sub
+- [Pierre Kancir](https://github.com/khancyr):
+  - ***Subsystem***: Copter SITL, Rover SITL
+- [Leonard Hall](https://github.com/lthall):
+  - ***Subsystem***: Copter attitude control and navigation

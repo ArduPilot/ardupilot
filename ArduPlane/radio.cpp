@@ -90,18 +90,15 @@ void Plane::init_rc_out_main()
  */
 void Plane::init_rc_out_aux()
 {
-    update_aux();
     SRV_Channels::enable_aux_servos();
 
     SRV_Channels::cork();
     
-    // Initialization of servo outputs
-    SRV_Channels::output_trim_all();
-
     servos_output();
     
     // setup PWM values to send if the FMU firmware dies
-    SRV_Channels::setup_failsafe_trim_all();  
+    // allows any VTOL motors to shut off
+    SRV_Channels::setup_failsafe_trim_all_non_motors();
 }
 
 /*
@@ -239,6 +236,7 @@ void Plane::control_failsafe()
         channel_roll->set_radio_in(channel_roll->get_radio_trim());
         channel_pitch->set_radio_in(channel_pitch->get_radio_trim());
         channel_rudder->set_radio_in(channel_rudder->get_radio_trim());
+        rudder_input = 0;
 
         // note that we don't set channel_throttle->radio_in to radio_trim,
         // as that would cause throttle failsafe to not activate
