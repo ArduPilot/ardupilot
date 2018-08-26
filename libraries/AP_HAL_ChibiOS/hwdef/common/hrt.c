@@ -20,20 +20,43 @@
 #include "hrt.h"
 #include <stdint.h>
 
-static uint64_t timer_base_us;
+static uint64_t timer_base_us64;
+#if CH_CFG_ST_RESOLUTION == 16
+static uint32_t timer_base_us32;
+#endif
 static uint32_t timer_base_ms;
 static volatile systime_t last_systime;
 
+#if CH_CFG_ST_RESOLUTION == 16
 static uint32_t get_systime_us32(void)
 {
     systime_t now = chVTGetSystemTimeX();
     if (now < last_systime) {
-        timer_base_us += TIME_MAX_SYSTIME;
+        uint32_t last_u32 = timer_base_us32;
+        timer_base_us32 += (uint32_t)TIME_MAX_SYSTIME;
+        if (timer_base_us32 < last_u32) {
+            timer_base_us64 += ((uint32_t)-1);
+            timer_base_ms += ((uint32_t)-1)/1000;
+        }
+    }
+    last_systime = now;
+    return timer_base_us32 + (uint32_t)now;
+}
+
+#elif CH_CFG_ST_RESOLUTION == 32
+static uint32_t get_systime_us32(void)
+{
+    systime_t now = chVTGetSystemTimeX();
+    if (now < last_systime) {
+        timer_base_us64 += TIME_MAX_SYSTIME;
         timer_base_ms += TIME_MAX_SYSTIME/1000;
     }
     last_systime = now;
     return now;
 }
+#else
+#error "unsupported timer resolution"
+#endif
 
 /*
   we use chSysGetStatusAndLockX() to prevent an interrupt while
@@ -44,7 +67,7 @@ uint64_t hrt_micros64()
 {
     syssts_t sts = chSysGetStatusAndLockX();
     uint32_t now = get_systime_us32();
-    uint64_t ret = timer_base_us + now;
+    uint64_t ret = timer_base_us64 + now;
     chSysRestoreStatusX(sts);
     return ret;
 }
