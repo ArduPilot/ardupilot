@@ -99,6 +99,16 @@ enum ioevents {
 #define PAGE_REG_SETUP_PWM_RATE_MASK 2
 #define PAGE_REG_SETUP_DEFAULTRATE   3
 #define PAGE_REG_SETUP_ALTRATE       4
+#define PAGE_REG_SETUP_DSM           7
+/* DSM bind states */
+enum {
+    dsm_bind_power_down = 0,
+    dsm_bind_power_up,
+    dsm_bind_set_rx_out,
+    dsm_bind_send_pulses,
+    dsm_bind_reinit_uart
+};
+
 #define PAGE_REG_SETUP_REBOOT_BL    10
 #define PAGE_REG_SETUP_CRC			11
 #define PAGE_REG_SETUP_SBUS_RATE    19
@@ -111,6 +121,24 @@ enum ioevents {
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
+
+// DSM2 Bind Modes (not recommended):
+// Pulses Mode     Protocol Type
+// 3      Internal DSM2     22ms
+// 4      External DSM2     22ms
+// 5      Internal DSM2     11ms
+// 6      External DSM2     11ms
+
+// DSMX Bind Modes:
+// Pulses Mode     Protocol Type
+// 7      Internal DSMx     22ms
+// 8      External DSMx     22ms
+// 9      Internal DSMx     11ms
+// 10     External DSMx     11ms
+
+#define DSM2_BIND_PULSES  3
+#define DSMX_BIND_PULSES  7
+#define DSMX8_BIND_PULSES 9
 
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
@@ -724,6 +752,45 @@ bool AP_IOMCU::healthy(void)
 {
     // for now just check CRC
     return crc_is_ok;
+}
+
+void AP_IOMCU::bind_dsm(uint8_t mode)
+{
+    uint8_t num_pulses;
+    switch (mode) {
+        case 0:
+            num_pulses = DSM2_BIND_PULSES;
+            break;
+        case 1:
+            num_pulses = DSMX_BIND_PULSES;
+            break;
+        default:
+            num_pulses = DSMX8_BIND_PULSES;
+            break;
+    }
+
+    uint16_t dsm_reg;
+    
+    // Turn off power
+    dsm_reg = dsm_bind_power_down;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM, 1, &dsm_reg);
+    hal.scheduler->delay(500);
+    
+    // Turn on power
+    dsm_reg = dsm_bind_set_rx_out;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM, 1, &dsm_reg);
+    dsm_reg = dsm_bind_power_up;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM, 1, &dsm_reg);
+    hal.scheduler->delay(72);
+    
+    // Send out needed number of impulses
+    dsm_reg = dsm_bind_send_pulses | (num_pulses << 4);
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM, 1, &dsm_reg);
+    hal.scheduler->delay(50);
+    
+    // Enable UART
+    dsm_reg = dsm_bind_reinit_uart;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM, 1, &dsm_reg);
 }
 
 #endif // HAL_WITH_IO_MCU
