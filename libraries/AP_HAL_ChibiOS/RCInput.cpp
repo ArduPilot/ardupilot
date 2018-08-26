@@ -168,9 +168,17 @@ void RCInput::_timer_tick(void)
  */
 bool RCInput::rc_bind(int dsmMode)
 {
+#if HAL_WITH_IO_MCU
+    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.bind_dsm(dsmMode);
+    }
+    rcin_mutex.give();
+#endif
+
 #if HAL_USE_ICU == TRUE
     // ask AP_RCProtocol to start a bind
-    rcin_prot.start_bind();
+    rcin_prot.start_bind(dsmMode);
 #endif
     
 #if HAL_RCINPUT_WITH_AP_RADIO
