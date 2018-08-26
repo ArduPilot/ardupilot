@@ -785,6 +785,20 @@ void AP_IOMCU::shutdown(void)
 }
 
 /*
+  request bind on a DSM radio
+ */
+void AP_IOMCU::bind_dsm(uint8_t mode)
+{
+    if (config.protocol_version != IOMCU_PROTOCOL_VERSION ||
+        hal.util->get_soft_armed()) {
+        // only with ChibiOS IO firmware, and disarmed
+        return;
+    }
+    uint16_t reg = mode;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, &reg);
+}
+
+/*
   setup for mixing. This allows fixed wing aircraft to fly in manual
   mode if the FMU dies
  */

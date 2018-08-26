@@ -65,6 +65,9 @@ public:
      */
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
+    // Do DSM receiver binding
+    void bind_dsm(uint8_t mode);
+
     /*
       get servo rail voltage
      */
