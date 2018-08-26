@@ -408,7 +408,7 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount{ahrs, current_loc};
+    AP_Mount camera_mount{current_loc};
 #endif
 
     // AC_Fence library to reduce fly-aways
