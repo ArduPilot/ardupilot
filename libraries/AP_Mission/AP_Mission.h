@@ -365,7 +365,6 @@ public:
     void reset();
 
     /// clear - clears out mission
-    ///     returns true if mission was running so it could not be cleared
     bool clear();
 
     /// truncate - truncate any mission items beyond given index
