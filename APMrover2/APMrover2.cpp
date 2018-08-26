@@ -73,9 +73,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  200),
 #endif
 
-#if OSD_ENABLED == ENABLED
-    SCHED_TASK(publish_osd_info, 1, 10),
-#endif
 
     SCHED_TASK(gcs_failsafe_check,     10,    200),
     SCHED_TASK(fence_check,            10,    200),
@@ -323,16 +320,5 @@ void Rover::update_current_mode(void)
     control_mode->update();
 }
 
-#if OSD_ENABLED == ENABLED
-void Rover::publish_osd_info()
-{
-    AP_OSD::NavInfo nav_info;
-/*    nav_info.wp_distance = auto_state.wp_distance;
-    nav_info.wp_bearing = nav_controller->target_bearing_cd();
-    nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
-    nav_info.wp_number = mission.get_current_nav_index();
-    osd.set_nav_info(nav_info);*/
-}
-#endif
 
 AP_HAL_MAIN_CALLBACKS(&rover);
