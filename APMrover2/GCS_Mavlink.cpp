@@ -365,13 +365,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_wheel_encoder(chan);
         break;
 
-    case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        rover.camera_mount.status_msg(chan);
-#endif  // MOUNT == ENABLED
-        break;
-
     case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         rover.send_fence_status(chan);
@@ -654,36 +647,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
         return MAV_RESULT_ACCEPTED;
 
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_SET_ROI: {
-        // param1 : /* Region of interest mode (not used)*/
-        // param2 : /* MISSION index/ target ID (not used)*/
-        // param3 : /* ROI index (not used)*/
-        // param4 : /* empty */
-        // x : lat
-        // y : lon
-        // z : alt
-        // sanity check location
-        if (!check_latlng(packet.x, packet.y)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location roi_loc;
-        roi_loc.lat = packet.x;
-        roi_loc.lng = packet.y;
-        roi_loc.alt = (int32_t)(packet.z * 100.0f);
-        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-            // switch off the camera tracking if enabled
-            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                rover.camera_mount.set_mode_to_default();
-            }
-        } else {
-            // send the command to the camera mount
-            rover.camera_mount.set_roi_target(roi_loc);
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
-#endif
-
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -696,35 +659,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
-
-#if MOUNT == ENABLED
-        // Sets the region of interest (ROI) for the camera
-    case MAV_CMD_DO_SET_ROI:
-        // sanity check location
-        if (!check_latlng(packet.param5, packet.param6)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location roi_loc;
-        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-            // switch off the camera tracking if enabled
-            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                rover.camera_mount.set_mode_to_default();
-            }
-        } else {
-            // send the command to the camera mount
-            rover.camera_mount.set_roi_target(roi_loc);
-        }
-        return MAV_RESULT_ACCEPTED;
-#endif
-
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_MOUNT_CONTROL:
-        rover.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-        return MAV_RESULT_ACCEPTED;
-#endif
 
     case MAV_CMD_MISSION_START:
         rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
@@ -1193,22 +1127,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 #endif  // HIL_MODE
-
-#if MOUNT == ENABLED
-    // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
-        {
-            rover.camera_mount.configure_msg(msg);
-            break;
-        }
-
-    // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-    case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        {
-            rover.camera_mount.control_msg(msg);
-            break;
-        }
-#endif  // MOUNT == ENABLED
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
