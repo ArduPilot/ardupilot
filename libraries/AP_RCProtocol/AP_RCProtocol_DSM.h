@@ -23,7 +23,7 @@ class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_DSM(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void start_bind(void) override;
+    void start_bind(uint8_t type) override;
     void update(void) override;
 
 private:
@@ -50,5 +50,7 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
-
+    
+    // DSM receiver type
+    uint8_t rcv_type;
 };

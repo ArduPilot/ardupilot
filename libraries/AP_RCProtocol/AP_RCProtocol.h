@@ -48,7 +48,7 @@ public:
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
     bool new_input();
-    void start_bind(void);
+    void start_bind(uint8_t type);
 
 private:
     enum rcprotocol_t _detected_protocol = NONE;

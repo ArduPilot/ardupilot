@@ -31,7 +31,7 @@ public:
     uint8_t num_channels();
 
     // support for receivers that have FC initiated bind support
-    virtual void start_bind(void) {}
+    virtual void start_bind(uint8_t type) {}
 
     // allow for backends that need regular polling
     virtual void update(void) {}

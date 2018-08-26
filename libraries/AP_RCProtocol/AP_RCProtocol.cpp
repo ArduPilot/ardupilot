@@ -120,11 +120,11 @@ uint16_t AP_RCProtocol::read(uint8_t chan)
 /*
   ask for bind start on supported receivers (eg spektrum satellite)
  */
-void AP_RCProtocol::start_bind(void)
+void AP_RCProtocol::start_bind(uint8_t type)
 {
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
-            backend[i]->start_bind();
+            backend[i]->start_bind(type);
         }
     }
 }

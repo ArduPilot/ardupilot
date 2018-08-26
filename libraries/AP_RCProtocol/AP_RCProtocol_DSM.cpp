@@ -32,6 +32,24 @@ extern const AP_HAL::HAL& hal;
 #define DSM_FRAME_SIZE		16		/**<DSM frame size in bytes*/
 #define DSM_FRAME_CHANNELS	7		/**<Max supported DSM channels*/
 
+// DSM2 Bind Modes (not recommended):
+// Pulses Mode     Protocol Type
+// 3      Internal DSM2     22ms
+// 4      External DSM2     22ms
+// 5      Internal DSM2     11ms
+// 6      External DSM2     11ms
+
+// DSMX Bind Modes:
+// Pulses Mode     Protocol Type
+// 7      Internal DSMx     22ms
+// 8      External DSMx     22ms
+// 9      Internal DSMx     11ms
+// 10     External DSMx     11ms
+
+#define DSM2_BIND_PULSES  3
+#define DSMX_BIND_PULSES  7
+#define DSMX8_BIND_PULSES 9
+
 void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
@@ -373,15 +391,16 @@ bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[
     return true;
 }
 
-
 /*
   start bind on DSM satellites
+    0 - DSM2
+    1 - DSMX
  */
-void AP_RCProtocol_DSM::start_bind(void)
+void AP_RCProtocol_DSM::start_bind(uint8_t type)
 {
+    rcv_type = type;
     bind_state = BIND_STATE1;
 }
-
 
 /*
   update function used for bind state machine
@@ -414,9 +433,19 @@ void AP_RCProtocol_DSM::update(void)
     case BIND_STATE3: {
         uint32_t now = AP_HAL::millis();
         if (now - bind_last_ms > 72) {
-            // 9 pulses works with all satellite receivers, and supports the highest
-            // available protocol
-            const uint8_t num_pulses = 9;
+            uint8_t num_pulses;
+            switch (rcv_type) {
+                case 0:
+                    num_pulses = DSM2_BIND_PULSES;
+                    break;
+                case 1:
+                    num_pulses = DSMX_BIND_PULSES;
+                    break;
+                default:
+                    num_pulses = DSMX8_BIND_PULSES;
+                    break;
+            }
+            
             for (uint8_t i=0; i<num_pulses; i++) {
                 hal.scheduler->delay_microseconds(120);
                 hal.gpio->write(HAL_GPIO_SPEKTRUM_RC, 0);
