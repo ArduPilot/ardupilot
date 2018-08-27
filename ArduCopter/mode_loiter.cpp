@@ -120,10 +120,17 @@ void Copter::ModeLoiter::run()
 
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
 #if FRAME_CONFIG == HELI_FRAME
+        if (!motors->get_interlock() && ap.land_complete) {
+            loiter_nav->init_target();
+            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->set_yaw_target_to_current_heading();
+            pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        } else {
         // force descent rate and call position controller
-        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        if (ap.land_complete_maybe) {
-            pos_control->relax_alt_hold_controllers(0.0f);
+            pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+            if (ap.land_complete_maybe) {
+                pos_control->relax_alt_hold_controllers(0.0f);
+            }
         }
 #else
         loiter_nav->init_target();
