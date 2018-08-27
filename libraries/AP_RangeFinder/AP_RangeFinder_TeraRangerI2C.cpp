@@ -160,7 +160,7 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
     uint16_t _distance_cm = 0;
 
     if (collect_raw(_raw_distance) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if(process_raw_measure(_raw_distance, _distance_cm)){
+        if (process_raw_measure(_raw_distance, _distance_cm)){
             accum.sum += _distance_cm;
             accum.count++;
         }
@@ -178,6 +178,7 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
     if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
         if (accum.count > 0) {
             state.distance_cm = accum.sum / accum.count;
+            state.last_reading_ms = AP_HAL::millis();
             accum.sum = 0;
             accum.count = 0;
             update_status();

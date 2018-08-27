@@ -55,6 +55,9 @@ public:
     // in metres relative to the body frame origin
     const Vector3f &get_pos_offset() const { return state.pos_offset; }
 
+    // return system time of last successful read from the sensor (used for DPTH logging)
+    uint32_t last_reading_ms() const { return state.last_reading_ms; }
+
 protected:
 
     // update status based on distance measurement

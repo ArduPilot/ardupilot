@@ -33,7 +33,6 @@ private:
 
     uint16_t distance;
     bool new_distance;
-    uint32_t last_update_ms;
     
     // start a reading
     bool start_reading(void);

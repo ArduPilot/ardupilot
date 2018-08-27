@@ -114,7 +114,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
         // pulse widths in the log
         state.voltage_mv = pwm.pulse_width;
 
-        _last_pulse_time_ms = now;
+        state.last_reading_ms = now;
 
         // setup for scaling in meters per millisecond
         float _distance_cm = pwm.pulse_width * 0.1f * scaling + state.offset;
@@ -162,9 +162,9 @@ void AP_RangeFinder_PX4_PWM::update(void)
        probably dead. Try resetting it. Tests show the sensor takes
        about 0.2s to boot, so 500ms offers some safety margin
     */
-    if (now - _last_pulse_time_ms > 500U && _disable_time_ms == 0) {
+    if (now - state.last_reading_ms > 500U && _disable_time_ms == 0) {
         ioctl(_fd, SENSORIOCRESET, 0);
-        _last_pulse_time_ms = now;
+        state.last_reading_ms = now;
 
         // if a stop pin is configured then disable the sensor for the
         // settle time
@@ -185,7 +185,7 @@ void AP_RangeFinder_PX4_PWM::update(void)
         (now - _disable_time_ms > settle_time_ms)) {
         hal.gpio->write(stop_pin, true);        
         _disable_time_ms = 0;
-        _last_pulse_time_ms = now;
+        state.last_reading_ms = now;
     }
 
     if (count != 0) {
