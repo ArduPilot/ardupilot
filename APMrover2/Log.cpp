@@ -56,7 +56,7 @@ void Rover::Log_Write_Depth()
 
     // get position
     Location loc;
-    if (!rover.ahrs.get_position(loc)) {
+    if (!ahrs.get_position(loc)) {
         return;
     }
 
