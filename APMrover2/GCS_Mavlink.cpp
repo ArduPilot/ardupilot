@@ -264,6 +264,21 @@ void Rover::send_fence_status(mavlink_channel_t chan)
     fence_send_mavlink_status(chan);
 }
 
+void Rover::send_wind(mavlink_channel_t chan)
+{
+    // exit immediately if no wind vane
+    if (!rover.windvane.enabled()) {
+        return;
+    }
+
+    // send wind
+    mavlink_msg_wind_send(
+        chan,
+        rover.windvane.get_absolute_wind_direction_rad(),
+        0,      // no wind speed (yet)
+        0);
+}
+
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
 {
     // send wheel encoder data using rpm message
@@ -347,6 +362,9 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_fence_status(chan);
         break;
 
+    case MSG_WIND:
+        CHECK_PAYLOAD_SIZE(WIND);
+        rover.send_wind(chan);
         break;
 
     case MSG_PID_TUNING:
@@ -492,6 +510,7 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
+    MSG_WIND,
     MSG_RANGEFINDER,
     MSG_SYSTEM_TIME,
     MSG_BATTERY2,
