@@ -88,6 +88,7 @@ class Board:
             '-Wno-unknown-pragmas',
             '-Wno-trigraphs',
             '-Werror=return-type',
+            '-Werror=unused-result',
         ]
 
         if 'clang' in cfg.env.COMPILER_CC:
@@ -134,6 +135,7 @@ class Board:
             '-Werror=return-type',
             '-Werror=switch',
             '-Werror=sign-compare',
+            '-Werror=unused-result',
             '-Wfatal-errors',
             '-Wno-trigraphs',
         ]
