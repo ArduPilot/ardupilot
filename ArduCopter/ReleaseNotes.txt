@@ -1,5 +1,18 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc8 28-Aug-2018
+Changes from 3.6.0-rc7
+1) TeraRanger Tower EVO lidar support added
+2) PCA9685 and NCA5623 LED support added (replacements for Toshiba LED that is becoming end-of-life)
+3) Missions can start with DO_ commands (first NAV command must still be takeoff)
+4) ChibiOS fixes:
+    a) DShot and BLHeli stability improvements
+    b) added OmnibusNanoV6 bootloader
+5) Bug fixes:
+    a) AP_Stat only saves values to eeprom if they change (reduces CPU impact)
+    b) boost throttle respects safety switch
+    c) TradHeli reduce chance of tip-over when landed in Loiter
+------------------------------------------------------------------
 Copter 3.6.0-rc7 01-Aug-2018
 Changes from 3.6.0-rc6
 1) Compass rotation detection during calibration (see COMPASS_AUTO_ROT param)
