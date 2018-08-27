@@ -26,9 +26,10 @@ private:
                                  AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev);
 
     bool measure(void);
-    bool collect(uint16_t &distance_cm);
-    
-    bool init(void);    
+    bool collect_raw(uint16_t &raw_distance);
+    bool process_raw_measure(uint16_t raw_distance, uint16_t &distance_cm);
+
+    bool init(void);
     void timer(void);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 
