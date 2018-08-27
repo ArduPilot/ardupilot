@@ -131,6 +131,12 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
     uint16_t min_tx_buffer = 1024;
     uint16_t min_rx_buffer = 512;
+
+    if (sdef.is_usb) {
+        // give more buffer space for log download on USB
+        min_tx_buffer *= 4;
+    }
+    
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
     // while waiting to write GPS config packets
