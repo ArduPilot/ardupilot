@@ -79,7 +79,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
     // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 42:SmartRTL, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 28:Relay On/Off, 30:Lost Rover Sound, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 42:SmartRTL, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER),
 
@@ -418,6 +418,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case RELAY3:
     case RELAY4:
     case CAMERA_TRIGGER:
+    case LOST_VEHICLE_SOUND:
     case DO_NOTHING:
         break;
     case GRIPPER:
@@ -517,6 +518,21 @@ void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
     }
 }
 
+void RC_Channel::do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag)
+{
+    switch (ch_flag) {
+    case HIGH:
+        AP_Notify::flags.vehicle_lost = true;
+        break;
+    case MIDDLE:
+        // nothing
+        break;
+    case LOW:
+        AP_Notify::flags.vehicle_lost = false;
+        break;
+    }
+}
+
 void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
@@ -543,6 +559,10 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
     case SPRAYER:
         do_aux_function_sprayer(ch_flag);
+        break;
+
+    case LOST_VEHICLE_SOUND:
+        do_aux_function_lost_vehicle_sound(ch_flag);
         break;
 
     default:

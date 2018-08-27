@@ -132,7 +132,7 @@ public:
         RETRACT_MOUNT =       27, // Retract Mount
         RELAY =               28, // Relay pin on/off (only supports first relay)
         LANDING_GEAR =        29, // Landing gear controller
-        LOST_COPTER_SOUND =   30, // Play lost copter sound
+        LOST_VEHICLE_SOUND =  30, // Play lost vehicle sound
         MOTOR_ESTOP =         31, // Emergency Stop Switch
         MOTOR_INTERLOCK =     32, // Motor On/Off switch
         BRAKE =               33, // Brake flight mode
@@ -181,6 +181,7 @@ protected:
 
     void do_aux_function_camera_trigger(const aux_switch_pos_t ch_flag);
     void do_aux_function_gripper(const aux_switch_pos_t ch_flag);
+    void do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const aux_switch_pos_t ch_flag);
 
