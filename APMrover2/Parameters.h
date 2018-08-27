@@ -208,7 +208,7 @@ public:
         k_param_DataFlash = 253,  // Logging Group
 
         // 254,255: reserved
-        };
+    };
 
     AP_Int16    format_version;
 

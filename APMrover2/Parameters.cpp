@@ -651,7 +651,7 @@ void Rover::load_parameters(void)
     }
 
     if (!g.format_version.load() ||
-         g.format_version != Parameters::k_format_version) {
+        g.format_version != Parameters::k_format_version) {
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
         AP_Param::erase_all();
@@ -681,7 +681,8 @@ void Rover::load_parameters(void)
                                       Parameters::k_param_rc_7_old,  Parameters::k_param_rc_8_old,
                                       Parameters::k_param_rc_9_old,  Parameters::k_param_rc_10_old,
                                       Parameters::k_param_rc_11_old, Parameters::k_param_rc_12_old,
-                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old };
+                                      Parameters::k_param_rc_13_old, Parameters::k_param_rc_14_old
+                                    };
     const uint16_t old_aux_chan_mask = 0x3FFA;
     SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, &rcmap);
     hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
@@ -692,7 +693,7 @@ void Rover::load_parameters(void)
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
     AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
-                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON|
-                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
+                                  AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON|
+                                  AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 }

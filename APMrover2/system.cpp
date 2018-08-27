@@ -168,10 +168,10 @@ void Rover::startup_ground(void)
 
     gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
-    #if(GROUND_START_DELAY > 0)
-        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
-        delay(GROUND_START_DELAY * 1000);
-    #endif
+#if(GROUND_START_DELAY > 0)
+    gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
+    delay(GROUND_START_DELAY * 1000);
+#endif
 
     // IMU ground start
     //------------------------
@@ -187,7 +187,7 @@ void Rover::startup_ground(void)
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
+    );
 #endif
 
     // we don't want writes to the serial port to cause us to pause
@@ -217,7 +217,8 @@ void Rover::update_ahrs_flyforward()
             }
             // if throttle over threshold for 2 seconds set flyforward to true
             flyforward = (now - flyforward_start_ms > 2000);
-        } else {
+        }
+        else {
             // reset timer
             flyforward_start_ms = 0;
         }

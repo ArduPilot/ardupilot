@@ -177,7 +177,7 @@ private:
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
-    NavEKF2 EKF2{&ahrs, rangefinder};
+    NavEKF2 EKF2 {&ahrs, rangefinder};
     NavEKF3 EKF3{&ahrs, rangefinder};
     AP_AHRS_NavEKF ahrs{EKF2, EKF3};
 #else
@@ -194,12 +194,12 @@ private:
 
     // Mission library
     AP_Mission mission{ahrs,
-            FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
+                   FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
+                   FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
+                   FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow {ahrs};
 #endif
 
     // RSSI
@@ -217,10 +217,16 @@ private:
 
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
-    GCS_Rover &gcs() { return _gcs; }
+    GCS_Rover &gcs()
+    {
+        return _gcs;
+    }
 
     // RC Channels:
-    RC_Channels_Rover &rc() { return g2.rc_channels; }
+    RC_Channels_Rover &rc()
+    {
+        return g2.rc_channels;
+    }
 
     // relay support
     AP_Relay relay;
@@ -232,7 +238,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera{&relay, MASK_LOG_CAMERA, current_loc, ahrs};
+    AP_Camera camera {&relay, MASK_LOG_CAMERA, current_loc, ahrs};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
@@ -291,15 +297,15 @@ private:
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
-                           FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
-                           _failsafe_priorities};
+                       FUNCTOR_BIND_MEMBER(&Rover::handle_battery_failsafe, void, const char*, const int8_t),
+                       _failsafe_priorities};
 
 #if FRSKY_TELEM_ENABLED == ENABLED
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
 #if DEVO_TELEM_ENABLED == ENABLED
-    AP_DEVO_Telem devo_telemetry{ahrs};
+    AP_DEVO_Telem devo_telemetry {ahrs};
 #endif
 
 #if OSD_ENABLED == ENABLED
@@ -547,14 +553,14 @@ private:
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
-                                                       Failsafe_Action_Terminate,
-                                                       Failsafe_Action_Hold,
-                                                       Failsafe_Action_RTL,
-                                                       Failsafe_Action_SmartRTL_Hold,
-                                                       Failsafe_Action_SmartRTL,
-                                                       Failsafe_Action_None,
-                                                       -1 // the priority list must end with a sentinel of -1
-                                                      };
+        Failsafe_Action_Terminate,
+        Failsafe_Action_Hold,
+        Failsafe_Action_RTL,
+        Failsafe_Action_SmartRTL_Hold,
+        Failsafe_Action_SmartRTL,
+        Failsafe_Action_None,
+        -1 // the priority list must end with a sentinel of -1
+    };
     static_assert(_failsafe_priorities[ARRAY_SIZE(_failsafe_priorities) - 1] == -1,
                   "_failsafe_priorities is missing the sentinel");
 
@@ -575,7 +581,10 @@ public:
     void motor_test_stop();
 
     // frame type
-    uint8_t get_frame_type() { return g2.frame_type.get(); }
+    uint8_t get_frame_type()
+    {
+        return g2.frame_type.get();
+    }
 };
 
 extern const AP_HAL::HAL& hal;
