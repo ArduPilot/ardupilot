@@ -5,7 +5,7 @@
 #include <AP_HAL/AP_HAL_Macros.h>
 #include <AP_HAL/Semaphores.h>
 #include "AP_HAL_PX4_Namespace.h"
-#include <pthread.h>
+#include <nuttx/pthread.h>
 
 class PX4::Semaphore : public AP_HAL::Semaphore {
 public:
