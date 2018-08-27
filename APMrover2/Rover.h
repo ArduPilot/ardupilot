@@ -280,6 +280,9 @@ private:
         uint32_t detected_time_ms;
     } obstacle;
 
+    // range finder last update (used for DPTH logging)
+    uint32_t rangefinder_last_reading_ms;
+
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
