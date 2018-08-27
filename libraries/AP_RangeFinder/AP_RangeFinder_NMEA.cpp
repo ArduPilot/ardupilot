@@ -48,9 +48,9 @@ void AP_RangeFinder_NMEA::update(void)
     uint32_t now = AP_HAL::millis();
     if (get_reading(state.distance_cm)) {
         // update range_valid state based on distance measured
-        _last_reading_ms = now;
+        state.last_reading_ms = now;
         update_status();
-    } else if ((now - _last_reading_ms) > 3000) {
+    } else if ((now - state.last_reading_ms) > 3000) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 }

@@ -87,6 +87,7 @@ public:
         bool     pre_arm_check;         // true if sensor has passed pre-arm checks
         uint16_t pre_arm_distance_min;  // min distance captured during pre-arm checks
         uint16_t pre_arm_distance_max;  // max distance captured during pre-arm checks
+        uint32_t last_reading_ms;       // system time of last successful update from sensor
 
         AP_Int8  type;
         AP_Int8  pin;
@@ -147,6 +148,7 @@ public:
     bool has_data_orient(enum Rotation orientation) const;
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
+    uint32_t last_reading_ms(enum Rotation orientation) const;
 
     /*
       set an externally estimated terrain height. Used to enable power

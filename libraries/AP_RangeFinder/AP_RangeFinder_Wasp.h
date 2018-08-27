@@ -49,7 +49,6 @@ private:
     void parse_response(void);
 
     AP_HAL::UARTDriver *uart;
-    uint32_t last_reading_ms;
     char linebuf[10];
     uint8_t linebuf_len;
     AP_Int16 mavg;
