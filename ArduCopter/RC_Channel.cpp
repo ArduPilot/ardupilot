@@ -366,20 +366,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             }
             break;
 
-        case LOST_COPTER_SOUND:
-            switch (ch_flag) {
-                case HIGH:
-                    AP_Notify::flags.vehicle_lost = true;
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case LOW:
-                    AP_Notify::flags.vehicle_lost = false;
-                    break;
-            }
-            break;
-
         case MOTOR_ESTOP:
             // Turn on Emergency Stop logic when channel is high
             copter.set_motor_emergency_stop(ch_flag == HIGH);
