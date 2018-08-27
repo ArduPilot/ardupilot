@@ -51,3 +51,4 @@ LIBRARIES += AC_Avoidance
 LIBRARIES += AC_AttitudeControl
 LIBRARIES += AP_Devo_Telem
 LIBRARIES += AP_Follow
+LIBRARIES += AP_OSD
