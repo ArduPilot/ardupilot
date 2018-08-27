@@ -521,7 +521,7 @@ class AutoTest(ABC):
                 # yes, exactly equal.
                 if add_to_context:
                     self.context_get().parameters.append((name, old_value))
-                if self.should_fetch_all_for_parameter_change(name.upper()) and value == 1:
+                if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
                     self.fetch_parameters()
                 return
             self.progress("Param fetch returned incorrect value (%s) vs (%s)"
