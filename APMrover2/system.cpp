@@ -78,6 +78,10 @@ void Rover::init_ardupilot()
     devo_telemetry.init(serial_manager);
 #endif
 
+#if OSD_ENABLED == ENABLED
+    osd.init();
+#endif
+
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif
