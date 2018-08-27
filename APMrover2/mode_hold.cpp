@@ -10,6 +10,9 @@ void ModeHold::update()
         rover.balancebot_pitch_control(throttle, rover.arming.is_armed());
     }
 
+    // relax mainsail
+    rover.sailboat_set_mainsail(100);
+
     // hold position - stop motors and center steering
     g2.motors.set_throttle(throttle);
     g2.motors.set_steering(0.0f);

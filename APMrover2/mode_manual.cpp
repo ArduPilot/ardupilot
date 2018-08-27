@@ -18,6 +18,9 @@ void ModeManual::update()
         rover.balancebot_pitch_control(desired_throttle, rover.arming.is_armed());
     }
 
+    // set sailboat mainsail from throttle position
+    rover.sailboat_set_mainsail(desired_throttle);
+
     // copy RC scaled inputs to outputs
     g2.motors.set_throttle(desired_throttle);
     g2.motors.set_steering(desired_steering, false);
