@@ -768,6 +768,7 @@ void AP_RangeFinder_VL53L0X::update(void)
 {
     if (counter > 0) {
         state.distance_cm = sum_mm / (10*counter);
+        state.last_reading_ms = AP_HAL::millis();
         sum_mm = 0;
         counter = 0;
         update_status();

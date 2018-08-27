@@ -910,6 +910,15 @@ const Vector3f &RangeFinder::get_pos_offset_orient(enum Rotation orientation) co
     return backend->get_pos_offset();
 }
 
+uint32_t RangeFinder::last_reading_ms(enum Rotation orientation) const
+{
+    AP_RangeFinder_Backend *backend = find_instance(orientation);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->last_reading_ms();
+}
+
 MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);

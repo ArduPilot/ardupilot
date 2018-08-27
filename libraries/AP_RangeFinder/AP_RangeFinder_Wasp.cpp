@@ -103,7 +103,7 @@ bool AP_RangeFinder_Wasp::get_reading(uint16_t &reading_cm) {
         if (c == '\n') {
             linebuf[linebuf_len] = 0;
             linebuf_len = 0;
-            last_reading_ms = AP_HAL::millis();
+            state.last_reading_ms = AP_HAL::millis();
             if (isalpha(linebuf[0])) {
                 parse_response();
             } else {
@@ -144,7 +144,7 @@ void AP_RangeFinder_Wasp::update(void) {
         set_status(RangeFinder::RangeFinder_NoData);
     }
 
-    if (AP_HAL::millis() - last_reading_ms > 500) {
+    if (AP_HAL::millis() - state.last_reading_ms > 500) {
         // attempt to reconfigure on the assumption this was a bad baud setting
         configuration_state = WASP_CFG_RATE;
     }

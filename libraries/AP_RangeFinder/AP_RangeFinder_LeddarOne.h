@@ -69,7 +69,6 @@ private:
     LeddarOne_Status parse_response(uint8_t &number_detections);
 
     AP_HAL::UARTDriver *uart = nullptr;
-    uint32_t last_reading_ms;
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 
