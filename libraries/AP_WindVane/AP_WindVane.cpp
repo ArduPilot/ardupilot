@@ -105,6 +105,12 @@ AP_WindVane *AP_WindVane::get_instance()
     return _s_instance;
 }
 
+// return true if wind vane is enabled
+bool AP_WindVane::enabled() const
+{
+    return (_type != WINDVANE_NONE);
+}
+
 // Initialize the Wind Vane object and prepare it for use
 void AP_WindVane::init()
 {
