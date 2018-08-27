@@ -41,26 +41,12 @@ public:
     int16_t max_distance_cm() const { return state.max_distance_cm; }
     int16_t min_distance_cm() const { return state.min_distance_cm; }
     int16_t ground_clearance_cm() const { return state.ground_clearance_cm; }
-    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const {
-        if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
-            return MAV_DISTANCE_SENSOR_UNKNOWN;
-        }
-        return _get_mav_distance_sensor_type();
-    }
-    RangeFinder::RangeFinder_Status status() const {
-        if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
-            // turned off at runtime?
-            return RangeFinder::RangeFinder_NotConnected;
-        }
-        return state.status;
-    }
+    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
+    RangeFinder::RangeFinder_Status status() const;
     RangeFinder::RangeFinder_Type type() const { return (RangeFinder::RangeFinder_Type)state.type.get(); }
 
     // true if sensor is returning data
-    bool has_data() const {
-        return ((state.status != RangeFinder::RangeFinder_NotConnected) &&
-                (state.status != RangeFinder::RangeFinder_NoData));
-    }
+    bool has_data() const;
 
     // returns count of consecutive good readings
     uint8_t range_valid_count() const { return state.range_valid_count; }
