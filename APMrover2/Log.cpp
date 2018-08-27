@@ -60,6 +60,13 @@ void Rover::Log_Write_Depth()
         return;
     }
 
+    // check if new sensor reading has arrived
+    uint32_t reading_ms = rangefinder.last_reading_ms(ROTATION_PITCH_270);
+    if (reading_ms == rangefinder_last_reading_ms) {
+        return;
+    }
+    rangefinder_last_reading_ms = reading_ms;
+
     DataFlash.Log_Write("DPTH", "TimeUS,Lat,Lng,Depth",
                         "sDUm", "FGG0", "QLLf",
                         AP_HAL::micros64(),
