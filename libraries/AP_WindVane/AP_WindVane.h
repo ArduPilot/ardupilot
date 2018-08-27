@@ -40,6 +40,9 @@ public:
 
     static AP_WindVane *get_instance();
 
+    // return true if wind vane is enabled
+    bool enabled() const;
+
     // Initialize the Wind Vane object and prepare it for use
     void init();
 
