@@ -72,6 +72,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update_trigger, 50,  200),
 #endif
+
+
     SCHED_TASK(gcs_failsafe_check,     10,    200),
     SCHED_TASK(fence_check,            10,    200),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
@@ -317,5 +319,6 @@ void Rover::update_current_mode(void)
 {
     control_mode->update();
 }
+
 
 AP_HAL_MAIN_CALLBACKS(&rover);
