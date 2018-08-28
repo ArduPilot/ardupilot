@@ -115,7 +115,7 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
         break;
     case LOW:
         if (rover.control_mode == &mode) {
-            rc().reset_mode_switch();
+            RC_Channels::reset_mode_switch();
         }
     }
 }
