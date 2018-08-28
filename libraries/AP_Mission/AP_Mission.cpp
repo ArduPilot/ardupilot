@@ -1554,15 +1554,16 @@ void AP_Mission::advance_current_do_cmd()
 
     // find next do command
     Mission_Command cmd;
-    if (get_next_do_cmd(cmd_index, cmd)) {
-        // set current do command and start it
-        _do_cmd = cmd;
-        _flags.do_cmd_loaded = true;
-        start_command(_do_cmd);
-    }else{
+    if (!get_next_do_cmd(cmd_index, cmd)) {
         // set flag to stop unnecessarily searching for do commands
         _flags.do_cmd_all_done = true;
+        return;
     }
+
+    // set current do command and start it
+    _do_cmd = cmd;
+    _flags.do_cmd_loaded = true;
+    start_command(_do_cmd);
 }
 
 /// get_next_cmd - gets next command found at or after start_index
