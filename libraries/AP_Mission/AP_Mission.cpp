@@ -1552,13 +1552,6 @@ void AP_Mission::advance_current_do_cmd()
         cmd_index = _do_cmd.index + 1;
     }
 
-    // check if we've reached end of mission
-    if (cmd_index >= (unsigned)_cmd_total) {
-        // set flag to stop unnecessarily searching for do commands
-        _flags.do_cmd_all_done = true;
-        return;
-    }
-
     // find next do command
     Mission_Command cmd;
     if (get_next_do_cmd(cmd_index, cmd)) {
