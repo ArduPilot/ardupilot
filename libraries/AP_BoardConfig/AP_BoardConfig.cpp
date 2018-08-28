@@ -132,13 +132,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 
 #if HAL_HAVE_SAFETY_SWITCH
-    // @Param: SAFETYENABLE
-    // @DisplayName: Enable use of safety arming switch
-    // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
+    // @Param: SAFETY_START
+    // @DisplayName: Sets the startup state of the safety switch
+    // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the enabled (safe) state with the light flashing at boot. When set to zero the safety switch will start in the disabled (unsafe) state with the light solid at boot. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
+    AP_GROUPINFO("SAFETY_START",   3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
 #endif
 
 #if AP_FEATURE_SBUS_OUT
