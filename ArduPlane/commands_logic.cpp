@@ -80,7 +80,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         set_mode(RTL, MODE_REASON_UNKNOWN);
-        break;
+    break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
         do_continue_and_change_alt(cmd);
@@ -116,6 +116,11 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_SET_HOME:
         do_set_home(cmd);
+        break;
+    case MAV_CMD_DO_SET_MODE:
+        if (cmd.p1==QLAND){
+            set_mode(QLAND, MODE_REASON_UNKNOWN);
+        }
         break;
 
     case MAV_CMD_DO_SET_SERVO:
@@ -346,6 +351,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
     case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_SET_MODE:
         return true;
 
     default:
