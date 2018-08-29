@@ -23,6 +23,10 @@
 
 #if HAL_USE_PWM == TRUE
 
+#if !STM32_DMA_ADVANCED
+#define DISABLE_DSHOT
+#endif
+
 class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
     void     init();
