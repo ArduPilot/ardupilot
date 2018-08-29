@@ -51,7 +51,22 @@
 #define APM_I2C_PRIORITY        176
 #endif
 
-#define APM_MAIN_THREAD_STACK_SIZE 8192
+#ifndef TIMER_THD_WA_SIZE
+#define TIMER_THD_WA_SIZE   2048
+#endif
+
+#ifndef RCIN_THD_WA_SIZE
+#define RCIN_THD_WA_SIZE    512
+#endif
+
+#ifndef IO_THD_WA_SIZE
+#define IO_THD_WA_SIZE      2048
+#endif
+
+#ifndef STORAGE_THD_WA_SIZE
+#define STORAGE_THD_WA_SIZE 2048
+#endif
+
 
 /* Scheduler implementation: */
 class ChibiOS::Scheduler : public AP_HAL::Scheduler {
