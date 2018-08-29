@@ -42,6 +42,7 @@
 #include "AP_Baro_DPS280.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
+#include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
@@ -168,7 +169,6 @@ AP_Baro *AP_Baro::_instance;
 AP_Baro::AP_Baro()
 {
     _instance = this;
-    
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -399,8 +399,7 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
  */
 #define ADD_BACKEND(backend) \
     do { _add_backend(backend);     \
-       if (_num_drivers == BARO_MAX_DRIVERS || \
-          _num_sensors == BARO_MAX_INSTANCES) { \
+       if (!have_free_backends()) { \
           return; \
        } \
     } while (0)
@@ -425,16 +424,6 @@ void AP_Baro::init(void)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(new AP_Baro_SITL(*this));
     return;
-#endif
-    
-#if HAL_WITH_UAVCAN
-    bool added;
-    do {
-        added = _add_backend(AP_Baro_UAVCAN::probe(*this));
-        if (_num_drivers == BARO_MAX_DRIVERS || _num_sensors == BARO_MAX_INSTANCES) {
-            return;
-        }
-    } while (added);
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -613,6 +602,13 @@ void AP_Baro::init(void)
     _probe_i2c_barometers();
 #endif
     
+#if HAL_WITH_UAVCAN
+    //Detect UAVCAN Modules, try as many times as there are driver slots
+    for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
+        ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
+    }
+#endif    
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
 
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
