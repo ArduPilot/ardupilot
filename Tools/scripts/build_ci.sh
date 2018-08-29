@@ -25,14 +25,6 @@ if [ -z "$CI_BUILD_TARGET" ]; then
     CI_BUILD_TARGET="sitl linux px4-v2"
 fi
 
-if [[ "$CI_BUILD_TARGET" == *"px4"* ]]; then
-    export CCACHE_MAXSIZE="250M"
-elif [[ "$CI_BUILD_TARGET" == "sitltest" ]]; then
-    export CCACHE_MAXSIZE="20M"
-else
-    export CCACHE_MAXSIZE="150M"
-fi
-
 declare -A waf_supported_boards
 
 waf=modules/waf/waf-light
@@ -122,7 +114,7 @@ for t in $CI_BUILD_TARGET; do
             fi
 
             start_time=$(get_time)
-            CCACHE_DISABLE="true" make $t -j$(nproc)
+            make $t -j$(nproc)
             diff_time=$(($(get_time)-$start_time))
             echo -e "\033[32m'make' finished successfully (${diff_time}s)\033[0m"
             popd
