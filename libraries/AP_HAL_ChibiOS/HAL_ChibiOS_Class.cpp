@@ -158,8 +158,9 @@ static void main_loop()
     ChibiOS::I2CBus::clear_all();
 #endif
 
+#if STM32_DMA_ADVANCED
     ChibiOS::Shared_DMA::init();
-
+#endif
     peripheral_power_enable();
         
     hal.uartA->begin(115200);
