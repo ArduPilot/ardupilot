@@ -322,7 +322,7 @@ class chibios(Board):
 
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
-        env.CXXFLAGS += [
+        env.CXXFLAGS += cfg.env.CPU_FLAGS + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
             '-fsingle-precision-constant',
@@ -366,8 +366,6 @@ class chibios(Board):
             '-fno-builtin-puts',
             '-mno-thumb-interwork',
             '-mthumb',
-            '-mfpu=fpv4-sp-d16',
-            '-mfloat-abi=hard',
             '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
             '--specs=nano.specs',
             '-specs=nosys.specs'
@@ -378,7 +376,7 @@ class chibios(Board):
 
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
-        env.LINKFLAGS = [
+        env.LINKFLAGS = cfg.env.CPU_FLAGS + [
             '-Os',
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -391,7 +389,6 @@ class chibios(Board):
             '-u_getpid',
             '-u_errno',
             '-uchThdExit',
-            '-u_printf_float',
             '-fno-common',
             '-nostartfiles',
             '-mno-thumb-interwork',
@@ -401,6 +398,7 @@ class chibios(Board):
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
+            '-Wl,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=%s/ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % (cfg.env.BUILDROOT, cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
         ]
 
         if cfg.env.DEBUG:
@@ -433,8 +431,6 @@ class chibios(Board):
         except Exception:
             cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
             env.HAVE_INTEL_HEX = False
-        
-        cfg.load('chibios')
 
     def build(self, bld):
         super(chibios, self).build(bld)
