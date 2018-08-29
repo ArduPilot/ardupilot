@@ -142,9 +142,15 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-static THD_FUNCTION(main_loop,arg)
+
+static void main_loop()
 {
     daemon_task = chThdGetSelfX();
+
+    /*
+      switch to high priority for main loop
+     */
+    chThdSetPriority(APM_MAIN_PRIORITY);
 
 #ifdef HAL_I2C_CLEAR_BUS
     // Clear all I2C Buses. This can be needed on some boards which
@@ -237,13 +243,8 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     assert(callbacks);
     g_callbacks = callbacks;
 
-    void *main_thread_wa = hal.util->malloc_type(THD_WORKING_AREA_SIZE(APM_MAIN_THREAD_STACK_SIZE), AP_HAL::Util::MEM_FAST);
-    chThdCreateStatic(main_thread_wa,
-                      APM_MAIN_THREAD_STACK_SIZE,
-                      APM_MAIN_PRIORITY,     /* Initial priority.    */
-                      main_loop,             /* Thread function.     */
-                      nullptr);              /* Thread parameter.    */
-    chThdExit(0);
+    //Takeover main
+    main_loop();
 }
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
