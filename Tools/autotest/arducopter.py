@@ -534,7 +534,7 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(2, 1475)
                 # disable fence
                 self.set_parameter("FENCE_ENABLE", 0)
-            if alt <= 1 and home_distance < 10:
+            if (alt <= 1 and home_distance < 10) or (not self.armed() and home_distance < 10):
                 # reduce throttle
                 self.set_rc(3, 1000)
                 self.mavproxy.send('switch 2\n')  # land mode
