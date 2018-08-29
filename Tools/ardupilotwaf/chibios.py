@@ -335,6 +335,6 @@ def build(bld):
 
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
-    wraplist = ['strerror_r', 'fclose', 'freopen', 'fread']
+    wraplist = ['strerror_r', 'fclose', 'freopen', 'fread', 'fprintf']
     for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
