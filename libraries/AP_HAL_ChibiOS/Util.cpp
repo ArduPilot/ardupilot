@@ -182,6 +182,8 @@ uint64_t Util::get_hw_rtc() const
     return stm32_get_utc_usec();
 }
 
+#ifndef HAL_NO_FLASH_SUPPORT
+
 bool Util::flash_bootloader()
 {
     uint32_t fw_size;
@@ -228,6 +230,7 @@ bool Util::flash_bootloader()
     free(fw);
     return false;
 }
+#endif //#ifndef HAL_NO_FLASH_SUPPORT
 
 /*
   display system identifer - board type and serial number
