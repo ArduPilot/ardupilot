@@ -39,11 +39,14 @@
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
-THD_WORKING_AREA(_timer_thread_wa, 2048);
-THD_WORKING_AREA(_rcin_thread_wa, 512);
-THD_WORKING_AREA(_io_thread_wa, 2048);
-THD_WORKING_AREA(_storage_thread_wa, 2048);
-
+THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
+THD_WORKING_AREA(_rcin_thread_wa, RCIN_THD_WA_SIZE);
+#ifndef HAL_USE_EMPTY_IO
+THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
+#endif
+#ifndef HAL_USE_EMPTY_STORAGE
+THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
+#endif
 Scheduler::Scheduler()
 {
 }
@@ -65,20 +68,24 @@ void Scheduler::init()
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
-
+#ifndef HAL_USE_EMPTY_IO
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
                      sizeof(_io_thread_wa),
                      APM_IO_PRIORITY,        /* Initial priority.      */
                      _io_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
+#endif
 
+#ifndef HAL_USE_EMPTY_STORAGE
     // the storage thread runs at just above IO priority
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
                      _storage_thread,             /* Thread function.       */
                      this);                  /* Thread parameter.      */
+#endif
+
 }
 
 
@@ -209,14 +216,18 @@ void Scheduler::reboot(bool hold_in_bootloader)
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
 
+#ifndef NO_DATAFLASH
     //stop logging
     DataFlash_Class::instance()->StopLogging();
 
     // stop sdcard driver, if active
     sdcard_stop();
+#endif
 
+#if defined(HAL_USE_RTC) && HAL_USE_RTC
     // setup RTC for fast reboot
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
+#endif
 
     // disable all interrupt sources
     port_disable();
