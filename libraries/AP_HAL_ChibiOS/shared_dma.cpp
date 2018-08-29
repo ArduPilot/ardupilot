@@ -20,7 +20,7 @@
   code to handle sharing of DMA channels between peripherals
  */
 
-#if CH_CFG_USE_SEMAPHORES == TRUE
+#if CH_CFG_USE_SEMAPHORES == TRUE && STM32_DMA_ADVANCED
 
 using namespace ChibiOS;
 
@@ -186,4 +186,4 @@ void Shared_DMA::lock_all(void)
     }
 }
 
-#endif // CH_CFG_USE_SEMAPHORES
+#endif // CH_CFG_USE_SEMAPHORES && STM32_DMA_ADVANCED
