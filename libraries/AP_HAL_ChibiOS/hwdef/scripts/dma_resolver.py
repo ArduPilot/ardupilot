@@ -104,7 +104,10 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
 
     try:
         lib = importlib.import_module(mcu_type)
-        dma_map = lib.DMA_Map
+        if hasattr(lib, "DMA_Map"):
+            dma_map = lib.DMA_Map
+        else:
+            return
     except ImportError:
         print("Unable to find module for MCU %s" % mcu_type)
         sys.exit(1)
