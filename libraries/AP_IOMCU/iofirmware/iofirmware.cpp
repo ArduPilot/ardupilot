@@ -141,7 +141,7 @@ void AP_IOMCU_FW::init()
 
 void AP_IOMCU_FW::update()
 {
-    eventmask_t mask = chEvtWaitAnyTimeout(~0, MS2ST(1));
+    eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
 
     if (do_reboot && (AP_HAL::millis() > reboot_time)) {
         hal.scheduler->reboot(true);
