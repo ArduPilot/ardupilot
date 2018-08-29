@@ -52,4 +52,5 @@ else
 # _fdm_input_step sees ArduPilot has no parent and kills ArduPilot!
   ( : ; "$cmd" $* &>"$filename" < /dev/null ) &
 fi
+sleep 1
 exit 0

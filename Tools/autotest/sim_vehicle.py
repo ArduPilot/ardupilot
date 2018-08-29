@@ -499,6 +499,8 @@ def run_in_terminal_window(autotest, name, cmd):
             progress("Cannot find %s process terminal" % name)
     else:
         p = subprocess.Popen(runme)
+        if under_macos():
+            p.wait()
 
 
 tracker_uarta = None  # blemish
