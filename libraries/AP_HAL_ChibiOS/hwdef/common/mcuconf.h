@@ -36,6 +36,9 @@
 #include "hwdef.h"
 
 #pragma once
+#ifdef STM32F100_MCUCONF
+#include "stm32f1_mcuconf.h"
+#else
 /*
  * STM32F4xx drivers configuration.
  * The following settings override the default settings present in
@@ -384,3 +387,4 @@
  */
 #define STM32_WDG_USE_IWDG                  FALSE
 
+#endif //!STM32F100_MCUCONF

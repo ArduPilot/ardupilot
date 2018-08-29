@@ -388,7 +388,7 @@ int free_file_descriptor ( int fileno );
 int new_file_descriptor ( void );
 int posix_fopen_modes_to_open ( const char *mode );
 
-int fprintf(FILE *fp, const char *format, ...);
+int __wrap_fprintf(FILE *fp, const char *format, ...);
 
 #ifdef __cplusplus
 }
