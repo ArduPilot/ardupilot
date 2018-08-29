@@ -2536,7 +2536,7 @@ static void _fprintf_putc(struct _printf_t *p, char ch)
 /// @return size of printed result
 
 int
-fprintf(FILE *fp, const char *fmt, ...)
+__wrap_fprintf(FILE *fp, const char *fmt, ...)
 {
     va_list va;
     char* buf;

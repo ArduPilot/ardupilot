@@ -33,6 +33,22 @@
 /*===========================================================================*/
 
 /**
+ * @brief   STM32 GPIO static initialization data.
+ */
+#ifdef STM32F100_MCUCONF
+
+const PALConfig pal_default_config =
+{
+  {VAL_GPIOA_ODR, VAL_GPIOA_CRL, VAL_GPIOA_CRH},
+  {VAL_GPIOB_ODR, VAL_GPIOB_CRL, VAL_GPIOB_CRH},
+  {VAL_GPIOC_ODR, VAL_GPIOC_CRL, VAL_GPIOC_CRH},
+  {VAL_GPIOD_ODR, VAL_GPIOD_CRL, VAL_GPIOD_CRH},
+  {VAL_GPIOE_ODR, VAL_GPIOE_CRL, VAL_GPIOE_CRH},
+};
+
+#else //Other than STM32F1 series
+
+/**
  * @brief   Type of STM32 GPIO port setup.
  */
 typedef struct {
@@ -192,13 +208,17 @@ static void stm32_gpio_init(void) {
 #endif
 }
 
+#endif //!STM32F100_MCUCONF
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
  *          and before any other initialization.
  */
 void __early_init(void) {
+#ifndef STM32F100_MCUCONF
   stm32_gpio_init();
+#endif
   stm32_clock_init();
 }
 

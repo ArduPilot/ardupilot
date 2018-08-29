@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -g -fomit-frame-pointer -falign-functions=16  -DCHPRINTF_USE_FLOAT=1
+  USE_OPT = -Os -g -fomit-frame-pointer -falign-functions=16
 endif
 
 # C specific options here (added to USE_OPT).
@@ -171,8 +171,6 @@ INCDIR = $(CHIBIOS)/os/license \
 # Compiler settings
 #
 
-MCU  = cortex-m4
-
 #TRGT = arm-elf-
 TRGT = arm-none-eabi-
 CC   = $(TRGT)gcc
@@ -211,7 +209,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
+UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
 
 ifeq ($(ENABLE_ASSERTS),yes)
  UDEFS += -DHAL_CHIBIOS_ENABLE_ASSERTS
