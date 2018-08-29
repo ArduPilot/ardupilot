@@ -364,8 +364,14 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # raise throttle slightly to avoid hitting the ground
-        self.set_rc(3, 1800)
-        self.wait_altitude(20, 25, relative=True)
+        pos = self.mav.location(relative_alt=True)
+        if pos.alt > 25:
+            self.set_rc(3, 1300)
+            self.wait_altitude(20, 25, relative=True)
+        if pos.alt < 20:
+            self.set_rc(3, 1800)
+            self.wait_altitude(20, 25, relative=True)
+        self.hover()
 
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
