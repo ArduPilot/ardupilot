@@ -23,7 +23,7 @@
 #if HAL_USE_ICU == TRUE
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
-#define MAX_SIGNAL_TRANSITIONS 512
+#define MAX_SIGNAL_TRANSITIONS 256
 #define DEFAULT_BOUNCE_BUF_SIZE 32
 
 class ChibiOS::SoftSigReader {
