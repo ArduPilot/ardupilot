@@ -140,7 +140,8 @@ float AP_WindVane::get_apparent_wind_direction_rad()
         {   // assume head to wind at home locaiton, apparent wind angle must be calculated
             float bearing = _home_heading;
             apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // this is a approximation as we are not considering boat speed and wind speed
-        }   break;
+            break;
+        }
     }
 
     // make sure between 0 and 2pi
