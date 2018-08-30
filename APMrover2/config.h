@@ -137,10 +137,6 @@
   #define CRUISE_SPEED    2  // in m/s
 #endif
 
-#ifndef TURN_GAIN
-  #define TURN_GAIN       5
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Dataflash logging control
 //
