@@ -63,9 +63,16 @@ public:
 
 private:
 
-    static AP_WindVane *_s_instance;
+    // read the bearing value from an analog pin - returns radians
+    float read_analog();
 
-    // Wind Vane parameters
+    // read the bearing value from a PWM value on a RC channel - returns radians
+    float read_PWM_bearing();
+    
+    // Convert from apparent wind angle to true wind absolute angle 
+    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed); 
+    
+    // parameters
     AP_Int8 _type;             // type of windvane being used
     AP_Int8 _rc_in_no;         // RC inpout chanel to use
     AP_Int8 _analog_pin_no;    // analog pin connected to sensor
@@ -78,16 +85,6 @@ private:
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
-
-    // read the bearing value from an analog pin - returns radians
-    float read_analog();
-
-    // read the bearing value from a PWM value on a RC channel - returns radians
-    float read_PWM_bearing();
-    
-    // Convert from apparent wind angle to true wind absolute angle 
-    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed); 
-
 };
 
 namespace AP {

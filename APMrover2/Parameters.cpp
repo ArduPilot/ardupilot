@@ -574,7 +574,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:Reverse to target point,1:Always face bow to target point
     // @User: Standard
     AP_GROUPINFO("LOIT_TYPE", 25, ParametersG2, loit_type, 0),
-  
+
     // @Group: SPRAYER_
     // @Path: ../libraries/AC_Sprayer/AC_Sprayer.cpp
     AP_SUBGROUPINFO(sprayer, "SPRAY_", 26, ParametersG2, AC_Sprayer),
