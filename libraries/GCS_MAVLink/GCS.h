@@ -254,7 +254,6 @@ protected:
     virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
     virtual AP_Mission *get_mission() = 0;
     virtual AP_Rally *get_rally() const = 0;
-    virtual class AP_Camera *get_camera() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
     virtual bool set_mode(uint8_t mode) = 0;
