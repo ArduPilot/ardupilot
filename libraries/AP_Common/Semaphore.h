@@ -14,8 +14,6 @@
  */
 #pragma once
 
-#pragma once
-
 /*
   a method to make semaphores less error prone. The WITH_SEMAPHORE()
   macro will block forever for a semaphore, and will automatically
@@ -28,11 +26,16 @@
 
   The WITH_SEMAPHORE() macro can be used with either type of semaphore
  */
+
+namespace AP_HAL {
+class Semaphore;
+}
+
 class WithSemaphore {
 public:
-    WithSemaphore(HAL_Semaphore &mtx) :
-    _mtx(mtx)
-    {
+    WithSemaphore(AP_HAL::Semaphore *mtx) : WithSemaphore(*mtx) { }
+
+    WithSemaphore(AP_HAL::Semaphore &mtx) : _mtx(mtx) {
         _mtx.take_blocking();
     }
 
@@ -40,7 +43,7 @@ public:
         _mtx.give();
     }
 private:
-    HAL_Semaphore &_mtx;
+    AP_HAL::Semaphore &_mtx;
 };
 
 #define WITH_SEMAPHORE(sem) WithSemaphore _getsem(sem)
