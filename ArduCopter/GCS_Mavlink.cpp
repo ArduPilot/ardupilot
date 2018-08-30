@@ -1555,15 +1555,6 @@ AP_Mission *GCS_MAVLINK_Copter::get_mission()
 #endif
 }
 
-AP_Camera *GCS_MAVLINK_Copter::get_camera() const
-{
-#if CAMERA == ENABLED
-    return &copter.camera;
-#else
-    return nullptr;
-#endif
-}
-
 AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
