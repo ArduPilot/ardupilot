@@ -164,9 +164,9 @@ void Rover::Log_Write_Sail()
     // get wind direction
     float wind_dir_abs = 0.0f;
     float wind_dir_rel = 0.0f;
-    if (rover.windvane.enabled()) {
-        wind_dir_abs = degrees(windvane.get_absolute_wind_direction_rad());
-        wind_dir_rel = degrees(windvane.get_apparent_wind_direction_rad());
+    if (rover.g2.windvane.enabled()) {
+        wind_dir_abs = degrees(g2.windvane.get_absolute_wind_direction_rad());
+        wind_dir_rel = degrees(g2.windvane.get_apparent_wind_direction_rad());
     }
 
     DataFlash.Log_Write("SAIL", "TimeUS,WindDirAbs,WindDirRel,SailOut",

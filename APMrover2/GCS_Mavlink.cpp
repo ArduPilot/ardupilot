@@ -267,14 +267,14 @@ void Rover::send_fence_status(mavlink_channel_t chan)
 void Rover::send_wind(mavlink_channel_t chan)
 {
     // exit immediately if no wind vane
-    if (!rover.windvane.enabled()) {
+    if (!rover.g2.windvane.enabled()) {
         return;
     }
 
     // send wind
     mavlink_msg_wind_send(
         chan,
-        rover.windvane.get_absolute_wind_direction_rad(),
+        rover.g2.windvane.get_absolute_wind_direction_rad(),
         0,      // no wind speed (yet)
         0);
 }

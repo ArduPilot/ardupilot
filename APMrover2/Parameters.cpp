@@ -409,10 +409,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     GOBJECT(button, "BTN_",  AP_Button),
 
-    // @Group: WNDVN_
-    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
-    GOBJECT(windvane, "WNDVN_",  AP_WindVane),
-
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -595,6 +591,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(rally, "RALLY_", 28, ParametersG2, AP_Rally_Rover),
 #endif
 
+    // @Group: WNDVN_
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    AP_SUBGROUPINFO(windvane, "WNDVN_", 29, ParametersG2, AP_WindVane),
+
     // @Param: SAIL_ANGLE_MIN
     // @DisplayName: Sail min angle
     // @Description: mainsheet tight, angle between centerline and boom
@@ -653,7 +653,8 @@ ParametersG2::ParametersG2(void)
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
-    rally(rover.ahrs)
+    rally(rover.ahrs),
+    windvane()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
