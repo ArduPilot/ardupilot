@@ -1254,11 +1254,6 @@ void Sub::gcs_update()
     gcs().update();
 }
 
-Compass *GCS_MAVLINK_Sub::get_compass() const
-{
-    return &sub.compass;
-}
-
 AP_Mission *GCS_MAVLINK_Sub::get_mission()
 {
     return &sub.mission;
