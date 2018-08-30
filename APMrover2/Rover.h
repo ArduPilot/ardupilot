@@ -173,7 +173,6 @@ private:
     AP_InertialSensor ins;
     RangeFinder rangefinder{serial_manager, ROTATION_NONE};
     AP_Button button;
-    AP_WindVane windvane;
 
     // flight modes convenience array
     AP_Int8 *modes;

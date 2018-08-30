@@ -409,10 +409,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     GOBJECT(button, "BTN_",  AP_Button),
 
-    // @Group: WNDVN_
-    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
-    GOBJECT(windvane, "WNDVN_",  AP_WindVane),
-
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -603,6 +599,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("SIMPLE_TYPE", 29, ParametersG2, simple_type, 0),
 
+    // @Group: WNDVN_
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    AP_SUBGROUPINFO(windvane, "WNDVN_", 30, ParametersG2, AP_WindVane),
+
     // @Param: SAIL_ANGLE_MIN
     // @DisplayName: Sail min angle
     // @Description: mainsheet tight, angle between centerline and boom
@@ -610,7 +610,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_ANGLE_MIN", 30, ParametersG2, sail_angle_min, 0),
+    AP_GROUPINFO("SAIL_ANGLE_MIN", 31, ParametersG2, sail_angle_min, 0),
 
     // @Param: SAIL_ANGLE_MAX
     // @DisplayName: Sail max angle
@@ -619,7 +619,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_ANGLE_MAX", 31, ParametersG2, sail_angle_max, 90),
+    AP_GROUPINFO("SAIL_ANGLE_MAX", 32, ParametersG2, sail_angle_max, 90),
 
     // @Param: SAIL_ANGLE_IDEAL
     // @DisplayName: Sail ideal angle
@@ -628,7 +628,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_ANGLE_IDEAL", 32, ParametersG2, sail_angle_ideal, 5),
+    AP_GROUPINFO("SAIL_ANGLE_IDEAL", 33, ParametersG2, sail_angle_ideal, 5),
 
     AP_GROUPEND
 };
@@ -661,7 +661,8 @@ ParametersG2::ParametersG2(void)
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
-    rally(rover.ahrs)
+    rally(rover.ahrs),
+    windvane()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

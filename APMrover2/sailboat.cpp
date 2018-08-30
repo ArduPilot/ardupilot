@@ -46,7 +46,7 @@ void Rover::sailboat_update_mainsail()
     }
 
     // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no dirence so take abs
-    float wind_dir_apparent = fabsf(windvane.get_apparent_wind_direction_rad());
+    float wind_dir_apparent = fabsf(g2.windvane.get_apparent_wind_direction_rad());
 
     // set the main sail to the ideal angle to the wind
     float mainsail_angle = wind_dir_apparent - g2.sail_angle_ideal;

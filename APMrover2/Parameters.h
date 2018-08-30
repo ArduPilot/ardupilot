@@ -204,7 +204,6 @@ public:
         k_param_notify,
         k_param_button,
         k_param_osd,
-        k_param_windvane,
 
         k_param_DataFlash = 253,  // Logging Group
 
@@ -376,6 +375,9 @@ public:
     AP_Float sail_angle_min;
     AP_Float sail_angle_max;
     AP_Float sail_angle_ideal;
+
+    // windvane
+    AP_WindVane windvane;
 };
 
 extern const AP_Param::Info var_info[];
