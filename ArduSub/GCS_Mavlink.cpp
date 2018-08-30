@@ -1259,15 +1259,6 @@ AP_Mission *GCS_MAVLINK_Sub::get_mission()
     return &sub.mission;
 }
 
-AP_Camera *GCS_MAVLINK_Sub::get_camera() const
-{
-#if CAMERA == ENABLED
-    return &sub.camera;
-#else
-    return nullptr;
-#endif
-}
-
 AP_Rally *GCS_MAVLINK_Sub::get_rally() const
 {
 #if AC_RALLY == ENABLED
