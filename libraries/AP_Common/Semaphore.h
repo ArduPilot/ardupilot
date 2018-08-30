@@ -46,5 +46,5 @@ private:
     AP_HAL::Semaphore &_mtx;
 };
 
-#define WITH_SEMAPHORE(sem) WithSemaphore _getsem(sem)
+#define WITH_SEMAPHORE(sem) WithSemaphore _getsem ## __UNIQ__(sem)
 
