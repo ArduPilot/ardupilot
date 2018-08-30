@@ -2023,7 +2023,7 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t *msg)
 
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
 {
-    AP_Camera *camera = get_camera();
+    AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -2316,7 +2316,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
         {
-            AP_Camera *camera = get_camera();
+            AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
                 return;
             }
@@ -3018,7 +3018,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_CAMERA_FEEDBACK:
         {
-            AP_Camera *camera = get_camera();
+            AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
                 break;
             }
