@@ -1305,6 +1305,15 @@ AP_Mission *GCS_MAVLINK_Rover::get_mission()
     return &rover.mission;
 }
 
+AP_Rally *GCS_MAVLINK_Rover::get_rally() const
+{
+#if AC_RALLY == ENABLED
+    return &rover.rally;
+#else
+    return nullptr;
+#endif
+}
+
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
     Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);

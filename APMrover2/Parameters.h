@@ -54,6 +54,7 @@ public:
         k_param_serial0_baud,   // deprecated, can be deleted
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
+        k_param_rally,
 
         // 97: RSSI
         k_param_rssi = 97,
