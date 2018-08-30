@@ -1555,11 +1555,6 @@ AP_Mission *GCS_MAVLINK_Copter::get_mission()
 #endif
 }
 
-Compass *GCS_MAVLINK_Copter::get_compass() const
-{
-    return &copter.compass;
-}
-
 AP_Camera *GCS_MAVLINK_Copter::get_camera() const
 {
 #if CAMERA == ENABLED
