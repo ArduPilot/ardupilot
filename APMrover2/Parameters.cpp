@@ -356,12 +356,6 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera_mount,           "MNT",  AP_Mount),
 #endif
 
-#if AC_RALLY == ENABLED
-    // @Group: RALLY_
-    // @Path: AP_Rally.cpp,../libraries/AP_Rally/AP_Rally.cpp
-    GOBJECT(rally,      "RALLY_",   AP_Rally_Rover),
-#endif
-
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming),
@@ -591,6 +585,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_WheelEncoder/AP_WheelRateControl.cpp
     AP_SUBGROUPINFO(wheel_rate_control, "WRC", 27, ParametersG2, AP_WheelRateControl),
 
+#if AC_RALLY == ENABLED
+    // @Group: RALLY_
+    // @Path: AP_Rally.cpp,../libraries/AP_Rally/AP_Rally.cpp
+    AP_SUBGROUPINFO(rally, "RALLY_", 28, ParametersG2, AP_Rally_Rover),
+#endif
+
     AP_GROUPEND
 };
 
@@ -621,7 +621,8 @@ ParametersG2::ParametersG2(void)
     fence(rover.ahrs),
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
-    follow()
+    follow(),
+    rally(rover.ahrs)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

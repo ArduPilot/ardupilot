@@ -1308,7 +1308,7 @@ AP_Mission *GCS_MAVLINK_Rover::get_mission()
 AP_Rally *GCS_MAVLINK_Rover::get_rally() const
 {
 #if AC_RALLY == ENABLED
-    return &rover.rally;
+    return &rover.g2.rally;
 #else
     return nullptr;
 #endif

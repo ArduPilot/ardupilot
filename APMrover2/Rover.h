@@ -242,9 +242,6 @@ private:
     AP_Mount camera_mount{ahrs, current_loc};
 #endif
 
-    // Rally library
-    AP_Rally_Rover rally{ahrs};
-
     // true if initialisation has completed
     bool initialised;
 
