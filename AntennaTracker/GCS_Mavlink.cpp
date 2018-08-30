@@ -609,11 +609,6 @@ void Tracker::gcs_retry_deferred(void)
     gcs().retry_deferred();
 }
 
-Compass *GCS_MAVLINK_Tracker::get_compass() const
-{
-    return &tracker.compass;
-}
-
 /*
   set_mode() wrapper for MAVLink SET_MODE
  */
