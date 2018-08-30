@@ -16,7 +16,6 @@ protected:
 
     AP_Mission *get_mission() override;
     AP_Rally *get_rally() const override;
-    AP_Camera *get_camera() const override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
 
