@@ -194,10 +194,10 @@ void AP_MotorsUGV::setup_motors()
 
     case FRAME_TYPE_OMNIX:
         _motors_num = 4,
-        add_motor(0, -1.0f, 1.0f, 1.0f);
-        add_motor(1, -1.0f, -1.0f, -1.0f);
-        add_motor(2, 1.0f, -1.0f, 1.0f);
-        add_motor(3, 1.0f, 1.0f, -1.0f);
+        add_motor(0, 1.0f, -1.0f, -1.0f);
+        add_motor(1, 1.0f, -1.0f, 1.0f);
+        add_motor(2, 1.0f, 1.0f, -1.0f);
+        add_motor(3, 1.0f, 1.0f, 1.0f);
         break;
 
     case FRAME_TYPE_OMNIPLUS:
