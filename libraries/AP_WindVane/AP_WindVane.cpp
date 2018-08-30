@@ -125,10 +125,10 @@ float AP_WindVane::get_apparent_wind_direction_rad()
     float apparent_angle = 0.0f;  
 
     switch (_type) {
+        case WindVaneType::WINDVANE_HOME_HEADING:
         case WindVaneType::WINDVANE_PWM_PIN:
-        {   // RC input, apparent wind angle must be calculated
-            float bearing = read_PWM_bearing();
-            apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // This is a approximation as we are not considering boat speed and wind speed
+        { 
+            apparent_angle = get_absolute_wind_direction_rad() - AP::ahrs().yaw; // This is a approximation as we are not considering boat speed and wind speed
             break;
         }
         case WindVaneType::WINDVANE_ANALOG_PIN:
@@ -136,19 +136,11 @@ float AP_WindVane::get_apparent_wind_direction_rad()
             apparent_angle = read_analog();
             break;
         }
-        default:
-        {   // assume head to wind at home locaiton, apparent wind angle must be calculated
-            float bearing = _home_heading;
-            apparent_angle = fabsf(wrap_PI(AP::ahrs().yaw - bearing)); // this is a approximation as we are not considering boat speed and wind speed
-            break;
-        }
+
     }
 
-    // make sure between 0 and 2pi
-    apparent_angle = fabsf(wrap_PI(apparent_angle));
-
-    // Set to +- 180 to make symmetrical, + is wind over stbd side, - is wind over port side
-    apparent_angle = apparent_angle - radians(180);
+    // make sure between -pi and pi
+    apparent_angle = wrap_PI(apparent_angle);
 
     return apparent_angle;
 }
@@ -162,17 +154,18 @@ float AP_WindVane::get_absolute_wind_direction_rad()
 
     // PWM and home location directly read absolute bearing
     switch (_type) {
-        case WindVaneType::WINDVANE_PWM_PIN:
-        {
-            bearing = read_PWM_bearing();
-            return bearing;
-        }
-        case WindVaneType::WINDVANE_NONE:
+        case WindVaneType::WINDVANE_HOME_HEADING:
         {
             bearing =  _home_heading;
             return bearing;
         }
-        default:
+        case WindVaneType::WINDVANE_PWM_PIN:
+        {
+            bearing = read_PWM_bearing(); // read bearing from pwm and offset home bearing by that much
+            bearing = wrap_PI(bearing + _home_heading);
+            return bearing;
+        }
+        case WindVaneType::WINDVANE_ANALOG_PIN:
         {   // get apparent wind as read by sensor
             apparent_angle = get_apparent_wind_direction_rad();
             break;
@@ -180,11 +173,11 @@ float AP_WindVane::get_absolute_wind_direction_rad()
     }
 
     // convert from apparent
-    // bearing = apparent_to_absolute(apparent_angle, wind_speed, heading, ground_speed)
-    bearing = apparent_to_absolute(apparent_angle, 10.0f, 0.0f, 5.0f);
+    // bearing = apparent_to_absolute(apparent_angle, wind_speed)
+    bearing = apparent_to_absolute(apparent_angle, 10.0f);
 
-    // make sure between 0 and 2pi
-    bearing = fabsf(wrap_PI(bearing));
+    // make sure between -pi and pi
+    bearing = wrap_PI(bearing);
 
     return bearing;
 }
@@ -212,26 +205,29 @@ float AP_WindVane::read_analog()
     float bearing_offset = (_analog_volt_head - _analog_volt_min)/(_analog_volt_max-_analog_volt_min);\
     float bearing = (voltage_ratio + bearing_offset) * radians(360);
 
-    bearing = fabsf(wrap_PI(bearing));
+    bearing = wrap_PI(bearing);
     return bearing;
 }
 
-// read the bearing value from a PWM value on a RC channel
+// read the bearing value from a PWM value on a RC channel (+- 180deg in radians)
 float AP_WindVane::read_PWM_bearing()
 {
     RC_Channel *ch = rc().channel(_rc_in_no-1);
     if (ch == nullptr) {
         return 0.0f;
     }
-    float bearing = ch->norm_input() * radians(360);
+    float bearing = ch->norm_input() * radians(180);
     return bearing;
 }
 
 // convert from apparent wind angle to true wind absolute angle
-float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed)
+float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_wind_speed)
 {
     // https://en.wikipedia.org/wiki/Apparent_wind
     float bearing = 0.0f;
+    
+    float heading =  AP::ahrs().yaw;
+    float ground_speed = 0.0f;//AP::ahrs().groundspeed;
 
     // Calculate true wind speed (possibly put this in another function somewhere)
     float true_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(apparent_angle));
@@ -245,7 +241,7 @@ float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_win
     }
 
     // make sure between 0 and 2pi
-    bearing = fabsf(wrap_PI(bearing));
+    bearing = wrap_PI(heading + bearing);
     return bearing;    
 }
 

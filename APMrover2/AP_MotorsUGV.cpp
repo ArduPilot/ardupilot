@@ -284,7 +284,12 @@ void AP_MotorsUGV::set_lateral(float lateral)
 // set mainsail input as a value from 0 to 100
 void AP_MotorsUGV::set_mainsail(float mainsail)
 {
-    _mainsail = mainsail;
+    // if disarmed sheet out 
+    if (!hal.util->get_soft_armed()) {
+        _mainsail = 100;
+    } else { 
+        _mainsail = mainsail;
+    }
 }
 
 // get slew limited throttle
@@ -482,8 +487,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         }
         return false;
     }
-    // check if only one of throttle or steering outputs has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+    // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
+    if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }

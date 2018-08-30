@@ -15,6 +15,7 @@ To Do List
  - allow tack on geofence for auto mode use on restricted water
 
  ----- Long term
+ - max speed paramiter and contoller, for maping you may not want to go too fast
  - add wind speed sensor
  - mavlink sailing messages
  - sailing loiter, boat stays inside loiter circle, more like plane than rover, will carry on sailing but stay close to a point, cant slow down too much or will lose steering
@@ -45,9 +46,12 @@ void Rover::sailboat_update_mainsail()
         return;
     }
 
-    // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no dirence so take abs
+    // + is wind over starboard side, - is wind over port side, but as the sails are sheeted the same on each side it makes no difrence so take abs
     float wind_dir_apparent = fabsf(g2.windvane.get_apparent_wind_direction_rad());
 
+    // Convert to degrees as all parameters are in degrees and its easyer than converting them all to radians
+    wind_dir_apparent = degrees(wind_dir_apparent);
+    
     // set the main sail to the ideal angle to the wind
     float mainsail_angle = wind_dir_apparent - g2.sail_angle_ideal;
 

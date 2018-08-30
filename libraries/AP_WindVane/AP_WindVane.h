@@ -25,8 +25,9 @@ public:
 
     enum WindVaneType {
         WINDVANE_NONE       = 0,
-        WINDVANE_PWM_PIN    = 1,
-        WINDVANE_ANALOG_PIN = 2,
+        WINDVANE_HOME_HEADING = 1,
+        WINDVANE_PWM_PIN    = 2,
+        WINDVANE_ANALOG_PIN = 3,
     };
 
     AP_WindVane();
@@ -70,7 +71,7 @@ private:
     float read_PWM_bearing();
 
     // Convert from apparent wind angle to true wind absolute angle
-    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed, float heading, float ground_speed);
+    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed);
 
     // parameters
     AP_Int8 _type;             // type of windvane being used
