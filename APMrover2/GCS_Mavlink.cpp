@@ -1295,11 +1295,6 @@ AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
 #endif
 }
 
-Compass *GCS_MAVLINK_Rover::get_compass() const
-{
-    return &rover.compass;
-}
-
 AP_Mission *GCS_MAVLINK_Rover::get_mission()
 {
     return &rover.mission;
