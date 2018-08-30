@@ -36,8 +36,6 @@ private:
     Vector3f _sum;
     uint32_t _count;
 
-    HAL_Semaphore _sem_mag;
-
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
     uint8_t _sensor_id;
