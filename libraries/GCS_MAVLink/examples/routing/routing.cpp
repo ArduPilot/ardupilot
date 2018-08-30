@@ -28,7 +28,6 @@ public:
 protected:
 
     uint32_t telem_delay() const override { return 0; }
-    Compass *get_compass() const override { return nullptr; };
     AP_Mission *get_mission() override { return nullptr; }
     AP_Rally *get_rally() const override { return nullptr; }
     AP_Camera *get_camera() const override { return nullptr; };
