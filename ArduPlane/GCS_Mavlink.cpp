@@ -1596,11 +1596,6 @@ bool GCS_MAVLINK_Plane::accept_packet(const mavlink_status_t &status, mavlink_me
     return (msg.sysid == plane.g.sysid_my_gcs);
 }
 
-Compass *GCS_MAVLINK_Plane::get_compass() const
-{
-    return &plane.compass;
-}
-
 AP_Mission *GCS_MAVLINK_Plane::get_mission()
 {
     return &plane.mission;
