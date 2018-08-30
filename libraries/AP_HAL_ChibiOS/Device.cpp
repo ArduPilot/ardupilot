@@ -80,7 +80,7 @@ void DeviceBus::bus_thread(void *arg)
         if (next_needed >= now && next_needed - now < delay) {
             delay = next_needed - now;
         }
-        // don't delay for less than 400usec, so one thread doesn't
+        // don't delay for less than 100usec, so one thread doesn't
         // completely dominate the CPU
         if (delay < 100) {
             delay = 100;
