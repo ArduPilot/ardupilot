@@ -10,10 +10,9 @@ bool ModeRTL::_enter()
 
     // initialise waypoint speed
     set_desired_speed_to_default(true);
-
+    return_target = rover.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt);
     // set destination
-    set_desired_location(rover.home);
-
+    set_desired_location(return_target);
     return true;
 }
 

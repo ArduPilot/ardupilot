@@ -398,6 +398,7 @@ public:
 protected:
 
     bool _enter() override;
+    Location return_target;
 };
 
 class ModeSmartRTL : public Mode
