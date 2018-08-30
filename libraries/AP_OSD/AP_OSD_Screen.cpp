@@ -825,7 +825,7 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     float hdp = gps.get_hdop() / 100.0f;
-    backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, hdp);
+    backend->write(x, y, false, "%c%c%3.2f", SYM_HDOP_L, SYM_HDOP_R, (double)hdp);
 }
 
 void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
@@ -902,7 +902,7 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     AP_BattMonitor &battery = AP_BattMonitor::battery();
     float amps = battery.current_amps();
     if (amps > 0.0) {
-        backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(3.6 * u_scale(VSPEED,vspd)/amps),unit_icon);
+        backend->write(x, y, false,"%c%c%3.1f%c",SYM_PTCHUP,SYM_EFF,(double)(3.6f * u_scale(VSPEED,vspd)/amps),unit_icon);
     } else {
         backend->write(x, y, false,"%c%c---%c",SYM_PTCHUP,SYM_EFF,unit_icon);
     } 
