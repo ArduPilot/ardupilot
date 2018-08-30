@@ -16,7 +16,7 @@ StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
   #define RALLY_INCLUDE_HOME_DEFAULT 0
 #elif APM_BUILD_TYPE(APM_BUILD_APMrover2)
   #define RALLY_LIMIT_KM_DEFAULT 0.5f
-  #define RALLY_INCLUDE_HOME_DEFAULT 0
+  #define RALLY_INCLUDE_HOME_DEFAULT 1
 #else
   #define RALLY_LIMIT_KM_DEFAULT 1.0f
   #define RALLY_INCLUDE_HOME_DEFAULT 0
