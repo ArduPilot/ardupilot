@@ -1610,15 +1610,6 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
     }
 }
 
-AP_Camera *GCS_MAVLINK_Plane::get_camera() const
-{
-#if CAMERA == ENABLED
-    return &plane.camera;
-#else
-    return nullptr;
-#endif
-}
-
 AP_AdvancedFailsafe *GCS_MAVLINK_Plane::get_advanced_failsafe() const
 {
     return &plane.afs;
