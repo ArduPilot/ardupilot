@@ -4,6 +4,7 @@
 
 #include "RC_Channel.h"
 #include "AC_Sprayer/AC_Sprayer.h"
+#include "AP_Rally.h"
 
 // Global parameter class.
 //
@@ -54,7 +55,6 @@ public:
         k_param_serial0_baud,   // deprecated, can be deleted
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
-        k_param_rally,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -364,6 +364,9 @@ public:
 
     // Sprayer
     AC_Sprayer sprayer;
+
+    // Rally point library
+    AP_Rally_Rover rally;
 };
 
 extern const AP_Param::Info var_info[];
