@@ -1,3 +1,48 @@
+Release 3.9.1, 31st August 2018
+-------------------------------
+
+The ArduPilot dev team are delighted to announce a new stable plane
+release. This is a minor release, but does include some important
+fixes.
+
+The only change over the 3.9.1beta3 release is an increase in the USB
+buffer size to give faster log download over USB.
+
+Other important changes from the 3.9.1beta releases include:
+
+ - updated to default values for some tuning parameters
+
+ - fixed a critical safety issue found by Oliver Volkmann, and fixed
+   by Michael du Breuil. The problem could lead to quadplane motors
+   starting on reboot
+
+ - fixed a bug where RC failsafe could lead rudder input stuck at the
+   last rudder input value in some modes. Thanks to Michael du Breuil
+   for the fix
+
+ - improved DShot and BLHeli-passthrough support, fixing errors
+   reported by BLHeli32 ESCs and making using BLHeliSuite32 much more
+   reliable
+
+ - new tonealarm system, bringing the tones produced under ChibiOS and
+   Linux HALs in line with tones produced under the HAL_PX4 HAL.
+
+ - added a new LED driver for the NCP5623 LED
+
+ - fixed delay caused by parameter writes in AP_Stats
+
+ - fixed default RSSI input pin on some boards
+
+ - fixed the incorrect display of "no io thread heartbeat" message
+
+ - fixed microSD support on some boards due to running out of DMA
+   capable memory
+
+Many thanks to everyone who has been testing the beta releases.
+
+Happy flying!
+
+
 Release 3.9.1beta3, 23rd August 2018
 ------------------------------------
 
