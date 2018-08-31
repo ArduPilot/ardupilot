@@ -6,12 +6,17 @@
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 
+// we need a boardconfig created so that the io processor is available
+#if HAL_WITH_IO_MCU || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_IOMCU/AP_IOMCU.h>
+AP_BoardConfig BoardConfig;
+#endif
+
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
-#define NUM_CHANNELS 8
 
 class RC_Channel_Example : public RC_Channel
 {
@@ -38,83 +43,26 @@ private:
 
 };
 
-const AP_Param::GroupInfo RC_Channels::var_info[] = {
-    // @Group: 1_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[0], "1_",  1, RC_Channels_Example, RC_Channel_Example),
+#define RC_CHANNELS_SUBCLASS RC_Channels_Example
+#define RC_CHANNEL_SUBCLASS RC_Channel_Example
 
-    // @Group: 2_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[1], "2_",  2, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 3_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[2], "3_",  3, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 4_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[3], "4_",  4, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 5_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[4], "5_",  5, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 6_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[5], "6_",  6, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 7_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[6], "7_",  7, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 8_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[7], "8_",  8, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 9_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[8], "9_",  9, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 10_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[9], "10_", 10, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 11_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[10], "11_", 11, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 12_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[11], "12_", 12, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 13_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[12], "13_", 13, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 14_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[13], "14_", 14, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 15_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[14], "15_", 15, RC_Channels_Example, RC_Channel_Example),
-
-    // @Group: 16_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[15], "16_", 16, RC_Channels_Example, RC_Channel_Example),
-
-    AP_GROUPEND
-};
+#include <RC_Channel/RC_Channels_VarInfo.h>
 
 static RC_Channels_Example rc_channels;
 
-static void print_pwm(void);
 static void print_radio_values();
 
+#define RC_CHANNELS_TO_DISPLAY 8
 
 void setup()
 {
     hal.console->printf("ArduPilot RC Channel test\n");
+
+#if HAL_WITH_IO_MCU || CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+    BoardConfig.init();
+#endif
+
+    rc().init();
 
     print_radio_values();
 
@@ -142,24 +90,29 @@ void setup()
 
 void loop()
 {
-    rc().read_input();
-    print_pwm();
-    
-    hal.scheduler->delay(20);
-}
+    static uint8_t count = 0;
 
-static void print_pwm(void)
-{
-    for (int i=0; i<NUM_CHANNELS; i++) {
-	    hal.console->printf("ch%u: %4d ", (unsigned)i+1, (int)rc().channel(i)->get_control_in());
+    if (count++ == 0) {
+        for (int i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
+            hal.console->printf("Ch %02d ", (unsigned)i+1);
+        }
+        hal.console->printf("\n");
+    }
+
+    rc().read_input();
+    for (uint8_t i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
+	    hal.console->printf("%5d ", (int)rc().channel(i)->get_control_in());
+	    // hal.console->printf("%4d ", (int)rc().channel(i)->percent_input());
     }
     hal.console->printf("\n");
+
+    hal.scheduler->delay(20);
 }
 
 
 static void print_radio_values()
 {
-    for (int i=0; i<NUM_CHANNELS; i++) {
+    for (int i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
 	     hal.console->printf("CH%u: %u|%u\n",
 			  (unsigned)i+1,
               (unsigned)rc().channel(i)->get_radio_min(),
