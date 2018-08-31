@@ -19,8 +19,7 @@ void ModeManual::update()
     }
 
     // set sailboat mainsail from throttle position
-    // invert throttle signal, so minium throttle is sail out
-    rover.sailboat_set_mainsail(100.0f - desired_throttle);
+    rover.sailboat_set_mainsail(desired_throttle);
 
     // copy RC scaled inputs to outputs
     g2.motors.set_throttle(desired_throttle);

@@ -240,7 +240,7 @@ float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_win
         bearing = -acosf( (apparent_wind_speed * cosf(apparent_angle) - ground_speed)/ true_wind_speed);
     }
 
-    // make sure between 0 and 2pi
+    // make sure between -pi and pi
     bearing = wrap_PI(heading + bearing);
     return bearing;    
 }

@@ -16,6 +16,17 @@ void Rover::fence_check()
 
     // if there is a new breach take action
     if (new_breaches) {
+        
+        /*
+            if were sailing a indirect route we should tack on the breach 
+            not sure if this will trigger a single time for a breach or repetidaly while the vehicle is ouside the fence
+            if it tirggers repetidaly it will result in lots of tacking on the spot currently
+            posibly introduce a sailboat fence leeway distance so a fence breach is only reported if the sailboat goes past this distance, to give it a chance to do its tack
+        */
+        if (_sailboat_indirect_route){
+            _sailboat_tack = true;
+        }
+        
         // if the user wants some kind of response and motors are armed
         if (g2.fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
             // if we are within 100m of the fence, RTL

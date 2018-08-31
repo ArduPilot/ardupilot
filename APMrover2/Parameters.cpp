@@ -621,6 +621,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_ANGLE_IDEAL", 32, ParametersG2, sail_angle_ideal, 5),
+    
+    // @Param: SAIL_NO_GO_ANGLE
+    // @DisplayName: Sailing no go zone angle 
+    // @Description: The typical closest angle to the wind the vehicle will sail at
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_NO_GO_ANGLE", 33, ParametersG2, sail_no_go, 45),
 
     AP_GROUPEND
 };

@@ -426,8 +426,8 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     }
     _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
-    if (rover.use_pivot_steering(_yaw_error_cd)) {
-        // for pivot turns use heading controller
+    if (rover.use_pivot_steering(_yaw_error_cd) || rover.sailboat_update_indirect_route(desired_heading)) {         
+        // for pivot turns use heading controller and sailboat on indirect routes
         calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
     } else {
         // call lateral acceleration to steering controller
@@ -460,6 +460,11 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 // calculate steering output to drive towards desired heading
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed)
 {
+    // if we cant sail at desired heading caculate new heading to sailing on
+    if (rover.sailboat_update_indirect_route(desired_heading_cd)){
+        desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);  
+    }
+    
     // calculate yaw error so it can be used for reporting and slowing the vehicle
     _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
 

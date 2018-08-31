@@ -28,6 +28,8 @@ To Do List
  - more advanced sail control, ie twist
  - independent sheeting for main and jib
  - wing type sails with 'elevator' control
+ - tack on depth sounder info to stop sailing into shallow water on indirect sailing routes
+ - add option to do proper tacks, ie tacking on flat spot in the waves, or only try once at a certain speed, or some better method than just changing the desired heading suddenly
 */
 
 // directly set a mainsail value (used for manual modes)
@@ -59,9 +61,75 @@ void Rover::sailboat_update_mainsail()
     mainsail_angle = constrain_float(mainsail_angle, g2.sail_angle_min, g2.sail_angle_max);
 
     // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
-    float mainsail = ((mainsail_angle - g2.sail_angle_min)/(g2.sail_angle_max - g2.sail_angle_min)) * 100.0f;
+    float mainsail = linear_interpolate(0.0f, 100.0f, mainsail_angle, g2.sail_angle_min, g2.sail_angle_max);
 
     g2.motors.set_mainsail(mainsail);
+}
+
+// Should we take a indirect navigaion route, either to go upwind or in the future for speed 
+bool Rover::sailboat_update_indirect_route(float desired_heading)
+{
+    if (!g2.motors.has_sail()) {
+        return false;
+    }
+    desired_heading = radians(desired_heading / 100.0f);
+    _sailboat_indirect_route = false;
+    
+    // Check if desired heading is in the no go zone, if it is we can't go direct
+    if (fabsf(wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - desired_heading))) <= radians(g2.sail_no_go)){
+        _sailboat_indirect_route = true; 
+    }  
+    
+    return _sailboat_indirect_route;
+}    
+
+// If we can't sail on the desired heading then we should pick the best heading that we can sail on 
+float Rover::sailboat_calc_heading(float desired_heading)
+{
+    if (!g2.motors.has_sail()) {
+        return desired_heading;
+    }
+    
+    desired_heading = radians(desired_heading / 100.0f);
+
+    
+    /* 
+        Until we get more fancy logic for best posible speed just assume we can sail upwind on at the no go angle 
+        Just set off on which ever of the no go angles is closeer, once the end destination is within a single tack it will switch back to direct route method 
+        This should result in a long leg with a single tack to get to the destination, with tacks on fence.
+        
+        Need to add some logic to stop it from tacking back towards fence once it has been bounced off, posibly a miniumm distance and time between tacks or something
+    */
+    
+    // left and right no go headings looking upwind
+    float left_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sail_no_go));
+    float right_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sail_no_go));
+    
+    // Sail on which ever is closest to our current heading unless were suposed to be tacking
+    float left_error = fabsf(wrap_PI(left_no_go_heading - ahrs.yaw_sensor));
+    float right_error = fabsf(wrap_PI(right_no_go_heading - ahrs.yaw_sensor));
+    
+    bool port_tack = false;
+    
+    if (left_error <= right_error){
+        // sailing on the left hand no go angle will result in being on port tack
+        port_tack = true; 
+    }
+    
+    // Are we due to tack because of a fence breach?
+    if (_sailboat_tack){
+        port_tack = !port_tack;
+        _sailboat_tack = false;    
+    }
+    
+    // Set new heading
+    if (port_tack){
+        desired_heading = degrees(left_no_go_heading) * 100.0f;
+    } else {
+        desired_heading = degrees(right_no_go_heading) * 100.0f;
+    }
+
+    return desired_heading;
 }
 
 // Velocity Made Good, this is the speed we are travling towards the desired destination

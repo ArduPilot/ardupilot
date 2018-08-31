@@ -13,8 +13,7 @@ void ModeAcro::update()
         g2.motors.set_throttle(desired_throttle);
         
         // set sailboat mainsail from throttle position
-        // invert throttle signal, so minium throttle is sail out
-        rover.sailboat_set_mainsail(100.0f - desired_throttle);
+        rover.sailboat_set_mainsail(desired_throttle);
     } else {
         float desired_speed;
         // convert pilot stick input into desired steering and speed

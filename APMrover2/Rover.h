@@ -510,7 +510,12 @@ private:
     // sailboat.cpp
     void sailboat_set_mainsail(float mainsail);
     void sailboat_update_mainsail();
+    bool sailboat_update_indirect_route(float desired_heading);
+    float sailboat_calc_heading(float desired_heading);
     float sailboat_VMG(float target_heading);
+    
+    bool _sailboat_indirect_route;
+    bool _sailboat_tack;
 
     // sensors.cpp
     void init_compass(void);
