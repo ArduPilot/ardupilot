@@ -135,6 +135,13 @@ void Rover::init_ardupilot()
     // give AHRS the range beacon sensor
     ahrs.set_beacon(&g2.beacon);
 
+#if OPTFLOW == ENABLED
+    // make optflow available to AHRS
+    ahrs.set_optflow(&optflow);
+    // init the optical flow sensor
+    init_optflow();
+#endif
+
     // initialize SmartRTL
     g2.smart_rtl.init();
 

@@ -99,6 +99,11 @@
 #include "AP_Rally.h"
 #include "RC_Channel.h"                  // RC Channel Library
 
+// libraries which are dependent on #defines in defines.h and/or config.h
+#if OPTFLOW == ENABLED
+ # include <AP_OpticalFlow/AP_OpticalFlow.h>
+#endif
+
 class Rover : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Rover;
@@ -201,7 +206,10 @@ private:
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
+#if OPTFLOW == ENABLED
+    // Optical flow sensor
     OpticalFlow optflow{ahrs};
+#endif
 #endif
 
     // RSSI
@@ -483,6 +491,7 @@ private:
     void Log_Write_Error(uint8_t sub_system, uint8_t error_code);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_Nav_Tuning();
+    void Log_Write_Optflow();
     void Log_Write_Proximity();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Steering();
@@ -519,6 +528,8 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void update_sensor_status_flags(void);
+    void init_optflow();
+    void update_optical_flow(void);
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

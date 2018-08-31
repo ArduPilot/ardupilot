@@ -307,6 +307,39 @@ void Rover::Log_Write_WheelEncoder()
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_Optflow {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t surface_quality;
+    float flow_x;
+    float flow_y;
+    float body_x;
+    float body_y;
+};
+
+// Write an optical flow packet
+void Rover::Log_Write_Optflow()
+{
+ #if OPTFLOW == ENABLED
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+    const Vector2f &flowRate = optflow.flowRate();
+    const Vector2f &bodyRate = optflow.bodyRate();
+    struct log_Optflow pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
+        time_us         : AP_HAL::micros64(),
+        surface_quality : optflow.quality(),
+        flow_x          : flowRate.x,
+        flow_y          : flowRate.y,
+        body_x          : bodyRate.x,
+        body_y          : bodyRate.y
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+ #endif     // OPTFLOW == ENABLED
+}
+
 void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by DataFlash
@@ -339,6 +372,10 @@ const LogStructure Rover::log_structure[] = {
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" },
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder),
       "WENC",  "Qfbffbf", "TimeUS,Dist0,Qual0,RPM0,Dist1,Qual1,RPM1", "sm-qm-q", "F0--0--" },
+#if OPTFLOW == ENABLED
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
+#endif
 };
 
 void Rover::log_init(void)

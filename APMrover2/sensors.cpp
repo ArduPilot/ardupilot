@@ -133,6 +133,44 @@ void Rover::update_wheel_encoder()
     wheel_encoder_last_ekf_update_ms = now;
 }
 
+// initialise optical flow sensor
+void Rover::init_optflow()
+{
+#if OPTFLOW == ENABLED
+    // initialise optical flow sensor
+    optflow.init();
+#endif      // OPTFLOW == ENABLED
+}
+
+// called at 200hz
+#if OPTFLOW == ENABLED
+void Rover::update_optical_flow(void)
+{
+    static uint32_t last_of_update = 0;
+
+    // exit immediately if not enabled
+    if (!optflow.enabled()) {
+        return;
+    }
+
+    // read from sensor
+    optflow.update();
+
+    // write to log and send to EKF if new data has arrived
+    if (optflow.last_update() != last_of_update) {
+        last_of_update = optflow.last_update();
+        uint8_t flowQuality = optflow.quality();
+        Vector2f flowRate = optflow.flowRate();
+        Vector2f bodyRate = optflow.bodyRate();
+        const Vector3f &posOffset = optflow.get_pos_offset();
+        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
+        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
+            Log_Write_Optflow();
+        }
+    }
+}
+#endif  // OPTFLOW == ENABLED
+
 // Calibrate compass
 void Rover::compass_cal_update() {
     if (!hal.util->get_soft_armed()) {
@@ -257,6 +295,11 @@ void Rover::update_sensor_status_flags(void)
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (optflow.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (g2.visual_odom.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
@@ -305,6 +348,11 @@ void Rover::update_sensor_status_flags(void)
     if (gps.is_healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
+#if OPTFLOW == ENABLED
+    if (!optflow.healthy()) {
+        control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
     if (g2.visual_odom.enabled() && !g2.visual_odom.healthy()) {
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }

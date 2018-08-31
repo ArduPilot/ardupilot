@@ -342,6 +342,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 #endif  // MOUNT == ENABLED
         break;
 
+    case MSG_OPTICAL_FLOW:
+#if OPTFLOW == ENABLED
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+        send_opticalflow(rover.optflow);
+#endif
+        break;
+
     case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         rover.send_fence_status(chan);
@@ -497,6 +504,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY2,
     MSG_BATTERY_STATUS,
     MSG_MOUNT_STATUS,
+    MSG_OPTICAL_FLOW,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,

@@ -30,6 +30,7 @@
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
 #define LOG_WHEELENCODER_MSG    0x0F
+#define LOG_OPTFLOW_MSG         0x10
 #define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG       0x00
@@ -51,6 +52,7 @@
 #define MASK_LOG_STEERING       (1<<13)
 #define MASK_LOG_RC             (1<<14)
 #define MASK_LOG_ARM_DISARM     (1<<15)
+#define MASK_LOG_OPTFLOW        (1UL<<18)
 #define MASK_LOG_IMU_RAW        (1UL<<19)
 
 // for mavlink SET_POSITION_TARGET messages
