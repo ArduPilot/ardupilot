@@ -15,7 +15,7 @@ void Copter::landinggear_update()
     // if we are doing an automatic landing procedure, force the landing gear to deploy.
     // To-Do: should we pause the auto-land procedure to give time for gear to come down?
     if (flightmode->landing_gear_should_be_deployed()) {
-        landinggear.set_position(AP_LandingGear::LandingGear_Deploy_And_Keep_Deployed);
+        landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
     }
 
     // send event message to datalog if status has changed
