@@ -1080,6 +1080,23 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             break;
 #endif
 
+        case MAV_CMD_AIRFRAME_CONFIGURATION: {
+            // Param 1: Select which gear, not used in ArduPilot
+            // Param 2: 0 = Deploy, 1 = Retract
+            // For safety, anything other than 1 will deploy
+            switch ((uint8_t)packet.param2) {
+                case 1:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
+                    result = MAV_RESULT_ACCEPTED;
+                    break;
+                default:
+                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
+                    result = MAV_RESULT_ACCEPTED;
+                    break;
+            }
+        break;
+        }
+
         /* Solo user presses Fly button */
         case MAV_CMD_SOLO_BTN_FLY_CLICK: {
             result = MAV_RESULT_ACCEPTED;
