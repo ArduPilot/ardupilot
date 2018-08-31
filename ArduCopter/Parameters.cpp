@@ -948,6 +948,30 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(user_parameters, "USR", 28, ParametersG2, UserParameters),
 #endif
 
+    // @Param: RTL_PWR_CLIMB
+    // @DisplayName: RTL climb power
+    // @Description: % over/under hover power to climb
+    // @Range: 0 10
+    // @Increment: .01
+    // @User: Advanced
+    AP_GROUPINFO("RTL_PWR_CLIMB", 28, ParametersG2, rtl_pwr_climb, 1.2),
+
+    // @Param: RTL_PWR_CRUISE
+    // @DisplayName: RTL cruise power
+    // @Description: % over/under hover power to climb
+    // @Range: 0 10
+    // @Increment: .01
+    // @User: Advanced
+    AP_GROUPINFO("RTL_PWR_CRUISE", 29, ParametersG2, rtl_pwr_cruise, .8),
+
+    // @Param: RTL_PWR_DESCENT
+    // @DisplayName: RTL descent power 
+    // @Description: % over/under hover power to climb
+    // @Range: 0 10
+    // @Increment: .01
+    // @User: Advanced
+    AP_GROUPINFO("RTL_PWR_DESCENT", 30, ParametersG2, rtl_pwr_descent, .85),
+
     AP_GROUPEND
 };
 

@@ -877,6 +877,7 @@ private:
     void update_visual_odom();
     void winch_init();
     void winch_update();
+    void energyToRTL();
 
     // setup.cpp
     void report_compass();

@@ -109,6 +109,11 @@ void Copter::ModeRTL::climb_start()
 
     // hold current yaw during initial climb
     auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+    rtl_mah_estimated = batt.mah_rtl();
+    rtl_sec_estimated = batt.sec_rtl();
+    rtl_time_start = millis();
+    rtl_mah_start = batt.consumed_mah();
 }
 
 // rtl_return_start - initialise return to home
@@ -321,6 +326,7 @@ void Copter::ModeRTL::land_start()
 {
     _state = RTL_Land;
     _state_complete = false;
+    msg_sent = false;
 
     // Set wp navigation target to above home
     loiter_nav->init_target(wp_nav->get_wp_destination());
@@ -365,6 +371,13 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
 
         // check if we've completed this stage of RTL
         _state_complete = ap.land_complete;
+
+        if (ap.land_complete && !msg_sent) {
+            rtl_mah_diff = (batt.consumed_mah() - rtl_mah_start) - rtl_mah_estimated;
+            rtl_sec_diff = ((millis() - rtl_time_start) * .001) - rtl_sec_estimated;
+            gcs().send_text(MAV_SEVERITY_INFO,"RTL MAH Diff %d; RTL Seconds Diff %d",rtl_mah_diff,rtl_sec_diff);
+            msg_sent = true;
+        }
         return;
     }
 
@@ -376,6 +389,13 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
 
     // check if we've completed this stage of RTL
     _state_complete = ap.land_complete;
+    if (ap.land_complete) {
+        rtl_mah_diff = (batt.consumed_mah() - rtl_mah_start) - rtl_mah_estimated;
+        rtl_sec_diff = ((millis() - rtl_time_start) * .001) - rtl_sec_estimated;
+        gcs().send_text(MAV_SEVERITY_INFO,"RTL MAH Diff %d; RTL Seconds Diff %d",rtl_mah_diff,rtl_sec_diff);
+    }
+    
+    
 }
 
 void Copter::ModeRTL::build_path(bool terrain_following_allowed)

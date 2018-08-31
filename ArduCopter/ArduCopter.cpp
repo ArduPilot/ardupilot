@@ -461,6 +461,9 @@ void Copter::one_hz_loop()
 
     // init compass location for declination
     init_compass_location();
+
+    // Run the RTL energy calculation
+    energyToRTL();
 }
 
 // called at 50hz

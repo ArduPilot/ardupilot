@@ -132,6 +132,7 @@ protected:
     RC_Channel *&channel_yaw;
     float &G_Dt;
     ap_t &ap;
+    AP_BattMonitor &batt = AP::battery();
 
     // note that we support two entirely different automatic takeoffs:
 
@@ -1035,6 +1036,13 @@ private:
     // RTL
     RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
+    uint32_t rtl_time_start;
+    uint32_t rtl_mah_start;
+    uint32_t rtl_mah_estimated;
+    uint32_t rtl_sec_estimated;
+    uint32_t rtl_mah_diff;
+    uint32_t rtl_sec_diff;
+    bool msg_sent = false;
 
     struct {
         // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain

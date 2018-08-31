@@ -586,6 +586,10 @@ public:
     UserParameters user_parameters;
 #endif
 
+    // RTL Energy parameters
+    AP_Float rtl_pwr_climb;
+    AP_Float rtl_pwr_cruise;
+    AP_Float rtl_pwr_descent;
 };
 
 extern const AP_Param::Info        var_info[];

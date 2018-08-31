@@ -472,3 +472,100 @@ void Copter::winch_update()
     g2.winch.update();
 #endif
 }
+
+// Calculates the time and MAH required to perform an RTL sequence from current location to landing
+void Copter::energyToRTL()
+{
+    // Variables for parameters, constraints, and conversions
+    //uint32_t masRate_hover = motors->get_current_hover() / 3600;  // Milliamps per second in hover
+    uint32_t masRate_hover = motors->get_current_hover() / 3600;    // Milliamps per second in hover
+    uint32_t masRate_climb = masRate_hover * g2.rtl_pwr_climb;      // Milliamps per second in a climb as a +/- % of hover
+    uint32_t masRate_cruise = masRate_hover * g2.rtl_pwr_cruise;    // Milliamps per second in cruise as a +/- % of hover
+    uint32_t masRate_descent = masRate_hover * g2.rtl_pwr_cruise;   // Milliamps per second in a descent as a +/- % of hover
+    
+    // Variables for totals
+    uint32_t rtl_total_sec;                 // Total seconds to complete RTL
+    uint32_t rtl_total_mah;                 // Total MAH to complete and RTL
+    static uint32_t rtl_total_mah_last = 0; // Last sent rtl_total_mah
+
+    // These parameters and values are required to proceed. Abort if any are not set or unavailable.
+    // Set totals to zero if we can't proceed.
+    if (masRate_climb == 0 || masRate_cruise == 0 || masRate_descent == 0 || masRate_hover == 0
+      || !battery.has_current() || !ahrs.home_is_set() || !motors->armed()) {
+        rtl_total_sec = 0; 
+        rtl_total_mah = 0;
+    } else {
+
+        // Braking takes a lot if moving fast
+        uint32_t sec_braking;
+        uint32_t mah_braking;
+        if (inertial_nav.get_velocity_xy() > 510) {
+            sec_braking = 20;
+            mah_braking = sec_braking * masRate_climb;
+        } else {
+            sec_braking = 0;
+            mah_braking = 0;
+        }
+
+        // Climb
+        uint32_t target_alt_cm = MAX(current_loc.alt + g.rtl_climb_min, g.rtl_altitude);            // Altitude copter will RTL at
+        uint32_t sec_climb = ((target_alt_cm - current_loc.alt) / (copter.wp_nav->get_speed_up())); // Time in seconds to climb
+        if (sec_climb > 0 ) { sec_climb += 3; }                                                     // 3 seconds accounts for accel/decel
+        uint32_t mah_climb = sec_climb * masRate_climb;                                             // MAH total required to climb
+
+        // Cruise
+        uint32_t rtl_cruiseSpeed = ((g.rtl_speed_cms > 0) ? g.rtl_speed_cms : copter.wp_nav->get_speed_xy());    // Cruise speed
+        uint32_t sec_cruise = (home_distance() / rtl_cruiseSpeed) + 8;                                           // Cruise time in seconds (distance to cruise + 8 seconds for accel/decel)
+        if (sec_cruise > 0 ) { sec_cruise += 8; }                                                                // 8 seconds accounts for accel/decel
+        uint32_t mah_cruise = sec_cruise * masRate_cruise;                                                       // Cruise mAh consumed
+
+        // Hover
+        uint32_t sec_hover = (g.rtl_loiter_time * .001);        // Hover time + 10 seconds to cover transition between phases
+        uint32_t mah_hover = sec_hover * masRate_hover;         // Hover mAh consumed
+
+        // Descent
+        uint32_t rtl_desSpeed = (g.land_speed_high > 0) ? g.land_speed_high : copter.wp_nav->get_speed_down();  // Descent rate
+        uint32_t desc_cm = constrain_int32(target_alt_cm - g2.land_alt_low, 0, target_alt_cm);  // Descent from altitude to final landing start
+        uint32_t sec_desc = desc_cm / rtl_desSpeed;                                             // Descent time in seconds
+        uint32_t mah_descent = (sec_desc * masRate_descent);                                    // Descent mAh consumed
+        
+        // Final Landing Descent
+        uint32_t land_desc_cm = g2.land_alt_low;            // Final descent distance
+        uint32_t sec_land = land_desc_cm / g.land_speed;    // Final descent time in seconds
+        uint32_t mah_land = sec_land * masRate_hover;       // Final descent mAh consumed
+
+
+        // BATT_FS_LOW_ACT parameter options: 0:None,1:Land,2:RTL,3:SmartRTL,4:SmartRTL or Land,5:Terminate
+        // Calculate time to land if the failsafe is set for land
+        // Calculate time to RTL if the failsafe is set for RTL
+        // All other failsafe options are 0 since we can't calculate them
+        switch (battery.get_failsafe_low_action()) {
+            case Failsafe_Action_Land:  // BATT_FS_LOW_ACT = 1 (Land only)
+                rtl_total_sec = sec_desc + sec_land;
+                rtl_total_mah = mah_descent + mah_land;
+                break;
+            case Failsafe_Action_RTL:   // BATT_FS_LOW_ACT = 2 (RTL)
+                rtl_total_sec = sec_braking + sec_climb + sec_cruise + sec_hover + sec_desc + sec_land;
+                rtl_total_mah = mah_braking + mah_climb + mah_cruise + mah_hover + mah_descent + mah_land;
+                break;
+            default: // BATT_FS_LOW_ACT = Anythinig else
+                rtl_total_sec = 0; 
+                rtl_total_mah = 0;
+                break;
+        }
+        
+        // Messaging for testing only
+        static uint32_t lastmsg = AP_HAL::millis();
+        if (AP_HAL::millis() - lastmsg > 30000) {
+            // gcs().send_text(MAV_SEVERITY_WARNING, "CL:%d; CR:%d; HV:%d; DS:%d; LN:%d; mAh:%d Sec:%d", mah_climb,mah_cruise,mah_hover,mah_descent,mah_land,rtl_total_mah,rtl_total_sec);
+            gcs().send_text(MAV_SEVERITY_WARNING, "mAh:%d Sec:%d", rtl_total_mah,rtl_total_sec);
+            lastmsg = AP_HAL::millis();
+        }
+    }
+
+    // Update battery monitor
+    if (rtl_total_mah != rtl_total_mah_last) {
+        battery.set_rtl_mah(0,rtl_total_mah, rtl_total_sec);
+        rtl_total_mah_last = rtl_total_mah;
+    }
+}
