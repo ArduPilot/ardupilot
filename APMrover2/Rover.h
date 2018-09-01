@@ -516,6 +516,9 @@ private:
     
     bool _sailboat_indirect_route;
     bool _sailboat_tack;
+	bool _sailboat_tacking;
+	float _sailboat_tack_stat_time;
+	float _sailboat_new_tack_heading;
 
     // sensors.cpp
     void init_compass(void);

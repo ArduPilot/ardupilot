@@ -23,7 +23,7 @@ void Rover::fence_check()
             if it tirggers repetidaly it will result in lots of tacking on the spot currently
             posibly introduce a sailboat fence leeway distance so a fence breach is only reported if the sailboat goes past this distance, to give it a chance to do its tack
         */
-        if (_sailboat_indirect_route){
+        if (_sailboat_indirect_route && !_sailboat_tack && !_sailboat_tacking){
             _sailboat_tack = true;
         }
         

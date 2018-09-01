@@ -71,7 +71,7 @@ private:
     float read_PWM_bearing();
 
     // Convert from apparent wind angle to true wind absolute angle
-    float apparent_to_absolute(float apparent_angle, float apparent_wind_speed);
+    float apparent_to_absolute(float apparent_angle);
 
     // parameters
     AP_Int8 _type;             // type of windvane being used

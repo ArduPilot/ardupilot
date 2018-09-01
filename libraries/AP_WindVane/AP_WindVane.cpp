@@ -128,7 +128,7 @@ float AP_WindVane::get_apparent_wind_direction_rad()
         case WindVaneType::WINDVANE_HOME_HEADING:
         case WindVaneType::WINDVANE_PWM_PIN:
         { 
-            apparent_angle = get_absolute_wind_direction_rad() - AP::ahrs().yaw; // This is a approximation as we are not considering boat speed and wind speed
+            apparent_angle = wrap_2PI(get_absolute_wind_direction_rad() - AP::ahrs().yaw); // This is a approximation as we are not considering boat speed and wind speed
             break;
         }
         case WindVaneType::WINDVANE_ANALOG_PIN:
@@ -162,7 +162,7 @@ float AP_WindVane::get_absolute_wind_direction_rad()
         case WindVaneType::WINDVANE_PWM_PIN:
         {
             bearing = read_PWM_bearing(); // read bearing from pwm and offset home bearing by that much
-            bearing = wrap_PI(bearing + _home_heading);
+            bearing = wrap_2PI(bearing + _home_heading);
             return bearing;
         }
         case WindVaneType::WINDVANE_ANALOG_PIN:
@@ -173,8 +173,7 @@ float AP_WindVane::get_absolute_wind_direction_rad()
     }
 
     // convert from apparent
-    // bearing = apparent_to_absolute(apparent_angle, wind_speed)
-    bearing = apparent_to_absolute(apparent_angle, 10.0f);
+    bearing = apparent_to_absolute(apparent_angle);
 
     // make sure between -pi and pi
     bearing = wrap_PI(bearing);
@@ -201,34 +200,37 @@ float AP_WindVane::read_analog()
     // assumes voltage increases as wind vane moves clockwise, we could get round this with more complex code and calibration
     // not sure about where to write a calibration code, but we just need to rotate the vane a few times and record the min and max voltage and the set it to head to wind to record the offset
 
-    float voltage_ratio = (current_analog_voltage - _analog_volt_min)/(_analog_volt_max-_analog_volt_min);
-    float bearing_offset = (_analog_volt_head - _analog_volt_min)/(_analog_volt_max-_analog_volt_min);\
+    float voltage_ratio = linear_interpolate(0.0f, 1.0f, current_analog_voltage, _analog_volt_min, _analog_volt_max);
+    float bearing_offset = linear_interpolate(0.0f, 1.0f, _analog_volt_head, _analog_volt_min, _analog_volt_max);
+
     float bearing = (voltage_ratio + bearing_offset) * radians(360);
 
-    bearing = wrap_PI(bearing);
+    bearing = wrap_2PI(bearing);
+    
     return bearing;
 }
 
-// read the bearing value from a PWM value on a RC channel (+- 180deg in radians)
+// read the bearing value from a PWM value on a RC channel (+- 45deg in radians)
 float AP_WindVane::read_PWM_bearing()
 {
     RC_Channel *ch = rc().channel(_rc_in_no-1);
     if (ch == nullptr) {
         return 0.0f;
     }
-    float bearing = ch->norm_input() * radians(180);
+    float bearing = ch->norm_input() * radians(45);
     return bearing;
 }
 
 // convert from apparent wind angle to true wind absolute angle
-float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_wind_speed)
+float AP_WindVane::apparent_to_absolute(float apparent_angle)
 {
     // https://en.wikipedia.org/wiki/Apparent_wind
     float bearing = 0.0f;
     
     float heading =  AP::ahrs().yaw;
-    float ground_speed = 0.0f;//AP::ahrs().groundspeed;
-
+    float ground_speed = 0.0f; // AP::ahrs().groundspeed;
+    float apparent_wind_speed = 0.0f; // read wind speed from sensor 
+ 
     // Calculate true wind speed (possibly put this in another function somewhere)
     float true_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(apparent_angle));
 
@@ -241,7 +243,7 @@ float AP_WindVane::apparent_to_absolute(float apparent_angle, float apparent_win
     }
 
     // make sure between -pi and pi
-    bearing = wrap_PI(heading + bearing);
+    bearing = wrap_2PI(heading + bearing);
     return bearing;    
 }
 

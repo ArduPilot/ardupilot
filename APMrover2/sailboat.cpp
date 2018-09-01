@@ -5,10 +5,6 @@ To Do List
  ----- short term
  - add calibration code for analog wind Vane
  - setup log of relevant sailing variables
- - add sailboat parameters, ie no go zone, sheeting range, ideal sail aoa
- - auto sheet mode, not sure if acro will work well, may be very tricky to go at a defined speed, depends on wind speed and heading. dead down wind it can be bad to try and slowdown
- suggest instead a auto sheet mode, where the sheet is trimmed for the heading the boat is on automatically this would work with acro steering, we could then have a try and sail or sheet out and stop user input
- this would also work for acro mode motor sailing
  - consider drag vs lift sailing differences, ie upwind sail is like wing, dead down wind sail is like parachute
  - auto mode
  - Set up PID for the mainsail, So that it will hold at a maximum heal value, by sheeting out and/or changing heading (possibly some sort of ratio parameter here, ie only sheet out or only bear away or combination)
@@ -115,18 +111,47 @@ float Rover::sailboat_calc_heading(float desired_heading)
         // sailing on the left hand no go angle will result in being on port tack
         port_tack = true; 
     }
-    
-    // Are we due to tack because of a fence breach?
+
+    // Allow force tack from rudder input 
+    float steering_in = rover.channel_steer->norm_input();
+    if (fabsf(steering_in) > 0.9f && !_sailboat_tack && !_sailboat_tacking){
+        // if were on port a left hand steering input would be a tack
+        if(port_tack && steering_in < -0.9f){
+            _sailboat_tack = true;
+        } else if(!port_tack && steering_in > 0.9f){ // if on stbd right hand turn is a tack
+            _sailboat_tack = true;
+        }
+    }
+     
+    // Are we due to tack?
     if (_sailboat_tack){
-        port_tack = !port_tack;
-        _sailboat_tack = false;    
+
+        // Pick a heading for the new tack 
+        if (!port_tack){
+            _sailboat_new_tack_heading = degrees(left_no_go_heading) * 100.0f;
+        } else {
+            _sailboat_new_tack_heading = degrees(right_no_go_heading) * 100.0f;
+        }
+
+        _sailboat_tack = false;  
+        _sailboat_tacking = true;
+        _sailboat_tack_stat_time = AP_HAL::millis();  		
     }
     
-    // Set new heading
-    if (port_tack){
-        desired_heading = degrees(left_no_go_heading) * 100.0f;
+    // If were in the process of a tack we should not change the target heading 
+    if (_sailboat_tacking){
+        // Check if we have tacked round enough or if we have timed out
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - (degrees(ahrs.yaw_sensor) * 100.0f))) < (20.0f * 100.0f)){
+            _sailboat_tacking = false; 
+        }
+        desired_heading = _sailboat_new_tack_heading;
     } else {
-        desired_heading = degrees(right_no_go_heading) * 100.0f;
+        // Set new heading
+        if (port_tack){
+            desired_heading = degrees(left_no_go_heading) * 100.0f;
+        } else {
+            desired_heading = degrees(right_no_go_heading) * 100.0f;
+        }
     }
 
     return desired_heading;
