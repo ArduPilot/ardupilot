@@ -437,7 +437,7 @@ def _build_post_funs(bld):
     if bld.env.SUBMODULE_UPDATE:
         bld.git_submodule_post_fun()
 
-def load_pre_build(bld):
+def _load_pre_build(bld):
     '''allow for a pre_build() function in build modules'''
     brd = bld.get_board()
     if getattr(brd, 'pre_build', None):
@@ -457,7 +457,7 @@ def build(bld):
         cxxflags=['-include', 'ap_config.h'],
     )
 
-    load_pre_build(bld)
+    _load_pre_build(bld)
 
     if bld.get_board().with_uavcan:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
