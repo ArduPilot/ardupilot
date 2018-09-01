@@ -107,9 +107,8 @@ void Plane::calc_airspeed_errors()
     // may be using synthetic airspeed
     ahrs.airspeed_estimate(&airspeed_measured);
 
-    // FBW_B airspeed target
-    if (control_mode == FLY_BY_WIRE_B || 
-        control_mode == CRUISE) {
+    // FBW_B/cruise airspeed target
+    if (!failsafe.rc_failsafe && (control_mode == FLY_BY_WIRE_B || control_mode == CRUISE)) {
         target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
                                         aparm.airspeed_min) *
                               channel_throttle->get_control_in()) +
