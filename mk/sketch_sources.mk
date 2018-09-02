@@ -2,11 +2,16 @@
 # Sketch
 #
 
-SRCSUFFIXES = *.cpp *.c *.S
+SRCSUFFIXES = *.cpp
 
 MAKE_INC=$(wildcard $(SRCROOT)/make.inc)
 ifeq (,$(MAKE_INC))
 $(error You must have a make.inc file to list library dependencies)
+endif
+
+GLOBAL_MAKE_INC=$(wildcard $(SKETCHBOOK)/mk/make.inc)
+ifeq (,$(GLOBAL_MAKE_INC))
+$(error You must have a make.inc in mk/ directory)
 endif
 
 # Sketch source files
@@ -19,6 +24,7 @@ SKETCHOBJS := $(addsuffix .o,$(basename $(SKETCHOBJS)))
 
 # get list of libraries from make.inc
 include $(MAKE_INC)
+include $(GLOBAL_MAKE_INC)
 LIBTOKENS := $(LIBRARIES)
 
 
@@ -58,9 +64,9 @@ LIBTOKENS += \
 	AP_HAL_VRBRAIN
 endif
 
-ifeq ($(HAL_BOARD),HAL_BOARD_FLYMAPLE)
+ifeq ($(HAL_BOARD),HAL_BOARD_F4LIGHT)
 LIBTOKENS += \
-	AP_HAL_FLYMAPLE
+	AP_HAL_F4Light
 endif
 
 #
@@ -73,7 +79,7 @@ SKETCHLIBNAMES		:=	$(notdir $(SKETCHLIBS))
 SKETCHLIBSRCDIRS	:=	$(SKETCHLIBS) $(addsuffix /utility,$(SKETCHLIBS))
 SKETCHLIBSRCS		:=	$(wildcard $(foreach suffix,$(SRCSUFFIXES),$(addsuffix /$(suffix),$(SKETCHLIBSRCDIRS))))
 SKETCHLIBOBJS		:=	$(addsuffix .o,$(basename $(subst $(SKETCHBOOK),$(BUILDROOT),$(SKETCHLIBSRCS))))
-SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/
+SKETCHLIBINCLUDES	:=	-I$(SKETCHBOOK)/libraries/ -I$(BUILDROOT)/libraries/ -I$(BUILDROOT)/libraries/GCS_MAVLink/
 SKETCHLIBSRCSRELATIVE	:=	$(subst $(SKETCHBOOK)/,,$(SKETCHLIBSRCS))
 
 ifeq ($(VERBOSE),)

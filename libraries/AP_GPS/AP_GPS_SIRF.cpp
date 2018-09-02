@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,20 +27,15 @@
 //
 // XXX the bytes show up on the wire, but at least my test unit (EM-411) seems to ignore them.
 //
-const uint8_t AP_GPS_SIRF::_initialisation_blob[] PROGMEM = {
+const uint8_t AP_GPS_SIRF::_initialisation_blob[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0xb0, 0xb3,
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3 
 };
 
 AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port),
-    _step(0),
-    _gather(false),
-    _payload_length(0),
-    _payload_counter(0),
-    _msg_id(0)
+    AP_GPS_Backend(_gps, _state, _port)
 {
-    gps.send_blob_start(state.instance, (const prog_char *)_initialisation_blob, sizeof(_initialisation_blob));
+    gps.send_blob_start(state.instance, (const char *)_initialisation_blob, sizeof(_initialisation_blob));
 }
 
 
@@ -84,7 +78,7 @@ AP_GPS_SIRF::read(void)
                 break;
             }
             _step = 0;
-        // FALLTHROUGH
+            FALLTHROUGH;
         case 0:
             if(PREAMBLE1 == data)
                 _step++;
@@ -138,7 +132,7 @@ AP_GPS_SIRF::read(void)
         case 5:
             if (_gather) {                                              // gather data if requested
                 _accumulate(data);
-                _buffer.bytes[_payload_counter] = data;
+                _buffer[_payload_counter] = data;
                 if (++_payload_counter == _payload_length)
                     _step++;
             } else {
@@ -186,7 +180,7 @@ AP_GPS_SIRF::_parse_gps(void)
         state.location.lng      = swap_int32(_buffer.nav.longitude);
         state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
         state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
-        state.ground_course_cd  = wrap_360_cd(swap_int16(_buffer.nav.ground_course));
+        state.ground_course     = wrap_360(swap_int16(_buffer.nav.ground_course)*0.01f);
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;
@@ -205,48 +199,49 @@ AP_GPS_SIRF::_accumulate(uint8_t val)
 /*
   detect a SIRF GPS
  */
-bool
-AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
+bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
 {
-	switch (state.step) {
-	case 1:
-		if (PREAMBLE2 == data) {
-			state.step++;
-			break;
-		}
-		state.step = 0;
-	case 0:
-		state.payload_length = state.payload_counter = state.checksum = 0;
-		if (PREAMBLE1 == data)
-			state.step++;
-		break;
-	case 2:
-		state.step++;
-		if (data != 0) {
-			// only look for short messages
-			state.step = 0;
-		}
-		break;
-	case 3:
-		state.step++;
-		state.payload_length = data;
-		break;
-	case 4:
-		state.checksum = (state.checksum + data) & 0x7fff;
-		if (++state.payload_counter == state.payload_length)
-			state.step++;
-		break;
-	case 5:
-		state.step++;
-		if ((state.checksum >> 8) != data) {
-			state.step = 0;
-		}
-		break;
-	case 6:
-		state.step = 0;
-		if ((state.checksum & 0xff) == data) {
-			return true;
-		}
+    switch (state.step) {
+    case 1:
+        if (PREAMBLE2 == data) {
+            state.step++;
+            break;
+        }
+        state.step = 0;
+        FALLTHROUGH;
+    case 0:
+        state.payload_length = state.payload_counter = state.checksum = 0;
+        if (PREAMBLE1 == data)
+            state.step++;
+        break;
+    case 2:
+        state.step++;
+        if (data != 0) {
+            // only look for short messages
+            state.step = 0;
+        }
+        break;
+    case 3:
+        state.step++;
+        state.payload_length = data;
+        break;
+    case 4:
+        state.checksum = (state.checksum + data) & 0x7fff;
+        if (++state.payload_counter == state.payload_length) {
+            state.step++;
+        }
+        break;
+    case 5:
+        state.step++;
+        if ((state.checksum >> 8) != data) {
+            state.step = 0;
+        }
+        break;
+    case 6:
+        state.step = 0;
+        if ((state.checksum & 0xff) == data) {
+            return true;
+        }
     }
     return false;
 }

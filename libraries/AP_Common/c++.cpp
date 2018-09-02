@@ -1,5 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 //
 // C++ runtime support not provided by Arduino
 //
@@ -11,10 +9,7 @@
 
 /*
   globally override new and delete to ensure that we always start with
-  zero memory. This ensures consistent behaviour. Note that
-  initialising all members of all C++ classes separately takes a lot
-  of flash space. On APM1/APM2 it would mean we wouldn't fit on the
-  board at all.
+  zero memory. This ensures consistent behaviour.
  */
 void * operator new(size_t size)
 {
@@ -41,30 +36,3 @@ void operator delete[](void * ptr)
 {
     if (ptr) free(ptr);
 }
-
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-
-// Conflicts with libmaple wirish/cxxabi-compat.cpp
-#if CONFIG_HAL_BOARD != HAL_BOARD_FLYMAPLE
-extern "C" void __cxa_pure_virtual(){
-    while (1){}
-}
-#endif
-
-__extension__ typedef int __guard __attribute__((mode (__DI__)));
-
-int __cxa_guard_acquire(__guard *g)
-{
-    return !*(char *)(g);
-};
-
-void __cxa_guard_release (__guard *g){
-    *(char *)g = 1;
-};
-
-void __cxa_guard_abort (__guard *) {
-};
-
-#endif // CONFIG_HAL_BOARD
-

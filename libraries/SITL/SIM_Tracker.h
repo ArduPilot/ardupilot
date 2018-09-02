@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +44,6 @@ private:
     const float yaw_range = 170;
     const float zero_yaw = 270;  // yaw direction at startup
     const float zero_pitch = 10; // pitch at startup
-    bool verbose = false;
     uint64_t last_debug_us = 0;
 
     float pitch_input;

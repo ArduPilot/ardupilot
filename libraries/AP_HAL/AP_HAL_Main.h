@@ -1,11 +1,22 @@
-#ifndef __AP_HAL_MAIN_H__
-#define __AP_HAL_MAIN_H__
+/*
+ * Copyright (C) 2016  Intel Corporation. All rights reserved.
+ *
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#pragma once
 
 #include "HAL.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-#define CONFIG_MAIN_WITHOUT_ARGC_ARGV 1
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #define AP_MAIN __EXPORT ArduPilot_main
@@ -15,31 +26,11 @@
 #define AP_MAIN main
 #endif
 
-#if CONFIG_MAIN_WITHOUT_ARGC_ARGV
-
-#define AP_HAL_MAIN() extern "C" { \
-    int AP_MAIN(void); \
-    int AP_MAIN(void) { \
-        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
-        hal.run(0, NULL, &callbacks); \
-        return 0; \
-    } \
-    }
-
-#define AP_HAL_MAIN_CALLBACKS(CALLBACKS) extern "C" { \
-    int AP_MAIN(void); \
-    int AP_MAIN(void) { \
-        hal.run(0, NULL, CALLBACKS); \
-        return 0; \
-    } \
-    }
-
-#else
-
-#define AP_HAL_MAIN() extern "C" { \
+#define AP_HAL_MAIN() \
+    AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
+    extern "C" {                               \
     int AP_MAIN(int argc, char* const argv[]); \
     int AP_MAIN(int argc, char* const argv[]) { \
-        AP_HAL::HAL::FunCallbacks callbacks(setup, loop); \
         hal.run(argc, argv, &callbacks); \
         return 0; \
     } \
@@ -52,7 +43,3 @@
         return 0; \
     } \
     }
-
-#endif
-
-#endif // __AP_HAL_MAIN_H__

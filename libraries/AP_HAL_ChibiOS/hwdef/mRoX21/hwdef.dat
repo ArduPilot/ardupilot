@@ -1,0 +1,6 @@
+# hw definition file for processing by chibios_hwdef.py for the
+# mRo X2.1 board. This is a fmuv3, with BRD_TYPE forced to 20
+
+include ../fmuv3/hwdef.dat
+
+define BOARD_TYPE_DEFAULT 20

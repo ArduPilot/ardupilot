@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -10,6 +8,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include <GCS_MAVLink/GCS.h>
 
 /* PX4 headers */
 #include <drivers/drv_led.h>
@@ -31,38 +31,42 @@ PX4GPIO::PX4GPIO()
 
 void PX4GPIO::init()
 {
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     _led_fd = open(LED0_DEVICE_PATH, O_RDWR);
     if (_led_fd == -1) {
-        hal.scheduler->panic("Unable to open " LED0_DEVICE_PATH);
+        AP_HAL::panic("Unable to open " LED0_DEVICE_PATH);
     }
     if (ioctl(_led_fd, LED_OFF, LED_BLUE) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO LED BLUE\n");
     }
     if (ioctl(_led_fd, LED_OFF, LED_RED) != 0) {
-         hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
+        hal.console->printf("GPIO: Unable to setup GPIO LED RED\n");
+    }
+#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
+    if (ioctl(_led_fd, LED_OFF, LED_GREEN) != 0) {
+        hal.console->printf("GPIO: Unable to setup GPIO LED GREEN\n");
     }
 #endif
-    _tone_alarm_fd = open(TONEALARM0_DEVICE_PATH, O_WRONLY);
-    if (_tone_alarm_fd == -1) {
-        hal.scheduler->panic("Unable to open " TONEALARM0_DEVICE_PATH);
-    }
-
+#endif
+#if !defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     _gpio_fmu_fd = open(PX4FMU_DEVICE_PATH, 0);
     if (_gpio_fmu_fd == -1) {
-        hal.scheduler->panic("Unable to open GPIO");
+        AP_HAL::panic("Unable to open GPIO");
     }
+#endif
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
     if (ioctl(_gpio_fmu_fd, GPIO_CLEAR, GPIO_EXT_1) != 0) {
         hal.console->printf("GPIO: Unable to setup GPIO_1\n");
     }
 #endif
 
+#ifdef PX4IO_DEVICE_PATH
     // also try to setup for the relay pins on the IO board
     _gpio_io_fd = open(PX4IO_DEVICE_PATH, O_RDWR);
     if (_gpio_io_fd == -1) {
         hal.console->printf("GPIO: Unable to open px4io\n");
     }
+#endif
 }
 
 void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
@@ -83,17 +87,6 @@ void PX4GPIO::pinMode(uint8_t pin, uint8_t output)
         break;
     }
 }
-
-int8_t PX4GPIO::analogPinToDigitalPin(uint8_t pin)
-{
-    switch (pin) {
-    case PX4_GPIO_FMU_SERVO_PIN(0) ... PX4_GPIO_FMU_SERVO_PIN(5):
-        // the only pins that can be mapped are the FMU servo rail pins */
-        return pin;
-    }
-    return -1;
-}
-
 
 uint8_t PX4GPIO::read(uint8_t pin) {
     switch (pin) {
@@ -117,6 +110,9 @@ uint8_t PX4GPIO::read(uint8_t pin) {
 #ifdef PX4IO_P_SETUP_RELAYS_POWER1
         case PX4_GPIO_EXT_IO_RELAY1_PIN: {
             uint32_t relays = 0;
+            if (_gpio_io_fd == -1) {
+                return LOW;
+            }
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER1)?HIGH:LOW;
         }
@@ -125,6 +121,9 @@ uint8_t PX4GPIO::read(uint8_t pin) {
 #ifdef PX4IO_P_SETUP_RELAYS_POWER2
         case PX4_GPIO_EXT_IO_RELAY2_PIN: {
             uint32_t relays = 0;
+            if (_gpio_io_fd == -1) {
+                return LOW;
+            }
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_POWER2)?HIGH:LOW;
         }
@@ -133,6 +132,9 @@ uint8_t PX4GPIO::read(uint8_t pin) {
 #ifdef PX4IO_P_SETUP_RELAYS_ACC1
         case PX4_GPIO_EXT_IO_ACC1_PIN: {
             uint32_t relays = 0;
+            if (_gpio_io_fd == -1) {
+                return LOW;
+            }
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC1)?HIGH:LOW;
         }
@@ -141,6 +143,9 @@ uint8_t PX4GPIO::read(uint8_t pin) {
 #ifdef PX4IO_P_SETUP_RELAYS_ACC2
         case PX4_GPIO_EXT_IO_ACC2_PIN: {
             uint32_t relays = 0;
+            if (_gpio_io_fd == -1) {
+                return LOW;
+            }
             ioctl(_gpio_io_fd, GPIO_GET, (unsigned long)&relays);
             return (relays & PX4IO_P_SETUP_RELAYS_ACC2)?HIGH:LOW;
         }
@@ -159,7 +164,7 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 {
     switch (pin) {
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
         case HAL_GPIO_A_LED_PIN:    // Arming LED
             if (value == LOW) {
                 ioctl(_led_fd, LED_OFF, LED_RED);
@@ -168,7 +173,12 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 
-        case HAL_GPIO_B_LED_PIN:    // not used yet 
+        case HAL_GPIO_B_LED_PIN:    // Green LED
+            if (value == LOW) {
+                ioctl(_led_fd, LED_OFF, LED_GREEN);
+            } else {
+                ioctl(_led_fd, LED_ON, LED_GREEN);
+            }
             break;
 
         case HAL_GPIO_C_LED_PIN:    // GPS LED 
@@ -179,15 +189,6 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
             }
             break;
 #endif
-
-        case PX4_GPIO_PIEZO_PIN:    // Piezo beeper 
-            if (value == LOW) { // this is inverted 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 3);    // Alarm on !! 
-                //::write(_tone_alarm_fd, &user_tune, sizeof(user_tune));
-            } else { 
-                ioctl(_tone_alarm_fd, TONE_SET_ALARM, 0);    // Alarm off !! 
-            }
-            break;
 
 #ifdef GPIO_EXT_1
         case PX4_GPIO_EXT_FMU_RELAY1_PIN:
@@ -203,25 +204,33 @@ void PX4GPIO::write(uint8_t pin, uint8_t value)
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER1
         case PX4_GPIO_EXT_IO_RELAY1_PIN:
-            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER1);
+            if (_gpio_io_fd != -1) {
+                ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER1);
+            }
             break;
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_POWER2
         case PX4_GPIO_EXT_IO_RELAY2_PIN:
-            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER2);
+            if (_gpio_io_fd != -1) {
+                ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_POWER2);
+            }
             break;
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC1
         case PX4_GPIO_EXT_IO_ACC1_PIN:
-            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC1);
+            if (_gpio_io_fd != -1) {
+                ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC1);
+            }
             break;
 #endif
 
 #ifdef PX4IO_P_SETUP_RELAYS_ACC2
         case PX4_GPIO_EXT_IO_ACC2_PIN:
-            ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC2);
+            if (_gpio_io_fd != -1) {
+                ioctl(_gpio_io_fd, value==LOW?GPIO_CLEAR:GPIO_SET, PX4IO_P_SETUP_RELAYS_ACC2);
+            }
             break;
 #endif
 
@@ -242,8 +251,150 @@ AP_HAL::DigitalSource* PX4GPIO::channel(uint16_t n) {
 }
 
 /* Interrupt interface: */
-bool PX4GPIO::attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p, uint8_t mode)
+AP_HAL::GPIO::irq_handler_fn_t PX4GPIO::pin_handlers[6] = {};
+
+int PX4GPIO::irq_handler_gpio0(int irq, void *context)
 {
+    irq_handler(0);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio1(int irq, void *context)
+{
+    irq_handler(1);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio2(int irq, void *context)
+{
+    irq_handler(2);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio3(int irq, void *context)
+{
+    irq_handler(3);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio4(int irq, void *context)
+{
+    irq_handler(4);
+    return 0;
+}
+int PX4GPIO::irq_handler_gpio5(int irq, void *context)
+{
+    irq_handler(5);
+    return 0;
+}
+
+void PX4GPIO::irq_handler(uint8_t handler)
+{
+    const uint32_t now = AP_HAL::micros();
+
+    AP_HAL::GPIO::irq_handler_fn_t &fn = pin_handlers[handler];
+    if (!fn) {
+        return;
+    }
+
+    const uint8_t pin = handler + 50;
+    const bool pin_state = hal.gpio->read(pin);
+
+    fn(pin, pin_state, now);
+}
+
+uint32_t PX4GPIO::pin_to_gpio(uint8_t pin)
+{
+#ifdef GPIO_GPIO0_INPUT
+    switch (pin) {
+    case 50:
+        return GPIO_GPIO0_INPUT;
+    case 51:
+        return GPIO_GPIO1_INPUT;
+    case 52:
+        return GPIO_GPIO2_INPUT;
+    case 53:
+        return GPIO_GPIO3_INPUT;
+    case 54:
+        return GPIO_GPIO4_INPUT;
+    case 55:
+        return GPIO_GPIO5_INPUT;
+    default:
+        return 0;
+    }
+#endif // GPIO_GPIO5_INPUT
+    return 0;
+}
+
+bool PX4GPIO::attach_interrupt(uint8_t pin,
+                               irq_handler_fn_t fn,
+                               INTERRUPT_TRIGGER_TYPE mode)
+{
+    const uint32_t gpio = pin_to_gpio(pin);
+
+    if (gpio == 0) {
+        // failed to map from pin to GPIO INPUT
+        return false;
+    }
+
+    if (pin < 50) {
+        return false;
+    }
+
+    const uint8_t handler_offset = pin - 50;
+    if (handler_offset > ARRAY_SIZE(pin_handlers)) {
+        return false;
+    }
+
+    // bounce attempt if there is already a handler:
+    if (fn && pin_handlers[handler_offset]) {
+        return false;
+    }
+
+    // attach a distinct interrupt handler for each different GPIO
+    int (*handler)(int irq, void *context) = nullptr;
+    switch (gpio) {
+#ifdef GPIO_GPIO0_INPUT
+    case GPIO_GPIO0_INPUT:
+        handler = irq_handler_gpio0;
+        break;
+    case GPIO_GPIO1_INPUT:
+        handler = irq_handler_gpio1;
+        break;
+    case GPIO_GPIO2_INPUT:
+        handler = irq_handler_gpio2;
+        break;
+    case GPIO_GPIO3_INPUT:
+        handler = irq_handler_gpio3;
+        break;
+    case GPIO_GPIO4_INPUT:
+        handler = irq_handler_gpio4;
+        break;
+    case GPIO_GPIO5_INPUT:
+        handler = irq_handler_gpio5;
+        break;
+#endif // GPIO_GPIO5_INPUT
+    default:
+        break;
+    }
+    if (handler == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "No handler for %u", gpio);
+        return false;
+    }
+
+    if (fn) {
+        stm32_gpiosetevent(gpio,
+                           (mode == INTERRUPT_RISING)||(mode==INTERRUPT_BOTH),
+                           (mode == INTERRUPT_FALLING)||(mode==INTERRUPT_BOTH),
+                           false, // event
+                           handler);
+    } else {
+        // removing existing handler
+        stm32_gpiosetevent(gpio,
+                           false, // rising
+                           false, // falling
+                           false, // event
+                           nullptr);
+    }
+
+    pin_handlers[handler_offset] = fn;
+
     return true;
 }
 

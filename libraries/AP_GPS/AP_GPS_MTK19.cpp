@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +22,7 @@
 //   Note that this driver supports both the 1.6 and 1.9 protocol varients
 //
 
+#include "AP_GPS_MTK.h"
 #include "AP_GPS_MTK19.h"
 
 extern const AP_HAL::HAL& hal;
@@ -104,7 +104,7 @@ restart:
         // Receive message data
         //
         case 3:
-            _buffer.bytes[_payload_counter++] = data;
+            _buffer[_payload_counter++] = data;
             _ck_b += (_ck_a += data);
             if (_payload_counter == sizeof(_buffer)) {
                 _step++;
@@ -144,7 +144,7 @@ restart:
 			}
             state.location.alt      = _buffer.msg.altitude;
             state.ground_speed      = _buffer.msg.ground_speed*0.01f;
-            state.ground_course_cd  = wrap_360_cd(_buffer.msg.ground_course);
+            state.ground_course     = wrap_360(_buffer.msg.ground_course*0.01f);
             state.num_sats          = _buffer.msg.satellites;
             state.hdop              = _buffer.msg.hdop;
             
@@ -159,7 +159,7 @@ restart:
                                         (unsigned)_mtk_revision);                                        
 #endif
                     make_gps_time(_buffer.msg.utc_date, bcd_time_ms);
-                    state.last_gps_time_ms = hal.scheduler->millis();
+                    state.last_gps_time_ms = AP_HAL::millis();
                 }
                 // the _fix_counter is to reduce the cost of the GPS
                 // BCD time conversion by only doing it every 10s

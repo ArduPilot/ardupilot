@@ -75,7 +75,7 @@ for fastIndex = 1:indexLimitFast % 1000 Hz gimbal prediction loop
     time = dtFast*fastIndex;
     % Calculate Truth Data
     % Need to replace this with a full kinematic model or test data
-    % calculate truth angular rates - we don't start maneouvring until
+    % calculate truth angular rates - we don't start manoeuvring until
     % heading alignment is complete
     psiRateTruth = gndSpd/radius*hdgAlignedEKF;
     angRateTruth = [0;0;psiRateTruth]; % constant yaw rate

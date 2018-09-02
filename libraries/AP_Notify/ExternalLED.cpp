@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -14,19 +12,19 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "ExternalLED.h"
+
+#include "AP_Notify.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Notify.h"
+
+#if (defined(EXTERNAL_LED_ARMED) && defined(EXTERNAL_LED_GPS) && \
+    defined(EXTERNAL_LED_MOTOR1) && defined(EXTERNAL_LED_MOTOR2))
 
 extern const AP_HAL::HAL& hal;
 
 bool ExternalLED::init(void)
 {
-    // return immediately if disabled
-    if (!AP_Notify::flags.external_leds) {
-        return false;
-    }
-
     // setup the main LEDs as outputs
     hal.gpio->pinMode(EXTERNAL_LED_ARMED, HAL_GPIO_OUTPUT);
     hal.gpio->pinMode(EXTERNAL_LED_GPS, HAL_GPIO_OUTPUT);
@@ -46,11 +44,6 @@ bool ExternalLED::init(void)
  */
 void ExternalLED::update(void)
 {
-    // return immediately if disabled
-    if (!AP_Notify::flags.external_leds) {
-        return;
-    }
-
     // reduce update rate from 50hz to 10hz
     _counter++;
     if (_counter < 5) {
@@ -245,3 +238,7 @@ void ExternalLED::motor_led2(bool on_off)
         hal.gpio->write(EXTERNAL_LED_MOTOR2, _flags.motorled2_on);
     }
 }
+#else
+bool ExternalLED::init(void) {return true;}
+void ExternalLED::update(void) {return;}
+#endif

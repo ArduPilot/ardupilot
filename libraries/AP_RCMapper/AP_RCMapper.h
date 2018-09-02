@@ -1,17 +1,16 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef AP_RCMAPPER_H
-#define AP_RCMAPPER_H
+#pragma once
 
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
-class RCMapper
-{
+class RCMapper {
 public:
-    /// Constructor
-    ///
     RCMapper();
+
+    /* Do not allow copies */
+    RCMapper(const RCMapper &other) = delete;
+    RCMapper &operator=(const RCMapper&) = delete;
 
     /// roll - return input channel number for roll / aileron input
     uint8_t roll() const { return _ch_roll; }
@@ -25,6 +24,12 @@ public:
     /// yaw - return input channel number for yaw / rudder input
     uint8_t yaw() const { return _ch_yaw; }
 
+    /// forward - return input channel number for forward input
+    uint8_t forward() const { return _ch_forward; }
+
+    /// lateral - return input channel number for lateral input
+    uint8_t lateral() const { return _ch_lateral; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -33,5 +38,6 @@ private:
     AP_Int8 _ch_pitch;
     AP_Int8 _ch_yaw;
     AP_Int8 _ch_throttle;
+    AP_Int8 _ch_forward;
+    AP_Int8 _ch_lateral;
 };
-#endif

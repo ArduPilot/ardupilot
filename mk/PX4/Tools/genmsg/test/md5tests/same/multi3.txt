@@ -1,7 +1,0 @@
-int32 a
-Log log
-string s
-Clock time
-int32 b
-duration d
-time t 

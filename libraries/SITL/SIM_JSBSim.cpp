@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,15 +35,14 @@ namespace SITL {
 #pragma GCC diagnostic ignored "-Wunused-result"
 
 #define DEBUG_JSBSIM 1
-#define FEET_TO_METERS 0.3048f
 
 JSBSim::JSBSim(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
     sock_control(false),
     sock_fgfdm(true),
     initialised(false),
-    jsbsim_script(NULL),
-    jsbsim_fgout(NULL),
+    jsbsim_script(nullptr),
+    jsbsim_fgout(nullptr),
     created_templates(false),
     started_jsbsim(false),
     opened_control_socket(false),
@@ -59,7 +57,7 @@ JSBSim::JSBSim(const char *home_str, const char *frame_str) :
         frame = FRAME_NORMAL;
     }
     const char *model_name = strchr(frame_str, ':');
-    if (model_name != NULL) {
+    if (model_name != nullptr) {
         jsbsim_model = model_name + 1;
     }
 }
@@ -79,8 +77,8 @@ bool JSBSim::create_templates(void)
     asprintf(&jsbsim_fgout,  "%s/jsbsim_fgout_%u.xml", autotest_dir, instance);
 
     FILE *f = fopen(jsbsim_script, "w");
-    if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim script %s", jsbsim_script);
+    if (f == nullptr) {
+        AP_HAL::panic("Unable to create jsbsim script %s", jsbsim_script);
     }
     fprintf(f,
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
@@ -124,8 +122,8 @@ bool JSBSim::create_templates(void)
     fclose(f);
 
     f = fopen(jsbsim_fgout, "w");
-    if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
+    if (f == nullptr) {
+        AP_HAL::panic("Unable to create jsbsim fgout script %s", jsbsim_fgout);
     }
     fprintf(f, "<?xml version=\"1.0\"?>\n"
             "<output name=\"127.0.0.1\" type=\"FLIGHTGEAR\" port=\"%u\" protocol=\"udp\" rate=\"1000\"/>\n",
@@ -135,8 +133,8 @@ bool JSBSim::create_templates(void)
     char *jsbsim_reset;
     asprintf(&jsbsim_reset, "%s/aircraft/%s/reset.xml", autotest_dir, jsbsim_model);
     f = fopen(jsbsim_reset, "w");
-    if (f == NULL) {
-        hal.scheduler->panic("Unable to create jsbsim reset script %s", jsbsim_reset);
+    if (f == nullptr) {
+        AP_HAL::panic("Unable to create jsbsim reset script %s", jsbsim_reset);
     }
     float r, p, y;
     dcm.to_euler(&r, &p, &y);
@@ -175,13 +173,14 @@ bool JSBSim::start_JSBSim(void)
     }
 
     int p[2];
-    int devnull = open("/dev/null", O_RDWR);
+    int devnull = open("/dev/null", O_RDWR|O_CLOEXEC);
     if (pipe(p) != 0) {
-        hal.scheduler->panic("Unable to create pipe");
+        AP_HAL::panic("Unable to create pipe");
     }
     pid_t child_pid = fork();
     if (child_pid == 0) {
         // in child
+        setsid();
         dup2(devnull, 0);
         dup2(p[1], 1);
         close(p[0]);
@@ -207,7 +206,7 @@ bool JSBSim::start_JSBSim(void)
                          "--simulation-rate=1000",
                          logdirective,
                          script,
-                         NULL);
+                         nullptr);
         if (ret != 0) {
             perror("JSBSim");
         }
@@ -219,20 +218,21 @@ bool JSBSim::start_JSBSim(void)
     // read startup to be sure it is running
     char c;
     if (read(jsbsim_stdout, &c, 1) != 1) {
-        hal.scheduler->panic("Unable to start JSBSim");
+        AP_HAL::panic("Unable to start JSBSim");
     }
 
     if (!expect("JSBSim Execution beginning")) {
-        hal.scheduler->panic("Failed to start JSBSim");
+        AP_HAL::panic("Failed to start JSBSim");
     }
     if (!open_control_socket()) {
-        hal.scheduler->panic("Failed to open JSBSim control socket");
+        AP_HAL::panic("Failed to open JSBSim control socket");
     }
 
     fcntl(jsbsim_stdout, F_SETFL, fcntl(jsbsim_stdout, F_GETFL, 0) | O_NONBLOCK);
 
     started_jsbsim = true;
     check_stdout();
+    close(devnull);
     return true;
 }
 
@@ -321,11 +321,11 @@ bool JSBSim::open_fdm_socket(void)
 */
 void JSBSim::send_servos(const struct sitl_input &input)
 {
-    char *buf = NULL;
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float throttle = (input.servos[2]-1000)/1000.0;
-    float rudder   = (input.servos[3]-1500)/500.0f;
+    char *buf = nullptr;
+    float aileron  = filtered_servo_angle(input, 0);
+    float elevator = filtered_servo_angle(input, 1);
+    float throttle = filtered_servo_range(input, 2);
+    float rudder   = filtered_servo_angle(input, 3);
     if (frame == FRAME_ELEVON) {
         // fake an elevon plane
         float ch1 = aileron;
@@ -420,7 +420,14 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * FEET_TO_METERS;
+    airspeed_pitot = airspeed;
 
+    // update magnetic field
+    update_mag_field_bf();
+    
+    rpm1 = fdm.rpm[0];
+    rpm2 = fdm.rpm[1];
+    
     // assume 1kHz for now
     time_now_us += 1000;
 }

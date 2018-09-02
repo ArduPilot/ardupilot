@@ -73,7 +73,7 @@ build_devrelease() {
         git log -1 > "$SUBDIR/git-version.txt" || return 1
         [ -f APM_Config.h ] && {
             shopt -s nullglob
-            version=$(grep 'define.THISFIRMWARE' *.pde *.h 2> /dev/null | cut -d'"' -f2)
+            version=$(grep 'define.THISFIRMWARE' version.h 2> /dev/null | cut -d'"' -f2)
             echo >> "$SUBDIR/git-version.txt"
             echo "APMVERSION: $version" >> "$SUBDIR/git-version.txt"
         }

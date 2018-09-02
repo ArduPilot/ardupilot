@@ -313,13 +313,13 @@
     <name>Event/Failsafe</name>
     <status>FAIL</status>
     <message>ERR found: GPS </message>
-    <data>(test data will be embeded here at some point)</data>
+    <data>(test data will be embedded here at some point)</data>
   </result>
   <result>
     <name>GPS</name>
     <status>WARN</status>
     <message>Min satellites: 6, Max HDop: 4.68</message>
-    <data>(test data will be embeded here at some point)</data>
+    <data>(test data will be embedded here at some point)</data>
   </result>
   <result>
     <name>Parameters</name>
@@ -330,7 +330,7 @@
     <name>PM</name>
     <status>FAIL</status>
     <message>14 slow loop lines found, max 18.56% on line 2983</message>
-    <data>(test data will be embeded here at some point)</data>
+    <data>(test data will be embedded here at some point)</data>
   </result>
   <result>
     <name>Pitch/Roll</name>

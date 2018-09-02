@@ -17,44 +17,33 @@
 //      Copyright (c) 2010 Michael Smith. All rights reserved.
 //
 //
-
-#ifndef __AP_HAL_UTILITY_BETTERSTREAM_H__
-#define __AP_HAL_UTILITY_BETTERSTREAM_H__
+#pragma once
 
 #include <stdarg.h>
+
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Namespace.h>
-#include "Stream.h"
 
-/* prog_char_t: */
-#include <AP_Progmem/AP_Progmem.h>
-
-/* AP_HAL::BetterStream is a pure virtual interface. It resembles
- * Michael Smith's BetterStream library for Arduino.
- * The Michael Smith BetterStream provided some implementations for AVR based
- * on _vprintf(). 
- * Please provide your own platform-specic implementation of vprintf, sprintf,
- * etc. to implement the printf functions.
- *
- * TODO: Segregate prog_char_t dependent functions to be available on AVR
- * platform only, with default implementations elsewhere.
- */
-
-class AP_HAL::BetterStream : public AP_HAL::Stream {
+class AP_HAL::BetterStream {
 public:
-    BetterStream(void) {}
 
-    virtual void print_P(const prog_char_t *) = 0; 
-    virtual void println_P(const prog_char_t *) = 0;
-    virtual void printf(const char *, ...)
-                        __attribute__ ((format(__printf__, 2, 3))) = 0;
-    /* No format checking on printf_P: can't currently support that on AVR */
-    virtual void _printf_P(const prog_char *, ...) = 0;
+    virtual void printf(const char *, ...) FMT_PRINTF(2, 3);
+    virtual void vprintf(const char *, va_list);
 
-#define printf_P(fmt, ...) _printf_P((const prog_char *)fmt, ## __VA_ARGS__)
-    
-    virtual void vprintf(const char *, va_list) = 0;
-    virtual void vprintf_P(const prog_char *, va_list) = 0;
+    void print(const char *str) { write(str); }
+    void println(const char *str) { printf("%s\r\n", str); }
+
+    virtual size_t write(uint8_t) = 0;
+    virtual size_t write(const uint8_t *buffer, size_t size);
+    size_t write(const char *str);
+
+    virtual uint32_t available() = 0;
+
+    /* return value for read():
+     * -1 if nothing available, uint8_t value otherwise. */
+    virtual int16_t read() = 0;
+
+    /* NB txspace was traditionally a member of BetterStream in the
+     * FastSerial library. As far as concerns go, it belongs with available() */
+    virtual uint32_t txspace() = 0;
 };
-
-#endif // __AP_HAL_UTILITY_BETTERSTREAM_H__
-

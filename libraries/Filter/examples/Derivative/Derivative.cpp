@@ -6,29 +6,38 @@
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
 
+void setup();
+void loop();
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-DerivativeFilter<float,11> derivative;
+#define USE_NOISE 0
+
+DerivativeFilter<float, 11> derivative;
 
 // setup routine
-void setup(){}
+void setup() {}
 
 static float noise(void)
 {
+#if USE_NOISE
     return ((random() % 100)-50) * 0.001f;
+#else
+    return 0;
+#endif
 }
 
-//Main loop where the action takes place
+// Main loop where the action takes place
 void loop()
 {
     hal.scheduler->delay(50);
-    float t = hal.scheduler->millis()*1.0e-3f;
+    float t = AP_HAL::millis() * 1.0e-3f;
     float s = sinf(t);
-    //s += noise();
-    uint32_t t1 = hal.scheduler->micros();
+    s += noise();
+    uint32_t t1 = AP_HAL::micros();
     derivative.update(s, t1);
     float output = derivative.slope() * 1.0e6f;
-    hal.console->printf("%f %f %f %f\n", t, output, s, cosf(t));
+    hal.console->printf("%f %f %f %f\n", (double)t, (double)output, (double)s, (double)cosf(t));
 }
 
 AP_HAL_MAIN();

@@ -1,0 +1,266 @@
+/*
+  implement protocol for controlling an IO microcontroller
+
+  For bootstrapping this will initially implement the px4io protocol,
+  but will later move to an ArduPilot specific protocol
+ */
+
+#include <AP_HAL/AP_HAL.h>
+
+#if HAL_WITH_IO_MCU
+
+#include "ch.h"
+
+#define IOMCU_MAX_CHANNELS 16
+
+class AP_IOMCU {
+public:
+    AP_IOMCU(AP_HAL::UARTDriver &uart);
+
+    void init(void);
+
+    // write to one channel
+    void write_channel(uint8_t chan, uint16_t pwm);
+
+    // read from one channel
+    uint16_t read_channel(uint8_t chan);
+
+    // cork output
+    void cork(void);
+
+    // push output
+    void push(void);
+
+    // set output frequency
+    void set_freq(uint16_t chmask, uint16_t freq);
+
+    // get output frequency
+    uint16_t get_freq(uint16_t chan);
+
+    // get state of safety switch
+    AP_HAL::Util::safety_state get_safety_switch_state(void) const;
+
+    // force safety on
+    bool force_safety_on(void);
+
+    // force safety off
+    void force_safety_off(void);
+
+    // set PWM of channels when safety is on
+    void set_safety_pwm(uint16_t chmask, uint16_t period_us);
+
+    // set mask of channels that ignore safety state
+    void set_safety_mask(uint16_t chmask);
+    
+    /*
+      enable sbus output
+    */
+    bool enable_sbus_out(uint16_t rate_hz);
+
+    /*
+      check for new RC input
+     */
+    bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
+
+    /*
+      get servo rail voltage
+     */
+    float get_vservo(void) const { return reg_status.vservo * 0.001; }
+
+    /*
+      get rssi voltage
+     */
+    float get_vrssi(void) const { return reg_status.vrssi * 0.001; }
+
+    // set target for IMU heater
+    void set_heater_duty_cycle(uint8_t duty_cycle);
+
+    // set default output rate
+    void set_default_rate(uint16_t rate_hz);
+
+    // set to oneshot mode
+    void set_oneshot_mode(void);
+
+    // check if IO is healthy
+    bool healthy(void);
+
+private:
+    AP_HAL::UARTDriver &uart;
+
+    void thread_main(void);
+
+    // read count 16 bit registers
+    bool read_registers(uint8_t page, uint8_t offset, uint8_t count, uint16_t *regs);
+
+    // write count 16 bit registers
+    bool write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs);
+
+    // write a single register
+    bool write_register(uint8_t page, uint8_t offset, uint16_t v) {
+        return write_registers(page, offset, 1, &v);
+    }
+    
+    // modify a single register
+    bool modify_register(uint8_t page, uint8_t offset, uint16_t clearbits, uint16_t setbits);
+
+    // trigger an ioevent
+    void trigger_event(uint8_t event);
+
+    // IOMCU thread
+    thread_t *thread_ctx;
+
+    // time when we last read various pages
+    uint32_t last_status_read_ms;
+    uint32_t last_rc_read_ms;
+    uint32_t last_servo_read_ms;
+    uint32_t last_debug_ms;
+    uint32_t last_safety_option_check_ms;
+
+    // last value of safety options
+    uint16_t last_safety_options = 0xFFFF;
+
+    void send_servo_out(void);
+    void read_rc_input(void);
+    void read_servo(void);
+    void read_status(void);
+    void print_debug(void);
+    void discard_input(void);
+    void event_failed(uint8_t event);
+    void update_safety_options(void);
+    
+    // PAGE_STATUS values
+    struct PACKED {
+        uint16_t freemem;
+        uint16_t cpuload;
+        
+        // status flags
+        uint16_t flag_outputs_armed:1;
+        uint16_t flag_override:1;
+        uint16_t flag_rc_ok:1;
+        uint16_t flag_rc_ppm:1;
+        uint16_t flag_rc_dsm:1;
+        uint16_t flag_rc_sbus:1;
+        uint16_t flag_fmu_ok:1;
+        uint16_t flag_raw_pwm:1;
+        uint16_t flag_mixer_ok:1;
+        uint16_t flag_arm_sync:1;
+        uint16_t flag_init_ok:1;
+        uint16_t flag_failsafe:1;
+        uint16_t flag_safety_off:1;
+        uint16_t flag_fmu_initialised:1;
+        uint16_t flag_rc_st24:1;
+        uint16_t flag_rc_sumd_srxl:1;
+        
+        uint16_t alarms;
+        uint16_t vbatt;
+        uint16_t ibatt;
+        uint16_t vservo;
+        uint16_t vrssi;
+        uint16_t prssi;
+    } reg_status;
+
+    // PAGE_RAW_RCIN values
+    struct PACKED {
+        uint16_t count;
+        uint16_t flags_frame_drop:1;
+        uint16_t flags_failsafe:1;
+        uint16_t flags_dsm11:1;
+        uint16_t flags_mapping_ok:1;
+        uint16_t flags_rc_ok:1;
+        uint16_t flags_unused:11;
+        uint16_t nrssi;
+        uint16_t data;
+        uint16_t frame_count;
+        uint16_t lost_frame_count;
+        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t last_frame_count;
+        uint32_t last_input_us;
+    } rc_input;
+    
+    // output pwm values
+    struct {
+        uint8_t num_channels;
+        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint8_t safety_pwm_set;
+        uint8_t safety_pwm_sent;
+        uint16_t safety_pwm[IOMCU_MAX_CHANNELS];
+        uint16_t safety_mask;
+    } pwm_out;
+
+    // read back pwm values
+    struct {
+        uint16_t pwm[IOMCU_MAX_CHANNELS];
+    } pwm_in;
+
+    // output rates
+    struct {
+        uint16_t freq;
+        uint16_t chmask;
+        uint16_t default_freq = 50;
+        uint16_t sbus_rate_hz;
+    } rate;
+
+    // IMU heater duty cycle
+    uint8_t heater_duty_cycle;
+
+    uint32_t last_servo_out_us;
+
+    bool corked;
+
+    bool crc_is_ok;
+
+    // firmware upload
+    const char *fw_name = "io_firmware.bin";
+    uint8_t *fw;
+    uint32_t fw_size;
+
+    bool upload_fw(void);
+    bool recv_byte_with_timeout(uint8_t *c, uint32_t timeout_ms);
+    bool recv_bytes(uint8_t *p, uint32_t count);
+    void drain(void);
+    bool send(uint8_t c);
+    bool send(const uint8_t *p, uint32_t count);
+    bool get_sync(uint32_t timeout = 40);
+    bool sync();
+    bool get_info(uint8_t param, uint32_t &val);
+    bool erase();
+    bool program(uint32_t fw_size);
+    bool verify_rev2(uint32_t fw_size);
+    bool verify_rev3(uint32_t fw_size_local);
+    bool reboot();
+
+    bool check_crc(void);
+    
+    enum {
+        PROTO_NOP               = 0x00,
+        PROTO_OK                = 0x10,
+        PROTO_FAILED            = 0x11,
+        PROTO_INSYNC            = 0x12,
+        PROTO_INVALID           = 0x13,
+        PROTO_BAD_SILICON_REV   = 0x14,
+        PROTO_EOC               = 0x20,
+        PROTO_GET_SYNC          = 0x21,
+        PROTO_GET_DEVICE        = 0x22,
+        PROTO_CHIP_ERASE        = 0x23,
+        PROTO_CHIP_VERIFY       = 0x24,
+        PROTO_PROG_MULTI        = 0x27,
+        PROTO_READ_MULTI        = 0x28,
+        PROTO_GET_CRC           = 0x29,
+        PROTO_GET_OTP           = 0x2a,
+        PROTO_GET_SN            = 0x2b,
+        PROTO_GET_CHIP          = 0x2c,
+        PROTO_SET_DELAY         = 0x2d,
+        PROTO_GET_CHIP_DES      = 0x2e,
+        PROTO_REBOOT            = 0x30,
+
+        INFO_BL_REV       = 1,        /**< bootloader protocol revision */
+        BL_REV            = 5,        /**< supported bootloader protocol  */
+        INFO_BOARD_ID     = 2,        /**< board type */
+        INFO_BOARD_REV    = 3,        /**< board revision */
+        INFO_FLASH_SIZE   = 4,        /**< max firmware size in bytes */
+
+        PROG_MULTI_MAX    = 248,      /**< protocol max is 255, must be multiple of 4 */
+    };
+};
+
+#endif // HAL_WITH_IO_MCU

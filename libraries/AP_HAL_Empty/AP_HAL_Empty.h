@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_EMPTY_H__
-#define __AP_HAL_EMPTY_H__
+#pragma once
 
 /* Your layer exports should depend on AP_HAL.h ONLY. */
 #include <AP_HAL/AP_HAL.h>
@@ -21,6 +19,3 @@
  */
 
 #include "HAL_Empty_Class.h"
-
-#endif //__AP_HAL_EMPTY_H__
-

@@ -1,5 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
 #include "Copter.h"
 
 #ifdef USERHOOK_INIT
@@ -42,5 +40,22 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
+}
+#endif
+
+#ifdef USERHOOK_AUXSWITCH
+void Copter::userhook_auxSwitch1(uint8_t ch_flag)
+{
+    // put your aux switch #1 handler here (CHx_OPT = 47)
+}
+
+void Copter::userhook_auxSwitch2(uint8_t ch_flag)
+{
+    // put your aux switch #2 handler here (CHx_OPT = 48)
+}
+
+void Copter::userhook_auxSwitch3(uint8_t ch_flag)
+{
+    // put your aux switch #3 handler here (CHx_OPT = 49)
 }
 #endif

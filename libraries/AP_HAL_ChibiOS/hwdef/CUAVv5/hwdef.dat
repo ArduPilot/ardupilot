@@ -1,0 +1,4 @@
+# hw definition file for processing by chibios_hwdef.py
+# for CUAVv5 hardware.
+
+include ../fmuv5/hwdef.dat

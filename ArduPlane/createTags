@@ -3,8 +3,7 @@
 
 ctags -RV --language-force=C++ --c++-kinds=+p --fields=+iaS --extra=+q  \
 	. \
-	../libraries/* \
-	/usr/lib/avr/include
+	../libraries/*
 
 # sample vimrc file
 # you'll need to have omnicpp plugin for vim
@@ -15,7 +14,6 @@ ctags -RV --language-force=C++ --c++-kinds=+p --fields=+iaS --extra=+q  \
 #" line enables syntax highlighting by default.
 #syntax on
 #filetype on
-#au BufNewFile,BufRead *.pde set filetype=cpp
 
 #" If using a dark background within the editing area and syntax highlighting
 #" turn on this option as well
@@ -57,9 +55,6 @@ ctags -RV --language-force=C++ --c++-kinds=+p --fields=+iaS --extra=+q  \
 #let OmniCpp_MayCompleteArrow = 1 " autocomplete after ->
 #let OmniCpp_MayCompleteScope = 1 " autocomplete after ::
 #let OmniCpp_DefaultNamespaces = ["std", "_GLIBCXX_STD"]
-
-#" arduino syntax
-#au BufNewFile,BufRead *.pde setf arduino
 
 #" automatically open and close the popup menu / preview window
 #"au CursorMovedI,InsertLeave * if pumvisible() == 0|silent! pclose|endif

@@ -1,0 +1,29 @@
+# hw definition file for processing by chibios_pins.py
+# for minimal F405 build
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 3
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+FLASH_SIZE_KB 1024
+
+# board voltage
+STM32_VDD 330U
+
+# order of UARTs
+UART_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 15360
+
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_INS_DEFAULT HAL_INS_NONE
+define HAL_BARO_DEFAULT HAL_BARO_NONE

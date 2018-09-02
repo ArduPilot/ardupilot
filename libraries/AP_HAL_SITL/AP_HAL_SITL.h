@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_SITL_H__
-#define __AP_HAL_SITL_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -8,7 +6,4 @@
 
 #include "HAL_SITL_Class.h"
 
-#endif // CONFIG_HAL_BOARD
-
-#endif // __AP_HAL_SITL_H__
-
+#endif  // CONFIG_HAL_BOARD

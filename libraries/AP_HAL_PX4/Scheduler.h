@@ -1,6 +1,4 @@
-
-#ifndef __AP_HAL_PX4_SCHEDULER_H__
-#define __AP_HAL_PX4_SCHEDULER_H__
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
@@ -12,9 +10,13 @@
 
 #define PX4_SCHEDULER_MAX_TIMER_PROCS 8
 
+#define APM_MAX_PRIORITY        243
 #define APM_MAIN_PRIORITY_BOOST 241
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
+#define APM_SPI_PRIORITY        242
+#define APM_CAN_PRIORITY        179
+#define APM_I2C_PRIORITY        178
 #define APM_UART_PRIORITY        60
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
@@ -45,27 +47,35 @@ public:
     PX4Scheduler();
     /* AP_HAL::Scheduler methods */
 
-    void     init(void *unused);
+    void     init();
     void     delay(uint16_t ms);
-    uint32_t millis();
-    uint32_t micros();
-    uint64_t millis64();
-    uint64_t micros64();
     void     delay_microseconds(uint16_t us);
     void     delay_microseconds_boost(uint16_t us);
-    void     register_delay_callback(AP_HAL::Proc, uint16_t min_time_ms);
     void     register_timer_process(AP_HAL::MemberProc);
     void     register_io_process(AP_HAL::MemberProc);
     void     register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
-    void     suspend_timer_procs();
-    void     resume_timer_procs();
     void     reboot(bool hold_in_bootloader);
-    void     panic(const prog_char_t *errormsg, ...) FORMAT(2, 3) NORETURN;
 
-    bool     in_timerprocess();
-    bool     system_initializing();
+    bool     in_main_thread() const override;
     void     system_initialized();
     void     hal_initialized() { _hal_initialized = true; }
+
+    /*
+      disable interrupts and return a context that can be used to
+      restore the interrupt state. This can be used to protect
+      critical regions
+     */
+    void *disable_interrupts_save(void) override;
+
+    /*
+      restore interrupt state from disable_interrupts_save()
+     */
+    void restore_interrupts(void *) override;
+
+    /*
+      create a new thread
+     */
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
     
 private:
     bool _initialized;
@@ -73,9 +83,6 @@ private:
     AP_HAL::Proc _delay_cb;
     uint16_t _min_delay_cb_ms;
     AP_HAL::Proc _failsafe;
-    volatile bool _timer_pending;
-
-    volatile bool _timer_suspended;
 
     AP_HAL::MemberProc _timer_proc[PX4_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
@@ -85,20 +92,18 @@ private:
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
 
-    volatile bool _timer_event_missed;
-
     pid_t _main_task_pid;
     pthread_t _timer_thread_ctx;
     pthread_t _io_thread_ctx;
     pthread_t _storage_thread_ctx;
     pthread_t _uart_thread_ctx;
 
-    void *_timer_thread(void);
-    void *_io_thread(void);
-    void *_storage_thread(void);
-    void *_uart_thread(void);
+    static void *_timer_thread(void *arg);
+    static void *_io_thread(void *arg);
+    static void *_storage_thread(void *arg);
+    static void *_uart_thread(void *arg);
 
-    void _run_timers(bool called_from_timer_thread);
+    void _run_timers();
     void _run_io(void);
 
     void delay_microseconds_semaphore(uint16_t us);
@@ -107,8 +112,6 @@ private:
     perf_counter_t  _perf_io_timers;
     perf_counter_t  _perf_storage_timer;
     perf_counter_t  _perf_delay;
+    static void *thread_create_trampoline(void *ctx);    
 };
 #endif
-#endif // __AP_HAL_PX4_SCHEDULER_H__
-
-

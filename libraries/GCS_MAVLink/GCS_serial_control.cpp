@@ -1,4 +1,3 @@
-// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
   MAVLink SERIAL_CONTROL handling
  */
@@ -28,13 +27,13 @@ extern const AP_HAL::HAL& hal;
 /**
    handle a SERIAL_CONTROL message
  */
-void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
+void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
 {
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(msg, &packet);
 
-    AP_HAL::UARTDriver *port = NULL;
-    AP_HAL::Stream *stream = NULL;
+    AP_HAL::UARTDriver *port = nullptr;
+    AP_HAL::BetterStream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
@@ -54,21 +53,31 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
         break;
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.uartB;
-        gps.lock_port(0, exclusive);
+        AP::gps().lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
         stream = port = hal.uartE;
-        gps.lock_port(1, exclusive);
+        AP::gps().lock_port(1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();
+        if (stream == nullptr) {
+            return;
+        }
         break;
     default:
         // not supported yet
         return;
     }
-    
-    if (exclusive && port != NULL) {
+    if (stream == nullptr) {
+        // this is probably very bad
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("stream is nullptr");
+#endif
+        return;
+    }
+
+    if (exclusive && port != nullptr) {
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
         // control support
@@ -76,7 +85,7 @@ void GCS_MAVLINK::handle_serial_control(mavlink_message_t *msg, AP_GPS &gps)
     }
 
     // optionally change the baudrate
-    if (packet.baudrate != 0 && port != NULL) {
+    if (packet.baudrate != 0 && port != nullptr) {
         port->begin(packet.baudrate);
     }
 
@@ -132,11 +141,11 @@ more_data:
     }
 
     if (packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) {
-        while (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        while (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             hal.scheduler->delay(1);
         }
     } else {
-        if (comm_get_txspace(chan) < MAVLINK_NUM_NON_PAYLOAD_BYTES+MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        if (!HAVE_PAYLOAD_SPACE(chan, SERIAL_CONTROL)) {
             // no space for reply
             return;
         }
@@ -154,6 +163,7 @@ more_data:
     _mav_finalize_message_chan_send(chan, 
                                     MAVLINK_MSG_ID_SERIAL_CONTROL,
                                     (const char *)&packet,
+                                    MAVLINK_MSG_ID_SERIAL_CONTROL_MIN_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {

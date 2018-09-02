@@ -1,0 +1,5 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro Pixhawk4 hardware.
+
+include ../fmuv5/hwdef.dat
+

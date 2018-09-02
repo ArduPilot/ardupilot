@@ -1,4 +1,3 @@
-/// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,7 +38,7 @@ CRRCSim::CRRCSim(const char *home_str, const char *frame_str) :
 
     sock.reuseaddress();
     sock.set_blocking(false);
-    heli_servos = (strstr(frame_str,"heli") != NULL);
+    heli_servos = (strstr(frame_str,"heli") != nullptr);
 }
 
 /*
@@ -130,6 +129,7 @@ void CRRCSim::recv_fdm(const struct sitl_input &input)
     position.z = -pkt.altitude;
 
     airspeed = pkt.airspeed;
+    airspeed_pitot = pkt.airspeed;
 
     dcm.from_euler(pkt.roll, pkt.pitch, pkt.yaw);
 
@@ -151,6 +151,10 @@ void CRRCSim::update(const struct sitl_input &input)
     send_servos(input);
     recv_fdm(input);
     update_position();
+    time_advance();
+
+    // update magnetic field
+    update_mag_field_bf();
 }
 
 } // namespace SITL

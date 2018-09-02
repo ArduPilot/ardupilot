@@ -21,12 +21,11 @@ function format_header {
   do_commit $1
 }
 
-PDEFILES=`find $DIR -name '*.pde' -print`
 CPPFILES=`find $DIR -name '*.cpp' -print`
 CFILES=`find $DIR -name '*.c' -print`
 HFILES=`find $DIR -name '*.h' -print`
 
-for f in $PDEFILES $CPPFILES $CFILES; do
+for f in $CPPFILES $CFILES; do
   format_cpp $f
 done
 
