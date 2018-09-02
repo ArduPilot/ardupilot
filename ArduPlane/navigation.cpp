@@ -109,10 +109,32 @@ void Plane::calc_airspeed_errors()
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == FLY_BY_WIRE_B || control_mode == CRUISE)) {
-        target_airspeed_cm = ((int32_t)(aparm.airspeed_max -
-                                        aparm.airspeed_min) *
-                              channel_throttle->get_control_in()) +
-                             ((int32_t)aparm.airspeed_min * 100);
+        if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
+            float control_min = 0.0f;
+            float control_mid = 0.0f;
+            const float control_max = channel_throttle->get_range();
+            const float control_in = channel_throttle->get_control_in();
+            switch (channel_throttle->get_type()) {
+                case RC_Channel::RC_CHANNEL_TYPE_ANGLE:
+                    control_min = -control_max;
+                    break;
+                case RC_Channel::RC_CHANNEL_TYPE_RANGE:
+                    control_mid = channel_throttle->get_control_mid();
+                    break;
+            }
+            if (control_in <= control_mid) {
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_min * 100, aparm.airspeed_cruise_cm,
+                                                        control_in,
+                                                        control_min, control_mid);
+            } else {
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_cruise_cm, aparm.airspeed_max * 100,
+                                                        control_in,
+                                                        control_mid, control_max);
+            }
+        } else {
+            target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
+                                  channel_throttle->get_control_in()) + ((int32_t)aparm.airspeed_min * 100);
+        }
 
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
