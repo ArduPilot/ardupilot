@@ -73,6 +73,8 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
     : _ahrs(ahrs),
       _last_update_ms(0)
 {
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -124,3 +126,14 @@ void OpticalFlow::update(void)
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
 
+// singleton instance
+OpticalFlow *OpticalFlow::_singleton;
+
+namespace AP {
+
+OpticalFlow *opticalflow()
+{
+    return OpticalFlow::get_singleton();
+}
+
+}
