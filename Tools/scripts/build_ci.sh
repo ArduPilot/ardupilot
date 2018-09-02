@@ -136,15 +136,6 @@ for t in $CI_BUILD_TARGET; do
             $waf check
         fi
     fi
-
-    if [[ $t == linux ]]; then
-        $waf configure --board $t
-        $waf tests
-        for some_test in build/linux/tests/*; do
-            echo "Running ($some_test)"
-            "$some_test"
-        done
-    fi
 done
 
 python Tools/autotest/param_metadata/param_parse.py --no-emit --vehicle APMrover2
