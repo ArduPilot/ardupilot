@@ -337,6 +337,16 @@ struct PACKED log_BARO {
     float   ground_temp;
 };
 
+struct PACKED log_Optflow {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t surface_quality;
+    float flow_x;
+    float flow_y;
+    float body_x;
+    float body_y;
+};
+
 struct PACKED log_AHRS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1434,7 +1444,9 @@ Format characters in the format string for binary log messages
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }
 
 
 // #if SBP_HW_LOGGING
@@ -1600,6 +1612,7 @@ enum LogMessages : uint8_t {
     LOG_ISBD_MSG,
     LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
+    LOG_OPTFLOW_MSG,
     _LOG_LAST_MSG_
 };
 
