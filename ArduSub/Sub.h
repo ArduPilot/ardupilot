@@ -485,7 +485,6 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void gcs_data_stream_send(void);
     void gcs_update(void);
-    void Log_Write_Optflow();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();
     void Log_Write_Attitude();
@@ -617,7 +616,6 @@ private:
     void init_compass();
 #if OPTFLOW == ENABLED
     void init_optflow();
-    void update_optical_flow(void);
 #endif
     void terrain_update();
     void terrain_logging();
