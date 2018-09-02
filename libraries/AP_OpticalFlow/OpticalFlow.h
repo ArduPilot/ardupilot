@@ -36,6 +36,11 @@ public:
     OpticalFlow(const OpticalFlow &other) = delete;
     OpticalFlow &operator=(const OpticalFlow&) = delete;
 
+    // get singleton instance
+    static OpticalFlow *get_singleton() {
+        return _singleton;
+    }
+
     // init - initialise sensor
     void init(void);
 
@@ -79,6 +84,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static OpticalFlow *_singleton;
+
     AP_AHRS_NavEKF &_ahrs;
     OpticalFlow_backend *backend;
 
@@ -99,5 +107,9 @@ private:
 
     uint32_t _last_update_ms;        // millis() time of last update
 };
+
+namespace AP {
+    OpticalFlow *opticalflow();
+}
 
 #include "OpticalFlow_backend.h"
