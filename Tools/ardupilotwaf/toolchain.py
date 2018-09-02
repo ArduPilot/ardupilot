@@ -131,13 +131,20 @@ def configure(cfg):
     _filter_supported_cxx_compilers('g++', 'clang++')
 
     if cfg.env.TOOLCHAIN == 'native':
-        cfg.load('compiler_cxx compiler_c gccdeps')
+        cfg.load('compiler_cxx compiler_c')
+
+        if not cfg.options.disable_gccdeps:
+            cfg.load('gccdeps')
+
         return
 
     cfg.find_toolchain_program('ar')
 
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
-    cfg.load('compiler_cxx compiler_c gccdeps')
+    cfg.load('compiler_cxx compiler_c')
+
+    if not cfg.options.disable_gccdeps:
+        cfg.load('gccdeps')
 
     if cfg.env.COMPILER_CC == 'clang':
         cfg.env.CFLAGS += cfg.env.CLANG_FLAGS
