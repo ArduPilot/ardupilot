@@ -5,9 +5,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 
-#define RC_CHANNEL_TYPE_ANGLE       0
-#define RC_CHANNEL_TYPE_RANGE       1
-
 #define NUM_RC_CHANNELS 16
 
 /// @class	RC_Channel
@@ -31,8 +28,14 @@ public:
         RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
     };
 
+    enum ChannelType {
+        RC_CHANNEL_TYPE_ANGLE = 0,
+        RC_CHANNEL_TYPE_RANGE = 1,
+    };
+
     // setup the control preferences
     void        set_range(uint16_t high);
+    uint16_t    get_range() const { return high_in; }
     void        set_angle(uint16_t angle);
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
@@ -97,6 +100,8 @@ public:
 
     // set and save trim if changed
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
+
+    ChannelType get_type(void) const { return type_in; }
 
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
@@ -209,7 +214,7 @@ private:
     AP_Int8     reversed;
     AP_Int16    dead_zone;
 
-    uint8_t     type_in;
+    ChannelType type_in;
     int16_t     high_in;
 
     // the input channel this corresponds to
