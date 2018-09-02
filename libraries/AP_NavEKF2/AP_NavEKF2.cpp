@@ -1082,7 +1082,7 @@ bool NavEKF2::use_compass(void) const
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
-void NavEKF2::writeOptFlowMeas(uint8_t &rawFlowQuality, Vector2f &rawFlowRates, Vector2f &rawGyroRates, uint32_t &msecFlowMeas, const Vector3f &posOffset)
+void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
