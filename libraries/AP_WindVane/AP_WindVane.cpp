@@ -128,7 +128,7 @@ float AP_WindVane::get_apparent_wind_direction_rad()
         case WindVaneType::WINDVANE_HOME_HEADING:
         case WindVaneType::WINDVANE_PWM_PIN:
         { 
-            apparent_angle = wrap_2PI(get_absolute_wind_direction_rad() - AP::ahrs().yaw); // This is a approximation as we are not considering boat speed and wind speed
+            apparent_angle = wrap_PI(get_absolute_wind_direction_rad() - AP::ahrs().yaw); // This is a approximation as we are not considering boat speed and wind speed
             break;
         }
         case WindVaneType::WINDVANE_ANALOG_PIN:
@@ -205,7 +205,7 @@ float AP_WindVane::read_analog()
 
     float bearing = (voltage_ratio + bearing_offset) * radians(360);
 
-    bearing = wrap_2PI(bearing);
+    bearing = wrap_PI(bearing);
     
     return bearing;
 }

@@ -516,9 +516,16 @@ private:
     
     bool _sailboat_indirect_route;
     bool _sailboat_tack;
-	bool _sailboat_tacking;
-	float _sailboat_tack_stat_time;
-	float _sailboat_new_tack_heading;
+    bool _sailboat_tacking;
+    float _sailboat_tack_stat_time;
+    float _sailboat_new_tack_heading;
+    uint8_t _sailboat_current_tack;
+    float _sailboat_heading_last_run;
+    enum _tack {
+        Unknown = 0,
+        Port = 1,
+        STBD = 2
+    };
 
     // sensors.cpp
     void init_compass(void);

@@ -9,6 +9,7 @@ To Do List
  - auto mode
  - Set up PID for the mainsail, So that it will hold at a maximum heal value, by sheeting out and/or changing heading (possibly some sort of ratio parameter here, ie only sheet out or only bear away or combination)
  - allow tack on geofence for auto mode use on restricted water
+ - add sailing output messages, 'On indiret route','Starting Tack','Tack Complete' ? 
 
  ----- Long term
  - max speed paramiter and contoller, for maping you may not want to go too fast
@@ -90,7 +91,7 @@ float Rover::sailboat_calc_heading(float desired_heading)
 
     
     /* 
-        Until we get more fancy logic for best posible speed just assume we can sail upwind on at the no go angle 
+        Until we get more fancy logic for best posible speed just assume we can sail upwind at the no go angle 
         Just set off on which ever of the no go angles is closeer, once the end destination is within a single tack it will switch back to direct route method 
         This should result in a long leg with a single tack to get to the destination, with tacks on fence.
         
@@ -101,36 +102,53 @@ float Rover::sailboat_calc_heading(float desired_heading)
     float left_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sail_no_go));
     float right_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sail_no_go));
     
-    // Sail on which ever is closest to our current heading unless were suposed to be tacking
-    float left_error = fabsf(wrap_PI(left_no_go_heading - ahrs.yaw_sensor));
-    float right_error = fabsf(wrap_PI(right_no_go_heading - ahrs.yaw_sensor));
-    
-    bool port_tack = false;
-    
-    if (left_error <= right_error){
-        // sailing on the left hand no go angle will result in being on port tack
-        port_tack = true; 
+    // Caculate what tack we are on if it has been too long since we knew
+    if (_sailboat_current_tack ==  _tack::Unknown || (AP_HAL::millis() - _sailboat_heading_last_run) > 1000){
+        if (g2.windvane.get_apparent_wind_direction_rad() < 0){
+            _sailboat_current_tack = _tack::Port;
+        } else {
+            _sailboat_current_tack = _tack::STBD;
+        }   
     }
-
+    _sailboat_heading_last_run = AP_HAL::millis();
+    
     // Allow force tack from rudder input 
     float steering_in = rover.channel_steer->norm_input();
     if (fabsf(steering_in) > 0.9f && !_sailboat_tack && !_sailboat_tacking){
-        // if were on port a left hand steering input would be a tack
-        if(port_tack && steering_in < -0.9f){
-            _sailboat_tack = true;
-        } else if(!port_tack && steering_in > 0.9f){ // if on stbd right hand turn is a tack
-            _sailboat_tack = true;
-        }
+       
+        switch (_sailboat_current_tack){
+            case _tack::Unknown: //should never be called but default to port tack       
+            case _tack::Port: {
+                if (steering_in < -0.9f){ // if were on port a left hand steering input would be a tack
+                    _sailboat_tack = true;
+                }
+                break;
+            } 
+            case _tack::STBD: {
+                if (steering_in > 0.9f){ // if on stbd right hand turn is a tack
+                    _sailboat_tack = true;
+                }
+                break;
+            }  
+        }        
     }
-     
+
     // Are we due to tack?
     if (_sailboat_tack){
 
         // Pick a heading for the new tack 
-        if (!port_tack){
-            _sailboat_new_tack_heading = degrees(left_no_go_heading) * 100.0f;
-        } else {
-            _sailboat_new_tack_heading = degrees(right_no_go_heading) * 100.0f;
+        switch (_sailboat_current_tack){
+            case _tack::Unknown: //should never be called but default to port tack       
+            case _tack::Port: {
+                _sailboat_new_tack_heading = degrees(right_no_go_heading) * 100.0f;
+                _sailboat_current_tack = _tack::STBD;  
+                break;
+            } 
+            case _tack::STBD: {
+                _sailboat_new_tack_heading = degrees(left_no_go_heading) * 100.0f;    
+                _sailboat_current_tack = _tack::Port;  
+                break;
+            }  
         }
 
         _sailboat_tack = false;  
@@ -140,17 +158,23 @@ float Rover::sailboat_calc_heading(float desired_heading)
     
     // If were in the process of a tack we should not change the target heading 
     if (_sailboat_tacking){
-        // Check if we have tacked round enough or if we have timed out
+        // Check if we have tacked round enough or if we have timed out, add some logic to look at aparent wind angle
         if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - (degrees(ahrs.yaw_sensor) * 100.0f))) < (20.0f * 100.0f)){
             _sailboat_tacking = false; 
         }
         desired_heading = _sailboat_new_tack_heading;
     } else {
         // Set new heading
-        if (port_tack){
-            desired_heading = degrees(left_no_go_heading) * 100.0f;
-        } else {
-            desired_heading = degrees(right_no_go_heading) * 100.0f;
+         switch (_sailboat_current_tack){
+            case _tack::Unknown: //should never be called but default to port tack       
+            case _tack::Port: {
+                    desired_heading = degrees(left_no_go_heading) * 100.0f;
+                break;
+            } 
+            case _tack::STBD: {
+                    desired_heading = degrees(right_no_go_heading) * 100.0f;
+                break;
+            }  
         }
     }
 
