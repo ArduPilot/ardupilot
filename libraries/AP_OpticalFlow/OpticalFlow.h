@@ -30,7 +30,7 @@ class OpticalFlow
     friend class OpticalFlow_backend;
 
 public:
-    OpticalFlow(AP_AHRS_NavEKF& ahrs);
+    OpticalFlow();
 
     /* Do not allow copies */
     OpticalFlow(const OpticalFlow &other) = delete;
@@ -87,7 +87,6 @@ private:
 
     static OpticalFlow *_singleton;
 
-    AP_AHRS_NavEKF &_ahrs;
     OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
