@@ -314,13 +314,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(copter.optflow);
-#endif
-        break;
-
     case MSG_WIND:
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
