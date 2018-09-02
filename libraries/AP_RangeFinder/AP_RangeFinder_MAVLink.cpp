@@ -45,20 +45,27 @@ bool AP_RangeFinder_MAVLink::detect()
 
 /*
    Set the distance based on a MAVLINK message
-*/
-void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
+*/void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
 {
     mavlink_distance_sensor_t packet;
     mavlink_msg_distance_sensor_decode(msg, &packet);
 
     // only accept distances for downward facing sensors
-    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
-        state.last_reading_ms = AP_HAL::millis();
-        distance_cm = packet.current_distance;
+    if (packet.orientation != MAV_SENSOR_ROTATION_PITCH_270)
+    {
+        return;
     }
+
+    // Check if distance between the min-max range
+    if (packet.current_distance > packet.max_distance || packet.current_distance < packet.min_distance)
+    {
+        return;
+    }
+
+    state.last_reading_ms = AP_HAL::millis();
+    distance_cm = packet.current_distance;
     sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
 }
-
 /*
    update the state of the sensor
 */
