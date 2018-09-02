@@ -69,9 +69,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
 };
 
 // default constructor
-OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
-    : _ahrs(ahrs),
-      _last_update_ms(0)
+OpticalFlow::OpticalFlow()
 {
     _singleton = this;
 
