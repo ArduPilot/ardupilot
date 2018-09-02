@@ -273,7 +273,7 @@ private:
 
     // Optical flow sensor
 #if OPTFLOW == ENABLED
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow;
 #endif
 
     // system time in milliseconds of last recorded yaw reset from ekf
