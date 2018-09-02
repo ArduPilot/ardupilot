@@ -67,6 +67,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--disable-gccdeps',
+        action='store_true',
+        default=False,
+        help='Disable the use of GCC dependencies output method and use waf default method.')
+
     g.add_option('--enable-asserts',
         action='store_true',
         default=False,
