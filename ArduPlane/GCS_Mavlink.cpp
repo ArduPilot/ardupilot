@@ -475,15 +475,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.send_wind(chan);
         break;
 
-    case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
-        if (plane.optflow.enabled()) {        
-            CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-            send_opticalflow(plane.optflow);
-        }
-#endif
-        break;
-
     case MSG_PID_TUNING:
         if (plane.control_mode != MANUAL) {
             CHECK_PAYLOAD_SIZE(PID_TUNING);
