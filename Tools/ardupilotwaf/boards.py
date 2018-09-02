@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys, os
 
 import waflib
+from waflib import Utils
 from waflib.Configure import conf
 
 _board_classes = {}
@@ -319,12 +320,13 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
-        if sys.platform == 'cygwin':
+        if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [
                 'winmm',
             ]
-            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
+        if Utils.unversioned_sys_platform() == 'cygwin':
+            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
@@ -404,7 +406,7 @@ class chibios(Board):
             '-fno-threadsafe-statics',
         ]
 
-        if sys.platform == 'cygwin':
+        if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         bldnode = cfg.bldnode.make_node(self.name)
