@@ -823,7 +823,6 @@ private:
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();
-    void Log_Write_Optflow();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
