@@ -26,27 +26,34 @@ from waflib import Build, ConfigSet, Configure, Context, Utils
 # Default installation prefix for Linux boards
 default_prefix = '/usr/'
 
-def _set_build_context_variant(variant):
+# Override Build execute and Configure post_recurse methods for autoconfigure purposes
+Build.BuildContext.execute = ardupilotwaf.ap_autoconfigure(Build.BuildContext.execute)
+Configure.ConfigurationContext.post_recurse = ardupilotwaf.ap_configure_post_recurse()
+
+
+def _set_build_context_variant(board):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
             continue
-        c.variant = variant
+        c.variant = board
 
 def init(ctx):
     env = ConfigSet.ConfigSet()
     try:
         p = os.path.join(Context.out_dir, Build.CACHE_DIR, Build.CACHE_SUFFIX)
         env.load(p)
-    except:
+    except EnvironmentError:
         return
 
     Configure.autoconfig = 'clobber' if env.AUTOCONFIG else False
 
-    if 'VARIANT' not in env:
+    board = ctx.options.board or env.BOARD
+
+    if not board:
         return
 
     # define the variant build commands according to the board
-    _set_build_context_variant(env.VARIANT)
+    _set_build_context_variant(board)
 
 def options(opt):
     opt.load('compiler_cxx compiler_c waf_unit_test python')
@@ -59,8 +66,8 @@ def options(opt):
     g.add_option('--board',
         action='store',
         choices=boards_names,
-        default='sitl',
-        help='Target board to build, choices are %s.' % boards_names)
+        default=None,
+        help='Target board to build, choices are %s.' % ', '.join(boards_names))
 
     g.add_option('--debug',
         action='store_true',
@@ -81,7 +88,7 @@ def options(opt):
         action='store_true',
         default=False,
         help='use old NuttX IO firmware for IOMCU')
-    
+
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -190,20 +197,22 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
+    if cfg.options.board is None:
+        cfg.options.board = 'sitl'
+
     cfg.env.BOARD = cfg.options.board
-    cfg.env.DEBUG = cfg.options.debug
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
-    cfg.env.VARIANT = cfg.env.BOARD
-
-    _set_build_context_variant(cfg.env.VARIANT)
-    cfg.setenv(cfg.env.VARIANT)
+    _set_build_context_variant(cfg.env.BOARD)
+    cfg.setenv(cfg.env.BOARD)
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.USE_NUTTX_IOFW = cfg.options.use_nuttx_iofw
+
+    cfg.env.OPTIONS = cfg.options.__dict__
 
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
@@ -315,7 +324,7 @@ def board(ctx):
         print('No board currently configured')
         return
 
-    print('Board configured to: {}'.format(env.VARIANT))
+    print('Board configured to: {}'.format(env.BOARD))
 
 def _build_cmd_tweaks(bld):
     if bld.cmd == 'check-all':
