@@ -29,8 +29,7 @@ OpticalFlow_backend::~OpticalFlow_backend(void)
 // update the frontend
 void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)
 {
-    frontend._state = state;
-    frontend._last_update_ms = AP_HAL::millis();
+    frontend.update_state(state);
 }
 
 // apply yaw angle to a vector
