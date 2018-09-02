@@ -203,7 +203,7 @@ class Board:
             env.CXXFLAGS += [
                 '-Wno-error=cast-align',
             ]
-            
+
             env.DEFINES.update(
                 UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
                 UAVCAN_NO_ASSERTIONS = 1,
@@ -260,13 +260,8 @@ def add_dynamic_boards():
 
 def get_boards_names():
     add_dynamic_boards()
-    ret = sorted(list(_board_classes.keys()))
-    # some board types should not be selected
-    hidden = ['chibios']
-    for h in hidden:
-        if h in ret:
-            ret.remove(h)
-    return ret        
+
+    return sorted(list(_board_classes.keys()), key=str.lower)
 
 @conf
 def get_board(ctx):
@@ -333,8 +328,9 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-            
+
 class chibios(Board):
+    abstract = True
     toolchain = 'arm-none-eabi'
 
     def configure_env(self, cfg, env):
@@ -452,7 +448,7 @@ class chibios(Board):
             env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
-            
+
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
@@ -707,7 +703,7 @@ class rst_zynq(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
         )
-        
+
 class px4(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
@@ -872,7 +868,7 @@ class px4_v4pro(px4):
         self.px4io_name = 'px4io-v2'
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True		
-		
+
 class aerofc_v1(px4):
     name = 'aerofc-v1'
     def __init__(self):
