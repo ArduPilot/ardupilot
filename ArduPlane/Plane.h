@@ -287,7 +287,7 @@ private:
 
 #if OPTFLOW == ENABLED
     // Optical flow sensor
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow;
 #endif
 
     // Rally Ponints
