@@ -183,7 +183,7 @@ public:
     void send_ahrs();
     void send_battery2();
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void send_opticalflow(const OpticalFlow &optflow);
+    void send_opticalflow();
 #endif
     virtual void send_attitude() const;
     void send_autopilot_version() const;
