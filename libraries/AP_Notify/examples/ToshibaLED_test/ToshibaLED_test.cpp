@@ -9,6 +9,8 @@ void blink();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+AP_Notify notify;
+
 static ToshibaLED_I2C toshiba_led(1);
 
 void setup(void)
@@ -20,6 +22,7 @@ void setup(void)
     if (toshiba_led.init()) {
         hal.console->printf("Failed to initialise Toshiba LED\n");
     }
+    toshiba_led.pNotify = &notify;
 
     // turn on initialising notification
     AP_Notify::flags.initialising = false;
