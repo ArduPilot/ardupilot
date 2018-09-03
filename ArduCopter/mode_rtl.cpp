@@ -12,6 +12,11 @@
 // rtl_init - initialise rtl controller
 bool Copter::ModeRTL::init(bool ignore_checks)
 {
+    if (!ignore_checks) {
+        if (!AP::ahrs().home_is_set()) {
+            return false;
+        }
+    }
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
     build_path(!copter.failsafe.terrain);
