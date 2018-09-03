@@ -15,3 +15,14 @@ int8_t RC_Channels_Plane::flight_mode_channel_number() const
 {
     return plane.g.flight_mode_channel.get();
 }
+
+bool RC_Channels_Plane::has_valid_input() const
+{
+    if (plane.failsafe.rc_failsafe) {
+        return false;
+    }
+    if (plane.failsafe.throttle_counter != 0) {
+        return false;
+    }
+    return true;
+}
