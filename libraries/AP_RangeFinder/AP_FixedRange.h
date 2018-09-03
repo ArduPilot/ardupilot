@@ -3,11 +3,11 @@
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
 
-class AP_RangeFinder_Fake : public AP_RangeFinder_Backend
+class AP_FixedRange : public AP_RangeFinder_Backend
 {
 public:
     // constructor
-    AP_RangeFinder_Fake(RangeFinder::RangeFinder_State &_state);
+    AP_FixedRange(RangeFinder::RangeFinder_State &_state);
 
     // static detection function
     static bool detect(RangeFinder::RangeFinder_State &_state);

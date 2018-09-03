@@ -14,18 +14,18 @@
  */
 
 /*
- *   AP_RangeFinder_Fake.cpp - Fake rangefinder that reports a fixed distance to the ground
+ *   AP_FixedRange.cpp - Fake rangefinder that reports a fixed distance to the ground
  *
  */
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "RangeFinder.h"
-#include "AP_RangeFinder_Fake.h"
+#include "AP_FixedRange.h"
 
 /* 
    Constructor that just sets the status as ready
 */
-AP_RangeFinder_Fake::AP_RangeFinder_Fake(RangeFinder::RangeFinder_State &_state) :
+AP_FixedRange::AP_FixedRange(RangeFinder::RangeFinder_State &_state) :
     AP_RangeFinder_Backend(_state)
 {
     state.max_distance_cm = state.ground_clearance_cm + 1;
@@ -36,7 +36,7 @@ AP_RangeFinder_Fake::AP_RangeFinder_Fake(RangeFinder::RangeFinder_State &_state)
 /* 
    If we instantiate a fake rangefinder, it should always be detected
 */
-bool AP_RangeFinder_Fake::detect(RangeFinder::RangeFinder_State &_state)
+bool AP_FixedRange::detect(RangeFinder::RangeFinder_State &_state)
 {
     return true;
 }
@@ -44,7 +44,7 @@ bool AP_RangeFinder_Fake::detect(RangeFinder::RangeFinder_State &_state)
 /*
   update distance_cm 
  */
-void AP_RangeFinder_Fake::update(void)
+void AP_FixedRange::update(void)
 {
     state.distance_cm = state.ground_clearance_cm;
     state.last_reading_ms = AP_HAL::millis();

@@ -15,7 +15,7 @@
 
 #include "RangeFinder.h"
 #include "AP_RangeFinder_analog.h"
-#include "AP_RangeFinder_Fake.h"
+#include "AP_FixedRange.h"
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include "AP_RangeFinder_MaxsonarSerialLV.h"
@@ -760,8 +760,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case RangeFinder_TYPE_FAKE:
         // note that analog will always come back as present if the pin is valid
-        if (AP_RangeFinder_Fake::detect(state[instance])) {
-            drivers[instance] = new AP_RangeFinder_Fake(state[instance]);
+        if (AP_FixedRange::detect(state[instance])) {
+            drivers[instance] = new AP_FixedRange(state[instance]);
         }
         break;
     default:
