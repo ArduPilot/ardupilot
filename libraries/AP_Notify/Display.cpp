@@ -337,6 +337,9 @@ bool Display::init(void)
         default:
             break;
         }
+        if (_driver != nullptr) {
+            break;
+        }
     }
 
     if (_driver == nullptr) {
