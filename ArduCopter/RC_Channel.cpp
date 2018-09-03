@@ -74,7 +74,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case MISSION_RESET:
     case ATTCON_FEEDFWD:
     case ATTCON_ACCEL_LIM:
-    case LOST_COPTER_SOUND:
     case MOTOR_ESTOP:
     case MOTOR_INTERLOCK:
     case AVOID_ADSB:
