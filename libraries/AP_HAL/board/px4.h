@@ -141,6 +141,10 @@
 #define AP_FEATURE_SBUS_OUT 1
 #endif
 
+#ifndef HAL_WITH_UAVCAN
+#define HAL_WITH_UAVCAN	0
+#endif
+
 #include <AP_HAL_PX4/Semaphores.h>
 #define HAL_Semaphore PX4::Semaphore
 #define HAL_Semaphore_Recursive PX4::Semaphore_Recursive
