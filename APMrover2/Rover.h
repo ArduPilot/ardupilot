@@ -513,12 +513,14 @@ private:
     bool sailboat_update_indirect_route(float desired_heading);
     float sailboat_calc_heading(float desired_heading);
     float sailboat_VMG(float target_heading);
+    float sailboat_acro_tack();
     
     bool _sailboat_indirect_route;
     bool _sailboat_tack;
     bool _sailboat_tacking;
     float _sailboat_tack_stat_time;
     float _sailboat_new_tack_heading;
+    float _sailboat_new_tack_heading_rad;
     uint8_t _sailboat_current_tack;
     float _sailboat_heading_last_run;
     enum _tack {

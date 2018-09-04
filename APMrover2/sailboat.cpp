@@ -181,6 +181,29 @@ float Rover::sailboat_calc_heading(float desired_heading)
     return desired_heading;
 }
 
+float Rover::sailboat_acro_tack()
+{       
+    // Wait until tack is completed
+    // Check if we have tacked round enough or if we have timed out
+    if (_sailboat_tacking){
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw_sensor)) < radians(5.0f)){
+            _sailboat_tacking = false; 
+        }
+    }    
+    
+    // intiate tack
+    if (_sailboat_tack) {
+        // Match the curent angle to the true wind on the new tack 
+        _sailboat_new_tack_heading_rad = ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw_sensor));
+                     
+        _sailboat_tack = false;  
+        _sailboat_tacking = true;
+        _sailboat_tack_stat_time = AP_HAL::millis();       
+    }    
+    
+    return _sailboat_new_tack_heading_rad;
+}
+
 // Velocity Made Good, this is the speed we are travling towards the desired destination
 // Not sure how usefull this is at this stage, but would be usefull to log
 float Rover::sailboat_VMG(float target_heading)
@@ -190,7 +213,7 @@ float Rover::sailboat_VMG(float target_heading)
     float speed;
     g2.attitude_control.get_forward_speed(speed);
 
-    float vmg = speed * cosf(wrap_PI(target_heading - ahrs.yaw));
+    float vmg = speed * cosf(wrap_PI(target_heading - ahrs.yaw_sensor));
 
     return vmg;
 }

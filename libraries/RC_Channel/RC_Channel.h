@@ -160,6 +160,7 @@ public:
         GUIDED       =        55, // guided mode
         LOITER       =        56, // loiter mode
         FOLLOW       =        57, // follow mode
+        SAILBOAT_TACK =       58, // Rover Sailboat tack
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
