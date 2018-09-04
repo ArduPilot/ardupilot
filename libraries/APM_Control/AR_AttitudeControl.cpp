@@ -391,6 +391,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     const uint32_t now = AP_HAL::millis();
     if (!speed_control_active()) {
         _throttle_speed_pid.reset_filter();
+        _throttle_speed_pid.reset_I();
         _desired_speed = speed;
     }
     _speed_last_ms = now;
