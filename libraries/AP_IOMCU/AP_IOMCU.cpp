@@ -323,6 +323,26 @@ void AP_IOMCU::read_status()
 {
     uint16_t *r = (uint16_t *)&reg_status;
     read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r);
+
+    if (reg_status.flag_safety_off == 0) {
+        // if the IOMCU is indicating that safety is on, then force a
+        // re-check of the safety options. This copes with a IOMCU reset
+        last_safety_options = 0xFFFF;
+
+        // also check if the safety should be definately off.
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+        if (!boardconfig) {
+            return;
+        }
+        uint16_t options = boardconfig->get_safety_button_options();
+        if (safety_forced_off && (options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON) == 0) {
+            // the safety has been forced off, and the user has asked
+            // that the button can never be used, so there should be
+            // no way for the safety to be on except a IOMCU
+            // reboot. Force safety off again
+            force_safety_off();
+        }
+    }
 }
 
 /*
@@ -519,6 +539,7 @@ AP_HAL::Util::safety_state AP_IOMCU::get_safety_switch_state(void) const
 bool AP_IOMCU::force_safety_on(void)
 {
     trigger_event(IOEVENT_FORCE_SAFETY_ON);
+    safety_forced_off = false;
     return true;
 }
 
@@ -526,6 +547,7 @@ bool AP_IOMCU::force_safety_on(void)
 void AP_IOMCU::force_safety_off(void)
 {
     trigger_event(IOEVENT_FORCE_SAFETY_OFF);
+    safety_forced_off = true;
 }
 
 // read from one channel
