@@ -367,6 +367,15 @@ public:
 
     // Rally point library
     AP_Rally_Rover rally;
+
+    // sailboat parameters
+    AP_Float sail_angle_min;
+    AP_Float sail_angle_max;
+    AP_Float sail_angle_ideal;
+    AP_Float sail_no_go;
+
+    // windvane
+    AP_WindVane windvane;
 };
 
 extern const AP_Param::Info var_info[];

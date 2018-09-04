@@ -64,6 +64,8 @@ void Rover::init_ardupilot()
 
     rssi.init();
 
+    g2.windvane.init();
+
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
@@ -331,6 +333,9 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
 
     // Set the SmartRTL home location. If activated, SmartRTL will ultimately try to land at this point
     g2.smart_rtl.set_home(true);
+
+    // save home heading for use in sail vehicles
+    rover.g2.windvane.record_home_headng();
 
     change_arm_state();
     return true;
