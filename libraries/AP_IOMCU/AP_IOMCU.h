@@ -119,6 +119,9 @@ private:
     // last value of safety options
     uint16_t last_safety_options = 0xFFFF;
 
+    // have we forced the safety off?
+    bool safety_forced_off;
+
     void send_servo_out(void);
     void read_rc_input(void);
     void read_servo(void);
