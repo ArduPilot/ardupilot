@@ -132,6 +132,8 @@ float Rover::sailboat_calc_heading(float desired_heading)
             }  
         }        
     }
+    
+    // Add paramiter for maximum cross track error befoe tack
 
     // Are we due to tack?
     if (_sailboat_tack){
@@ -194,7 +196,7 @@ float Rover::sailboat_acro_tack()
     // intiate tack
     if (_sailboat_tack) {
         // Match the curent angle to the true wind on the new tack 
-        _sailboat_new_tack_heading_rad = ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw_sensor));
+        _sailboat_new_tack_heading_rad = wrap_2PI(ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw_sensor)));
                      
         _sailboat_tack = false;  
         _sailboat_tacking = true;

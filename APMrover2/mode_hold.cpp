@@ -26,5 +26,5 @@ void ModeHold::update()
     
     // hold position - stop motors and center steering
     g2.motors.set_throttle(throttle);
-    g2.motors.set_steering(steering_out);
+    g2.motors.set_steering(steering_out  * 4500.0f);
 }
