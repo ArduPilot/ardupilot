@@ -237,13 +237,13 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     // Generate estimate of ground speed vector using air data system
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
-    float airspeed;
+    float airspeed = 0;
     const bool gotAirspeed = airspeed_estimate_true(&airspeed);
     const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
         const Vector3f wind = wind_estimate();
         const Vector2f wind2d(wind.x, wind.y);
-        const Vector2f airspeed_vector(cosf(yaw) * airspeed, sinf(yaw) * airspeed);
+        const Vector2f airspeed_vector(_cos_yaw * airspeed, _sin_yaw * airspeed);
         gndVelADS = airspeed_vector - wind2d;
     }
 
@@ -281,6 +281,20 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     if (!gotAirspeed && gotGPS) {
         return gndVelGPS;
     }
+
+    if (airspeed > 0) {
+        // we have a rough airspeed, and we have a yaw. For
+        // dead-reckoning purposes we can create a estimated
+        // groundspeed vector
+        Vector2f ret(cosf(yaw), sinf(yaw));
+        ret *= airspeed;
+        // adjust for estimated wind
+        Vector3f wind = wind_estimate();
+        ret.x += wind.x;
+        ret.y += wind.y;
+        return ret;
+    }
+
     return Vector2f(0.0f, 0.0f);
 }
 
