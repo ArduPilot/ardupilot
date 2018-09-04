@@ -76,7 +76,9 @@ fi
 
 sudo usermod -a -G dialout $USER
 
-$APT_GET remove modemmanager
+if dpkg-query -l "modemmanager"; then
+    $APT_GET remove modemmanager
+fi
 $APT_GET update
 
 if apt-cache search python-wxgtk3.0 | grep wx; then

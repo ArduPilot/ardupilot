@@ -1,7 +1,22 @@
 FROM ubuntu:16.04
-ADD . /ardupilot
 WORKDIR /ardupilot
 
-RUN apt-get update && apt-get upgrade -y && apt-get dist-upgrade -y && apt-get install lsb-release sudo software-properties-common python-software-properties -y
-ENV USER=root
-RUN bash -c "Tools/scripts/install-prereqs-ubuntu.sh -y && apt-get install gcc-arm-none-eabi -y"
+RUN useradd -U -d /ardupilot ardupilot && \
+    usermod -G users ardupilot
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install --no-install-recommends -y \
+    lsb-release \
+    sudo \
+    software-properties-common \
+    python-software-properties && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ENV USER=ardupilot
+ADD . /ardupilot
+RUN chown -R ardupilot:ardupilot /ardupilot && \
+    bash -c "Tools/scripts/install-prereqs-ubuntu.sh -y && apt-get install gcc-arm-none-eabi -y" && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+USER ardupilot
+ENV CCACHE_MAXSIZE=1G
+ENV PATH /usr/lib/ccache:/ardupilot/Tools:${PATH}
