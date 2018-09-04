@@ -627,6 +627,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
+    if opts.sysid is not None:
+        cmd.extend(["--sysid", str(opts.sysid)])
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args.split(" "))
@@ -1064,6 +1066,10 @@ group_sim.add_option("", "--start-time",
                      default=None,
                      type='string',
                      help="specify simulation start time in format YYYY-MM-DD-HH:MM in your local time zone")
+group_sim.add_option("", "--sysid",
+                     type='int',
+                     default=None,
+                     help="Set SYSID_THISMAV")
 parser.add_option_group(group_sim)
 
 
