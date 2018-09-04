@@ -1023,6 +1023,11 @@ bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
                                         gnd_speed + _wind_max);
         *airspeed_ret = true_airspeed / get_EAS2TAS();
     }
+    if (!ret) {
+        // give the last estimate, but return false. This is used by
+        // dead-reckoning code
+        *airspeed_ret = _last_airspeed;
+    }
     return ret;
 }
 
