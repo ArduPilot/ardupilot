@@ -97,6 +97,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
 
@@ -228,6 +229,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SIM_PORT_OUT,
         CMDLINE_IRLOCK_PORT,
         CMDLINE_START_TIME,
+        CMDLINE_SYSID,
     };
 
     const struct GetOptLong::option options[] = {
@@ -264,6 +266,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
+        {"sysid",           true,   0, CMDLINE_SYSID},
         {0, false, 0, 0}
     };
 
@@ -385,6 +388,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_START_TIME:
             start_time_UTC = atoi(gopt.optarg);
             break;
+        case CMDLINE_SYSID: {
+            const int32_t sysid = atoi(gopt.optarg);
+            if (sysid < 1 || sysid > 255) {
+                fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
+                exit(1);
+            }
+            char sysid_string[18];
+            snprintf(sysid_string, sizeof(sysid_string), "SYSID_THISMAV=%s", gopt.optarg);
+            _set_param_default(sysid_string);
+            break;
+        }
         default:
             _usage();
             exit(1);
