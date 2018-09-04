@@ -515,18 +515,17 @@ class AutoTestCopter(AutoTest):
             alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
-            self.progress("Alt: %u  HomeDistance: %.0f" %
+            self.progress("Alt: %f  HomeDistance: %.0f" %
                           (alt, home_distance))
             # recenter pitch sticks once we're home so we don't fly off again
             if pitching_forward and home_distance < 10:
                 pitching_forward = False
-                self.set_rc(2, 1500)
+                self.set_rc(2, 1475)
                 # disable fence
                 self.set_parameter("FENCE_ENABLE", 0)
             if alt <= 1 and home_distance < 10:
                 # reduce throttle
                 self.set_rc(3, 1000)
-                # switch mode to stabilize
                 self.mavproxy.send('switch 2\n')  # land mode
                 self.wait_mode('LAND')
                 self.progress("Waiting for disarm")
