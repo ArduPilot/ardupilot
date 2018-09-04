@@ -797,7 +797,7 @@ parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
 group_sim.add_option("-I", "--instance",
-                     default=0,
+                     default=1,
                      type='int',
                      help="instance of simulator")
 group_sim.add_option("-V", "--valgrind",
@@ -995,8 +995,8 @@ if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
 # setup ports for this instance
-mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * cmd_opts.instance)
-simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
+mavlink_port = "tcp:127.0.0.1:" + str(5760 + 10 * (cmd_opts.instance - 1))
+simout_port = "127.0.0.1:" + str(5501 + 10 * (cmd_opts.instance - 1))
 
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
