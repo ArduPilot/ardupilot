@@ -791,7 +791,7 @@ void AC_PosControl::init_xy_controller()
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
-void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
+void AC_PosControl::update_xy_controller()
 {
     // compute dt
     uint32_t now = AP_HAL::millis();
@@ -812,7 +812,7 @@ void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
     desired_vel_to_pos(dt);
 
     // run horizontal position controller
-    run_xy_controller(dt, ekfNavVelGainScaler);
+    run_xy_controller(dt);
 
     // update xy update time
     _last_update_xy_ms = now;
@@ -888,7 +888,7 @@ void AC_PosControl::init_vel_controller_xyz()
 ///     velocity targets should we set using set_desired_velocity_xy() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
+void AC_PosControl::update_vel_controller_xy()
 {
     // capture time since last iteration
     uint32_t now = AP_HAL::millis();
@@ -910,7 +910,7 @@ void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
     desired_vel_to_pos(dt);
 
     // run position controller
-    run_xy_controller(dt, ekfNavVelGainScaler);
+    run_xy_controller(dt);
 
     // update xy update time
     _last_update_xy_ms = now;
@@ -921,9 +921,9 @@ void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
 ///     velocity targets should we set using set_desired_velocity_xyz() method
 ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
 ///     throttle targets will be sent directly to the motors
-void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
+void AC_PosControl::update_vel_controller_xyz()
 {
-    update_vel_controller_xy(ekfNavVelGainScaler);
+    update_vel_controller_xy();
 
     // update altitude target
     set_alt_target_from_climb_rate_ff(_vel_desired.z, _dt, false);
@@ -991,8 +991,11 @@ void AC_PosControl::desired_vel_to_pos(float nav_dt)
 ///     desired velocity (_vel_desired) is combined into final target velocity
 ///     converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 ///     converts desired accelerations provided in lat/lon frame to roll/pitch angles
-void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
+void AC_PosControl::run_xy_controller(float dt)
 {
+    float ekfGndSpdLimit, ekfNavVelGainScaler;
+    AP::ahrs_navekf().getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+
     Vector3f curr_pos = _inav.get_position();
     float kP = ekfNavVelGainScaler * _p_pos_xy.kP(); // scale gains to compensate for noisy optical flow measurement in the EKF
 
