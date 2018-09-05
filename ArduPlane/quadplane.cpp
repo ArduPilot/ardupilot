@@ -992,12 +992,8 @@ void QuadPlane::control_loiter()
                                                plane.channel_pitch->get_control_in(),
                                                plane.G_Dt);
 
-    // Update EKF speed limit - used to limit speed when we are using optical flow
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-    
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
@@ -1762,8 +1758,6 @@ void QuadPlane::vtol_position_controller(void)
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
     check_attitude_relax();
 
@@ -1825,7 +1819,7 @@ void QuadPlane::vtol_position_controller(void)
         pos_control->set_desired_accel_xy(0.0f,0.0f);
 
         // run horizontal velocity controller
-        pos_control->update_vel_controller_xy(ekfNavVelGainScaler);
+        pos_control->update_vel_controller_xy();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
@@ -1882,7 +1876,7 @@ void QuadPlane::vtol_position_controller(void)
 
         // set position control target and update
         pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
-        pos_control->update_xy_controller(ekfNavVelGainScaler);
+        pos_control->update_xy_controller();
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
@@ -1990,9 +1984,6 @@ void QuadPlane::takeoff_controller(void)
     /*
       for takeoff we use the position controller
     */
-    float ekfGndSpdLimit, ekfNavVelGainScaler;    
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-
     check_attitude_relax();
 
     setup_target_position();
@@ -2003,7 +1994,7 @@ void QuadPlane::takeoff_controller(void)
 
     // set position control target and update
     pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
-    pos_control->update_xy_controller(ekfNavVelGainScaler);
+    pos_control->update_xy_controller();
 
     // nav roll and pitch are controller by position controller
     plane.nav_roll_cd = pos_control->get_roll();
