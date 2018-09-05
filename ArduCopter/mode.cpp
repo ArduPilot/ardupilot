@@ -23,12 +23,10 @@ Copter::Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
-    ap(copter.ap),
-    ekfGndSpdLimit(copter.ekfGndSpdLimit),
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags(copter.heli_flags),
 #endif
-    ekfNavVelGainScaler(copter.ekfNavVelGainScaler)
+    ap(copter.ap)
 { };
 
 float Copter::Mode::auto_takeoff_no_nav_alt_cm = 0;
@@ -251,9 +249,6 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 // called at 100hz or more
 void Copter::update_flight_mode()
 {
-    // Update EKF speed limit - used to limit speed when we are using optical flow
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-
     target_rangefinder_alt_used = false;
 
     flightmode->run();
@@ -519,7 +514,7 @@ void Copter::Mode::land_run_horizontal_control()
     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
     int32_t nav_roll  = loiter_nav->get_roll();
     int32_t nav_pitch = loiter_nav->get_pitch();

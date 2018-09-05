@@ -304,7 +304,7 @@ void Copter::ModeRTL::descent_run()
     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
     // call z-axis position controller
     pos_control->set_alt_target_with_slew(rtl_path.descent_target.alt, G_Dt);

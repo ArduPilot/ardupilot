@@ -56,7 +56,7 @@ void Copter::ModeBrake::run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run brake controller
-    wp_nav->update_brake(ekfGndSpdLimit, ekfNavVelGainScaler);
+    wp_nav->update_brake();
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);

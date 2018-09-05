@@ -173,12 +173,6 @@ protected:
     // altitude below which we do no navigation in auto takeoff
     static float auto_takeoff_no_nav_alt_cm;
 
-    // gnd speed limit required to observe optical flow sensor limits
-    float &ekfGndSpdLimit;
-
-    // scale factor applied to velocity controller gain to prevent optical flow noise causing excessive angle demand noise
-    float &ekfNavVelGainScaler;
-
 #if FRAME_CONFIG == HELI_FRAME
     heli_flags_t &heli_flags;
 #endif
