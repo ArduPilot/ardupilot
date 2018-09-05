@@ -93,8 +93,9 @@ float Rover::sailboat_calc_heading(float desired_heading)
     
     /* 
         Until we get more fancy logic for best posible speed just assume we can sail upwind at the no go angle 
-        Just set off on which ever of the no go angles is closeer, once the end destination is within a single tack it will switch back to direct route method 
-        This should result in a long leg with a single tack to get to the destination, with tacks on fence.
+        Just set off on which ever of the no go angles is on the corect tack, once the end destination is within a single tack it will switch back to direct route method 
+        This should result in a long leg with a single tack to get to the destination.
+        Tack can be trigerd by geo fence, aux switch and max cross track error
         
         Need to add some logic to stop it from tacking back towards fence once it has been bounced off, posibly a miniumm distance and time between tacks or something
     */
@@ -175,8 +176,12 @@ float Rover::sailboat_calc_heading(float desired_heading)
     // If were in the process of a tack we should not change the target heading 
     if (_sailboat_tacking){
         // Check if we have tacked round enough or if we have timed out, add some logic to look at aparent wind angle
-        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - ahrs.yaw_sensor)) < (20.0f * 100.0f)){
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - ahrs.yaw_sensor)) < (10.0f * 100.0f)){
             _sailboat_tacking = false; 
+            // If we timed out and did not reached the desired heading we canot be sure what tack we are on
+            if(AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f){
+                _sailboat_current_tack = _tack::Unknown;        
+            }    
         }
         desired_heading = _sailboat_new_tack_heading;
     } else {
@@ -223,7 +228,11 @@ float Rover::sailboat_acro_tack()
 
 float Rover::sailboat_update_rate_max(float rate_max)
 {
-    // if were just travling in a 'straight line' reduce the maximum allowed rate to smooth out heading response to wind changes, use max rate for tacking
+    if (!g2.motors.has_sail()) {
+        return rate_max;
+    }
+    
+    // if were just travling in a 'straight line' reduce the maximum allowed rate to smooth out heading response to wind changes, use normal max rate for tacking
     if(!_sailboat_tack && !_sailboat_tacking){
         rate_max = g2.sailboat_straight_rate;    
     }  
