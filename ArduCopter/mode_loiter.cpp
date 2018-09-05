@@ -138,11 +138,11 @@ void Copter::ModeLoiter::run()
             pos_control->relax_alt_hold_controllers(0.0f);
         }
 #else
-        loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 #endif
+        loiter_nav->init_target();
         loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         pos_control->update_z_controller();
