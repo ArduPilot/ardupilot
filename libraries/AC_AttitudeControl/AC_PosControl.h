@@ -230,7 +230,7 @@ public:
 
     /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
     ///     when use_desired_velocity is true the desired velocity (i.e. feed forward) is incorporated at the pos_to_rate step
-    void update_xy_controller(float ekfNavVelGainScaler);
+    void update_xy_controller();
 
     /// set_target_to_stopping_point_xy - sets horizontal target to reasonable stopping position in cm from home
     void set_target_to_stopping_point_xy();
@@ -257,13 +257,13 @@ public:
     ///     velocity targets should we set using set_desired_velocity_xy() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
     ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xy(float ekfNavVelGainScaler);
+    void update_vel_controller_xy();
     
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
     ///     throttle targets will be sent directly to the motors
-    void update_vel_controller_xyz(float ekfNavVelGainScaler);
+    void update_vel_controller_xyz();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
@@ -347,7 +347,7 @@ protected:
     ///     desired velocity (_vel_desired) is combined into final target velocity
     ///     converts desired velocities in lat/lon directions to accelerations in lat/lon frame
     ///     converts desired accelerations provided in lat/lon frame to roll/pitch angles
-    void run_xy_controller(float dt, float ekfNavVelGainScaler);
+    void run_xy_controller(float dt);
 
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
