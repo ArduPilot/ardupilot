@@ -278,6 +278,12 @@ void Plane::crash_detection_update(void)
         crash_state.checkedHardLanding = false;
     }
 
+    // if we have no GPS lock and we don't have a functional airspeed
+    // sensor then don't do crash detection
+    if (gps.status() < AP_GPS::GPS_OK_FIX_3D && (!airspeed.use() || !airspeed.healthy())) {
+        crashed = false;
+    }
+
     if (!crashed) {
         // reset timer
         crash_state.debounce_timer_ms = 0;
