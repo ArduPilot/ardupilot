@@ -266,10 +266,9 @@ void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node
 {
     if (take_registry()) {
         AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
-        if (driver == nullptr) {
-            return;
+        if (driver != nullptr) {
+            driver->handle_fix_msg(cb);
         }
-        driver->handle_fix_msg(cb);
         give_registry();
     }
 }
@@ -278,10 +277,9 @@ void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node
 {
     if (take_registry()) {
         AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
-        if (driver == nullptr) {
-            return;
+        if (driver != nullptr) {
+            driver->handle_aux_msg(cb);
         }
-        driver->handle_aux_msg(cb);
         give_registry();
     }
 }
