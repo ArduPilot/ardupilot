@@ -52,7 +52,7 @@ void Sub::poshold_run()
     motors.set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run loiter controller
-    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update();
 
     ///////////////////////
     // update xy outputs //
