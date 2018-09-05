@@ -980,7 +980,7 @@ void Copter::ModeAuto::payload_place_run_loiter()
     land_run_horizontal_control();
 
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
     // call attitude controller
     const float target_yaw_rate = 0;
