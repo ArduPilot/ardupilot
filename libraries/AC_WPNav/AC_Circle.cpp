@@ -159,7 +159,7 @@ void AC_Circle::update()
     }
 
     // update position controller
-    _pos_control.update_xy_controller(1.0f);
+    _pos_control.update_xy_controller();
 }
 
 // get_closest_point_on_circle - returns closest point on the circle
