@@ -93,6 +93,9 @@ void Tracker::one_second_loop()
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
+    // update assigned functions and enable auxiliary servos
+    SRV_Channels::enable_aux_servos();
+
     // updated armed/disarmed status LEDs
     update_armed_disarmed();
 
