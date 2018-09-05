@@ -1,6 +1,24 @@
 #include "AP_Arming.h"
 #include "Rover.h"
 
+
+// This is commented out as i couldent get the paramiter to be added on to the existing group, temporetly hard coded
+/*
+const AP_Param::GroupInfo AP_Arming_Rover::var_info[] = {
+    // variables from parent vehicle
+    AP_NESTEDGROUPINFO(AP_Arming, 0),
+
+    // @Param: RUDDER
+    // @DisplayName: Rudder Arming
+    // @Description: Control arm/disarm by rudder input. When enabled arming is done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
+    // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm,3:Arm but only disarm if not in manual, for sailboats
+    // @User: Advanced
+    AP_GROUPINFO("RUDDER",       3,     AP_Arming_Rover,  rudder_arming_value,     2),
+
+    AP_GROUPEND
+};
+*/
+
 // perform pre_arm_rc_checks checks
 bool AP_Arming_Rover::pre_arm_rc_checks(const bool display_failure)
 {

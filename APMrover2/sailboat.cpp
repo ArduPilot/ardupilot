@@ -135,7 +135,7 @@ float Rover::sailboat_calc_heading(float desired_heading)
     }
     
     // Maximum cross track error before tack, this efectively defines a 'corridor' of width 2*sailboat_auto_xtrack_tack that the boat will stay within
-    if (rover.nav_controller->crosstrack_error() >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack)){
+    if (rover.nav_controller->crosstrack_error() >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack) && !_sailboat_tack && !_sailboat_tacking){
         _sailboat_tack = true;
     }    
         
