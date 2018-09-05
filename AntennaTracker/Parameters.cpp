@@ -403,4 +403,11 @@ void Tracker::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
     hal.console->printf("load_all took %luus\n", (unsigned long)(AP_HAL::micros() - before));
+
+#if HAL_HAVE_SAFETY_SWITCH
+    // configure safety switch to allow stopping the motors while armed
+    AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
+                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON|
+                                                      AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
+#endif
 }
