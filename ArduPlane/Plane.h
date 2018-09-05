@@ -150,6 +150,7 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
     friend class GCS_Plane;
+    friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
 
     Plane(void);
