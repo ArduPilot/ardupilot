@@ -50,6 +50,10 @@
  #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
 #endif
 
+#if !defined(HAL_PROBE_EXTERNAL_I2C_BAROS) && !HAL_MINIMIZE_FEATURES
+#define HAL_PROBE_EXTERNAL_I2C_BAROS
+#endif
+
 #ifndef HAL_BARO_PROBE_EXT_DEFAULT
  #define HAL_BARO_PROBE_EXT_DEFAULT 0
 #endif
