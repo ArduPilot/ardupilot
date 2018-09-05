@@ -21,7 +21,7 @@ void Tracker::init_servos()
 
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
-    
+
     yaw_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
     pitch_servo_out_filt.set_cutoff_frequency(SERVO_OUT_FILT_HZ);
 }
