@@ -98,9 +98,6 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 // called at 100hz or more
 void Sub::update_flight_mode()
 {
-    // Update EKF speed limit - used to limit speed when we are using optical flow
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-
     switch (control_mode) {
     case ACRO:
         acro_run();

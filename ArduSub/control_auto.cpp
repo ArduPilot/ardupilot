@@ -734,7 +734,7 @@ void Sub::auto_terrain_recover_run()
     }
 
     // run loiter controller
-    loiter_nav.update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav.update();
 
     ///////////////////////
     // update xy targets //
