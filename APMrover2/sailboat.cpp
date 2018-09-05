@@ -135,8 +135,16 @@ float Rover::sailboat_calc_heading(float desired_heading)
     }
     
     // Maximum cross track error before tack, this efectively defines a 'corridor' of width 2*sailboat_auto_xtrack_tack that the boat will stay within
-    if (rover.nav_controller->crosstrack_error() >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack) && !_sailboat_tack && !_sailboat_tacking){
-        _sailboat_tack = true;
+    if (fabsf(rover.nav_controller->crosstrack_error()) >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack) && !_sailboat_tack && !_sailboat_tacking){
+        // Make sure the new tack will reduce the cross track error        
+        // If were on starbard tack we a travling towards the left hand boundary
+        if (rover.nav_controller->crosstrack_error() > 0 && _sailboat_current_tack == _tack::STBD){
+            _sailboat_tack = true;
+        }
+        // If were on port tack we a travling towards the right hand boundary
+        if (rover.nav_controller->crosstrack_error() < 0 && _sailboat_current_tack == _tack::Port){
+            _sailboat_tack = true;
+        }
     }    
         
     // Are we due to tack?
@@ -191,23 +199,24 @@ float Rover::sailboat_calc_heading(float desired_heading)
 
 float Rover::sailboat_acro_tack()
 {       
-    // Wait until tack is completed
-    // Check if we have tacked round enough or if we have timed out
-    if (_sailboat_tacking){
-        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw)) < radians(5.0f)){
-            _sailboat_tacking = false; 
-        }
-    }    
     
     // intiate tack
     if (_sailboat_tack) {
         // Match the curent angle to the true wind on the new tack 
-        _sailboat_new_tack_heading_rad = wrap_2PI(ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw)));
+        _sailboat_new_tack_heading_rad = wrap_2PI(ahrs.yaw + 2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw)));
                      
         _sailboat_tack = false;  
         _sailboat_tacking = true;
         _sailboat_tack_stat_time = AP_HAL::millis();       
     }    
+    
+    // Wait until tack is completed
+    // Check if we have tacked round enough or if we have timed out
+    if (_sailboat_tacking ){
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw)) < radians(5.0f)){
+            _sailboat_tacking = false; 
+        }
+    }
     
     return _sailboat_new_tack_heading_rad;
 }
