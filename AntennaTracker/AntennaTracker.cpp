@@ -114,7 +114,6 @@ void Tracker::one_second_loop()
         if (ahrs.get_location(temp_loc)) {
             set_home(temp_loc);
         }
-        return;
     }
 }
 
