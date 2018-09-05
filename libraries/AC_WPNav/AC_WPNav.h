@@ -64,7 +64,7 @@ public:
     void init_brake_target(float accel_cmss);
     ///
     /// update_brake - run the brake controller - should be called at 400hz
-    void update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+    void update_brake();
 
     ///
     /// waypoint controller
