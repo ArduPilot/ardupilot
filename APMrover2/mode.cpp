@@ -460,9 +460,10 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 // calculate steering output to drive towards desired heading
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed)
 {
-    // if we cant sail at desired heading caculate new heading to sailing on
+    // if we cant sail at desired heading caculate new heading to sailing on, also update maximum rate
     if (rover.sailboat_update_indirect_route(desired_heading_cd)){
         desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);  
+        rate_max = rover.sailboat_update_rate_max(rate_max); 
     }
     
     // calculate yaw error so it can be used for reporting and slowing the vehicle

@@ -514,6 +514,7 @@ private:
     float sailboat_calc_heading(float desired_heading);
     float sailboat_VMG(float target_heading);
     float sailboat_acro_tack();
+    float sailboat_update_rate_max(float rate_max);
     
     bool _sailboat_indirect_route;
     bool _sailboat_tack;

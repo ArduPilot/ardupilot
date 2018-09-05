@@ -630,6 +630,25 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_NO_GO_ANGLE", 33, ParametersG2, sail_no_go, 45),
+    
+    // @Param: SAIL_MAX_XTRACK
+    // @DisplayName: Sailing max auto cross track error 
+    // @Description: When sailing upwind a sailboat will tack when it reaches this cross track error, this efectively defines a 'corridor' of width 2*SAIL_MAX_XTRACK that the boat will stay within, 0 = disabled
+    // @Units: m
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_MAX_XTRACK", 34, ParametersG2, sailboat_auto_xtrack_tack, 0),
+    
+    // @Param: SAIL_MAX_ST_RT
+    // @DisplayName: Sailing auto straight line rate
+    // @Description: Maximum rate used when sailing on one tack in auto modes, this changes how quicky the heading responds to changes in wind direciton, tacks do not use this rate
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_MAX_ST_RT", 35, ParametersG2, sailboat_straight_rate, 25),
+    
 
     AP_GROUPEND
 };

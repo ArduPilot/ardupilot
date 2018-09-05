@@ -15,13 +15,16 @@ void ModeHold::update()
     if (g2.motors.has_sail()){
         // relax mainsail
         rover.sailboat_set_mainsail(100);
-
-        // call heading controller
-        steering_out = attitude_control.get_steering_out_heading(g2.windvane.get_absolute_wind_direction_rad(),
-                                                                         g2.pivot_turn_rate,
-                                                                         g2.motors.limit.steer_left,
-                                                                         g2.motors.limit.steer_right,
-                                                                         rover.G_Dt);
+        
+        // Only steer into wind if armed
+        if(hal.util->get_soft_armed()){
+            // call heading controller
+            steering_out = attitude_control.get_steering_out_heading(g2.windvane.get_absolute_wind_direction_rad(),
+                                                                    g2.pivot_turn_rate,
+                                                                    g2.motors.limit.steer_left,
+                                                                    g2.motors.limit.steer_right,
+                                                                    rover.G_Dt);
+        }
     }
     
     // hold position - stop motors and center steering

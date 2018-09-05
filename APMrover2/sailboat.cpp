@@ -73,7 +73,8 @@ bool Rover::sailboat_update_indirect_route(float desired_heading)
     _sailboat_indirect_route = false;
     
     // Check if desired heading is in the no go zone, if it is we can't go direct
-    if (fabsf(wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - desired_heading))) <= radians(g2.sail_no_go)){
+    // add 10 deg padding to try and avoid constant switching between methods
+    if (fabsf(wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - desired_heading))) <= radians(g2.sail_no_go + 10.0f)){
         _sailboat_indirect_route = true; 
     }  
     
@@ -133,9 +134,14 @@ float Rover::sailboat_calc_heading(float desired_heading)
         }        
     }
     
-    // Add paramiter for maximum cross track error befoe tack
-
+    // Maximum cross track error before tack, this efectively defines a 'corridor' of width 2*sailboat_auto_xtrack_tack that the boat will stay within
+    if (rover.nav_controller->crosstrack_error() >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack)){
+        _sailboat_tack = true;
+    }    
+        
     // Are we due to tack?
+    // Need some code that will double check that we did tack if we ment to, ie in light wind it may get stuck head to wind, we could program difftent tacking methods depending on wind, ie fast, slow, gibe right round in very light wind, or minimum speed, so bearaway to acellerate abit. 
+    // Could add a do_tack routine that takes the current and target heading and gives target rates depending on conditons
     if (_sailboat_tack){
 
         // Pick a heading for the new tack 
@@ -161,7 +167,7 @@ float Rover::sailboat_calc_heading(float desired_heading)
     // If were in the process of a tack we should not change the target heading 
     if (_sailboat_tacking){
         // Check if we have tacked round enough or if we have timed out, add some logic to look at aparent wind angle
-        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - (degrees(ahrs.yaw_sensor) * 100.0f))) < (20.0f * 100.0f)){
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - ahrs.yaw_sensor)) < (20.0f * 100.0f)){
             _sailboat_tacking = false; 
         }
         desired_heading = _sailboat_new_tack_heading;
@@ -188,7 +194,7 @@ float Rover::sailboat_acro_tack()
     // Wait until tack is completed
     // Check if we have tacked round enough or if we have timed out
     if (_sailboat_tacking){
-        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw_sensor)) < radians(5.0f)){
+        if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw)) < radians(5.0f)){
             _sailboat_tacking = false; 
         }
     }    
@@ -196,7 +202,7 @@ float Rover::sailboat_acro_tack()
     // intiate tack
     if (_sailboat_tack) {
         // Match the curent angle to the true wind on the new tack 
-        _sailboat_new_tack_heading_rad = wrap_2PI(ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw_sensor)));
+        _sailboat_new_tack_heading_rad = wrap_2PI(ahrs.yaw + -2.0f * wrap_PI((g2.windvane.get_absolute_wind_direction_rad() - ahrs.yaw)));
                      
         _sailboat_tack = false;  
         _sailboat_tacking = true;
@@ -204,6 +210,16 @@ float Rover::sailboat_acro_tack()
     }    
     
     return _sailboat_new_tack_heading_rad;
+}
+
+float Rover::sailboat_update_rate_max(float rate_max)
+{
+    // if were just travling in a 'straight line' reduce the maximum allowed rate to smooth out heading response to wind changes, use max rate for tacking
+    if(!_sailboat_tack && !_sailboat_tacking){
+        rate_max = g2.sailboat_straight_rate;    
+    }  
+    
+    return rate_max;
 }
 
 // Velocity Made Good, this is the speed we are travling towards the desired destination
@@ -215,7 +231,7 @@ float Rover::sailboat_VMG(float target_heading)
     float speed;
     g2.attitude_control.get_forward_speed(speed);
 
-    float vmg = speed * cosf(wrap_PI(target_heading - ahrs.yaw_sensor));
+    float vmg = speed * cosf(wrap_PI(target_heading - ahrs.yaw));
 
     return vmg;
 }
