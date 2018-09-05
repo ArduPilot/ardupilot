@@ -470,8 +470,9 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    int nsat = gps.num_sats();
-    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+    uint8_t nsat = gps.num_sats();
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
