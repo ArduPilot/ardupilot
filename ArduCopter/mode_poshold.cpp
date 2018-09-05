@@ -442,7 +442,7 @@ void Copter::ModePosHold::run()
                     poshold_update_brake_angle_from_velocity(poshold.brake_pitch, -vel_fw);
 
                     // run loiter controller
-                    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+                    loiter_nav->update();
 
                     // calculate final roll and pitch output by mixing loiter and brake controls
                     poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, loiter_nav->get_roll());
@@ -473,7 +473,7 @@ void Copter::ModePosHold::run()
 
                 case POSHOLD_LOITER:
                     // run loiter controller
-                    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+                    loiter_nav->update();
 
                     // set roll angle based on loiter controller outputs
                     poshold.roll = loiter_nav->get_roll();
