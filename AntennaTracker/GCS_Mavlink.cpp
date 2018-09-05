@@ -2,9 +2,6 @@
 
 #include "Tracker.h"
 
-// default sensors are present and healthy: gyro, accelerometer, barometer, rate_control, attitude_stabilization, yaw_position, altitude control, x/y position control, motor_control
-#define MAVLINK_SENSOR_PRESENT_DEFAULT (MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL | MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_YAW_POSITION | MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL | MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS)
-
 /*
  *  !!NOTE!!
  *
@@ -84,11 +81,13 @@ void Tracker::send_extended_status1(mavlink_channel_t chan)
         battery_current = battery.current_amps() * 100;
     }
 
+    update_sensor_status_flags();
+
     mavlink_msg_sys_status_send(
         chan,
-        0,
-        0,
-        0,
+        control_sensors_present,
+        control_sensors_enabled,
+        control_sensors_health,
         static_cast<uint16_t>(scheduler.load_average() * 1000),
         battery.voltage() * 1000,  // mV
         battery_current,        // in 10mA units
