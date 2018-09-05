@@ -188,6 +188,9 @@ public:
 
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > NO_FIX) {
+            return NO_FIX;
+        }
         return state[instance].status;
     }
     GPS_Status status(void) const {
@@ -417,6 +420,11 @@ public:
     // returns true if all GPS instances have passed all final arming checks/state changes
     bool prepare_for_arming(void);
 
+    // used to disable GPS for GPS failure testing in flight
+    void force_disable(bool disable) {
+        _force_disable_gps = disable;
+    }
+
 protected:
 
     // configuration parameters
@@ -555,6 +563,9 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE  = 1
     };
+
+    // used for flight testing with GPS loss
+    bool _force_disable_gps;
 };
 
 namespace AP {
