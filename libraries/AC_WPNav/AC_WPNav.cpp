@@ -118,11 +118,11 @@ void AC_WPNav::init_brake_target(float accel_cmss)
 }
 
 // update_brake - run the stop controller - gets called at 400hz
-void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
+void AC_WPNav::update_brake()
 {
     // send adjusted feed forward velocity back to position controller
     _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
-    _pos_control.update_xy_controller(ekfNavVelGainScaler);
+    _pos_control.update_xy_controller();
 }
 
 ///
@@ -522,7 +522,7 @@ bool AC_WPNav::update_wpnav()
         _pos_control.freeze_ff_z();
     }
 
-    _pos_control.update_xy_controller(1.0f);
+    _pos_control.update_xy_controller();
     check_wp_leash_length();
 
     _wp_last_update = AP_HAL::millis();
@@ -814,7 +814,7 @@ bool AC_WPNav::update_spline()
     }
 
     // run horizontal position controller
-    _pos_control.update_xy_controller(1.0f);
+    _pos_control.update_xy_controller();
 
     _wp_last_update = AP_HAL::millis();
 
