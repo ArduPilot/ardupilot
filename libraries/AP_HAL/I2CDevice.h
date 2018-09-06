@@ -109,8 +109,9 @@ public:
 /*
   convenient macros for iterating over I2C bus numbers
  */
-#define FOREACH_I2C_EXTERNAL(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask_external(), i=0; i<32; i++) if ((1U<<i)&_bmask)
-#define FOREACH_I2C_INTERNAL(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask_internal(), i=0; i<32; i++) if ((1U<<i)&_bmask)
-#define FOREACH_I2C(i) for (uint32_t _bmask=hal.i2c_mgr->get_bus_mask(), i=0; i<32; i++) if ((1U<<i)&_bmask)
-    
+#define FOREACH_I2C_MASK(i,mask) for (uint32_t _bmask=mask, i=0; i<32; i++) if ((1U<<i)&_bmask)
+#define FOREACH_I2C_EXTERNAL(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask_external())
+#define FOREACH_I2C_INTERNAL(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask_internal())
+#define FOREACH_I2C(i) FOREACH_I2C_MASK(i,hal.i2c_mgr->get_bus_mask())
+
 }
