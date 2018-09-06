@@ -508,7 +508,8 @@ class AutoTestPlane(AutoTest):
             self.mavproxy.send('switch 1\n')  # auto mode
             self.wait_mode('AUTO')
             self.wait_ready_to_arm()
-            self.arm_vehicle()
+            if not self.armed():
+                self.arm_vehicle()
             while self.armed():
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
                 self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
@@ -601,7 +602,6 @@ class AutoTestPlane(AutoTest):
             self.progress("Home location: %s" % self.homeloc)
             self.wait_ready_to_arm()
             self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
 
             self.run_test("Flaps", self.fly_flaps)
 

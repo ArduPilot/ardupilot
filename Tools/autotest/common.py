@@ -343,7 +343,8 @@ class AutoTest(ABC):
 
     def log_download(self, filename, timeout=360):
         """Download latest log."""
-        self.disarm_vehicle()
+        if self.armed():
+            self.disarm_vehicle()
         self.mav.wait_heartbeat()
         self.mavproxy.send("log list\n")
         self.mavproxy.expect("numLogs")
