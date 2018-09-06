@@ -121,7 +121,7 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     if (!report) {
         return;
     }
-    char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
     hal.util->snprintf((char*)taggedfmt, sizeof(taggedfmt)-1, "PreArm: %s", fmt);
     MAV_SEVERITY severity = check_severity(check);
     va_list arg_list;
