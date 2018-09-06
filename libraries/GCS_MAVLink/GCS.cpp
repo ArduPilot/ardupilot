@@ -7,8 +7,8 @@ extern const AP_HAL::HAL& hal;
  */
 void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
     send_statustext(severity, GCS_MAVLINK::active_channel_mask() | GCS_MAVLINK::streaming_channel_mask(), text);
 }
 
