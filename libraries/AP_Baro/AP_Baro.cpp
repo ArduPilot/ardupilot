@@ -647,6 +647,8 @@ void AP_Baro::_probe_i2c_barometers(void)
         FOREACH_I2C_EXTERNAL(i) {
             ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
                                               std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5611_I2C_ADDR))));
+            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+                                              std::move(hal.i2c_mgr->get_device(i, HAL_BARO_MS5611_I2C_ADDR2))));
         }
     }
     if (probe & PROBE_MS5607) {
