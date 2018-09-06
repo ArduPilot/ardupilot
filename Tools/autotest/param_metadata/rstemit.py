@@ -207,7 +207,7 @@ Complete Parameter List
                 continue
                 
             # Check if frame_type defined
-            frame_type = '' if not hasattr(param, 'FrameType') else param.FrameType.strip()
+            frame_type = param.FrameType.strip() if hasattr(param, 'FrameType') else ''
             
             d = param.__dict__
             if self.annotate_with_vehicle:
