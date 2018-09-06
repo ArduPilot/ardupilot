@@ -59,7 +59,11 @@ void Rover::sailboat_update_mainsail()
 
     // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
     float mainsail = linear_interpolate(0.0f, 100.0f, mainsail_angle, g2.sail_angle_min, g2.sail_angle_max);
+    
+    // Use Pid controller to sheet out 
+    float pid_offset =  g2.attitude_control.get_sail_out_from_heel(g2.sail_heel_angle_max, G_Dt) * 100.0f;
 
+    mainsail = constrain_float((mainsail+pid_offset), 0.0f ,100.0f);
     g2.motors.set_mainsail(mainsail);
 }
 
@@ -100,10 +104,20 @@ float Rover::sailboat_calc_heading(float desired_heading)
         Need to add some logic to stop it from tacking back towards fence once it has been bounced off, posibly a miniumm distance and time between tacks or something
     */
     
-    // left and right no go headings looking upwind
-    float left_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sail_no_go));
-    float right_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sail_no_go));
+    float left_no_go_heading = 0.0f;
+    float right_no_go_heading = 0.0f;
     
+    // left and right no go headings looking upwind
+    if (rover.control_mode == &rover.mode_hold){
+        // Use upwind tacking angles
+        left_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sail_no_go));
+        right_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sail_no_go));
+    } else {
+        // In hold mode use hold angle
+        left_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() + radians(g2.sailboat_hold_angle));
+        right_no_go_heading = wrap_2PI(g2.windvane.get_absolute_wind_direction_rad() - radians(g2.sailboat_hold_angle));
+    }
+
     // Caculate what tack we are on if it has been too long since we knew
     if (_sailboat_current_tack ==  _tack::Unknown || (AP_HAL::millis() - _sailboat_heading_last_run) > 1000){
         if (g2.windvane.get_apparent_wind_direction_rad() < 0){
@@ -135,8 +149,8 @@ float Rover::sailboat_calc_heading(float desired_heading)
         }        
     }
     
-    // Maximum cross track error before tack, this efectively defines a 'corridor' of width 2*sailboat_auto_xtrack_tack that the boat will stay within
-    if (fabsf(rover.nav_controller->crosstrack_error()) >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack) && !_sailboat_tack && !_sailboat_tacking){
+    // Maximum cross track error before tack, this efectively defines a 'corridor' of width 2*sailboat_auto_xtrack_tack that the boat will stay within, disable if tacking or in hold mode
+    if (fabsf(rover.nav_controller->crosstrack_error()) >= g2.sailboat_auto_xtrack_tack && !is_zero(g2.sailboat_auto_xtrack_tack) && !_sailboat_tack && !_sailboat_tacking && rover.control_mode != &rover.mode_hold){
         // Make sure the new tack will reduce the cross track error        
         // If were on starbard tack we a travling towards the left hand boundary
         if (rover.nav_controller->crosstrack_error() > 0 && _sailboat_current_tack == _tack::STBD){
@@ -173,9 +187,10 @@ float Rover::sailboat_calc_heading(float desired_heading)
         _sailboat_tack_stat_time = AP_HAL::millis();  		
     }
     
-    // If were in the process of a tack we should not change the target heading 
+    // If were in the process of a tack we should not change the target heading, (not sure if this is a good idea or not), the target shouldent change but too much while were are tacking, except if the vane provides poor readings as we are tacking, duno
     if (_sailboat_tacking){
         // Check if we have tacked round enough or if we have timed out, add some logic to look at aparent wind angle
+        // not sure if the time out is nessisary
         if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_180_cd(_sailboat_new_tack_heading - ahrs.yaw_sensor)) < (10.0f * 100.0f)){
             _sailboat_tacking = false; 
             // If we timed out and did not reached the desired heading we canot be sure what tack we are on
@@ -217,6 +232,7 @@ float Rover::sailboat_acro_tack()
     
     // Wait until tack is completed
     // Check if we have tacked round enough or if we have timed out
+    // time out needed for acro as the pilot is not in control while tacking
     if (_sailboat_tacking ){
         if (AP_HAL::millis() - _sailboat_tack_stat_time > 10000.0f || fabsf(wrap_PI(_sailboat_new_tack_heading_rad - ahrs.yaw)) < radians(5.0f)){
             _sailboat_tacking = false; 

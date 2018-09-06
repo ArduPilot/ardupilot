@@ -375,6 +375,9 @@ public:
     AP_Float sail_no_go;
     AP_Float sailboat_auto_xtrack_tack;
     AP_Float sailboat_straight_rate;
+    AP_Float sailboat_hold_angle;
+    AP_Float sailboat_loiter_radius;
+    AP_Float sail_heel_angle_max;
     
     // windvane
     AP_WindVane windvane;

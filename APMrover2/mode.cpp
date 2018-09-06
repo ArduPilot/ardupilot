@@ -20,6 +20,10 @@ void Mode::exit()
 
 bool Mode::enter()
 {
+    // clear sailboat tacking flags
+    rover._sailboat_tack = false;
+    rover._sailboat_tacking = false;
+    
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
 

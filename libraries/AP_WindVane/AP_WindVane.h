@@ -55,6 +55,9 @@ public:
 
     // get the absolute wind direction in radians
     float get_absolute_wind_direction_rad();
+    
+    // Update apparent wind direction
+    void update_apparent_wind();
 
     // record home heading
     void record_home_headng();
@@ -71,7 +74,7 @@ private:
     float read_PWM_bearing();
 
     // Convert from apparent wind angle to true wind absolute angle
-    float apparent_to_absolute(float apparent_angle);
+    float apparent_to_absolute();
 
     // parameters
     AP_Int8 _type;             // type of windvane being used
@@ -80,9 +83,12 @@ private:
     AP_Float _analog_volt_min;          // minimum voltage read by windvane
     AP_Float _analog_volt_max;          // maximum voltage read by windvane
     AP_Float _analog_volt_head;         // voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle
+    AP_Float _filter_freq;              // Low pass filter frequency
 
     static AP_WindVane *_s_instance;
     float _home_heading;
+    float _apparent_angle;
+    float _apparent_angle_last; 
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;

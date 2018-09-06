@@ -543,6 +543,7 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void update_sensor_status_flags(void);
+    void windvane_update();
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

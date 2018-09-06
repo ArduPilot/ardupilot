@@ -95,6 +95,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
+    SCHED_TASK(windvane_update,        50,    200),
 };
 
 void Rover::read_mode_switch()

@@ -16,14 +16,23 @@ void ModeHold::update()
         // relax mainsail
         rover.sailboat_set_mainsail(100);
         
-        // Only steer into wind if armed
-        if(hal.util->get_soft_armed()){
-            // call heading controller
-            steering_out = attitude_control.get_steering_out_heading(g2.windvane.get_absolute_wind_direction_rad(),
-                                                                    g2.pivot_turn_rate,
-                                                                    g2.motors.limit.steer_left,
-                                                                    g2.motors.limit.steer_right,
-                                                                    rover.G_Dt);
+        // Only steer into wind if armed and a sterring angle is deffined
+        if(hal.util->get_soft_armed() && is_positive(g2.sailboat_hold_angle)){
+            if(is_zero(g2.sailboat_hold_angle)){
+                // call heading controller
+                steering_out = attitude_control.get_steering_out_heading(g2.windvane.get_absolute_wind_direction_rad(),
+                                                                        g2.pivot_turn_rate,
+                                                                        g2.motors.limit.steer_left,
+                                                                        g2.motors.limit.steer_right,
+                                                                        rover.G_Dt);
+            } else {
+                // if hold angle is not zero use sailboat heading controler, this allows aux switch and rudder input tacking, pass the wind direciton as the defualt heading in case of error
+                steering_out = attitude_control.get_steering_out_heading(radians(rover.sailboat_calc_heading(g2.windvane.get_absolute_wind_direction_rad()) / 100.0f),
+                                                                        g2.pivot_turn_rate,
+                                                                        g2.motors.limit.steer_left,
+                                                                        g2.motors.limit.steer_right,
+                                                                        rover.G_Dt);
+            }
         }
     }
     

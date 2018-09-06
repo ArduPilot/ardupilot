@@ -649,6 +649,33 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAIL_MAX_ST_RT", 35, ParametersG2, sailboat_straight_rate, 25),
     
+    // @Param: SAIL_HOLD_ANGLE
+    // @DisplayName: Sailing hold mode wind angle
+    // @Description: Sailing hold mode will hold this angle into the wind, zero is head to wind, if none zero aux switch tacking is enabled, if negative hold mode will not steer  
+    // @Units: deg
+    // @Range: 0 180
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_MAX_ST_RT", 36, ParametersG2, sailboat_hold_angle, 0),
+    
+    // @Param: SAIL_LOITER_RAD
+    // @DisplayName: Sailing loiter radius 
+    // @Description: In loiter mode the sailboat will sail within this radius of the loiter point
+    // @Units: m
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_LOITER_RAD", 37, ParametersG2, sailboat_loiter_radius, 8),
+    
+    // @Param: SAIL_HEEL_MAX
+    // @DisplayName: Sailing maximum heel angle 
+    // @Description: When in auto sail trim modes the heel will be limited to this value using PID control
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_HEEL_MAX", 38, ParametersG2, sail_heel_angle_max, 30),   
+    
 
     AP_GROUPEND
 };

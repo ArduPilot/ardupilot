@@ -349,3 +349,10 @@ void Rover::update_sensor_status_flags(void)
     frsky_telemetry.update_sensor_status_flags(~control_sensors_health & control_sensors_enabled & control_sensors_present);
 #endif
 }
+
+void Rover::windvane_update()
+{
+    if(g2.windvane.enabled()){
+        g2.windvane.update_apparent_wind();
+    }
+}
