@@ -171,7 +171,7 @@ float Aircraft::hagl() const
 */
 bool Aircraft::on_ground() const
 {
-    return hagl() <= 0;
+    return hagl() <= 0.001f;  // prevent bouncing around ground
 }
 
 /*
