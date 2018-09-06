@@ -58,7 +58,7 @@ void AP_Frsky_Telem::init(const AP_SerialManager &serial_manager,
         if (_frame_string == nullptr) {
             queue_message(MAV_SEVERITY_INFO, AP::fwversion().fw_string);
         } else {
-            char firmware_buf[50];
+            char firmware_buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
             snprintf(firmware_buf, sizeof(firmware_buf), "%s %s", AP::fwversion().fw_string, _frame_string);
             queue_message(MAV_SEVERITY_INFO, firmware_buf);
         }
