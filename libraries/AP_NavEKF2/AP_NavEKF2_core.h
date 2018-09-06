@@ -1155,7 +1155,7 @@ private:
     } mag_state;
 
     // string representing last reason for prearm failure
-    char prearm_fail_string[40];
+    char prearm_fail_string[41];
 
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
