@@ -17,6 +17,7 @@
 #include "Thread.h"
 
 #include <alloca.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -243,7 +244,7 @@ bool Thread::set_stack_size(size_t stack_size)
         return false;
     }
 
-    _stack_size = stack_size;
+    _stack_size = MAX(stack_size, (size_t) PTHREAD_STACK_MIN);
 
     return true;
 }

@@ -359,7 +359,8 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         }
     }
 
-    thread->set_stack_size(stack_size);
+    // Add 256k to HAL-independent requested stack size
+    thread->set_stack_size(256 * 1024 + stack_size);
 
     /*
      * We should probably store the thread handlers and join() when exiting,
