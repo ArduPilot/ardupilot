@@ -431,7 +431,7 @@ bool DataFlash_Class::logging_failed() const
 
 void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
 {
-    char msg[64] {};
+    char msg[65] {}; // sizeof(log_Message.msg) + null-termination
 
     va_list ap;
     va_start(ap, fmt);
