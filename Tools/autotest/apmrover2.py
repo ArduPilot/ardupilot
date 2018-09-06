@@ -146,6 +146,8 @@ class AutoTestRover(AutoTest):
             self.set_parameter("RC7_OPTION", 7)
             self.set_parameter("RC8_OPTION", 58)
 
+            self.clear_wp()
+
             # use LEARNING Mode
             self.mavproxy.send('switch 5\n')
             self.wait_mode('MANUAL')
@@ -198,10 +200,8 @@ class AutoTestRover(AutoTest):
                 raise NotAchievedException()
 
             # TODO: actually drive the mission
-            self.progress("Clearing waypoints")
+
             self.clear_wp()
-            self.mavproxy.send('wp list\n')
-            self.mavproxy.expect('Requesting 0 waypoints')
         except Exception as e:
             self.progress("Caught exception: %s" % str(e))
             ex = e
