@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 
     // @Param: EXT_BUS
     // @DisplayName: External baro bus
-    // @Description: This selects the bus number for looking for an I2C barometer
+    // @Description: This selects the bus number for looking for an I2C barometer. When set to -1 it will probe all external i2c buses based on the GND_PROBE_EXT parameter.
     // @Values: -1:Disabled,0:Bus0,1:Bus1
     // @User: Advanced
     AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
@@ -154,7 +154,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
     // @Param: PROBE_EXT
     // @DisplayName: External barometers to probe
-    // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types
+    // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on GND_EXT_BUS. If GND_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in GND_EXT_BUS.
     // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller
     // @Values: 1:BMP085,2:BMP280,4:MS5611,8:MS5607,16:MS5637,32:FBM320,64:DPS280,128:LPS25H,256:Keller
     // @User: Advanced
@@ -635,6 +635,11 @@ void AP_Baro::_probe_i2c_barometers(void)
         // for the purpose of baro probing, treat CubeBlack internal i2c as external. It has
         // no internal i2c baros, so this is safe
         mask |= hal.i2c_mgr->get_bus_mask_internal();
+    }
+    // if the user has set GND_EXT_BUS then probe the bus given by that parameter
+    int8_t ext_bus = _ext_bus;
+    if (ext_bus >= 0) {
+        mask = 1U << (uint8_t)ext_bus;
     }
     if (probe & PROBE_BMP085) {
         FOREACH_I2C_MASK(i,mask) {
