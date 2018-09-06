@@ -332,11 +332,14 @@ class AutoTest(ABC):
 
     def clear_wp(self):
         """Trigger RC 8 to clear waypoint."""
+        self.progress("Clearing waypoints")
         self.set_rc(8, 1000)
         self.wait_seconds(0.5)
         self.set_rc(8, 2000)
         self.wait_seconds(0.5)
         self.set_rc(8, 1000)
+        self.mavproxy.send('wp list\n')
+        self.mavproxy.expect('Requesting 0 waypoints')
 
     def log_download(self, filename, timeout=360):
         """Download latest log."""
