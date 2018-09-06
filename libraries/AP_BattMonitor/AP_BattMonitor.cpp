@@ -209,9 +209,9 @@ void AP_BattMonitor::convert_params(void) {
         info.old_group_element = conversionTable[i].old_element;
         info.type = (ap_var_type)AP_BattMonitor_Params::var_info[destination_index].type;
         if (param_instance) {
-            hal.util->snprintf(param_name, 17, "BATT2_%s", AP_BattMonitor_Params::var_info[destination_index].name);
+            hal.util->snprintf(param_name, sizeof(param_name), "BATT2_%s", AP_BattMonitor_Params::var_info[destination_index].name);
         } else {
-            hal.util->snprintf(param_name, 17, "BATT_%s", AP_BattMonitor_Params::var_info[destination_index].name);
+            hal.util->snprintf(param_name, sizeof(param_name), "BATT_%s", AP_BattMonitor_Params::var_info[destination_index].name);
         }
 
         AP_Param::convert_old_parameter(&info, 1.0f, 0);
