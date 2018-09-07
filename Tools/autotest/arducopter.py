@@ -1270,12 +1270,23 @@ class AutoTestCopter(AutoTest):
             count_start = -1
             count_stop = -1
             tstart = self.get_sim_time()
+            last_mission_current_msg = 0
+            last_seq = None
             while self.armed(): # we RTL at end of mission
-                now = self.get_sim_time()
+                now = self.get_sim_time_cached()
                 if now - tstart > 120:
                     raise AutoTestTimeoutException()
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
+                if ((now - last_mission_current_msg) > 1 or
+                    m.seq != last_seq):
+                    dist = None
+                    x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
+                    if x is not None:
+                        dist = x.wp_dist
+                        self.progress("MISSION_CURRENT.seq=%u dist=%s" %
+                                      (m.seq, dist))
+                    last_mission_current_msg = self.get_sim_time_cached()
+                    last_seq = m.seq
                 if m.seq == 3:
                     self.progress("At delay item")
                     if count_start == -1:
