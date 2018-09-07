@@ -1736,8 +1736,8 @@ class AutoTestCopter(AutoTest):
             self.run_test("Set modes via modeswitch",
                           self.test_setting_modes_via_modeswitch)
 
-            self.run_test("Set modes via auxswitch",
-                          self.test_setting_modes_via_auxswitch)
+#            self.run_test("Set modes via auxswitch",
+#                          self.test_setting_modes_via_auxswitch)
 
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
