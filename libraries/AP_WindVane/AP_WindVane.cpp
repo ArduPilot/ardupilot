@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Wind Vane Type
     // @Description: Wind Vane type
-    // @Values: 0:None,1:Heading when armed,2:RC input,3:Analog
+    // @Values: 0:None,1:Heading when armed,2:RC input offset heading when armed,3:Analog
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_WindVane, _type,  0, AP_PARAM_FLAG_ENABLE),
 
@@ -44,13 +44,13 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RC_IN_NO", 2, AP_WindVane, _rc_in_no,  0),
 
-    // @Param: ANALOG_PIN
+    // @Param: ANA_PIN
     // @DisplayName: Analog input
     // @Description: Analog input pin to read as Wind vane sensor pot
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 3, AP_WindVane, _analog_pin_no, WINDVANE_DEFAULT_PIN),
 
-    // @Param: ANALOG_V_MIN
+    // @Param: ANA_V_MIN
     // @DisplayName: Analog minumum voltage
     // @Description: Minimum analalog voltage read by windvane 
     // @Units: V
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ANA_V_MIN", 4, AP_WindVane, _analog_volt_min, 0.0f),
 
-    // @Param: ANALOG_V_MAX
+    // @Param: ANA_V_MAX
     // @DisplayName: Analog maximum voltage
     // @Description: Minimum analalog voltage read by windvane 
     // @Units: V
@@ -68,21 +68,21 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ANA_V_MAX", 5, AP_WindVane, _analog_volt_max, 3.3f),
 
-    // @Param: ANALOG_V_HEAD
-    // @DisplayName: Analog headwind voltage
-    // @Description: Voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle
-    // @Units: V
-    // @Increment: 0.01
-    // @Range: 0 5.0
+    // @Param: ANA_OF_HD
+    // @DisplayName: Analog headwind offset
+    // @Description: Angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
+    // @Units: deg
+    // @Increment: 1
+    // @Range: 0 360
     // @User: Standard
-    AP_GROUPINFO("ANA_V_HEAD", 6, AP_WindVane, _analog_volt_head, 0.0f),
+    AP_GROUPINFO("ANA_OF_HD", 6, AP_WindVane, _analog_head_bearing_offset, 0.0f),
 
     // @Param: FILT
     // @DisplayName: Wind vane low pass filter frequency
     // @Description: Wind vane low pass filter frequency
     // @Units: hz
     // @User: Standard
-    AP_GROUPINFO("FILT", 7, AP_WindVane, _filt_hz, 1.0f),
+    AP_GROUPINFO("FILT", 7, AP_WindVane, _filt_hz, 0.1f),
 
     AP_GROUPEND
 };
@@ -132,6 +132,7 @@ void AP_WindVane::init()
     // set-up filter
     low_pass_filter_wind_sin.set_cutoff_frequency(_filt_hz);
     low_pass_filter_wind_cos.set_cutoff_frequency(_filt_hz);
+    _last_filt_hz = _filt_hz;
 }
 
 // Caculate the apparent wind bearing in radians, the wind comes from this direciton, 0 = head to wind, called at 50hz
@@ -163,8 +164,14 @@ void AP_WindVane::update_apparent_wind()
     }
 
     // apply low pass filter
+    // Update frequency if its been changed
+    if (fabsf(_last_filt_hz- _filt_hz) > 0.0001f){
+        low_pass_filter_wind_sin.set_cutoff_frequency(_filt_hz);
+        low_pass_filter_wind_cos.set_cutoff_frequency(_filt_hz);
+        _last_filt_hz = _filt_hz;
+    }
     // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
-    float filtered_sin = low_pass_filter_wind_sin.apply(sinf(apparent_angle_in), 0.02f); // 0.02s = 50hz
+    float filtered_sin = low_pass_filter_wind_sin.apply(sinf(apparent_angle_in), 0.02f);
     float filtered_cos = low_pass_filter_wind_cos.apply(cosf(apparent_angle_in), 0.02f);
     _apparent_angle = atan2f(filtered_sin, filtered_cos);
 
@@ -211,6 +218,12 @@ void AP_WindVane::record_home_headng()
     _home_heading = AP::ahrs().yaw;
 }
 
+// Return true wind speed
+float AP_WindVane::get_true_wind_speed()
+{
+    return _true_wind_speed;
+}    
+
 // Private
 // -------
 
@@ -224,10 +237,10 @@ float AP_WindVane::read_analog()
     // assumes voltage increases as wind vane moves clockwise, we could get round this with more complex code and calibration
     // not sure about where to write a calibration code, but we just need to rotate the vane a few times and record the min and max voltage and the set it to head to wind to record the offset
 
+    current_analog_voltage = constrain_float(current_analog_voltage,_analog_volt_min,_analog_volt_max);
     float voltage_ratio = linear_interpolate(0.0f, 1.0f, current_analog_voltage, _analog_volt_min, _analog_volt_max);
-    float bearing_offset = linear_interpolate(0.0f, 1.0f, _analog_volt_head, _analog_volt_min, _analog_volt_max);
 
-    float bearing = (voltage_ratio + bearing_offset) * radians(360);
+    float bearing = (voltage_ratio * radians(360)) + radians(_analog_head_bearing_offset);
 
     return wrap_PI(bearing);
 }
@@ -251,18 +264,37 @@ float AP_WindVane::apparent_to_absolute()
     float bearing = 0.0f;
 
     float heading =  AP::ahrs().yaw;
-    float ground_speed = 0.0f; // AP::ahrs().groundspeed;
-    float apparent_wind_speed = 0.0f; // read wind speed from sensor
+    
+    // Duplicated from rover get forward speed 
+    float ground_speed = 0.0f;
+    Vector3f velocity;
+    if (!AP::ahrs().get_velocity_NED(velocity)) {
+        // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
+        if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+            if (labs(wrap_180_cd(AP::ahrs().yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
+                ground_speed = AP::gps().ground_speed();
+            } else {
+                ground_speed = -AP::gps().ground_speed();
+            }
+        }
+    }
+    // calculate forward speed velocity into body frame
+    ground_speed = velocity.x*AP::ahrs().cos_yaw() + velocity.y*AP::ahrs().sin_yaw();
+    
+    // Asume wind speed is 4 times boat speed, not sure if this is a good aproximation or not
+    float apparent_wind_speed = ground_speed * 4.0f; 
+   
+    // read wind speed from sensor if posible
  
-    // Calculate true wind speed (possibly put this in another function somewhere)
-    float true_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(_apparent_angle));
+    // Calculate true wind speed (possibly put this in another function somewhere?)
+    _true_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(_apparent_angle));
 
-    if (is_zero(true_wind_speed)) { // There is no true wind, so return apparent angle, to avoid divide by zero
+    if (is_zero(_true_wind_speed)) { // There is no true wind, so return apparent angle, to avoid divide by zero
         bearing = _apparent_angle;
-    } else if (_apparent_angle <= radians(180)) {
-        bearing = acosf((apparent_wind_speed * cosf(_apparent_angle) - ground_speed) / true_wind_speed);
+    } else if (is_positive(_apparent_angle)) {
+        bearing = acosf((apparent_wind_speed * cosf(_apparent_angle) - ground_speed) / _true_wind_speed);
     } else {
-        bearing = -acosf((apparent_wind_speed * cosf(_apparent_angle) - ground_speed) / true_wind_speed);
+        bearing = -acosf((apparent_wind_speed * cosf(_apparent_angle) - ground_speed) / _true_wind_speed);
     }
 
     // make sure between -pi and pi

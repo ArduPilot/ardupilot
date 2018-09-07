@@ -62,6 +62,9 @@ public:
     // record home heading
     void record_home_headng();
 
+    // Return true wind speed    
+    float get_true_wind_speed();
+
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -77,18 +80,20 @@ private:
     float apparent_to_absolute();
 
     // parameters
-    AP_Int8 _type;              // type of windvane being used
-    AP_Int8 _rc_in_no;          // RC input channel to use
-    AP_Int8 _analog_pin_no;     // analog pin connected to sensor
-    AP_Float _analog_volt_min;  // minimum voltage read by windvane
-    AP_Float _analog_volt_max;  // maximum voltage read by windvane
-    AP_Float _analog_volt_head; // voltage when windvane is indicating a headwind, ie 0 degress relative to vehicle
-    AP_Float _filt_hz;          // Low pass filter frequency
+    AP_Int8 _type;                          // type of windvane being used
+    AP_Int8 _rc_in_no;                      // RC input channel to use
+    AP_Int8 _analog_pin_no;                 // analog pin connected to sensor
+    AP_Float _analog_volt_min;              // minimum voltage read by windvane
+    AP_Float _analog_volt_max;              // maximum voltage read by windvane
+    AP_Float _analog_head_bearing_offset;   // Angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
+    AP_Float _filt_hz;                      // Low pass filter frequency
 
     static AP_WindVane *_s_instance;
     float _home_heading;
     float _apparent_angle;
     float _apparent_angle_last; 
+    float _last_filt_hz;
+    float _true_wind_speed;
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
