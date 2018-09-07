@@ -90,6 +90,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case GUIDED:
     case LOITER:
     case FOLLOW:
+    case SAILBOAT_TACK:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -227,6 +228,14 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     // Set mode to Follow
     case FOLLOW:
         do_aux_function_change_mode(rover.mode_follow, ch_flag);
+        break;
+        
+    // Do Sailboat tack
+    case SAILBOAT_TACK:
+        // Only tack if we are in a suitable mode and not already tacking
+        if (ch_flag == HIGH && !rover._sailboat_tack && !rover._sailboat_tacking  && (rover._sailboat_indirect_route || rover.control_mode == &rover.mode_acro || (rover.control_mode == &rover.mode_hold && is_positive(rover.g2.sailboat_hold_angle)))) {
+            rover._sailboat_tack = true;
+        }
         break;
 
     // set mode to Simple

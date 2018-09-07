@@ -512,7 +512,26 @@ private:
     // sailboat.cpp
     void sailboat_set_mainsail(float mainsail);
     void sailboat_update_mainsail();
-    float sailboat_VMG(float target_heading);
+    bool sailboat_update_indirect_route(float desired_heading);
+    float sailboat_calc_heading(float desired_heading);
+    void sailboat_VMG(float target_heading);
+    float sailboat_acro_tack();
+    float sailboat_update_rate_max(float rate_max);
+    
+    bool _sailboat_indirect_route;
+    bool _sailboat_tack;
+    bool _sailboat_tacking;
+    float _sailboat_tack_stat_time;
+    float _sailboat_new_tack_heading;
+    float _sailboat_new_tack_heading_rad;
+    uint8_t _sailboat_current_tack;
+    float _sailboat_heading_last_run;
+    float _sailboat_velocity_made_good;
+    enum _tack {
+        Unknown = 0,
+        Port = 1,
+        STBD = 2
+    };
 
     // sensors.cpp
     void init_compass(void);
@@ -527,6 +546,7 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void update_sensor_status_flags(void);
+    void windvane_update();
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

@@ -20,6 +20,10 @@ void Mode::exit()
 
 bool Mode::enter()
 {
+    // clear sailboat tacking flags
+    rover._sailboat_tack = false;
+    rover._sailboat_tacking = false;
+    
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
 
@@ -441,8 +445,8 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     }
     _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
-    if (rover.use_pivot_steering(_yaw_error_cd)) {
-        // for pivot turns use heading controller
+    if (rover.use_pivot_steering(_yaw_error_cd) || rover.sailboat_update_indirect_route(desired_heading)) {         
+        // for pivot turns use heading controller and sailboat on indirect routes
         calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
     } else {
         // call lateral acceleration to steering controller
@@ -476,6 +480,12 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
 void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_degs)
 {
+    // if we cant sail at desired heading caculate new heading to sailing on, also update maximum rate
+    if (rover.sailboat_update_indirect_route(desired_heading_cd)){
+        desired_heading_cd = rover.sailboat_calc_heading(desired_heading_cd);  
+        rate_max = rover.sailboat_update_rate_max(rate_max); 
+    }
+    
     // calculate yaw error so it can be used for reporting and slowing the vehicle
     _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
 

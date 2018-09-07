@@ -274,8 +274,8 @@ void Rover::send_wind(mavlink_channel_t chan)
     // send wind
     mavlink_msg_wind_send(
         chan,
-        rover.g2.windvane.get_absolute_wind_direction_rad(),
-        0,      // no wind speed (yet)
+        degrees(rover.g2.windvane.get_absolute_wind_direction_rad()),
+        rover.g2.windvane.get_true_wind_speed(),
         0);
 }
 

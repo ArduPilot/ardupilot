@@ -12,6 +12,13 @@ public:
 
     AP_Arming_Rover() : AP_Arming() { }
 
+    enum ArmingRudder {
+        ARMING_RUDDER_DISABLED  = 0,
+        ARMING_RUDDER_ARMONLY   = 1,
+        ARMING_RUDDER_ARMDISARM = 2,
+        ARMING_RUDDER_NO_DISARM_MANUAL = 3
+    };
+    
     /* Do not allow copies */
     AP_Arming_Rover(const AP_Arming_Rover &other) = delete;
     AP_Arming_Rover &operator=(const AP_Arming_Rover&) = delete;
@@ -22,8 +29,8 @@ public:
 
 protected:
     bool fence_checks(bool report);
-    bool proximity_check(bool report);
-
+    bool proximity_check(bool report);    
+   
 private:
-
+    
 };

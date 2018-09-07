@@ -11,6 +11,9 @@ void ModeAcro::update()
         get_pilot_desired_steering_and_throttle(desired_steering, desired_throttle);
         // no valid speed, just use the provided throttle
         g2.motors.set_throttle(desired_throttle);
+        
+        // set sailboat mainsail from throttle position
+        rover.sailboat_set_mainsail(desired_throttle);
     } else {
         float desired_speed;
         // convert pilot stick input into desired steering and speed
@@ -18,16 +21,29 @@ void ModeAcro::update()
         calc_throttle(desired_speed, false, true);
     }
 
-    // convert pilot steering input to desired turn rate in radians/sec
-    const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
+    float steering_out = 0.0f;
 
-    // run steering turn rate controller and throttle controller
-    const float steering_out = attitude_control.get_steering_out_rate(target_turn_rate,
+    // Check if we should to a tack due to aux switch
+    if (g2.motors.has_sail() && (rover._sailboat_tack || rover._sailboat_tacking)){             
+        // call heading controller
+        steering_out = attitude_control.get_steering_out_heading(rover.sailboat_acro_tack(),
+                                                                         g2.pivot_turn_rate,
+                                                                         g2.motors.limit.steer_left,
+                                                                         g2.motors.limit.steer_right,
+                                                                         rover.G_Dt);
+    } else {   
+        // convert pilot steering input to desired turn rate in radians/sec
+        const float target_turn_rate = (desired_steering / 4500.0f) * radians(g2.acro_turn_rate);
+    
+        // run steering turn rate controller and throttle controller
+        steering_out = attitude_control.get_steering_out_rate(target_turn_rate,
                                                                       g2.motors.limit.steer_left,
                                                                       g2.motors.limit.steer_right,
                                                                       rover.G_Dt);
 
+    }
     g2.motors.set_steering(steering_out * 4500.0f);
+
 }
 
 bool ModeAcro::requires_velocity() const

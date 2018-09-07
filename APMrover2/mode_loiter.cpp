@@ -20,17 +20,24 @@ bool ModeLoiter::_enter()
 
 void ModeLoiter::update()
 {
+    float loiter_radius = g.waypoint_radius;
+    
+    // Sailboats need a larger loiter radius 
+    if(g2.motors.has_sail()){
+        loiter_radius = g2.sailboat_loiter_radius;
+    }    
+        
     // get distance (in meters) to destination
     _distance_to_destination = get_distance(rover.current_loc, _destination);
 
     // if within waypoint radius slew desired speed towards zero and use existing desired heading
-    if (_distance_to_destination <= g.waypoint_radius) {
+    if (_distance_to_destination <= loiter_radius) {
         _desired_speed = attitude_control.get_desired_speed_accel_limited(0.0f, rover.G_Dt);
         _yaw_error_cd = 0.0f;
     } else {
         // P controller with hard-coded gain to convert distance to desired speed
         // To-Do: make gain configurable or calculate from attitude controller's maximum accelearation
-        _desired_speed = MIN((_distance_to_destination - g.waypoint_radius) * 0.5f, g.speed_cruise);
+        _desired_speed = MIN((_distance_to_destination - loiter_radius) * 0.5f, g.speed_cruise);
 
         // calculate bearing to destination
         _desired_yaw_cd = get_bearing_cd(rover.current_loc, _destination);
@@ -46,6 +53,12 @@ void ModeLoiter::update()
         // 45deg of error reduces speed to 75%, 90deg of error reduces speed to 50%
         float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
         _desired_speed *= yaw_error_ratio;
+    }
+    
+    // Sailboats shoulden't stop and cant go backwards
+    if(g2.motors.has_sail() && !is_positive(_desired_speed)) 
+    {     
+        _desired_speed = 1.0f;
     }
 
     // run steering and throttle controllers
