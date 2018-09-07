@@ -16,7 +16,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_MAV.h"
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <GCS_MAVLink/GCS.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -103,44 +102,45 @@ void AP_Proximity_MAV::handle_msg(mavlink_message_t *msg)
         _distance_max = packet.max_distance / 100.0f;
         _last_update_ms = AP_HAL::millis();
 
+        // get user configured yaw correction from front end
+        const float yaw_correction = constrain_float(frontend.get_yaw_correction(state.instance), -360.0f, +360.0f);
+        float dir_correction;
+        if (frontend.get_orientation(state.instance) == 0) {
+            dir_correction = 1.0f;
+        } else {
+            dir_correction = -1.0f;
+        }
+        bool used[72] = {false};
+
         // iterate over distance array sectors
         for (uint8_t i = 0; i < _num_sectors; i++) {
-            const float sector_width_half = _sector_width_deg[i] / 2.0f;
-            bool updated = false;
-            _angle[i] = i * 45;
-            _distance[i] = MAX_DISTANCE;
+             const float sector_width_half = _sector_width_deg[i] / 2.0f;
+             bool updated = false;
+             _angle[i] = _sector_middle_deg[i];
+             _distance[i] = MAX_DISTANCE;
 
-            // iterate over message's sectors
-            for (uint8_t j = 0; j < total_distances; j++) {
-                const float packet_distance_m = packet.distances[j] / 100.0f;
-                const float mid_angle = increment * (0.5f + j) - increment_half;
-                float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - mid_angle));
-                // update distance array sector with shortest distance from message
-                if ((angle_diff <= sector_width_half) && (packet_distance_m < _distance[i])) {
-                    _distance[i] = packet_distance_m;
-                }
+             // iterate over message's sectors
+             for (uint8_t j = 0; j < total_distances; j++) {
+                 if (!used[j]) {
+                     const float packet_distance_m = packet.distances[j] / 100.0f;
+                     const float mid_angle = wrap_360(increment * dir_correction * (0.5f + j) - increment_half + yaw_correction);
+                     float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - mid_angle));
+
+                     // update distance array sector with shortest distance from message
+                     if ((angle_diff <= sector_width_half)) {
+                         if((packet_distance_m < _distance[i])){
+                            _distance[i] = packet_distance_m;
+                            _angle[i] = mid_angle;
+                         }
+                         used[j] = true;
+                     }
+                 }
                 updated = true;
-            }
-            _distance_valid[i] = (_distance[i] >= _distance_min) && (_distance[i] <= _distance_max);
-            if (updated) {
-                update_boundary_for_sector(i);
-            }
-        }
-
-        // debug
-        static uint8_t counter = 0;
-        counter++;
-        if (counter > 5) {
-            counter = 0;
-            gcs().send_text(MAV_SEVERITY_INFO, "D0:%3.1f 1:%3.1f 2:%3.1f 3:%3.1f 4:%3.1f 5:%3.1f 6:%3.1f 7:%3.1f",
-                (double)_distance[0],
-                (double)_distance[1],
-                (double)_distance[2],
-                (double)_distance[3],
-                (double)_distance[4],
-                (double)_distance[5],
-                (double)_distance[6],
-                (double)_distance[7]);
+             }
+             _distance_valid[i] = (_distance[i] >= _distance_min) && (_distance[i] <= _distance_max);
+             if (updated) {
+                 update_boundary_for_sector(i);
+             }
         }
     }
 }
