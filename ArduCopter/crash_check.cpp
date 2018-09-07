@@ -7,8 +7,8 @@
 
 // Code to detect a thrust loss main ArduCopter code
 #define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second decent while level and high throttle indictes thrust loss
-#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD 150    // we can't expect to maintain altitude beyond 15 degrees on all aircraft
-#define THRUST_LOSS_CHECK_MINIMUM_THROTTLE 0.9f     // we can expect to maintain altitude above 90 % throttle
+#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD  150   // we can't expect to maintain altitude beyond 15 degrees on all aircraft
+#define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
 
 // crash_check - disarms motors if a crash has been detected
 // crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
@@ -58,9 +58,7 @@ void Copter::crash_check()
     }
 }
 
-// crash_check - disarms motors if a crash has been detected
-// crashes are detected by the vehicle being more than 20 degrees beyond it's angle limits continuously for more than 1 second
-// called at MAIN_LOOP_RATE
+// check for loss of thrust and trigger thrust boost in motors library
 void Copter::thrust_loss_check()
 {
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
@@ -79,18 +77,18 @@ void Copter::thrust_loss_check()
     // check for desired angle over 15 degrees
     // todo: add thrust angle to AC_AttitudeControl
     const Vector3f angle_target =  attitude_control->get_att_target_euler_cd();
-    if ((fabs(angle_target.x) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD) || (fabs(angle_target.y) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD)) {
+    if ((fabsf(angle_target.x) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD) || (fabsf(angle_target.y) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD)) {
         thrust_loss_counter = 0;
         return;
     }
 
-    // check for throttle over 90 % or throttle saturation
+    // check for throttle over 90% or throttle saturation
     if ((attitude_control->get_throttle_in() < THRUST_LOSS_CHECK_MINIMUM_THROTTLE) && (!motors->limit.throttle_upper)) {
         thrust_loss_counter = 0;
         return;
     }
 
-    // check for throttle over 90 % or throttle saturation
+    // check throttle is over 25%
     if ((attitude_control->get_throttle_in() < 0.25f)) {
         thrust_loss_counter = 0;
         return;
@@ -102,7 +100,7 @@ void Copter::thrust_loss_check()
         return;
     }
 
-    // we may be crashing
+    // we may have lost thrust
     thrust_loss_counter++;
 
     // check if thrust loss for 1 second
@@ -110,8 +108,7 @@ void Copter::thrust_loss_check()
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_THRUST_LOSS_CHECK, ERROR_CODE_FAILSAFE_OCCURRED);
         // send message to gcs
-        //gcs().send_text(MAV_SEVERITY_EMERGENCY,"Potential Thrust Loss");
-        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor());
+        gcs_send_text_fmt(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
         // enable thrust loss handling
         motors->set_thrust_boost(true);
     }
