@@ -28,6 +28,12 @@
 #define AR_ATTCONTROL_BAL_SPEED_FF      1.0f
 #define AR_ATTCONTROL_DT                0.02f
 #define AR_ATTCONTROL_TIMEOUT_MS        200
+#define AR_ATTCONTROL_HEEL_SAIL_P       1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_I       0.1f
+#define AR_ATTCONTROL_HEEL_SAIL_D       0.0f
+#define AR_ATTCONTROL_HEEL_SAIL_IMAX    1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_FILT    10.0f
+#define AR_ATTCONTROL_DT                0.02f
 
 // throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
 #define AR_ATTCONTROL_THR_ACCEL_MAX     2.00f
@@ -95,15 +101,19 @@ public:
     // returns a throttle output from -100 to +100 given a desired pitch angle and vehicle's current speed (from wheel encoders)
     // desired_pitch is in radians, veh_speed_pct is supplied as a percentage (-100 to +100) of vehicle's top speed
     float get_throttle_out_from_pitch(float desired_pitch, float veh_speed_pct, bool motor_limit_low, bool motor_limit_high, float dt);
-
+    
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
+
+    // Sailboat heel(roll) angle contorller, release sail to keep at maximum heel angle
+    float get_sail_out_from_heel(float desired_heel, float dt);
 
     // low level control accessors for reporting and logging
     AC_P& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_throttle_speed_pid() { return _throttle_speed_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
+    AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
 
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
@@ -140,6 +150,7 @@ private:
     AC_PID   _throttle_speed_pid;   // throttle speed controller
     AC_PID   _pitch_to_throttle_pid;// balancebot pitch controller
     AP_Float _pitch_to_throttle_speed_ff;   // balancebot feed forward from speed
+    AC_PID   _sailboat_heel_pid;   // Sailboat heel angle pid controller
 
     AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
     AP_Float _throttle_decel_max;    // speed/throttle control deceleration maximum in m/s/s. 0 to use ATC_ACCEL_MAX for deceleration
@@ -163,4 +174,7 @@ private:
 
     // balancebot pitch control
     uint32_t _balance_last_ms = 0;
+
+    // Sailboat heel control 
+    uint32_t _heel_controller_last_ms = 0;
 };
