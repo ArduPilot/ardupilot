@@ -1027,22 +1027,33 @@ class AutoTest(ABC):
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
+        if type(mode) == int or mode.isdigit():
+            return self.wait_mode_number(int(mode), timeout=timeout)
         mode_map = self.mav.mode_mapping()
         if mode_map is None or mode not in mode_map:
             self.progress("Unknown mode '%s'" % mode)
             self.progress("Available modes '%s'" % mode_map.keys())
             raise ErrorException()
         self.progress("Waiting for mode %s" % mode)
+        self.wait_mode_number(mode_map[mode], timeout=timeout, verbose=False)
+        self.progress("Got mode %s" % mode)
+
+    def wait_mode_number(self, mode, timeout=60, verbose=True):
+        if verbose:
+                self.progress("Waiting for mode %u" % mode)
         tstart = self.get_sim_time()
-        self.mav.wait_heartbeat()
-        while self.mav.flightmode != mode:
+        while self.mav.messages["HEARTBEAT"].custom_mode != mode:
             if (timeout is not None and
                     self.get_sim_time() > tstart + timeout):
                 raise WaitModeTimeout()
             self.mav.wait_heartbeat()
-        # self.progress("heartbeat mode %s Want: %s" % (
-        # self.mav.flightmode, mode))
-        self.progress("Got mode %s" % mode)
+
+        self.progress("Waiting for mode %s" % mode)
+        tstart = self.get_sim_time()
+
+        if self.mav.messages['HEARTBEAT'].custom_mode == mode:
+            return
+        self.mav.wait_heartbeat()
 
     def wait_ready_to_arm(self, timeout=None):
         # wait for EKF checks to pass
