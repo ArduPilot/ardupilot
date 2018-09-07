@@ -528,6 +528,8 @@ class AutoTestPlane(AutoTest):
             ex = e
         self.context_pop()
         if ex:
+            if self.armed():
+                self.disarm_vehicle()
             raise ex
 
     def test_rc_relay(self):
@@ -601,9 +603,11 @@ class AutoTestPlane(AutoTest):
             self.progress("Home location: %s" % self.homeloc)
             self.wait_ready_to_arm()
             self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
 
             self.run_test("Flaps", self.fly_flaps)
+
+            self.mavproxy.send('switch 6\n')
+            self.wait_mode('MANUAL')
 
             self.run_test("Takeoff", self.takeoff)
 

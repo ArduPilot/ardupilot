@@ -343,7 +343,6 @@ class AutoTest(ABC):
 
     def log_download(self, filename, timeout=360):
         """Download latest log."""
-        self.disarm_vehicle()
         self.mav.wait_heartbeat()
         self.mavproxy.send("log list\n")
         self.mavproxy.expect("numLogs")
@@ -409,6 +408,7 @@ class AutoTest(ABC):
             self.mavproxy.send('rc %u %u\n' % (chan, pwm))
             m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
             chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
+            self.progress("set_rc: want=%fu got=%u" % (pwm, chan_pwm))
             if chan_pwm == pwm:
                 return True
         self.progress("Failed to send RC commands to channel %s" % str(chan))
