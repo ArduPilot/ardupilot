@@ -709,11 +709,8 @@ class AutoTestRover(AutoTest):
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
 
-            self.run_test("Test Sprayer", self.test_sprayer)
-
             self.wait_ready_to_arm()
             self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
 
             self.run_test("Set modes via mavproxy switch",
                           self.test_setting_modes_via_mavproxy_switch)
@@ -726,6 +723,8 @@ class AutoTestRover(AutoTest):
 
             self.run_test("Set modes via auxswitches",
                           self.test_setting_modes_via_auxswitches)
+
+            self.arm_vehicle()
 
             self.run_test("Drive an RTL Mission", self.drive_rtl_mission)
 
@@ -750,14 +749,14 @@ class AutoTestRover(AutoTest):
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE with MAVProxy",
-                          self.mavproxy_do_set_mode_via_command_long())
+                          self.mavproxy_do_set_mode_via_command_long)
 
             self.run_test("Test ServoRelayEvents",
                           self.test_servorelayevents)
 
-            self.disarm_vehicle()
-
             self.run_test("Test RC overrides", self.test_rc_overrides)
+
+            self.run_test("Test Sprayer", self.test_sprayer)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
