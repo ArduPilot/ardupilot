@@ -1254,3 +1254,58 @@ protected:
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+
+class ModeZigZag : public Mode {        
+
+public:
+
+    // inherit constructor
+    using Copter::Mode::Mode;
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+    void receive_signal_from_auxsw(RC_Channel::aux_switch_pos_t aux_switch_position);
+
+protected:
+
+    const char *name() const override { return "ZIGZAG"; }
+    const char *name4() const override { return "ZIGZ"; }
+
+private:
+
+    void auto_control();
+    void manual_control();
+    bool has_arr_at_dest();
+    bool calculate_next_dest(Vector3f& next_dest, RC_Channel::aux_switch_pos_t next_A_or_B) const;
+    bool set_destination(const Vector3f& destination, RC_Channel::aux_switch_pos_t aux_switch_position);
+
+    struct {   
+        Vector2f A_pos; // in NEU frame in cm relative to home location
+        Vector2f B_pos; // in NEU frame in cm relative to home location
+        RC_Channel::aux_switch_pos_t switch_pos_A;  // switch position recorded as point A
+        RC_Channel::aux_switch_pos_t switch_pos_B;  // switch position recorded as point B
+    } zigzag_waypoint;
+
+    enum zigzag_state {
+        REQUIRE_A,       // point A is not defined yet, pilot has manual control
+        REQUIRE_B,       // point B is not defined but A has been defined, pilot has manual control
+        AUTO,            // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
+        MANUAL_REGAIN    // pilot toggle the switch to middle position, has manual control
+    };
+
+    zigzag_state stage = REQUIRE_A;
+
+    struct {
+        uint32_t last_judge_pos_time;
+        Vector3f last_pos;
+        bool is_keeping_time;
+    } zigzag_judge_moving;
+
+    bool zigzag_is_between_A_and_B;
+};
