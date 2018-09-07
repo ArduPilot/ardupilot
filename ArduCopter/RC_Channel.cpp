@@ -524,6 +524,15 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             userhook_auxSwitch3(ch_flag);
             break;
 #endif
+
+        case ZIGZAG:
+#if MODE_ZIGZAG_ENABLED == ENABLED
+            if (copter.flightmode == &copter.mode_zigzag) {
+                copter.mode_zigzag.receive_signal_from_auxsw(ch_flag);
+            }
+#endif
+            break;
+
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;
