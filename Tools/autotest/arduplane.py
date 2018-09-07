@@ -509,9 +509,23 @@ class AutoTestPlane(AutoTest):
             self.wait_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
+            tstart = self.get_sim_time_cached()
+            last_mission_current_msg = 0
+            last_seq = None
             while self.armed():
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
+                time_delta = (self.get_sim_time_cached() -
+                              last_mission_current_msg)
+                if (time_delta >1 or
+                    m.seq != last_seq):
+                    dist = None
+                    x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
+                    if x is not None:
+                        dist = x.wp_dist
+                    self.progress("MISSION_CURRENT.seq=%u (dist=%s)" %
+                                  (m.seq,str(dist)))
+                    last_mission_current_msg = self.get_sim_time_cached()
+                    last_seq = m.seq
             # flaps should undeploy at the end
             self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=30)
 
@@ -557,7 +571,7 @@ class AutoTestPlane(AutoTest):
             raise PreconditionFailedException()
         self.set_rc(12, 2000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 1:
+        while self.get_sim_time() - tstart < 10:
             x = self.mav.messages.get("CAMERA_FEEDBACK", None)
             if x is not None:
                 break
@@ -648,4 +662,7 @@ class AutoTestPlane(AutoTest):
         if len(self.fail_list):
             self.progress("FAILED: %s" % self.fail_list)
             return False
+
+        self.progress("Max set_rc_timeout=%s" % self.max_set_rc_timeout);
+
         return True
