@@ -101,7 +101,7 @@ public:
     // returns a throttle output from -100 to +100 given a desired pitch angle and vehicle's current speed (from wheel encoders)
     // desired_pitch is in radians, veh_speed_pct is supplied as a percentage (-100 to +100) of vehicle's top speed
     float get_throttle_out_from_pitch(float desired_pitch, float veh_speed_pct, bool motor_limit_low, bool motor_limit_high, float dt);
-    
+
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
 

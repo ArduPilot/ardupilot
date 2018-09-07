@@ -29,8 +29,8 @@ public:
 
 protected:
     bool fence_checks(bool report);
-    bool proximity_check(bool report);    
-   
+    bool proximity_check(bool report);
+
 private:
-    
+
 };
