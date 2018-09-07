@@ -161,12 +161,11 @@ public:
         LOITER       =        56, // loiter mode
         FOLLOW       =        57, // follow mode
         CLEAR_WP     =        58, // clear waypoints
+        ZIGZAG       =        59, // zigzag mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
     typedef enum aux_func aux_func_t;
-
-protected:
 
     // auxillary switch handling:
     enum aux_switch_pos {
@@ -176,6 +175,8 @@ protected:
     };
 
     typedef enum aux_switch_pos aux_switch_pos_t;
+
+protected:
 
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
