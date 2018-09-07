@@ -1553,6 +1553,111 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_zigzag_mode(self):
+        '''disable GPS navigation, enable Vicon input'''
+        # scribble down a location we can set origin to:
+
+        self.progress("Waiting for location")
+        start = self.mav.location()
+        self.mavproxy.send('switch 6\n')  # stabilize mode
+        self.mav.wait_heartbeat()
+        self.wait_mode('STABILIZE')
+        self.progress("Waiting reading for arm")
+        self.wait_ready_to_arm()
+
+        old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        print("old_pos=%s" % str(old_pos))
+
+        self.context_push();
+
+        ex = None
+        try:
+            # set channel 8 for zigzag switch and recentre it
+            self.set_parameter("RC8_OPTION", 59)
+            self.mavproxy.send('mode loiter\n') # change to loiter mode
+            self.wait_mode('LOITER')
+            self.arm_vehicle()
+            # increase altitude until 5m
+            self.set_rc(3, 1700)
+            self.wait_altitude(5, 5.20, relative=True)
+            self.set_rc(3, 1500)
+            ZIGZAG = 24
+            j=0
+            while j<4:  #conduct test for all 4 directions
+                self.set_rc(8, 1500)
+                self.set_rc(4, 1420)
+                self.wait_heading(352-j*90)  # align heading with the run-way
+                self.set_rc(4, 1500)
+                self.mavproxy.send('mode %u\n' %ZIGZAG) #set Zigzag mode
+                self.wait_mode(ZIGZAG)
+                self.set_rc(8, 1100)    # record point A
+                self.set_rc(1, 1700)    # fly side-way for 20m
+                self.wait_distance(20)
+                self.set_rc(1, 1500)
+                self.wait_groundspeed(0, 0.20)   #wait until the copter slows down
+                self.set_rc(8, 1500)    # pilot always have to cross mid position when changing for low to high position
+                self.set_rc(8, 1900)    # record point B
+
+                i=1
+                while i<2:                 # run zigzag A->B and B->A for 5 times
+                    self.set_rc(2, 1300)    # fly forward for 10 meter
+                    self.wait_distance(10)
+                    self.set_rc(2, 1500)    # re-centre pitch rc control
+                    self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+                    self.set_rc(8, 1500)    # switch to mid position
+                    self.set_rc(8, 1100)    # auto execute vector BA
+                    self.wait_distance(17)  # wait for it to finish
+                    self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+
+                    self.set_rc(2, 1300)    # fly forward for 10 meter
+                    self.wait_distance(10)
+                    self.set_rc(2, 1500)    # re-centre pitch rc control
+                    self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+                    self.set_rc(8, 1500)    # switch to mid position
+                    self.set_rc(8, 1900)    # auto execute vector AB
+                    self.wait_distance(17)  # wait for it to finish
+                    self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+                    i=i+1
+                # test the case when pilot switch to manual control during the auto flight  
+                self.set_rc(2, 1300)    # fly forward for 10 meter
+                self.wait_distance(10)
+                self.set_rc(2, 1500)    # re-centre pitch rc control
+                self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+                self.set_rc(8, 1500)    # switch to mid position
+                self.set_rc(8, 1100)    # switch to low position, auto execute vector BA
+                self.wait_distance(8)   # purposely switch to manual halfway
+                self.set_rc(8, 1500)    
+                self.wait_groundspeed(0, 0.2)   # copter should slow down here
+                self.set_rc(2, 1300)    # manual control to fly forward
+                self.wait_distance(8)
+                self.set_rc(2, 1500)    # re-centre pitch rc control
+                self.wait_groundspeed(0, 0.2)   # wait until the copter slows down
+                self.set_rc(8, 1100)    # copter should continue mission here
+                self.wait_distance(8)   # wait for it to finish rest of BA
+                self.wait_groundspeed(0, 0.2)   #wait until the copter slows down
+                self.set_rc(8, 1500)    # switch to mid position
+                self.set_rc(8, 1900)    # switch to execute AB again
+                self.wait_distance(17)  # wait for it to finish
+                self.wait_groundspeed(0, 0.2)   # wait until the copter slows down
+                self.mavproxy.send('mode loiter\n') # change to loiter mode
+                self.wait_mode('LOITER')
+                j=j+1
+
+            # recenter controls:
+            self.progress("# Enter RTL")
+            self.mavproxy.send('switch 3\n')
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+
+        self.context_pop();
+        self.set_rc(3, 1000)
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_setting_modes_via_modeswitch(self):
         self.context_push()
         ex = None
@@ -1907,6 +2012,9 @@ class AutoTestCopter(AutoTest):
 
             '''vision position'''  # expects vehicle to be disarmed
             self.run_test("Fly Vision Position", self.fly_vision_position)
+
+            # Zigzag mode test
+            self.run_test("Fly ZigZag Mode", self.fly_zigzag_mode)
 
             # Download logs
             self.run_test("log download",
