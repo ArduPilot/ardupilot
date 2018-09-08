@@ -308,6 +308,23 @@ void Copter::motors_output()
     }
 #endif
 
+    static AP_Motors::spool_up_down_mode last_spool_mode = AP_Motors::SHUT_DOWN;
+
+    if (last_spool_mode != motors->get_spool_mode()) {
+        last_spool_mode = motors->get_spool_mode();
+        if (last_spool_mode == AP_Motors::SHUT_DOWN) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SHUT_DOWN");  
+        } else if (last_spool_mode == AP_Motors::SPIN_WHEN_ARMED) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SPIN_WHEN_ARMED");  
+        } else if (last_spool_mode == AP_Motors::SPOOL_UP) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SPOOL_UP");  
+        } else if (last_spool_mode == AP_Motors::THROTTLE_UNLIMITED) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: THROTTLE_UNLIMITED");  
+        } else if (last_spool_mode == AP_Motors::SPOOL_DOWN) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SPOOL_DOWN");  
+        }
+    }     
+
     // Update arming delay state
     if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || control_mode == THROW)) {
         ap.in_arming_delay = false;
