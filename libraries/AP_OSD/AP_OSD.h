@@ -101,6 +101,7 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting btemp{false, 0, 0};
     AP_OSD_Setting hdop{false, 0, 0};
     AP_OSD_Setting waypoint{false, 0, 0};
     AP_OSD_Setting xtrack_error{false, 0, 0};
@@ -158,6 +159,7 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+    void draw_btemp(uint8_t x, uint8_t y);
     void draw_hdop(uint8_t x, uint8_t y);
     void draw_waypoint(uint8_t x, uint8_t y);
     void draw_xtrack_error(uint8_t x, uint8_t y);
