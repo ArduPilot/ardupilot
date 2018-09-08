@@ -67,7 +67,6 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
 #endif
 
     // we are armed if we are not initialising
-// should this use spool mode instead of motors->armed???
     if (copter.motors != nullptr && copter.motors->armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
@@ -278,7 +277,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     // the check for nullptr here doesn't just save a nullptr
     // dereference; it means that we send messages out even if we're
     // failing to detect a PX4 board type (see delay(3000) in px_drivers).
-// should this use spool mode instead of motors->armed???
     if (copter.motors != nullptr && copter.scheduler.time_available_usec() < 250 && copter.motors->armed()) {
         gcs().set_out_of_time(true);
         return false;

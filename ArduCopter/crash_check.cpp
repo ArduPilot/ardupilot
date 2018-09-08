@@ -18,7 +18,6 @@ void Copter::crash_check()
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
 
     // return immediately if disarmed, or crash checking disabled
-// should this use spool mode instead of motors->armed()??
     if (!motors->armed() || ap.land_complete || g.fs_crash_check == 0) {
         crash_counter = 0;
         return;
@@ -149,7 +148,6 @@ void Copter::parachute_check()
     parachute.update();
 
     // return immediately if motors are not armed or pilot's throttle is above zero
-//should this use spool mode instead of motors->armed()??
     if (!motors->armed()) {
         control_loss_count = 0;
         return;

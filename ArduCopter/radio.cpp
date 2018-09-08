@@ -152,7 +152,6 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
     if (throttle_pwm < (uint16_t)g.failsafe_throttle_value) {
 
         // if we are already in failsafe or motors not armed pass through throttle and exit
-//should this be spool mode instead of motors->armed??
         if (failsafe.radio || !(ap.rc_receiver_present || motors->armed())) {
             return;
         }
