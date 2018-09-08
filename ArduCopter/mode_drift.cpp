@@ -89,13 +89,18 @@ void Copter::ModeDrift::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
-    } else if (ap.throttle_zero || !motors->get_interlock()) {
+    } else if (ap.throttle_zero || (!motors->get_interlock() && ap.using_interlock)) {
+        // This is designed to preserve flying functions in the case of inflight motor interlock disabled.
+        if (ap.land_complete) {
+            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->reset_rate_controller_I_terms();
+        }
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        set_land_complete(false);
+        if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+        }
     }
 
     // call attitude controller
