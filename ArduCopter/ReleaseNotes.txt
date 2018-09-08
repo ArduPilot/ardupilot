@@ -1,5 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc9 08-Sep-2018
+Changes from 3.6.0-rc8
+1) Landing gear can be operated using AIRFRAME_CONFIGURATION mavlink messages
+2) Support playing tunes received via MAVLink (i.e. from GCS)
+3) Bug Fixes:
+    a) Twitch reduced when entering Loiter at high speed
+    b) Safety switch state fix when Pixhawk/Cube I/O board reset in flight
+    c) External display fix to allow plugging into either I2C port
+------------------------------------------------------------------
 Copter 3.6.0-rc8 28-Aug-2018
 Changes from 3.6.0-rc7
 1) TeraRanger Tower EVO lidar support added
