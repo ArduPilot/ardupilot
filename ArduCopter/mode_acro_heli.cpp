@@ -29,35 +29,29 @@ void Copter::ModeAcro_Heli::run()
     float target_roll, target_pitch, target_yaw;
     float pilot_throttle_scaled;
 
-    // Tradheli should not reset roll, pitch, yaw targets when motors are not runup, because
-    // we may be in autorotation flight.  These should be reset only when transitioning from disarmed
-    // to armed, because the pilot will have placed the helicopter down on the landing pad.  This is so
-    // that the servos move in a realistic fashion while disarmed for operational checks.
-    // Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero so the swash servos move
-    
-//  This code is a remnant of when Rob didn't trust changes in the main code wouldn't cause an in
-//  flight disarm.  Making this code align with multi's would help across the board to remove #if statements.
-//  I think we are less likely now to suffer an inflight disarming
-    if(!motors->armed()) {
-        copter.heli_flags.init_targets_on_arming=true;
-        attitude_control->set_attitude_target_to_current_attitude();
-        attitude_control->reset_rate_controller_I_terms();
-    }
-    
-    if(motors->armed() && copter.heli_flags.init_targets_on_arming) {
-        attitude_control->set_attitude_target_to_current_attitude();
-        attitude_control->reset_rate_controller_I_terms();
-        if (motors->get_interlock()) {
-            copter.heli_flags.init_targets_on_arming=false;
-        }
-    }   
+    // Tradheli should not reset roll, pitch, yaw targets when motors are not runup while flying, because
+    // we may be in autorotation flight.  This is so that the servos move in a realistic fashion while disarmed
+    // for operational checks. Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero
+    // so the swash servos move.
 
+    if (!motors->armed()) {  // Motors Stopped
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (!motors->get_interlock() && ap.land_complete) { // landed and motors interlock disabled
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        attitude_control->set_attitude_target_to_current_attitude();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (!motors->get_interlock()) { // motors interlock disabled inflight
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     // clear landing flag above zero throttle
-    if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED && !ap.throttle_zero) {
-        set_land_complete(false);
+        if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED && !motors->limit.throttle_lower) {
+            set_land_complete(false);
+        }
     }
 
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     if (!motors->has_flybar()){
         // convert the input to the desired body frame rate
