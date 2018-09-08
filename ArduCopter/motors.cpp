@@ -93,13 +93,11 @@ void Copter::auto_disarm_check()
         return;
     }
 
-#if FRAME_CONFIG == HELI_FRAME
     // if the rotor is still spinning, don't initiate auto disarm
-    if (motors->rotor_speed_above_critical()) {
+    if (motors->get_spool_mode() != AP_Motors::SPIN_WHEN_ARMED) {
         auto_disarm_begin = tnow_ms;
         return;
     }
-#endif
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
     if ((ap.using_interlock && !motors->get_interlock()) || ap.motor_emergency_stop) {

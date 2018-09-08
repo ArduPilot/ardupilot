@@ -322,7 +322,6 @@ bool Copter::ekf_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
-//should spool mode be used instead of motors->armed??
     if (!motors->armed()) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
     } else {
@@ -362,7 +361,6 @@ bool Copter::optflow_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal relative position
-//should spool mode be used instead of motors->armed??
     if (!motors->armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
     } else {
@@ -377,7 +375,6 @@ void Copter::update_auto_armed()
     // disarm checks
     if(ap.auto_armed){
         // if motors are disarmed, auto_armed should also be false
-//should spool mode be used instead of motors->armed??
         if(!motors->armed()) {
             set_auto_armed(false);
             return;
@@ -386,30 +383,26 @@ void Copter::update_auto_armed()
         if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-#if FRAME_CONFIG == HELI_FRAME
         // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
         // so that rotor runup is checked again before attempting to take-off
-//should spool mode be used instead of motors->armed??  since rotor_runup_complete is required then THROTTLE UNLIMITED is required for spool mode
-        if(ap.land_complete && !motors->rotor_runup_complete()) {
+        if(ap.land_complete && motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
-#endif // HELI_FRAME
     }else{
         // arm checks
         
-#if FRAME_CONFIG == HELI_FRAME
         // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-//should spool mode be used instead of motors->armed??  since rotor_runup_complete is required then THROTTLE UNLIMITED is required for spool mode
-        if(motors->armed() && !ap.throttle_zero && motors->rotor_runup_complete()) {
-            set_auto_armed(true);
-        }
-#else
+        if(motors->armed() && ap.using_interlock) {
+            if(!ap.throttle_zero && motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+                set_auto_armed(true);
+            }
         // if motors are armed and throttle is above zero auto_armed should be true
         // if motors are armed and we are in throw mode, then auto_armed should be true
-        if(motors->armed() && (!ap.throttle_zero || control_mode == THROW)) {
-            set_auto_armed(true);
+        } else if (motors->armed() && !ap.using_interlock) {
+            if(!ap.throttle_zero || control_mode == THROW) {
+                set_auto_armed(true);
+            }
         }
-#endif // HELI_FRAME
     }
 }
 
