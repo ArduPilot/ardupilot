@@ -56,7 +56,6 @@ public:
     // get bitmask of enabled checks
     uint16_t get_enabled_checks();
 
-
     // pre_arm_checks() is virtual so it can be modified in a vehicle specific subclass
     virtual bool pre_arm_checks(bool report);
 
