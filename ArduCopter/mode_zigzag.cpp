@@ -191,12 +191,10 @@ bool Copter::ModeZigZag::calculate_next_dest(Vector3f& next_dest, RC_Channel::au
     // used to check if the drone is outside A-B scale
     int next_dir = 1;
     // if the drone's position is between A and B
-    Vector2f cur_pos_2d, AB, P_on_AB;
-    cur_pos_2d.x = cur_pos.x;
-    cur_pos_2d.y = cur_pos.y;
-    AB = zigzag_waypoint.B_pos - zigzag_waypoint.A_pos;
+    const Vector2f cur_pos_2d{cur_pos.x, cur_pos.y};
+    const Vector2f AB = zigzag_waypoint.B_pos - zigzag_waypoint.A_pos;
+    const Vector2f P_on_AB = Vector2f::closest_point(cur_pos_2d, zigzag_waypoint.A_pos, zigzag_waypoint.B_pos);
     float dis_AB = AB.length();
-    P_on_AB = Vector2f::closest_point(cur_pos_2d, zigzag_waypoint.A_pos, zigzag_waypoint.B_pos);
     float dis_from_AB_squared = (P_on_AB - cur_pos_2d).length_squared();
     next_dest.z = cur_pos.z;
     if (is_zero(dis_AB)) {   //protection against division by zero
@@ -286,30 +284,30 @@ bool Copter::ModeZigZag::set_destination(const Vector3f& destination, RC_Channel
     }
 #endif
     switch (stage) {
-        case REQUIRE_A:
-            //define point A
-            zigzag_waypoint.A_pos.x = destination.x;
-            zigzag_waypoint.A_pos.y = destination.y;
-            zigzag_waypoint.switch_pos_A = aux_switch_position;
-            stage = REQUIRE_B;     //next need to define point B
+    case REQUIRE_A:
+        //define point A
+        zigzag_waypoint.A_pos.x = destination.x;
+        zigzag_waypoint.A_pos.y = destination.y;
+        zigzag_waypoint.switch_pos_A = aux_switch_position;
+        stage = REQUIRE_B;     //next need to define point B
+        return true;
+    case REQUIRE_B:
+        //point B will only be defined after A is defined
+        //if user toggle to the switch position that were previously defined as A
+        //exit the function and do nothing
+        if(aux_switch_position == zigzag_waypoint.switch_pos_A){    
             return true;
-        case REQUIRE_B:
-            //point B will only be defined after A is defined
-            //if user toggle to the switch position that were previously defined as A
-            //exit the function and do nothing
-            if(aux_switch_position == zigzag_waypoint.switch_pos_A){    
-                return true;
-            }
-            zigzag_waypoint.B_pos.x = destination.x; // define point B
-            zigzag_waypoint.B_pos.y = destination.y;
-            zigzag_waypoint.switch_pos_B = aux_switch_position;
-            stage = MANUAL_REGAIN;               //user is still in manual control until he turns the switch again to point A position
-            return true;
-        default:
-            // when both A and B are defined and switch in not in middle position, set waypoint destination
-            // no need to check return status because terrain data is not used
-            wp_nav->set_wp_destination(destination, false);
-            return true;
+        }
+        zigzag_waypoint.B_pos.x = destination.x; // define point B
+        zigzag_waypoint.B_pos.y = destination.y;
+        zigzag_waypoint.switch_pos_B = aux_switch_position;
+        stage = MANUAL_REGAIN;               //user is still in manual control until he turns the switch again to point A position
+        return true;
+    default:
+        // when both A and B are defined and switch in not in middle position, set waypoint destination
+        // no need to check return status because terrain data is not used
+        wp_nav->set_wp_destination(destination, false);
+        return true;
     }
 
 }
