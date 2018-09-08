@@ -26,6 +26,12 @@
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMONLY
+#else
+  #define ARMING_RUDDER_DEFAULT         ARMING_RUDDER_ARMDISARM
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
@@ -73,6 +79,16 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
 
+    // @Param: RUDDER
+    // @DisplayName: Arming with Rudder enable/disable
+    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
+    // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
+                                                                                           AP_PARAM_FRAME_ROVER |
+                                                                                           AP_PARAM_FRAME_COPTER |
+                                                                                           AP_PARAM_FRAME_TRICOPTER |
+                                                                                           AP_PARAM_FRAME_HELI),
     AP_GROUPEND
 };
 

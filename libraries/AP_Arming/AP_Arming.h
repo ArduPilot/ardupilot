@@ -68,6 +68,14 @@ public:
     // get expected magnetic field strength
     uint16_t compass_magfield_expected() const;
 
+    // rudder arming support
+    enum ArmingRudder {
+        ARMING_RUDDER_DISABLED  = 0,
+        ARMING_RUDDER_ARMONLY   = 1,
+        ARMING_RUDDER_ARMDISARM = 2
+    };
+    ArmingRudder rudder_arming() const { return (ArmingRudder)_rudder_arming.get(); }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
@@ -77,6 +85,7 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
+    AP_Int8                 _rudder_arming;
 
     // internal members
     bool                    armed:1;
