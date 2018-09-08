@@ -133,15 +133,7 @@ void Copter::ModeLoiter::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-#if FRAME_CONFIG == HELI_FRAME
-        // force descent rate and call position controller
-        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        if (ap.land_complete_maybe) {
-            pos_control->relax_alt_hold_controllers(0.0f);
-        }
-#else
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-#endif
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
         pos_control->update_z_controller();
@@ -179,19 +171,19 @@ void Copter::ModeLoiter::run()
         break;
 
     case Loiter_Landed:
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-#if FRAME_CONFIG == HELI_FRAME
-        if ((target_climb_rate < 0.0f) && !motors->get_interlock()) {
-#else
-        if (target_climb_rate < 0.0f) {
-#endif
+
+        // multicopters set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
+        if (target_climb_rate < 0.0f && !ap.using_interlock) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
+
         loiter_nav->init_target();
-        attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_yaw_target_to_current_heading();
+        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->set_yaw_target_to_current_heading();
+        }
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
@@ -221,7 +213,18 @@ void Copter::ModeLoiter::run()
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // update altitude target and call position controller
-        pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        // protects helis from inadvertantly disabling motor interlock inflight by controlling descent rather than relaxing alt_hold controller
+        // statement doesn't affect multicopters since they should never be spin_when_armed or spool_down while flying
+        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
+            // This keeps collective from spiking if spin when armed set before land complete set.
+            if (ap.land_complete_maybe) {
+                pos_control->relax_alt_hold_controllers(0.0f);
+            } else {
+                pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+            }
+        } else {
+            pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        }
         pos_control->update_z_controller();
         break;
     }
