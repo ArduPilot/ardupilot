@@ -189,6 +189,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Group: EFF
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
+    
+    // @Group: BTEMP
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -908,6 +912,13 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     } 
 }
 
+void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
+{
+    AP_Baro &barometer = AP::baro();
+    float btmp = barometer.get_temperature(1);
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -941,6 +952,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+    DRAW_SETTING(btemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
 
