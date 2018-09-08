@@ -52,21 +52,26 @@ void Copter::ModeCircle::run()
     }
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
+    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN SPIN_WHEN_ARMED*****
+    // also protects heli's from inflight motor interlock disable
+    if (!motors->armed() || !ap.auto_armed || (motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED && ap.land_complete)) {
+        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+            zero_throttle_and_relax_ac();
+        } else {
+            zero_throttle_and_hold_attitude();
+        }  
         pos_control->relax_alt_hold_controllers(0.0f);
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
             copter.init_disarm_motors();
         }
+        return;
+    }
+
+    if (ap.land_complete) {
+        zero_throttle_and_hold_attitude();  
+        pos_control->relax_alt_hold_controllers(0.0f);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         return;
     }
 
@@ -88,7 +93,12 @@ void Copter::ModeCircle::run()
     }
 
     // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    // protects heli's from inflight motor interlock disable
+    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED && !ap.land_complete) {
+        pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
+    } else {
+        pos_control->set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    }
     pos_control->update_z_controller();
 }
 
