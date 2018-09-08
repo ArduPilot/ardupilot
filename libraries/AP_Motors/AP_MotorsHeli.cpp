@@ -375,7 +375,6 @@ void AP_MotorsHeli::output_logic()
     if (_flags.armed) {
         if (!_flags.interlock) {
             _spool_desired = DESIRED_SPIN_WHEN_ARMED;
-            _spool_mode = SPIN_WHEN_ARMED;
         }
     } else {
         _spool_desired = DESIRED_SHUT_DOWN;
