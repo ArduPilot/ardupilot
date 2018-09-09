@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Param: FILT
     // @DisplayName: Wind vane low pass filter frequency
     // @Description: Wind vane low pass filter frequency, a value of -1 diables filter
-    // @Units: hz
+    // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("FILT", 7, AP_WindVane, _filt_hz, 0.1f),
     
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     // @Description: set to one to enter clabration on reboot
     // @Units: deg
     // @Increment: 1
-    // @Range: 0 360    
+    // @Range: 0 360
     // @User: Standard
     AP_GROUPINFO("ANA_DZ", 9, AP_WindVane, _analog_deadzone,  0),
 
