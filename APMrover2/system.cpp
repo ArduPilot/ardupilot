@@ -64,6 +64,8 @@ void Rover::init_ardupilot()
 
     rssi.init();
 
+    g2.airspeed.init();
+
     g2.windvane.init();
 
     // init baro before we start the GCS, so that the CLI baro test works
