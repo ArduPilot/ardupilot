@@ -284,7 +284,7 @@ void AP_MotorsHeli_Quad::output_to_motors()
             // sends minimum values out to the motors
             update_motor_control(ROTOR_CONTROL_STOP);
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends idle output to motors when armed. rotor could be static or turning (autorotation)
             update_motor_control(ROTOR_CONTROL_IDLE);
             break;

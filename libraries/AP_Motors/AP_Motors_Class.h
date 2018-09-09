@@ -103,7 +103,7 @@ public:
     // desired spool states
     enum spool_up_down_desired {
         DESIRED_SHUT_DOWN = 0,              // all motors stop
-        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
+        DESIRED_GROUND_IDLE = 1,            // all motors at ground idle
         DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
     };
 
@@ -114,7 +114,7 @@ public:
     // spool states
     enum spool_up_down_mode {
         SHUT_DOWN = 0,                      // all motors stop
-        SPIN_WHEN_ARMED = 1,                // all motors at spin when armed
+        GROUND_IDLE = 1,                    // all motors at ground idle
         SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
         THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
         SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing

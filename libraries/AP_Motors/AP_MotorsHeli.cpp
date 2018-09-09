@@ -374,7 +374,7 @@ void AP_MotorsHeli::output_logic()
     // force desired and current spool mode if disarmed and armed with interlock enabled
     if (_flags.armed) {
         if (!_flags.interlock) {
-            _spool_desired = DESIRED_SPIN_WHEN_ARMED;
+            _spool_desired = DESIRED_GROUND_IDLE;
         }
     } else {
         _spool_desired = DESIRED_SHUT_DOWN;
@@ -393,20 +393,20 @@ void AP_MotorsHeli::output_logic()
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_SHUT_DOWN) {
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
                 break;
             }
 
             break;
 
-        case SPIN_WHEN_ARMED: {
-            // Motors should be stationary or at spin when armed.
+        case GROUND_IDLE: {
+            // Motors should be stationary or at ground idle.
             // Servos should be moving to correct the current attitude.
             if (_spool_desired == DESIRED_SHUT_DOWN){
                 _spool_mode = SHUT_DOWN;
             } else if(_spool_desired == DESIRED_THROTTLE_UNLIMITED) {
                 _spool_mode = SPOOL_UP;
-            } else {    // _spool_desired == SPIN_WHEN_ARMED
+            } else {    // _spool_desired == GROUND_IDLE
 
             }
 
@@ -450,7 +450,7 @@ void AP_MotorsHeli::output_logic()
                 break;
             }
             if (!rotor_speed_above_critical()){
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
             }
             break;
     }

@@ -62,7 +62,7 @@ void AP_MotorsTailsitter::output_to_motors()
             limit.throttle_lower = true;
             limit.throttle_upper = true;
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
             // set limits flags

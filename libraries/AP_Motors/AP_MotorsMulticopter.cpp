@@ -448,7 +448,7 @@ void AP_MotorsMulticopter::output_logic()
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_SHUT_DOWN) {
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
                 break;
             }
 
@@ -461,8 +461,8 @@ void AP_MotorsMulticopter::output_logic()
             _thrust_boost_ratio = 0.0f;
             break;
 
-        case SPIN_WHEN_ARMED: {
-            // Motors should be stationary or at spin when armed.
+        case GROUND_IDLE: {
+            // Motors should be stationary or at ground idle.
             // Servos should be moving to correct the current attitude.
 
             // set limits flags
@@ -487,7 +487,7 @@ void AP_MotorsMulticopter::output_logic()
                     _spin_up_ratio = 1.0f;
                     _spool_mode = SPOOL_UP;
                 }
-            } else {    // _spool_desired == SPIN_WHEN_ARMED
+            } else {    // _spool_desired == GROUND_IDLE
                 float spin_up_armed_ratio = 0.0f;
                 if (_spin_min > 0.0f) {
                     spin_up_armed_ratio = _spin_arm / _spin_min;
@@ -588,7 +588,7 @@ void AP_MotorsMulticopter::output_logic()
             if (_throttle_thrust_max >= get_current_limit_max_throttle()) {
                 _throttle_thrust_max = get_current_limit_max_throttle();
             } else if (is_zero(_throttle_thrust_max)) {
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
             }
 
             _thrust_boost_ratio = MAX(0.0, _thrust_boost_ratio-1.0f/(_spool_up_time*_loop_rate));
