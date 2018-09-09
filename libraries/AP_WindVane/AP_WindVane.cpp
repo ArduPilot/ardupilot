@@ -17,6 +17,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include <Filter/Filter.h>
 #include <utility>
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
@@ -79,10 +80,26 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: FILT
     // @DisplayName: Wind vane low pass filter frequency
-    // @Description: Wind vane low pass filter frequency
+    // @Description: Wind vane low pass filter frequency, a value of -1 diables filter
     // @Units: hz
     // @User: Standard
     AP_GROUPINFO("FILT", 7, AP_WindVane, _filt_hz, 0.1f),
+    
+    // @Param: CAL
+    // @DisplayName: set to one to enter clabration on reboot
+    // @Description: set to one to enter clabration on reboot
+    // @Values: 0:None, 1:Calabrate
+    // @User: Standard
+    AP_GROUPINFO("CAL", 8, AP_WindVane, _calibration,  0),
+    
+    // @Param: ANA_DZ
+    // @DisplayName: Analog potentiopmeter dead zone
+    // @Description: set to one to enter clabration on reboot
+    // @Units: deg
+    // @Increment: 1
+    // @Range: 0 360    
+    // @User: Standard
+    AP_GROUPINFO("ANA_DZ", 9, AP_WindVane, _analog_deadzone,  0),
 
     AP_GROUPEND
 };
@@ -129,10 +146,14 @@ void AP_WindVane::init()
     // a pin for reading the Wind Vane voltage.
     windvane_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);    
 
-    // set-up filter
-    low_pass_filter_wind_sin.set_cutoff_frequency(_filt_hz);
-    low_pass_filter_wind_cos.set_cutoff_frequency(_filt_hz);
-    _last_filt_hz = _filt_hz;
+    // set _last_filt_hz to trigger set-up filter
+    _last_filt_hz = 10000.0f;  
+
+    // Trigger Calabration
+    if(_calibration){
+        _calibrate_vane = true;
+        _calibration.set_and_save(0);
+    }      
 }
 
 // Caculate the apparent wind bearing in radians, the wind comes from this direciton, 0 = head to wind, called at 50hz
@@ -156,25 +177,35 @@ void AP_WindVane::update_apparent_wind()
         }
     }
 
+    // Calabration, make sure not armed and wait abit after boot 
+    if(_calibrate_vane && !(hal.util->get_soft_armed()) && AP_HAL::millis() > 30000.0f){
+        calibrate();
+    }
+    
     // Try and spot a stuck vane, must have moved by atlest 2deg, probably some tuning to be done to the value
     if (fabsf(wrap_PI(_apparent_angle_last-apparent_angle_in)) < radians(2.0f)) {
         apparent_angle_in = _apparent_angle; // if its not moved just use current apparent angle
     } else {
         _apparent_angle_last = apparent_angle_in;
     }
+    
 
-    // apply low pass filter
-    // Update frequency if its been changed
-    if (fabsf(_last_filt_hz- _filt_hz) > 0.0001f){
-        low_pass_filter_wind_sin.set_cutoff_frequency(_filt_hz);
-        low_pass_filter_wind_cos.set_cutoff_frequency(_filt_hz);
-        _last_filt_hz = _filt_hz;
+    // apply low pass filter if enabled
+    if(is_positive(_filt_hz)){
+        // Update frequency if its been changed
+        if (fabsf(_last_filt_hz - _filt_hz) > 0.0001f){
+            low_pass_filter_wind_sin.set_cutoff_frequency(_filt_hz);
+            low_pass_filter_wind_cos.set_cutoff_frequency(_filt_hz);
+            _last_filt_hz = _filt_hz;
+        }
+        // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
+        float filtered_sin = low_pass_filter_wind_sin.apply(sinf(apparent_angle_in), 0.02f);
+        float filtered_cos = low_pass_filter_wind_cos.apply(cosf(apparent_angle_in), 0.02f);
+        _apparent_angle = atan2f(filtered_sin, filtered_cos);
+    } else { 
+        _apparent_angle = apparent_angle_in;
     }
-    // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
-    float filtered_sin = low_pass_filter_wind_sin.apply(sinf(apparent_angle_in), 0.02f);
-    float filtered_cos = low_pass_filter_wind_cos.apply(cosf(apparent_angle_in), 0.02f);
-    _apparent_angle = atan2f(filtered_sin, filtered_cos);
-
+        
     // make sure between -pi and pi
     _apparent_angle = wrap_PI(_apparent_angle);
 }
@@ -231,16 +262,16 @@ float AP_WindVane::get_true_wind_speed()
 float AP_WindVane::read_analog()
 {
     windvane_analog_source->set_pin(_analog_pin_no);
-    float current_analog_voltage = windvane_analog_source->voltage_average();
+    _current_analog_voltage = windvane_analog_source->voltage_average();
 
     // calculate bearing from analog voltage
     // assumes voltage increases as wind vane moves clockwise, we could get round this with more complex code and calibration
     // not sure about where to write a calibration code, but we just need to rotate the vane a few times and record the min and max voltage and the set it to head to wind to record the offset
 
-    current_analog_voltage = constrain_float(current_analog_voltage,_analog_volt_min,_analog_volt_max);
-    float voltage_ratio = linear_interpolate(0.0f, 1.0f, current_analog_voltage, _analog_volt_min, _analog_volt_max);
+    float current_analog_voltage_constrain = constrain_float(_current_analog_voltage,_analog_volt_min,_analog_volt_max);
+    float voltage_ratio = linear_interpolate(0.0f, 1.0f, current_analog_voltage_constrain, _analog_volt_min, _analog_volt_max);
 
-    float bearing = (voltage_ratio * radians(360)) + radians(_analog_head_bearing_offset);
+    float bearing = (voltage_ratio * radians(360-_analog_deadzone)) + radians(_analog_head_bearing_offset);
 
     return wrap_PI(bearing);
 }
@@ -260,10 +291,15 @@ float AP_WindVane::read_PWM_bearing()
 // convert from apparent wind angle to true wind absolute angle
 float AP_WindVane::apparent_to_absolute()
 {
-    // https://en.wikipedia.org/wiki/Apparent_wind
-    float bearing = 0.0f;
-
     float heading =  AP::ahrs().yaw;
+    
+    // If no wind speed sensor ignore apparent wind effects
+    if(1){
+        return wrap_2PI(heading + _apparent_angle);
+    }
+    
+    // https://en.wikipedia.org/wiki/Apparent_wind
+ 
     
     // Duplicated from rover get forward speed 
     float ground_speed = 0.0f;
@@ -289,6 +325,7 @@ float AP_WindVane::apparent_to_absolute()
     // Calculate true wind speed (possibly put this in another function somewhere?)
     _true_wind_speed = sqrtf( powf(apparent_wind_speed,2)  + powf(ground_speed,2)  - 2 * apparent_wind_speed * ground_speed * cosf(_apparent_angle));
 
+    float bearing = 0.0f;
     if (is_zero(_true_wind_speed)) { // There is no true wind, so return apparent angle, to avoid divide by zero
         bearing = _apparent_angle;
     } else if (is_positive(_apparent_angle)) {
@@ -300,6 +337,44 @@ float AP_WindVane::apparent_to_absolute()
     // make sure between -pi and pi
     bearing = wrap_2PI(heading + bearing);
     return bearing;
+}
+
+// Calabrate windwane 
+void AP_WindVane::calibrate()
+{
+    switch (_type) {
+        case WindVaneType::WINDVANE_HOME_HEADING:
+        case WindVaneType::WINDVANE_PWM_PIN:
+        {
+            gcs().send_text(MAV_SEVERITY_INFO, "WindVane, No cal required");
+            _calibrate_vane = false;
+        }
+        case WindVaneType::WINDVANE_ANALOG_PIN:
+        {
+            if(!_calibration_in_progress){
+                _current_time =  AP_HAL::millis();
+                _calibration_in_progress = true;
+                _voltage_max = _current_analog_voltage;
+                _voltage_min = _current_analog_voltage;
+                gcs().send_text(MAV_SEVERITY_INFO, "WindVane Analog input calibrating");
+            }             
+               
+            // record min and max voltage
+            _voltage_max = fmax(_voltage_max,_current_analog_voltage);
+            _voltage_min = fmin(_voltage_min,_current_analog_voltage);                
+            
+            // Calibarate for 60 seconds
+            if ((AP_HAL::millis() - _current_time) > 30000.0f ){
+                // save to params
+                _analog_volt_max.set_and_save(_voltage_max);
+                _analog_volt_min.set_and_save(_voltage_min);
+                        
+                gcs().send_text(MAV_SEVERITY_INFO, "WindVane Analog input calibration complete");   
+                _calibrate_vane = false;
+            }
+
+        }
+    }
 }
 
 AP_WindVane *AP_WindVane::_s_instance = nullptr;

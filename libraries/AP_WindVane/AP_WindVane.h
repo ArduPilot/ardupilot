@@ -78,6 +78,9 @@ private:
 
     // Convert from apparent wind angle to true wind absolute angle
     float apparent_to_absolute();
+    
+    // Calabrate
+    void calibrate();
 
     // parameters
     AP_Int8 _type;                          // type of windvane being used
@@ -87,6 +90,8 @@ private:
     AP_Float _analog_volt_max;              // maximum voltage read by windvane
     AP_Float _analog_head_bearing_offset;   // Angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
     AP_Float _filt_hz;                      // Low pass filter frequency
+    AP_Int8 _calibration;                   // Enter calabration
+    AP_Float _analog_deadzone;              // Analog pot deadzone deg
 
     static AP_WindVane *_s_instance;
     float _home_heading;
@@ -94,6 +99,12 @@ private:
     float _apparent_angle_last; 
     float _last_filt_hz;
     float _true_wind_speed;
+    bool _calibrate_vane = false;
+    bool _calibration_in_progress = false;
+    float _current_analog_voltage;
+    float _voltage_max;
+    float _voltage_min;
+    float _current_time;
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
