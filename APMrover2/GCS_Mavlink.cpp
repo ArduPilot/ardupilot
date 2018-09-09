@@ -271,11 +271,23 @@ void Rover::send_wind(mavlink_channel_t chan)
         return;
     }
 
+    float wind_angle;
+    float wind_speed;
+  
+    // Send apparent or true wind speed and direciton 
+    if(rover.g2.sail_mavlink_true_apparent == 0){ // True
+        wind_angle = degrees(rover.g2.windvane.get_absolute_wind_direction_rad());
+        wind_speed = rover.g2.windvane.get_true_wind_speed();
+    } else { // Aparent
+        wind_angle = degrees(rover.g2.windvane.get_apparent_wind_direction_rad());
+        wind_speed = 0.0f; // read from airspeed lib
+    }        
+    
     // send wind
     mavlink_msg_wind_send(
         chan,
-        degrees(rover.g2.windvane.get_absolute_wind_direction_rad()),
-        rover.g2.windvane.get_true_wind_speed(),
+        wind_angle,
+        wind_speed,
         0);
 }
 

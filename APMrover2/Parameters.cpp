@@ -684,6 +684,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAIL_HEEL_MAX", 39, ParametersG2, sail_heel_angle_max, 30),   
 
+    // @Param: SAIL_AP_TRU
+    // @DisplayName: Sailing send true or apparent wind as wind mavling message 
+    // @Description: Send true wind speed and direction or apparent wind speed and direction to GCS via mavlink
+    // @Values: 0:True Wind,1:Apparent wind
+    // @User: Standard
+    AP_GROUPINFO("SAIL_AP_TRU", 40, ParametersG2, sail_mavlink_true_apparent, 0),   
+    
     AP_GROUPEND
 };
 
