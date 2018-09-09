@@ -165,23 +165,26 @@ void Rover::Log_Write_Sail()
     float wind_dir_abs = 0.0f;
     float wind_dir_rel = 0.0f;
     float true_wind_speed = 0.0f;
+    float aparent_wind_speed = 0.0f;
     if (rover.g2.windvane.enabled()) {
         wind_dir_abs = degrees(g2.windvane.get_absolute_wind_direction_rad());
         wind_dir_rel = degrees(g2.windvane.get_apparent_wind_direction_rad());
         true_wind_speed = g2.windvane.get_true_wind_speed();
+        aparent_wind_speed = g2.windvane.get_apparent_wind_speed();
     }
-    float VMG = 0.0f;
-    if (rover._sailboat_indirect_route){
-        VMG = rover._sailboat_velocity_made_good;
+    float vmg = 0.0f;
+    if (rover._sailboat_indirect_route) {
+        vmg = rover._sailboat_velocity_made_good;
     }
-    DataFlash.Log_Write("SAIL", "TimeUS,WindDirAbs,WindDirRel,TrueWindSpd,SailOut,VMG",
-                        "shh%", "F000", "Qfff", // not sure if i need to change this line or not??
+    DataFlash.Log_Write("SAIL", "TimeUS,WindDirAbs,WindDirRel,TrueWindSpd,AparentWindSpd,SailOut,VMG",
+                        "shhnn%n", "F000000", "Qffffff",
                         AP_HAL::micros64(),
                         (double)wind_dir_abs,
                         (double)wind_dir_rel,
                         (double)true_wind_speed,
+                        (double)aparent_wind_speed,
                         (double)g2.motors.get_mainsail(),
-                        (double)VMG);
+                        (double)vmg);
 }
 
 struct PACKED log_Steering {

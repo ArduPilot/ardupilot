@@ -27,6 +27,7 @@ def build(bld):
             'AP_Follow',
             'AP_OSD',
             'AP_WindVane',
+            'AP_Airspeed',
         ],
     )
 

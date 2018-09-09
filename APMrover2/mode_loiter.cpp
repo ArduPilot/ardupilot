@@ -21,12 +21,12 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     float loiter_radius = g.waypoint_radius;
-    
-    // Sailboats need a larger loiter radius 
+
+    // Sailboats need a larger loiter radius
     if(g2.motors.has_sail()){
         loiter_radius = g2.sailboat_loiter_radius;
-    }    
-        
+    }
+
     // get distance (in meters) to destination
     _distance_to_destination = get_distance(rover.current_loc, _destination);
 
@@ -54,10 +54,10 @@ void ModeLoiter::update()
         float yaw_error_ratio = 1.0f - constrain_float(fabsf(_yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
         _desired_speed *= yaw_error_ratio;
     }
-    
+
     // Sailboats shoulden't stop and cant go backwards
-    if(g2.motors.has_sail() && !is_positive(_desired_speed)) 
-    {     
+    if(g2.motors.has_sail() && !is_positive(_desired_speed))
+    {
         _desired_speed = 1.0f;
     }
 

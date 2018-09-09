@@ -382,12 +382,12 @@ public:
     AP_Float sailboat_loiter_radius;
     AP_Float sail_heel_angle_max;
     AP_Int8 sail_mavlink_true_apparent;
-    
-    // Arming rudder
-    AP_Int8 rudder_arming_value;
-    
+
     // windvane
     AP_WindVane windvane;
+
+    // Airspeed
+    AP_Airspeed airspeed;
 };
 
 extern const AP_Param::Info var_info[];

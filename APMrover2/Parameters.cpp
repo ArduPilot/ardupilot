@@ -623,74 +623,78 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: SAIL_ANGLE_IDEAL
     // @DisplayName: Sail ideal angle
-    // @Description: ideal angle between sail and apparent wind
+    // @Description: Ideal angle between sail and apparent wind
     // @Units: deg
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_ANGLE_IDEAL", 33, ParametersG2, sail_angle_ideal, 5),
-    
+    AP_GROUPINFO("SAIL_ANGLE_IDEAL", 33, ParametersG2, sail_angle_ideal, 25),
+
     // @Param: SAIL_NO_GO_ANGLE
-    // @DisplayName: Sailing no go zone angle 
-    // @Description: The typical closest angle to the wind the vehicle will sail at
+    // @DisplayName: Sailing no go zone angle
+    // @Description: The typical closest angle to the wind the vehicle will sail at, the vehicle will sail at this angle when going upwind
     // @Units: deg
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_NO_GO_ANGLE", 34, ParametersG2, sail_no_go, 45),
-    
+
     // @Param: SAIL_MAX_XTRACK
-    // @DisplayName: Sailing max auto cross track error 
-    // @Description: When sailing upwind a sailboat will tack when it reaches this cross track error, this efectively defines a 'corridor' of width 2*SAIL_MAX_XTRACK that the boat will stay within, 0 = disabled
+    // @DisplayName: Sailing max auto mode cross track error
+    // @Description: When sailing upwind vehicle will tack when it reaches this cross track error, this efectively defines a 'corridor' of width 2*SAIL_MAX_XTRACK that the vehicle will stay within, 0 = disabled
     // @Units: m
     // @Range: 0 50
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_MAX_XTRACK", 35, ParametersG2, sailboat_auto_xtrack_tack, 0),
-    
+    AP_GROUPINFO("SAIL_MAX_XTRACK", 35, ParametersG2, sailboat_auto_xtrack_tack, 10),
+
     // @Param: SAIL_MAX_ST_RT
-    // @DisplayName: Sailing auto straight line rate
+    // @DisplayName: Sailing auto mode straight line rate
     // @Description: Maximum rate used when sailing on one tack in auto modes, this changes how quicky the heading responds to changes in wind direciton, tacks do not use this rate
     // @Units: deg/s
     // @Range: 0 360
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_MAX_ST_RT", 36, ParametersG2, sailboat_straight_rate, 25),
-    
+    AP_GROUPINFO("SAIL_MAX_ST_RT", 36, ParametersG2, sailboat_straight_rate, 10),
+
     // @Param: SAIL_HOLD_ANGLE
     // @DisplayName: Sailing hold mode wind angle
-    // @Description: Sailing hold mode will hold this angle into the wind, zero is head to wind, if none zero aux switch tacking is enabled, if negative hold mode will not steer  
+    // @Description: Sailing hold mode will hold this angle into the wind, zero is head to wind, if none zero aux switch tacking is enabled, if negative hold mode will not steer
     // @Units: deg
     // @Range: 0 180
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_HOLD_ANGLE", 37, ParametersG2, sailboat_hold_angle, 0),
-    
+
     // @Param: SAIL_LOITER_RAD
-    // @DisplayName: Sailing loiter radius 
+    // @DisplayName: Sailing loiter radius
     // @Description: In loiter mode the sailboat will sail within this radius of the loiter point
     // @Units: m
     // @Range: 0 50
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_LOITER_RAD", 38, ParametersG2, sailboat_loiter_radius, 8),
-    
+    AP_GROUPINFO("SAIL_LOITER_RAD", 38, ParametersG2, sailboat_loiter_radius, 5),
+
     // @Param: SAIL_HEEL_MAX
-    // @DisplayName: Sailing maximum heel angle 
+    // @DisplayName: Sailing maximum heel angle
     // @Description: When in auto sail trim modes the heel will be limited to this value using PID control
     // @Units: deg
     // @Range: 0 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("SAIL_HEEL_MAX", 39, ParametersG2, sail_heel_angle_max, 30),   
+    AP_GROUPINFO("SAIL_HEEL_MAX", 39, ParametersG2, sail_heel_angle_max, 15),   
 
     // @Param: SAIL_GCS_TRU_WND
-    // @DisplayName: Sailing send true or apparent wind as wind mavling message 
+    // @DisplayName: Sailing send true or apparent wind as wind mavling message
     // @Description: Send true wind speed and direction or apparent wind speed and direction to GCS via mavlink
     // @Values: 0:True Wind,1:Apparent wind
     // @User: Standard
-    AP_GROUPINFO("SAIL_GCS_TRU_WND", 40, ParametersG2, sail_mavlink_true_apparent, 0),   
-    
+    AP_GROUPINFO("SAIL_GCS_TRU_WND", 40, ParametersG2, sail_mavlink_true_apparent, 0),
+
+    // @Group: ARSPD
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    AP_SUBGROUPINFO(airspeed, "ARSPD", 41, ParametersG2, AP_Airspeed),
+
     AP_GROUPEND
 };
 
@@ -723,7 +727,8 @@ ParametersG2::ParametersG2(void)
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
     rally(rover.ahrs),
-    windvane()
+    windvane(),
+    airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -790,6 +795,7 @@ void Rover::load_parameters(void)
 
     if (g2.motors.has_sail()) {
         g2.crash_angle.set_default(0);
+        g2.loit_type.set_default(1);
     }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,

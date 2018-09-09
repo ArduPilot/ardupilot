@@ -516,8 +516,8 @@ private:
     float sailboat_calc_heading(float desired_heading);
     void sailboat_VMG(float target_heading);
     float sailboat_acro_tack();
-    float sailboat_update_rate_max(float rate_max);
-    
+    float sailboat_update_rate_max(float rate_max_degs);
+
     bool _sailboat_indirect_route;
     bool _sailboat_tack;
     bool _sailboat_tacking;
@@ -547,6 +547,7 @@ private:
     void init_proximity();
     void update_sensor_status_flags(void);
     void windvane_update();
+    void read_airspeed();
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

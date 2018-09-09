@@ -353,6 +353,29 @@ void Rover::update_sensor_status_flags(void)
 void Rover::windvane_update()
 {
     if(g2.windvane.enabled()){
-        g2.windvane.update_apparent_wind();
+        g2.windvane.update_windvane();
+    }
+}
+
+/*
+  ask airspeed sensor for a new value, duplicated from plane
+ */
+void Rover::read_airspeed(void)
+{
+    if (g2.airspeed.enabled()) {
+        g2.airspeed.read();
+        /*
+        Not sure if its worth setting up airseed logs, if windvane airspeed is enabled the speed will be loged in the SAIL messages
+        if (should_log(MASK_LOG_IMU)) {
+            DataFlash.Log_Write_Airspeed(airspeed);
+        }
+        */
+
+        // supply a new temperature to the barometer from the digital
+        // airspeed sensor if we can
+        float temperature;
+        if (g2.airspeed.get_temperature(temperature)) {
+            barometer.set_external_temperature(temperature);
+        }
     }
 }

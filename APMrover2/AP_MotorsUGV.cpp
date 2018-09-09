@@ -571,12 +571,6 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                         limit.steer_left = true;
                         limit.steer_right = true;
                     }
-                    
-                    // Sailboats should reduce rudder input when going slowly in order to reduce drag
-                    if (has_sail()){
-                        // linerly reduce to 1/3 range at zero speed to full range at MOT_SPD_SCA_BASE
-                        steering *= (2.0f / 3.0f) / (fabsf(ground_speed) / _speed_scale_base) + (1.0f / 3.0f);
-                    }    
                 }
                 // reverse steering direction when backing up
                 if (is_negative(ground_speed)) {
