@@ -39,11 +39,11 @@ void Copter::ModeAcro_Heli::run()
         attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
     } else if (!motors->get_interlock() && ap.land_complete) { // landed and motors interlock disabled
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
     } else if (!motors->get_interlock()) { // motors interlock disabled inflight
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     // clear landing flag above zero throttle

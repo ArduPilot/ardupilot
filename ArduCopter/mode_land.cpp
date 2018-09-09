@@ -55,16 +55,16 @@ void Copter::ModeLand::run()
 void Copter::ModeLand::gps_run()
 {
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED) {
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
             zero_throttle_and_relax_ac();
         } else {
             zero_throttle_and_hold_attitude();
         }  
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -74,7 +74,7 @@ void Copter::ModeLand::gps_run()
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
         loiter_nav->init_target();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 
@@ -120,8 +120,8 @@ void Copter::ModeLand::nogps_run()
 
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     // *****CHECK LOGIC HERE.  I MADE IT SIMILAR TO GPS_RUN BUT KEPT ATTITUDE CONTROL STUFF *****
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED) {
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
             zero_throttle_and_relax_ac();
         } else {
             // call attitude controller
@@ -129,9 +129,9 @@ void Copter::ModeLand::nogps_run()
             attitude_control->set_throttle_out(0,false,g.throttle_filt);
             zero_throttle_and_hold_attitude();
         }
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // disarm when the landing detector says we've landed and motors have spooled down
-        if (ap.land_complete && (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED)) {
+        if (ap.land_complete && (motors->get_spool_mode() == AP_Motors::GROUND_IDLE)) {
             copter.init_disarm_motors();
         }
         return;
@@ -142,7 +142,7 @@ void Copter::ModeLand::nogps_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         attitude_control->set_throttle_out(0,false,g.throttle_filt);
         zero_throttle_and_hold_attitude();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 

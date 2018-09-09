@@ -34,7 +34,7 @@ void Copter::ModeAcro::run()
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control->relax_attitude_controllers();
     } else if (ap.throttle_zero || !motors->get_interlock()) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control->relax_attitude_controllers();
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);

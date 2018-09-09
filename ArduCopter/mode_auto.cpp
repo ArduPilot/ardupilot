@@ -785,8 +785,8 @@ void Copter::ModeAuto::wp_run()
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -863,7 +863,7 @@ void Copter::ModeAuto::land_run()
         zero_throttle_and_relax_ac();
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 
@@ -872,7 +872,7 @@ void Copter::ModeAuto::land_run()
         zero_throttle_and_hold_attitude();
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 
@@ -1554,7 +1554,7 @@ bool Copter::ModeAuto::verify_land()
 
         case LandStateType_Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = ap.land_complete && (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED);
+            retval = ap.land_complete && (motors->get_spool_mode() == AP_Motors::GROUND_IDLE);
             break;
 
         default:

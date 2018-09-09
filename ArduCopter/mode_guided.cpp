@@ -435,8 +435,8 @@ void Copter::ModeGuided::pos_control_run()
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -490,8 +490,8 @@ void Copter::ModeGuided::vel_control_run()
         zero_throttle_and_hold_attitude();
         pos_control->init_vel_controller_xyz();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -559,8 +559,8 @@ void Copter::ModeGuided::posvel_control_run()
         pos_control->set_desired_velocity(Vector3f(0,0,0));
         pos_control->relax_alt_hold_controllers(0.0f);
         zero_throttle_and_hold_attitude();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -654,7 +654,7 @@ void Copter::ModeGuided::angle_control_run()
     if (ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f)) {
         zero_throttle_and_relax_ac();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 

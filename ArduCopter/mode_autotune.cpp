@@ -333,13 +333,13 @@ void Copter::ModeAutoTune::run()
 
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
+        // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
 #if FRAME_CONFIG == HELI_FRAME
         if ((target_climb_rate < 0.0f) && !motors->get_interlock()) {
 #else
         if (target_climb_rate < 0.0f) {
 #endif
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }

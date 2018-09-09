@@ -366,17 +366,17 @@ bool Copter::ModeRTL::landing_gear_should_be_deployed() const
 void Copter::ModeRTL::land_run(bool disarm_on_land)
 {
     // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
-    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN SPIN_WHEN_ARMED*****
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED) {
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN GROUND_IDLE*****
+    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
             zero_throttle_and_relax_ac();
         } else {
             zero_throttle_and_hold_attitude();
         }  
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
             _state_complete = true;
         }
@@ -387,7 +387,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
         loiter_nav->init_target();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 

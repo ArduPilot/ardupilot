@@ -95,7 +95,7 @@ void Copter::ModeDrift::run()
             attitude_control->set_yaw_target_to_current_heading();
             attitude_control->reset_rate_controller_I_terms();
         }
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {

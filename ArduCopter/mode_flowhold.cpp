@@ -286,14 +286,14 @@ void Copter::ModeFlowHold::run()
         break;
 
     case FlowHold_Landed:
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
+        // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
 
-        if (copter.motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        if (copter.motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.attitude_control->reset_rate_controller_I_terms();
             copter.attitude_control->set_yaw_target_to_current_heading();
         }
@@ -311,9 +311,9 @@ void Copter::ModeFlowHold::run()
 
         // call position controller
         // protects helis from inadvertantly disabling motor interlock inflight by controlling descent rather than relaxing alt_hold controller
-        // statement doesn't affect multicopters since they should never be spin_when_armed or spool_down while flying
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
-            // This keeps collective from spiking if spin when armed set before land complete set.
+        // statement doesn't affect multicopters since they should never be ground idle or spool_down while flying
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
+            // This keeps collective from spiking if ground idle set before land complete set.
             if (ap.land_complete_maybe) {
                 copter.pos_control->relax_alt_hold_controllers(0.0f);
             } else {

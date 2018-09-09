@@ -94,12 +94,12 @@ void Copter::ModeAltHold::run()
         // multicopters set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         // Any aircraft using interlock will not got to spin_when_armed unless commanded by interlock switch.
         if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
 
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             attitude_control->reset_rate_controller_I_terms();
             attitude_control->set_yaw_target_to_current_heading();
         }
@@ -124,7 +124,7 @@ void Copter::ModeAltHold::run()
         // set position controller target
         // protects helis from inadvertantly disabling motor interlock inflight by controlling descent rather than relaxing alt_hold controller
         // statement doesn't affect multicopters since they should never be spin_when_armed or spool_down while flying
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
             // This keeps collective from spiking if spin when armed set before land complete set.
             if (ap.land_complete_maybe) {
                 pos_control->relax_alt_hold_controllers(0.0f);

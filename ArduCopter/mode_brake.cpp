@@ -35,19 +35,19 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 void Copter::ModeBrake::run()
 {
     // if not auto armed set throttle to zero and exit immediately
-    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN SPIN_WHEN_ARMED*****
+    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN GROUND_IDLE*****
     // also protects heli's from inflight motor interlock disable
     
-    if (!motors->armed() || !ap.auto_armed || (motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED && ap.land_complete)) {
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    if (!motors->armed() || !ap.auto_armed || (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && ap.land_complete)) {
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
             zero_throttle_and_relax_ac();
         } else {
             zero_throttle_and_hold_attitude();
         }  
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        if (motors->get_spool_mode() == AP_Motors::SPIN_WHEN_ARMED) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             copter.init_disarm_motors();
         }
         return;
@@ -58,7 +58,7 @@ void Copter::ModeBrake::run()
         zero_throttle_and_hold_attitude();
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
         pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
     }
 
@@ -80,7 +80,7 @@ void Copter::ModeBrake::run()
 
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable
-    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_SPIN_WHEN_ARMED && !ap.land_complete) {
+    if (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && !ap.land_complete) {
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
     } else {
         pos_control->set_alt_target_from_climb_rate_ff(0.0f, G_Dt, false);

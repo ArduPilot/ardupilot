@@ -94,7 +94,7 @@ void Copter::auto_disarm_check()
     }
 
     // if the rotor is still spinning, don't initiate auto disarm
-    if (motors->get_spool_mode() != AP_Motors::SPIN_WHEN_ARMED) {
+    if (motors->get_spool_mode() != AP_Motors::GROUND_IDLE) {
         auto_disarm_begin = tnow_ms;
         return;
     }
@@ -314,8 +314,8 @@ void Copter::motors_output()
         last_spool_mode = motors->get_spool_mode();
         if (last_spool_mode == AP_Motors::SHUT_DOWN) {
             gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SHUT_DOWN");  
-        } else if (last_spool_mode == AP_Motors::SPIN_WHEN_ARMED) {
-            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SPIN_WHEN_ARMED");  
+        } else if (last_spool_mode == AP_Motors::GROUND_IDLE) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: GROUND_IDLE");  
         } else if (last_spool_mode == AP_Motors::SPOOL_UP) {
             gcs().send_text(MAV_SEVERITY_INFO,"Spool mode: SPOOL_UP");  
         } else if (last_spool_mode == AP_Motors::THROTTLE_UNLIMITED) {
