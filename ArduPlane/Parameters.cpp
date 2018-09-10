@@ -1241,7 +1241,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_quadplane,         14,      AP_PARAM_FLOAT, "Q_VXY_P" },
     { Parameters::k_param_quadplane,         15,      AP_PARAM_FLOAT, "Q_VZ_P" },
     { Parameters::k_param_quadplane,         16,      AP_PARAM_FLOAT, "Q_AZ_P" },
-    
+
     { Parameters::k_param_land_slope_recalc_shallow_threshold,0,AP_PARAM_FLOAT, "LAND_SLOPE_RCALC" },
     { Parameters::k_param_land_slope_recalc_steep_threshold_to_abort,0,AP_PARAM_FLOAT, "LAND_ABORT_DEG" },
     { Parameters::k_param_land_pitch_cd,      0,      AP_PARAM_INT16, "LAND_PITCH_CD" },
@@ -1257,8 +1257,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8,  "LAND_FLAP_PERCENT" },
 
     // battery failsafes
-    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_FS_LOW_MAH" },
+    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_FLOAT, "BATT_FS_LOW_VOLT" },
+    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_FS_LOW_MAH" },
 
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
 };
