@@ -47,7 +47,10 @@ public:
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
-    
+
+    // limit throttle based on RPM
+    void throttle_limit(int16_t &throttle);
+
 private:
     const AP_RPM &rpm;
     const AP_AHRS &ahrs;
@@ -77,7 +80,11 @@ private:
     
     // RPM above which engine is considered to be running
     AP_Int32 rpm_threshold;
-    
+
+    // thresholds for throttle advance
+    AP_Int32 rpm_threshold_high;
+    AP_Int8 thr_threshold_high;
+
     // time when we started the starter
     uint32_t starter_start_time_ms;
 

@@ -100,6 +100,20 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 100
     AP_GROUPINFO("START_PCT", 10, AP_ICEngine, start_percent, 5),
+
+    // @Param: RPM_HIGH
+    // @DisplayName: RPM high threshold
+    // @Description: RPM value beyond which full throttle is available. Zero means no threshold
+    // @User: Advanced
+    // @Range: 0 100
+    AP_GROUPINFO("RPM_HIGH", 11, AP_ICEngine, rpm_threshold_high, 0),
+
+    // @Param: THR_HIGH
+    // @DisplayName: Throttle high threshold
+    // @Description: Throttle value which will not be exceeded if RPM is below ICE_RPM_HIGH. Zero to disable
+    // @User: Advanced
+    // @Range: 0 100
+    AP_GROUPINFO("THR_HIGH", 12, AP_ICEngine, thr_threshold_high, 0),
     
     AP_GROUPEND    
 };
@@ -288,4 +302,26 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     }
     state = ICE_STARTING;
     return true;
+}
+
+/*
+  implement throttle limiting based on RPM threshold. This copes with
+  motors that have poor low-end tuning, where they need a long time to
+  come up to revs when advancing the throttle
+ */
+void AP_ICEngine::throttle_limit(int16_t &throttle)
+{
+    if (!enable ||
+        rpm_threshold_high <= 0 ||
+        thr_threshold_high <= 0 ||
+        rpm_instance <= 0 ||
+        throttle <= thr_threshold_high ||
+        !rpm.healthy(rpm_instance-1)) {
+        return;
+    }
+    if (rpm.get_rpm(rpm_instance-1) < rpm_threshold_high) {
+        if (throttle > thr_threshold_high) {
+            throttle = thr_threshold_high;
+        }
+    }
 }
