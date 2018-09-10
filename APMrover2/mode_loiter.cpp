@@ -49,6 +49,6 @@ void ModeLoiter::update()
     }
 
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd, _desired_speed < 0);
+    calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(_desired_speed, false, true);
 }
