@@ -367,6 +367,9 @@ public:
 
     // Rally point library
     AP_Rally_Rover rally;
+
+    // Simple mode types
+    AP_Int8 simple_type;
 };
 
 extern const AP_Param::Info var_info[];

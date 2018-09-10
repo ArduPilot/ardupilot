@@ -145,6 +145,30 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
     lateral_out = rover.channel_lateral->get_control_in();
 }
 
+// decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
+void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
+{
+    float desired_steering;
+    float desired_throttle;
+    get_pilot_input(desired_steering, desired_throttle);
+
+    // scale down and limit throttle and steering to a -1 to +1 range
+    desired_throttle = constrain_float(desired_throttle / 100.0f, -1.0f, 1.0f);
+    desired_steering = constrain_float(desired_steering / 4500.0f, -1.0, 1.0f);
+
+    // calculate angle of input stick vector
+    heading_out = wrap_360_cd(atan2f(desired_steering,desired_throttle) * DEGX100);
+
+    // calculate magnitude of input stick vector
+    float magnitude_max = 1.0f;
+    float magnitude = safe_sqrt(sq(desired_throttle) + sq(desired_steering));
+    if (magnitude > magnitude_max) {
+        magnitude = magnitude_max;
+    }
+    float throttle = magnitude / magnitude_max;
+    speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+}
+
 // set desired location
 void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
