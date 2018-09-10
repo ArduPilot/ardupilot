@@ -717,11 +717,29 @@ class AutoTest(ABC):
                 return
         raise AutoTestTimeoutException()
 
-    def do_set_mode_via_command_long(self):
+    def get_mode_from_mode_mapping(self, mode):
+        """Validate and return the mode number from a string or int."""
+        mode_map = self.mav.mode_mapping()
+        if mode_map is None:
+            raise ErrorException()
+        if isinstance(mode, str):
+            if mode in mode_map:
+                return mode_map.get(mode)
+        if mode in mode_map.values():
+            return mode
+        self.progress("Unknown mode '%s'" % mode)
+        self.progress("Available modes '%s'" % mode_map)
+        raise ErrorException()
+
+    def do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
+        custom_mode = self.get_mode_from_mode_mapping(mode)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 5:
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
                          base_mode,
                          custom_mode,
@@ -733,28 +751,30 @@ class AutoTest(ABC):
                          )
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
                 return
-        raise AutoTestTimeoutException()
 
-    def mavproxy_do_set_mode_via_command_long(self):
+    def mavproxy_do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message with Mavproxy."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
-        start = self.get_sim_time()
-        while self.get_sim_time() - start < 5:
+        custom_mode = self.get_mode_from_mode_mapping(mode)
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.mavproxy.send("long DO_SET_MODE %u %u\n" %
                                (base_mode, custom_mode))
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
-                return
-        raise AutoTestTimeoutException()
+                return True
 
     def reach_heading_manual(self, heading):
         """Manually direct the vehicle to the target heading."""
@@ -1062,11 +1082,7 @@ class AutoTest(ABC):
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
-        mode_map = self.mav.mode_mapping()
-        if mode_map is None or mode not in mode_map:
-            self.progress("Unknown mode '%s'" % mode)
-            self.progress("Available modes '%s'" % mode_map.keys())
-            raise ErrorException()
+        self.get_mode_from_mode_mapping(mode)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
         self.mav.wait_heartbeat()
