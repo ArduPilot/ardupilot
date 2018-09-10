@@ -854,23 +854,30 @@ class AutoTest(ABC):
         self.progress("Failed to DISARM with switch")
         return False
 
-    def autodisarm_motors(self):
-        """Autodisarm motors."""
-        self.progress("Autodisarming motors")
-        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:  # NOT IMPLEMENTED ON ROVER
-            self.progress("MOTORS AUTODISARMED OK")
-            return True
+    def wait_autodisarm_motors(self):
+        """Wait for Autodisarm motors within disarm delay
+        this feature is only available in copter (DISARM_DELAY) and plane (LAND_DISARMDELAY)."""
+        self.progress("Wait autodisarming motors")
+        disarm_delay = None
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            disarm_delay = self.get_parameter("DISARM_DELAY")
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            disarm_delay = self.get_parameter("LAND_DISARMDELAY")
         tstart = self.get_sim_time()
-        timeout = 15
+        timeout = disarm_delay * 2
         while self.get_sim_time() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
-                disarm_delay = self.get_sim_time() - tstart
+                disarm_time = self.get_sim_time() - tstart
                 self.progress("MOTORS AUTODISARMED")
-                self.progress("Autodisarm in %ss" % disarm_delay)  # TODO check disarming time
-                return True
-        self.progress("Unable to AUTODISARMED")
-        return False
+                self.progress("Autodisarm in %ss, expect less than %ss" % (disarm_time, disarm_delay))
+                return disarm_time <= disarm_delay
+        raise AutoTestTimeoutException("Failed to AUTODISARM")
 
     @staticmethod
     def should_fetch_all_for_parameter_change(param_name):
@@ -1671,7 +1678,6 @@ class AutoTest(ABC):
             self.progress("disarm with rc input")
             if not self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to disarm with RC input")
-
         # Disable auto disarm for next test
         # Rover and Sub don't have auto disarm
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
