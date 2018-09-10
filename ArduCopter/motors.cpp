@@ -13,6 +13,12 @@ void Copter::arm_motors_check()
 {
     static int16_t arming_counter;
 
+    // check if arming/disarm using rudder is allowed
+    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+        return;
+    }
+
 #if TOY_MODE_ENABLED == ENABLED
     if (g2.toy_mode.enabled()) {
         // not armed with sticks in toy mode
@@ -51,8 +57,8 @@ void Copter::arm_motors_check()
             auto_disarm_begin = millis();
         }
 
-    // full left
-    }else if (tmp < -4000) {
+    // full left and rudder disarming is enabled
+    } else if ((tmp < -4000) && (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM)) {
         if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
