@@ -446,14 +446,15 @@ void Mode::calc_steering_from_lateral_acceleration(float lat_accel, bool reverse
 }
 
 // calculate steering output to drive towards desired heading
-void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed)
+// rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
+void Mode::calc_steering_to_heading(float desired_heading_cd, float rate_max_degs)
 {
     // calculate yaw error so it can be used for reporting and slowing the vehicle
     _yaw_error_cd = wrap_180_cd(desired_heading_cd - ahrs.yaw_sensor);
 
     // call heading controller
     const float steering_out = attitude_control.get_steering_out_heading(radians(desired_heading_cd*0.01f),
-                                                                         rate_max,
+                                                                         radians(rate_max_degs),
                                                                          g2.motors.limit.steer_left,
                                                                          g2.motors.limit.steer_right,
                                                                          rover.G_Dt);
