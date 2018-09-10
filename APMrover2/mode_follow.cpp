@@ -68,6 +68,6 @@ void ModeFollow::update()
     _desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
 
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd, desired_speed < 0);
+    calc_steering_to_heading(_desired_yaw_cd);
     calc_throttle(calc_reduced_speed_for_turn_or_distance(desired_speed), false, true);
 }
