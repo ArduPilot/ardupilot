@@ -449,7 +449,7 @@ class AutoTest(ABC):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
 
-    def arm_vehicle(self):
+    def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -462,7 +462,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
@@ -470,7 +470,7 @@ class AutoTest(ABC):
         self.progress("Unable to ARM with mavlink")
         raise AutoTestTimeoutException()
 
-    def disarm_vehicle(self):
+    def disarm_vehicle(self, timeout=20):
         """Disarm vehicle with mavlink disarm message."""
         self.progress("Disarm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -483,7 +483,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
@@ -507,13 +507,12 @@ class AutoTest(ABC):
         self.progress("DISARMED")
         return True
 
-    def arm_motors_with_rc_input(self):
+    def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
         self.set_throttle_zero()
         self.mavproxy.send('rc 1 2000\n')
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
@@ -526,13 +525,12 @@ class AutoTest(ABC):
         self.mavproxy.send('rc 1 1500\n')
         return False
 
-    def disarm_motors_with_rc_input(self):
+    def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
         self.set_throttle_zero()
         self.mavproxy.send('rc 1 1000\n')
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
