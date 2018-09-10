@@ -141,7 +141,8 @@ protected:
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
 
     // calculate steering output to drive towards desired heading
-    void calc_steering_to_heading(float desired_heading_cd, float rate_max, bool reversed = false);
+    // rate_max is a maximum turn rate in deg/s.  set to zero to use default turn rate limits
+    void calc_steering_to_heading(float desired_heading_cd, float rate_max_degs = 0.0f);
 
     // calculates the amount of throttle that should be output based
     // on things like proximity to corners and current speed
