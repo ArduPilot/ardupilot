@@ -205,15 +205,24 @@ void Plane::dspoiler_update(void)
     float dspoiler2_left = elevon_left;
     float dspoiler1_right = elevon_right;
     float dspoiler2_right = elevon_right;
+    RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
+	int8_t flap_percent = flapin->percent_input();;
     if (rudder > 0) {
         // apply rudder to right wing
         dspoiler1_right = constrain_float(elevon_right + rudder, -4500, 4500);
         dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
     } else {
         // apply rudder to left wing
-        dspoiler1_left = constrain_float(elevon_left + rudder, -4500, 4500);
-        dspoiler2_left = constrain_float(elevon_left - rudder, -4500, 4500);
+        dspoiler1_left = constrain_float(elevon_left - rudder, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left + rudder, -4500, 4500);
     }
+	if (flap_percent > 0) {
+		//apply crow brakes to both wings
+	    dspoiler1_left = constrain_float(elevon_left + flap_percent * 25, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left - flap_percent * 45, -4500, 4500);
+	    dspoiler1_right = constrain_float(elevon_right + flap_percent * 25, -4500, 4500);
+        dspoiler2_right = constrain_float(elevon_right - flap_percent * 45, -4500, 4500); 
+	}
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler1_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler2_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler1_right);
