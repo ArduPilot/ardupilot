@@ -264,7 +264,9 @@ float AR_AttitudeControl::get_steering_out_lat_accel(float desired_accel, bool m
 }
 
 // return a steering servo output from -1 to +1 given a heading in radians
-float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate_max, bool motor_limit_left, bool motor_limit_right, float dt)
+// set rate_max_rads to a non-zero number to apply a limit on the desired turn rate
+// return value is normally in range -1.0 to +1.0 but can be higher or lower
+float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate_max_rads, bool motor_limit_left, bool motor_limit_right, float dt)
 {
     // calculate heading error (in radians)
     const float yaw_error = wrap_PI(heading_rad - _ahrs.yaw);
@@ -272,8 +274,8 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);
     // limit desired_rate if a custom pivot turn rate is selected, otherwise use ATC_STR_RAT_MAX
-    if (is_positive(rate_max)) {
-        desired_rate = constrain_float(desired_rate, -rate_max, rate_max);
+    if (is_positive(rate_max_rads)) {
+        desired_rate = constrain_float(desired_rate, -rate_max_rads, rate_max_rads);
     }
 
     return get_steering_out_rate(desired_rate, motor_limit_left, motor_limit_right, dt);
