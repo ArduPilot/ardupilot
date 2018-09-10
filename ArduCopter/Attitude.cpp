@@ -1,7 +1,6 @@
 #include "Copter.h"
 
-// get_pilot_desired_heading - transform pilot's yaw input into a
-// desired yaw rate
+// transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
 float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
