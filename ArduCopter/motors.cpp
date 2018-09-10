@@ -25,20 +25,20 @@ void Copter::arm_motors_check()
         return;
     }
 #endif
-    
+
     // ensure throttle is down
     if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
         return;
     }
 
-    int16_t tmp = channel_yaw->get_control_in();
+    int16_t yaw_in = channel_yaw->get_control_in();
 
     // full right
-    if (tmp > 4000) {
+    if (yaw_in > 4000) {
 
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if( arming_counter <= AUTO_TRIM_DELAY ) {
+        if (arming_counter <= AUTO_TRIM_DELAY) {
             arming_counter++;
         }
 
@@ -58,14 +58,14 @@ void Copter::arm_motors_check()
         }
 
     // full left and rudder disarming is enabled
-    } else if ((tmp < -4000) && (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM)) {
+    } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM)) {
         if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
 
         // increase the counter to a maximum of 1 beyond the disarm delay
-        if( arming_counter <= DISARM_DELAY ) {
+        if (arming_counter <= DISARM_DELAY) {
             arming_counter++;
         }
 
@@ -75,7 +75,7 @@ void Copter::arm_motors_check()
         }
 
     // Yaw is centered so reset arming counter
-    }else{
+    } else {
         arming_counter = 0;
     }
 }
