@@ -399,7 +399,6 @@ private:
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
-    void init_simple_mode(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);

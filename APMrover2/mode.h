@@ -496,16 +496,17 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void init_simple_heading();
+    void init_heading();
 
-protected:
-
-    float simple_initial_heading;
+private:
 
     // simple type enum used for SIMPLE_TYPE parameter
     enum simple_type {
         Simple_InitialHeading = 0,
         Simple_CardinalDirections = 1,
     };
+
+    float _initial_heading_cd;  // vehicle heading (in centi-degrees) at moment vehicle was armed
+    float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
 
