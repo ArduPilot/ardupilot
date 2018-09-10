@@ -148,16 +148,12 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
 // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
 void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
 {
-    float desired_steering;
-    float desired_throttle;
-    get_pilot_input(desired_steering, desired_throttle);
-
-    // scale down and limit throttle and steering to a -1 to +1 range
-    desired_throttle = constrain_float(desired_throttle / 100.0f, -1.0f, 1.0f);
-    desired_steering = constrain_float(desired_steering / 4500.0f, -1.0, 1.0f);
+    // get steering and throttle in the -1 to +1 range
+    float desired_steering = constrain_float(rover.channel_steer->get_control_in() / 4500.0f, -1.0, 1.0f);
+    float desired_throttle = constrain_float(rover.channel_throttle->get_control_in() / 100.0f, -1.0f, 1.0f);
 
     // calculate angle of input stick vector
-    heading_out = wrap_360_cd(atan2f(desired_steering,desired_throttle) * DEGX100);
+    heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
 
     // calculate magnitude of input stick vector
     float magnitude_max = 1.0f;

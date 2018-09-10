@@ -333,7 +333,7 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
     g2.smart_rtl.set_home(true);
 
     // initialize simple mode heading
-    rover.mode_simple.init_simple_heading();
+    rover.mode_simple.init_heading();
 
     change_arm_state();
     return true;
