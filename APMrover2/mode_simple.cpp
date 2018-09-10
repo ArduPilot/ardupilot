@@ -16,16 +16,16 @@ void ModeSimple::update()
         // get piot input
         get_pilot_desired_steering_and_speed(desired_steering, desired_speed);
 
-        float simple_steering;
+        float simple_heading;
         if (is_zero(desired_steering)) {
-            simple_steering = ((simple_initial_heading - ahrs.yaw) * 4500.0f);
+            simple_heading = ((simple_initial_heading - ahrs.yaw) * 4500.0f);
         } else {
-            simple_steering = desired_steering;
+            simple_heading = desired_steering;
         }
 
         // run throttle and steering controllers
+        calc_steering_to_heading(simple_heading, false);
         calc_throttle(desired_speed, true, false);
-        g2.motors.set_steering(simple_steering, false);
     }
 
     // cardinal directions simple mode
