@@ -745,11 +745,11 @@ class AutoTestRover(AutoTest):
                           self.do_get_autopilot_capabilities)
 
             self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE",
-                          self.do_set_mode_via_command_long)
+                          lambda: self.do_set_mode_via_command_long("HOLD"))
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
             self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE with MAVProxy",
-                          self.mavproxy_do_set_mode_via_command_long)
+                          lambda: self.mavproxy_do_set_mode_via_command_long("HOLD"))
 
             self.run_test("Test ServoRelayEvents",
                           self.test_servorelayevents)
