@@ -154,7 +154,7 @@ struct Vector2
     // reflects this vector about n
     void    reflect(const Vector2<T> &n)
     {
-        Vector2<T>        orig(*this);
+        const Vector2<T>        orig(*this);
         project(n);
         *this= *this*2 - orig;
     }
@@ -175,10 +175,10 @@ struct Vector2
     // perpendicular to v1 maximising distance from p1
     static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1)
     {
-        Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
-        Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
-        T d1 = perpendicular1 * pos_delta;
-        T d2 = perpendicular2 * pos_delta;
+        const Vector2<T> perpendicular1 = Vector2<T>(-v1[1], v1[0]);
+        const Vector2<T> perpendicular2 = Vector2<T>(v1[1], -v1[0]);
+        const T d1 = perpendicular1 * pos_delta;
+        const T d2 = perpendicular2 * pos_delta;
         if (d1 > d2) {
             return perpendicular1;
         }
