@@ -149,19 +149,14 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
 void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
 {
     // get steering and throttle in the -1 to +1 range
-    float desired_steering = constrain_float(rover.channel_steer->get_control_in() / 4500.0f, -1.0, 1.0f);
-    float desired_throttle = constrain_float(rover.channel_throttle->get_control_in() / 100.0f, -1.0f, 1.0f);
+    const float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
+    const float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
 
     // calculate angle of input stick vector
     heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
 
-    // calculate magnitude of input stick vector
-    float magnitude_max = 1.0f;
-    float magnitude = safe_sqrt(sq(desired_throttle) + sq(desired_steering));
-    if (magnitude > magnitude_max) {
-        magnitude = magnitude_max;
-    }
-    float throttle = magnitude / magnitude_max;
+    // calculate throttle using magnitude of input stick vector
+    const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
     speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 }
 
