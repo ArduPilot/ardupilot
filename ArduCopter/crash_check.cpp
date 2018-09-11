@@ -7,7 +7,7 @@
 
 // Code to detect a thrust loss main ArduCopter code
 #define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second decent while level and high throttle indictes thrust loss
-#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD  150   // we can't expect to maintain altitude beyond 15 degrees on all aircraft
+#define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD  1500  // we can't expect to maintain altitude beyond 15 degrees on all aircraft
 #define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
 
 // crash_check - disarms motors if a crash has been detected
@@ -76,8 +76,8 @@ void Copter::thrust_loss_check()
 
     // check for desired angle over 15 degrees
     // todo: add thrust angle to AC_AttitudeControl
-    const Vector3f angle_target =  attitude_control->get_att_target_euler_cd();
-    if ((fabsf(angle_target.x) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD) || (fabsf(angle_target.y) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD)) {
+    const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
+    if (safe_sqrt(sq(angle_target.x) + sq(angle_target.y)) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD) {
         thrust_loss_counter = 0;
         return;
     }
@@ -108,7 +108,7 @@ void Copter::thrust_loss_check()
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_THRUST_LOSS_CHECK, ERROR_CODE_FAILSAFE_OCCURRED);
         // send message to gcs
-        gcs_send_text_fmt(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
         // enable thrust loss handling
         motors->set_thrust_boost(true);
     }
