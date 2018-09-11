@@ -73,7 +73,7 @@ public:
         ARMING_RUDDER_ARMONLY   = 1,
         ARMING_RUDDER_ARMDISARM = 2
     };
-    ArmingRudder rudder_arming() const { return (ArmingRudder)_rudder_arming.get(); }
+    ArmingRudder get_rudder_arming_type() const { return (ArmingRudder)_rudder_arming.get(); }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
