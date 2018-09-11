@@ -442,7 +442,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
 void NavEKF2_core::CovarianceInit()
 {
     // zero the matrix
-    memset(P, 0, sizeof(P));
+    memset(&P[0][0], 0, sizeof(P));
 
     // attitude error
     P[0][0]   = 0.1f;
