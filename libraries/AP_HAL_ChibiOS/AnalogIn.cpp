@@ -294,7 +294,7 @@ void AnalogIn::_timer_tick(void)
         Debug("chan %u value=%u\n",
               (unsigned)pin_config[i].channel,
               (unsigned)buf_adc[i]);
-        for (uint8_t j=0; j < ADC_GRP1_NUM_CHANNELS; j++) {
+        for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
             ChibiOS::AnalogSource *c = _channels[j];
             if (c != nullptr && pin_config[i].channel == c->_pin) {
                 // add a value
