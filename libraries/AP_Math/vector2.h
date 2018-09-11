@@ -30,6 +30,9 @@
 #pragma once
 
 #include <cmath>
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 template <typename T>
 struct Vector2
