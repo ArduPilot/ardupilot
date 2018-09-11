@@ -114,17 +114,9 @@ void Matrix3<T>::from_euler312(float roll, float pitch, float yaw)
 template <typename T>
 void Matrix3<T>::rotate(const Vector3<T> &g)
 {
-    Matrix3<T> temp_matrix;
-    temp_matrix.a.x = a.y * g.z - a.z * g.y;
-    temp_matrix.a.y = a.z * g.x - a.x * g.z;
-    temp_matrix.a.z = a.x * g.y - a.y * g.x;
-    temp_matrix.b.x = b.y * g.z - b.z * g.y;
-    temp_matrix.b.y = b.z * g.x - b.x * g.z;
-    temp_matrix.b.z = b.x * g.y - b.y * g.x;
-    temp_matrix.c.x = c.y * g.z - c.z * g.y;
-    temp_matrix.c.y = c.z * g.x - c.x * g.z;
-    temp_matrix.c.z = c.x * g.y - c.y * g.x;
-
+    const Matrix3<T> temp_matrix(a.y * g.z - a.z * g.y, a.z * g.x - a.x * g.z, a.x * g.y - a.y * g.x,
+                                 b.y * g.z - b.z * g.y, b.z * g.x - b.x * g.z, b.x * g.y - b.y * g.x,
+                                 c.y * g.z - c.z * g.y, c.z * g.x - c.x * g.z, c.x * g.y - c.y * g.x);
     (*this) += temp_matrix;
 }
 
