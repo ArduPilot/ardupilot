@@ -671,7 +671,7 @@ class AutoTestRover(AutoTest):
             # check we revert to normal RC inputs when gcs overrides cease:
             self.progress("Waiting for RC to revert to normal RC input")
             while True:
-                m = self.mav.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+                m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
                 print("%s" % m)
                 if m.chan3_raw == normal_rc_throttle:
                     break
