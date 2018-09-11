@@ -28,6 +28,6 @@ void ModeSimple::update()
     }
 
     // run throttle and steering controllers
-    calc_steering_to_heading(desired_heading_cd, 0.0f, false);
+    calc_steering_to_heading(desired_heading_cd);
     calc_throttle(desired_speed, false, true);
 }
