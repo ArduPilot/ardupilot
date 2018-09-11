@@ -48,11 +48,10 @@ static const uint8_t crc8_table[] = {
  */
 uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 {
-	uint16_t i;
 	uint16_t crc = 0x0;
 
 	while (len--) {
-		i = (crc ^ *p++) & 0xFF;
+		const uint16_t i = (crc ^ *p++) & 0xFF;
 		crc = (crc8_table[i] ^ (crc << 8)) & 0xFF;
 	}
 
