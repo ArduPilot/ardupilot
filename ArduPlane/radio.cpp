@@ -106,7 +106,7 @@ void Plane::init_rc_out_aux()
 */
 void Plane::rudder_arm_disarm_check()
 {
-    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
 
     if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
         //parameter disallows rudder arming/disabling
