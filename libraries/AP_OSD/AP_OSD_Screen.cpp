@@ -206,6 +206,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
     
+    // @Group: ASPD2
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
+    
     AP_GROUPEND
 };
 
@@ -966,6 +970,17 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    float asp2 = airspeed->get_airspeed(1);
+    if (airspeed != nullptr && airspeed->healthy(1)) {
+        backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, asp2), u_icon(SPEED));
+    } else {
+        backend->write(x, y, false, "%c ---%c", SYM_ASPD, u_icon(SPEED));
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -993,6 +1008,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
     DRAW_SETTING(aspeed);
+    DRAW_SETTING(aspd2);
     DRAW_SETTING(vspeed);
     DRAW_SETTING(throttle);
     DRAW_SETTING(heading);
