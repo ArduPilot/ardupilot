@@ -25,7 +25,7 @@
 *          18-12-2003
 *          06-06-2004
 *
-* © 2003, This code is provided "as is" and you can use it freely as long as
+* Copyright 2003, This code is provided "as is" and you can use it freely as long as
 * credit is given to Bill Perone in the application it is used in
 *
 * Notes:
