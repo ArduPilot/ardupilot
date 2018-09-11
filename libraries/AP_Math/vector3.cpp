@@ -20,7 +20,7 @@
 
 #include "AP_Math.h"
 
-#define HALF_SQRT_2 0.70710678118654757f
+static const float HALF_SQRT_2 = 0.70710678118654757f;
 
 // rotate a vector by a standard rotation, attempting
 // to use the minimum number of floating point operations
