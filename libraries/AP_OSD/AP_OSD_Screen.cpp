@@ -935,7 +935,10 @@ void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 {
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    float temperature;
+    if (!airspeed) {
+        return;
+    }
+    float temperature = 0;
     airspeed->get_temperature(temperature);
     if (airspeed->healthy()) {
         backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, temperature), u_icon(TEMPERATURE));
