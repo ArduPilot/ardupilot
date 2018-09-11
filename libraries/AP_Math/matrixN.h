@@ -43,6 +43,6 @@ public:
     // Matrix symmetry routine
     void force_symmetry(void);
 
-private:
     T v[N][N];
+private:
 };
