@@ -4,7 +4,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
+#include <cstdio>
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define MAT_ALG_ACCURACY    1e-4f

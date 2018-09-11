@@ -19,9 +19,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include <stdio.h>
+#include <cstdio>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <fenv.h>
+#include <cfenv>
 #endif
 
 #include <AP_Math/AP_Math.h>

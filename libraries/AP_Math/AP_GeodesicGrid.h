@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include "AP_Math.h"
 
 /**

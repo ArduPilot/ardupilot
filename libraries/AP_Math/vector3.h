@@ -48,8 +48,10 @@
 #pragma once
 
 #include <cmath>
-#include <float.h>
-#include <string.h>
+#include <cstdint>
+#include <cfloat>
+#include <cstring>
+
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif

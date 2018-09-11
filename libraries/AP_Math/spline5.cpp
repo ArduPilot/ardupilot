@@ -21,7 +21,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
+#include <cstdint>
 #include "spline5.h"
 
 void splinterp5(const float x[5], float out[4][4])

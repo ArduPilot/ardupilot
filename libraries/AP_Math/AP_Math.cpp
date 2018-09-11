@@ -1,7 +1,5 @@
 #include "AP_Math.h"
 
-#include <float.h>
-
 /*
  * is_equal(): Integer implementation, provided for convenience and
  * compatibility with old code. Expands to the same as comparing the values

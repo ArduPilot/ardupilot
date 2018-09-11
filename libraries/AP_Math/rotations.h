@@ -17,6 +17,7 @@
  */
 #pragma once
 
+#include <cstdint>
 // these rotations form a full set - every rotation in the following
 // list when combined with another in the list forms an entry which is
 // also in the list. This is an important property. Please run the

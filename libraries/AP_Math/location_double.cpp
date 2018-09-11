@@ -22,7 +22,7 @@
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include <AP_HAL/AP_HAL.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include "AP_Math.h"
 #include "location.h"
 

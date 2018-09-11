@@ -15,7 +15,7 @@
 #pragma once
 
 #include <cmath>
-#include <string.h>
+#include <cstring>
 #include "matrixN.h"
 
 #ifndef MATH_CHECK_INDEXES

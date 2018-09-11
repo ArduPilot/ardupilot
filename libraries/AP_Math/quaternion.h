@@ -21,7 +21,9 @@
 #if MATH_CHECK_INDEXES
 #include <assert.h>
 #endif
-#include <math.h>
+#include <cstdint>
+#include "matrix3.h"
+#include "vector3.h"
 
 class Quaternion {
 public:

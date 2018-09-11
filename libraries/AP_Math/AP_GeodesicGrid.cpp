@@ -101,7 +101,7 @@
  *  by the non-zero coefficient.
  */
 
-#include <assert.h>
+#include <cassert>
 
 #include "AP_GeodesicGrid.h"
 

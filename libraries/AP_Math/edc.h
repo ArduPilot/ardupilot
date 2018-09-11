@@ -17,6 +17,6 @@
 // Contact: Fergus Noble <fergus@swift-nav.com>
 #pragma once
 
-#include <inttypes.h>
+#include <cstdint>
 
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
