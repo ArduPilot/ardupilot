@@ -48,7 +48,7 @@ void Rover::init_rc_out()
 void Rover::rudder_arm_disarm_check()
 {
     // check if arming/disarm using rudder is allowed
-    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    AP_Arming::ArmingRudder arming_rudder = arming.get_rudder_arming_type();
     if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
         return;
     }
