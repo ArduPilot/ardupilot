@@ -973,6 +973,9 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 {
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (!airspeed) {
+        return;
+    }
     float asp2 = airspeed->get_airspeed(1);
     if (airspeed != nullptr && airspeed->healthy(1)) {
         backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, asp2), u_icon(SPEED));
