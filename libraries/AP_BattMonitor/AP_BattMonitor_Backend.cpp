@@ -143,6 +143,35 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
     return AP_BattMonitor::BatteryFailsafe_None;
 }
 
+bool update_check(size_t buflen, char *buffer, bool failed, const char *message)
+{
+    if (failed) {
+        strncpy(buffer, message, buflen);
+        return false;
+    }
+    return true;
+}
+
+bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
+{
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+
+    bool below_arming_voltage = is_positive(_params._arming_minimum_voltage) &&
+                                (_state.voltage < _params._arming_minimum_voltage);
+    bool below_arming_capacity = (_params._arming_minimum_capacity > 0) &&
+                                 ((_params._pack_capacity - _state.consumed_mah) < _params._arming_minimum_capacity);
+
+    bool result = update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
+    result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
+    result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
+    result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
+    result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
+    result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+
+    return result;
+}
+
 void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
 {
     // use voltage or sag compensated voltage
@@ -160,12 +189,11 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
     // check critical battery levels
     if ((voltage_used > 0) && (_params._critical_voltage > 0) && (voltage_used < _params._critical_voltage)) {
         critical_voltage = true;
-        // this is the first time our voltage has dropped below minimum so start timer
     } else {
         critical_voltage = false;
     }
 
-    // check capacity if current monitoring is enabled
+    // check capacity failsafe if current monitoring is enabled
     if (has_current() && (_params._critical_capacity > 0) &&
         ((_params._pack_capacity - _state.consumed_mah) < _params._critical_capacity)) {
         critical_capacity = true;

@@ -146,6 +146,22 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FS_CRT_ACT", 17, AP_BattMonitor_Params, _failsafe_critical_action, 0),
 
+    // @Param: ARM_VOLT
+    // @DisplayName: Required arming voltage
+    // @Description: Battery voltage level which is required to arm the aircraft. Set to 0 to allow arming at any voltage.
+    // @Units: V
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("ARM_VOLT", 18, AP_BattMonitor_Params, _arming_minimum_voltage, 0),
+
+    // @Param: ARM_MAH
+    // @DisplayName: Required arming remaining capacity
+    // @Description: Battery capacity remaining which is required to arm the aircraft. Set to 0 to allow arming at any capacity. Note that execept for smart batteries rebooting the vehicle will always reset the remaining capacity estimate, which can lead to this check not providing sufficent protection, it is recommended to always use this in conjunction with the @PREFIX@_ARM_VOLT parameter.
+    // @Units: mAh
+    // @Increment: 50
+    // @User: Advanced
+    AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
+
     AP_GROUPEND
 
 };

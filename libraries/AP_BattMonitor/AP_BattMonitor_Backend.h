@@ -56,6 +56,9 @@ public:
     // updates failsafe timers, and returns what failsafes are active
     AP_BattMonitor::BatteryFailsafe update_failsafes(void);
 
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(char * buffer, size_t buflen) const;
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)

@@ -417,6 +417,19 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
     }
 }
 
+bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
+{
+    char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+
+    for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        if (drivers[i] != nullptr && !(drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer)))) {
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, temp_buffer);
+            return false;
+        }
+    }
+
+    return true;
+}
 
 namespace AP {
 
