@@ -172,9 +172,9 @@ uint16_t SRV_Channel::get_limit_pwm(LimitValue limit) const
     case SRV_CHANNEL_LIMIT_TRIM:
         return servo_trim;
     case SRV_CHANNEL_LIMIT_MIN:
-        return servo_min;
+        return reversed?servo_max:servo_min;
     case SRV_CHANNEL_LIMIT_MAX:
-        return servo_max;
+        return reversed?servo_min:servo_max;
     case SRV_CHANNEL_LIMIT_ZERO_PWM:
     default:
         return 0;
