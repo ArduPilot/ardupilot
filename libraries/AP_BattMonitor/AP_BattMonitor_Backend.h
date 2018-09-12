@@ -46,8 +46,15 @@ public:
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
+    /// get voltage with sag removed (based on battery current draw and resistance)
+    /// this will always be greater than or equal to the raw voltage
+    float voltage_resting_estimate() const;
+
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
+
+    // updates failsafe timers, and returns what failsafes are active
+    AP_BattMonitor::BatteryFailsafe update_failsafes(void);
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

@@ -254,9 +254,8 @@ float AP_BattMonitor::voltage(uint8_t instance) const
 /// this will always be greater than or equal to the raw voltage
 float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
 {
-    if (instance < _num_instances) {
-        // resting voltage should always be greater than or equal to the raw voltage
-        return MAX(state[instance].voltage, state[instance].voltage_resting_estimate);
+    if (instance < _num_instances && drivers[instance] != nullptr) {
+        return drivers[instance]->voltage_resting_estimate();
     } else {
         return 0.0f;
     }
@@ -313,7 +312,11 @@ void AP_BattMonitor::check_failsafes(void)
 {
     if (hal.util->get_soft_armed()) {
         for (uint8_t i = 0; i < _num_instances; i++) {
-            const BatteryFailsafe type = check_failsafe(i);
+            if (drivers[i] == nullptr) {
+                continue;
+            }
+
+            const BatteryFailsafe type = drivers[i]->update_failsafes();
             if (type <= state[i].failsafe) {
                 continue;
             }
@@ -359,71 +362,6 @@ void AP_BattMonitor::check_failsafes(void)
             }
         }
     }
-}
-
-// returns the failsafe state of the battery
-AP_BattMonitor::BatteryFailsafe AP_BattMonitor::check_failsafe(const uint8_t instance)
-{
-    // exit immediately if no monitors setup
-    if (_num_instances == 0 || instance >= _num_instances) {
-        return BatteryFailsafe_None;
-    }
-
-    const uint32_t now = AP_HAL::millis();
-
-    // use voltage or sag compensated voltage
-    float voltage_used;
-    switch (_params[instance].failsafe_voltage_source()) {
-        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_Raw:
-        default:
-            voltage_used = state[instance].voltage;
-            break;
-        case AP_BattMonitor_Params::BattMonitor_LowVoltageSource_SagCompensated:
-            voltage_used = voltage_resting_estimate(instance);
-            break;
-    }
-
-    // check critical battery levels
-    if ((voltage_used > 0) && (_params[instance]._critical_voltage > 0) && (voltage_used < _params[instance]._critical_voltage)) {
-        // this is the first time our voltage has dropped below minimum so start timer
-        if (state[instance].critical_voltage_start_ms == 0) {
-            state[instance].critical_voltage_start_ms = now;
-        } else if (_params[instance]._low_voltage_timeout > 0 &&
-                   now - state[instance].critical_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
-            return BatteryFailsafe_Critical;
-        }
-    } else {
-        // acceptable voltage so reset timer
-        state[instance].critical_voltage_start_ms = 0;
-    }
-
-    // check capacity if current monitoring is enabled
-    if (has_current(instance) && (_params[instance]._critical_capacity > 0) &&
-        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._critical_capacity)) {
-        return BatteryFailsafe_Critical;
-    }
-
-    if ((voltage_used > 0) && (_params[instance]._low_voltage > 0) && (voltage_used < _params[instance]._low_voltage)) {
-        // this is the first time our voltage has dropped below minimum so start timer
-        if (state[instance].low_voltage_start_ms == 0) {
-            state[instance].low_voltage_start_ms = now;
-        } else if (_params[instance]._low_voltage_timeout > 0 &&
-                   now - state[instance].low_voltage_start_ms > uint32_t(_params[instance]._low_voltage_timeout)*1000U) {
-            return BatteryFailsafe_Low;
-        }
-    } else {
-        // acceptable voltage so reset timer
-        state[instance].low_voltage_start_ms = 0;
-    }
-
-    // check capacity if current monitoring is enabled
-    if (has_current(instance) && (_params[instance]._low_capacity > 0) &&
-        ((_params[instance]._pack_capacity - state[instance].consumed_mah) < _params[instance]._low_capacity)) {
-        return BatteryFailsafe_Low;
-    }
-
-    // if we've gotten this far then battery is ok
-    return BatteryFailsafe_None;
 }
 
 // return true if any battery is pushing too much power
