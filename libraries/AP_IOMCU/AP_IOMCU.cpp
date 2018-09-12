@@ -61,6 +61,7 @@ enum iopage {
     PAGE_PWM_INFO = 7,
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
+    PAGE_FAILSAFE_PWM = 55,
     PAGE_DISARMED_PWM = 108,
 };
 
@@ -278,8 +279,17 @@ void AP_IOMCU::thread_main(void)
         // update safety pwm
         if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
             uint8_t set = pwm_out.safety_pwm_set;
-            write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm);            
-            pwm_out.safety_pwm_sent = set;
+            if (write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
+                pwm_out.safety_pwm_sent = set;
+            }
+        }
+
+        // update failsafe pwm
+        if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
+            uint8_t set = pwm_out.failsafe_pwm_set;
+            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.failsafe_pwm)) {
+                pwm_out.failsafe_pwm_sent = set;
+            }
         }
     }
 }
@@ -289,6 +299,12 @@ void AP_IOMCU::thread_main(void)
  */
 void AP_IOMCU::send_servo_out()
 {
+#if 0
+    // simple method to test IO failsafe
+    if (AP_HAL::millis() > 30000) {
+        return;
+    }
+#endif
     if (pwm_out.num_channels > 0) {
         uint8_t n = pwm_out.num_channels;
         if (rate.sbus_rate_hz == 0) {
@@ -297,8 +313,9 @@ void AP_IOMCU::send_servo_out()
         uint32_t now = AP_HAL::micros();
         if (now - last_servo_out_us >= 2000) {
             // don't send data at more than 500Hz
-            write_registers(PAGE_DIRECT_PWM, 0, n, pwm_out.pwm);
-            last_servo_out_us = now;
+            if (write_registers(PAGE_DIRECT_PWM, 0, n, pwm_out.pwm)) {
+                last_servo_out_us = now;
+            }
         }
     }    
 }
@@ -726,6 +743,25 @@ void AP_IOMCU::set_safety_pwm(uint16_t chmask, uint16_t period_us)
     }
     if (changed) {
         pwm_out.safety_pwm_set++;
+    }
+}
+
+/*
+  set the pwm to use when in FMU failsafe
+ */
+void AP_IOMCU::set_failsafe_pwm(uint16_t chmask, uint16_t period_us)
+{
+    bool changed = false;
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+        if (chmask & (1U<<i)) {
+            if (pwm_out.failsafe_pwm[i] != period_us) {
+                pwm_out.failsafe_pwm[i] = period_us;
+                changed = true;
+            }
+        }
+    }
+    if (changed) {
+        pwm_out.failsafe_pwm_set++;
     }
 }
 
