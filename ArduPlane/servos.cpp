@@ -491,6 +491,11 @@ void Plane::servos_twin_engine_mix(void)
     float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
     float rudder = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / float(SERVO_MAX);
 
+    if (afs.should_crash_vehicle()) {
+        // when in AFS failsafe force rudder input for differential thrust to zero
+        rudder = 0;
+    }
+
     float throttle_left, throttle_right;
 
     if (throttle < 0 && aparm.throttle_min < 0) {
