@@ -1443,4 +1443,16 @@ void RCOutput::safety_update(void)
 #endif
 }
 
+/*
+  set PWM to send to a set of channels if the FMU firmware dies
+*/
+void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.set_failsafe_pwm(chmask, period_us);
+    }
+#endif
+}
+
 #endif // HAL_USE_PWM
