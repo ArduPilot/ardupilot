@@ -131,6 +131,11 @@ public:
       get safety switch state, used by Util.cpp
     */
     AP_HAL::Util::safety_state _safety_switch_state(void);
+
+    /*
+      set PWM to send to a set of channels if the FMU firmware dies
+     */
+    void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
     
 private:
     struct pwm_group {
