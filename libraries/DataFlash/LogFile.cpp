@@ -1437,20 +1437,23 @@ void DataFlash_Class::Log_Write_Current_instance(const uint64_t time_us,
 // Write an Current data packet
 void DataFlash_Class::Log_Write_Current()
 {
+    // Big painful assert to ensure that logging won't produce suprising results when the
+    // number of battery monitors changes, does have the built in expectation that
+    // LOG_COMPASS_MSG follows the last LOG_CURRENT_CELLSx_MSG
+    static_assert(((LOG_CURRENT_MSG + AP_BATT_MONITOR_MAX_INSTANCES) == LOG_CURRENT_CELLS_MSG) &&
+                  ((LOG_CURRENT_CELLS_MSG + AP_BATT_MONITOR_MAX_INSTANCES) == LOG_COMPASS_MSG),
+                  "The number of batt monitors has changed without updating the log "
+                  "table entries. Please add new enums for LOG_CURRENT_MSG, LOG_CURRENT_CELLS_MSG "
+                  "directly following the highest indexed fields. Don't forget to update the log "
+                  "description table as well.");
+
     const uint64_t time_us = AP_HAL::micros64();
     const uint8_t num_instances = AP::battery().num_instances();
-    if (num_instances >= 1) {
+    for (uint8_t i = 0; i < num_instances; i++) {
         Log_Write_Current_instance(time_us,
-                                   0,
-                                   LOG_CURRENT_MSG,
-                                   LOG_CURRENT_CELLS_MSG);
-    }
-
-    if (num_instances >= 2) {
-        Log_Write_Current_instance(time_us,
-                                   1,
-                                   LOG_CURRENT2_MSG,
-                                   LOG_CURRENT_CELLS2_MSG);
+                                   i,
+                                   (LogMessages)((uint8_t)LOG_CURRENT_MSG + i),
+                                   (LogMessages)((uint8_t)LOG_CURRENT_CELLS_MSG + i));
     }
 }
 
