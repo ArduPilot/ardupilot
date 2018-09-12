@@ -1,3 +1,31 @@
+Release 3.9.2beta1, 12th September 2018
+---------------------------------------
+
+The is the first beta release of the plane 3.9.2 stable release. It
+contains a number of important bug fixes.
+
+ - fixed a quadplane bug that could cause large attitude instability
+   during takeoff if the aircraft does not have enough power to climb
+   to its target height. Thanks to Leonard for the fix.
+
+ - fixed a bug that prevented dead-reckoning working on GPS loss.
+
+ - fixed an ADC bug that prevented some boards from using all of their
+   analog input. Thanks to vierfuffzig for reporting!
+
+ - fixed a bug in advanced failsafe support that left RC input to
+   throttle active after termination. Thanks to Michael Thomas for
+   finding this bug.
+
+ - fixed use of OLED displays on the first I2C bus on systems with two
+   I2C buses
+
+Thanks to everyone who has contributed, and please report all test
+results with this beta.
+
+Happy flying!
+
+
 Release 3.9.1, 31st August 2018
 -------------------------------
 
