@@ -83,7 +83,6 @@ protected:
     AP_Int8                 require;
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
-    AP_Float                _min_voltage[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_Int8                 _rudder_arming;
 
     // internal members

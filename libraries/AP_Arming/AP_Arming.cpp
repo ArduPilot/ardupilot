@@ -63,21 +63,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCTHRESH",    3,     AP_Arming,  accel_error_threshold,  AP_ARMING_ACCEL_ERROR_THRESHOLD),
 
-    // @Param: VOLT_MIN
-    // @DisplayName: Arming voltage minimum on the first battery
-    // @Description: The minimum voltage of the first battery required to arm, 0 disables the check
-    // @Units: V
-    // @Increment: 0.1 
-    // @User: Standard
-    AP_GROUPINFO("VOLT_MIN",      4,     AP_Arming,  _min_voltage[0],  0),
-
-    // @Param: VOLT2_MIN
-    // @DisplayName: Arming voltage minimum on the second battery
-    // @Description: The minimum voltage of the second battery required to arm, 0 disables the check
-    // @Units: V
-    // @Increment: 0.1 
-    // @User: Standard
-    AP_GROUPINFO("VOLT2_MIN",     5,     AP_Arming,  _min_voltage[1],  0),
+    // index 4 was VOLT_MIN, moved to AP_BattMonitor
+    // index 5 was VOLT2_MIN, moved to AP_BattMonitor
 
     // @Param: RUDDER
     // @DisplayName: Arming with Rudder enable/disable
@@ -433,21 +420,10 @@ bool AP_Arming::battery_checks(bool report)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BATTERY)) {
 
-        const AP_BattMonitor &_battery = AP::battery();
-
-        if (AP_Notify::flags.failsafe_battery) {
-            check_failed(ARMING_CHECK_BATTERY, report, "Battery failsafe on");
+        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+        if (!AP::battery().arming_checks(sizeof(buffer), buffer)) {
+            check_failed(ARMING_CHECK_BATTERY, report, buffer);
             return false;
-        }
-
-        for (uint8_t i = 0; i < _battery.num_instances(); i++) {
-            if ((_min_voltage[i] > 0.0f) && (_battery.voltage(i) < _min_voltage[i])) {
-                check_failed(ARMING_CHECK_BATTERY, report, "Battery %d voltage %.1f below minimum %.1f",
-                            i+1,
-                            (double)_battery.voltage(i),
-                             (double)_min_voltage[i]);
-                return false;
-            }
         }
      }
     return true;
