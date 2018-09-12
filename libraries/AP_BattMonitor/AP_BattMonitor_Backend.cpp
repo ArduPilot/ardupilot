@@ -98,11 +98,53 @@ float AP_BattMonitor_Backend::voltage_resting_estimate() const
     return MAX(_state.voltage, _state.voltage_resting_estimate);
 }
 
-
 AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
 {
     const uint32_t now = AP_HAL::millis();
 
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+
+    if (critical_voltage) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (_state.critical_voltage_start_ms == 0) {
+            _state.critical_voltage_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.critical_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::BatteryFailsafe_Critical;
+        }
+    } else {
+        // acceptable voltage so reset timer
+        _state.critical_voltage_start_ms = 0;
+    }
+
+    if (critical_capacity) {
+        return AP_BattMonitor::BatteryFailsafe_Critical;
+    }
+
+    if (low_voltage) {
+        // this is the first time our voltage has dropped below minimum so start timer
+        if (_state.low_voltage_start_ms == 0) {
+            _state.low_voltage_start_ms = now;
+        } else if (_params._low_voltage_timeout > 0 &&
+                   now - _state.low_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
+            return AP_BattMonitor::BatteryFailsafe_Low;
+        }
+    } else {
+        // acceptable voltage so reset timer
+        _state.low_voltage_start_ms = 0;
+    }
+
+    if (low_capacity) {
+        return AP_BattMonitor::BatteryFailsafe_Low;
+    }
+
+    // if we've gotten this far then battery is ok
+    return AP_BattMonitor::BatteryFailsafe_None;
+}
+
+void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
+{
     // use voltage or sag compensated voltage
     float voltage_used;
     switch (_params.failsafe_voltage_source()) {
@@ -117,43 +159,31 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
 
     // check critical battery levels
     if ((voltage_used > 0) && (_params._critical_voltage > 0) && (voltage_used < _params._critical_voltage)) {
+        critical_voltage = true;
         // this is the first time our voltage has dropped below minimum so start timer
-        if (_state.critical_voltage_start_ms == 0) {
-            _state.critical_voltage_start_ms = now;
-        } else if (_params._low_voltage_timeout > 0 &&
-                   now - _state.critical_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
-            return AP_BattMonitor::BatteryFailsafe_Critical;
-        }
     } else {
-        // acceptable voltage so reset timer
-        _state.critical_voltage_start_ms = 0;
+        critical_voltage = false;
     }
 
     // check capacity if current monitoring is enabled
     if (has_current() && (_params._critical_capacity > 0) &&
         ((_params._pack_capacity - _state.consumed_mah) < _params._critical_capacity)) {
-        return AP_BattMonitor::BatteryFailsafe_Critical;
+        critical_capacity = true;
+    } else {
+        critical_capacity = false;
     }
 
     if ((voltage_used > 0) && (_params._low_voltage > 0) && (voltage_used < _params._low_voltage)) {
-        // this is the first time our voltage has dropped below minimum so start timer
-        if (_state.low_voltage_start_ms == 0) {
-            _state.low_voltage_start_ms = now;
-        } else if (_params._low_voltage_timeout > 0 &&
-                   now - _state.low_voltage_start_ms > uint32_t(_params._low_voltage_timeout)*1000U) {
-            return AP_BattMonitor::BatteryFailsafe_Low;
-        }
+        low_voltage = true;
     } else {
-        // acceptable voltage so reset timer
-        _state.low_voltage_start_ms = 0;
+        low_voltage = false;
     }
 
     // check capacity if current monitoring is enabled
     if (has_current() && (_params._low_capacity > 0) &&
         ((_params._pack_capacity - _state.consumed_mah) < _params._low_capacity)) {
-        return AP_BattMonitor::BatteryFailsafe_Low;
+        low_capacity = true;
+    } else {
+        low_capacity = false;
     }
-
-    // if we've gotten this far then battery is ok
-    return AP_BattMonitor::BatteryFailsafe_None;
 }
