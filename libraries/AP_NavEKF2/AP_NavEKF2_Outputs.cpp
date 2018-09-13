@@ -316,10 +316,12 @@ bool NavEKF2_core::getHAGL(float &HAGL) const
 bool NavEKF2_core::getLLH(struct Location &loc) const
 {
     const AP_GPS &gps = AP::gps();
+    Location origin;
+    float posD;
 
-    if(validOrigin) {
+    if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt =  100 * (int32_t)(ekfGpsRefHgt - (double)outputDataNew.position.z);
+        loc.alt =  origin.alt - posD*100;
         loc.flags.relative_alt = 0;
         loc.flags.terrain_alt = 0;
 
