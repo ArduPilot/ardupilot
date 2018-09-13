@@ -18,6 +18,15 @@ float Plane::get_speed_scaler(void)
             speed_scaler = 2.0;
         }
         speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
+
+        if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
+            // when in VTOL modes limit surface movement at low speed to prevent instability
+            float threshold = aparm.airspeed_min * 0.5;
+            if (aspeed < threshold) {
+                float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
+                speed_scaler = MIN(speed_scaler, new_scaler);
+            }
+        }
     } else {
         if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
             speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
