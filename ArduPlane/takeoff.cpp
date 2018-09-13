@@ -31,11 +31,28 @@ bool Plane::auto_takeoff_check(void)
         return false;
     }
 
-    // Check for launch acceleration if set. NOTE: relies on TECS 50Hz processing
-    if (!takeoff_state.launchTimerStarted &&
-        !is_zero(g.takeoff_throttle_min_accel) &&
-        SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
-        goto no_launch;
+    if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
+        // we are requiring an X acceleration event to launch
+        float xaccel = SpdHgt_Controller->get_VXdot();
+        if (g2.takeoff_throttle_accel_count <= 1) {
+            if (xaccel < g.takeoff_throttle_min_accel) {
+                goto no_launch;
+            }
+        } else {
+            // we need multiple accel events
+            if (now - takeoff_state.accel_event_ms > 500) {
+                takeoff_state.accel_event_counter = 0;
+            }
+            bool odd_event = ((takeoff_state.accel_event_counter & 1) != 0);
+            bool got_event = (odd_event?xaccel < -g.takeoff_throttle_min_accel : xaccel > g.takeoff_throttle_min_accel);
+            if (got_event) {
+                takeoff_state.accel_event_counter++;
+                takeoff_state.accel_event_ms = now;
+            }
+            if (takeoff_state.accel_event_counter < g2.takeoff_throttle_accel_count) {
+                goto no_launch;
+            }
+        }
     }
 
     // we've reached the acceleration threshold, so start the timer
@@ -64,6 +81,7 @@ bool Plane::auto_takeoff_check(void)
             ahrs.pitch_sensor >= 4500 ||
             (!fly_inverted() && labs(ahrs.roll_sensor) > 3000)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Bad launch AUTO");
+            takeoff_state.accel_event_counter = 0;
             goto no_launch;
         }
     }

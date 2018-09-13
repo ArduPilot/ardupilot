@@ -549,6 +549,8 @@ public:
 #ifdef ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
+
+    AP_Int8 takeoff_throttle_accel_count;
 };
 
 extern const AP_Param::Info var_info[];

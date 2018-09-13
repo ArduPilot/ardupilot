@@ -128,7 +128,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15.
+    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT paramter for control of full "shake to arm".
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
@@ -1181,6 +1181,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // Scripting is intentionally not showing up in the parameter docs until it is a more standard feature
     AP_SUBGROUPINFO(scripting, "SCR_", 14, ParametersG2, AP_Scripting),
 #endif
+
+    // @Param: TKOFF_ACCEL_CNT
+    // @DisplayName: Takeoff throttle acceleration count
+    // @Description: This is the number of acceleration events to require for arming with TKOFF_THR_MINACC. The default is 1, which means a single forward acceleration above TKOFF_THR_MINACC will arm. By setting this higher than 1 you can require more forward/backward movements to arm.
+    // @Range: 1 10
+    // @User: User
+    AP_GROUPINFO("TKOFF_ACCEL_CNT", 15, ParametersG2, takeoff_throttle_accel_count, 1),
 
     AP_GROUPEND
 };
