@@ -1247,8 +1247,10 @@ void QuadPlane::update_transition(void)
         }
     }
     
-    // if rotors are fully forward then we are not transitioning
-    if (tiltrotor_fully_fwd()) {
+    // if rotors are fully forward then we are not transitioning,
+    // unless we are waiting for airspeed to increase (in which case
+    // the tilt till decrease rapidly)
+    if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_DONE;
     }
     
