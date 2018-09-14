@@ -42,7 +42,7 @@ extern AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_COMPASS_AUTO_ROT_DEFAULT
-#define HAL_COMPASS_AUTO_ROT_DEFAULT 1
+#define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 #endif
 
 const AP_Param::GroupInfo Compass::var_info[] = {
