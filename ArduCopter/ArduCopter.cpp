@@ -587,9 +587,11 @@ void Copter::update_altitude()
 void Copter::publish_osd_info()
 {
     AP_OSD::NavInfo nav_info;
-    nav_info.wp_distance = flightmode->wp_distance();
+    //wp_distance: conversion needed from centimeters to meters
+    nav_info.wp_distance = flightmode->wp_distance() * 1.0e-2f;
     nav_info.wp_bearing = flightmode->wp_bearing();
-    nav_info.wp_xtrack_error = flightmode->crosstrack_error();
+    //crosstrack_error: conversion needed from centimeters to meters
+    nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
     nav_info.wp_number = mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
 }
