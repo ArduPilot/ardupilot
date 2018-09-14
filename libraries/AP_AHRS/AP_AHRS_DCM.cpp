@@ -674,8 +674,14 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
         // keep last airspeed estimate for dead-reckoning purposes
         Vector3f airspeed = velocity - _wind;
-        airspeed.z = 0;
-        _last_airspeed = airspeed.length();
+
+        // rotate vector to body frame
+        const Matrix3f &rot = get_rotation_body_to_ned();
+        airspeed = rot.mul_transpose(airspeed);
+
+        // take positive component in X direction. This mimics a pitot
+        // tube
+        _last_airspeed = MAX(airspeed.x, 0);
     }
 
     if (have_gps()) {
