@@ -70,6 +70,10 @@ public:
     // set lateral input as a value from -100 to +100
     void set_lateral(float lateral);
 
+    // set mainsail input as a value from 0 to 100
+    void set_mainsail(float mainsail);
+    float get_mainsail() const { return _mainsail; }
+
     // get slew limited throttle
     // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
     // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -80,6 +84,9 @@ public:
 
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
     bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
+
+    // true if the vehicle has a mainsail
+    bool has_sail() const;
 
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
@@ -128,6 +135,9 @@ protected:
     // dt is the main loop time interval and is required when rate control is required
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
 
+    // output for sailboat's mainsail in the range of 0 to 100
+    void output_mainsail(float mainsail);
+
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
 
@@ -162,6 +172,7 @@ protected:
     float   _throttle_prev; // throttle input from previous iteration
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
+    float   _mainsail;  // requested mainsail input as a value from 0 to 100
 
     // custom config variables
     float   _throttle_factor[AP_MOTORS_NUM_MOTORS_MAX];
