@@ -58,7 +58,7 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2 revo-bootloader"
+      env: CI_BUILD_TARGET="px4-v2 revo-bootloader iofirmware"
     - compiler: "gcc"
       env: CI_BUILD_TARGET="px4-v4 revo-mini"
     - if: type != cron
