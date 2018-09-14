@@ -183,6 +183,7 @@ private:
     void init_stabilize(void);
     void control_stabilize(void);
 
+    void check_attitude_relax(void);
     void init_hover(void);
     void control_hover(void);
     void run_rate_controller(void);
@@ -301,6 +302,9 @@ private:
 
     // pitch when we enter loiter mode
     int32_t loiter_initial_pitch_cd;
+
+    // when did we last run the attitude controller?
+    uint32_t last_att_control_ms;
 
     // true if we have reached the airspeed threshold for transition
     enum {
