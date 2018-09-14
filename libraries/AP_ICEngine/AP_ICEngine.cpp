@@ -114,6 +114,20 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Advanced
     // @Range: 0 100
     AP_GROUPINFO("THR_HIGH", 12, AP_ICEngine, thr_threshold_high, 0),
+
+    // @Param: IDLE_RPM
+    // @DisplayName: Min RPM for idling
+    // @Description: RPM value below which throttle will be slowly increased for idle. Zero for no adjustment
+    // @User: Advanced
+    // @Range: 0 100
+    AP_GROUPINFO("IDLE_RPM", 13, AP_ICEngine, idle_rpm, 0),
+
+    // @Param: IDLE_ADJ
+    // @DisplayName: Maximum throttle adjustment for idle
+    // @Description: Maximum change from idle throttle for targeting idle
+    // @User: Advanced
+    // @Range: 0 100
+    AP_GROUPINFO("IDLE_ADJ", 14, AP_ICEngine, idle_adjust, 5),
     
     AP_GROUPEND    
 };
@@ -305,23 +319,43 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
 }
 
 /*
-  implement throttle limiting based on RPM threshold. This copes with
-  motors that have poor low-end tuning, where they need a long time to
-  come up to revs when advancing the throttle
+  implement throttle limiting and adjustment based on RPM
+  threshold. This copes with motors that have poor low-end tuning,
+  where they need a long time to come up to revs when advancing the
+  throttle
  */
-void AP_ICEngine::throttle_limit(int16_t &throttle)
+void AP_ICEngine::throttle_adjustment(int16_t &throttle, int16_t thr_min)
 {
     if (!enable ||
         rpm_threshold_high <= 0 ||
         thr_threshold_high <= 0 ||
+        state != ICE_RUNNING ||
         rpm_instance <= 0 ||
-        throttle <= thr_threshold_high ||
         !rpm.healthy(rpm_instance-1)) {
         return;
     }
-    if (rpm.get_rpm(rpm_instance-1) < rpm_threshold_high) {
-        if (throttle > thr_threshold_high) {
-            throttle = thr_threshold_high;
-        }
+
+    // when running always use at least THR_MIN
+    throttle = MAX(throttle, thr_min);
+
+    float cur_rpm = rpm.get_rpm(rpm_instance-1);
+    if (cur_rpm < rpm_threshold_high) {
+        throttle = MIN(throttle, thr_threshold_high);
     }
+
+    uint32_t now = AP_HAL::millis();
+    const int16_t hysterisis = 50;
+    if (now - last_idle_adjust_ms > 1000) {
+        if (cur_rpm < idle_rpm-hysterisis && cur_rpm > rpm_threshold) {
+            // we are running below the idle target
+            idle_adjustment += 0.5;
+        } else if (cur_rpm > idle_rpm+hysterisis && throttle <= thr_min) {
+            // we are idling over the idle target
+            idle_adjustment -= 0.5;
+        }
+        last_idle_adjust_ms = now;
+    }
+
+    idle_adjustment = constrain_float(idle_adjustment, -idle_adjust, idle_adjust);
+    throttle += idle_adjustment;
 }

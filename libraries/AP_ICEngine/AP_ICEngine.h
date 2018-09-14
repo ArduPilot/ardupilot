@@ -49,7 +49,7 @@ public:
     bool engine_control(float start_control, float cold_start, float height_delay);
 
     // limit throttle based on RPM
-    void throttle_limit(int16_t &throttle);
+    void throttle_adjustment(int16_t &throttle, int16_t thr_min);
 
 private:
     const AP_RPM &rpm;
@@ -84,6 +84,8 @@ private:
     // thresholds for throttle advance
     AP_Int32 rpm_threshold_high;
     AP_Int8 thr_threshold_high;
+    AP_Int32 idle_rpm;
+    AP_Int8 idle_adjust;
 
     // time when we started the starter
     uint32_t starter_start_time_ms;
@@ -102,5 +104,9 @@ private:
 
     // we are waiting for valid height data
     bool height_pending:1;
+
+    // time we last did idle adjustment
+    uint32_t last_idle_adjust_ms;
+    float idle_adjustment;
 };
 
