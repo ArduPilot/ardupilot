@@ -90,6 +90,7 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
     case GUIDED:
     case LOITER:
     case FOLLOW:
+    case SAILBOAT_TACK:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -232,6 +233,13 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     // set mode to Simple
     case SIMPLE:
         do_aux_function_change_mode(rover.mode_simple, ch_flag);
+        break;
+
+    // trigger sailboat tack
+    case SAILBOAT_TACK:
+        if (ch_flag == HIGH) {
+            rover.control_mode->handle_tack_request();
+        }
         break;
 
     default:

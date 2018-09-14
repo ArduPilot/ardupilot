@@ -647,6 +647,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_HEEL_MAX", 35, ParametersG2, sail_heel_angle_max, 15),
+
+    // @Param: SAIL_NO_GO_ANGLE
+    // @DisplayName: Sailing no go zone angle
+    // @Description: The typical closest angle to the wind the vehicle will sail at. the vehicle will sail at this angle when going upwind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_NO_GO_ANGLE", 36, ParametersG2, sail_no_go, 45),
+
+    // @Group: ARSPD
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    AP_SUBGROUPINFO(airspeed, "ARSPD", 37, ParametersG2, AP_Airspeed),
+
     AP_GROUPEND
 };
 
@@ -679,7 +693,8 @@ ParametersG2::ParametersG2(void)
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
     rally(rover.ahrs),
-    windvane()
+    windvane(),
+    airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
