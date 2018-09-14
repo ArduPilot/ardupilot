@@ -664,6 +664,11 @@ void Plane::set_servos(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
 
+    // implement throttle limiting based on RPM
+    int16_t thr_demand = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    g2.ice_control.throttle_adjustment(thr_demand, aparm.throttle_min);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, thr_demand);
+
     // run output mixer and send values to the hal for output
     servos_output();
 }
