@@ -168,6 +168,9 @@ void AP_MotorsUGV::setup_servo_output()
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         SRV_Channels::set_angle(function, 100);
     }
+
+    // mainsail range from 0 to 100
+    SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
 }
 
 // config for frames with vectored motors and custom motor configurations
@@ -278,6 +281,12 @@ void AP_MotorsUGV::set_lateral(float lateral)
     _lateral = constrain_float(lateral, -100.0f, 100.0f);
 }
 
+// set mainsail input as a value from 0 to 100
+void AP_MotorsUGV::set_mainsail(float mainsail)
+{
+    _mainsail = constrain_float(mainsail, 0.0f, 100.0f);
+}
+
 // get slew limited throttle
 // used by manual mode to avoid bad steering behaviour during transitions from forward to reverse
 // same as private slew_limit_throttle method (see below) but does not update throttle state
@@ -303,6 +312,12 @@ bool AP_MotorsUGV::have_skid_steering() const
     return false;
 }
 
+// true if the vehicle has a mainsail
+bool AP_MotorsUGV::has_sail() const
+{
+    return SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet);
+}
+
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 {
     // soft-armed overrides passed in armed status
@@ -325,6 +340,9 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 
     // output for frames with vectored and custom motor configurations
     output_custom_config(armed, _steering, _throttle, _lateral);
+
+    // output to mainsail
+    output_mainsail(_mainsail);
 
     // send values to the PWM timers for output
     SRV_Channels::calc_pwm();
@@ -464,8 +482,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         }
         return false;
     }
-    // check if only one of throttle or steering outputs has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+    // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
+    if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }
@@ -744,6 +762,16 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
             // do nothing
             break;
     }
+}
+
+// output for sailboat's mainsail
+void AP_MotorsUGV::output_mainsail(float mainsail)
+{
+    if (!has_sail()) {
+        return;
+    }
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, constrain_float(mainsail, 0.0f, 100.0f));
 }
 
 // slew limit throttle for one iteration
