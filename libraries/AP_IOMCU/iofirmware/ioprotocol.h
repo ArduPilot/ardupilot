@@ -8,15 +8,16 @@
 //#define IOMCU_DEBUG
 
 struct PACKED IOPacket {
-	uint8_t 	count:6;
-	uint8_t 	code:2;
-	uint8_t 	crc;
-	uint8_t 	page;
-	uint8_t 	offset;
-	uint16_t	regs[PKT_MAX_REGS];
+    uint8_t 	count:6;
+    uint8_t 	code:2;
+    uint8_t 	crc;
+    uint8_t 	page;
+    uint8_t 	offset;
+    uint16_t	regs[PKT_MAX_REGS];
 
     // get packet size in bytes
-    uint8_t get_size(void) const {
+    uint8_t get_size(void) const
+    {
         return count*2 + 4;
     }
 };
@@ -86,7 +87,7 @@ enum iopage {
 struct PACKED page_reg_status {
     uint16_t freemem;
     uint16_t cpuload;
-        
+
     // status flags
     uint16_t flag_outputs_armed:1;
     uint16_t flag_override:1;
@@ -104,7 +105,7 @@ struct PACKED page_reg_status {
     uint16_t flag_fmu_initialised:1;
     uint16_t flag_rc_st24:1;
     uint16_t flag_rc_sumd_srxl:1;
-    
+
     uint16_t alarms;
     uint16_t vbatt;
     uint16_t ibatt;
