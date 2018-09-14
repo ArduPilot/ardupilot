@@ -219,6 +219,49 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_BAL_SPD_FF", 11, AR_AttitudeControl, _pitch_to_throttle_speed_ff, AR_ATTCONTROL_BAL_SPEED_FF),
 
+    // @Param: _SAIL_P
+    // @DisplayName: Sail Heel control P gain
+    // @Description: Sail Heel control P gain for sailboats.  Converts the error between the desired heel angle (in radians) and actual heel to a main sail output (in the range -1 to +1)
+    // @Range: 0.000 2.000
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _SAIL_I
+    // @DisplayName: Sail Heel control I gain
+    // @Description: Sail Heel control I gain for sailboats.  Corrects long term error between the desired heel angle (in radians) and actual
+    // @Range: 0.000 2.000
+    // @User: Standard
+
+    // @Param: _SAIL_IMAX
+    // @DisplayName: Sail Heel control I gain maximum
+    // @Description: Sail Heel control I gain maximum.  Constrains the maximum I term contribution to the main sail output (range -1 to +1)
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _SAIL_D
+    // @DisplayName: Sail Heel control D gain
+    // @Description: Sail Heel control D gain.  Compensates for short-term change in desired heel angle vs actual
+    // @Range: 0.000 0.100
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _SAIL_FF
+    // @DisplayName: Sail Heel control feed forward
+    // @Description: Sail Heel control feed forward
+    // @Range: 0.000 0.500
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _SAIL_FILT
+    // @DisplayName: Sail Heel control filter frequency
+    // @Description: Sail Heel control input filter.  Lower values reduce noise but add delay.
+    // @Range: 0.000 100.000
+    // @Increment: 0.1
+    // @Units: Hz
+    // @User: Standard
+    AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
+
     AP_GROUPEND
 };
 
@@ -227,8 +270,9 @@ AR_AttitudeControl::AR_AttitudeControl(AP_AHRS &ahrs) :
     _steer_angle_p(AR_ATTCONTROL_STEER_ANG_P),
     _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_IMAX, AR_ATTCONTROL_STEER_RATE_FILT, AR_ATTCONTROL_DT, AR_ATTCONTROL_STEER_RATE_FF),
     _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, AR_ATTCONTROL_THR_SPEED_IMAX, AR_ATTCONTROL_THR_SPEED_FILT, AR_ATTCONTROL_DT),
-    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, AR_ATTCONTROL_PITCH_THR_IMAX, AR_ATTCONTROL_PITCH_THR_FILT, AR_ATTCONTROL_DT)
-{
+    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, AR_ATTCONTROL_PITCH_THR_IMAX, AR_ATTCONTROL_PITCH_THR_FILT, AR_ATTCONTROL_DT),
+    _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, AR_ATTCONTROL_HEEL_SAIL_IMAX, AR_ATTCONTROL_HEEL_SAIL_FILT, AR_ATTCONTROL_DT)
+    {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -554,6 +598,58 @@ float AR_AttitudeControl::get_desired_pitch() const
     }
 
     return _pitch_to_throttle_pid.get_pid_info().desired;
+}
+
+// Sailboat heel(roll) angle contorller release sail to keep at maximum heel angle
+// But do not atempt to reach maximum heel angle, ie only let sails off do not pull them in
+float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
+{
+    // sanity check dt
+    dt = constrain_float(dt, 0.0f, 1.0f);
+
+    // if not called recently, reset input filter
+    const uint32_t now = AP_HAL::millis();
+    if ((_heel_controller_last_ms == 0) || ((now - _heel_controller_last_ms) > AR_ATTCONTROL_TIMEOUT_MS)) {
+        _sailboat_heel_pid.reset_filter();
+        _sailboat_heel_pid.reset_I();
+    }
+    _heel_controller_last_ms = now;
+
+    // calculate heel error, we don't care about the sign
+    const float heel_error =  fabsf(_ahrs.roll) - desired_heel;
+
+    // set PID's dt
+    _sailboat_heel_pid.set_dt(dt);
+
+    // record desired heel angle for logging purposes only
+    _sailboat_heel_pid.set_desired_rate(desired_heel);
+
+    // heel error is given as input to PID contoller
+    _sailboat_heel_pid.set_input_filter_all(heel_error);
+
+    // get feed-forward
+    const float ff = _sailboat_heel_pid.get_ff(desired_heel);
+
+    // get p
+    float p = _sailboat_heel_pid.get_p();
+    // constrain p to only be positive
+    if (!is_positive(p)) {
+        p = 0.0f;
+    }
+
+    // get i
+    float i = _sailboat_heel_pid.get_integrator();
+    // constrain i to only be positive, reset integrator if negative
+    if (!is_positive(i)) {
+        i = 0.0f;
+        _sailboat_heel_pid.reset_I();
+    }
+
+    // get d
+    const float d = _sailboat_heel_pid.get_d();
+
+    // constrain and return final output
+    return (ff + p + i + d );
 }
 
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
