@@ -782,7 +782,6 @@ void QuadPlane::check_attitude_relax(void)
     uint32_t now = AP_HAL::millis();
     if (now - last_att_control_ms > 500) {
         attitude_control->relax_attitude_controllers();
-        attitude_control->reset_rate_controller_I_terms();
     }
     last_att_control_ms = now;
 }
@@ -1417,7 +1416,6 @@ void QuadPlane::update(void)
           make sure we don't have any residual control from previous flight stages
          */
         attitude_control->relax_attitude_controllers();
-        attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0);
     }
     
