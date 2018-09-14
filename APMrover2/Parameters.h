@@ -377,9 +377,13 @@ public:
     AP_Float sail_angle_max;
     AP_Float sail_angle_ideal;
     AP_Float sail_heel_angle_max;
+    AP_Float sail_no_go;
 
     // windvane
     AP_WindVane windvane;
+
+    // Airspeed
+    AP_Airspeed airspeed;
 };
 
 extern const AP_Param::Info var_info[];
