@@ -92,6 +92,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ $t == "iofirmware" ]; then
+        echo "Building iofirmware"
+        $waf configure --board iomcu
+        $waf clean
+        $waf iofirmware
+        continue
+    fi
+    
     if [ $t == "revo-mini" ]; then
         # save some time by only building one target for revo-mini
         echo "Building revo-mini"
