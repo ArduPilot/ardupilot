@@ -161,15 +161,26 @@ void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool r
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
+    // Initialize the attitude variables to the current attitude
     // TODO add _ahrs.get_quaternion()
     _attitude_target_quat.from_rotation_matrix(_ahrs.get_rotation_body_to_ned());
-    _attitude_target_ang_vel = _ahrs.get_gyro();
-    _attitude_target_euler_angle = Vector3f(_ahrs.roll, _ahrs.pitch, _ahrs.yaw);
+    _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
+    _attitude_ang_error.initialise();
 
-    // Set reference angular velocity used in angular velocity controller equal
-    // to the input angular velocity and reset the angular velocity integrators.
-    // This zeros the output of the angular velocity controller.
+    // Initialize the angular rate variables to the current rate
+    _attitude_target_ang_vel = _ahrs.get_gyro();
+    ang_vel_to_euler_rate(_attitude_target_euler_angle, _attitude_target_ang_vel, _attitude_target_euler_rate);
     _rate_target_ang_vel = _ahrs.get_gyro();
+
+    // Initialize remaining variables
+    _thrust_error_angle = 0.0f;
+
+    // Reset the PID filters
+    get_rate_roll_pid().reset_filter();
+    get_rate_pitch_pid().reset_filter();
+    get_rate_yaw_pid().reset_filter();
+
+    // Reset the I terms
     reset_rate_controller_I_terms();
 }
 
