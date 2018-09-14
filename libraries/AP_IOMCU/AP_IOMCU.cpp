@@ -633,7 +633,7 @@ bool AP_IOMCU::check_crc(void)
         fw = nullptr;
         return true;
     } else {
-        hal.console->printf("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", crc, io_crc);
+        hal.console->printf("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
     }
 
     const uint16_t magic = REBOOT_BL_MAGIC;
