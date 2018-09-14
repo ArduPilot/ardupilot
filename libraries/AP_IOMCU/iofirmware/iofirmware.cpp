@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include "iofirmware.h"
@@ -493,3 +495,6 @@ void AP_IOMCU_FW::rcout_mode_update(void)
 }
 
 AP_HAL_MAIN();
+#endif // HAL_BOARD_CHIBIOS
+
+
