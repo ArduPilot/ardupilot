@@ -170,9 +170,7 @@ void AC_AttitudeControl::relax_attitude_controllers()
     // to the input angular velocity and reset the angular velocity integrators.
     // This zeros the output of the angular velocity controller.
     _rate_target_ang_vel = _ahrs.get_gyro();
-    get_rate_roll_pid().reset_I();
-    get_rate_pitch_pid().reset_I();
-    get_rate_yaw_pid().reset_I();
+    reset_rate_controller_I_terms();
 }
 
 void AC_AttitudeControl::reset_rate_controller_I_terms()
