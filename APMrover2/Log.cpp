@@ -167,14 +167,23 @@ void Rover::Log_Write_Sail()
     }
 
     // get wind direction
+    float wind_dir_abs = 0.0f;
     float wind_dir_rel = 0.0f;
+    float wind_speed_true = 0.0f;
+    float wind_speed_apparent = 0.0f;
     if (rover.g2.windvane.enabled()) {
+        wind_dir_abs = degrees(g2.windvane.get_absolute_wind_direction_rad());
         wind_dir_rel = degrees(g2.windvane.get_apparent_wind_direction_rad());
+        wind_speed_true = g2.windvane.get_true_wind_speed();
+        wind_speed_apparent = g2.windvane.get_apparent_wind_speed();
     }
-    DataFlash.Log_Write("SAIL", "TimeUS,WindDirRel,SailOut,VMG",
-                        "sh%n", "F000", "Qfff",
+    DataFlash.Log_Write("SAIL", "TimeUS,WindDirAbs,WindDirApp,WindSpdTrue,WindSpdApp,SailOut,VMG",
+                        "shhnn%n", "F000000", "Qffffff",
                         AP_HAL::micros64(),
+                        (double)wind_dir_abs,
                         (double)wind_dir_rel,
+                        (double)wind_speed_true,
+                        (double)wind_speed_apparent,
                         (double)g2.motors.get_mainsail(),
                         (double)sailboat_get_VMG());
 }

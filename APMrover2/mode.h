@@ -116,6 +116,9 @@ public:
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
 
+    // handle tacking request (from auxiliary switch) in sailboats
+    virtual void handle_tack_request();
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -222,6 +225,9 @@ public:
     // acro mode requires a velocity estimate for non skid-steer rovers
     bool requires_position() const override { return false; }
     bool requires_velocity() const override;
+
+    // sailboats in acro mode support user manually initiating tacking from transmitter
+    void handle_tack_request() override;
 };
 
 

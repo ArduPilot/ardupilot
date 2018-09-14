@@ -387,6 +387,16 @@ private:
         LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
     } cruise_learn;
 
+    // sailboat variables
+    enum Sailboat_Tack {
+        Tack_Port,
+        Tack_STBD
+    };
+    bool _sailboat_tacking;                 // true when sailboat is in the process of tacking to a new heading
+    float _sailboat_tack_heading_rad;       // target heading in radians while tacking in either acro or autonomous modes
+    uint32_t _sailboat_auto_tack_request_ms;// system time user requested tack in autonomous modes
+    uint32_t _sailboat_auto_tack_start_ms;  // system time when tack was started in autonomous mode
+
 private:
 
     // APMrover2.cpp
@@ -508,6 +518,13 @@ private:
     // sailboat.cpp
     void sailboat_update_mainsail(float desired_speed);
     float sailboat_get_VMG() const;
+    void sailboat_handle_tack_request_acro();
+    float sailboat_get_tack_heading_rad() const;
+    void sailboat_handle_tack_request_auto();
+    void sailboat_clear_tack();
+    bool sailboat_tacking() const;
+    bool sailboat_use_indirect_route(float desired_heading_cd) const;
+    float sailboat_calc_heading(float desired_heading_cd);
 
     // sensors.cpp
     void init_compass(void);
@@ -521,6 +538,7 @@ private:
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
+    void read_airspeed();
     void update_sensor_status_flags(void);
 
     // Steering.cpp

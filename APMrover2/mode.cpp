@@ -47,6 +47,9 @@ bool Mode::enter()
     // initialisation common to all modes
     if (ret) {
         set_reversed(false);
+
+        // clear sailboat tacking flags
+        rover.sailboat_clear_tack();
     }
 
     return ret;
@@ -254,6 +257,15 @@ void Mode::set_reversed(bool value)
     _reversed = value;
 }
 
+// handle tacking request (from auxiliary switch) in sailboats
+void Mode::handle_tack_request()
+{
+    // autopilot modes handle tacking
+    if (is_autopilot_mode()) {
+        rover.sailboat_handle_tack_request_auto();
+    }
+}
+
 void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled)
 {
     // add in speed nudging
@@ -435,7 +447,11 @@ void Mode::calc_steering_to_waypoint(const struct Location &origin, const struct
     }
     _yaw_error_cd = wrap_180_cd(desired_heading - ahrs.yaw_sensor);
 
-    if (rover.use_pivot_steering(_yaw_error_cd)) {
+    if (rover.sailboat_use_indirect_route(desired_heading)) {
+        // sailboats use heading controller when tacking upwind
+        desired_heading = rover.sailboat_calc_heading(desired_heading);
+        calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
+    } else if (rover.use_pivot_steering(_yaw_error_cd)) {
         // for pivot turns use heading controller
         calc_steering_to_heading(desired_heading, g2.pivot_turn_rate);
     } else {
