@@ -693,6 +693,8 @@ void QuadPlane::init_stabilize(void)
  */
 void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
+    check_attitude_relax();
+
     if (in_vtol_mode() || is_tailsitter()) {
         // use euler angle attitude control
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
@@ -767,6 +769,21 @@ void QuadPlane::run_z_controller(void)
     }
     last_pidz_active_ms = now;
     pos_control->update_z_controller();    
+}
+
+/*
+  check if we should relax the attitude controllers
+
+  We relax them whenever we will be using them after a period of
+  inactivity
+ */
+void QuadPlane::check_attitude_relax(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - last_att_control_ms > 500) {
+        attitude_control->relax_attitude_controllers();
+    }
+    last_att_control_ms = now;
 }
 
 // init quadplane hover mode 
@@ -948,6 +965,7 @@ void QuadPlane::control_loiter()
         return;
     }
 
+    check_attitude_relax();
 
     if (should_relax()) {
         loiter_nav->soften_for_landing();
@@ -1342,7 +1360,8 @@ void QuadPlane::update_transition(void)
         uint32_t dt = AP_HAL::millis() - transition_start_ms;
         plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
         plane.nav_roll_cd = 0;
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd, 
+        check_attitude_relax();
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
         attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
@@ -1397,7 +1416,6 @@ void QuadPlane::update(void)
           make sure we don't have any residual control from previous flight stages
          */
         attitude_control->relax_attitude_controllers();
-        attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0);
     }
     
@@ -1740,6 +1758,8 @@ void QuadPlane::vtol_position_controller(void)
         return;
     }
 
+    check_attitude_relax();
+
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
@@ -1971,6 +1991,8 @@ void QuadPlane::takeoff_controller(void)
     float ekfGndSpdLimit, ekfNavVelGainScaler;    
     ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
 
+    check_attitude_relax();
+
     setup_target_position();
 
     // set position controller desired velocity and acceleration to zero
@@ -1998,6 +2020,8 @@ void QuadPlane::takeoff_controller(void)
  */
 void QuadPlane::waypoint_controller(void)
 {
+    check_attitude_relax();
+
     setup_target_position();
 
     /*
