@@ -51,6 +51,9 @@ extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
+// special pins
+#define ANALOG_SERVO_VRSSI_PIN 103
+
 /*
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board. 
@@ -183,13 +186,6 @@ void AnalogSource::_add_value(float v, float vcc5V)
 }
 
 
-AnalogIn::AnalogIn() :
-    _board_voltage(0),
-    _servorail_voltage(0),
-    _power_flags(0)
-{
-}
-
 /*
   callback from ADC driver when sample buffer is filled
  */
@@ -290,23 +286,29 @@ void AnalogIn::_timer_tick(void)
         }
 #endif
     }
+
+#if HAL_WITH_IO_MCU
+    // now handle special inputs from IOMCU
+    _servorail_voltage = iomcu.get_vservo();
+    _rssi_voltage = iomcu.get_vrssi();
+#endif
+    
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
         Debug("chan %u value=%u\n",
               (unsigned)pin_config[i].channel,
               (unsigned)buf_adc[i]);
         for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
             ChibiOS::AnalogSource *c = _channels[j];
-            if (c != nullptr && pin_config[i].channel == c->_pin) {
-                // add a value
-                c->_add_value(buf_adc[i], _board_voltage);
+            if (c != nullptr) {
+                if (pin_config[i].channel == c->_pin) {
+                    // add a value
+                    c->_add_value(buf_adc[i], _board_voltage);
+                } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
+                    c->_add_value(_rssi_voltage / VOLTAGE_SCALING, 0);
+                }
             }
         }
     }
-
-#if HAL_WITH_IO_MCU
-    // now handle special inputs from IOMCU
-    _servorail_voltage = iomcu.get_vservo();
-#endif
 
 #if CHIBIOS_ADC_MAVLINK_DEBUG
     static uint8_t count;
