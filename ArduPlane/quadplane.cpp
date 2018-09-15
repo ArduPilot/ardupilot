@@ -780,7 +780,7 @@ void QuadPlane::run_z_controller(void)
 void QuadPlane::check_attitude_relax(void)
 {
     uint32_t now = AP_HAL::millis();
-    if (now - last_att_control_ms > 500) {
+    if (now - last_att_control_ms > 100) {
         attitude_control->relax_attitude_controllers();
     }
     last_att_control_ms = now;
