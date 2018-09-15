@@ -125,7 +125,7 @@ void Copter::auto_disarm_check()
     }
 
     // disarm once timer expires
-    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
+    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms || ap.motor_emergency_stop) {
         init_disarm_motors();
         auto_disarm_begin = tnow_ms;
     }
