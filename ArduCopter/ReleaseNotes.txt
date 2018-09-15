@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc10 15-Sep-2018
+Changes from 3.6.0-rc9
+1) Arming/disarming from transmitter can be disabled with ARMING_RUDDER parameter
+2) ChibiOS fixes:
+    a) UART baud rate rounding fix (allow 921600 baud to work)
+    b) ADC fix to allow more simultaneous channels
+3) Bug Fixes:
+    a) Lean angle limit (to maintain altitude) always allows at least 10deg of lean
+    b) Attitude Control and PID initialisation fix to reduce twitches when switching modes
+------------------------------------------------------------------
 Copter 3.6.0-rc9 08-Sep-2018
 Changes from 3.6.0-rc8
 1) Landing gear can be operated using AIRFRAME_CONFIGURATION mavlink messages
