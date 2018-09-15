@@ -125,7 +125,7 @@ void Copter::auto_disarm_check()
     }
 
     // disarm once timer expires
-    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms) {
+    if ((tnow_ms-auto_disarm_begin) >= disarm_delay_ms || ap.motor_emergency_stop) {
         init_disarm_motors();
         auto_disarm_begin = tnow_ms;
     }
@@ -185,7 +185,7 @@ bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do
         Log_Write_Event(DATA_EKF_ALT_RESET);
 
         // we have reset height, so arming height is zero
-        arming_altitude_m = 0;        
+        arming_altitude_m = 0;
     } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         set_home_to_current_location(false);
