@@ -398,6 +398,12 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             }
             break;
         }
+        case MOTOR_TEST_MAINSAIL: {
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet)) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_mainsail_sheet, pct);
+            }
+            break;
+        }
         default:
             return false;
     }
@@ -449,6 +455,12 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
             }
             if (SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
                 SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm);
+            }
+            break;
+        }
+        case MOTOR_TEST_MAINSAIL: {
+            if (SRV_Channels::function_assigned(SRV_Channel::k_mainsail_sheet)) {
+                SRV_Channels::set_output_pwm(SRV_Channel::k_mainsail_sheet, pwm);
             }
             break;
         }
