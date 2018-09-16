@@ -99,10 +99,15 @@ void Copter::ModeZigZag::manual_control()
     pos_control->set_accel_z(g.pilot_accel_z);
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
+        float target_roll, target_pitch;
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
+
+        // convert pilot input to lean angles
+        get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+
         // process pilot's roll and pitch input
-        loiter_nav->set_pilot_desired_acceleration(channel_roll->get_control_in(), channel_pitch->get_control_in(), G_Dt);
+        loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
@@ -126,10 +131,7 @@ void Copter::ModeZigZag::manual_control()
             loiter_nav->get_pitch(), target_yaw_rate);
 
     // adjust climb rate using rangefinder
-    if (copter.rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
-    }
+    target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
 
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -189,7 +191,7 @@ bool Copter::ModeZigZag::calculate_next_dest(Vector3f& next_dest, RC_Channel::au
         return true;
     }
     // used to check if the drone is outside A-B scale
-    int next_dir = 1;
+    int8_t next_dir = 1;
     // if the drone's position is between A and B
     const Vector2f cur_pos_2d{cur_pos.x, cur_pos.y};
     const Vector2f AB = zigzag_waypoint.B_pos - zigzag_waypoint.A_pos;
@@ -247,7 +249,7 @@ void Copter::ModeZigZag::receive_signal_from_auxsw(RC_Channel::aux_switch_pos_t 
             // calculate next point A or B
             // need to judge if the drone's position is between A and B
             Vector3f next_dest;
-            if(calculate_next_dest(next_dest, aux_switch_position)){
+            if (calculate_next_dest(next_dest, aux_switch_position)) {
                 // initialise waypoint and spline controller
                 wp_nav->wp_and_spline_init();
                 set_destination(next_dest, aux_switch_position);
@@ -295,7 +297,7 @@ bool Copter::ModeZigZag::set_destination(const Vector3f& destination, RC_Channel
         //point B will only be defined after A is defined
         //if user toggle to the switch position that were previously defined as A
         //exit the function and do nothing
-        if(aux_switch_position == zigzag_waypoint.switch_pos_A){    
+        if (aux_switch_position == zigzag_waypoint.switch_pos_A) {    
             return true;
         }
         zigzag_waypoint.B_pos.x = destination.x; // define point B
