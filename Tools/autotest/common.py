@@ -445,6 +445,46 @@ class AutoTest(ABC):
         else:
             self.set_rc(3, 1000)
 
+    def set_output_to_max(self, chan):
+        """Set output to max with RC Radio taking into account REVERSED parameter."""
+        is_reversed = self.get_parameter("RC%u_REVERSED" % chan)
+        out_max = int(self.get_parameter("RC%u_MAX" % chan))
+        out_min = int(self.get_parameter("RC%u_MIN" % chan))
+        if is_reversed == 0:
+            self.set_rc(chan, out_max)
+        else:
+            self.set_rc(chan, out_min)
+
+    def set_output_to_min(self, chan):
+        """Set output to min with RC Radio taking into account REVERSED parameter."""
+        is_reversed = self.get_parameter("RC%u_REVERSED" % chan)
+        out_max = int(self.get_parameter("RC%u_MAX" % chan))
+        out_min = int(self.get_parameter("RC%u_MIN" % chan))
+        if is_reversed == 0:
+            self.set_rc(chan, out_min)
+        else:
+            self.set_rc(chan, out_max)
+
+    def set_output_to_trim(self, chan):
+        """Set output to trim with RC Radio."""
+        out_trim = int(self.get_parameter("RC%u_TRIM" % chan))
+        self.set_rc(chan, out_trim)
+
+    def get_rudder_channel(self):
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            return int(self.get_parameter("RCMAP_YAW"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            return int(self.get_parameter("RCMAP_YAW"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:
+            return int(self.get_parameter("RCMAP_ROLL"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            raise ErrorException("Arming with rudder is not supported by Submarine")
+
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
@@ -511,36 +551,36 @@ class AutoTest(ABC):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
         self.set_throttle_zero()
-        self.mavproxy.send('rc 1 2000\n')
+        self.set_output_to_max(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
-            if not self.mav.motors_armed():
+            if self.mav.motors_armed():
                 arm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS ARMED OK WITH RADIO")
-                self.mavproxy.send('rc 1 1500\n')
+                self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Arm in %ss" % arm_delay)  # TODO check arming time
                 return True
         self.progress("FAILED TO ARM WITH RADIO")
-        self.mavproxy.send('rc 1 1500\n')
+        self.set_output_to_trim(self.get_rudder_channel())
         return False
 
     def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
         self.set_throttle_zero()
-        self.mavproxy.send('rc 1 1000\n')
+        self.set_output_to_min(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
-                self.mavproxy.send('rc 1 1500\n')
+                self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
         self.progress("FAILED TO DISARM WITH RADIO")
-        self.mavproxy.send('rc 1 1500\n')
+        self.set_output_to_trim(self.get_rudder_channel())
         return False
 
     def autodisarm_motors(self):
@@ -1211,6 +1251,8 @@ class AutoTest(ABC):
 
     def test_arm_feature(self):
         """Common feature to test."""
+        self.context_push()
+        self.set_parameter("ARMING_RUDDER", 2)
         # TEST ARMING/DISARM
         if not self.arm_vehicle():
             self.progress("Failed to ARM")
@@ -1224,12 +1266,14 @@ class AutoTest(ABC):
         if not self.mavproxy_disarm_vehicle():
             self.progress("Failed to DISARM")
             raise NotAchievedException()
-        if not self.arm_motors_with_rc_input():
-            raise NotAchievedException()
-        if not self.disarm_motors_with_rc_input():
-            raise NotAchievedException()
-        if not self.autodisarm_motors():
-            raise NotAchievedException()
+        if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            if not self.arm_motors_with_rc_input():
+                raise NotAchievedException()
+            if not self.disarm_motors_with_rc_input():
+                raise NotAchievedException()
+            if not self.autodisarm_motors():
+                raise NotAchievedException()
+        self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
     def test_gripper(self):
