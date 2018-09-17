@@ -171,6 +171,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_",  57, RangeFinder, backend_var_info[0]),
 
+    // @Param: _UPRATE
+    // @DisplayName: Update rate
+    // @Description: Measurement cycle for updating distance.
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("_UPRATE",  61, RangeFinder, state[0].update_rate, 0),
+
 #if RANGEFINDER_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
@@ -293,6 +300,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Group: 2_
     // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 58, RangeFinder, backend_var_info[1]),
+
+    // @Param: 2_UPRATE
+    // @DisplayName: Update rate
+    // @Description: Measurement cycle for updating distance.
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("2_UPRATE",  62, RangeFinder, state[1].update_rate, 0),
+
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 2
@@ -418,6 +433,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Group: 3_
     // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 59, RangeFinder, backend_var_info[2]),
+
+    // @Param: 3_UPRATE
+    // @DisplayName: Update rate
+    // @Description: Measurement cycle for updating distance.
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("3_UPRATE",  63, RangeFinder, state[2].update_rate, 0),
+
 #endif
 
 #if RANGEFINDER_MAX_INSTANCES > 3
@@ -543,6 +566,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Group: 4_
     // @Path: AP_RangeFinder_Wasp.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 60, RangeFinder, backend_var_info[3]),
+
+    // @Param: 4_UPRATE
+    // @DisplayName: Update rate
+    // @Description: Measurement cycle for updating distance.
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("4_UPRATE",  64, RangeFinder, state[3].update_rate, 0),
+
 #endif
 
     AP_GROUPEND

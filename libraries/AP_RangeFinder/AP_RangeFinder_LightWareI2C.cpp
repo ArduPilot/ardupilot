@@ -62,8 +62,8 @@ AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFi
 
 void AP_RangeFinder_LightWareI2C::init()
 {
-    // call timer() at 20Hz
-    _dev->register_periodic_callback(50000,
+    // call timer() at 20Hz(50000)
+    _dev->register_periodic_callback(state.update_rate>0?1000000/state.update_rate:50000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_LightWareI2C::timer, void));
 }
 
