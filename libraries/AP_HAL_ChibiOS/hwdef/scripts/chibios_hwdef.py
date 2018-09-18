@@ -1316,7 +1316,6 @@ def write_env_py(filename):
 
     # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
     env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(build_flags)
-    print env_vars['CPU_FLAGS']
     pickle.dump(env_vars, open(filename, "wb"))
 
 def romfs_add(romfs_filename, filename):
