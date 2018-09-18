@@ -189,7 +189,6 @@ private:
     void check_attitude_relax(void);
     void init_hover(void);
     void control_hover(void);
-    void run_rate_controller(void);
 
     void init_loiter(void);
     void init_land(void);
@@ -205,7 +204,7 @@ private:
     float desired_auto_yaw_rate_cds(void) const;
 
     bool should_relax(void);
-    void motors_output(void);
+    void motors_output(bool run_rate_controller = true);
     void Log_Write_QControl_Tuning();
     float landing_descent_rate_cms(float height_above_ground) const;
     

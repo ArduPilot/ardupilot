@@ -81,7 +81,7 @@ void QuadPlane::tailsitter_output(void)
         return;
     }
     
-    motors_output();
+    motors_output(false);
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 
