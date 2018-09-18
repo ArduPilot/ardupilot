@@ -26,7 +26,7 @@
 
 float longitude_scale(const struct Location &loc)
 {
-    float scale = cosf(loc.lat * 1.0e-7f * DEG_TO_RAD);
+    float scale = cosf(loc.lat * (1.0e-7f * DEG_TO_RAD));
     return constrain_float(scale, 0.01f, 1.0f);
 }
 
