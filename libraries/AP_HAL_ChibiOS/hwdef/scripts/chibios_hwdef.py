@@ -544,9 +544,11 @@ def write_mcu_config(f):
         build_info['MCU'] = cortex
     else:
         cortex = "cortex-m4"
-        env_vars['CPU_FLAGS'] = ['-u_printf_float', "-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
+        env_vars['CPU_FLAGS'] = [ "-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
-        build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
+        if not args.bootloader:
+            env_vars['CPU_FLAGS'].append('-u_printf_float')
+            build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
     # setup build variables
     for v in build_info.keys():
         build_flags.append('%s=%s' % (v, build_info[v]))
