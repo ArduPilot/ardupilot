@@ -487,7 +487,12 @@ def write_mcu_config(f):
         env_vars['MAIN_STACK'] = get_config('MAIN_STACK')
     else:
         env_vars['MAIN_STACK'] = "0x400"
-    
+
+    if get_config('IOMCU_FW', required=False):
+        env_vars['IOMCU_FW'] = get_config('IOMCU_FW')
+    else:
+        env_vars['IOMCU_FW'] = 0
+
     # write any custom STM32 defines
     for d in alllines:
         if d.startswith('STM32_'):
