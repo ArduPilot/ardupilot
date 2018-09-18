@@ -219,7 +219,7 @@ uint32_t get_fattime()
     return fattime;
 }
 
-#if defined(HAL_USE_RTC) && HAL_USE_RTC
+#if !defined(NO_FASTBOOT)
 // get RTC backup register 0
 static uint32_t get_rtc_backup0(void)
 {
@@ -253,7 +253,7 @@ void set_fast_reboot(enum rtc_boot_magic v)
     set_rtc_backup0(v);
 }
 
-#endif //HAL_USE_RTC
+#endif //NO_FASTBOOT
 
 /*
   enable peripheral power if needed This is done late to prevent
