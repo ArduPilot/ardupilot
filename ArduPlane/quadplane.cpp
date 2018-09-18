@@ -1122,7 +1122,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
     float climb_rate;
     if (plane.auto_throttle_mode) {
         // use altitude_error_cm, spread over 10s interval
-        climb_rate = plane.altitude_error_cm / 10.0f;
+        climb_rate = plane.altitude_error_cm * 0.1f;
     } else {
         // otherwise estimate from pilot input
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
@@ -1131,9 +1131,10 @@ float QuadPlane::assist_climb_rate_cms(void) const
     climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
 
     // bring in the demanded climb rate over 2 seconds
+    const uint32_t ramp_up_time_ms = 2000;
     const uint32_t dt_since_start = last_pidz_active_ms - last_pidz_init_ms;
-    if (dt_since_start < 2000) {
-        climb_rate = linear_interpolate(0, climb_rate, dt_since_start, 0, 2000);
+    if (dt_since_start < ramp_up_time_ms) {
+        climb_rate = linear_interpolate(0, climb_rate, dt_since_start, 0, ramp_up_time_ms);
     }
     
     return climb_rate;
@@ -1309,8 +1310,6 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_hover(assist_climb_rate_cms());
-        run_rate_controller();
-        motors_output();
         last_throttle = motors->get_throttle();
 
         // reset integrators while we are below target airspeed as we
@@ -1348,8 +1347,6 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
-        run_rate_controller();
-        motors_output();
         break;
     }
 
@@ -1368,30 +1365,22 @@ void QuadPlane::update_transition(void)
                                                                       plane.nav_pitch_cd,
                                                                       0);
         attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
-        run_rate_controller();
-        motors_output();
         break;
     }
 
     case TRANSITION_ANGLE_WAIT_VTOL:
         // nothing to do, this is handled in the fw attitude controller
-        break;
+        return;
 
     case TRANSITION_DONE:
         if (!tilt.motors_active && !is_tailsitter()) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
             motors->output();
         }
-        break;
+        return;
     }
-}
 
-/*
-  run multicopter rate controller
- */
-void QuadPlane::run_rate_controller(void)
-{
-    attitude_control->rate_controller_run();
+    motors_output();
 }
 
 /*
@@ -1433,9 +1422,6 @@ void QuadPlane::update(void)
         
         // give full authority to attitude control
         attitude_control->set_throttle_mix_max();
-
-        // run low level rate controllers
-        run_rate_controller();
 
         // output to motors
         motors_output();
@@ -1551,8 +1537,12 @@ void QuadPlane::check_throttle_suppression(void)
 /*
   output motors and do any copter needed
  */
-void QuadPlane::motors_output(void)
+void QuadPlane::motors_output(bool run_rate_controller)
 {
+    if (run_rate_controller) {
+        attitude_control->rate_controller_run();
+    }
+
     if (!hal.util->get_soft_armed() || plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
@@ -2160,9 +2150,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
     if (!setup()) {
         return false;
     }
-    attitude_control->get_rate_roll_pid().reset_I();
-    attitude_control->get_rate_pitch_pid().reset_I();
-    attitude_control->get_rate_yaw_pid().reset_I();
+    attitude_control->reset_rate_controller_I_terms();
     pos_control->get_accel_z_pid().reset_I();
     pos_control->get_vel_xy_pid().reset_I();
     
