@@ -79,6 +79,7 @@ void Copter::ModeThrow::run()
         stage = Throw_PosHold;
 
         // initialise the loiter target to the curent position and velocity
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
