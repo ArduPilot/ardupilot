@@ -68,7 +68,7 @@ int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
   return retval;
 }
 
-int snprintf(char *str, size_t size, const char *fmt, ...)
+int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 {
 #ifndef HAL_NO_PRINTF
    va_list arg;
@@ -165,7 +165,7 @@ scanf (const char *fmt, ...)
  *  sscanf(buf,fmt,va_alist)
  */
 int 
-sscanf (const char *buf, const char *fmt, ...)
+__wrap_sscanf (const char *buf, const char *fmt, ...)
 {
     int             count;
     va_list ap;
