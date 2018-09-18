@@ -265,6 +265,7 @@ void Copter::ModeRTL::descent_run()
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
     }
@@ -356,6 +357,7 @@ void Copter::ModeRTL::land_run(bool disarm_on_land)
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
         // disarm when the landing detector says we've landed

@@ -57,6 +57,7 @@ void Copter::ModeLand::gps_run()
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
         // disarm when the landing detector says we've landed
