@@ -1,7 +1,8 @@
 
 class Parameter(object):
-    def __init__(self, name):
+    def __init__(self, name, real_path):
         self.name = name
+        self.real_path = real_path
 
 
 class Vehicle(object):
