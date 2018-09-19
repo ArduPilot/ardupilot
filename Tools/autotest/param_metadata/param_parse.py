@@ -48,6 +48,8 @@ vehicles = []
 libraries = []
 
 error_count = 0
+current_param = None
+current_file = None
 
 
 def debug(str_to_print):
@@ -60,6 +62,10 @@ def error(str_to_print):
     """Show errors."""
     global error_count
     error_count += 1
+    if current_file is not None:
+        print("In %s" % current_file)
+    if current_param is not None:
+        print("At param %s" % current_param)
     print(str_to_print)
 
 
@@ -82,11 +88,11 @@ if len(vehicles) > 1 or len(vehicles) == 0:
 
 for vehicle in vehicles:
     debug("===\n\n\nProcessing %s" % vehicle.name)
+    current_file = vehicle.path+'/Parameters.' + extension
 
-    f = open(vehicle.path+'/Parameters.' + extension)
+    f = open(current_file)
     p_text = f.read()
     f.close()
-
     param_matches = prog_param.findall(p_text)
     group_matches = prog_groups.findall(p_text)
 
@@ -103,8 +109,9 @@ for vehicle in vehicles:
             libraries.append(lib)
 
     for param_match in param_matches:
-        p = Parameter(vehicle.name+":"+param_match[0])
+        p = Parameter(vehicle.name+":"+param_match[0], current_file)
         debug(p.name + ' ')
+        current_param = p.name
         field_text = param_match[1]
         fields = prog_param_fields.findall(field_text)
         field_list = []
@@ -120,7 +127,7 @@ for vehicle in vehicles:
                 error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
 
         vehicle.params.append(p)
-
+    current_file = None
     debug("Processed %u params" % len(vehicle.params))
 
 debug("Found %u documented libraries" % len(libraries))
@@ -135,6 +142,8 @@ def process_library(vehicle, library, pathprefix=None):
     paths = library.Path.split(',')
     for path in paths:
         path = path.strip()
+        global current_file
+        current_file = path
         debug("\n Processing file '%s'" % path)
         if pathprefix is not None:
             libraryfname = os.path.join(pathprefix, path)
@@ -156,8 +165,10 @@ def process_library(vehicle, library, pathprefix=None):
         param_matches = prog_param.findall(p_text)
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
-            p = Parameter(library.name+param_match[0])
+            p = Parameter(library.name+param_match[0], current_file)
             debug(p.name + ' ')
+            global current_param
+            current_param = p.name
             field_text = param_match[1]
             fields = prog_param_fields.findall(field_text)
             non_vehicle_specific_values_seen = False
@@ -224,6 +235,7 @@ def process_library(vehicle, library, pathprefix=None):
                 process_library(vehicle, lib, os.path.dirname(libraryfname))
                 alllibs.append(lib)
 
+    current_file = None
 
 for library in libraries:
     debug("===\n\n\nProcessing library %s" % library.name)
@@ -253,6 +265,10 @@ def validate(param):
     """
     Validates the parameter meta data.
     """
+    global current_file
+    current_file = param.real_path
+    global current_param
+    current_param = param.name
     # Validate values
     if (hasattr(param, "Range")):
         rangeValues = param.__dict__["Range"].split(" ")
