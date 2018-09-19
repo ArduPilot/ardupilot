@@ -19,6 +19,7 @@ export NUTTX_GIT_VERSION="ci_test"
 export PX4_GIT_VERSION="ci_test"
 export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 3 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
@@ -37,6 +38,12 @@ function get_time {
 }
 
 echo "Targets: $CI_BUILD_TARGET"
+echo "Compiler: $c_compiler"
+
+if [ $c_compiler == "clang" ]; then
+    autotest_args='--waf-configure-args="--check-c-compiler=clang --check-cxx-compiler=clang++"'
+fi
+
 for t in $CI_BUILD_TARGET; do
     # special case for SITL testing in CI
     if [ $t == "sitltest-copter" ]; then
@@ -46,7 +53,7 @@ for t in $CI_BUILD_TARGET; do
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         unset BUILDROOT
         echo "Running SITL QuadCopter test"
-        Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter
+        Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter $autotest_args
         ccache -s && ccache -z
         continue
     fi
@@ -57,7 +64,7 @@ for t in $CI_BUILD_TARGET; do
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         unset BUILDROOT
         echo "Running SITL Plane test"
-        Tools/autotest/autotest.py build.ArduPlane fly.ArduPlane
+        Tools/autotest/autotest.py build.ArduPlane fly.ArduPlane $autotest_args
         ccache -s && ccache -z
         continue
     fi
@@ -68,7 +75,7 @@ for t in $CI_BUILD_TARGET; do
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         unset BUILDROOT
         echo "Running SITL QuadPlane test"
-        Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane
+        Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane $autotest_args
         ccache -s && ccache -z
         continue
     fi
@@ -79,7 +86,7 @@ for t in $CI_BUILD_TARGET; do
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         unset BUILDROOT
         echo "Running SITL Rover test"
-        Tools/autotest/autotest.py build.APMrover2 drive.APMrover2
+        Tools/autotest/autotest.py build.APMrover2 drive.APMrover2 $autotest_args
         ccache -s && ccache -z
         continue
     fi
