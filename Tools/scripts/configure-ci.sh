@@ -54,9 +54,9 @@ mkdir -p $HOME/bin
 # symlink to compiler versions
 ln -s /usr/bin/gcc-4.9 ~/bin/gcc
 ln -s /usr/bin/g++-4.9 ~/bin/g++
-ln -s /usr/bin/clang-3.7 ~/bin/clang
-ln -s /usr/bin/clang++-3.7 ~/bin/clang++
-ln -s /usr/bin/llvm-ar-3.7 ~/bin/llvm-ar
+ln -s /usr/bin/clang-7 ~/bin/clang
+ln -s /usr/bin/clang++-7 ~/bin/clang++
+ln -s /usr/bin/llvm-ar-7 ~/bin/llvm-ar
 
 mkdir -p $HOME/ccache
 
