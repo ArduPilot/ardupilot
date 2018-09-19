@@ -583,6 +583,32 @@ class AutoTest(ABC):
         self.set_output_to_trim(self.get_rudder_channel())
         return False
 
+    def arm_motors_with_switch(self, switch_chan, timeout=20):
+        """Arm motors with switch."""
+        self.progress("Arm motors with switch %d" % switch_chan)
+        self.set_rc(switch_chan, 2000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if self.mav.motors_armed():
+                self.progress("MOTORS ARMED OK WITH SWITCH")
+                return True
+        self.progress("FAILED TO ARM WITH SWITCH")
+        return False
+
+    def disarm_motors_with_switch(self, switch_chan, timeout=20):
+        """Disarm motors with switch."""
+        self.progress("Disarm motors with switch %d" % switch_chan)
+        self.set_rc(switch_chan, 1000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                self.progress("MOTORS DISARMED OK WITH SWITCH")
+                return True
+        self.progress("FAILED TO DISARM WITH SWITCH")
+        return False
+
     def autodisarm_motors(self):
         """Autodisarm motors."""
         self.progress("Autodisarming motors")
@@ -1252,8 +1278,15 @@ class AutoTest(ABC):
     def test_arm_feature(self):
         """Common feature to test."""
         self.context_push()
-        self.set_parameter("ARMING_RUDDER", 2)
         # TEST ARMING/DISARM
+        self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
+        interlock_channel = 8  # Plane got flighmode_ch on channel 8
+        if self.mav.mav_type is not mavutil.mavlink.MAV_TYPE_HELICOPTER:  # heli don't need interlock option
+            interlock_channel = 9
+            self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
+        self.set_rc(interlock_channel, 1000)
+        self.set_throttle_zero()
+        self.start_test("Test normal arm and disarm features")
         if not self.arm_vehicle():
             self.progress("Failed to ARM")
             raise NotAchievedException()
@@ -1273,6 +1306,25 @@ class AutoTest(ABC):
                 raise NotAchievedException()
             if not self.autodisarm_motors():
                 raise NotAchievedException()
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.set_parameter("DISARM_DELAY", 0)
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            self.set_parameter("LAND_DISARMDELAY", 0)
+        # Rover and Sub don't have auto disarm
+        self.start_test("Test arm and disarm with switch")
+        arming_switch = 7
+        self.set_parameter("RC%d_OPTION" % arming_switch, 41)
+        self.set_rc(arming_switch, 1000)
+        if not self.arm_motors_with_switch(arming_switch):
+            raise NotAchievedException()
+        if not self.disarm_motors_with_switch(arming_switch):
+            raise NotAchievedException()
+        self.set_rc(arming_switch, 1000)
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
