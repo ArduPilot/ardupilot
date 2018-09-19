@@ -550,7 +550,6 @@ class AutoTest(ABC):
     def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
-        self.set_throttle_zero()
         self.set_output_to_max(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
@@ -568,7 +567,6 @@ class AutoTest(ABC):
     def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
-        self.set_throttle_zero()
         self.set_output_to_min(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
@@ -612,7 +610,6 @@ class AutoTest(ABC):
     def autodisarm_motors(self):
         """Autodisarm motors."""
         self.progress("Autodisarming motors")
-        self.set_throttle_zero()
         if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:  # NOT IMPLEMENTED ON ROVER
             self.progress("MOTORS AUTODISARMED OK")
             return True
