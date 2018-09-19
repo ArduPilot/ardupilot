@@ -90,14 +90,15 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BUS",    8, AC_PrecLand, _bus, -1),
 
-    // @Param: BUFFER
-    // @DisplayName: Inertial History Buffer
-    // @Description: Length of inertial history buffer in ms, to cope with variable landing_target latency
+    // @Param: LAG
+    // @DisplayName: Precision Landing sensor lag
+    // @Description: Precision Landing sensor lag in ms, to cope with variable landing_target latency
     // @Range: 1 250
     // @Increment: 1
-    // @User: Advanced
     // @Units: ms
-    AP_GROUPINFO("BUFFER", 9, AC_PrecLand, _inertial_buffer_length, 20), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag_ms, 20), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
 
     AP_GROUPEND
 };
@@ -125,7 +126,7 @@ void AC_PrecLand::init()
     _backend_state.healthy = false;
 
     // Create inertial history buffer
-    inertial_buffer();
+    check_inertial_buffer();
     /* NOTE: If this check below returns without creating buffer and backend then SITL crashes */
     if (_inertial_history == nullptr) {
         return; // allocation failed
@@ -161,29 +162,31 @@ void AC_PrecLand::init()
     }
 }
 
-// inertial_buffer - create/update inertial buffer
-void AC_PrecLand::inertial_buffer()
+// create inertial buffer
+void AC_PrecLand::check_inertial_buffer()
 {
-    // If PLND_LATENCY parameter is not within bounds, return without doing anything
-    if ( _inertial_buffer_length <= 0 || _inertial_buffer_length > 250 ) {
+    // if lag parameter is not within bounds, return without doing anything
+    if (_lag_ms <= 0 || _lag_ms > 250) {
         return;
     }
 
     // calculate inertial buffer size from delay length (loop runs at 400hz)
-    _inertial_buffer_size = (uint16_t)roundf(_inertial_buffer_length / (1000/400.0f));
+    uint16_t inertial_buffer_size = (uint16_t)roundf(_lag_ms / (1000/400.0f));
 
-    // Create buffer if it doesn't exist or if latency parameter has changed
-    if (_inertial_history == nullptr || _inertial_buffer_size != _inertial_history->size()) {
+    // create buffer if it doesn't exist or if latency parameter has changed
+    if (_inertial_history == nullptr || inertial_buffer_size != _inertial_history->size()) {
         // instantiate ring buffer to hold inertial history
-        _inertial_history = new ObjectArray<inertial_data_frame_s>(_inertial_buffer_size);
+        _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
     }
 }
 
 // update - give chance to driver to get updates from sensor
 void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
-    // Recreate inertial buffer if latency parameter has changed
-    inertial_buffer();
+    // exit immediately if not enabled
+    if (_backend == nullptr || _inertial_history == nullptr) {
+        return;
+    }
 
     // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
