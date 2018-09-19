@@ -1349,6 +1349,45 @@ class AutoTest(ABC):
                 raise NotAchievedException()
             self.set_throttle_zero()
             self.set_rc(arming_switch, 1000)
+        self.start_test("Test arming failure with ARMING_RUDDER=0")
+        self.set_parameter("ARMING_RUDDER", 0)
+        if self.arm_motors_with_rc_input():
+            self.progress("Failed to NOT ARM")
+            raise NotAchievedException()
+        self.start_test("Test disarming failure with ARMING_RUDDER=0")
+        self.arm_vehicle()
+        if self.disarm_motors_with_rc_input():
+            self.progress("Failed to NOT DISARM")
+            raise NotAchievedException()
+        self.disarm_vehicle()
+        self.mav.wait_heartbeat()
+        self.start_test("Test disarming failure with ARMING_RUDDER=1")
+        self.set_parameter("ARMING_RUDDER", 1)
+        self.arm_vehicle()
+        if self.disarm_motors_with_rc_input():
+            self.progress("Failed to NOT ARM")
+            raise NotAchievedException()
+        self.disarm_vehicle()
+        self.mav.wait_heartbeat()
+        self.set_parameter("ARMING_RUDDER", 2)
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.start_test("Test arming failure with interlock enabled")
+            self.set_rc(interlock_channel, 2000)
+            if self.arm_motors_with_rc_input():
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            if self.arm_motors_with_switch(arming_switch):
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            self.disarm_vehicle()
+            self.mav.wait_heartbeat()
+            self.set_rc(arming_switch, 1000)
+            self.set_rc(interlock_channel, 1000)
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
