@@ -646,6 +646,7 @@ bool Sub::auto_terrain_recover_start()
     mission.stop();
 
     // Reset xy target
+    loiter_nav.clear_pilot_desired_acceleration();
     loiter_nav.init_target();
 
     // Reset z axis controller
