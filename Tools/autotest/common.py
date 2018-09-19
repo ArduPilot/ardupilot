@@ -1388,6 +1388,28 @@ class AutoTest(ABC):
             self.mav.wait_heartbeat()
             self.set_rc(arming_switch, 1000)
             self.set_rc(interlock_channel, 1000)
+            if self.mav.mav_type is mavutil.mavlink.MAV_TYPE_HELICOPTER:
+                self.start_test("Test motor interlock enable can't be set while disarmed")
+                self.set_rc(interlock_channel, 2000)
+                channel_field = "servo%u_raw" % interlock_channel
+                interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
+                tstart = self.get_sim_time()
+                while True:
+                    remaining = 20 - (self.get_sim_time_cached() - tstart)
+                    if remaining <= 0:
+                        break
+                    m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                            blocking=True,
+                                            timeout=remaining)
+                    m_value = getattr(m, channel_field, None)
+                    if m_value is None:
+                        raise ValueError()
+                    self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
+                                  (channel_field, m_value, interlock_value))
+                    if m_value != interlock_value:
+                        raise NotAchievedException("Motor interlock was changed while disarmed")
+            self.set_rc(8, 1000)
+        self.progress("ALL PASS")
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
