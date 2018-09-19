@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include "AC_PrecLand.h"
 #include "AC_PrecLand_Backend.h"
 #include "AC_PrecLand_Companion.h"
@@ -93,12 +94,12 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: LAG
     // @DisplayName: Precision Landing sensor lag
     // @Description: Precision Landing sensor lag in ms, to cope with variable landing_target latency
-    // @Range: 1 250
+    // @Range: 0.02 0.250
     // @Increment: 1
-    // @Units: ms
+    // @Units: s
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag_ms, 20), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
+    AP_GROUPINFO("LAG", 9, AC_PrecLand, _lag, 0.02), // 20ms is the old default buffer size (8 frames @ 400hz/2.5ms)
 
     AP_GROUPEND
 };
@@ -125,11 +126,9 @@ void AC_PrecLand::init()
     _backend = nullptr;
     _backend_state.healthy = false;
 
-    // Create inertial history buffer
-    check_inertial_buffer();
-    /* NOTE: If this check below returns without creating buffer and backend then SITL crashes */
-    if (_inertial_history == nullptr) {
-        return; // allocation failed
+    // create inertial history buffer, return on failure so backends are not created
+    if (!init_inertial_buffer()) {
+        return;
     }
 
     // instantiate backend based on type parameter
@@ -159,24 +158,6 @@ void AC_PrecLand::init()
     // init backend
     if (_backend != nullptr) {
         _backend->init();
-    }
-}
-
-// create inertial buffer
-void AC_PrecLand::check_inertial_buffer()
-{
-    // if lag parameter is not within bounds, return without doing anything
-    if (_lag_ms <= 0 || _lag_ms > 250) {
-        return;
-    }
-
-    // calculate inertial buffer size from delay length (loop runs at 400hz)
-    uint16_t inertial_buffer_size = (uint16_t)roundf(_lag_ms / (1000/400.0f));
-
-    // create buffer if it doesn't exist or if latency parameter has changed
-    if (_inertial_history == nullptr || inertial_buffer_size != _inertial_history->size()) {
-        // instantiate ring buffer to hold inertial history
-        _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
     }
 }
 
@@ -269,6 +250,22 @@ void AC_PrecLand::handle_msg(mavlink_message_t* msg)
 //
 // Private methods
 //
+
+// initialise inertial buffer
+bool AC_PrecLand::init_inertial_buffer()
+{
+    // constrain lag parameter to be within bounds
+    _lag = constrain_float(_lag, 0.02f, 0.25f);
+
+    // calculate inertial buffer size from delay length (loop runs at main loop rate)
+    uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * AP::scheduler().get_loop_rate_hz()), 1);
+
+    // instantiate ring buffer to hold inertial history
+    _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
+
+    // return success/failure
+    return (_inertial_history != nullptr);
+}
 
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
