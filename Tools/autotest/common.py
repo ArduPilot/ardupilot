@@ -1301,8 +1301,10 @@ class AutoTest(ABC):
                 raise NotAchievedException()
             if not self.disarm_motors_with_rc_input():
                 raise NotAchievedException()
-            if not self.autodisarm_motors():
-                raise NotAchievedException()
+            # self.arm_vehicle()
+            # if not self.autodisarm_motors():
+            #     raise NotAchievedException()
+            # Disable auto disarm for next test
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
                                  mavutil.mavlink.MAV_TYPE_HELICOPTER,
                                  mavutil.mavlink.MAV_TYPE_HEXAROTOR,
