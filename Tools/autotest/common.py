@@ -1052,7 +1052,7 @@ class AutoTest(ABC):
             if m_value is None:
                 raise ValueError() #?
             if m_value == value:
-                return
+                return True
 
     def wait_location(self,
                       loc,
