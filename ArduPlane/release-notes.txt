@@ -1,3 +1,17 @@
+Release 3.9.2beta3, 20th September 2018
+---------------------------------------
+
+The is the third beta release of the plane 3.9.2 stable release. It
+contains a small number of fixes:
+
+ - fixed clearing of loiter pilot acceleration targets for quadplanes
+
+ - fixed handling of duplicate rotations for COMPASS_AUTO_ROT
+
+I expect this will be the last beta release before 3.9.2
+
+Happy flying!
+
 Release 3.9.2beta2, 15th September 2018
 ---------------------------------------
 
