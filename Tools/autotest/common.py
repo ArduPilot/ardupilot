@@ -1325,6 +1325,30 @@ class AutoTest(ABC):
         if not self.disarm_motors_with_switch(arming_switch):
             raise NotAchievedException()
         self.set_rc(arming_switch, 1000)
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.start_test("Test arming failure with throttle too high")
+            self.set_rc(3, 1800)
+            try:
+                if self.arm_vehicle():
+                    self.progress("Failed to NOT ARM")
+                    raise NotAchievedException()
+            except AutoTestTimeoutException():
+                pass
+            except ValueError:
+                pass
+            if self.arm_motors_with_rc_input():
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            if self.arm_motors_with_switch(arming_switch):
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            self.set_throttle_zero()
+            self.set_rc(arming_switch, 1000)
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
