@@ -829,6 +829,7 @@ void Copter::ModeAuto::land_run()
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
     }
@@ -924,6 +925,7 @@ void Copter::ModeAuto::payload_place_run()
     if (!payload_place_run_should_run()) {
         zero_throttle_and_relax_ac();
         // set target to current position
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
     }
