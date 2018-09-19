@@ -851,6 +851,7 @@ void QuadPlane::control_hover(void)
 void QuadPlane::init_loiter(void)
 {
     // initialise loiter
+    loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
@@ -961,6 +962,7 @@ void QuadPlane::control_loiter()
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control->set_throttle_out_unstabilized(0, true, 0);
         pos_control->relax_alt_hold_controllers(0);
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
     }
@@ -973,6 +975,7 @@ void QuadPlane::control_loiter()
 
     const uint32_t now = AP_HAL::millis();
     if (now - last_loiter_ms > 500) {
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
     }
     last_loiter_ms = now;
@@ -1855,6 +1858,7 @@ void QuadPlane::vtol_position_controller(void)
         if (plane.auto_state.wp_proportion >= 1 ||
             plane.auto_state.wp_distance < 5) {
             poscontrol.state = QPOS_POSITION2;
+            loiter_nav->clear_pilot_desired_acceleration();
             loiter_nav->init_target();
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
                                     (double)ahrs.groundspeed(), (double)plane.auto_state.wp_distance);
@@ -2131,6 +2135,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     throttle_wait = false;
 
     // set target to current position
+    loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
