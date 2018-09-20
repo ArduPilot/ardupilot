@@ -61,26 +61,26 @@ public:
     /// z position controller
     ///
 
-    /// set_speed_z - sets maximum climb and descent rates
+    /// set_max_speed_z - sets maximum climb and descent rates
     ///     speed_down can be positive or negative but will always be interpreted as a descent speed
-    ///     leash length will be recalculated the next time update_z_controller() is called
-    void set_speed_z(float speed_down, float speed_up);
+    ///     leash length will be recalculated
+    void set_max_speed_z(float speed_down, float speed_up);
 
-    /// get_speed_up - accessor for current up speed in cm/s
-    float get_speed_up() const { return _speed_up_cms; }
+    /// get_max_speed_up - accessor for current maximum up speed in cm/s
+    float get_max_speed_up() const { return _speed_up_cms; }
 
-    /// get_speed_down - accessors for current down speed in cm/s.  Will be a negative number
-    float get_speed_down() const { return _speed_down_cms; }
+    /// get_max_speed_down - accessors for current maximum down speed in cm/s.  Will be a negative number
+    float get_max_speed_down() const { return _speed_down_cms; }
 
     /// get_vel_target_z - returns current vertical speed in cm/s
     float get_vel_target_z() const { return _vel_target.z; }
 
-    /// set_accel_z - set vertical acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_z_controller() is called
-    void set_accel_z(float accel_cmss);
+    /// set_max_accel_z - set the maximum vertical acceleration in cm/s/s
+    ///     leash length will be recalculated
+    void set_max_accel_z(float accel_cmss);
 
-    /// get_accel_z - returns current vertical acceleration in cm/s/s
-    float get_accel_z() const { return _accel_z_cms; }
+    /// get_max_accel_z - returns current maximum vertical acceleration in cm/s/s
+    float get_max_accel_z() const { return _accel_z_cms; }
 
     /// calc_leash_length - calculates the vertical leash lengths from maximum speed, acceleration
     ///     called by update_z_controller if z-axis speed or accelerations are changed
@@ -165,15 +165,15 @@ public:
     ///     this does not update the xy target
     void init_xy_controller();
 
-    /// set_accel_xy - set horizontal acceleration in cm/s/s
-    ///     leash length will be recalculated the next time update_xy_controller() is called
-    void set_accel_xy(float accel_cmss);
-    float get_accel_xy() const { return _accel_cms; }
+    /// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
+    ///     leash length will be recalculated
+    void set_max_accel_xy(float accel_cmss);
+    float get_max_accel_xy() const { return _accel_cms; }
 
-    /// set_speed_xy - set horizontal speed maximum in cm/s
-    ///     leash length will be recalculated the next time update_xy_controller() is called
-    void set_speed_xy(float speed_cms);
-    float get_speed_xy() const { return _speed_cms; }
+    /// set_max_speed_xy - set the maximum horizontal speed maximum in cm/s
+    ///     leash length will be recalculated
+    void set_max_speed_xy(float speed_cms);
+    float get_max_speed_xy() const { return _speed_cms; }
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
