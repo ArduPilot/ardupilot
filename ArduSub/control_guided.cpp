@@ -76,8 +76,8 @@ void Sub::guided_vel_control_start()
     guided_mode = Guided_Velocity;
 
     // initialize vertical speeds and leash lengths
-    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_max_accel_z(g.pilot_accel_z);
 
     // initialise velocity controller
     pos_control.init_vel_controller_xyz();
@@ -92,8 +92,8 @@ void Sub::guided_posvel_control_start()
     pos_control.init_xy_controller();
 
     // set speed and acceleration from wpnav's speed and acceleration
-    pos_control.set_speed_xy(wp_nav.get_speed_xy());
-    pos_control.set_accel_xy(wp_nav.get_wp_acceleration());
+    pos_control.set_max_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
 
     const Vector3f& curr_pos = inertial_nav.get_position();
     const Vector3f& curr_vel = inertial_nav.get_velocity();
@@ -103,8 +103,8 @@ void Sub::guided_posvel_control_start()
     pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // set vertical speed and acceleration
-    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
-    pos_control.set_accel_z(wp_nav.get_accel_z());
+    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // pilot always controls yaw
     set_auto_yaw_mode(AUTO_YAW_HOLD);
@@ -117,8 +117,8 @@ void Sub::guided_angle_control_start()
     guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
-    pos_control.set_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
-    pos_control.set_accel_z(wp_nav.get_accel_z());
+    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
