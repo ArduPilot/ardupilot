@@ -15,8 +15,8 @@ bool Sub::poshold_init()
     }
 
     // initialize vertical speeds and acceleration
-    pos_control.set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control.set_accel_z(g.pilot_accel_z);
+    pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control.set_max_accel_z(g.pilot_accel_z);
 
     // initialise position and desired velocity
     pos_control.set_alt_target(inertial_nav.get_altitude());
