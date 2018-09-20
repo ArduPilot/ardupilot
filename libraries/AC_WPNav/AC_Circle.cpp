@@ -210,14 +210,14 @@ void AC_Circle::calc_velocities(bool init_velocity)
         _angular_accel = MAX(fabsf(_angular_vel_max),ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));  // reach maximum yaw velocity in 1 second
     }else{
         // calculate max velocity based on waypoint speed ensuring we do not use more than half our max acceleration for accelerating towards the center of the circle
-        float velocity_max = MIN(_pos_control.get_speed_xy(), safe_sqrt(0.5f*_pos_control.get_accel_xy()*_radius));
+        float velocity_max = MIN(_pos_control.get_max_speed_xy(), safe_sqrt(0.5f*_pos_control.get_max_accel_xy()*_radius));
 
         // angular_velocity in radians per second
         _angular_vel_max = velocity_max/_radius;
         _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
 
         // angular_velocity in radians per second
-        _angular_accel = MAX(_pos_control.get_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
+        _angular_accel = MAX(_pos_control.get_max_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
     // initialise angular velocity
