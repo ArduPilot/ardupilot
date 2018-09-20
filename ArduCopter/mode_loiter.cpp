@@ -84,8 +84,8 @@ void Copter::ModeLoiter::run()
     float takeoff_climb_rate = 0.0f;
 
     // initialize vertical speed and acceleration
-    pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_accel_z(g.pilot_accel_z);
+    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_max_accel_z(g.pilot_accel_z);
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {

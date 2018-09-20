@@ -19,8 +19,8 @@ bool Copter::ModeLand::init(bool ignore_checks)
     }
 
     // initialize vertical speeds and leash lengths
-    pos_control->set_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());
-    pos_control->set_accel_z(wp_nav->get_accel_z());
+    pos_control->set_max_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());
+    pos_control->set_max_accel_z(wp_nav->get_accel_z());
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
