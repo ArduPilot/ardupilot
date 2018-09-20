@@ -1966,6 +1966,7 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
             self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
 
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)
