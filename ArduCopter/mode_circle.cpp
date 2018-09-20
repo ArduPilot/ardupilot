@@ -13,10 +13,10 @@ bool Copter::ModeCircle::init(bool ignore_checks)
         pilot_yaw_override = false;
 
         // initialize speeds and accelerations
-        pos_control->set_speed_xy(wp_nav->get_speed_xy());
-        pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-        pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-        pos_control->set_accel_z(g.pilot_accel_z);
+        pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
+        pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
+        pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+        pos_control->set_max_accel_z(g.pilot_accel_z);
 
         // initialise circle controller including setting the circle center based on vehicle speed
         copter.circle_nav->init();
@@ -35,10 +35,10 @@ void Copter::ModeCircle::run()
     float target_climb_rate = 0;
 
     // initialize speeds and accelerations
-    pos_control->set_speed_xy(wp_nav->get_speed_xy());
-    pos_control->set_accel_xy(wp_nav->get_wp_acceleration());
-    pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
-    pos_control->set_accel_z(g.pilot_accel_z);
+    pos_control->set_max_speed_xy(wp_nav->get_speed_xy());
+    pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
+    pos_control->set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+    pos_control->set_max_accel_z(g.pilot_accel_z);
     
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {

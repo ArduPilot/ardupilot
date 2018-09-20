@@ -229,7 +229,7 @@ float Copter::get_surface_tracking_climb_rate(int16_t target_rate, float current
 float Copter::get_avoidance_adjusted_climbrate(float target_rate)
 {
 #if AC_AVOID_ENABLED == ENABLED
-    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_accel_z(), target_rate, G_Dt);
+    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
     return target_rate;
 #else
     return target_rate;

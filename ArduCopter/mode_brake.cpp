@@ -13,8 +13,8 @@ bool Copter::ModeBrake::init(bool ignore_checks)
         wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
 
         // initialize vertical speed and acceleration
-        pos_control->set_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
-        pos_control->set_accel_z(BRAKE_MODE_DECEL_RATE);
+        pos_control->set_max_speed_z(BRAKE_MODE_SPEED_Z, BRAKE_MODE_SPEED_Z);
+        pos_control->set_max_accel_z(BRAKE_MODE_DECEL_RATE);
 
         // initialise position and desired velocity
         if (!pos_control->is_active_z()) {
