@@ -89,8 +89,8 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     }
 
     // initialize vertical speeds and leash lengths
-    copter.pos_control->set_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
-    copter.pos_control->set_accel_z(copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // initialise position and desired velocity
     if (!copter.pos_control->is_active_z()) {
@@ -224,8 +224,8 @@ void Copter::ModeFlowHold::run()
     update_height_estimate();
     
     // initialize vertical speeds and acceleration
-    copter.pos_control->set_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
-    copter.pos_control->set_accel_z(copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
     copter.update_simple_mode();
