@@ -197,20 +197,14 @@ AC_PosControl::AC_PosControl(const AP_AHRS_View& ahrs, const AP_InertialNav& ina
     _p_pos_xy(POSCONTROL_POS_XY_P),
     _pid_vel_xy(POSCONTROL_VEL_XY_P, POSCONTROL_VEL_XY_I, POSCONTROL_VEL_XY_D, POSCONTROL_VEL_XY_IMAX, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ, POSCONTROL_DT_50HZ),
     _dt(POSCONTROL_DT_400HZ),
-    _last_update_xy_ms(0),
-    _last_update_z_ms(0),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
     _accel_z_cms(POSCONTROL_ACCEL_Z),
-    _accel_last_z_cms(0.0f),
     _accel_cms(POSCONTROL_ACCEL_XY),
     _leash(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_down_z(POSCONTROL_LEASH_LENGTH_MIN),
     _leash_up_z(POSCONTROL_LEASH_LENGTH_MIN),
-    _roll_target(0.0f),
-    _pitch_target(0.0f),
-    _distance_to_target(0.0f),
     _accel_target_filter(POSCONTROL_ACCEL_FILTER_HZ)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -249,11 +243,9 @@ void AC_PosControl::set_dt(float delta_sec)
     _vel_error_filter.set_cutoff_frequency(POSCONTROL_VEL_ERROR_CUTOFF_FREQ);
 }
 
-/// set_speed_z - sets maximum climb and descent rates
+/// set_max_speed_z - set the maximum climb and descent rates
 /// To-Do: call this in the main code as part of flight mode initialisation
-///     calc_leash_length_z should be called afterwards
-///     speed_down should be a negative number
-void AC_PosControl::set_speed_z(float speed_down, float speed_up)
+void AC_PosControl::set_max_speed_z(float speed_down, float speed_up)
 {
     // ensure speed_down is always negative
     speed_down = -fabsf(speed_down);
@@ -266,8 +258,8 @@ void AC_PosControl::set_speed_z(float speed_down, float speed_up)
     }
 }
 
-/// set_accel_z - set vertical acceleration in cm/s/s
-void AC_PosControl::set_accel_z(float accel_cmss)
+/// set_max_accel_z - set the maximum vertical acceleration in cm/s/s
+void AC_PosControl::set_max_accel_z(float accel_cmss)
 {
     if (fabsf(_accel_z_cms-accel_cmss) > 1.0f) {
         _accel_z_cms = accel_cmss;
@@ -640,8 +632,8 @@ void AC_PosControl::run_z_controller()
 /// lateral position controller
 ///
 
-/// set_accel_xy - set horizontal acceleration in cm/s/s
-void AC_PosControl::set_accel_xy(float accel_cmss)
+/// set_max_accel_xy - set the maximum horizontal acceleration in cm/s/s
+void AC_PosControl::set_max_accel_xy(float accel_cmss)
 {
     if (fabsf(_accel_cms-accel_cmss) > 1.0f) {
         _accel_cms = accel_cmss;
@@ -650,8 +642,8 @@ void AC_PosControl::set_accel_xy(float accel_cmss)
     }
 }
 
-/// set_speed_xy - set horizontal speed maximum in cm/s
-void AC_PosControl::set_speed_xy(float speed_cms)
+/// set_max_speed_xy - set the maximum horizontal speed maximum in cm/s
+void AC_PosControl::set_max_speed_xy(float speed_cms)
 {
     if (fabsf(_speed_cms-speed_cms) > 1.0f) {
         _speed_cms = speed_cms;
@@ -700,7 +692,7 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 /// get_stopping_point_xy - calculates stopping point based on current position, velocity, vehicle acceleration
 ///     distance_max allows limiting distance to stopping point
 ///     results placed in stopping_position vector
-///     set_accel_xy() should be called before this method to set vehicle acceleration
+///     set_max_accel_xy() should be called before this method to set vehicle acceleration
 ///     set_leash_length() should have been called before this method
 void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 {
