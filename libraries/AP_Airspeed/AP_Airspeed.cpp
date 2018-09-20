@@ -265,7 +265,7 @@ void AP_Airspeed::init()
         }
 
         if (sensor[i] && !sensor[i]->init()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] init failed", i);
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed %u init failed", i + 1);
             delete sensor[i];
             sensor[i] = nullptr;
         }
@@ -338,9 +338,9 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     if (AP_HAL::millis() - state[i].cal.start_ms >= 1000 &&
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] sensor unhealthy", i);
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed %u unhealthy", i + 1);
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed[%u] sensor calibrated", i);
+            gcs().send_text(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
             param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
         }
         state[i].cal.start_ms = 0;
@@ -396,11 +396,6 @@ void AP_Airspeed::read(uint8_t i)
         state[i].last_pressure  = airspeed_pressure;
         state[i].raw_airspeed   = sqrtf(MAX(airspeed_pressure, 0) * param[i].ratio);
         state[i].airspeed       = sqrtf(MAX(state[i].filtered_pressure, 0) * param[i].ratio);
-        if (airspeed_pressure < -32) {
-            // we're reading more than about -8m/s. The user probably has
-            // the ports the wrong way around
-            state[i].healthy = false;
-        }
         break;
     case PITOT_TUBE_ORDER_AUTO:
     default:
@@ -408,6 +403,12 @@ void AP_Airspeed::read(uint8_t i)
         state[i].raw_airspeed   = sqrtf(fabsf(airspeed_pressure) * param[i].ratio);
         state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
         break;
+    }
+
+    if (state[i].last_pressure < -32) {
+        // we're reading more than about -8m/s. The user probably has
+        // the ports the wrong way around
+        state[i].healthy = false;
     }
 
     state[i].last_update_ms = AP_HAL::millis();
