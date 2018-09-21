@@ -19,6 +19,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -95,6 +96,9 @@ for FrSky SPort Passthrough
 #define AP_ARMED_OFFSET             8
 #define AP_BATT_FS_OFFSET           9
 #define AP_EKF_FS_OFFSET            10
+#define AP_IMU_TEMP_LIMIT           0x3F
+#define AP_IMU_TEMP_OFFSET          26
+#define AP_IMU_TEMP_ORIGIN          19
 // for home position related data
 #define HOME_ALT_OFFSET             12
 #define HOME_BEARING_LIMIT          0x7F
