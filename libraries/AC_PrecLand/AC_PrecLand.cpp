@@ -114,8 +114,9 @@ AC_PrecLand::AC_PrecLand()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// init - perform any required initialisation of backends
-void AC_PrecLand::init()
+// perform any required initialisation of landing controllers
+// update_rate_hz should be the rate at which the update method will be called in hz
+void AC_PrecLand::init(uint16_t update_rate_hz)
 {
     // exit immediately if init has already been run
     if (_backend != nullptr) {
@@ -126,8 +127,16 @@ void AC_PrecLand::init()
     _backend = nullptr;
     _backend_state.healthy = false;
 
-    // create inertial history buffer, return on failure so backends are not created
-    if (!init_inertial_buffer()) {
+    // create inertial history buffer
+    // constrain lag parameter to be within bounds
+    _lag = constrain_float(_lag, 0.02f, 0.25f);
+
+    // calculate inertial buffer size from lag and minimum of main loop rate and update_rate_hz argument
+    const uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * MIN(update_rate_hz, AP::scheduler().get_loop_rate_hz())), 1);
+
+    // instantiate ring buffer to hold inertial history, return on failure so no backends are created
+    _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
+    if (_inertial_history == nullptr) {
         return;
     }
 
@@ -250,22 +259,6 @@ void AC_PrecLand::handle_msg(mavlink_message_t* msg)
 //
 // Private methods
 //
-
-// initialise inertial buffer
-bool AC_PrecLand::init_inertial_buffer()
-{
-    // constrain lag parameter to be within bounds
-    _lag = constrain_float(_lag, 0.02f, 0.25f);
-
-    // calculate inertial buffer size from delay length (loop runs at main loop rate)
-    uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * AP::scheduler().get_loop_rate_hz()), 1);
-
-    // instantiate ring buffer to hold inertial history
-    _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
-
-    // return success/failure
-    return (_inertial_history != nullptr);
-}
 
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {

@@ -48,7 +48,8 @@ public:
     };
 
     // perform any required initialisation of landing controllers
-    void init();
+    // update_rate_hz should be the rate at which the update method will be called in hz
+    void init(uint16_t update_rate_hz);
 
     // returns true if precision landing is healthy
     bool healthy() const { return _backend_state.healthy; }
@@ -100,9 +101,6 @@ private:
 
     // returns enabled parameter as an behaviour
     enum PrecLandBehaviour get_behaviour() const { return (enum PrecLandBehaviour)(_enabled.get()); }
-
-    // initialise inertial buffer, return true on success
-    bool init_inertial_buffer();
 
     // run target position estimator
     void run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid);
