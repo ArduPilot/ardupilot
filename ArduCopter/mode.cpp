@@ -57,6 +57,13 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_auto;
             break;
 #endif
+ 
+ // for flight mode SEMI_AUTO add a2s_Andres
+#if MODE_SEMI_AUTO_ENABLED == ENABLED
+        case SEMI_AUTO:
+            ret = &mode_semi_auto;
+            break;
+#endif
 
 #if MODE_CIRCLE_ENABLED == ENABLED
         case CIRCLE:
