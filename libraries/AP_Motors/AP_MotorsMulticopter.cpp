@@ -183,6 +183,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX",  39, AP_MotorsMulticopter,  _batt_idx, 0),
 
+    // @Param: SLEW_TIME
+    // @DisplayName: Thrust output slew time
+    // @Description: Time in seconds to slew output thrust from zero to full thrust.
+    // @Range: 0 1
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_TIME",   40, AP_MotorsMulticopter,  _slew_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+
     AP_GROUPEND
 };
 

@@ -174,9 +174,15 @@ void AP_MotorsTri::output_armed_stabilizing()
     //_thrust_left = roll_thrust * 0.5f + pitch_thrust * 1.0f;
     //_thrust_rear = 0;
 
-    _thrust_right = roll_thrust * -0.5f + pitch_thrust * 0.5f;
-    _thrust_left = roll_thrust * 0.5f + pitch_thrust * 0.5f;
-    _thrust_rear = pitch_thrust * -0.5f;
+    // Apply slew limit to thrust output
+    float thrust_right = roll_thrust * -0.5f + pitch_thrust * 0.5f;
+    float thrust_left = roll_thrust * 0.5f + pitch_thrust * 0.5f;
+    float thrust_rear = pitch_thrust * -0.5f;
+
+    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+    _thrust_right += constrain_float(_thrust_right-thrust_right, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    _thrust_left += constrain_float(_thrust_left-thrust_left, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    _thrust_rear += constrain_float(_thrust_rear-thrust_rear, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
 
     // calculate roll and pitch for each motor
     // set rpy_low and rpy_high to the lowest and highest values of the motors

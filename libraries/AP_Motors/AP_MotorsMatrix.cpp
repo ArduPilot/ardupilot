@@ -151,6 +151,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float   rpy_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
     float   yaw_allowed = 1.0f;         // amount of yaw we can fit in
     float   thr_adj;                    // the difference between the pilot's desired throttle and throttle_thrust_best_rpy
+    float   thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -202,14 +203,14 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             // calculate the thrust outputs for roll and pitch
-            _thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
+            thrust_rpyt_out[i] = roll_thrust * _roll_factor[i] + pitch_thrust * _pitch_factor[i];
             // record lowest roll+pitch command
-            if (_thrust_rpyt_out[i] < rp_low) {
-                rp_low = _thrust_rpyt_out[i];
+            if (thrust_rpyt_out[i] < rp_low) {
+                rp_low = thrust_rpyt_out[i];
             }
             // record highest roll+pitch command
-            if (_thrust_rpyt_out[i] > rp_high && (!_thrust_boost || i != _motor_lost_index)) {
-                rp_high = _thrust_rpyt_out[i];
+            if (thrust_rpyt_out[i] > rp_high && (!_thrust_boost || i != _motor_lost_index)) {
+                rp_high = thrust_rpyt_out[i];
             }
         }
     }
@@ -217,8 +218,8 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // include the lost motor scaled by _thrust_boost_ratio
     if (_thrust_boost && motor_enabled[_motor_lost_index]) {
         // record highest roll+pitch command
-        if (_thrust_rpyt_out[_motor_lost_index] > rp_high) {
-            rp_high = _thrust_boost_ratio*rp_high + (1.0f-_thrust_boost_ratio)*_thrust_rpyt_out[_motor_lost_index];
+        if (thrust_rpyt_out[_motor_lost_index] > rp_high) {
+            rp_high = _thrust_boost_ratio*rp_high + (1.0f-_thrust_boost_ratio)*thrust_rpyt_out[_motor_lost_index];
         }
     }
 
@@ -247,23 +248,23 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     float rpy_high = -1.0f; // highest thrust value
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = _thrust_rpyt_out[i] + yaw_thrust * _yaw_factor[i];
+            thrust_rpyt_out[i] = thrust_rpyt_out[i] + yaw_thrust * _yaw_factor[i];
 
             // record lowest roll+pitch+yaw command
-            if (_thrust_rpyt_out[i] < rpy_low) {
-                rpy_low = _thrust_rpyt_out[i];
+            if (thrust_rpyt_out[i] < rpy_low) {
+                rpy_low = thrust_rpyt_out[i];
             }
             // record highest roll+pitch+yaw command
-            if (_thrust_rpyt_out[i] > rpy_high && (!_thrust_boost || i != _motor_lost_index)) {
-                rpy_high = _thrust_rpyt_out[i];
+            if (thrust_rpyt_out[i] > rpy_high && (!_thrust_boost || i != _motor_lost_index)) {
+                rpy_high = thrust_rpyt_out[i];
             }
         }
     }
     // include the lost motor scaled by _thrust_boost_ratio
     if (_thrust_boost) {
         // record highest roll+pitch+yaw command
-        if (_thrust_rpyt_out[_motor_lost_index] > rpy_high && motor_enabled[_motor_lost_index]) {
-            rpy_high = _thrust_boost_ratio*rpy_high + (1.0f-_thrust_boost_ratio)*_thrust_rpyt_out[_motor_lost_index];
+        if (thrust_rpyt_out[_motor_lost_index] > rpy_high && motor_enabled[_motor_lost_index]) {
+            rpy_high = _thrust_boost_ratio*rpy_high + (1.0f-_thrust_boost_ratio)*thrust_rpyt_out[_motor_lost_index];
         }
     }
 
@@ -303,7 +304,15 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + (rpy_scale * _thrust_rpyt_out[i]);
+            thrust_rpyt_out[i] = throttle_thrust_best_rpy + thr_adj + (rpy_scale * thrust_rpyt_out[i]);
+        }
+    }
+
+    // apply slew limit to thrust output
+    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (motor_enabled[i]) {
+            _thrust_rpyt_out[i] += constrain_float(thrust_rpyt_out[i]-_thrust_rpyt_out[i], -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
         }
     }
 

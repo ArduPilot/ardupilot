@@ -188,8 +188,14 @@ void AP_MotorsCoax::output_armed_stabilizing()
         limit.yaw = true;
     }
 
-    _thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
-    _thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
+    // calculate the throttle setting for the lift fan
+    float thrust_yt_ccw = thrust_out + 0.5f * yaw_thrust;
+    float thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
+
+    // Apply slew limit to thrust output
+    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+    _thrust_yt_ccw += constrain_float(_thrust_yt_ccw-thrust_yt_ccw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    _thrust_yt_cw += constrain_float(_thrust_yt_cw-thrust_yt_cw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
 
     // limit thrust out for calculation of actuator gains
     float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.5f, 1.0f);
