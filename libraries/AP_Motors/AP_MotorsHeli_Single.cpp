@@ -541,11 +541,11 @@ void AP_MotorsHeli_Single::servo_test()
         _oscillate_angle += 8 * M_PI / _loop_rate;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test = 1.0f;
+        _collective_test += (1.0f / _loop_rate);
         _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test = 0.0f;
+        _collective_test -= (1.0f / _loop_rate);
         _oscillate_angle += 2 * M_PI / _loop_rate;
         _yaw_test = sinf(_oscillate_angle);
     } else {                                                                                                  // reset cycle
@@ -562,10 +562,10 @@ void AP_MotorsHeli_Single::servo_test()
     }
 
     // over-ride servo commands to move servos through defined ranges
-    _throttle_filter.reset(_collective_test);
-    _roll_in = _roll_test;
-    _pitch_in = _pitch_test;
-    _yaw_in = _yaw_test;
+    _throttle_filter.reset(constrain_float(_collective_test, 0.0f, 1.0f));
+    _roll_in = constrain_float(_roll_test, -1.0f, 1.0f);
+    _pitch_in = constrain_float(_pitch_test, -1.0f, 1.0f);
+    _yaw_in = constrain_float(_yaw_test, -1.0f, 1.0f);
 }
 
 // parameter_check - check if helicopter specific parameters are sensible
