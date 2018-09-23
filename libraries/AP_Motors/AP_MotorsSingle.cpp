@@ -200,8 +200,12 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float thrust_out = throttle_avg_max + thr_adj;
 
     // Apply slew limit to thrust output
-    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
-    _thrust_out += constrain_float(_thrust_out-thrust_out, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    if (!is_zero(_slew_time)) {
+        float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+        _thrust_out += constrain_float(_thrust_out-thrust_out, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    } else {
+        _thrust_out = thrust_out;
+    }
 
     if (is_zero(_thrust_out)) {
         limit.roll_pitch = true;

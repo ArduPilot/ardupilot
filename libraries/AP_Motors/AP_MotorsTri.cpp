@@ -179,10 +179,16 @@ void AP_MotorsTri::output_armed_stabilizing()
     float thrust_left = roll_thrust * 0.5f + pitch_thrust * 0.5f;
     float thrust_rear = pitch_thrust * -0.5f;
 
-    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
-    _thrust_right += constrain_float(_thrust_right-thrust_right, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
-    _thrust_left += constrain_float(_thrust_left-thrust_left, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
-    _thrust_rear += constrain_float(_thrust_rear-thrust_rear, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    if (!is_zero(_slew_time)) {
+        float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+        _thrust_right += constrain_float(_thrust_right-thrust_right, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_left += constrain_float(_thrust_left-thrust_left, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_rear += constrain_float(_thrust_rear-thrust_rear, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    } else {
+        _thrust_right = thrust_right;
+        _thrust_left = thrust_left;
+        _thrust_rear = thrust_rear;
+    }
 
     // calculate roll and pitch for each motor
     // set rpy_low and rpy_high to the lowest and highest values of the motors

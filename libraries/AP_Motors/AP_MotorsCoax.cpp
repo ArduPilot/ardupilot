@@ -193,9 +193,14 @@ void AP_MotorsCoax::output_armed_stabilizing()
     float thrust_yt_cw = thrust_out - 0.5f * yaw_thrust;
 
     // Apply slew limit to thrust output
-    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
-    _thrust_yt_ccw += constrain_float(_thrust_yt_ccw-thrust_yt_ccw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
-    _thrust_yt_cw += constrain_float(_thrust_yt_cw-thrust_yt_cw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    if (!is_zero(_slew_time)) {
+        float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+        _thrust_yt_ccw += constrain_float(_thrust_yt_ccw-thrust_yt_ccw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_yt_cw += constrain_float(_thrust_yt_cw-thrust_yt_cw, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    } else {
+        _thrust_yt_ccw = thrust_yt_ccw;
+        _thrust_yt_cw = thrust_yt_cw;
+    }
 
     // limit thrust out for calculation of actuator gains
     float thrust_out_actuator = constrain_float(MAX(_throttle_hover*0.5f,thrust_out), 0.5f, 1.0f);

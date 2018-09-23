@@ -309,10 +309,18 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // apply slew limit to thrust output
-    float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
-    for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] += constrain_float(thrust_rpyt_out[i]-_thrust_rpyt_out[i], -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+    if (!is_zero(_slew_time)) {
+        float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
+        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                _thrust_rpyt_out[i] += constrain_float(thrust_rpyt_out[i]-_thrust_rpyt_out[i], -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+            }
+        }
+    } else {
+        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            if (motor_enabled[i]) {
+                _thrust_rpyt_out[i] = thrust_rpyt_out[i];
+            }
         }
     }
 
