@@ -28,6 +28,7 @@ public:
         WINDVANE_HOME_HEADING = 1,
         WINDVANE_PWM_PIN    = 2,
         WINDVANE_ANALOG_PIN = 3,
+        WINDVANE_SITL       = 10
     };
 
     AP_WindVane();
@@ -66,6 +67,9 @@ private:
 
     // read the bearing value from a PWM value on a RC channel - returns radians
     float read_PWM_bearing();
+
+    // read the apparent wind direction in radians from SITL
+    float read_direction_SITL();
 
     // update apparent wind direction
     void update_apparent_wind_direction();

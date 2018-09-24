@@ -23,6 +23,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #include <board_config.h>
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -200,6 +203,26 @@ float AP_WindVane::read_PWM_bearing()
     return wrap_PI(bearing);
 }
 
+// read the apparent wind direction in radians from SITL
+float AP_WindVane::read_direction_SITL()
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // temporarily store true speed and direction for easy access
+    const float wind_speed = AP::sitl()->wind_speed_active;
+    const float wind_dir_rad = radians(AP::sitl()->wind_direction_active);
+
+    // convert true wind speed and direction into a 2D vector
+    Vector2f wind_vector_ef(sinf(wind_dir_rad) * wind_speed, cosf(wind_dir_rad) * wind_speed);
+
+    // add vehicle speed to get apparent wind vector
+    wind_vector_ef.x += AP::sitl()->state.speedE;
+    wind_vector_ef.y += AP::sitl()->state.speedN;
+
+    return wrap_PI(atan2f(wind_vector_ef.x, wind_vector_ef.y) - AP::ahrs().yaw);
+#else
+    return 0.0f;
+#endif
+}
 // Calculate the apparent wind direction in radians, the wind comes from this direction, 0 = head to wind
 void AP_WindVane::update_apparent_wind_direction()
 {
@@ -218,6 +241,11 @@ void AP_WindVane::update_apparent_wind_direction()
             return;
         case WindVaneType::WINDVANE_ANALOG_PIN:
             apparent_angle_in = read_analog();
+            break;
+        case WindVaneType::WINDVANE_SITL:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            apparent_angle_in = read_direction_SITL();
+#endif
             break;
     }
 
