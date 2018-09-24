@@ -30,6 +30,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Dual, _servo1_pos, AP_MOTORS_HELI_DUAL_SERVO1_POS),
 
     // @Param: SV2_POS
@@ -39,6 +40,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Dual, _servo2_pos,  AP_MOTORS_HELI_DUAL_SERVO2_POS),
 
     // @Param: SV3_POS
@@ -48,6 +50,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Dual, _servo3_pos,  AP_MOTORS_HELI_DUAL_SERVO3_POS),
 
     // @Param: SV4_POS
@@ -57,6 +60,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV4_POS", 4, AP_MotorsHeli_Dual, _servo4_pos, AP_MOTORS_HELI_DUAL_SERVO4_POS),
 
     // @Param: SV5_POS
@@ -66,6 +70,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV5_POS", 5, AP_MotorsHeli_Dual, _servo5_pos, AP_MOTORS_HELI_DUAL_SERVO5_POS),
 
     // @Param: SV6_POS
@@ -75,6 +80,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("SV6_POS", 6, AP_MotorsHeli_Dual, _servo6_pos, AP_MOTORS_HELI_DUAL_SERVO6_POS),
 
     // @Param: PHANG1
@@ -84,6 +90,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("PHANG1", 7, AP_MotorsHeli_Dual, _swash1_phase_angle, 0),
 
     // @Param: PHANG2
@@ -93,6 +100,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("PHANG2", 8, AP_MotorsHeli_Dual, _swash2_phase_angle, 0),
 
     // @Param: DUAL_MODE
@@ -100,6 +108,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Sets the dual mode of the heli, either as tandem or as transverse.
     // @Values: 0:Longitudinal, 1:Transverse
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("DUAL_MODE", 9, AP_MotorsHeli_Dual, _dual_mode, AP_MOTORS_HELI_DUAL_MODE_TANDEM),
 
     // @Param: DCP_SCALER
@@ -107,6 +116,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Scaling factor applied to the differential-collective-pitch
     // @Range: 0 1
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("DCP_SCALER", 10, AP_MotorsHeli_Dual, _dcp_scaler, AP_MOTORS_HELI_DUAL_DCP_SCALER),
 
     // @Param: DCP_YAW
@@ -114,6 +124,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     // @Range: -10 10
     // @Increment: 0.1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("DCP_YAW", 11, AP_MotorsHeli_Dual, _dcp_yaw_effect, 0),
 
     // @Param: YAW_SCALER
@@ -121,6 +132,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Scaler for mixing yaw into roll or pitch.
     // @Range: -10 10
     // @Increment: 0.1
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
     // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
@@ -132,6 +144,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("COL2_MIN", 16, AP_MotorsHeli_Dual, _collective2_min, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN),
 
     // @Param: COL2_MAX
@@ -141,6 +154,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("COL2_MAX", 17, AP_MotorsHeli_Dual, _collective2_max, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX),
 
     // @Param: COL2_MID
@@ -150,6 +164,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("COL2_MID", 18, AP_MotorsHeli_Dual, _collective2_mid, AP_MOTORS_HELI_DUAL_COLLECTIVE2_MID),
 
     // @Param: COL_CTRL_DIR
@@ -157,6 +172,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
     // @Values: 0:Normal,1:Reversed
     // @User: Standard
+    // @FrameType: Heli_Dual
     AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Dual, _collective_direction, AP_MOTORS_HELI_DUAL_COLLECTIVE_DIRECTION_NORMAL),
 
     AP_GROUPEND

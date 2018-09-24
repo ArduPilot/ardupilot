@@ -205,12 +205,17 @@ Complete Parameter List
         for param in g.params:
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
+                
+            # Check if frame_type defined
+            frame_type = param.FrameType.strip() if hasattr(param, 'FrameType') else ''
+            
             d = param.__dict__
             if self.annotate_with_vehicle:
                 name = param.name
             else:
                 name = param.name.split(':')[-1]
-            tag = '%s: %s' % (self.escape(name), self.escape(param.DisplayName),)
+            tag_frametype = ' (%s)' % frame_type if frame_type else ''
+            tag = '%s%s: %s' % (self.escape(name), self.escape(tag_frametype), self.escape(param.DisplayName),)
             tag = tag.strip()
             reference = param.name
             # remove e.g. "ArduPlane:" from start of parameter name:
@@ -218,7 +223,8 @@ Complete Parameter List
                 reference = g.name + "_" + reference.split(":")[-1]
             else:
                 reference = reference.split(":")[-1]
-
+            if frame_type:
+                reference = reference + '__' + frame_type
             ret += """
 
 .. _{reference}:

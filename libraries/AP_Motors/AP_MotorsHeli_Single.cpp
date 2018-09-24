@@ -31,6 +31,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Single
     AP_GROUPINFO("SV1_POS", 1, AP_MotorsHeli_Single, _servo1_pos, AP_MOTORS_HELI_SINGLE_SERVO1_POS),
 
     // @Param: SV2_POS
@@ -40,6 +41,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Single
     AP_GROUPINFO("SV2_POS", 2, AP_MotorsHeli_Single, _servo2_pos, AP_MOTORS_HELI_SINGLE_SERVO2_POS),
 
     // @Param: SV3_POS
@@ -49,6 +51,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: deg
     // @User: Standard
     // @Increment: 1
+    // @FrameType: Heli_Single
     AP_GROUPINFO("SV3_POS", 3, AP_MotorsHeli_Single, _servo3_pos, AP_MOTORS_HELI_SINGLE_SERVO3_POS),
 
     // @Param: TAIL_TYPE
@@ -56,6 +59,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Tail type selection.  Simpler yaw controller used if external gyro is selected
     // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO),
 
     // @Param: SWASH_TYPE
@@ -63,6 +67,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Swash Type Setting
     // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swash_type, AP_MOTORS_HELI_SINGLE_SWASH_H3),
 
     // @Param: GYR_GAIN
@@ -72,6 +77,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("GYR_GAIN", 6, AP_MotorsHeli_Single, _ext_gyro_gain_std, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
 
     // @Param: PHANG
@@ -81,6 +87,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
+    // @FrameType: Heli_Single
     AP_GROUPINFO("PHANG", 7, AP_MotorsHeli_Single, _phase_angle, 0),
 
     // @Param: COLYAW
@@ -89,6 +96,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Range: -10 10
     // @Increment: 0.1
     // @User: Advanced
+    // @FrameType: Heli_Single
     AP_GROUPINFO("COLYAW", 8,  AP_MotorsHeli_Single, _collective_yaw_effect, 0),
 
     // @Param: FLYBAR_MODE
@@ -96,6 +104,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Flybar present or not.  Affects attitude controller used during ACRO flight mode
     // @Values: 0:NoFlybar,1:Flybar
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
 
     // @Param: TAIL_SPEED
@@ -105,6 +114,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT),
 
     // @Param: GYR_GAIN_ACRO
@@ -114,6 +124,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
 
     // Indices 16-18 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
@@ -123,6 +134,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Direction collective moves for positive pitch. 0 for Normal, 1 for Reversed
     // @Values: 0:Normal,1:Reversed
     // @User: Standard
+    // @FrameType: Heli_Single
     AP_GROUPINFO("COL_CTRL_DIR", 19, AP_MotorsHeli_Single, _collective_direction, AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL),
 
     // parameters up to and including 29 are reserved for tradheli
