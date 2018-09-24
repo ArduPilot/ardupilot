@@ -194,6 +194,7 @@ def process_library(vehicle, library, pathprefix=None):
                     debug("Setting vehicle-specific value (%s)" % str(this_vehicle_value))
                     setattr(p, field[0], this_vehicle_value)
                 debug("Appending (non_vehicle_specific_values_seen=%u other_vehicle_values_seen=%u this_vehicle_values_seen=%u!)" % (non_vehicle_specific_values_seen, other_vehicle_values_seen, this_vehicle_values_seen))
+                p.path = path # Add path. Later deleted - only used for duplicates
                 library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
@@ -263,6 +264,23 @@ def validate(param):
 for vehicle in vehicles:
     for param in vehicle.params:
         validate(param)
+
+# Find duplicate names in library and fix up path
+for library in libraries:
+    param_names_seen = set()
+    param_names_duplicate = set()
+    # Find duplicates:
+    for param in library.params:
+        if param.name in param_names_seen:  # is duplicate
+            param_names_duplicate.add(param.name)
+        param_names_seen.add(param.name)
+    # Fix up path for duplicates
+    for param in library.params:
+        if param.name in param_names_duplicate:
+            param.path = param.path.rsplit('/')[-1].rsplit('.')[0]
+        else:
+            # not a duplicate, so delete attribute.
+            delattr(param, "path")
 
 for library in libraries:
     for param in library.params:

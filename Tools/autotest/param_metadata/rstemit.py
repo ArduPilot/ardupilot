@@ -206,11 +206,18 @@ Complete Parameter List
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
+
+            # Get param path if defined (i.e. is duplicate parameter)
+            param_path = getattr(param, 'path', '')
+
             if self.annotate_with_vehicle:
                 name = param.name
             else:
                 name = param.name.split(':')[-1]
-            tag = '%s: %s' % (self.escape(name), self.escape(param.DisplayName),)
+
+            tag_param_path = ' (%s)' % param_path if param_path else ''
+            tag = '%s%s: %s' % (self.escape(name), self.escape(tag_param_path), self.escape(param.DisplayName),)
+
             tag = tag.strip()
             reference = param.name
             # remove e.g. "ArduPlane:" from start of parameter name:
@@ -218,6 +225,8 @@ Complete Parameter List
                 reference = g.name + "_" + reference.split(":")[-1]
             else:
                 reference = reference.split(":")[-1]
+            if param_path:
+                reference += '__' + param_path
 
             ret += """
 
