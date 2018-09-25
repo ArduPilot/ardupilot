@@ -546,8 +546,13 @@ public:
     }
 
     // create a view
-    AP_AHRS_View *create_view(enum Rotation rotation);
-    
+    AP_AHRS_View *create_view(enum Rotation rotation) {
+        return create_view_trim(rotation, 0.0f);
+    }
+
+    // create a view with pitch trim
+    AP_AHRS_View *create_view_trim(enum Rotation rotation, float pitch_trim);
+
     // return calculated AOA
     float getAOA(void);
 
