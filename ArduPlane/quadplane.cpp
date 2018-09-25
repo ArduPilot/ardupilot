@@ -358,7 +358,16 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 1 5
     // @User: Standard
     AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 5),
-	
+
+    // @Param: TRIM_PIT
+    // @DisplayName: Quadplane AHRS trim pitch
+    // @Description: Compensates for the pitch angle trim difference between forward and vertical flight pitch, NOTE! this is relative to forward flight trim not mounting locaiton
+    // @Units: deg
+    // @Range: -180 +180
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("TRIM_PIT", 4, QuadPlane, quadplane_ahrs_trim_pitch, 0),
+
     AP_GROUPEND
 };
 
@@ -548,11 +557,11 @@ bool QuadPlane::setup(void)
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     // create the attitude view used by the VTOL code
-    ahrs_view = ahrs.create_view(rotation);
+    ahrs_view = ahrs.create_view_trim(rotation, (float)quadplane_ahrs_trim_pitch);
     if (ahrs_view == nullptr) {
         goto failed;
     }
-    
+
     attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
         hal.console->printf("%s attitude_control\n", strUnableToAllocate);
