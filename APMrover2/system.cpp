@@ -64,6 +64,8 @@ void Rover::init_ardupilot()
 
     rssi.init();
 
+    g2.windvane.init();
+
     // init baro before we start the GCS, so that the CLI baro test works
     barometer.init();
 
@@ -334,6 +336,9 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
 
     // initialize simple mode heading
     rover.mode_simple.init_heading();
+
+    // save home heading for use in sail vehicles
+    rover.g2.windvane.record_home_headng();
 
     change_arm_state();
     return true;

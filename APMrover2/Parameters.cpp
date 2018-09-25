@@ -64,8 +64,8 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Steering,2:Throttle,4:Pitch,8:Left Wheel,16:Right Wheel
-    // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel
+    // @Values: 0:None,1:Steering,2:Throttle,4:Pitch,8:Left Wheel,16:Right Wheel,32:Sailboat Heel
+    // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel,5:Sailboat Heel
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
     // @Param: MAG_ENABLE
@@ -608,6 +608,45 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 30, ParametersG2, loit_radius, 2),
 
+    // @Group: WNDVN_
+    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    AP_SUBGROUPINFO(windvane, "WNDVN_", 31, ParametersG2, AP_WindVane),
+
+    // @Param: SAIL_ANGLE_MIN
+    // @DisplayName: Sail min angle
+    // @Description: Mainsheet tight, angle between centerline and boom
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_ANGLE_MIN", 32, ParametersG2, sail_angle_min, 0),
+
+    // @Param: SAIL_ANGLE_MAX
+    // @DisplayName: Sail max angle
+    // @Description: Mainsheet loose, angle between centerline and boom
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_ANGLE_MAX", 33, ParametersG2, sail_angle_max, 90),
+
+    // @Param: SAIL_ANGLE_IDEAL
+    // @DisplayName: Sail ideal angle
+    // @Description: Ideal angle between sail and apparent wind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_ANGLE_IDEAL", 34, ParametersG2, sail_angle_ideal, 25),
+
+    // @Param: SAIL_HEEL_MAX
+    // @DisplayName: Sailing maximum heel angle
+    // @Description: When in auto sail trim modes the heel will be limited to this value using PID control
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_HEEL_MAX", 35, ParametersG2, sail_heel_angle_max, 15),
     AP_GROUPEND
 };
 
@@ -639,7 +678,8 @@ ParametersG2::ParametersG2(void)
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
-    rally(rover.ahrs)
+    rally(rover.ahrs),
+    windvane()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -702,6 +742,14 @@ void Rover::load_parameters(void)
 
     if (is_balancebot()) {
         g2.crash_angle.set_default(30);
+    }
+
+    // sailboat defaults
+    if (g2.motors.has_sail()) {
+        g2.crash_angle.set_default(0);
+        g2.loit_type.set_default(1);
+        g2.loit_radius.set_default(5);
+        g.waypoint_overshoot.set_default(10);
     }
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
