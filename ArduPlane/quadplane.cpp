@@ -409,6 +409,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
     AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
 
+    // @Param: TAILSIT_SPDMIN
+    // @DisplayName: Tailsitter minimum airspeed scaling
+    // @Description: bellow this airspeed tailsiter is controlled by copter gains, gains scaled linearly between TAILSIT_SPDMIN and TAILSIT_SPDMAX, this apply s in Q modes and during Q assist if enabled
+    // @Units: m/s
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_SPDMIN", 10, QuadPlane, tailsitter.scaling_speed_min, 10),
+
+    // @Param: TAILSIT_SPDMAX
+    // @DisplayName: Tailsitter maximum airspeed scaling
+    // @Description: above this airspeed tailsiter is controlled by plane gains, gains scaled linearly between TAILSIT_SPDMIN and TAILSIT_SPDMAX, this apply s in Q modes and during Q assist if enabled
+    // @Units: m/s
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_SPDMAX", 11, QuadPlane, tailsitter.scaling_speed_max, 20),
+
     AP_GROUPEND
 };
 
@@ -737,8 +753,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
 
-    if (in_vtol_mode() || is_tailsitter()) {
-        if (tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL) {
+    if (in_vtol_mode()) {
+        if (is_tailsitter() && tailsitter.input_type == TAILSITTER_INPUT_BF_ROLL) {
             // Angle mode attitude control for pitch and body-frame roll, rate control for yaw.
             // this version interprets the first argument as yaw rate and the third as roll angle
             // because it is intended to be used with Q_TAILSIT_INPUT=1 where the roll and yaw sticks
@@ -757,7 +773,12 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
         // use the fixed wing desired rates
         float roll_rate = plane.rollController.get_pid_info().desired;
         float pitch_rate = plane.pitchController.get_pid_info().desired;
-        attitude_control->input_rate_bf_roll_pitch_yaw_2(roll_rate*100.0f, pitch_rate*100.0f, yaw_rate_cds);
+        if (is_tailsitter()) {
+            // tailsitter roll and yaw swapped due to change in reference frame
+            attitude_control->input_rate_bf_roll_pitch_yaw_2(yaw_rate_cds, pitch_rate*100.0f, -roll_rate*100.0f);
+        } else {
+            attitude_control->input_rate_bf_roll_pitch_yaw_2(roll_rate*100.0f, pitch_rate*100.0f, yaw_rate_cds);
+        }
     }
 }
 
@@ -1391,18 +1412,19 @@ void QuadPlane::update_transition(void)
      */
     if (have_airspeed &&
         assistance_needed(aspeed) &&
-        !is_tailsitter() &&
         hal.util->get_soft_armed() &&
         ((plane.auto_throttle_mode && !plane.throttle_suppressed) ||
          plane.get_throttle_input()>0 ||
          plane.is_flying())) {
         // the quad should provide some assistance to the plane
-        if (transition_state != TRANSITION_AIRSPEED_WAIT) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
-        }
-        transition_state = TRANSITION_AIRSPEED_WAIT;
-        if (transition_start_ms == 0) {
-            transition_start_ms = now;
+        if (!is_tailsitter()) {
+            if (transition_state != TRANSITION_AIRSPEED_WAIT) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
+            }
+            transition_state = TRANSITION_AIRSPEED_WAIT;
+            if (transition_start_ms == 0) {
+                transition_start_ms = now;
+            }
         }
         assisted_flight = true;
     } else {
