@@ -26,7 +26,7 @@ class AP_AHRS_View
 {
 public:
     // Constructor
-    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation);
+    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim);
 
     // update state
     void update(bool skip_ins_update=false);
@@ -188,4 +188,8 @@ private:
         float sin_pitch;
         float sin_yaw;
     } trig;
+
+    float x_angle;
+    float y_angle;
+    float z_angle;
 };
