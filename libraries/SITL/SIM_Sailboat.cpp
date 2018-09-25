@@ -27,71 +27,71 @@
 
 namespace SITL {
 
+#define STEERING_SERVO_CH   0   // steering controlled by servo output 1
+#define MAINSAIL_SERVO_CH   3   // main sail controlled by servo output 4
+
 Sailboat::Sailboat(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str),
-    max_wheel_turn(35),
+    steering_angle_max(35),
     turning_circle(1.8)
 {
 }
 
 // calculate the lift and drag as values from 0 to 1
 // given an apparent wind speed in m/s and angle-of-attack in degrees
-void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, float& lift, float& drag)
+void Sailboat::calc_lift_and_drag(float wind_speed, float angle_of_attack_deg, float& lift, float& drag) const
 {
+    const uint16_t index_width_deg = 10;
+    const uint8_t index_max = ARRAY_SIZE(lift_curve) - 1;
+
     // check extremes
     if (angle_of_attack_deg <= 0.0f) {
         lift = lift_curve[0];
         drag = drag_curve[0];
         return;
     }
-    if (angle_of_attack_deg >= 170.0f) {
-        lift = lift_curve[17];
-        drag = drag_curve[17];
+    if (angle_of_attack_deg >= index_max * index_width_deg) {
+        lift = lift_curve[index_max];
+        drag = drag_curve[index_max];
         return;
     }
 
-    uint8_t index = constrain_int16(angle_of_attack_deg / 10, 0, 17);
-    float remainder = angle_of_attack_deg - (index * 10.0f);
-    lift = linear_interpolate(lift_curve[index], lift_curve[index+1], remainder, 0.0f, 10.0f);
-    drag = linear_interpolate(drag_curve[index], drag_curve[index+1], remainder, 0.0f, 10.0f);
+    uint8_t index = constrain_int16(angle_of_attack_deg / index_width_deg, 0, index_max);
+    float remainder = angle_of_attack_deg - (index * index_width_deg);
+    lift = linear_interpolate(lift_curve[index], lift_curve[index+1], remainder, 0.0f, index_width_deg);
+    drag = linear_interpolate(drag_curve[index], drag_curve[index+1], remainder, 0.0f, index_width_deg);
 
     // apply scaling by wind speed
     lift *= wind_speed;
     drag *= wind_speed;
 }
 
-/*
-  return turning circle (diameter) in meters for steering angle proportion in degrees
-*/
-float Sailboat::turn_circle(float steering)
+// return turning circle (diameter) in meters for steering angle proportion in the range -1 to +1
+float Sailboat::get_turn_circle(float steering) const
 {
-    if (fabsf(steering) < 1.0e-6) {
+    if (is_zero(steering)) {
         return 0;
     }
-    return turning_circle * sinf(radians(max_wheel_turn)) / sinf(radians(steering*max_wheel_turn));
+    return turning_circle * sinf(radians(steering_angle_max)) / sinf(radians(steering * steering_angle_max));
 }
 
-/*
-   return yaw rate in degrees/second given steering_angle and speed
-*/
-float Sailboat::calc_yaw_rate(float steering, float speed)
+// return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
+float Sailboat::get_yaw_rate(float steering, float speed) const
 {
-    if (fabsf(steering) < 1.0e-6 or fabsf(speed) < 1.0e-6) {
+    if (is_zero(steering) || is_zero(speed)) {
         return 0;
     }
-    float d = turn_circle(steering);
+    float d = get_turn_circle(steering);
     float c = M_PI * d;
     float t = c / speed;
     float rate = 360.0f / t;
     return rate;
 }
 
-/*
-  return lateral acceleration in m/s/s
-*/
-float Sailboat::calc_lat_accel(float steering_angle, float speed)
+// return lateral acceleration in m/s/s given a steering input (in the range -1 to +1) and speed in m/s
+float Sailboat::get_lat_accel(float steering, float speed) const
 {
-    float yaw_rate = calc_yaw_rate(steering_angle, speed);
+    float yaw_rate = get_yaw_rate(steering, speed);
     float accel = radians(yaw_rate) * speed;
     return accel;
 }
@@ -105,10 +105,10 @@ void Sailboat::update(const struct sitl_input &input)
     update_wind(input);
 
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
-    float steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    float steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
 
     // calculate mainsail angle from servo output 4, 0 to 90 degrees
-    float mainsail_angle_bf = constrain_float((input.servos[3]-1000)/1000.0f * 90.0f, 0.0f, 90.0f);
+    float mainsail_angle_bf = constrain_float((input.servos[MAINSAIL_SERVO_CH]-1000)/1000.0f * 90.0f, 0.0f, 90.0f);
 
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
     Vector3f wind_apparent_ef = wind_ef + velocity_ef;
@@ -138,7 +138,7 @@ void Sailboat::update(const struct sitl_input &input)
     float speed = velocity_body.x;
 
     // yaw rate in degrees/s
-    float yaw_rate = calc_yaw_rate(steering, speed);
+    float yaw_rate = get_yaw_rate(steering, speed);
 
     gyro = Vector3f(0,0,radians(yaw_rate));
 
@@ -154,7 +154,6 @@ void Sailboat::update(const struct sitl_input &input)
 
     // now in earth frame
     Vector3f accel_earth = dcm * accel_body;
-    accel_earth += Vector3f(0, 0, GRAVITY_MSS);
 
     // we are on the ground, so our vertical accel is zero
     accel_earth.z = 0;
