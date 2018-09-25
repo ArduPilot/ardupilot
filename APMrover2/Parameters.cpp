@@ -599,6 +599,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("SIMPLE_TYPE", 29, ParametersG2, simple_type, 0),
 
+    // @Param: LOIT_RADIUS
+    // @DisplayName: Loiter radius
+    // @Description: Vehicle will drift when within this distance of the target position
+    // @Units: m
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOIT_RADIUS", 30, ParametersG2, loit_radius, 2),
+
     AP_GROUPEND
 };
 

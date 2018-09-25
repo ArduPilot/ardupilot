@@ -361,6 +361,7 @@ public:
 
     // loiter type
     AP_Int8 loit_type;
+    AP_Float loit_radius;
 
     // Sprayer
     AC_Sprayer sprayer;
