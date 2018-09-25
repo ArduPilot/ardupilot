@@ -257,11 +257,41 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
             return;
         }
     }
+
+    // sailboat heel to mainsail pid
+    if (g.gcs_pid_mask & 32) {
+        pid_info = &g2.attitude_control.get_sailboat_heel_pid().get_pid_info();
+        mavlink_msg_pid_tuning_send(chan, 9,
+                                    pid_info->desired,
+                                    pid_info->actual,
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Rover::send_fence_status(mavlink_channel_t chan)
 {
     fence_send_mavlink_status(chan);
+}
+
+void Rover::send_wind(mavlink_channel_t chan)
+{
+    // exit immediately if no wind vane
+    if (!rover.g2.windvane.enabled()) {
+        return;
+    }
+
+    // send wind
+    mavlink_msg_wind_send(
+        chan,
+        degrees(rover.g2.windvane.get_apparent_wind_direction_rad()),
+        0,
+        0);
 }
 
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
@@ -347,6 +377,9 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_fence_status(chan);
         break;
 
+    case MSG_WIND:
+        CHECK_PAYLOAD_SIZE(WIND);
+        rover.send_wind(chan);
         break;
 
     case MSG_PID_TUNING:
@@ -492,6 +525,7 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
+    MSG_WIND,
     MSG_RANGEFINDER,
     MSG_SYSTEM_TIME,
     MSG_BATTERY2,
