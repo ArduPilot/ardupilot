@@ -95,8 +95,17 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         return quadplane.do_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
-        crash_state.is_crashed = false;
-        return quadplane.do_vtol_land(cmd);
+        if (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) {
+            // the user wants to approach the landing in a fixed wing flight mode
+            // the waypoint will be used as a loiter_to_alt
+            // after which point the plane will compute the optimal into the wind direction
+            // and fly in on that direction towards the landing waypoint
+            // it will then transition to VTOL and do a normal quadplane landing
+            do_landing_vtol_approach(cmd);
+            break;
+        } else {
+            return quadplane.do_vtol_land(cmd);
+        }
         
     // Conditional commands
 
@@ -261,7 +270,13 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return quadplane.verify_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
-        return quadplane.verify_vtol_land();
+        if ((quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) && !verify_landing_vtol_approach(cmd)) {
+            // verify_landing_vtol_approach will return true once we have completed the approach,
+            // in which case we fall over to normal vtol landing code
+            return false;
+        } else {
+            return quadplane.verify_vtol_land();
+        }
 
     // Conditional commands
 
@@ -399,6 +414,15 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         }
     }
 #endif
+}
+
+void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
+{
+    do_loiter_to_alt(cmd);
+
+    vtol_approach_s.approach_stage = LOITER_TO_ALT;
+
+    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
@@ -941,6 +965,69 @@ void Plane::exit_mission_callback()
         set_mode(RTL, MODE_REASON_MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
+}
+
+bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
+{
+    switch (vtol_approach_s.approach_stage) {
+        case LOITER_TO_ALT:
+            if (verify_loiter_to_alt()) {
+                Vector3f wind = ahrs.wind_estimate();
+                vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
+                gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
+                // select target approach direction
+                // select detransition distance (add in extra distance if the approach does not fit in the required space)
+                // validate turn
+                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+            }
+            break;
+        case WAIT_FOR_BREAKOUT:
+            {
+                const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + 270));
+
+                nav_controller->update_loiter(cmd.content.location, aparm.loiter_radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
+
+                // breakout when within 5 degrees of the opposite direction
+                if (fabsf(ahrs.yaw - breakout_direction_rad) < radians(5.0f)) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
+                    vtol_approach_s.approach_stage = APPROACH_LINE;
+                    set_next_WP(cmd.content.location);
+                    // fallthrough
+                } else {
+                    break;
+                }
+                FALLTHROUGH;
+            }
+        case APPROACH_LINE:
+            {
+                // project an apporach path
+                Location start = cmd.content.location;
+                Location end = cmd.content.location;
+
+                // project a 1km waypoint to either side of the landing location
+                location_update(start, vtol_approach_s.approach_direction_deg + 180, 1000);
+                location_update(end, vtol_approach_s.approach_direction_deg, 1000);
+
+                nav_controller->update_waypoint(start, end);
+
+                // check if we should move on to the next waypoint
+                Location breakout_loc = cmd.content.location;
+                location_update(breakout_loc, vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                if(location_passed_point(current_loc, start, breakout_loc)) {
+                    vtol_approach_s.approach_stage = VTOL_LANDING;
+                    quadplane.do_vtol_land(cmd);
+                    // fallthrough
+                } else {
+                    break;
+                }
+                FALLTHROUGH;
+            }
+        case VTOL_LANDING:
+            // nothing to do here, we should be into the quadplane landing code
+            return true;
+    }
+
+    return false;
 }
 
 bool Plane::verify_loiter_heading(bool init)
