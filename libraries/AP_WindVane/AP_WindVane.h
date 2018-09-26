@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_WindVane
 {
@@ -38,9 +39,9 @@ public:
     AP_WindVane &operator=(const AP_WindVane&) = delete;
 
     // destructor
-    ~AP_WindVane(void);
+    ~AP_WindVane();
 
-    static AP_WindVane *get_instance();
+    static AP_WindVane *get_singleton();
 
     // return true if wind vane is enabled
     bool enabled() const;
@@ -51,8 +52,8 @@ public:
     // update wind vane
     void update();
 
-    // get the apparent wind direction in radians, 0 = head to wind
-    float get_apparent_wind_direction_rad() const { return _direction_apparent; }
+    // get the apparent wind direction in body-frame in radians, 0 = head to wind
+    float get_apparent_wind_direction_rad() const;
 
     // record home heading
     void record_home_headng();
@@ -62,14 +63,16 @@ public:
 
 private:
 
-    // read the bearing value from an analog pin - returns radians
-    float read_analog();
+    // read an analog port and calculate the wind direction in earth-frame in radians
+    float read_analog_direction_ef();
 
-    // read the bearing value from a PWM value on a RC channel - returns radians
-    float read_PWM_bearing();
+    // read rc input of apparent wind direction in earth-frame in radians
+    float read_PWM_direction_ef();
 
-    // read the apparent wind direction in radians from SITL
-    float read_direction_SITL();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // read SITL's apparent wind direction in earth-frame in radians
+    float read_SITL_direction_ef();
+#endif
 
     // update apparent wind direction
     void update_apparent_wind_direction();
@@ -88,11 +91,11 @@ private:
     AP_Int8 _calibration;                           // enter calibration
     AP_Float _analog_deadzone;                      // analog pot deadzone in degrees
 
-    static AP_WindVane *_s_instance;
+    static AP_WindVane *_singleton;
 
     // wind direction variables
     float _home_heading;                            // heading in radians recorded when vehicle was armed
-    float _direction_apparent;                      // wind's apparent direction in radians (0 = ahead of vehicle)
+    float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle)
     float _current_analog_voltage;                  // wind direction's latest analog voltage reading
 
     // calibration variables
@@ -102,6 +105,10 @@ private:
 
     // pin for reading analog voltage
     AP_HAL::AnalogSource *windvane_analog_source;
+
+    // low pass filters of direction
+    LowPassFilterFloat wind_sin_filt = LowPassFilterFloat(2.0f);
+    LowPassFilterFloat wind_cos_filt = LowPassFilterFloat(2.0f);
 };
 
 namespace AP {

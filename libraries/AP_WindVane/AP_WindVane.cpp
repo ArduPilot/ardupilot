@@ -109,35 +109,28 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPEND
 };
 
-// create a global instances of low pass filter
-LowPassFilterFloat low_pass_filter_wind_sin = LowPassFilterFloat(2.0f);
-LowPassFilterFloat low_pass_filter_wind_cos = LowPassFilterFloat(2.0f);
-LowPassFilterFloat low_pass_filter_wind_speed = LowPassFilterFloat(2.0f);
-
-// Public
-// ------
-
 // constructor
 AP_WindVane::AP_WindVane()
 {
     AP_Param::setup_object_defaults(this, var_info);
-    if (_s_instance) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton) {
         AP_HAL::panic("Too many Wind Vane sensors");
     }
-    _s_instance = this;
+#endif
+    _singleton = this;
 }
 
-// destructor
-AP_WindVane::~AP_WindVane(void)
+AP_WindVane::~AP_WindVane()
 {
 }
 
 /*
  * Get the AP_WindVane singleton
  */
-AP_WindVane *AP_WindVane::get_instance()
+AP_WindVane *AP_WindVane::get_singleton()
 {
-    return _s_instance;
+    return _singleton;
 }
 
 // return true if wind vane is enabled
@@ -150,10 +143,10 @@ bool AP_WindVane::enabled() const
 void AP_WindVane::init()
 {
     // a pin for reading the Wind Vane voltage
-    windvane_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
+    windvane_analog_source = hal.analogin->channel(_analog_pin_no);
 }
 
-// Update wind vane, called at 10hz
+// update wind vane, expected to be called at 20hz
 void AP_WindVane::update()
 {
     // exit immediately if not enabled
@@ -167,46 +160,47 @@ void AP_WindVane::update()
     update_apparent_wind_direction();
 }
 
+// get the apparent wind direction in radians, 0 = head to wind
+float AP_WindVane::get_apparent_wind_direction_rad() const
+{
+    return wrap_PI(_direction_apparent_ef - AP::ahrs().yaw);
+}
+
 // record home heading for use as wind direction if no sensor is fitted
 void AP_WindVane::record_home_headng()
 {
     _home_heading = AP::ahrs().yaw;
 }
 
-// Private
-// -------
-
-// read the Wind Vane value from an analog pin, calculate bearing from analog voltage
+// read an analog port and calculate the wind direction in earth-frame in radians
 // assumes voltage increases as wind vane moves clockwise
-float AP_WindVane::read_analog()
+float AP_WindVane::read_analog_direction_ef()
 {
     windvane_analog_source->set_pin(_analog_pin_no);
-    _current_analog_voltage = windvane_analog_source->voltage_average();
+    _current_analog_voltage = windvane_analog_source->voltage_average_ratiometric();
 
-    float current_analog_voltage_constrain = constrain_float(_current_analog_voltage,_analog_volt_min,_analog_volt_max);
-    float voltage_ratio = linear_interpolate(0.0f, 1.0f, current_analog_voltage_constrain, _analog_volt_min, _analog_volt_max);
+    const float voltage_ratio = linear_interpolate(0.0f, 1.0f, _current_analog_voltage, _analog_volt_min, _analog_volt_max);
+    const float direction = (voltage_ratio * radians(360 - _analog_deadzone)) + radians(_analog_head_bearing_offset);
 
-    float bearing = (voltage_ratio * radians(360 - _analog_deadzone)) + radians(_analog_head_bearing_offset);
-
-    return wrap_PI(bearing);
+    return wrap_PI(direction + AP::ahrs().yaw);
 }
 
-// read the bearing value from a PWM value on a RC channel (+- 45deg)
-float AP_WindVane::read_PWM_bearing()
+// read rc input of apparent wind direction in earth-frame in radians
+float AP_WindVane::read_PWM_direction_ef()
 {
     RC_Channel *ch = rc().channel(_rc_in_no-1);
     if (ch == nullptr) {
         return 0.0f;
     }
-    float bearing = ch->norm_input() * radians(45);
+    float direction = ch->norm_input() * radians(45);
 
-    return wrap_PI(bearing);
+    return wrap_PI(direction + _home_heading);
 }
 
-// read the apparent wind direction in radians from SITL
-float AP_WindVane::read_direction_SITL()
-{
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// read SITL's apparent wind direction in earth-frame in radians
+float AP_WindVane::read_SITL_direction_ef()
+{
     // temporarily store true speed and direction for easy access
     const float wind_speed = AP::sitl()->wind_speed_active;
     const float wind_dir_rad = radians(AP::sitl()->wind_direction_active);
@@ -218,51 +212,51 @@ float AP_WindVane::read_direction_SITL()
     wind_vector_ef.x += AP::sitl()->state.speedE;
     wind_vector_ef.y += AP::sitl()->state.speedN;
 
-    return wrap_PI(atan2f(wind_vector_ef.x, wind_vector_ef.y) - AP::ahrs().yaw);
-#else
-    return 0.0f;
-#endif
+    return atan2f(wind_vector_ef.x, wind_vector_ef.y);
 }
-// Calculate the apparent wind direction in radians, the wind comes from this direction, 0 = head to wind
+#endif
+
+// calculate the apparent wind direction in radians, the wind comes from this direction, 0 = head to wind
+// expected to be called at 20hz
 void AP_WindVane::update_apparent_wind_direction()
 {
-    float apparent_angle_in = 0.0f;
+    float apparent_angle_ef = 0.0f;
 
     switch (_type) {
         case WindVaneType::WINDVANE_HOME_HEADING:
             // this is a approximation as we are not considering boat speed and wind speed
             // do not filter home heading
-            _direction_apparent = wrap_PI(_home_heading - AP::ahrs().yaw);
+            _direction_apparent_ef = _home_heading;
             return;
         case WindVaneType::WINDVANE_PWM_PIN:
             // this is a approximation as we are not considering boat speed and wind speed
-            // do not filter home heading and pwm type vanes
-            _direction_apparent = wrap_PI(read_PWM_bearing() + _home_heading - AP::ahrs().yaw);
+            // do not filter pwm input from pilot
+            _direction_apparent_ef = read_PWM_direction_ef();
             return;
         case WindVaneType::WINDVANE_ANALOG_PIN:
-            apparent_angle_in = read_analog();
+            apparent_angle_ef = read_analog_direction_ef();
             break;
         case WindVaneType::WINDVANE_SITL:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            apparent_angle_in = read_direction_SITL();
+            apparent_angle_ef = read_SITL_direction_ef();
 #endif
             break;
     }
 
     // apply low pass filter if enabled
     if (is_positive(_vane_filt_hz)) {
-        low_pass_filter_wind_sin.set_cutoff_frequency(_vane_filt_hz);
-        low_pass_filter_wind_cos.set_cutoff_frequency(_vane_filt_hz);
+        wind_sin_filt.set_cutoff_frequency(_vane_filt_hz);
+        wind_cos_filt.set_cutoff_frequency(_vane_filt_hz);
         // https://en.wikipedia.org/wiki/Mean_of_circular_quantities
-        float filtered_sin = low_pass_filter_wind_sin.apply(sinf(apparent_angle_in), 0.02f);
-        float filtered_cos = low_pass_filter_wind_cos.apply(cosf(apparent_angle_in), 0.02f);
-        _direction_apparent = atan2f(filtered_sin, filtered_cos);
+        const float filtered_sin = wind_sin_filt.apply(sinf(apparent_angle_ef), 0.05f);
+        const float filtered_cos = wind_cos_filt.apply(cosf(apparent_angle_ef), 0.05f);
+        _direction_apparent_ef = atan2f(filtered_sin, filtered_cos);
     } else {
-        _direction_apparent = apparent_angle_in;
+        _direction_apparent_ef = apparent_angle_ef;
     }
 
     // make sure between -pi and pi
-    _direction_apparent = wrap_PI(_direction_apparent);
+    _direction_apparent_ef = wrap_PI(_direction_apparent_ef);
 }
 
 // calibrate windvane
@@ -310,11 +304,11 @@ void AP_WindVane::calibrate()
     }
 }
 
-AP_WindVane *AP_WindVane::_s_instance = nullptr;
+AP_WindVane *AP_WindVane::_singleton = nullptr;
 
 namespace AP {
     AP_WindVane *windvane()
     {
-        return AP_WindVane::get_instance();
+        return AP_WindVane::get_singleton();
     }
 };
