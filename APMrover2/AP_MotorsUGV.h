@@ -137,7 +137,7 @@ protected:
     void output_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt = 0.0f);
 
     // output for sailboat's mainsail in the range of 0 to 100
-    void output_mainsail(float mainsail);
+    void output_mainsail();
 
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
