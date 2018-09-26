@@ -53,6 +53,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200),
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200),
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200),
+    SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100),
     SCHED_TASK(update_visual_odom,     50,    200),
     SCHED_TASK(update_wheel_encoder,   50,    200),
     SCHED_TASK(update_compass,         10,    200),
@@ -95,7 +96,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
-    SCHED_TASK(windvane_update,        10,    200),
 };
 
 void Rover::read_mode_switch()

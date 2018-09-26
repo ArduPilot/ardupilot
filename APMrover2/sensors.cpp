@@ -241,11 +241,6 @@ void Rover::init_proximity(void)
     g2.proximity.set_rangefinder(&rangefinder);
 }
 
-void Rover::windvane_update()
-{
-    g2.windvane.update();
-}
-
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but

@@ -525,7 +525,6 @@ private:
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
-    void windvane_update();
     void update_sensor_status_flags(void);
 
     // Steering.cpp
