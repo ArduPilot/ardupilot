@@ -181,9 +181,9 @@ void AP_MotorsTri::output_armed_stabilizing()
 
     if (!is_zero(_slew_time)) {
         float thrust_rpyt_out_delta_max = 1.0f/(_slew_time*_loop_rate);
-        _thrust_right += constrain_float(_thrust_right-thrust_right, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
-        _thrust_left += constrain_float(_thrust_left-thrust_left, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
-        _thrust_rear += constrain_float(_thrust_rear-thrust_rear, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_right += constrain_float(thrust_right - _thrust_right, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_left += constrain_float(thrust_left - _thrust_left, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
+        _thrust_rear += constrain_float(thrust_rear - _thrust_rear, -thrust_rpyt_out_delta_max, thrust_rpyt_out_delta_max);
     } else {
         _thrust_right = thrust_right;
         _thrust_left = thrust_left;
