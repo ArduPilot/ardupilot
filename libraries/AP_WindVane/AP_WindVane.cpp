@@ -31,6 +31,7 @@ extern const AP_HAL::HAL& hal;
 
 // by default use the airspeed pin for Vane
 #define WINDVANE_DEFAULT_PIN 15
+#define WINDVANE_CALIBRATION_VOLT_DIFF_MIN  1.0f    // calibration routine's min voltage difference required for success
 
 const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
@@ -172,6 +173,15 @@ void AP_WindVane::record_home_headng()
     _home_heading = AP::ahrs().yaw;
 }
 
+bool AP_WindVane::start_calibration()
+{
+    if (enabled() && (_calibration == 0)) {
+        _calibration = 1;
+        return true;
+    }
+    return false;
+}
+
 // read an analog port and calculate the wind direction in earth-frame in radians
 // assumes voltage increases as wind vane moves clockwise
 float AP_WindVane::read_analog_direction_ef()
@@ -284,7 +294,7 @@ void AP_WindVane::calibrate()
                 _cal_start_ms = AP_HAL::millis();
                 _cal_volt_max = _current_analog_voltage;
                 _cal_volt_min = _current_analog_voltage;
-                gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Analog input calibrating");
+                gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration started, rotate wind vane");
             }
 
             // record min and max voltage
@@ -293,12 +303,22 @@ void AP_WindVane::calibrate()
 
             // calibrate for 30 seconds
             if ((AP_HAL::millis() - _cal_start_ms) > 30000) {
-                // save min and max voltage
-                _analog_volt_max.set_and_save(_cal_volt_max);
-                _analog_volt_min.set_and_save(_cal_volt_min);
-                _calibration.set_and_save(0);
+                // check for required voltage difference
+                const float volt_diff = _cal_volt_max - _cal_volt_min;
+                if (volt_diff >= WINDVANE_CALIBRATION_VOLT_DIFF_MIN) {
+                    // save min and max voltage
+                    _analog_volt_max.set_and_save(_cal_volt_max);
+                    _analog_volt_min.set_and_save(_cal_volt_min);
+                    _calibration.set_and_save(0);
+                    gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration complete (volt min:%.1f max:%1.f)",
+                            (double)_cal_volt_min,
+                            (double)_cal_volt_max);
+                } else {
+                    gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Calibration failed (volt diff %.1f below %.1f)",
+                            (double)volt_diff,
+                            (double)WINDVANE_CALIBRATION_VOLT_DIFF_MIN);
+                }
                 _cal_start_ms = 0;
-                gcs().send_text(MAV_SEVERITY_INFO, "WindVane: Analog input calibration complete");
             }
             break;
     }
