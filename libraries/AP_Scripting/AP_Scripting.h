@@ -14,9 +14,10 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
+#ifdef ENABLE_SCRIPTING
 
-#if ENABLE_SCRIPTING
+#include <AP_Common/AP_Common.h>
+#include <AP_Param/AP_Param.h>
 
 class AP_Scripting
 {
@@ -27,16 +28,27 @@ public:
     AP_Scripting(const AP_Scripting &other) = delete;
     AP_Scripting &operator=(const AP_Scripting&) = delete;
 
-    static AP_Scripting * get_singleton() {
-        return _singleton;
-    }
+    bool init(void);
+
+    bool is_running(void) const { return _running; }
+
+    static AP_Scripting * get_singleton(void) { return _singleton; }
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    void thread(void); // main script execution thread
+
+    bool _running;
+
+    AP_Int8 _enable;
+
     static AP_Scripting *_singleton;
+
 };
 
 namespace AP {
-    AP_Scripting * scripting();
+    AP_Scripting * scripting(void);
 };
 
 #endif // ENABLE_SCRIPTING
