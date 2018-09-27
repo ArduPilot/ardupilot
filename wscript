@@ -147,6 +147,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SFML graphics library")
 
+    g.add_option('--enable-scripting', action='store_true',
+                 default=False,
+                 help="Enable onboard scripting engine")
+
     g.add_option('--static',
         action='store_true',
         default=False,
@@ -230,6 +234,12 @@ def configure(cfg):
 
     cfg.start_msg('Unit tests')
     if cfg.env.HAS_GTEST:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('Scripting')
+    if cfg.options.enable_scripting:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
