@@ -584,6 +584,12 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
         } else {
             return MAV_RESULT_FAILED;
         }
+    } else if (is_equal(packet.param6, 1.0f)) {
+        if (rover.g2.windvane.start_calibration()) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
