@@ -91,6 +91,11 @@ class Board:
             '-Werror=unused-result',
         ]
 
+        if cfg.options.enable_scripting:
+            env.DEFINES.update(
+                ENABLE_SCRIPTING = 'TRUE',
+                )
+
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
