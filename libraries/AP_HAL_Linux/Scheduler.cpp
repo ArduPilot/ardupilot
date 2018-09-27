@@ -29,6 +29,7 @@ extern const AP_HAL::HAL& hal;
 #define APM_LINUX_RCIN_PRIORITY         13
 #define APM_LINUX_MAIN_PRIORITY         12
 #define APM_LINUX_IO_PRIORITY           10
+#define APM_LINUX_SCRIPTING_PRIORITY     1
 
 #define APM_LINUX_TIMER_RATE            1000
 #define APM_LINUX_UART_RATE             100
@@ -366,6 +367,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_IO, APM_LINUX_IO_PRIORITY},
         { PRIORITY_UART, APM_LINUX_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_LINUX_IO_PRIORITY},
+        { PRIORITY_SCRIPTING, APM_LINUX_SCRIPTING_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
