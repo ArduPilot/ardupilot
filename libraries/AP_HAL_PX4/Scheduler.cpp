@@ -418,6 +418,7 @@ bool PX4Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint
         { PRIORITY_IO, APM_IO_PRIORITY},
         { PRIORITY_UART, APM_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
+        { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

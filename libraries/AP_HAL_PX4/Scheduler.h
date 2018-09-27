@@ -23,6 +23,7 @@
 #define APM_SHELL_PRIORITY       57
 #define APM_OVERTIME_PRIORITY    10
 #define APM_STARTUP_PRIORITY     10
+#define APM_SCRIPTING_PRIORITY    1
 
 /* how long to boost priority of the main thread for each main
    loop. This needs to be long enough for all interrupt-level drivers
