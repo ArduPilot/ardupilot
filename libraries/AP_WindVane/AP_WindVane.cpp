@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: ANA_V_MIN
     // @DisplayName: Analog minumum voltage
-    // @Description: Minimum analalog voltage read by windvane
+    // @Description: Minimum analog voltage read by wind vane
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: ANA_V_MAX
     // @DisplayName: Analog maximum voltage
-    // @Description: Minimum analalog voltage read by windvane
+    // @Description: Minimum analog voltage read by wind vane
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -92,8 +92,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("VANE_FILT", 7, AP_WindVane, _vane_filt_hz, 0.5f),
 
     // @Param: CAL
-    // @DisplayName: set to one to enter calibration on reboot
-    // @Description: set to one to enter calibration on reboot
+    // @DisplayName: Wind vane calibration start
+    // @Description: Start wind vane calibration by setting this to 1
     // @Values: 0:None, 1:Calibrate
     // @User: Standard
     AP_GROUPINFO("CAL", 8, AP_WindVane, _calibration, 0),
