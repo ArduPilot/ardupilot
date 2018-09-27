@@ -93,7 +93,7 @@ class Board:
 
         if cfg.options.enable_scripting:
             env.DEFINES.update(
-                ENABLE_SCRIPTING = 'TRUE',
+                ENABLE_SCRIPTING = 1,
                 )
 
         if 'clang' in cfg.env.COMPILER_CC:
