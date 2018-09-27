@@ -58,6 +58,9 @@ public:
     // record home heading
     void record_home_headng();
 
+    // start calibration routine
+    bool start_calibration();
+
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
