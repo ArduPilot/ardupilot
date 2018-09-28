@@ -94,7 +94,13 @@ class Board:
         if cfg.options.enable_scripting:
             env.DEFINES.update(
                 ENABLE_SCRIPTING = 1,
+                LUA_32BITS = 1,
                 )
+
+            env.AP_LIBRARIES += [
+                'AP_Scripting',
+                'AP_Scripting/lua/src',
+                ]
 
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
@@ -327,6 +333,9 @@ class chibios(Board):
 
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
+        env.CFLAGS += [
+            '-Wno-cast-align',
+        ]
         env.CXXFLAGS += cfg.env.CPU_FLAGS + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
