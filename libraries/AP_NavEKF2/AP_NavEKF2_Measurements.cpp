@@ -838,7 +838,11 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    extNavDataNew.posErr = posErr;
+    if (posErr > 0) {
+        extNavDataNew.posErr = posErr;
+    } else {
+        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
+    }
     extNavDataNew.angErr = angErr;
     extNavDataNew.body_offset = &sensOffset;
     extNavDataNew.time_ms = timeStamp_ms;

@@ -462,6 +462,8 @@ void NavEKF2_core::FuseVelPosNED()
             // Use GPS reported position accuracy if available and floor at value set by GPS position noise parameter
             if (gpsPosAccuracy > 0.0f) {
                 R_OBS[3] = sq(constrain_float(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+            } else if (extNavUsedForPos) {
+                R_OBS[3] = sq(constrain_float(extNavDataDelayed.posErr, 0.01f, 10.0f));
             } else {
                 R_OBS[3] = sq(constrain_float(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
             }
@@ -883,7 +885,7 @@ void NavEKF2_core::selectHeightForFusion()
     // Select the height measurement source
     if (extNavDataToFuse && (activeHgtSource == HGT_SOURCE_EV)) {
         hgtMea = -extNavDataDelayed.pos.z;
-        posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
+        posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.01f, 10.0f));
     } else if (rangeDataToFuse && (activeHgtSource == HGT_SOURCE_RNG)) {
         // using range finder data
         // correct for tilt using a flat earth model
