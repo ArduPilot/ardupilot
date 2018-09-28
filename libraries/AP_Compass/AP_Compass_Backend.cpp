@@ -2,6 +2,8 @@
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
+
+#include <AP_Common/Semaphore.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -93,6 +95,57 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
       on final field outputs, not on the raw outputs
     */
     mag += state.motor_offset;
+}
+
+void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
+                                           uint32_t max_samples)
+{
+    /* rotate raw_field from sensor frame to body frame */
+    rotate_field(field, instance);
+
+    /* publish raw_field (uncorrected point sample) for calibration use */
+    publish_raw_field(field, instance);
+
+    /* correct raw_field for known errors */
+    correct_field(field, instance);
+
+    if (!field_ok(field)) {
+        return;
+    }
+
+    WITH_SEMAPHORE(_sem);
+
+    _accum += field;
+    _accum_count++;
+    if (max_samples && _accum_count >= max_samples) {
+        _accum_count /= 2;
+        _accum /= 2;
+    }
+}
+
+void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
+                                                   const Vector3f *scaling)
+{
+    if (!_sem->take_nonblocking()) {
+        return;
+    }
+
+    if (_accum_count == 0) {
+        _sem->give();
+        return;
+    }
+
+    if (scaling) {
+        _accum *= *scaling;
+    }
+    _accum /= _accum_count;
+
+    publish_filtered_field(_accum, instance);
+
+    _accum.zero();
+    _accum_count = 0;
+
+    _sem->give();
 }
 
 /*
