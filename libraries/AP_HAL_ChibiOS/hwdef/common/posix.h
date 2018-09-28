@@ -361,7 +361,7 @@ int dirname ( char *str );
  int fchmod ( int fd , mode_t mode );
 #endif
 
-char *getcwd ( char *pathname , int len );
+char *getcwd ( char *pathname , size_t len );
 int mkdir ( const char *pathname , mode_t mode );
 int rename ( const char *oldpath , const char *newpath );
 int rmdir ( const char *pathname );
