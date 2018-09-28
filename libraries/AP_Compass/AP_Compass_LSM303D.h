@@ -42,13 +42,9 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     float _mag_range_scale;
-    float _mag_x_accum;
-    float _mag_y_accum;
-    float _mag_z_accum;
     int16_t _mag_x;
     int16_t _mag_y;
     int16_t _mag_z;
-    uint8_t _accum_count;
 
     uint8_t _compass_instance;
     bool _initialised;
