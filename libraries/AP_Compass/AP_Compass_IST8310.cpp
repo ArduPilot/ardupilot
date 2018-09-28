@@ -234,40 +234,10 @@ void AP_Compass_IST8310::timer()
     /* Resolution: 0.3 µT/LSB - already convert to milligauss */
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, _instance);
-
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, _instance);
-
-    /* correct raw_field for known errors */
-    correct_field(field, _instance);
-
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _accum += field;
-        _accum_count++;
-        _sem->give();
-    }
+    accumulate_sample(field, _instance);
 }
 
 void AP_Compass_IST8310::read()
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-
-    if (_accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    Vector3f field(_accum);
-    field /= _accum_count;
-
-    publish_filtered_field(field, _instance);
-
-    _accum.zero();
-    _accum_count = 0;
-
-    _sem->give();
+    drain_accumulated_samples(_instance);
 }
