@@ -38,9 +38,6 @@ public:
     AP_WindVane(const AP_WindVane &other) = delete;
     AP_WindVane &operator=(const AP_WindVane&) = delete;
 
-    // destructor
-    ~AP_WindVane();
-
     static AP_WindVane *get_singleton();
 
     // return true if wind vane is enabled
