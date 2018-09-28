@@ -23,7 +23,7 @@ void ModeLoiter::update()
     // get distance (in meters) to destination
     _distance_to_destination = get_distance(rover.current_loc, _destination);
 
-    // if within waypoint radius slew desired speed towards zero and use existing desired heading
+    // if within loiter radius slew desired speed towards zero and use existing desired heading
     if (_distance_to_destination <= g2.loit_radius) {
         // sailboats do not stop
         const float desired_speed_within_radius = g2.motors.has_sail() ? 0.1f : 0.0f;
