@@ -38,9 +38,5 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
     uint8_t _compass_instance;
     float _scaling;
-    float _mag_x_accum;
-    float _mag_y_accum;
-    float _mag_z_accum;
-    uint32_t _accum_count;
     enum Rotation _rotation;
 };
