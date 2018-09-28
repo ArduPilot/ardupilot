@@ -228,20 +228,7 @@ void AP_Compass_AK09916::timer()
 
     field(data.magx * range_scale, data.magy * range_scale, data.magz * range_scale);
 
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, compass_instance);
-
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, compass_instance);
-
-    /* correct raw_field for known errors */
-    correct_field(field, compass_instance);
-
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        accum += field;
-        accum_count++;
-        _sem->give();
-    }
+    accumulate_sample(field, compass_instance);
 
 check_registers:
     dev->check_next_register();
@@ -249,20 +236,5 @@ check_registers:
 
 void AP_Compass_AK09916::read()
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
-    if (accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    accum /= accum_count;
-
-    publish_filtered_field(accum, compass_instance);
-
-    accum.zero();
-    accum_count = 0;
-    
-    _sem->give();
+    drain_accumulated_samples(compass_instance);
 }
