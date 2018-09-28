@@ -237,7 +237,8 @@ void AP_Compass_MMC3416::timer()
                offset.x, offset.y, offset.z);
 #endif
 
-        accumulate_field(field);
+        last_sample_ms = AP_HAL::millis();
+        accumulate_sample(field, compass_instance);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
             state = STATE_REFILL1;
@@ -263,7 +264,8 @@ void AP_Compass_MMC3416::timer()
         field *= -counts_to_milliGauss;
         field += offset;
 
-        accumulate_field(field);
+        last_sample_ms = AP_HAL::millis();
+        accumulate_sample(field, compass_instance);
 
         // we stay in STATE_MEASURE_WAIT3 for measure_count_limit cycles
         if (measure_count++ >= measure_count_limit) {
@@ -279,52 +281,7 @@ void AP_Compass_MMC3416::timer()
     }
 }
 
-/*
-  accumulate a field
- */
-void AP_Compass_MMC3416::accumulate_field(Vector3f &field)
-{
-#if 0
-    DataFlash_Class::instance()->Log_Write("MMC", "TimeUS,X,Y,Z", "Qfff",
-                                           AP_HAL::micros64(),
-                                           (double)field.x,
-                                           (double)field.y,
-                                           (double)field.z);
-#endif
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, compass_instance);
-        
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, compass_instance);
-        
-    /* correct raw_field for known errors */
-    correct_field(field, compass_instance);
-        
-    if (_sem->take(0)) {
-        accum += field;
-        accum_count++;
-        _sem->give();
-    }
-
-    last_sample_ms = AP_HAL::millis();
-}
-
 void AP_Compass_MMC3416::read()
 {
-    if (!_sem->take(0)) {
-        return;
-    }
-    if (accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    accum /= accum_count;
-
-    publish_filtered_field(accum, compass_instance);
-    
-    accum.zero();
-    accum_count = 0;
-    
-    _sem->give();
+    drain_accumulated_samples(compass_instance);
 }

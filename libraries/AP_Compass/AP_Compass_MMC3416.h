@@ -61,8 +61,6 @@ private:
     void accumulate_field(Vector3f &field);
 
     uint8_t compass_instance;
-    Vector3f accum;
-    uint16_t accum_count;
     bool force_external;
     Vector3f offset;
     uint16_t measure_count;
