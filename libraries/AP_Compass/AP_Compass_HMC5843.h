@@ -47,16 +47,12 @@ private:
 
     AP_HMC5843_BusDriver *_bus;
 
-    float _scaling[3];
+    Vector3f _scaling;
     float _gain_scale;
 
     int16_t _mag_x;
     int16_t _mag_y;
     int16_t _mag_z;
-    int16_t _mag_x_accum;
-    int16_t _mag_y_accum;
-    int16_t _mag_z_accum;
-    uint8_t _accum_count;
 
     uint8_t _compass_instance;
 
