@@ -62,6 +62,7 @@ public:
       terminated
      */
     virtual bool get_system_id(char buf[40]) { return false; }
+    virtual bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) { return false; }
 
     /**
        return commandline arguments, if available
@@ -111,6 +112,7 @@ public:
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
