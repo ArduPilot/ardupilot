@@ -37,7 +37,8 @@ public:
     /*
       get system identifier (STM32 serial number)
      */
-    bool get_system_id(char buf[40]);
+    bool get_system_id(char buf[40]) override;
+    bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
     uint32_t available_memory(void) override;
 

@@ -132,6 +132,16 @@ bool PX4Util::get_system_id(char buf[40])
     return true;
 }
 
+
+bool PX4Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    uint8_t serialid[12];
+    get_board_serial(serialid);
+    len = MIN(12, len);
+    memcpy(buf, serialid, len);
+    return true;
+}
+
 /**
    how much free memory do we have in bytes.
 */
