@@ -953,7 +953,7 @@ void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
     uint8_t pct2 = battery.capacity_remaining_pct(1);
     uint8_t p2 = (100 - pct2) / 16.6;
     float v2 = battery.voltage(1);
-    backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYM_BATT_FULL + p2, v2, SYM_VOLT);
+    backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYM_BATT_FULL + p2, (double)v2, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
@@ -963,7 +963,7 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
     if (battery.consumed_mah(1) <= 9999) {
         backend->write(x,y, false, "%4d%c", (int)battery.consumed_mah(1), SYM_MAH);
     } else {
-        backend->write(x,y, false, "%2.2f%c", ah, SYM_AH);
+        backend->write(x,y, false, "%2.2f%c", (double)ah, SYM_AH);
     }
 }
 
