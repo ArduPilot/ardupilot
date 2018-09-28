@@ -1594,7 +1594,7 @@ int fchmod(int fd, mode_t mode)
 /// @return 0 on sucess.
 /// @return -1 on error with errno set.
 
-char *getcwd(char *pathname, int len)
+char *getcwd(char *pathname, size_t len)
 {
     int res;
     errno = 0;
