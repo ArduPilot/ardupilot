@@ -1335,6 +1335,14 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_OBSTACLE_DISTANCE:
+    {
+#if PROXIMITY_ENABLED == ENABLED
+        copter.g2.proximity.handle_msg(msg);
+#endif
+        break;
+    }
+
 #if HIL_MODE != HIL_MODE_DISABLED
     case MAVLINK_MSG_ID_HIL_STATE:          // MAV ID: 90
     {
