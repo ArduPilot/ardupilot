@@ -122,10 +122,6 @@ AP_WindVane::AP_WindVane()
     _singleton = this;
 }
 
-AP_WindVane::~AP_WindVane()
-{
-}
-
 /*
  * Get the AP_WindVane singleton
  */
