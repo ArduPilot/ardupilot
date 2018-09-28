@@ -23,54 +23,64 @@
   without an implementation. If we need them then we can implement as
   needed.
  */
-#include <posix.h>
 #include <string.h>
 #include <hal.h>
 #include <memstreams.h>
 #include <chprintf.h>
 #include <ctype.h>
-#include "stdio.h"
+#include "hwdef/common/posix.h"
+#include "hwdef/common/stdio.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/print_vprintf.h>
+
+extern const AP_HAL::HAL& hal;
+
+/* Helper class implements AP_HAL::Print so we can use utility/vprintf */
+class StdioBufferPrinter : public AP_HAL::BetterStream {
+public:
+    StdioBufferPrinter(char* str, size_t size)  : _offs(0), _str(str), _size(size)  {}
+
+    size_t write(uint8_t c) override {
+        if (_offs < _size) {
+            _str[_offs] = c;
+            _offs++;
+            return 1;
+        } else if (_size == 0) {
+            _offs++;
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    size_t write(const uint8_t *buffer, size_t size) override {
+        size_t n = 0;
+        while (size--) {
+            n += write(*buffer++);
+        }
+        return n;
+    }
+
+    size_t _offs;
+    char* const  _str;
+    const size_t _size;
+
+    uint32_t available() override { return 0; }
+    int16_t read() override { return -1; }
+    uint32_t txspace() override { return 0; }
+};
 
 int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
-  int retval = 0;
-#ifndef HAL_NO_PRINTF
-  MemoryStream ms;
-  BaseSequentialStream *chp;
-  size_t size_wo_nul;
-
-  if (size > 0)
-    size_wo_nul = size - 1;
-  else
-    size_wo_nul = 0;
-
-  /* Memory stream object to be used as a string writer, reserving one
-     byte for the final zero.*/
-  msObjectInit(&ms, (uint8_t *)str, size_wo_nul, 0);
-
-  /* Performing the print operation using the common code.*/
-  chp = (BaseSequentialStream *)(void *)&ms;
-
-  retval = chvprintf(chp, fmt, ap);
-
-
-  /* Terminate with a zero, unless size==0.*/
-  if (ms.eos < size)
-      str[ms.eos] = 0;
-
-  /* Return number of bytes that would have been written.*/
-#else
-  (void)str;
-  (void)size;
-  (void)fmt;
-  (void)ap;
-#endif
-  return retval;
+    StdioBufferPrinter buf(str, size);
+    print_vprintf(&buf, fmt, ap);
+    // null terminate if possible
+    int ret = buf._offs;
+    buf.write(0);
+    return ret;
 }
 
 int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
 {
-#ifndef HAL_NO_PRINTF
    va_list arg;
    int done;
  
@@ -79,49 +89,30 @@ int __wrap_snprintf(char *str, size_t size, const char *fmt, ...)
    va_end (arg);
  
    return done;
-#else
-   (void)str;
-   (void)size;
-   (void)fmt;
-   return 0;
-#endif
 }
 
 int vasprintf(char **strp, const char *fmt, va_list ap)
 {
-#ifndef HAL_NO_PRINTF
     int len = vsnprintf(NULL, 0, fmt, ap);
     if (len <= 0) {
         return -1;
     }
-    char *buf = calloc(len+1, 1);
+    char *buf = (char*)calloc(len+1, 1);
     if (!buf) {
         return -1;
     }
     vsnprintf(buf, len+1, fmt, ap);
     (*strp) = buf;
     return len;
-#else
-    (void)strp;
-    (void)fmt;
-    (void)ap;
-    return 0;
-#endif
 }
 
 int asprintf(char **strp, const char *fmt, ...)
 {
-#ifndef HAL_NO_PRINTF
     va_list ap;
     va_start(ap, fmt);
     int ret = vasprintf(strp, fmt, ap);
     va_end(ap);
     return ret;
-#else
-    (void)strp;
-    (void)fmt;
-    return 0;
-#endif
 }
 
 int vprintf(const char *fmt, va_list arg)
