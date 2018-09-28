@@ -47,9 +47,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
-    Vector3f _mag_accum;
-    uint32_t _accum_count;
-
     uint8_t _compass_instance;
 
     struct {
