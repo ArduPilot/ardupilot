@@ -117,6 +117,12 @@ public:
     // uniform scaling
     Vector3<T> &operator /=(const T num);
 
+    // non-uniform scaling
+    Vector3<T> &operator *=(const Vector3<T> &v) {
+        x *= v.x; y *= v.y; z *= v.z;
+        return *this;
+    }
+
     // allow a vector3 to be used as an array, 0 indexed
     T & operator[](uint8_t i) {
         T *_v = &x;
