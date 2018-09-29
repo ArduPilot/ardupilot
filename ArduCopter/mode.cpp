@@ -376,6 +376,38 @@ void Copter::Mode::zero_throttle_and_relax_ac()
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
+void Copter::Mode::make_safe_shut_down()
+{
+    // command aircraft to initiate the shutdown process
+    motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+    switch (motors->get_spool_mode()) {
+
+    case AP_Motors::SHUT_DOWN:
+        // when we reach shutdown state command a disarm
+        copter.init_disarm_motors();
+        FALLTHROUGH;
+
+    case AP_Motors::GROUND_IDLE:
+        // relax controllers during idle states
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        break;
+
+    default:
+        // while transitioning though active states continue to operate normally
+        break;
+    }
+
+    // we may need to move this out
+    wp_nav->wp_and_spline_init();
+    // we may need to move this out
+    loiter_nav->init_target();
+    pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+    pos_control->update_z_controller();
+    // we may need to move this out
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
+}
+
 void Copter::Mode::zero_throttle_and_hold_attitude()
 {
     // run attitude controller

@@ -301,11 +301,14 @@ void Copter::ModeAutoTune::run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the init() checks
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
+
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
 
     // apply SIMPLE mode transform to pilot inputs
     update_simple_mode();
@@ -334,11 +337,7 @@ void Copter::ModeAutoTune::run()
     // reset target lean angles and heading while landed
     if (ap.land_complete) {
         // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-#if FRAME_CONFIG == HELI_FRAME
-        if ((target_climb_rate < 0.0f) && !motors->get_interlock()) {
-#else
         if (target_climb_rate < 0.0f) {
-#endif
             motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
@@ -354,7 +353,7 @@ void Copter::ModeAutoTune::run()
 
         // check if pilot is overriding the controls
         bool zero_rp_input = is_zero(target_roll) && is_zero(target_pitch);
-        if (!zero_rp_input || !is_zero(target_yaw_rate) || target_climb_rate != 0) {
+        if (!zero_rp_input || !is_zero(target_yaw_rate) || !is_zero(target_climb_rate)) {
             if (!pilot_override) {
                 pilot_override = true;
                 // set gains to their original values

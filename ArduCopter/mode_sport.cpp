@@ -71,10 +71,14 @@ void Copter::ModeSport::run()
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
-    // State Machine Determination
-    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+    // Sport State Machine Determination
+    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        sport_state = Sport_Landed;
+    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
         sport_state = Sport_MotorStopped;
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
+        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         sport_state = Sport_Takeoff;
     } else if (!ap.auto_armed || ap.land_complete) {
         sport_state = Sport_Landed;
@@ -87,15 +91,12 @@ void Copter::ModeSport::run()
 
     case Sport_MotorStopped:
 
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case Sport_Takeoff:
-        // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // initiate take-off
         if (!takeoff.running()) {
@@ -140,19 +141,7 @@ void Copter::ModeSport::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-        // call position controller
-        // protects helis from inadvertantly disabling motor interlock inflight by controlling descent rather than relaxing alt_hold controller
-        // statement doesn't affect multicopters since they should never be ground idle or spool_down while flying
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SPOOL_DOWN) {
-            // This keeps collective from spiking if ground idle set before land complete set.
-            if (ap.land_complete_maybe) {
-                pos_control->relax_alt_hold_controllers(0.0f);
-            } else {
-                pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-            }
-        } else {
-            pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-        }
+        pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         break;
     }
 

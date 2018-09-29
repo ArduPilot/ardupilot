@@ -749,20 +749,10 @@ void Copter::ModeAuto::wp_run()
         }
     }
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-        }
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -789,15 +779,13 @@ void Copter::ModeAuto::wp_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::spline_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // To-Do: reset waypoint origin to current location because copter is probably on the ground so we don't want it lurching left or right on take-off
-        //    (of course it would be better if people just used take-off)
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -832,23 +820,10 @@ void Copter::ModeAuto::spline_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::land_run()
 {
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        return;
-    }
-
-    // if landed, spool down motors (disarm is handled in verify_land)
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -895,11 +870,13 @@ void Copter::ModeAuto::nav_guided_run()
 //      called by auto_run at 100hz or more
 void Copter::ModeAuto::loiter_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
@@ -972,11 +949,11 @@ void Copter::ModeAuto::payload_place_run()
 
 bool Copter::ModeAuto::payload_place_run_should_run()
 {
-    // muts be armed
+    // musts be armed
     if (!motors->armed()) {
         return false;
     }
-    // muts be auto-armed
+    // musts be auto-armed
     if (!ap.auto_armed) {
         return false;
     }

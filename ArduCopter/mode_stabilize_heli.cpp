@@ -44,20 +44,27 @@ void Copter::ModeStabilize_Heli::run()
     // for operational checks. Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero
     // so the swash servos move.
 
-    if (!motors->armed()) {  // Motors Stopped
+    if (!motors->armed()) {
+        // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
-    } else if (!motors->get_interlock() && ap.land_complete) { // landed and motors interlock disabled
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
-    } else if (!motors->get_interlock()) { // motors interlock disabled inflight
+    } else if (ap.throttle_zero) {
+        // Attempting to Land
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    // clear landing flag above zero throttle
-        if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED && !motors->limit.throttle_lower) {
+    }
+
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        // Motors Stopped
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+        // Landed
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        // clear landing flag above zero throttle
+        if (!motors->limit.throttle_lower) {
             set_land_complete(false);
         }
     }

@@ -36,16 +36,28 @@ void Copter::ModeStabilize::run()
     float pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     if (!motors->armed()) {
+        // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
-    } else if (ap.throttle_zero || !motors->get_interlock()) {
+    } else if (ap.throttle_zero) {
+        // Attempting to Land
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
     } else {
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        set_land_complete(false);
+    }
+
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        // Motors Stopped
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+        // Landed
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_rate_controller_I_terms();
+    } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
+        // clear landing flag above zero throttle
+        if (!motors->limit.throttle_lower) {
+            set_land_complete(false);
+        }
     }
 
     // call attitude controller

@@ -374,15 +374,13 @@ void Copter::ModeGuided::takeoff_run()
 
 void Copter::Mode::auto_takeoff_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // initialise wpnav targets
-        wp_nav->shift_wp_origin_to_current_pos();
-        zero_throttle_and_relax_ac();
-        // clear i term when we're taking off
-        set_throttle_takeoff();
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -425,9 +423,10 @@ void Copter::ModeGuided::pos_control_run()
         }
     }
 
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -478,22 +477,10 @@ void Copter::ModeGuided::vel_control_run()
         }
     }
 
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        pos_control->init_vel_controller_xyz();
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        pos_control->init_vel_controller_xyz();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-        }
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -544,25 +531,10 @@ void Copter::ModeGuided::posvel_control_run()
         }
     }
 
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        // set target position and velocity to current position and velocity
-        pos_control->set_pos_target(inertial_nav.get_position());
-        pos_control->set_desired_velocity(Vector3f(0,0,0));
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        pos_control->set_pos_target(inertial_nav.get_position());
-        pos_control->set_desired_velocity(Vector3f(0,0,0));
-        pos_control->relax_alt_hold_controllers(0.0f);
-        zero_throttle_and_hold_attitude();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-        }
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -644,17 +616,10 @@ void Copter::ModeGuided::angle_control_run()
         yaw_rate_in = 0.0f;
     }
 
-    // if not auto armed or motors not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        return;
-    }
-
-    // landed with negative climb rate, spool down motors
-    if (ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f)) {
-        zero_throttle_and_relax_ac();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || (ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f))) {
+        make_safe_shut_down();
         return;
     }
 

@@ -34,24 +34,13 @@ bool Copter::ModeBrake::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeBrake::run()
 {
-    // if not auto armed set throttle to zero and exit immediately
-    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN GROUND_IDLE*****
-    // also protects heli's from inflight motor interlock disable
-    
-    if (!motors->armed() || !ap.auto_armed || (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && ap.land_complete)) {
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-            zero_throttle_and_relax_ac();
-        } else {
-            zero_throttle_and_hold_attitude();
-        }  
-        wp_nav->init_brake_target(BRAKE_MODE_DECEL_RATE);
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-        }
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
+
 
     // if landed, spool down motors and disarm
     if (ap.land_complete) {

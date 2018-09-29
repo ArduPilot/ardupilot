@@ -110,6 +110,7 @@ protected:
     // helper functions
     void zero_throttle_and_relax_ac();
     void zero_throttle_and_hold_attitude();
+    void make_safe_shut_down();
 
     // functions to control landing
     // in modes that support landing

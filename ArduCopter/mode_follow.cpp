@@ -27,6 +27,9 @@
 // initialise follow mode
 bool Copter::ModeFollow::init(const bool ignore_checks)
 {
+
+    // todo: if we can't take off in follow me then we should not enter the mode if we are landed or disarmed.
+
     // re-use guided mode
     gcs().send_text(MAV_SEVERITY_WARNING, "Follow-mode init");
     if (!g2.follow.enabled()) {
@@ -37,29 +40,10 @@ bool Copter::ModeFollow::init(const bool ignore_checks)
 
 void Copter::ModeFollow::run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN GROUND_IDLE*****
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-            zero_throttle_and_relax_ac();
-        } else {
-            zero_throttle_and_hold_attitude();
-        }  
-        pos_control->relax_alt_hold_controllers(0.0f);
-        pos_control->init_vel_controller_xyz();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-        }
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        pos_control->init_vel_controller_xyz();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 

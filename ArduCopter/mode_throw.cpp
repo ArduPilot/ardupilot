@@ -35,7 +35,7 @@ void Copter::ModeThrow::run()
     */
 
     // Don't enter THROW mode if interlock will prevent motors running
-    if (!motors->armed() && motors->get_interlock()) {
+    if (!motors->armed()) {
         // state machine entry is always from a disarmed state
         stage = Throw_Disarmed;
 

@@ -54,42 +54,22 @@ void Copter::ModeLand::run()
 //      should be called at 100hz or more
 void Copter::ModeLand::gps_run()
 {
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-            zero_throttle_and_relax_ac();
-        } else {
-            zero_throttle_and_hold_attitude();
-        }  
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
+    // Land State Machine Determination
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+    } else {
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        // pause before beginning land descent
+        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+            land_pause = false;
         }
-        return;
-    }
 
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        return;
+        land_run_horizontal_control();
+        land_run_vertical_control(land_pause);
     }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    
-    // pause before beginning land descent
-    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
-        land_pause = false;
-    }
-    
-    land_run_horizontal_control();
-    land_run_vertical_control(land_pause);
 }
 
 // land_nogps_run - runs the land controller
@@ -120,46 +100,24 @@ void Copter::ModeLand::nogps_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
-    // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
-    // *****CHECK LOGIC HERE.  I MADE IT SIMILAR TO GPS_RUN BUT KEPT ATTITUDE CONTROL STUFF *****
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-            zero_throttle_and_relax_ac();
-        } else {
-            // call attitude controller
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-            attitude_control->set_throttle_out(0,false,g.throttle_filt);
-            zero_throttle_and_hold_attitude();
-        }
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        // disarm when the landing detector says we've landed and motors have spooled down
-        if (ap.land_complete && (motors->get_spool_mode() == AP_Motors::GROUND_IDLE)) {
-            copter.init_disarm_motors();
-        }
-        return;
-    }
+    // Land State Machine Determination
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
+    } else {
+        // set motors to full range
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        attitude_control->set_throttle_out(0,false,g.throttle_filt);
-        zero_throttle_and_hold_attitude();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        return;
-    }
+        // pause before beginning land descent
+        if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+            land_pause = false;
+        }
 
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        land_run_vertical_control(land_pause);
+    }
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-    // pause before beginning land descent
-    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
-        land_pause = false;
-    }
-
-    land_run_vertical_control(land_pause);
 }
 
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch

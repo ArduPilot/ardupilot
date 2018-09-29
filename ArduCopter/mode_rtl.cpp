@@ -130,14 +130,10 @@ void Copter::ModeRTL::return_start()
 //      called by rtl_run at 100hz or more
 void Copter::ModeRTL::climb_return_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-// replace with 
-//  if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN || !ap.auto_armed) {
-// or should this be 
-//  if (motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED || !ap.auto_armed) {
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        // To-Do: re-initialise wpnav targets
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -192,14 +188,10 @@ void Copter::ModeRTL::loiterathome_start()
 //      called by rtl_run at 100hz or more
 void Copter::ModeRTL::loiterathome_run()
 {
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-// replace with 
-//  if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN || !ap.auto_armed) {
-// or should this be 
-//  if (motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED || !ap.auto_armed) {
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        // To-Do: re-initialise wpnav targets
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -269,16 +261,10 @@ void Copter::ModeRTL::descent_run()
     float target_pitch = 0.0f;
     float target_yaw_rate = 0.0f;
 
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-// replace with 
-//  if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN || !ap.auto_armed) {
-// or should this be 
-//  if (motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED || !ap.auto_armed) {
-    if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
-        // set target to current position
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
@@ -365,31 +351,10 @@ bool Copter::ModeRTL::landing_gear_should_be_deployed() const
 //      called by rtl_run at 100hz or more
 void Copter::ModeRTL::land_run(bool disarm_on_land)
 {
-    // if not auto armed or landing completed or motor interlock not enabled set throttle to zero and exit immediately
-    // ***** THIS WILL DISARM A/C IF USER SWITCHES TO MODE ON GROUND IN GROUND_IDLE*****
-    if (!motors->armed() || !ap.auto_armed || motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE) {
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE || motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-            zero_throttle_and_relax_ac();
-        } else {
-            zero_throttle_and_hold_attitude();
-        }  
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        pos_control->relax_alt_hold_controllers(0.0f);
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.init_disarm_motors();
-            _state_complete = true;
-        }
-        return;
-    }
-
-    // if landed, spool down motors and disarm
-    if (ap.land_complete) {
-        zero_throttle_and_hold_attitude();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    // if not armed set throttle to zero and exit immediately
+    // todo: this code is used in multiple places
+    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+        make_safe_shut_down();
         return;
     }
 
