@@ -104,6 +104,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case USER_FUNC2:
     case USER_FUNC3:
     case ZIGZAG:
+    case ZIGZAG_SaveWP:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -528,8 +529,24 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
         case ZIGZAG:
 #if MODE_ZIGZAG_ENABLED == ENABLED
+            do_aux_function_change_mode(control_mode_t::ZIGZAG, ch_flag);
+#endif
+            break;
+
+        case ZIGZAG_SaveWP:
+#if MODE_ZIGZAG_ENABLED == ENABLED
             if (copter.flightmode == &copter.mode_zigzag) {
-                copter.mode_zigzag.receive_signal_from_auxsw(ch_flag);
+                switch (ch_flag) {
+                    case LOW:
+                        copter.mode_zigzag.save_or_move_to_destination(0);
+                        break;
+                    case MIDDLE:
+                        copter.mode_zigzag.return_to_manual_control();
+                        break;
+                    case HIGH:
+                        copter.mode_zigzag.save_or_move_to_destination(1);
+                        break;
+                }
             }
 #endif
             break;
