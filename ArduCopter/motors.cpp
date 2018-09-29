@@ -303,7 +303,10 @@ void Copter::motors_output()
     // OBC rules
     if (g2.afs.should_crash_vehicle()) {
         g2.afs.terminate_vehicle();
-        return;
+        if (!g2.afs.terminating_vehicle_via_landing()) {
+            return;
+        }
+        // landing must continue to run the motors output
     }
 #endif
 
