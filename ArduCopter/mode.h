@@ -1270,7 +1270,11 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
 
-    void receive_signal_from_auxsw(RC_Channel::aux_switch_pos_t aux_switch_position);
+    // save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
+    void save_or_move_to_destination(uint8_t dest_num);
+
+    // return manual control to the pilot
+    void return_to_manual_control();
 
 protected:
 
@@ -1281,31 +1285,17 @@ private:
 
     void auto_control();
     void manual_control();
-    bool has_arr_at_dest();
-    bool calculate_next_dest(Vector3f& next_dest, RC_Channel::aux_switch_pos_t next_A_or_B) const;
-    bool set_destination(const Vector3f& destination, RC_Channel::aux_switch_pos_t aux_switch_position);
+    bool reached_destination();
+    bool calculate_next_dest(uint8_t position_num, Vector3f& next_dest) const;
 
-    struct {   
-        Vector2f A_pos; // in NEU frame in cm relative to home location
-        Vector2f B_pos; // in NEU frame in cm relative to home location
-        RC_Channel::aux_switch_pos_t switch_pos_A;  // switch position recorded as point A
-        RC_Channel::aux_switch_pos_t switch_pos_B;  // switch position recorded as point B
-    } zigzag_waypoint;
+    Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
+    Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
 
     enum zigzag_state {
-        REQUIRE_A,       // point A is not defined yet, pilot has manual control
-        REQUIRE_B,       // point B is not defined but A has been defined, pilot has manual control
-        AUTO,            // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
-        MANUAL_REGAIN    // pilot toggle the switch to middle position, has manual control
-    };
+        STORING_POINTS, // storing points A and B, pilot has manual control
+        AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
+        MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
+    } stage;
 
-    zigzag_state stage = REQUIRE_A;
-
-    struct {
-        uint32_t last_judge_pos_time;
-        Vector3f last_pos;
-        bool is_keeping_time;
-    } zigzag_judge_moving;
-
-    bool zigzag_is_between_A_and_B;
+    uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
 };
