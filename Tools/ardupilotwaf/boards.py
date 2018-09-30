@@ -119,6 +119,9 @@ class Board:
                 '-O0',
             ]
 
+        if cfg.options.enable_math_check_indexes:
+            env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
+
         env.CXXFLAGS += [
             '-std=gnu++11',
 
