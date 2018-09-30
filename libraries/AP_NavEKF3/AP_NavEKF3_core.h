@@ -415,7 +415,6 @@ private:
     // the states are available in two forms, either as a Vector24, or
     // broken down as individual elements. Both are equivalent (same
     // memory)
-    Vector24 statesArray;
     struct state_elements {
         Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
         Vector3f    velocity;       // velocity of IMU in local NED earth frame (m/sec)
@@ -425,7 +424,12 @@ private:
         Vector3f    earth_magfield; // earth frame magnetic field vector (Gauss)
         Vector3f    body_magfield;  // body frame magnetic field vector (Gauss)
         Vector2f    wind_vel;       // horizontal North East wind velocity vector in local NED earth frame (m/sec)
-    } &stateStruct;
+    };
+
+    union {
+        Vector24 statesArray;
+        struct state_elements stateStruct;
+    };
 
     struct output_elements {
         Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame

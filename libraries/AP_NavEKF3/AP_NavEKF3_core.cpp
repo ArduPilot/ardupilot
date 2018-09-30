@@ -12,8 +12,6 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 NavEKF3_core::NavEKF3_core(void) :
-    stateStruct(*reinterpret_cast<struct state_elements *>(&statesArray)),
-
     _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_UpdateFilter")),
     _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_CovariancePrediction")),
     _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseVelPosNED")),
