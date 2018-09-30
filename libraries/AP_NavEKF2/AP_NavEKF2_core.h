@@ -383,7 +383,6 @@ private:
     // the states are available in two forms, either as a Vector31, or
     // broken down as individual elements. Both are equivalent (same
     // memory)
-    Vector28 statesArray;
     struct state_elements {
         Vector3f    angErr;         // 0..2
         Vector3f    velocity;       // 3..5
@@ -395,7 +394,12 @@ private:
         Vector3f    body_magfield;  // 19..21
         Vector2f    wind_vel;       // 22..23
         Quaternion  quat;           // 24..27
-    } &stateStruct;
+    };
+
+    union {
+        Vector28 statesArray;
+        struct state_elements stateStruct;
+    };
 
     struct output_elements {
         Quaternion  quat;           // 0..3
