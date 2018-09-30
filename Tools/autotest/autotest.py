@@ -307,6 +307,7 @@ def run_step(step):
         "debug": opts.debug,
         "clean": not opts.no_clean,
         "configure": not opts.no_configure,
+        "extra_configure_args": opts.waf_configure_args,
     }
 
     vehicle_binary = None
@@ -626,6 +627,12 @@ if __name__ == "__main__":
                            action='store_true',
                            help='do not configure before building',
                            dest="no_configure")
+    group_build.add_option("", "--waf-configure-args",
+                           action="append",
+                           dest="waf_configure_args",
+                           type="string",
+                           default=[],
+                           help="extra arguments passed to waf in configure")
     group_build.add_option("-j", default=None, type='int', help='build CPUs')
     group_build.add_option("--no-clean",
                            default=False,
