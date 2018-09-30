@@ -102,6 +102,11 @@ submodules at specific revisions.
         default=None,
         help='set default parameters to embed in the firmware')
 
+    g.add_option('--enable-math-check-indexes',
+                 action='store_true',
+                 default=False,
+                 help="Enable checking of math indexes")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
