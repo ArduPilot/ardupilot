@@ -258,3 +258,5 @@ Vector3f rand_vec3f(void);
 // confirm a value is a valid octal value
 bool is_valid_octal(uint16_t octal);
 
+// return true if two rotations are equal
+bool rotation_equal(enum Rotation r1, enum Rotation r2);
