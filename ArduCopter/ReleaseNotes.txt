@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc11 01-Oct-2018
+Changes from 3.6.0-rc10
+1) Bug Fixes:
+    a) PosHold fix to initialise desired accelerations
+    b) Automatic compass orientation fix to account for equivalent rotations
+    c) ChibiOS fix to RSSI voltage reading
+------------------------------------------------------------------
 Copter 3.6.0-rc10 15-Sep-2018
 Changes from 3.6.0-rc9
 1) Arming/disarming from transmitter can be disabled with ARMING_RUDDER parameter
