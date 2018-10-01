@@ -171,5 +171,4 @@ private:
 
     Vector3f calculate_earth_field(CompassSample &sample, enum Rotation r);
     bool calculate_orientation();
-    bool rotation_equal(enum Rotation r1, enum Rotation r2) const;
 };
