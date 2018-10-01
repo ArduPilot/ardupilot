@@ -83,7 +83,11 @@ public:
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
-        
+
+    bool terminating_vehicle_via_landing() const {
+        return _terminate_action == TERMINATE_ACTION_LAND;
+    };
+
 protected:
     // setup failsafe values for if FMU firmware stops running
     virtual void setup_IO_failsafe(void) = 0;
