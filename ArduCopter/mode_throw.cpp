@@ -78,7 +78,7 @@ void Copter::ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
         stage = Throw_PosHold;
 
-        // initialise the loiter target to the curent position and velocity
+        // initialise the loiter target to the current position and velocity
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
