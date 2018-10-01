@@ -970,6 +970,10 @@ private:
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
 #endif
+ // for flight mode SEMI_AUTO add a2s_Andres
+#if MODE_SEMI_AUTO_ENABLED == ENABLED
+    ModeSemiAuto mode_semi_auto;
+#endif
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;
 #endif

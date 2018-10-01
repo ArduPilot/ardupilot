@@ -386,6 +386,164 @@ private:
 
 };
 
+// for flight mode SEMI_AUTO add a2s_Andres
+class ModeSemiAuto : public Mode {
+
+public:
+    // inherit constructor
+    using Copter::Mode::Mode;
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool is_autopilot() const override { return true; }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool in_guided_mode() const { return mode() == SemiAuto_NavGuided; }
+
+    // SemiAuto
+    SemiMode mode() const { return _mode; }
+
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    void wp_start(const Vector3f& destination);
+    void wp_start(const Location_Class& dest_loc);
+    void land_start();
+    void land_start(const Vector3f& destination);
+    void circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
+    void circle_start();
+    void spline_start(const Vector3f& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Vector3f& next_spline_destination);
+    void spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
+    void nav_guided_start();
+
+    bool landing_gear_should_be_deployed() const override;
+
+    void payload_place_start();
+
+    // only out here temporarily
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
+
+    // for GCS_MAVLink to call:
+    bool do_guided(const AP_Mission::Mission_Command& cmd);
+       
+protected:
+
+    const char *name() const override { return "SEMI_AUTO"; }
+    const char *name4() const override { return "SMAU"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    void run_autopilot() override;
+
+private:
+
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+
+    void takeoff_run();
+    void wp_run();
+    void spline_run();
+    void land_run();
+    void rtl_run();
+    void circle_run();
+    void nav_guided_run();
+    void loiter_run();
+
+    void payload_place_start(const Vector3f& destination);
+    void payload_place_run();
+    bool payload_place_run_should_run();
+    void payload_place_run_loiter();
+    void payload_place_run_descend();
+    void payload_place_run_release();
+
+   SemiMode _mode = SemiAuto_TakeOff;   // controls which auto controller is run
+
+    Location_Class terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
+
+    void do_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_circle(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+    void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+    void do_guided_limits(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    void do_yaw(const AP_Mission::Mission_Command& cmd);
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_roi(const AP_Mission::Mission_Command& cmd);
+    void do_mount_control(const AP_Mission::Mission_Command& cmd);
+#if CAMERA == ENABLED
+    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
+    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
+#endif
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
+#endif
+#if GRIPPER_ENABLED == ENABLED
+    void do_gripper(const AP_Mission::Mission_Command& cmd);
+#endif
+#if WINCH_ENABLED == ENABLED
+    void do_winch(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+
+    bool verify_takeoff();
+    bool verify_land();
+    bool verify_payload_place();
+    bool verify_loiter_unlimited();
+    bool verify_loiter_time();
+    bool verify_RTL();
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    bool verify_yaw();
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_circle(const AP_Mission::Mission_Command& cmd);
+    bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+    bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+#endif
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+
+    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
+
+    // Loiter control
+    uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
+    uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
+
+                                             // Delay the next navigation command
+    int32_t nav_delay_time_max;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t nav_delay_time_start;
+
+    // Delay Mission Scripting Command
+    int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
+    uint32_t condition_start;
+
+    LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
+
+    struct {
+        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
+        uint32_t hover_start_timestamp; // milliseconds
+        float hover_throttle_level;
+        uint32_t descend_start_timestamp; // milliseconds
+        uint32_t place_start_timestamp; // milliseconds
+        float descend_throttle_level;
+        float descend_start_altitude;
+        float descend_max; // centimetres
+    } nav_payload_place;
+
+};
+
 #if AUTOTUNE_ENABLED == ENABLED
 class ModeAutoTune : public Mode {
 

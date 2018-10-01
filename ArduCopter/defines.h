@@ -110,6 +110,7 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    SEMI_AUTO =    24,  // semiautomatic mode accepts altitude control add a2s_Andres
 };
 
 enum mode_reason_t {
@@ -202,6 +203,20 @@ enum AutoMode {
     Auto_NavGuided,
     Auto_Loiter,
     Auto_NavPayloadPlace,
+};
+
+// SemiAuto modes add a2s_Andres
+enum SemiMode {
+    SemiAuto_TakeOff,
+    SemiAuto_WP,
+    SemiAuto_Land,
+    SemiAuto_RTL,
+    SemiAuto_CircleMoveToEdge,
+    SemiAuto_Circle,
+    SemiAuto_Spline,
+    SemiAuto_NavGuided,
+    SemiAuto_Loiter,
+    SemiAuto_NavPayloadPlace,
 };
 
 // Guided modes
