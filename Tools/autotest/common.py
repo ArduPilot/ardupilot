@@ -640,13 +640,14 @@ class AutoTest(ABC):
             return True
         return False
 
-    def set_parameter(self, name, value, add_to_context=True):
+    def set_parameter(self, name, value, add_to_context=True, epsilon=0.00001):
         """Set parameters from vehicle."""
         old_value = self.get_parameter(name, retry=2)
         for i in range(1, 10):
             self.mavproxy.send("param set %s %s\n" % (name, str(value)))
             returned_value = self.get_parameter(name)
-            if returned_value == float(value):
+            delta = float(value) - returned_value
+            if abs(delta) < epsilon:
                 # yes, exactly equal.
                 if add_to_context:
                     self.context_get().parameters.append((name, old_value))
@@ -1158,12 +1159,13 @@ class AutoTest(ABC):
         # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
 
-    def wait_ready_to_arm(self, timeout=None):
+    def wait_ready_to_arm(self, timeout=None, require_absolute=True):
         # wait for EKF checks to pass
         self.progress("Waiting reading for arm")
-        return self.wait_ekf_happy(timeout=timeout)
+        return self.wait_ekf_happy(timeout=timeout,
+                                   require_absolute=require_absolute)
 
-    def wait_ekf_happy(self, timeout=30):
+    def wait_ekf_happy(self, timeout=30, require_absolute=True):
         """Wait for EKF to be happy"""
 
         """ if using SITL estimates directly """
@@ -1176,14 +1178,16 @@ class AutoTest(ABC):
                           mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
                           mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
                           mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
-                          mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
-                          mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
-                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL |
-                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
+                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL)
         # none of these bits must be set for arming to happen:
         error_bits = (mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
-                      mavutil.mavlink.ESTIMATOR_GPS_GLITCH |
                       mavutil.mavlink.ESTIMATOR_ACCEL_ERROR)
+        if require_absolute:
+            required_value |= (mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+                               mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
+                               mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
+            error_bits |= mavutil.mavlink.ESTIMATOR_GPS_GLITCH
+
         self.progress("Waiting for EKF value %u" % required_value)
         last_err_print_time = 0
         last_print_time = 0

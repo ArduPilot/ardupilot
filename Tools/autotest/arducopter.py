@@ -142,14 +142,17 @@ class AutoTestCopter(AutoTest):
         self.progress("Ran command")
         self.wait_for_alt(alt_min)
 
-    def takeoff(self, alt_min=30, takeoff_throttle=1700):
+    def takeoff(self,
+                alt_min=30,
+                takeoff_throttle=1700,
+                require_absolute=True):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
         if not self.armed():
             self.progress("Waiting reading for arm")
-            self.wait_ready_to_arm()
+            self.wait_ready_to_arm(require_absolute=require_absolute)
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
@@ -950,6 +953,57 @@ class AutoTestCopter(AutoTest):
             self.progress("heading %u" % m.heading)
 
         self.progress("CIRCLE OK for %u seconds" % holdtime)
+
+    # fly_optical_flow_limits - test EKF navigation limiting
+    def fly_optical_flow_limits(self):
+        ex = None
+        self.context_push()
+        try:
+            self.set_parameter("SIM_FLOW_ENABLE", 1)
+            self.set_parameter("FLOW_ENABLE", 1)
+
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12, epsilon=0.01)
+
+            self.set_parameter("SIM_GPS_DISABLE", 1)
+
+            self.reboot_sitl()
+
+            self.takeoff(alt_min=2, require_absolute=False)
+
+            self.mavproxy.send('mode loiter\n')
+            self.wait_mode('LOITER')
+
+            # speed should be limited to <10m/s
+            self.set_rc(2, 1000)
+
+            tstart = self.get_sim_time()
+            timeout = 60
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+                spd = m.groundspeed
+                self.progress("%0.1f: Low Speed: %f" %
+                              (self.get_sim_time_cached() - tstart, spd))
+                if spd > 8:
+                    self.progress("Speed should be limited by EKF optical flow limits")
+                    raise NotAchievedException()
+
+            self.progress("Moving higher")
+            self.change_alt(60)
+
+            self.wait_groundspeed(10, 100, timeout=60)
+        except Exception as e:
+            ex = e
+
+        self.set_rc(2, 1500)
+        self.context_pop()
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
 
     # fly_autotune - autotune the virtual vehicle
     def fly_autotune(self):
@@ -1892,6 +1946,10 @@ class AutoTestCopter(AutoTest):
 
             # Circle mode
             self.run_test("Fly CIRCLE mode", self.fly_circle)
+
+            # Optical flow limits test
+            self.run_test("Fly Optical Flow limits",
+                          self.fly_optical_flow_limits)
 
             # RTL
             self.run_test("RTL after CIRCLE mode", self.fly_RTL)
