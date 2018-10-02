@@ -291,7 +291,7 @@ class AutoTest(ABC):
         for p in expect_list:
             if p == e:
                 continue
-        util.pexpect_drain(p)
+            util.pexpect_drain(p)
 
     def drain_mav(self):
         count = 0
