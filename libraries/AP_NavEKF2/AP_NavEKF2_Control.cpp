@@ -257,11 +257,8 @@ void NavEKF2_core::setAidingMode()
             rngBcnTimeout = true;
             gpsNotAvailable = true;
         }
-        }
         break;
-
-    default:
-        break;
+    }
     }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
@@ -331,9 +328,6 @@ void NavEKF2_core::setAidingMode()
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
             }
-            break;
-
-        default:
             break;
         }
 
