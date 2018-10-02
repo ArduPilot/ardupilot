@@ -940,6 +940,9 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 {
     if (core) {
         core[primary].getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
+    } else {
+        ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
+        ekfNavVelGainScaler = 1.0f;
     }
 }
 
