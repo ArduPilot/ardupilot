@@ -19,7 +19,6 @@
 #include "RangeFinder_Backend.h"
 
 extern const AP_HAL::HAL& hal;
-AP_RangeFinder_Params &dummy = *(new AP_RangeFinder_Params()); //TODO: remove this when possible.
 
 /*
   base class constructor. 
@@ -32,14 +31,14 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_
 }
 
 MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {
-    if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
     return _get_mav_distance_sensor_type();
 }
 
 RangeFinder::RangeFinder_Status AP_RangeFinder_Backend::status() const {
-    if (state.type == RangeFinder::RangeFinder_TYPE_NONE) {
+    if (params.type == RangeFinder::RangeFinder_TYPE_NONE) {
         // turned off at runtime?
         return RangeFinder::RangeFinder_NotConnected;
     }
