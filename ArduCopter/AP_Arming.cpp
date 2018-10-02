@@ -125,7 +125,7 @@ bool AP_Arming_Copter::ins_checks(bool display_failure)
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
-            check_failed(ARMING_CHECK_INS, display_failure, "gyros still settling");
+            check_failed(ARMING_CHECK_INS, display_failure, "EKF attitude is bad");
             ret = false;
         }
     }
@@ -348,7 +348,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
+        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
         return false;
     }
 
@@ -512,7 +512,7 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
 
     // always check if inertial nav has started and is ready
     if (!ahrs.healthy()) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Waiting for Nav Checks");
+        check_failed(ARMING_CHECK_NONE, display_failure, "AHRS not healthy");
         return false;
     }
 
