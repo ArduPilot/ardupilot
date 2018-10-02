@@ -682,16 +682,8 @@ uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
 uint32_t AP_Frsky_Telem::calc_ap_status(void)
 {
     uint32_t ap_status;
-    uint8_t imu_temp = AP::ins().get_temperature(0);
-    if(imu_temp < AP_IMU_TEMP_ORIGIN) {
-    	imu_temp = 0;
-    } else {
-    	if(imu_temp > AP_IMU_TEMP_ORIGIN + AP_IMU_TEMP_LIMIT) {
-    		imu_temp = AP_IMU_TEMP_LIMIT;
-    	} else {
-    		imu_temp = (uint8_t)roundf(imu_temp - AP_IMU_TEMP_ORIGIN);
-    	}
-    }
+    uint8_t imu_temp = (uint8_t) roundf(constrain_float(AP::ins().get_temperature(0), AP_IMU_TEMP_MIN, AP_IMU_TEMP_MAX) - AP_IMU_TEMP_MIN);
+    
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
     ap_status = (uint8_t)((_ap.control_mode+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
