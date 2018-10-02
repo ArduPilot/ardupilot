@@ -815,7 +815,9 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.dma_handle == ctx) {
+            chSysLock();
             dmaStreamAllocate(group.dma, 10, dma_irq_callback, &group);
+            chSysUnlock();
         }
     }
 }
@@ -828,7 +830,9 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.dma_handle == ctx) {
+            chSysLock();
             dmaStreamRelease(group.dma);
+            chSysUnlock();
         }
     }
 }
