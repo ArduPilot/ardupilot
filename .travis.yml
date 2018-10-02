@@ -5,7 +5,8 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-#      - llvm-toolchain-precise-3.7
+      - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-7 main'
+        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
       - build-essential
       - gawk
@@ -20,8 +21,8 @@ addons:
       - g++-4.9
       - cmake3
       - cmake3-data
-#      - clang-3.7
-#      - llvm-3.7
+      - clang-7
+      - llvm-7
 
 cache:
   ccache: false
@@ -45,7 +46,6 @@ notifications:
 
 compiler:
   - gcc
-#  - clang
 
 env:
   global:
@@ -66,4 +66,7 @@ matrix:
       env: CI_BUILD_TARGET="sitltest-copter"
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane sitltest-rover"
+      env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
+    - if: type != cron
+      compiler: "clang"
+      env: CI_BUILD_TARGET="sitltest-rover"
