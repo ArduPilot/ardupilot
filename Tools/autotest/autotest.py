@@ -738,7 +738,7 @@ if __name__ == "__main__":
         for a in args:
             matches = [step for step in steps
                        if fnmatch.fnmatch(step.lower(), a.lower())]
-            if not len(matches):
+            if not len(matches) and a:
                 print("No steps matched {}".format(a))
                 sys.exit(1)
             matched.extend(matches)
