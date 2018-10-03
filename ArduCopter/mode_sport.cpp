@@ -51,17 +51,17 @@ void Copter::ModeSport::run()
     int32_t pitch_angle = wrap_180_cd(att_target.y);
     target_pitch_rate -= constrain_int32(pitch_angle, -ACRO_LEVEL_MAX_ANGLE, ACRO_LEVEL_MAX_ANGLE) * g.acro_balance_pitch;
 
-    AP_Vehicle::MultiCopter &aparm = copter.aparm;
-    if (roll_angle > aparm.angle_max){
-        target_roll_rate -=  g.acro_rp_p*(roll_angle-aparm.angle_max);
-    }else if (roll_angle < -aparm.angle_max) {
-        target_roll_rate -=  g.acro_rp_p*(roll_angle+aparm.angle_max);
+    const float angle_max = copter.aparm.angle_max;
+    if (roll_angle > angle_max){
+        target_roll_rate -=  g.acro_rp_p*(roll_angle-angle_max);
+    }else if (roll_angle < -angle_max) {
+        target_roll_rate -=  g.acro_rp_p*(roll_angle+angle_max);
     }
 
-    if (pitch_angle > aparm.angle_max){
-        target_pitch_rate -=  g.acro_rp_p*(pitch_angle-aparm.angle_max);
-    }else if (pitch_angle < -aparm.angle_max) {
-        target_pitch_rate -=  g.acro_rp_p*(pitch_angle+aparm.angle_max);
+    if (pitch_angle > angle_max){
+        target_pitch_rate -=  g.acro_rp_p*(pitch_angle-angle_max);
+    }else if (pitch_angle < -angle_max) {
+        target_pitch_rate -=  g.acro_rp_p*(pitch_angle+angle_max);
     }
 
     // get pilot's desired yaw rate

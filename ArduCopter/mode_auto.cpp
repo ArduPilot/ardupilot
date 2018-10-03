@@ -1002,18 +1002,17 @@ Location_Class Copter::ModeAuto::terrain_adjusted_location(const AP_Mission::Mis
 {
     // convert to location class
     Location_Class target_loc(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
 
     // decide if we will use terrain following
     int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+    if (copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
         target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
         curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
         // if using terrain, set target altitude to current altitude above terrain
         target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
     } else {
         // set target altitude to current altitude above home
-        target_loc.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        target_loc.set_alt_cm(copter.current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
     }
     return target_loc;
 }
@@ -1095,7 +1094,6 @@ void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cm
 {
     // convert back to location
     Location_Class target_loc(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
 
     // use current location if not provided
     if (target_loc.lat == 0 && target_loc.lng == 0) {
@@ -1112,11 +1110,12 @@ void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cm
     if (target_loc.alt == 0) {
         // set to current altitude but in command's alt frame
         int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
+        if (copter.current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
             target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
         } else {
             // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
+            target_loc.set_alt_cm(copter.current_loc.alt,
+                                  copter.current_loc.get_alt_frame());
         }
     }
 
