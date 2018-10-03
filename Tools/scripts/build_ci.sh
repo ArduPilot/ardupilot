@@ -40,54 +40,46 @@ function get_time {
 echo "Targets: $CI_BUILD_TARGET"
 echo "Compiler: $c_compiler"
 
-if [ $c_compiler == "clang" ]; then
-    autotest_args='--waf-configure-args="--check-c-compiler=clang --check-cxx-compiler=clang++"'
-fi
+pymavlink_installed=0
+
+function run_autotest() {
+    NAME="$1"
+    BVEHICLE="$2"
+    RVEHICLE="$3"
+
+    if [ pymavlink_installed -eq 0 ]; then
+        echo "Installing pymavlink"
+        git submodule init
+        git submodule update
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        pymavlink_installed=1
+    fi
+    unset BUILDROOT
+    echo "Running SITL $NAME test"
+
+    if [ $c_compiler == "clang" ]; then
+        w="--check-c-compiler=clang --check-cxx-compiler=clang++"
+    fi
+    Tools/autotest/autotest.py --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    ccache -s && ccache -z
+}
 
 for t in $CI_BUILD_TARGET; do
     # special case for SITL testing in CI
     if [ $t == "sitltest-copter" ]; then
-        echo "Installing pymavlink"
-        git submodule init
-        git submodule update
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
-        unset BUILDROOT
-        echo "Running SITL QuadCopter test"
-        Tools/autotest/autotest.py build.ArduCopter fly.ArduCopter $autotest_args
-        ccache -s && ccache -z
+        run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter"
         continue
     fi
     if [ $t == "sitltest-plane" ]; then
-        echo "Installing pymavlink"
-        git submodule init
-        git submodule update
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
-        unset BUILDROOT
-        echo "Running SITL Plane test"
-        Tools/autotest/autotest.py build.ArduPlane fly.ArduPlane $autotest_args
-        ccache -s && ccache -z
+        run_autotest "Plane" "build.ArduPlane" "fly.ArduPlane"
         continue
     fi
     if [ $t == "sitltest-quadplane" ]; then
-        echo "Installing pymavlink"
-        git submodule init
-        git submodule update
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
-        unset BUILDROOT
-        echo "Running SITL QuadPlane test"
-        Tools/autotest/autotest.py build.ArduPlane fly.QuadPlane $autotest_args
-        ccache -s && ccache -z
+        run_autotest "QuadPlane" "build.ArduPlane" "fly.QuadPlane"
         continue
     fi
     if [ $t == "sitltest-rover" ]; then
-        echo "Installing pymavlink"
-        git submodule init
-        git submodule update
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
-        unset BUILDROOT
-        echo "Running SITL Rover test"
-        Tools/autotest/autotest.py build.APMrover2 drive.APMrover2 $autotest_args
-        ccache -s && ccache -z
+        run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
         continue
     fi
 
