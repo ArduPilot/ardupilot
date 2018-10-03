@@ -33,7 +33,6 @@ private:
 
     ModeFilterFloat_Size5 signal_quality_filter {3};
     uint8_t last_pin = -1;
-    uint32_t last_gpio;
     struct IrqState {
         uint32_t last_pulse_us;
         uint32_t dt_sum;
