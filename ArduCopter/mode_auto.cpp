@@ -1748,7 +1748,7 @@ bool Copter::ModeAuto::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    return (labs(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
+    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
 }
 
 // verify_nav_wp - check if we have reached the next way point
