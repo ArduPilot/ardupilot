@@ -201,6 +201,7 @@ AP_BattMonitor::read()
         if (drivers[i] != nullptr && _params[i].type() != AP_BattMonitor_Params::BattMonitor_TYPE_NONE) {
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
+            drivers[i]->update_voltage_smoothed();
         }
     }
 
@@ -245,6 +246,16 @@ float AP_BattMonitor::voltage(uint8_t instance) const
 {
     if (instance < _num_instances) {
         return state[instance].voltage;
+    } else {
+        return 0.0f;
+    }
+}
+
+/// voltage_smoothed - returns battery voltage in volts with long term low-pass filter
+float AP_BattMonitor::voltage_smoothed(uint8_t instance) const
+{
+    if (instance < _num_instances) {
+        return state[instance].voltage_smoothed;
     } else {
         return 0.0f;
     }

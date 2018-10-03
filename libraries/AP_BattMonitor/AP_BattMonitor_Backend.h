@@ -49,6 +49,9 @@ public:
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
 
+    // update battery volage_smoothed
+    void update_voltage_smoothed();
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)

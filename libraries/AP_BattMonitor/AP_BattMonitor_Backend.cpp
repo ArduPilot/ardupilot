@@ -41,6 +41,24 @@ uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
     }
 }
 
+// update battery voltage LPF'd smoothed estimate
+void AP_BattMonitor_Backend::update_voltage_smoothed()
+{
+    const float lpf_fast = 0.90f;
+    const float lpf_slow = 0.98f;
+
+    if (is_zero(_state.voltage_smoothed)) {
+        // initialize
+        _state.voltage_smoothed = _state.voltage;
+    } else if (fabsf(_state.voltage_smoothed - _state.voltage) > 0.5f) {
+        // diff is big, go fast
+        _state.voltage_smoothed = (_state.voltage_smoothed * lpf_fast) + (_state.voltage * (1-lpf_fast));
+    } else {
+        // diff is small, go slow
+        _state.voltage_smoothed = (_state.voltage_smoothed * lpf_slow) + (_state.voltage * (1-lpf_slow));
+    }
+}
+
 // update battery resistance estimate
 // faster rates of change of the current and voltage readings cause faster updates to the resistance estimate
 // the battery resistance is calculated by comparing the latest current and voltage readings to a low-pass filtered current and voltage

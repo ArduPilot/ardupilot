@@ -65,6 +65,7 @@ public:
     struct BattMonitor_State {
         cells       cell_voltages;             // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
         float       voltage;                   // voltage in volts
+        float       voltage_smoothed;          // voltage in volts with big low-pass filter applied
         float       current_amps;              // current in amperes
         float       consumed_mah;              // total current draw in milliamp hours since start-up
         float       consumed_wh;               // total energy consumed in Wh since start-up
@@ -103,6 +104,10 @@ public:
     /// voltage - returns battery voltage in millivolts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    /// voltage_smoothed - returns battery voltage in millivolts with LPF applied
+    float voltage_smoothed(uint8_t instance) const;
+    float voltage_smoothed() const { return voltage_smoothed(AP_BATT_PRIMARY_INSTANCE); }
 
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
