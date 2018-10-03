@@ -173,6 +173,8 @@ public:
         SAILBOAT_TACK =       63, // rover sailboat tack
         REVERSE_THROTTLE =    64, // reverse throttle input
         GPS_DISABLE  =        65, // disable GPS for testing
+        RELAY5 =              66, // Relay5 pin on/off
+        RELAY6 =              67, // Relay6 pin on/off
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
