@@ -37,6 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAXLN 128
 #define ISSPACE " \t\n\r\f\v"
 
+#define BUFSIZ 256
+
 ///@brief make sure we use our strerror_r function
 
 #ifdef __cplusplus

@@ -45,6 +45,8 @@ void free(void *ptr);
 
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 
+#define L_tmpnam 32
+
 #ifdef __cplusplus
 }
 #endif
