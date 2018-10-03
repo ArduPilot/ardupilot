@@ -339,6 +339,8 @@ private:
     void nav_guided_run();
     void loiter_run();
 
+    Location_Class loc_from_cmd(const AP_Mission::Mission_Command& cmd) const;
+
     void payload_place_start(const Vector3f& destination);
     void payload_place_run();
     bool payload_place_run_should_run();
