@@ -1028,28 +1028,34 @@ void Copter::ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
+Location_Class Copter::ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
+{
+    Location_Class ret(cmd.content.location);
+
+    // use current lat, lon if zero
+    if (ret.lat == 0 && ret.lng == 0) {
+        ret.lat = copter.current_loc.lat;
+        ret.lng = copter.current_loc.lng;
+    }
+    // use current altitude if not provided
+    if (ret.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (copter.current_loc.get_alt_cm(ret.get_alt_frame(),curr_alt)) {
+            ret.set_alt_cm(curr_alt, ret.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            ret.set_alt_cm(copter.current_loc.alt,
+                           copter.current_loc.get_alt_frame());
+        }
+    }
+    return ret;
+}
+
 // do_nav_wp - initiate move to next waypoint
 void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
-
-    // use current lat, lon if zero
-    if (target_loc.lat == 0 && target_loc.lng == 0) {
-        target_loc.lat = current_loc.lat;
-        target_loc.lng = current_loc.lng;
-    }
-    // use current altitude if not provided
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-        }
-    }
+    Location_Class target_loc = loc_from_cmd(cmd);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1126,28 +1132,7 @@ void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cm
 // do_circle - initiate moving in a circle
 void Copter::ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class circle_center(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
-
-    // default lat/lon to current position if not provided
-    // To-Do: use stopping point or position_controller's target instead of current location to avoid jerk?
-    if (circle_center.lat == 0 && circle_center.lng == 0) {
-        circle_center.lat = current_loc.lat;
-        circle_center.lng = current_loc.lng;
-    }
-
-    // default target altitude to current altitude if not provided
-    if (circle_center.alt == 0) {
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(circle_center.get_alt_frame(),curr_alt)) {
-            // circle altitude uses frame from command
-            circle_center.set_alt_cm(curr_alt,circle_center.get_alt_frame());
-        } else {
-            // default to current altitude above origin
-            circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-            copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
-        }
-    }
+    Location_Class circle_center = loc_from_cmd(cmd);
 
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1171,25 +1156,7 @@ void Copter::ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
-
-    // use current lat, lon if zero
-    if (target_loc.lat == 0 && target_loc.lng == 0) {
-        target_loc.lat = current_loc.lat;
-        target_loc.lng = current_loc.lng;
-    }
-    // use current altitude if not provided
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-        }
-    }
+    Location_Class target_loc = loc_from_cmd(cmd);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
