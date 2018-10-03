@@ -17,13 +17,15 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
+#include "lua_bindings.h"
+
 // ensure that we have a set of stack sizes, and enforce constraints around it
 // except for the minimum size, these are allowed to be defined by the build system
 #undef SCRIPTING_STACK_MIN_SIZE
 #define SCRIPTING_STACK_MIN_SIZE 2048
 
 #if !defined(SCRIPTING_STACK_SIZE)
-  #define SCRIPTING_STACK_SIZE 2048
+  #define SCRIPTING_STACK_SIZE 8192
 #endif // !defined(SCRIPTING_STACK_SIZE)
 
 #if !defined(SCRIPTING_STACK_MAX_SIZE)
@@ -74,9 +76,28 @@ bool AP_Scripting::init(void) {
 
 void AP_Scripting::thread(void) {
     unsigned int loop = 0;
+    lua_State *state = luaL_newstate();
+    luaL_openlibs(state);
+    load_lua_bindings(state);
+
+    luaL_loadstring(state, "gcs.send_text(string.format(\"1 + 2 = %d\", 1+2))");
+
     while (true) {
         hal.scheduler->delay(1000);
         gcs().send_text(MAV_SEVERITY_INFO, "Scripting Loop: %u", loop++);
+
+        const uint32_t startMem = hal.util->available_memory();
+        const uint32_t loadEnd = AP_HAL::micros();
+        lua_pushvalue(state, -1);
+        if(lua_pcall(state, 0, LUA_MULTRET, 0)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(state, -1));
+            hal.console->printf("Lua: %s", lua_tostring(state, -1));
+            lua_pop(state, 1);
+            continue;
+        }
+        const uint32_t runEnd = AP_HAL::micros();
+        const uint32_t endMem = hal.util->available_memory();
+        gcs().send_text(MAV_SEVERITY_INFO, "Execution: %d Memory: %d", runEnd - loadEnd, startMem - endMem);
     }
 }
 
