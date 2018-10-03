@@ -431,18 +431,18 @@ bool Copter::ModeAutoTune::check_level(const LEVEL_ISSUE issue, const float curr
 bool Copter::ModeAutoTune::currently_level()
 {
     if (!check_level(LEVEL_ISSUE_ANGLE_ROLL,
-                     labs(ahrs.roll_sensor - roll_cd),
+                     fabsf(ahrs.roll_sensor - roll_cd),
                      AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
 
     if (!check_level(LEVEL_ISSUE_ANGLE_PITCH,
-                     labs(ahrs.pitch_sensor - pitch_cd),
+                     fabsf(ahrs.pitch_sensor - pitch_cd),
                      AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
     if (!check_level(LEVEL_ISSUE_ANGLE_YAW,
-                     labs(wrap_180_cd(ahrs.yaw_sensor-(int32_t)desired_yaw)),
+                     fabsf(wrap_180_cd(ahrs.yaw_sensor-(int32_t)desired_yaw)),
                      AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
