@@ -449,7 +449,7 @@ class AutoTest(ABC):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
 
-    def arm_vehicle(self):
+    def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -462,7 +462,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
@@ -470,7 +470,7 @@ class AutoTest(ABC):
         self.progress("Unable to ARM with mavlink")
         raise AutoTestTimeoutException()
 
-    def disarm_vehicle(self):
+    def disarm_vehicle(self, timeout=20):
         """Disarm vehicle with mavlink disarm message."""
         self.progress("Disarm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -483,7 +483,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
@@ -507,13 +507,12 @@ class AutoTest(ABC):
         self.progress("DISARMED")
         return True
 
-    def arm_motors_with_rc_input(self):
+    def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
         self.set_throttle_zero()
         self.mavproxy.send('rc 1 2000\n')
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
@@ -526,13 +525,12 @@ class AutoTest(ABC):
         self.mavproxy.send('rc 1 1500\n')
         return False
 
-    def disarm_motors_with_rc_input(self):
+    def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
         self.set_throttle_zero()
         self.mavproxy.send('rc 1 1000\n')
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
@@ -719,11 +717,29 @@ class AutoTest(ABC):
                 return
         raise AutoTestTimeoutException()
 
-    def do_set_mode_via_command_long(self):
+    def get_mode_from_mode_mapping(self, mode):
+        """Validate and return the mode number from a string or int."""
+        mode_map = self.mav.mode_mapping()
+        if mode_map is None:
+            raise ErrorException()
+        if isinstance(mode, str):
+            if mode in mode_map:
+                return mode_map.get(mode)
+        if mode in mode_map.values():
+            return mode
+        self.progress("Unknown mode '%s'" % mode)
+        self.progress("Available modes '%s'" % mode_map)
+        raise ErrorException()
+
+    def do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
+        custom_mode = self.get_mode_from_mode_mapping(mode)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 5:
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
                          base_mode,
                          custom_mode,
@@ -735,28 +751,30 @@ class AutoTest(ABC):
                          )
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
-                return
-        raise AutoTestTimeoutException()
+                return True
 
-    def mavproxy_do_set_mode_via_command_long(self):
+    def mavproxy_do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message with Mavproxy."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
-        start = self.get_sim_time()
-        while self.get_sim_time() - start < 5:
+        custom_mode = self.get_mode_from_mode_mapping(mode)
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.mavproxy.send("long DO_SET_MODE %u %u\n" %
                                (base_mode, custom_mode))
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
-                return
-        raise AutoTestTimeoutException()
+                return True
 
     def reach_heading_manual(self, heading):
         """Manually direct the vehicle to the target heading."""
@@ -1064,11 +1082,7 @@ class AutoTest(ABC):
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
-        mode_map = self.mav.mode_mapping()
-        if mode_map is None or mode not in mode_map:
-            self.progress("Unknown mode '%s'" % mode)
-            self.progress("Available modes '%s'" % mode_map.keys())
-            raise ErrorException()
+        self.get_mode_from_mode_mapping(mode)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
         self.mav.wait_heartbeat()
