@@ -47,7 +47,7 @@ function run_autotest() {
     BVEHICLE="$2"
     RVEHICLE="$3"
 
-    if [ pymavlink_installed -eq 0 ]; then
+    if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule init
         git submodule update
