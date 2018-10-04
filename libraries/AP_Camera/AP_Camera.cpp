@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Units: deg
     // @Range: 0 180
     AP_GROUPINFO("MAX_ROLL",  7, AP_Camera, _max_roll, 0),
- 
+
     // @Param: FEEDBACK_PIN
     // @DisplayName: Camera feedback pin
     // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection. See also the CAM_FEEDBACK_POL option. If using AUX4 pin on a Pixhawk then a fast capture method is used that allows for the trigger time to be as short as one microsecond.
@@ -92,13 +92,20 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Values: 0:TriggerLow,1:TriggerHigh
     // @User: Standard
     AP_GROUPINFO("FEEDBACK_POL",  9, AP_Camera, _feedback_polarity, 1),
-    
+
     // @Param: AUTO_ONLY
     // @DisplayName: Distance-trigging in AUTO mode only
     // @Description: When enabled, trigging by distance is done in AUTO mode only.
     // @Values: 0:Always,1:Only when in AUTO
     // @User: Standard
     AP_GROUPINFO("AUTO_ONLY",  10, AP_Camera, _auto_mode_only, 0),
+
+    // @Param: TYPE
+    // @DisplayName: Type of camera (0: None, 1: BMMCC)
+    // @Description: Set the camera type that is being used, certain cameras have custom functions that need further configuration, this enables that.
+    // @Values: 0:Default,1:BMMCC
+    // @User: Standard
+    AP_GROUPINFO("TYPE",  11, AP_Camera, _type, 0),
 
     AP_GROUPEND
 };
@@ -114,10 +121,10 @@ volatile bool   AP_Camera::_camera_triggered;
 void
 AP_Camera::servo_pic()
 {
-	SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_on_pwm);
+    SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_on_pwm);
 
-	// leave a message that it should be active for this many loops (assumes 50hz loops)
-	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
+    // leave a message that it should be active for this many loops (assumes 50hz loops)
+    _trigger_counter = constrain_int16(_trigger_duration*5,0,255);
 }
 
 /// basic relay activation
@@ -141,8 +148,7 @@ void AP_Camera::trigger_pic()
     setup_feedback_callback();
 
     _image_index++;
-    switch (_trigger_type)
-    {
+    switch (_trigger_type) {
     case AP_CAMERA_TRIGGER_TYPE_SERVO:
         servo_pic();                    // Servo operated camera
         break;
@@ -163,16 +169,26 @@ AP_Camera::trigger_pic_cleanup()
         _trigger_counter--;
     } else {
         switch (_trigger_type) {
-            case AP_CAMERA_TRIGGER_TYPE_SERVO:
-                SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
-                break;
-            case AP_CAMERA_TRIGGER_TYPE_RELAY:
-                if (_relay_on) {
-                    _apm_relay->off(0);
-                } else {
-                    _apm_relay->on(0);
-                }
-                break;
+        case AP_CAMERA_TRIGGER_TYPE_SERVO:
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_trigger, _servo_off_pwm);
+            break;
+        case AP_CAMERA_TRIGGER_TYPE_RELAY:
+            if (_relay_on) {
+                _apm_relay->off(0);
+            } else {
+                _apm_relay->on(0);
+            }
+            break;
+        }
+    }
+
+    if (_trigger_counter_cam_function) {
+        _trigger_counter_cam_function--;
+    } else {
+        switch (_type) {
+        case AP_Camera::CAMERA_TYPE_BMMCC:
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _servo_off_pwm);
+            break;
         }
     }
 }
@@ -210,6 +226,29 @@ void AP_Camera::configure(float shooting_mode, float shutter_speed, float apertu
 
     // send to all components
     GCS_MAVLINK::send_to_components(&msg);
+
+    if (_type == AP_Camera::CAMERA_TYPE_BMMCC) {
+        // Set a trigger for the additional functions that are flip controlled (so far just ISO and Record Start / Stop use this method, will add others if required)
+        _trigger_counter_cam_function = constrain_int16(_trigger_duration*5,0,255);
+
+        // If the message contains non zero values then use them for the below functions
+        if (ISO > 0) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _servo_on_pwm);
+        }
+
+        if (aperture > 0) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_aperture, (int)aperture);
+        }
+
+        if (shutter_speed > 0) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_shutter_speed, (int)shutter_speed);
+        }
+
+        // Use the shooting mode PWM value for the BMMCC as the focus control - no need to modify or create a new MAVlink message type.
+        if (shooting_mode > 0) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_cam_focus, (int)shooting_mode);
+        }
+    }
 }
 
 void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
@@ -293,7 +332,7 @@ void AP_Camera::update()
     }
 
     if (_is_in_auto_mode != true && _auto_mode_only != 0) {
-            return;
+        return;
     }
 
     uint32_t tnow = AP_HAL::millis();
@@ -340,7 +379,7 @@ bool AP_Camera::check_feedback_pin(void)
 void AP_Camera::capture_callback(void *context, uint32_t chan_index,
                                  hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow)
 {
-    _camera_triggered = true;    
+    _camera_triggered = true;
 }
 #endif
 
@@ -366,7 +405,7 @@ void AP_Camera::setup_feedback_callback(void)
                 gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup 3PWM1CAP");
                 close(fd);
                 goto failed;
-            }   
+            }
             if (up_input_capture_set(3, _feedback_polarity==1?Rising:Falling, 0, capture_callback, this) != 0) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Camera: unable to setup timer capture");
                 close(fd);
