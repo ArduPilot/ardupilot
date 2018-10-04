@@ -57,7 +57,8 @@ void AP_MotorsTailsitter::output_to_motors()
         case SHUT_DOWN:
             throttle = 0;
             // set limits flags
-            limit.roll_pitch = true;
+            limit.roll = true;
+            limit.pitch = true;
             limit.yaw = true;
             limit.throttle_lower = true;
             limit.throttle_upper = true;
@@ -66,7 +67,8 @@ void AP_MotorsTailsitter::output_to_motors()
             // sends output to motors when armed but not flying
             throttle = constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
             // set limits flags
-            limit.roll_pitch = true;
+            limit.roll = true;
+            limit.pitch = true;
             limit.yaw = true;
             limit.throttle_lower = true;
             limit.throttle_upper = true;
@@ -78,7 +80,8 @@ void AP_MotorsTailsitter::output_to_motors()
             throttle_left  = constrain_float(throttle + _rudder*0.5, _spin_min, 1);
             throttle_right = constrain_float(throttle - _rudder*0.5, _spin_min, 1);
             // initialize limits flags
-            limit.roll_pitch = false;
+            limit.roll = false;
+            limit.pitch = false;
             limit.yaw = false;
             limit.throttle_lower = false;
             limit.throttle_upper = false;
