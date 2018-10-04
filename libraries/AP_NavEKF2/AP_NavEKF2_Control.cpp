@@ -513,7 +513,7 @@ void  NavEKF2_core::updateFilterStatus(void)
     bool doingFlowNav = (PV_AidingMode == AID_RELATIVE) && flowDataValid;
     bool doingWindRelNav = !tasTimeout && assume_zero_sideslip();
     bool doingNormalGpsNav = !posTimeout && (PV_AidingMode == AID_ABSOLUTE);
-    bool someVertRefData = (!velTimeout && useGpsVertVel) || !hgtTimeout;
+    bool someVertRefData = (!velTimeout && (useGpsVertVel || useExtNavVel)) || !hgtTimeout;
     bool someHorizRefData = !(velTimeout && posTimeout && tasTimeout) || doingFlowNav;
     bool optFlowNavPossible = flowDataValid && delAngBiasLearned;
     bool gpsNavPossible = !gpsNotAvailable && gpsGoodToAlign && delAngBiasLearned;
