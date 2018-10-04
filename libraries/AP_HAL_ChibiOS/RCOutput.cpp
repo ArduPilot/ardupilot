@@ -1442,11 +1442,11 @@ void RCOutput::safety_update(void)
         safety_pressed = false;
     }
     if (safety_state==AP_HAL::Util::SAFETY_DISARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
         safety_pressed = false;        
     }
     if (safety_state==AP_HAL::Util::SAFETY_ARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         safety_pressed = false;        
     }
     if (safety_pressed) {
