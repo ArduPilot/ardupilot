@@ -23,7 +23,9 @@
 #if HAL_USE_ICU == TRUE
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
-#define MAX_SIGNAL_TRANSITIONS 256
+#ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
+#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 256
+#endif
 #define DEFAULT_BOUNCE_BUF_SIZE 32
 
 class ChibiOS::SoftSigReader {
@@ -36,7 +38,7 @@ private:
     uint32_t *signal;
     static void _irq_handler(void* self, uint32_t flags);
     uint8_t num_timer_channels;
-    ObjectBuffer<uint32_t> sigbuf{MAX_SIGNAL_TRANSITIONS};
+    ObjectBuffer<uint32_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     uint8_t enable_chan_mask;
     uint8_t max_pulse_width;
     const stm32_dma_stream_t* dma;
