@@ -108,7 +108,8 @@ void QuadPlane::tailsitter_output(void)
         float tilt_right = extra_elevator + (elevator - aileron) * tailsitter.vectored_hover_gain;
         if (fabsf(tilt_left) >= 4500 || fabsf(tilt_right) >= 4500) {
             // prevent integrator windup
-            motors->limit.roll_pitch = 1;
+            motors->limit.roll = 1;
+            motors->limit.pitch = 1;
             motors->limit.yaw = 1;
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
