@@ -22,7 +22,9 @@
 #if HAL_USE_EICU == TRUE
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
-#define MAX_SIGNAL_TRANSITIONS 256
+#ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
+#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 256
+#endif
 
 
 class ChibiOS::SoftSigReaderInt {
@@ -48,7 +50,7 @@ private:
     
     static eicuchannel_t get_pair_channel(eicuchannel_t channel);
 
-    ObjectBuffer<uint16_t> sigbuf{MAX_SIGNAL_TRANSITIONS};
+    ObjectBuffer<uint16_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     EICUConfig icucfg;
     EICUChannelConfig channel_config;
     EICUChannelConfig aux_channel_config;
