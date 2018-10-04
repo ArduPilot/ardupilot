@@ -110,6 +110,9 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
+    if(!storedExtNavVel.init(OBS_BUFFER_LENGTH)) {
+       return false;
+    }
 
     if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
         // check if there is enough memory to create the EKF-GSF object
@@ -337,6 +340,12 @@ void NavEKF2_core::InitialiseVariables()
     extNavUsedForPos = false;
     extNavYawResetRequest = false;
 
+    memset(&extNavVelNew, 0, sizeof(extNavVelNew));
+    memset(&extNavVelDelayed, 0, sizeof(extNavVelDelayed));
+    extNavVelToFuse = false;
+    extNavVelMeasTime_ms = 0;
+    useExtNavVel = false;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -346,6 +355,7 @@ void NavEKF2_core::InitialiseVariables()
     storedOutput.reset();
     storedRangeBeacon.reset();
     storedExtNav.reset();
+    storedExtNavVel.reset();
 
     // now init mag variables
     yawAlignComplete = false;
