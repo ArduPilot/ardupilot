@@ -122,6 +122,10 @@ public:
         k_dspoilerRight2        = 87,           ///< differential spoiler 2 (right wing)
         k_winch                 = 88,
         k_mainsail_sheet        = 89,           ///< Main Sail control via sheet
+        k_cam_iso               = 90,
+        k_cam_aperture          = 91,
+        k_cam_focus             = 92,
+        k_cam_shutter_speed     = 93,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
