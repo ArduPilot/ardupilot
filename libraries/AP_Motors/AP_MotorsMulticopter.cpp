@@ -157,7 +157,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO_FRAME("YAW_SV_ANGLE", 35, AP_MotorsMulticopter,  _yaw_servo_angle_max_deg, 30, AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("YAW_SV_ANGLE", 35, AP_MotorsMulticopter, _yaw_servo_angle_max_deg, 30, AP_PARAM_FRAME_TRICOPTER),
 
     // @Param: SPOOL_TIME
     // @DisplayName: Spool up time
@@ -166,7 +166,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Units: s
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("SPOOL_TIME",   36, AP_MotorsMulticopter,  _spool_up_time, AP_MOTORS_SPOOL_UP_TIME_DEFAULT),
+    AP_GROUPINFO("SPOOL_TIME", 36, AP_MotorsMulticopter, _spool_up_time, AP_MOTORS_SPOOL_UP_TIME_DEFAULT),
 
     // @Param: BOOST_SCALE
     // @DisplayName: Motor boost scale
@@ -174,7 +174,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("BOOST_SCALE",  37, AP_MotorsMulticopter,  _boost_scale, 0),
+    AP_GROUPINFO("BOOST_SCALE", 37, AP_MotorsMulticopter, _boost_scale, 0),
 
     // 38 RESERVED for BAT_POW_MAX
     
@@ -183,25 +183,34 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
     // @User: Advanced
-    AP_GROUPINFO("BAT_IDX",  39, AP_MotorsMulticopter,  _batt_idx, 0),
+    AP_GROUPINFO("BAT_IDX", 39, AP_MotorsMulticopter, _batt_idx, 0),
 
     // @Param: SLEW_UP_TIME
     // @DisplayName: Output slew time for increasing throttle
-    // @Description: Time in seconds to slew output from zero to full.  For medium size copter such as a Solo, a value of 0.25 is a good starting point.  This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
+    // @Description: Time in seconds to slew output from zero to full. This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
     // @Range: 0 .5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("SLEW_UP_TIME",   40, AP_MotorsMulticopter,  _slew_up_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+    AP_GROUPINFO("SLEW_UP_TIME", 40, AP_MotorsMulticopter, _slew_up_time, AP_MOTORS_SLEW_TIME_DEFAULT),
 
     // @Param: SLEW_DN_TIME
     // @DisplayName: Output slew time for decreasing throttle
-    // @Description: Time in seconds to slew output from full to zero.  For medium size copter such as a Solo, a value of 0.275 is a good starting point.  This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
+    // @Description: Time in seconds to slew output from full to zero. This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
     // @Range: 0 .5
     // @Units: s
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("SLEW_DN_TIME",   41, AP_MotorsMulticopter,  _slew_dn_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+    AP_GROUPINFO("SLEW_DN_TIME", 41, AP_MotorsMulticopter, _slew_dn_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+
+    // @Param: SAFE_TIME
+    // @DisplayName: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Description: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
     AP_GROUPEND
 };
@@ -386,7 +395,8 @@ int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
         // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && _disarm_safety_timer == 0 && !armed()) {
+        if (_disarm_disable_pwm && is_equal(_disarm_safe_timer, 0.0f) && !armed()) {
+//        if (_disarm_disable_pwm && !armed()) {
             pwm_output = 0;
         } else {
             pwm_output = get_pwm_output_min();
@@ -496,9 +506,13 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 void AP_MotorsMulticopter::output_logic()
 {
     if (_flags.armed) {
-        _disarm_safety_timer = 100;
-    } else if (_disarm_safety_timer != 0) {
-        _disarm_safety_timer--;
+        if (_disarm_disable_pwm && (_disarm_safe_timer < _safe_time)) {
+            _disarm_safe_timer += 1.0f/_loop_rate;
+        } else {
+            _disarm_safe_timer = _safe_time;
+        }
+    } else if (_disarm_safe_timer > 0.0f) {
+        _disarm_safe_timer -= 1.0f/_loop_rate;;
     }
 
     // force desired and current spool mode if disarmed or not interlocked
@@ -525,7 +539,7 @@ void AP_MotorsMulticopter::output_logic()
         limit.throttle_upper = true;
 
         // make sure the motors are spooling in the correct direction
-        if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
+        if (_spool_desired != DesiredSpoolState::SHUT_DOWN && _disarm_safe_timer >= _safe_time.get()) {
             _spool_state = SpoolState::GROUND_IDLE;
             break;
         }
@@ -561,6 +575,7 @@ void AP_MotorsMulticopter::output_logic()
                 _spool_state = SpoolState::SHUT_DOWN;
             }
             break;
+
         case DesiredSpoolState::THROTTLE_UNLIMITED:
             _spin_up_ratio += spool_step;
             // constrain ramp value and update mode
@@ -569,6 +584,7 @@ void AP_MotorsMulticopter::output_logic()
                 _spool_state = SpoolState::SPOOLING_UP;
             }
             break;
+
         case DesiredSpoolState::GROUND_IDLE:
             float spin_up_armed_ratio = 0.0f;
             if (_spin_min > 0.0f) {
