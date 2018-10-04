@@ -553,6 +553,9 @@ public:
     // return current vibration vector for primary IMU
     Vector3f get_vibration(void) const;
     
+    // Write velocity data from an external navigation system
+    virtual void writeVisionSpeed(const Vector3f &vel, uint32_t timeStamp_ms) { }
+
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;

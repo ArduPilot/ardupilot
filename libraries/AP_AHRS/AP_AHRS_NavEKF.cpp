@@ -1405,6 +1405,11 @@ void AP_AHRS_NavEKF::writeExtNavData(const Vector3f &sensOffset, const Vector3f 
 #endif
 }
 
+// Write velocity data from an external navigation system
+void AP_AHRS_NavEKF::writeVisionSpeed(const Vector3f &vel, uint32_t timeStamp_ms)
+{
+    EKF2.writeVisionSpeed(vel, timeStamp_ms);
+}
 
 // inhibit GPS usage
 uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
