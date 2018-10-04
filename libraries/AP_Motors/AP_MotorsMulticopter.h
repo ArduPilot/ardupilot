@@ -188,7 +188,7 @@ protected:
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
-    uint16_t            _disarm_safety_timer;
+    uint16_t            _disarm_safety_timer;   // Number of writes to the esc when transitioning between zero pwm to minimum
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;
