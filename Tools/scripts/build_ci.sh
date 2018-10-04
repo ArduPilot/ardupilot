@@ -66,24 +66,24 @@ function run_autotest() {
 
 for t in $CI_BUILD_TARGET; do
     # special case for SITL testing in CI
-    if [ $t == "sitltest-copter" ]; then
+    if [ "$t" == "sitltest-copter" ]; then
         run_autotest "Copter" "build.ArduCopter" "fly.ArduCopter"
         continue
     fi
-    if [ $t == "sitltest-plane" ]; then
+    if [ "$t" == "sitltest-plane" ]; then
         run_autotest "Plane" "build.ArduPlane" "fly.ArduPlane"
         continue
     fi
-    if [ $t == "sitltest-quadplane" ]; then
+    if [ "$t" == "sitltest-quadplane" ]; then
         run_autotest "QuadPlane" "build.ArduPlane" "fly.QuadPlane"
         continue
     fi
-    if [ $t == "sitltest-rover" ]; then
+    if [ "$t" == "sitltest-rover" ]; then
         run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
         continue
     fi
 
-    if [ $t == "revo-bootloader" ]; then
+    if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
         $waf configure --board revo-mini --bootloader
         $waf clean
@@ -91,7 +91,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ $t == "iofirmware" ]; then
+    if [ "$t" == "iofirmware" ]; then
         echo "Building iofirmware"
         $waf configure --board iomcu
         $waf clean
@@ -99,7 +99,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     
-    if [ $t == "revo-mini" ]; then
+    if [ "$t" == "revo-mini" ]; then
         # save some time by only building one target for revo-mini
         echo "Building revo-mini"
         $waf configure --board revo-mini
@@ -121,7 +121,7 @@ for t in $CI_BUILD_TARGET; do
             fi
 
             start_time=$(get_time)
-            make $t -j$(nproc)
+            make "$t" -j$(nproc)
             diff_time=$(($(get_time)-$start_time))
             echo -e "\033[32m'make' finished successfully (${diff_time}s)\033[0m"
             popd
@@ -130,7 +130,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then
         echo "Starting waf build for board ${t}..."
-        $waf configure --board $t \
+        $waf configure --board "$t" \
                 --enable-benchmarks \
                 --enable-header-checks \
                 --check-c-compiler="$c_compiler" \
