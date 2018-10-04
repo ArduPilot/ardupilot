@@ -354,6 +354,12 @@ public:
     // check if external navigation is being used for yaw observation
     bool isExtNavUsedForYaw(void) const;
 
+    /* Write velocity data from an external navigation system
+     * vel : velocity in NED (m)
+     * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+    */
+    void writeVisionSpeed(const Vector3f &vel, uint32_t timeStamp_ms);
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

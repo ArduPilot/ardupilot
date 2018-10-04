@@ -46,6 +46,12 @@ void NavEKF2_core::ResetVelocity(void)
             // clear the timeout flags and counters
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
+        } else if (imuSampleTime_ms - visionSpeedMeasTime_ms < 250) {
+            stateStruct.velocity.x = visionSpeedNew.vel.x;
+            stateStruct.velocity.y = visionSpeedNew.vel.y;
+            P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
+            velTimeout = false;
+            lastVelPassTime_ms = imuSampleTime_ms;
         } else {
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
@@ -293,6 +299,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
+    visionSpeedToFuse = storedVisionSpeed.recall(visionSpeedDelayed, imuDataDelayed.time_ms);
 
     // read GPS data from the sensor and check for new data in the buffer
     readGpsData();
@@ -350,6 +357,13 @@ void NavEKF2_core::SelectVelPosFusion()
     } else {
         fuseVelData = false;
         fusePosData = false;
+    }
+
+    if (visionSpeedToFuse) {
+        fuseVelData = true;
+        velPosObs[0] = visionSpeedDelayed.vel.x;
+        velPosObs[1] = visionSpeedDelayed.vel.y;
+        velPosObs[2] = visionSpeedDelayed.vel.z;
     }
 
     // we have GPS data to fuse and a request to align the yaw using the GPS course
@@ -490,6 +504,9 @@ void NavEKF2_core::FuseVelPosNED()
                 // use GPS receivers reported speed accuracy if available and floor at value set by GPS velocity noise parameter
                 R_OBS[0] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsHorizVelNoise, 50.0f));
                 R_OBS[2] = sq(constrain_float(gpsSpdAccuracy, frontend->_gpsVertVelNoise, 50.0f));
+            } else if (visionSpeedToFuse) {
+                R_OBS[0] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.01f, 5.0f));
+                R_OBS[2] = sq(constrain_float(frontend->_gpsVertVelNoise,  0.01f, 5.0f));
             } else {
                 // calculate additional error in GPS velocity caused by manoeuvring
                 R_OBS[0] = sq(constrain_float(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
@@ -575,7 +592,7 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse) {
+            if ((!visionSpeedToFuse) && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse)) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
