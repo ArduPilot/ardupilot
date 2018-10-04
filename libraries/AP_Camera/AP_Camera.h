@@ -46,7 +46,8 @@ public:
     AP_Camera &operator=(const AP_Camera&) = delete;
 
     // get singleton instance
-    static AP_Camera *get_singleton() {
+    static AP_Camera *get_singleton()
+    {
         return _singleton;
     }
 
@@ -60,7 +61,10 @@ public:
     void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void            set_trigger_distance(uint32_t distance_m) { _trigg_dist.set(distance_m); }
+    void            set_trigger_distance(uint32_t distance_m)
+    {
+        _trigg_dist.set(distance_m);
+    }
 
     void take_picture();
 
@@ -73,7 +77,15 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
 
     // set if vehicle is in AUTO mode
-    void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+    void set_is_auto_mode(bool enable)
+    {
+        _is_in_auto_mode = enable;
+    }
+
+    enum camera_types {
+        CAMERA_TYPE_STD,
+        CAMERA_TYPE_BMMCC
+    };
 
 private:
 
@@ -85,8 +97,10 @@ private:
     AP_Int16        _servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16        _servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     uint8_t         _trigger_counter;   // count of number of cycles shutter has been held open
+    uint8_t         _trigger_counter_cam_function;   // count of number of cycles alternative camera function has been held open
     AP_Relay       *_apm_relay;         // pointer to relay object from the base class Relay.
     AP_Int8         _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
+    AP_Int8         _type;              // Set the type of camera in use, will open additional parameters if set
     bool            _is_in_auto_mode;   // true if in AUTO mode
 
     void            servo_pic();        // Servo operated camera
@@ -97,7 +111,7 @@ private:
     static void     capture_callback(void *context, uint32_t chan_index,
                                      hrt_abstime edge_time, uint32_t edge_state, uint32_t overflow);
 #endif
-    
+
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
@@ -132,10 +146,13 @@ private:
     bool check_feedback_pin(void);
 
     // return true if we are using a feedback pin
-    bool using_feedback_pin(void) const { return _feedback_pin > 0; }
+    bool using_feedback_pin(void) const
+    {
+        return _feedback_pin > 0;
+    }
 
 };
 
 namespace AP {
-    AP_Camera *camera();
+AP_Camera *camera();
 };
