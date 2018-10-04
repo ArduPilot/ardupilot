@@ -118,7 +118,7 @@ public:
 
     // get number of PWM outputs enabled on FMU
     static uint8_t get_pwm_count(void) {
-        return instance?instance->pwm_count.get():4;
+        return instance?instance->pwm_count.get():8;
     }
 
 #if HAL_HAVE_SAFETY_SWITCH
