@@ -334,6 +334,15 @@ public:
     */
     void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
 
+    /*
+     * Write velocity data from an external navigation system
+     * vel : velocity in NED (m)
+     * err : velocity error (m/s)
+     * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
+     * delay_ms   : average delay of external nav system measurements relative to inertial measurements
+     */
+    void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
+
     // return true when external nav data is also being used as a yaw observation
     bool isExtNavUsedForYaw(void);
 
@@ -505,6 +514,12 @@ private:
         Vector3f gyro_scale;
         float accel_zbias;
     } inactiveBias[INS_MAX_INSTANCES];
+
+    struct ext_nav_vel_elements {
+        Vector3f vel;               // velocity in NED (m)
+        float err;                  // velocity measurement error (m/s)
+        uint32_t time_ms;           // measurement timestamp (msec)
+    };
 
     // update the navigation filter status
     void  updateFilterStatus(void);
@@ -805,7 +820,10 @@ private:
 
     // correct external navigation earth-frame position using sensor body-frame offset
     void CorrectExtNavForSensorOffset(Vector3f &ext_position) const;
-    
+
+    // correct external navigation earth-frame velocity using sensor body-frame offset
+    void CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const;
+
     // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
     // that uses IMU, GPS horizontal velocity and optionally true airspeed data.
     void runYawEstimatorPrediction(void);
@@ -1171,6 +1189,13 @@ private:
     bool extNavUsedForYaw;              // true when the external nav data is also being used as a yaw observation
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     bool extNavYawResetRequest;         // true when a reset of vehicle yaw using the external nav data is requested
+
+    obs_ring_buffer_t<ext_nav_vel_elements> storedExtNavVel; // external navigation velocity data buffer
+    ext_nav_vel_elements extNavVelNew;                       // external navigation velocity data at the current time horizon
+    ext_nav_vel_elements extNavVelDelayed;                   // external navigation velocity data at the fusion time horizon
+    uint32_t extNavVelMeasTime_ms;                           // time external navigation velocity measurements were accepted for input to the data buffer (msec)
+    bool extNavVelToFuse;                                    // true when there is new external navigation velocity to fuse
+    bool useExtNavVel;                                       // true external navigation velocity should be used
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
