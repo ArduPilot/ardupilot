@@ -97,6 +97,9 @@ define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
+# reduce memory usage in RCInput
+define SOFTSIG_MAX_SIGNAL_TRANSITIONS 256
+
 define IOMCU_FW TRUE
 define NO_FASTBOOT
 IOMCU_FW 1
