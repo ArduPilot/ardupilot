@@ -23,6 +23,7 @@
 #define AP_MOTORS_BAT_CURR_TC_DEFAULT   5.0f    // Time constant used to limit the maximum current
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 #define AP_MOTORS_SLEW_TIME_DEFAULT     0.0f    // slew rate limit for thrust output
+#define AP_MOTORS_SAFE_TIME_DEFAULT     1.0f    // Time for the esc when transitioning between zero pwm to minimum
 
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
@@ -148,6 +149,7 @@ protected:
     AP_Float            _thrust_curve_expo;     // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
     AP_Float            _slew_up_time;          // throttle increase slew limitting
     AP_Float            _slew_dn_time;          // throttle decrease slew limitting
+    AP_Float            _safe_time;             // Time for the esc when transitioning between zero pwm to minimum
     AP_Float            _spin_min;              // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _spin_max;              // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
     AP_Float            _spin_arm;              // throttle out ratio which produces the armed spin rate.  (i.e. 0 ~ 1 ) of the full throttle range
@@ -185,7 +187,7 @@ protected:
     float               _lift_max;              // maximum lift ratio from battery voltage
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum
     float               _throttle_thrust_max;   // the maximum allowed throttle thrust 0.0 to 1.0 in the range throttle_min to throttle_max
-    uint16_t            _disarm_safety_timer;
+    float               _disarm_safe_timer;     // Timer for the esc when transitioning between zero pwm to minimum
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;
