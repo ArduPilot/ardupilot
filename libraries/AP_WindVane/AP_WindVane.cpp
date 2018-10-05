@@ -211,6 +211,9 @@ float AP_WindVane::read_SITL_direction_ef()
     const float wind_speed = AP::sitl()->wind_speed_active;
     const float wind_dir_rad = radians(AP::sitl()->wind_direction_active);
 
+    // Note than the SITL wind direction is defined as the direction the wind is travelling to
+    // This is accounted for in these calculations
+
     // convert true wind speed and direction into a 2D vector
     Vector2f wind_vector_ef(sinf(wind_dir_rad) * wind_speed, cosf(wind_dir_rad) * wind_speed);
 
