@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0-rc12 05-Oct-2018
+Changes from 3.6.0-rc11
+1) Bug Fixes:
+    a) DSHot ESC driver race condition fix (could result in board freezing up)
+    b) EKF fix to rounding off home altitude (could result in slightly inaccurate home altitude)
+    c) Pixracer safety switch fix (BRD_SAFETYOPTION parameter was handled incorrectly)
+------------------------------------------------------------------
 Copter 3.6.0-rc11 01-Oct-2018
 Changes from 3.6.0-rc10
 1) Bug Fixes:
