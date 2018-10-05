@@ -55,9 +55,11 @@ private:
     float turning_circle;       // vehicle minimum turning circle diameter in meters
 
     // lift and drag curves.  index is angle/10deg
-    // angle-of-attack            0      10     20     30     40     50     60     70     80     90     100    110    120    130    140    150    160    170+
-    const float lift_curve[18] = {0.00f, 0.00f, 0.80f, 1.00f, 0.95f, 0.75f, 0.60f, 0.40f, 0.20f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f};
-    const float drag_curve[18] = {0.10f, 0.10f, 0.12f, 0.15f, 0.20f, 0.27f, 0.35f, 0.50f, 0.70f, 1.00f, 0.70f, 0.50f, 0.35f, 0.27f, 0.20f, 0.15f, 0.12f, 0.10f};
+    // angle-of-attack            0      10     20     30     40     50     60     70     80     90      100     110     120     130     140     150     160     170+
+    const float lift_curve[18] = {0.00f, 0.50f, 1.00f, 1.10f, 0.95f, 0.75f, 0.60f, 0.40f, 0.20f, 0.00f, -0.20f, -0.40f, -0.60f, -0.75f, -0.95f, -1.10f, -1.00f, -0.50f};
+    const float drag_curve[18] = {0.10f, 0.10f, 0.20f, 0.40f, 0.80f, 1.20f, 1.50f, 1.70f, 1.90f, 1.95f,  1.90f,  1.70f,  1.50f,  1.20f,  0.80f,  0.40f,  0.20f,  0.10f};
+
+    const float mass = 2.0f;
 };
 
 } // namespace SITL
