@@ -24,7 +24,6 @@ bool Copter::ModeSport::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeSport::run()
 {
-    SportModeState sport_state;
     float takeoff_climb_rate = 0.0f;
 
     // initialize vertical speed and acceleration
@@ -72,31 +71,19 @@ void Copter::ModeSport::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Sport State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        sport_state = Sport_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        sport_state = Sport_MotorStopped;
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-        sport_state = Sport_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        sport_state = Sport_Landed;
-    } else {
-        sport_state = Sport_Flying;
-    }
+    AltHoldModeState sport_state = get_alt_hold_state(target_climb_rate);
 
     // State Machine
     switch (sport_state) {
 
-    case Sport_MotorStopped:
+    case AltHold_MotorStopped:
 
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
-    case Sport_Takeoff:
+    case AltHold_Takeoff:
 
         // initiate take-off
         if (!takeoff.running()) {
@@ -118,7 +105,7 @@ void Copter::ModeSport::run()
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         break;
 
-    case Sport_Landed:
+    case AltHold_Landed:
         // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f && !ap.using_interlock) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
@@ -132,7 +119,7 @@ void Copter::ModeSport::run()
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
-    case Sport_Flying:
+    case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // adjust climb rate using rangefinder

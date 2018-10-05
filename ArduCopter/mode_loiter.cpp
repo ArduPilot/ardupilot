@@ -76,8 +76,6 @@ void Copter::ModeLoiter::precision_loiter_xy()
 // should be called at 100hz or more
 void Copter::ModeLoiter::run()
 {
-    LoiterModeState loiter_state;
-
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
     float target_climb_rate = 0.0f;
@@ -115,24 +113,12 @@ void Copter::ModeLoiter::run()
     }
 
     // Loiter State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        loiter_state = Loiter_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        loiter_state = Loiter_MotorStopped;
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-        loiter_state = Loiter_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        loiter_state = Loiter_Landed;
-    } else {
-        loiter_state = Loiter_Flying;
-    }
+    AltHoldModeState loiter_state = get_alt_hold_state(target_climb_rate);
 
     // Loiter State Machine
     switch (loiter_state) {
 
-    case Loiter_MotorStopped:
+    case AltHold_MotorStopped:
 
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
@@ -142,7 +128,7 @@ void Copter::ModeLoiter::run()
         pos_control->update_z_controller();
         break;
 
-    case Loiter_Takeoff:
+    case AltHold_Takeoff:
 
         // initiate take-off
         if (!takeoff.running()) {
@@ -171,7 +157,7 @@ void Copter::ModeLoiter::run()
         pos_control->update_z_controller();
         break;
 
-    case Loiter_Landed:
+    case AltHold_Landed:
 
         // multicopters set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f && !ap.using_interlock) {
@@ -190,7 +176,7 @@ void Copter::ModeLoiter::run()
         pos_control->update_z_controller();
         break;
 
-    case Loiter_Flying:
+    case AltHold_Flying:
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);

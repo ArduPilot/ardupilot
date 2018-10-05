@@ -352,13 +352,13 @@ void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_o
     // roll_out and pitch_out are returned
 }
 
-bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
+bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate_cms) const
 {
     if (!copter.ap.land_complete) {
         // can't take off if we're already flying
         return false;
     }
-    if (target_climb_rate <= 0.0f) {
+    if (target_climb_rate_cms <= 0.0f) {
         // can't takeoff unless we want to go up...
         return false;
     }
@@ -571,6 +571,25 @@ void Copter::Mode::land_run_horizontal_control()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
 }
+
+Copter::Mode::AltHoldModeState Copter::Mode::get_alt_hold_state(float target_climb_rate_cms)
+{
+    // Alt Hold State Machine Determination
+    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        return AltHold_Landed;
+    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
+        return AltHold_MotorStopped;
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
+        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
+        return AltHold_Takeoff;
+    } else if (!ap.auto_armed || ap.land_complete) {
+        return AltHold_Landed;
+    } else {
+        return AltHold_Flying;
+    }
+}
+
 
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base

@@ -21,7 +21,6 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeAltHold::run()
 {
-    AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
 
     // initialize vertical speeds and acceleration
@@ -43,19 +42,7 @@ void Copter::ModeAltHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Alt Hold State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        althold_state = AltHold_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        althold_state = AltHold_MotorStopped;
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-        althold_state = AltHold_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        althold_state = AltHold_Landed;
-    } else {
-        althold_state = AltHold_Flying;
-    }
+    AltHoldModeState althold_state = get_alt_hold_state(target_climb_rate);
 
     // Alt Hold State Machine
     switch (althold_state) {

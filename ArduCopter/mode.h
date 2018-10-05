@@ -118,6 +118,15 @@ protected:
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
 
+    // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
+    enum AltHoldModeState {
+        AltHold_MotorStopped,
+        AltHold_Takeoff,
+        AltHold_Flying,
+        AltHold_Landed
+    };
+    AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
+
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;
@@ -151,7 +160,7 @@ protected:
         void stop();
         void get_climb_rates(float& pilot_climb_rate,
                              float& takeoff_climb_rate);
-        bool triggered(float target_climb_rate) const;
+        bool triggered(float target_climb_rate_cms) const;
 
         bool running() const { return _running; }
     private:
