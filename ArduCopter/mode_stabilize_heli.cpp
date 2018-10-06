@@ -47,10 +47,8 @@ void Copter::ModeStabilize_Heli::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-    } else if (ap.throttle_zero) {
-        // Attempting to Land
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     } else {
+        // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     }
 

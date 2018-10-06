@@ -37,22 +37,20 @@ void Copter::ModeAcro_Heli::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-    } else if (ap.throttle_zero) {
-        // Attempting to Land
-        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     } else {
+        // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     }
 
-    if (motors->get_spool_state() == AP_Motors::SHUT_DOWN) {
+    if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
         // Motors Stopped
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
-    } else if (motors->get_spool_state() == AP_Motors::GROUND_IDLE) {
+    } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
         // Landed
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
-    } else if (motors->get_spool_state() == AP_Motors::THROTTLE_UNLIMITED) {
+    } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
         // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
             set_land_complete(false);
