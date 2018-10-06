@@ -122,8 +122,9 @@ protected:
     enum AltHoldModeState {
         AltHold_MotorStopped,
         AltHold_Takeoff,
-        AltHold_Flying,
-        AltHold_Landed
+        AltHold_Landed_Ground_Idle,
+        AltHold_Landed_Pre_Takeoff,
+        AltHold_Flying
     };
     AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
 

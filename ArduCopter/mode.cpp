@@ -352,24 +352,6 @@ void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_o
     // roll_out and pitch_out are returned
 }
 
-bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate_cms) const
-{
-    if (!copter.ap.land_complete) {
-        // can't take off if we're already flying
-        return false;
-    }
-    if (target_climb_rate_cms <= 0.0f) {
-        // can't takeoff unless we want to go up...
-        return false;
-    }
-    if (copter.motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED) {
-        // hold aircraft on the ground until rotor speed runup has finished
-        return false;
-    }
-
-    return true;
-}
-
 void Copter::Mode::zero_throttle_and_relax_ac()
 {
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
@@ -575,21 +557,72 @@ void Copter::Mode::land_run_horizontal_control()
 Copter::Mode::AltHoldModeState Copter::Mode::get_alt_hold_state(float target_climb_rate_cms)
 {
     // Alt Hold State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
+    if (!motors->armed()) {
+        // the aircraft should moved to a shut down state
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        return AltHold_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        return AltHold_MotorStopped;
+
+        // transition through states as aircraft spools down
+        switch (motors->get_spool_mode()) {
+
+        case AP_Motors::SHUT_DOWN:
+            return AltHold_MotorStopped;
+
+        case AP_Motors::DESIRED_GROUND_IDLE:
+            return AltHold_Landed_Ground_Idle;
+
+        default:
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
+        // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
+        // the aircraft should progress through the take off procedure
         return AltHold_Takeoff;
+
     } else if (!ap.auto_armed || ap.land_complete) {
-        return AltHold_Landed;
+        // the aircraft is armed and landed
+        if (target_climb_rate_cms < 0.0f && !ap.using_interlock) {
+            // the aircraft should move to a ground idle state
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+
+        } else {
+            // the aircraft should prepare for imminent take off
+            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+        }
+
+        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
+            // the aircraft is waiting in ground idle
+            return AltHold_Landed_Ground_Idle;
+
+        } else {
+            // the aircraft can leave the ground at any time
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
     } else {
+        // the aircraft is in a flying state
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         return AltHold_Flying;
     }
 }
 
+bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate_cms) const
+{
+    if (!copter.ap.land_complete) {
+        // can't take off if we're already flying
+        return false;
+    }
+    if (target_climb_rate_cms <= 0.0f) {
+        // can't takeoff unless we want to go up...
+        return false;
+    }
+    if (copter.motors->get_spool_mode() != AP_Motors::THROTTLE_UNLIMITED) {
+        // hold aircraft on the ground until rotor speed runup has finished
+        return false;
+    }
+
+    return true;
+}
 
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base

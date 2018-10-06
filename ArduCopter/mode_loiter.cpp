@@ -157,20 +157,15 @@ void Copter::ModeLoiter::run()
         pos_control->update_z_controller();
         break;
 
-    case AltHold_Landed:
-
-        // multicopters set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        } else {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
+    case AltHold_Landed_Ground_Idle:
 
         loiter_nav->init_target();
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            attitude_control->reset_rate_controller_I_terms();
-            attitude_control->set_yaw_target_to_current_heading();
-        }
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        // FALLTHROUGH
+
+    case AltHold_Landed_Pre_Takeoff:
+
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();

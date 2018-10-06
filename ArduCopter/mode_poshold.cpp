@@ -125,7 +125,6 @@ bool Copter::ModePosHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModePosHold::run()
 {
-    PosHoldModeState poshold_state;
     float takeoff_climb_rate = 0.0f;
     float brake_to_loiter_mix;          // mix of brake and loiter controls.  0 = fully brake controls, 1 = fully loiter controls
     float controller_to_pilot_roll_mix; // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
@@ -157,24 +156,12 @@ void Copter::ModePosHold::run()
     }
 
     // Pos Hold State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        poshold_state = PosHold_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        poshold_state = PosHold_MotorStopped;
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-        poshold_state = PosHold_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        poshold_state = PosHold_Landed;
-    } else {
-        poshold_state = PosHold_Flying;
-    }
+    AltHoldModeState poshold_state = get_alt_hold_state(target_climb_rate);
 
     // state machine
     switch (poshold_state) {
 
-    case PosHold_MotorStopped:
+    case AltHold_MotorStopped:
 
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
@@ -187,7 +174,7 @@ void Copter::ModePosHold::run()
         poshold.pitch_mode = POSHOLD_PILOT_OVERRIDE;
         break;
 
-    case PosHold_Takeoff:
+    case AltHold_Takeoff:
 
         // initiate take-off
         if (!takeoff.running()) {
@@ -217,28 +204,24 @@ void Copter::ModePosHold::run()
         poshold.pitch_mode = POSHOLD_PILOT_OVERRIDE;
         break;
 
-    case PosHold_Landed:
+    case AltHold_Landed_Ground_Idle:
 
-        // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        } else {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
         loiter_nav->init_target();
         loiter_nav->update();
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            attitude_control->reset_rate_controller_I_terms();
-            attitude_control->set_yaw_target_to_current_heading();
-        }
-        pos_control->relax_alt_hold_controllers(0.0f);
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        // FALLTHROUGH
+
+    case AltHold_Landed_Pre_Takeoff:
+
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
 
         // set poshold state to pilot override
         poshold.roll_mode = POSHOLD_PILOT_OVERRIDE;
         poshold.pitch_mode = POSHOLD_PILOT_OVERRIDE;
         break;
 
-    case PosHold_Flying:
+    case AltHold_Flying:
 
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 

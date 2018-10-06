@@ -105,17 +105,14 @@ void Copter::ModeSport::run()
         pos_control->add_takeoff_climb_rate(takeoff_climb_rate, G_Dt);
         break;
 
-    case AltHold_Landed:
-        // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        } else {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-        if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            attitude_control->reset_rate_controller_I_terms();
-            attitude_control->set_yaw_target_to_current_heading();
-        }
+    case AltHold_Landed_Ground_Idle:
+
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        // FALLTHROUGH
+
+    case AltHold_Landed_Pre_Takeoff:
+
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 

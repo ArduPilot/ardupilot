@@ -207,7 +207,6 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
 // should be called at 100hz or more
 void Copter::ModeFlowHold::run()
 {
-    FlowHoldModeState flowhold_state;
     float takeoff_climb_rate = 0.0f;
 
     update_height_estimate();
@@ -232,19 +231,7 @@ void Copter::ModeFlowHold::run()
     float target_yaw_rate = copter.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
 
     // Flow Hold State Machine Determination
-    if (!motors->armed() && motors->get_spool_mode() != AP_Motors::SHUT_DOWN) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        flowhold_state = FlowHold_Landed;
-    } else if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
-        flowhold_state = FlowHold_MotorStopped;
-    } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
-        // we are currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-        flowhold_state = FlowHold_Takeoff;
-    } else if (!ap.auto_armed || ap.land_complete) {
-        flowhold_state = FlowHold_Landed;
-    } else {
-        flowhold_state = FlowHold_Flying;
-    }
+    AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
 
     if (copter.optflow.healthy()) {
         const float filter_constant = 0.95;
@@ -256,7 +243,7 @@ void Copter::ModeFlowHold::run()
     // Flow Hold State Machine
     switch (flowhold_state) {
 
-    case FlowHold_MotorStopped:
+    case AltHold_MotorStopped:
 
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
@@ -265,7 +252,7 @@ void Copter::ModeFlowHold::run()
         flow_pi_xy.reset_I();
         break;
 
-    case FlowHold_Takeoff:
+    case AltHold_Takeoff:
         // set motors to full range
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
@@ -289,22 +276,18 @@ void Copter::ModeFlowHold::run()
         copter.pos_control->add_takeoff_climb_rate(takeoff_climb_rate, copter.G_Dt);
         break;
 
-    case FlowHold_Landed:
-        // set motors to ground idle if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f && !ap.using_interlock) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
-        } else {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
+    case AltHold_Landed_Ground_Idle:
 
-        if (copter.motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
-            copter.attitude_control->reset_rate_controller_I_terms();
-            copter.attitude_control->set_yaw_target_to_current_heading();
-        }
-        copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        // FALLTHROUGH
+
+    case AltHold_Landed_Pre_Takeoff:
+
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
-    case FlowHold_Flying:
+    case AltHold_Flying:
         copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
         // adjust climb rate using rangefinder
