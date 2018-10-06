@@ -39,8 +39,12 @@
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
+#ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
+#endif
+#ifndef HAL_NO_RCIN_THREAD
 THD_WORKING_AREA(_rcin_thread_wa, RCIN_THD_WA_SIZE);
+#endif
 #ifndef HAL_USE_EMPTY_IO
 THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
 #endif
@@ -55,19 +59,24 @@ void Scheduler::init()
 {
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
+
+#ifndef HAL_NO_TIMER_THREAD
     // setup the timer thread - this will call tasks at 1kHz
     _timer_thread_ctx = chThdCreateStatic(_timer_thread_wa,
                      sizeof(_timer_thread_wa),
                      APM_TIMER_PRIORITY,        /* Initial priority.    */
                      _timer_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
+#endif
 
+#ifndef HAL_NO_RCIN_THREAD
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
                      APM_RCIN_PRIORITY,        /* Initial priority.    */
                      _rcin_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
+#endif
 #ifndef HAL_USE_EMPTY_IO
     // the IO thread runs at lower priority
     _io_thread_ctx = chThdCreateStatic(_io_thread_wa,
