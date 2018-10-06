@@ -52,6 +52,9 @@ AP_Notify *AP_Notify::_instance;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
+  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
+    #define HAL_HAVE_PIXRACER_LED
+    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #else   // All other px4 boards use standard devices
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
