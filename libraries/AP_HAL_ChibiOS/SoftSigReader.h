@@ -42,6 +42,7 @@ private:
     uint8_t enable_chan_mask;
     uint8_t max_pulse_width;
     const stm32_dma_stream_t* dma;
+    uint32_t dmamode;
     ICUConfig icucfg;
     ICUDriver* _icu_drv = nullptr;
     uint16_t _bounce_buf_size = DEFAULT_BOUNCE_BUF_SIZE;
