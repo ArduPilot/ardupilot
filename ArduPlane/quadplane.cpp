@@ -369,6 +369,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: True
     AP_GROUPINFO("TRIM_PITCH", 4, QuadPlane, ahrs_trim_pitch, 0),
 
+    // @Param: TAILSIT_RLL_MX
+    // @DisplayName: Maximum Roll angle
+    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_ANGLE_MAX is used.
+    // @Units: deg
+    // @Range: 0 80
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_RLL_MX", 5, QuadPlane, tailsitter.max_roll_angle, 0),
+
     AP_GROUPEND
 };
 
