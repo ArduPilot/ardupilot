@@ -52,8 +52,8 @@
 #define HAL_GPIO_A_LED_PIN        27
 #define HAL_GPIO_B_LED_PIN        26
 #define HAL_GPIO_C_LED_PIN        25
-#define HAL_GPIO_LED_ON           0
-#define HAL_GPIO_LED_OFF          1
+#define HAL_GPIO_LED_ON           1
+#define HAL_GPIO_LED_OFF          0
 
 #define HAL_BARO_MS5611_NAME "ms5611"
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
