@@ -6,7 +6,7 @@
 #define CRASH_CHECK_ACCEL_MAX           3.0f    // vehicle must be accelerating less than 3m/s/s to be considered crashed
 
 // Code to detect a thrust loss main ArduCopter code
-#define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second decent while level and high throttle indictes thrust loss
+#define THRUST_LOSS_CHECK_TRIGGER_SEC         1     // 1 second descent while level and high throttle indicates thrust loss
 #define THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD  1500  // we can't expect to maintain altitude beyond 15 degrees on all aircraft
 #define THRUST_LOSS_CHECK_MINIMUM_THROTTLE    0.9f  // we can expect to maintain altitude above 90 % throttle
 
@@ -63,7 +63,7 @@ void Copter::thrust_loss_check()
 {
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
 
-    // exit immediately if motor failure handling already engaged
+    // exit immediately if thrust boost is already engaged
     if (motors->get_thrust_boost()) {
         return;
     }
@@ -77,7 +77,7 @@ void Copter::thrust_loss_check()
     // check for desired angle over 15 degrees
     // todo: add thrust angle to AC_AttitudeControl
     const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
-    if (safe_sqrt(sq(angle_target.x) + sq(angle_target.y)) > THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD) {
+    if (sq(angle_target.x) + sq(angle_target.y) > sq(THRUST_LOSS_CHECK_ANGLE_DEVIATION_CD)) {
         thrust_loss_counter = 0;
         return;
     }
@@ -94,8 +94,8 @@ void Copter::thrust_loss_check()
         return;
     }
 
-    // check for decent
-    if (inertial_nav.get_velocity_z() >= 0.0f) {
+    // check for descent
+    if (!is_negative(inertial_nav.get_velocity_z())) {
         thrust_loss_counter = 0;
         return;
     }
