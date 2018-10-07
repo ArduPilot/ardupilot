@@ -211,13 +211,18 @@ def _px4_taskgen(bld, **kw):
 @feature('_px4_romfs')
 def _process_romfs(self):
     bld = self.bld
+
+    board_name = bld.env.get_flat('PX4_BOARD_NAME')
+
     file_list = [
         'init.d/rc.APM',
         'init.d/rc.error',
         (bld.env.PX4_RC_S_SCRIPT, 'init.d/rcS'),
-        'tones/startup',
-        (bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'),
+        'tones/startup'
     ]
+    if board_name != "px4fmu-v2":
+        # we omit the bootloader on px4-v2 to save flash space
+        file_list.append((bld.env.PX4_BOOTLOADER, 'bootloader/fmu_bl.bin'))
 
     if bld.env.PX4_BOARD_RC:
         board_rc = 'init.d/rc.%s' % bld.env.get_flat('PX4_BOARD_NAME')
