@@ -100,6 +100,7 @@ AP_Compass_HMC5843::AP_Compass_HMC5843(AP_HMC5843_BusDriver *bus,
     , _rotation(rotation)
     , _force_external(force_external)
 {
+    memset(_scaling, 0, sizeof(_scaling));
 }
 
 AP_Compass_HMC5843::~AP_Compass_HMC5843()
