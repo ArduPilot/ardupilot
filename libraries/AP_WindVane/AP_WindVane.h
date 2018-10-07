@@ -53,7 +53,7 @@ public:
     float get_apparent_wind_direction_rad() const;
 
     // record home heading
-    void record_home_headng();
+    void record_home_heading();
 
     // start calibration routine
     bool start_calibration();

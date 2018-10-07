@@ -164,7 +164,7 @@ float AP_WindVane::get_apparent_wind_direction_rad() const
 }
 
 // record home heading for use as wind direction if no sensor is fitted
-void AP_WindVane::record_home_headng()
+void AP_WindVane::record_home_heading()
 {
     _home_heading = AP::ahrs().yaw;
 }
