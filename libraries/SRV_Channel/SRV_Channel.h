@@ -20,6 +20,7 @@
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_MotionController/AP_MotionController.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -450,6 +451,10 @@ private:
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
+    // support for AP_MotionController
+    AP_MotionController motioncontroller;
+    static AP_MotionController* motioncontroller_ptr;
+    
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;

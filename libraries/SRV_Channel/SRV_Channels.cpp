@@ -33,6 +33,7 @@ SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
+AP_MotionController* SRV_Channels::motioncontroller_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 AP_BLHeli *SRV_Channels::blheli_ptr;
@@ -160,6 +161,8 @@ SRV_Channels::SRV_Channels(void)
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
+    motioncontroller_ptr = &motioncontroller;
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
