@@ -291,7 +291,7 @@ class AutoTest(ABC):
         for p in expect_list:
             if p == e:
                 continue
-        util.pexpect_drain(p)
+            util.pexpect_drain(p)
 
     def drain_mav(self):
         count = 0
@@ -445,11 +445,51 @@ class AutoTest(ABC):
         else:
             self.set_rc(3, 1000)
 
+    def set_output_to_max(self, chan):
+        """Set output to max with RC Radio taking into account REVERSED parameter."""
+        is_reversed = self.get_parameter("RC%u_REVERSED" % chan)
+        out_max = int(self.get_parameter("RC%u_MAX" % chan))
+        out_min = int(self.get_parameter("RC%u_MIN" % chan))
+        if is_reversed == 0:
+            self.set_rc(chan, out_max)
+        else:
+            self.set_rc(chan, out_min)
+
+    def set_output_to_min(self, chan):
+        """Set output to min with RC Radio taking into account REVERSED parameter."""
+        is_reversed = self.get_parameter("RC%u_REVERSED" % chan)
+        out_max = int(self.get_parameter("RC%u_MAX" % chan))
+        out_min = int(self.get_parameter("RC%u_MIN" % chan))
+        if is_reversed == 0:
+            self.set_rc(chan, out_min)
+        else:
+            self.set_rc(chan, out_max)
+
+    def set_output_to_trim(self, chan):
+        """Set output to trim with RC Radio."""
+        out_trim = int(self.get_parameter("RC%u_TRIM" % chan))
+        self.set_rc(chan, out_trim)
+
+    def get_rudder_channel(self):
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            return int(self.get_parameter("RCMAP_YAW"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            return int(self.get_parameter("RCMAP_YAW"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:
+            return int(self.get_parameter("RCMAP_ROLL"))
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            raise ErrorException("Arming with rudder is not supported by Submarine")
+
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
         return self.mav.motors_armed()
 
-    def arm_vehicle(self):
+    def arm_vehicle(self, timeout=20):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -462,7 +502,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
@@ -470,7 +510,7 @@ class AutoTest(ABC):
         self.progress("Unable to ARM with mavlink")
         raise AutoTestTimeoutException()
 
-    def disarm_vehicle(self):
+    def disarm_vehicle(self, timeout=20):
         """Disarm vehicle with mavlink disarm message."""
         self.progress("Disarm motors with MAVLink cmd")
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -483,7 +523,7 @@ class AutoTest(ABC):
                      0,
                      )
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 20:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
@@ -507,48 +547,69 @@ class AutoTest(ABC):
         self.progress("DISARMED")
         return True
 
-    def arm_motors_with_rc_input(self):
+    def arm_motors_with_rc_input(self, timeout=20):
         """Arm motors with radio."""
         self.progress("Arm motors with radio")
-        self.set_throttle_zero()
-        self.mavproxy.send('rc 1 2000\n')
+        self.set_output_to_max(self.get_rudder_channel())
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
-            if not self.mav.motors_armed():
+            if self.mav.motors_armed():
                 arm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS ARMED OK WITH RADIO")
-                self.mavproxy.send('rc 1 1500\n')
+                self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Arm in %ss" % arm_delay)  # TODO check arming time
                 return True
         self.progress("FAILED TO ARM WITH RADIO")
-        self.mavproxy.send('rc 1 1500\n')
+        self.set_output_to_trim(self.get_rudder_channel())
         return False
 
-    def disarm_motors_with_rc_input(self):
+    def disarm_motors_with_rc_input(self, timeout=20):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
-        self.set_throttle_zero()
-        self.mavproxy.send('rc 1 1000\n')
+        self.set_output_to_min(self.get_rudder_channel())
         tstart = self.get_sim_time()
-        timeout = 15
         while self.get_sim_time() < tstart + timeout:
             self.mav.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
-                self.mavproxy.send('rc 1 1500\n')
+                self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
         self.progress("FAILED TO DISARM WITH RADIO")
-        self.mavproxy.send('rc 1 1500\n')
+        self.set_output_to_trim(self.get_rudder_channel())
+        return False
+
+    def arm_motors_with_switch(self, switch_chan, timeout=20):
+        """Arm motors with switch."""
+        self.progress("Arm motors with switch %d" % switch_chan)
+        self.set_rc(switch_chan, 2000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if self.mav.motors_armed():
+                self.progress("MOTORS ARMED OK WITH SWITCH")
+                return True
+        self.progress("FAILED TO ARM WITH SWITCH")
+        return False
+
+    def disarm_motors_with_switch(self, switch_chan, timeout=20):
+        """Disarm motors with switch."""
+        self.progress("Disarm motors with switch %d" % switch_chan)
+        self.set_rc(switch_chan, 1000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + timeout:
+            self.mav.wait_heartbeat()
+            if not self.mav.motors_armed():
+                self.progress("MOTORS DISARMED OK WITH SWITCH")
+                return True
+        self.progress("FAILED TO DISARM WITH SWITCH")
         return False
 
     def autodisarm_motors(self):
         """Autodisarm motors."""
         self.progress("Autodisarming motors")
-        self.set_throttle_zero()
         if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:  # NOT IMPLEMENTED ON ROVER
             self.progress("MOTORS AUTODISARMED OK")
             return True
@@ -719,11 +780,29 @@ class AutoTest(ABC):
                 return
         raise AutoTestTimeoutException()
 
-    def do_set_mode_via_command_long(self):
+    def get_mode_from_mode_mapping(self, mode):
+        """Validate and return the mode number from a string or int."""
+        mode_map = self.mav.mode_mapping()
+        if mode_map is None:
+            raise ErrorException()
+        if isinstance(mode, str):
+            if mode in mode_map:
+                return mode_map.get(mode)
+        if mode in mode_map.values():
+            return mode
+        self.progress("Unknown mode '%s'" % mode)
+        self.progress("Available modes '%s'" % mode_map)
+        raise ErrorException()
+
+    def do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
+        custom_mode = self.get_mode_from_mode_mapping(mode)
         tstart = self.get_sim_time()
-        while self.get_sim_time() - tstart < 5:
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
                          base_mode,
                          custom_mode,
@@ -735,28 +814,30 @@ class AutoTest(ABC):
                          )
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
                 return
-        raise AutoTestTimeoutException()
 
-    def mavproxy_do_set_mode_via_command_long(self):
+    def mavproxy_do_set_mode_via_command_long(self, mode, timeout=30):
+        """Set mode with a command long message with Mavproxy."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = 4  # hold
-        start = self.get_sim_time()
-        while self.get_sim_time() - start < 5:
+        custom_mode = self.get_mode_from_mode_mapping(mode)
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise AutoTestTimeoutException()
             self.mavproxy.send("long DO_SET_MODE %u %u\n" %
                                (base_mode, custom_mode))
             m = self.mav.recv_match(type='HEARTBEAT',
                                     blocking=True,
-                                    timeout=10)
+                                    timeout=remaining)
             if m is None:
                 raise ErrorException()
             if m.custom_mode == custom_mode:
-                return
-        raise AutoTestTimeoutException()
+                return True
 
     def reach_heading_manual(self, heading):
         """Manually direct the vehicle to the target heading."""
@@ -1064,11 +1145,7 @@ class AutoTest(ABC):
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
-        mode_map = self.mav.mode_mapping()
-        if mode_map is None or mode not in mode_map:
-            self.progress("Unknown mode '%s'" % mode)
-            self.progress("Available modes '%s'" % mode_map.keys())
-            raise ErrorException()
+        self.get_mode_from_mode_mapping(mode)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
         self.mav.wait_heartbeat()
@@ -1197,7 +1274,16 @@ class AutoTest(ABC):
 
     def test_arm_feature(self):
         """Common feature to test."""
+        self.context_push()
         # TEST ARMING/DISARM
+        self.set_parameter("ARMING_RUDDER", 2)  # allow arm and disarm with rudder on first tests
+        interlock_channel = 8  # Plane got flighmode_ch on channel 8
+        if self.mav.mav_type is not mavutil.mavlink.MAV_TYPE_HELICOPTER:  # heli don't need interlock option
+            interlock_channel = 9
+            self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
+        self.set_rc(interlock_channel, 1000)
+        self.set_throttle_zero()
+        self.start_test("Test normal arm and disarm features")
         if not self.arm_vehicle():
             self.progress("Failed to ARM")
             raise NotAchievedException()
@@ -1210,12 +1296,120 @@ class AutoTest(ABC):
         if not self.mavproxy_disarm_vehicle():
             self.progress("Failed to DISARM")
             raise NotAchievedException()
-        if not self.arm_motors_with_rc_input():
+        if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            if not self.arm_motors_with_rc_input():
+                raise NotAchievedException()
+            if not self.disarm_motors_with_rc_input():
+                raise NotAchievedException()
+            # self.arm_vehicle()
+            # if not self.autodisarm_motors():
+            #     raise NotAchievedException()
+            # Disable auto disarm for next test
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.set_parameter("DISARM_DELAY", 0)
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            self.set_parameter("LAND_DISARMDELAY", 0)
+        # Rover and Sub don't have auto disarm
+        self.start_test("Test arm and disarm with switch")
+        arming_switch = 7
+        self.set_parameter("RC%d_OPTION" % arming_switch, 41)
+        self.set_rc(arming_switch, 1000)
+        if not self.arm_motors_with_switch(arming_switch):
             raise NotAchievedException()
-        if not self.disarm_motors_with_rc_input():
+        if not self.disarm_motors_with_switch(arming_switch):
             raise NotAchievedException()
-        if not self.autodisarm_motors():
+        self.set_rc(arming_switch, 1000)
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.start_test("Test arming failure with throttle too high")
+            self.set_rc(3, 1800)
+            try:
+                if self.arm_vehicle():
+                    self.progress("Failed to NOT ARM")
+                    raise NotAchievedException()
+            except AutoTestTimeoutException():
+                pass
+            except ValueError:
+                pass
+            if self.arm_motors_with_rc_input():
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            if self.arm_motors_with_switch(arming_switch):
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            self.set_throttle_zero()
+            self.set_rc(arming_switch, 1000)
+        self.start_test("Test arming failure with ARMING_RUDDER=0")
+        self.set_parameter("ARMING_RUDDER", 0)
+        if self.arm_motors_with_rc_input():
+            self.progress("Failed to NOT ARM")
             raise NotAchievedException()
+        self.start_test("Test disarming failure with ARMING_RUDDER=0")
+        self.arm_vehicle()
+        if self.disarm_motors_with_rc_input():
+            self.progress("Failed to NOT DISARM")
+            raise NotAchievedException()
+        self.disarm_vehicle()
+        self.mav.wait_heartbeat()
+        self.start_test("Test disarming failure with ARMING_RUDDER=1")
+        self.set_parameter("ARMING_RUDDER", 1)
+        self.arm_vehicle()
+        if self.disarm_motors_with_rc_input():
+            self.progress("Failed to NOT ARM")
+            raise NotAchievedException()
+        self.disarm_vehicle()
+        self.mav.wait_heartbeat()
+        self.set_parameter("ARMING_RUDDER", 2)
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.start_test("Test arming failure with interlock enabled")
+            self.set_rc(interlock_channel, 2000)
+            if self.arm_motors_with_rc_input():
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            if self.arm_motors_with_switch(arming_switch):
+                self.progress("Failed to NOT ARM")
+                raise NotAchievedException()
+            self.disarm_vehicle()
+            self.mav.wait_heartbeat()
+            self.set_rc(arming_switch, 1000)
+            self.set_rc(interlock_channel, 1000)
+            if self.mav.mav_type is mavutil.mavlink.MAV_TYPE_HELICOPTER:
+                self.start_test("Test motor interlock enable can't be set while disarmed")
+                self.set_rc(interlock_channel, 2000)
+                channel_field = "servo%u_raw" % interlock_channel
+                interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
+                tstart = self.get_sim_time()
+                while True:
+                    remaining = 20 - (self.get_sim_time_cached() - tstart)
+                    if remaining <= 0:
+                        break
+                    m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                            blocking=True,
+                                            timeout=remaining)
+                    m_value = getattr(m, channel_field, None)
+                    if m_value is None:
+                        raise ValueError()
+                    self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
+                                  (channel_field, m_value, interlock_value))
+                    if m_value != interlock_value:
+                        raise NotAchievedException("Motor interlock was changed while disarmed")
+            self.set_rc(8, 1000)
+        self.progress("ALL PASS")
+        self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
 
     def test_gripper(self):
@@ -1230,7 +1424,10 @@ class AutoTest(ABC):
         self.set_parameter("SERVO8_FUNCTION", 28)
         self.set_parameter("SERVO8_MIN", 1000)
         self.set_parameter("SERVO8_MAX", 2000)
+        self.set_parameter("SERVO9_MIN", 1000)
+        self.set_parameter("SERVO9_MAX", 2000)
         self.set_parameter("RC9_OPTION", 19)
+        self.set_rc(9, 1500)
         self.reboot_sitl()
         self.progress("Waiting reading for arm")
         self.wait_ready_to_arm()

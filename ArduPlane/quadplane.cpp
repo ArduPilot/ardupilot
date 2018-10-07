@@ -327,7 +327,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: quadplane options
-    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the corrent position.
+    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight, and the vehicle will not use the vertical lift motors to climb during the transition. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the corrent position.
     // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
@@ -1309,7 +1309,15 @@ void QuadPlane::update_transition(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         assisted_flight = true;
-        hold_hover(assist_climb_rate_cms());
+
+        // do not allow a climb on the quad motors during transition
+        // a climb would add load to the airframe, and prolongs the
+        // transition
+        float climb_rate_cms = assist_climb_rate_cms();
+        if (options & OPTION_LEVEL_TRANSITION) {
+            climb_rate_cms = MIN(climb_rate_cms, 0.0f);
+        }
+        hold_hover(climb_rate_cms);
         last_throttle = motors->get_throttle();
 
         // reset integrators while we are below target airspeed as we

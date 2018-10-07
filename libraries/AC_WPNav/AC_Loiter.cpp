@@ -106,8 +106,10 @@ void AC_Loiter::init_target(const Vector3f& position)
     _pos_control.set_desired_velocity_xy(0.0f,0.0f);
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
 
-    // initialise position controller
-    _pos_control.init_xy_controller();
+    // initialise position controller if not already active
+    if (!_pos_control.is_active_xy()) {
+        _pos_control.init_xy_controller();
+    }
 }
 
 /// initialize's position and feed-forward velocity from current pos and velocity

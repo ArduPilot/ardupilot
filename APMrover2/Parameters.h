@@ -361,6 +361,7 @@ public:
 
     // loiter type
     AP_Int8 loit_type;
+    AP_Float loit_radius;
 
     // Sprayer
     AC_Sprayer sprayer;
@@ -370,6 +371,15 @@ public:
 
     // Simple mode types
     AP_Int8 simple_type;
+
+    // sailboat parameters
+    AP_Float sail_angle_min;
+    AP_Float sail_angle_max;
+    AP_Float sail_angle_ideal;
+    AP_Float sail_heel_angle_max;
+
+    // windvane
+    AP_WindVane windvane;
 };
 
 extern const AP_Param::Info var_info[];

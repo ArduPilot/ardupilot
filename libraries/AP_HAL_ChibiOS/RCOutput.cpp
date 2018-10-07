@@ -815,7 +815,9 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.dma_handle == ctx) {
+            chSysLock();
             dmaStreamAllocate(group.dma, 10, dma_irq_callback, &group);
+            chSysUnlock();
         }
     }
 }
@@ -828,7 +830,9 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         if (group.dma_handle == ctx) {
+            chSysLock();
             dmaStreamRelease(group.dma);
+            chSysUnlock();
         }
     }
 }
@@ -1438,11 +1442,11 @@ void RCOutput::safety_update(void)
         safety_pressed = false;
     }
     if (safety_state==AP_HAL::Util::SAFETY_DISARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
         safety_pressed = false;        
     }
     if (safety_state==AP_HAL::Util::SAFETY_ARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
+        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         safety_pressed = false;        
     }
     if (safety_pressed) {

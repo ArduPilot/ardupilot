@@ -266,9 +266,11 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # switch back to stabilize mode
-        self.set_rc(3, 1500)
         self.mavproxy.send('switch 6\n')
         self.wait_mode('STABILIZE')
+
+        # increase throttle a bit because we're about to pitch:
+        self.set_rc(3, 1525)
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
@@ -309,6 +311,9 @@ class AutoTestCopter(AutoTest):
         # save bottom left corner of square (should be near home) as waypoint
         self.progress("Save WP 6")
         self.save_wp()
+
+        # reduce throttle again
+        self.set_rc(3, 1500)
 
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
@@ -359,8 +364,14 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # raise throttle slightly to avoid hitting the ground
-        self.set_rc(3, 1800)
-        self.wait_altitude(20, 25, relative=True)
+        pos = self.mav.location(relative_alt=True)
+        if pos.alt > 25:
+            self.set_rc(3, 1300)
+            self.wait_altitude(20, 25, relative=True)
+        if pos.alt < 20:
+            self.set_rc(3, 1800)
+            self.wait_altitude(20, 25, relative=True)
+        self.hover()
 
         # switch to stabilize mode
         self.mavproxy.send('switch 6\n')
@@ -523,7 +534,7 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(2, 1475)
                 # disable fence
                 self.set_parameter("FENCE_ENABLE", 0)
-            if alt <= 1 and home_distance < 10:
+            if (alt <= 1 and home_distance < 10) or (not self.armed() and home_distance < 10):
                 # reduce throttle
                 self.set_rc(3, 1000)
                 self.mavproxy.send('switch 2\n')  # land mode
@@ -1753,6 +1764,8 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
 
+            self.mavproxy.send("wp clear\n")
+
             # Arm
             self.run_test("Arm features", self.test_arm_feature)
             self.arm_vehicle()
@@ -1953,6 +1966,7 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
             self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
 
             # Arm
             self.run_test("Arm motors", self.arm_vehicle)

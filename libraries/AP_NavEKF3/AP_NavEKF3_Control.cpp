@@ -367,9 +367,6 @@ void NavEKF3_core::setAidingMode()
             lastVelPassTime_ms = imuSampleTime_ms;
             lastRngBcnPassTime_ms = imuSampleTime_ms;
             break;
-
-        default:
-            break;
         }
 
         // Always reset the position and velocity when changing mode

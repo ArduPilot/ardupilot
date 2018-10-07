@@ -26,6 +26,7 @@ def build(bld):
             'AP_Devo_Telem',
             'AP_Follow',
             'AP_OSD',
+            'AP_WindVane',
         ],
     )
 
