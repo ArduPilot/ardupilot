@@ -532,7 +532,7 @@ void AP_MotorsMulticopter::output_logic()
 
             // initialise motor failure variables
             _thrust_boost = false;
-            _thrust_boost_ratio = 0.0f;
+            _thrust_boost_ratio = MAX(0.0, _thrust_boost_ratio - 1.0 / (_spool_up_time * _loop_rate));
             break;
 
         case THROTTLE_UNLIMITED:
