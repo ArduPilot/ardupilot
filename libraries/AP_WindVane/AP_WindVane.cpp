@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_WindVane, _type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: RC_IN_NO
-    // @DisplayName: RC Input Channel to use as wind angle value
+    // @DisplayName: Wind vane sensor RC Input Channel
     // @Description: RC Input Channel to use as wind angle value
     // @Range: 0 16
     // @Increment: 1
@@ -51,14 +51,14 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("RC_IN_NO", 2, AP_WindVane, _rc_in_no, 0),
 
     // @Param: ANA_PIN
-    // @DisplayName: Analog input
+    // @DisplayName: Wind vane Analog input
     // @Description: Analog input pin to read as Wind vane sensor pot
     // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("ANA_PIN", 3, AP_WindVane, _analog_pin_no, WINDVANE_DEFAULT_PIN),
 
     // @Param: ANA_V_MIN
-    // @DisplayName: Analog minumum voltage
+    // @DisplayName: Wind vane Analog minumum voltage
     // @Description: Minimum analog voltage read by wind vane
     // @Units: V
     // @Increment: 0.01
@@ -67,8 +67,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("ANA_V_MIN", 4, AP_WindVane, _analog_volt_min, 0.0f),
 
     // @Param: ANA_V_MAX
-    // @DisplayName: Analog maximum voltage
-    // @Description: Minimum analog voltage read by wind vane
+    // @DisplayName: Wind vane Analog maximum voltage
+    // @Description: Maximum analog voltage read by wind vane
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -76,8 +76,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("ANA_V_MAX", 5, AP_WindVane, _analog_volt_max, 3.3f),
 
     // @Param: ANA_OF_HD
-    // @DisplayName: Analog headwind offset
-    // @Description: Angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
+    // @DisplayName: Wind vane Analog headwind offset
+    // @Description: Angle offset when analog windvane is indicating a headwind, ie 0 degress relative to vehicle
     // @Units: deg
     // @Increment: 1
     // @Range: 0 360
@@ -99,8 +99,8 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
     AP_GROUPINFO("CAL", 8, AP_WindVane, _calibration, 0),
 
     // @Param: ANA_DZ
-    // @DisplayName: Analog potentiometer dead zone
-    // @Description: Analog potentiometer mechanical dead zone
+    // @DisplayName: Wind vane analog potentiometer dead zone
+    // @Description: Analog wind vane's potentiometer dead zone
     // @Units: deg
     // @Increment: 1
     // @Range: 0 360
