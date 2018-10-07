@@ -156,9 +156,15 @@ void RGBLed::update_colours(void)
 
     const uint32_t current_colour_sequence = get_colour_sequence();
 
-    const uint8_t step = (AP_HAL::millis()/100) % 10;
+    uint8_t step = (AP_HAL::millis()/100) % 10;
 
-    const uint8_t colour = current_colour_sequence >> (step*3);
+    // ensure we can't skip a step even with awful timing
+    if (step != last_step) {
+        step = (last_step+1) % 10;
+        last_step = step;
+    }
+
+    const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
 
     _red_des = (colour & RED) ? brightness : 0;
     _green_des = (colour & GREEN) ? brightness : 0;
