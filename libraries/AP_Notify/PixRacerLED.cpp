@@ -30,7 +30,7 @@
 extern const AP_HAL::HAL& hal;
 
 PixRacerLED::PixRacerLED() :
-    RGBLed(0, HAL_GPIO_LED_OFF, HAL_GPIO_LED_OFF, HAL_GPIO_LED_OFF)
+    RGBLed(0, 1, 1, 1)
 {
 }
 
