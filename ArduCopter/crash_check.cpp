@@ -88,7 +88,7 @@ void Copter::thrust_loss_check()
         return;
     }
 
-    // check throttle is over 25%
+    // check throttle is over 25% to prevent checks triggering from thrust limitations caused by low commanded throttle
     if ((attitude_control->get_throttle_in() < 0.25f)) {
         thrust_loss_counter = 0;
         return;
@@ -100,17 +100,28 @@ void Copter::thrust_loss_check()
         return;
     }
 
+    // check for angle error over 30 degrees to ensure the aircraft has attitude control
+    const float angle_error = attitude_control->get_att_error_angle_deg();
+    if (angle_error >= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
+        thrust_loss_counter = 0;
+        return;
+    }
+
+    // the aircraft is descending with low requested roll and pitch, at full available throttle, with attitude control
     // we may have lost thrust
     thrust_loss_counter++;
 
     // check if thrust loss for 1 second
     if (thrust_loss_counter >= (THRUST_LOSS_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
+        // reset counter
+        thrust_loss_counter = 0;
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_THRUST_LOSS_CHECK, ERROR_CODE_FAILSAFE_OCCURRED);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
         // enable thrust loss handling
         motors->set_thrust_boost(true);
+        // the motors library disables this when it is no longer needed to achieve the commanded output
     }
 }
 
