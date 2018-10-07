@@ -338,7 +338,7 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
     rover.mode_simple.init_heading();
 
     // save home heading for use in sail vehicles
-    rover.g2.windvane.record_home_headng();
+    rover.g2.windvane.record_home_heading();
 
     change_arm_state();
     return true;
