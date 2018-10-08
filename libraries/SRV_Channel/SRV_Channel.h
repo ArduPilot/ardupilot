@@ -452,8 +452,8 @@ private:
     static AP_SBusOut *sbus_ptr;
 
     // support for AP_MotionController
-    //AP_MotionController motioncontroller;
-    //static AP_MotionController* motioncontroller_ptr;
+    AP_MotionController motioncontroller;
+    static AP_MotionController* motioncontroller_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol

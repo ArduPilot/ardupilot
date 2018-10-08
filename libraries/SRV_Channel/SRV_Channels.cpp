@@ -33,7 +33,7 @@ SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
-//AP_MotionController* SRV_Channels::motioncontroller_ptr;
+AP_MotionController* SRV_Channels::motioncontroller_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 AP_BLHeli *SRV_Channels::blheli_ptr;
@@ -136,7 +136,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
     // @Group: _MOCR_
     // @Path: ../AP_MotionController/AP_MotionController.cpp
-    AP_SUBGROUPINFO(volz, "_MOCR_",  21, SRV_Channels, AP_MotionController),
+    AP_SUBGROUPINFO(motioncontroller, "_MOCR_",  21, SRV_Channels, AP_MotionController),
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -165,8 +165,8 @@ SRV_Channels::SRV_Channels(void)
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
-    //motioncontroller_ptr = &motioncontroller;
-
+    motioncontroller_ptr = &motioncontroller;
+    
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -234,7 +234,7 @@ void SRV_Channels::push()
     sbus_ptr->update();
 
     // give AP_MotionController library a chance to update
-    //motioncontroller_ptr->update();
+    motioncontroller_ptr->update();
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update

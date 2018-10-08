@@ -22,7 +22,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
 
 class AP_MotionController
 {
@@ -33,7 +32,7 @@ class AP_MotionController
     void init(void);
     void update(void);
 
-  private:
+  protected:
     AP_Int8 bitmask;
     AP_HAL::UARTDriver *port;
 };
