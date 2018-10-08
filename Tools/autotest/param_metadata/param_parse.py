@@ -282,10 +282,6 @@ for library in libraries:
             #not a duplicate, so delete attribute.
             delattr(param, "path")
 
-
-    
-                
-
 for library in libraries:
     for param in library.params:
         validate(param)

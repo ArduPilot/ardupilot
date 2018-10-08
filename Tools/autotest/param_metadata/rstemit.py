@@ -207,8 +207,8 @@ Complete Parameter List
                 continue
             d = param.__dict__
             
-            # Check if param path defined (i.e. is duplicate parameter)
-            param_path = param.path if hasattr(param, 'path') else ''
+            # Get param path if defined (i.e. is duplicate parameter)
+            param_path = getattr(param, 'path', '')
             
             if self.annotate_with_vehicle:
                 name = param.name
@@ -226,7 +226,7 @@ Complete Parameter List
             else:
                 reference = reference.split(":")[-1]
             if param_path:
-                reference = reference + '__' + param_path
+                reference += '__' + param_path
 
             ret += """
 
