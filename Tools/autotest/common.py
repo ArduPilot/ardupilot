@@ -208,7 +208,7 @@ class AutoTest(ABC):
             tstart = self.get_sim_time()
         while True:
 
-            self.mavproxy.send("set streamrate %u\n" % (self.sitl_streamrate()*2))
+            self.mavproxy.send("set streamrate %u\n" % (self.sitl_streamrate()+1))
             if self.mav is None:
                 break
 
