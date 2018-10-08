@@ -12,7 +12,7 @@ class RSTEmit(Emit):
         return """This is a complete list of the parameters which can be set (e.g. via the MAVLink protocol) to control vehicle behaviour. They are stored in persistent storage on the vehicle.
 
 This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.
-"""
+""" # noqa
 
     def toolname(self):
         return "Tools/autotest/param_metadata/param_parse.py"
@@ -53,7 +53,6 @@ Complete Parameter List
         pass
 
     def tablify_row(self, rowheading, row, widths, height):
-        ret = ""
         joiner = "|"
 
         row_lines = [x.split("\n") for x in row]
@@ -253,7 +252,10 @@ Complete Parameter List
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]
                         if abreviated_units != '':
-                            units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
+                            # use the known_units dictionary to
+                            # convert the abreviated unit into a full
+                            # textual one:
+                            units = known_units[abreviated_units]
                             row.append(cgi.escape(units))
                     else:
                         row.append(cgi.escape(param.__dict__[field]))
