@@ -57,8 +57,12 @@ function run_autotest() {
     unset BUILDROOT
     echo "Running SITL $NAME test"
 
+    w=""
     if [ $c_compiler == "clang" ]; then
-        w="--check-c-compiler=clang --check-cxx-compiler=clang++"
+        w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
+    fi
+    if [ $NAME == "Rover" ]; then
+        w="$w --enable-math-check-indexes"
     fi
     Tools/autotest/autotest.py --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
