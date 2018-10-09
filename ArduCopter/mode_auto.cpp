@@ -1316,7 +1316,13 @@ void Copter::ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        copter.wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        if (cmd.content.speed.speed_type == 2)  {
+            copter.wp_nav->set_speed_z(copter.wp_nav->get_speed_down(), cmd.content.speed.target_ms * 100.0f);
+        } else if (cmd.content.speed.speed_type == 3)  {
+            copter.wp_nav->set_speed_z(cmd.content.speed.target_ms * 100.0f, copter.wp_nav->get_speed_up());
+        } else {
+            copter.wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        }
     }
 }
 
