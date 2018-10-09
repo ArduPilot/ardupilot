@@ -234,7 +234,7 @@ AP_BattMonitor::read()
 
     DataFlash_Class *df = DataFlash_Class::instance();
     if (df->should_log(_log_battery_bit)) {
-        df->Log_Write_Current();
+        df->Log_Write_Battery();
         df->Log_Write_Power();
     }
 
