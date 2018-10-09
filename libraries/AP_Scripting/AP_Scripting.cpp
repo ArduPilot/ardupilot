@@ -25,7 +25,7 @@
 #define SCRIPTING_STACK_MIN_SIZE 2048
 
 #if !defined(SCRIPTING_STACK_SIZE)
-  #define SCRIPTING_STACK_SIZE 8192
+  #define SCRIPTING_STACK_SIZE 16384
 #endif // !defined(SCRIPTING_STACK_SIZE)
 
 #if !defined(SCRIPTING_STACK_MAX_SIZE)
@@ -80,7 +80,21 @@ void AP_Scripting::thread(void) {
     luaL_openlibs(state);
     load_lua_bindings(state);
 
-    luaL_loadstring(state, "gcs.send_text(string.format(\"1 + 2 = %d\", 1+2))");
+//    luaL_loadstring(state, "gcs.send_text(string.format(\"1 + 2 = %d\", 1+2))");
+
+    // load the sandbox creation function
+    if (luaL_dofile(state, "sandbox.lua")) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "SFATAL: %s", lua_tostring(state, -1));
+        return;
+    }
+
+    luaL_loadfile(state, "test.lua");
+    lua_getglobal(state, "get_sandbox_env"); //find the sandbox creation function
+    if (lua_pcall(state, 0, LUA_MULTRET, 0)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "SFATAL: %s", lua_tostring(state, -1));
+        return;
+    }
+    lua_setupvalue(state, -2, 1);
 
     while (true) {
         hal.scheduler->delay(1000);
