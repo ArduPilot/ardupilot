@@ -663,8 +663,8 @@ class AutoTest(ABC):
                 self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/retry)
                 return float(self.mavproxy.match.group(1))
             except pexpect.TIMEOUT:
-                if i < retry:
-                    continue
+                pass
+        raise NotAchievedException("Failed to retrieve parameter")
 
     def context_get(self):
         """Get Saved parameters."""
