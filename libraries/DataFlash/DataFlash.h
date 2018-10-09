@@ -131,7 +131,7 @@ public:
     void Log_Write_Airspeed(AP_Airspeed &airspeed);
     void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
     void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
-    void Log_Write_Current();
+    void Log_Write_Battery(void);
     void Log_Write_Compass(uint64_t time_us=0);
     void Log_Write_Mode(uint8_t mode, uint8_t reason);
 
@@ -303,10 +303,6 @@ private:
     void Log_Write_Compass_instance(uint64_t time_us,
                                     uint8_t mag_instance,
                                     enum LogMessages type);
-    void Log_Write_Current_instance(uint64_t time_us,
-                                    uint8_t battery_instance,
-                                    enum LogMessages type,
-                                    enum LogMessages celltype);
     void Log_Write_IMUDT_instance(uint64_t time_us,
                                   uint8_t imu_instance,
                                   enum LogMessages type);

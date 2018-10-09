@@ -1394,66 +1394,47 @@ void DataFlash_Class::Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f 
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_Class::Log_Write_Current_instance(const uint64_t time_us,
-                                                 const uint8_t battery_instance,
-                                                 const enum LogMessages type,
-                                                 const enum LogMessages celltype)
+void DataFlash_Class::Log_Write_Battery()
 {
-    AP_BattMonitor &battery = AP::battery();
-    float temp;
-    bool has_temp = battery.get_temperature(temp, battery_instance);
-    struct log_Current pkt = {
-        LOG_PACKET_HEADER_INIT(type),
-        time_us             : time_us,
-        voltage             : battery.voltage(battery_instance),
-        voltage_resting     : battery.voltage_resting_estimate(battery_instance),
-        current_amps        : battery.current_amps(battery_instance),
-        current_total       : battery.consumed_mah(battery_instance),
-        consumed_wh         : battery.consumed_wh(battery_instance),
-        temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
-        resistance          : battery.get_resistance(battery_instance)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-
-    // individual cell voltages
-    if (battery.has_cell_voltages(battery_instance)) {
-        const AP_BattMonitor::cells &cells = battery.get_cell_voltages(battery_instance);
-        struct log_Current_Cells cell_pkt = {
-            LOG_PACKET_HEADER_INIT(celltype),
-            time_us             : time_us,
-            voltage             : battery.voltage(battery_instance)
-        };
-        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-            cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
-        }
-        WriteBlock(&cell_pkt, sizeof(cell_pkt));
-
-        // check battery structure can hold all cells
-        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
-                      "Battery cell number doesn't match in library and log structure");
-    }
-}
-
-// Write an Current data packet
-void DataFlash_Class::Log_Write_Current()
-{
-    // Big painful assert to ensure that logging won't produce suprising results when the
-    // number of battery monitors changes, does have the built in expectation that
-    // LOG_COMPASS_MSG follows the last LOG_CURRENT_CELLSx_MSG
-    static_assert(((LOG_CURRENT_MSG + AP_BATT_MONITOR_MAX_INSTANCES) == LOG_CURRENT_CELLS_MSG) &&
-                  ((LOG_CURRENT_CELLS_MSG + AP_BATT_MONITOR_MAX_INSTANCES) == LOG_COMPASS_MSG),
-                  "The number of batt monitors has changed without updating the log "
-                  "table entries. Please add new enums for LOG_CURRENT_MSG, LOG_CURRENT_CELLS_MSG "
-                  "directly following the highest indexed fields. Don't forget to update the log "
-                  "description table as well.");
-
     const uint64_t time_us = AP_HAL::micros64();
-    const uint8_t num_instances = AP::battery().num_instances();
+    const AP_BattMonitor &battery = AP::battery();
+    const uint8_t num_instances = battery.num_instances();
+
     for (uint8_t i = 0; i < num_instances; i++) {
-        Log_Write_Current_instance(time_us,
-                                   i,
-                                   (LogMessages)((uint8_t)LOG_CURRENT_MSG + i),
-                                   (LogMessages)((uint8_t)LOG_CURRENT_CELLS_MSG + i));
+        float temp;
+        bool has_temp = battery.get_temperature(temp, i);
+        struct log_Battery pkt = {
+            LOG_PACKET_HEADER_INIT(LOG_BATTERY_MSG),
+            time_us             : time_us,
+            instance            : i,
+            voltage             : battery.voltage(i),
+            voltage_resting     : battery.voltage_resting_estimate(i),
+            current_amps        : battery.current_amps(i),
+            current_total       : battery.consumed_mah(i),
+            consumed_wh         : battery.consumed_wh(i),
+            temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
+            resistance          : battery.get_resistance(i)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+
+        // individual cell voltages
+        if (battery.has_cell_voltages(i)) {
+            const AP_BattMonitor::cells &cells = battery.get_cell_voltages(i);
+            struct log_Battery_Cells cell_pkt = {
+                LOG_PACKET_HEADER_INIT(LOG_BATTERY_CELLS_MSG),
+                time_us             : time_us,
+                instance            : i,
+                voltage             : battery.voltage(i)
+            };
+            for (uint8_t j = 0; i < ARRAY_SIZE(cells.cells); j++) {
+                cell_pkt.cell_voltages[j] = cells.cells[j] + 1;
+            }
+            WriteBlock(&cell_pkt, sizeof(cell_pkt));
+
+            // check battery structure can hold all cells
+            static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
+                          "Battery cell number doesn't match in library and log structure");
+        }
     }
 }
 
