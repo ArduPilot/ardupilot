@@ -171,6 +171,16 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     }
 }
 
+/// set_speed_z - allows main code to pass target vertical velocity for wp navigation
+void AC_WPNav::set_speed_z(float speed_down_cms, float speed_up_cms)
+{
+    _wp_speed_down_cms = speed_down_cms;
+    _wp_speed_up_cms = speed_up_cms;
+    _pos_control.set_max_speed_z(_wp_speed_down_cms, _wp_speed_up_cms);
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
+}
+
 /// set_wp_destination waypoint using location class
 ///     returns false if conversion from location to vector from ekf origin cannot be calculated
 bool AC_WPNav::set_wp_destination(const Location_Class& destination)
