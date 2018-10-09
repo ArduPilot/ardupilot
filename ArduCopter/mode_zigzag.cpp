@@ -190,7 +190,7 @@ void Copter::ModeZigZag::manual_control()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
