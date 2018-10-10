@@ -158,9 +158,6 @@ void Tracker::set_home(struct Location temp)
     if (ahrs.get_origin(ekf_origin)) {
         ahrs.set_home(temp);
     }
-
-    gcs().send_home();
-    gcs().send_ekf_origin();
 }
 
 void Tracker::arm_servos()
