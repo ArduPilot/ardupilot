@@ -28,6 +28,25 @@ SITL_START_LOCATION = mavutil.location(40.071374969556928,
 
 
 class AutoTestRover(AutoTest):
+    @staticmethod
+    def get_not_armable_mode_list():
+        return []
+
+    @staticmethod
+    def get_not_disarmed_settable_modes_list():
+        return ["FOLLOW"]
+
+    @staticmethod
+    def get_no_position_not_settable_modes_list():
+        return []
+
+    @staticmethod
+    def get_position_armable_modes_list():
+        return ["GUIDED", "LOITER", "STEERING", "AUTO", "RTL", "SMART_RTL"]
+
+    @staticmethod
+    def get_normal_armable_modes_list():
+        return ["ACRO", "HOLD", "MANUAL"]
 
     def log_name(self):
         return "APMrover2"
@@ -46,6 +65,9 @@ class AutoTestRover(AutoTest):
 
     def get_stick_arming_channel(self):
         return int(self.get_parameter("RCMAP_ROLL"))
+
+    def arming_test_mission(self):
+        return os.path.join(testdir, "ArduRover-Missions", "test_arming.txt")
 
     ##########################################################
     #   TESTS DRIVE
