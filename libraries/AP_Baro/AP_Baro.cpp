@@ -244,11 +244,15 @@ void AP_Baro::calibrate(bool save)
     _guessed_ground_temperature = get_external_temperature();
 
     // panic if all sensors are not calibrated
+    uint8_t num_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-            return;
+            gcs().send_text(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+            num_calibrated++;
         }
+    }
+    if (num_calibrated) {
+        return;
     }
     AP_HAL::panic("AP_Baro: all sensors uncalibrated");
 }
