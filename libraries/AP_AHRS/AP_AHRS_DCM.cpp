@@ -22,6 +22,7 @@
  */
 #include "AP_AHRS.h"
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1030,6 +1031,13 @@ void AP_AHRS_DCM::set_home(const Location &loc)
     _home = loc;
     _home.options = 0;
     _home_is_set = true;
+
+    // log ahrs home and ekf origin dataflash
+    Log_Write_Home_And_Origin();
+
+    // send new home and ekf origin to GCS
+    gcs().send_home();
+    gcs().send_ekf_origin();
 }
 
 //  a relative ground position to home in meters, Down
