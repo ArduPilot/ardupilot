@@ -69,13 +69,6 @@ bool Rover::set_home(const Location& loc, bool lock)
     // Save Home to EEPROM
     mission.write_home_to_storage();
 
-    // log ahrs home and ekf origin dataflash
-    ahrs.Log_Write_Home_And_Origin();
-
-    // send new home and ekf origin to GCS
-    gcs().send_home();
-    gcs().send_ekf_origin();
-
     // send text of home position to ground stations
     gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
             static_cast<double>(loc.lat * 1.0e-7f),
@@ -98,8 +91,6 @@ void Rover::update_home()
         if (ahrs.get_position(loc)) {
             if (get_distance(loc, ahrs.get_home()) > DISTANCE_HOME_MAX) {
                 ahrs.set_home(loc);
-                ahrs.Log_Write_Home_And_Origin();
-                gcs().send_home();
             }
         }
     }
