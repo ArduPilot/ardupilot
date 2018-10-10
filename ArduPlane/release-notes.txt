@@ -1,3 +1,24 @@
+Release 3.9.2, 10th October 2018
+--------------------------------
+
+The ArduPilot development team are delighted to announce the 3.9.2
+stable release of the ArduPilot plane code. This release includes a
+number of small but important fixes over 3.9.1.
+
+The changes since the 3.9.2beta3 release are:
+
+ - fixed a DShot send bug that could lead to board lockup
+
+ - fixed RGB LED display on Pixracer under both NuttX and ChibiOS
+
+ - fixed safety switch option handling bug
+
+Thanks for the bug reports and testing by all users for the 3.9.2beta
+series!
+
+Happy flying!
+
+
 Release 3.9.2beta3, 20th September 2018
 ---------------------------------------
 
