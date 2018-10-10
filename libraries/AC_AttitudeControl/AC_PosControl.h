@@ -123,8 +123,7 @@ public:
     /// relax_alt_hold_controllers - set all desired and targets to measured
     void relax_alt_hold_controllers(float throttle_setting);
 
-    /// get_alt_target, get_desired_alt - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
-    /// To-Do: remove one of the two functions below
+    /// get_alt_target - get desired altitude (in cm above home) from loiter or wp controller which should be fed into throttle controller
     float get_alt_target() const { return _pos_target.z; }
 
     /// get_alt_error - returns altitude error in cm
