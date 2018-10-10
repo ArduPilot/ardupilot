@@ -46,8 +46,6 @@ public:
         return _singleton;
     }
 
-    static const char *_clock_source_types[];
-
 private:
 
     static AP_RTC *_singleton;
