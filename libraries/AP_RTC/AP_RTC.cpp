@@ -6,13 +6,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-const char *AP_RTC::_clock_source_types[] = {
-    "GPS",
-    "SYSTEM_TIME",
-    "HW",
-    "NONE",
-};
-
 AP_RTC::AP_RTC()
 {
     AP_Param::setup_object_defaults(this, var_info);
