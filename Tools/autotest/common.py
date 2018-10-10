@@ -879,6 +879,18 @@ class AutoTest(ABC):
                 return disarm_time <= disarm_delay
         raise AutoTestTimeoutException("Failed to AUTODISARM")
 
+    def set_autodisarm_delay(self, delay):
+        """Set autodisarm delay"""
+        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            self.set_parameter("DISARM_DELAY", delay)
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            self.set_parameter("LAND_DISARMDELAY", delay)
+
     @staticmethod
     def should_fetch_all_for_parameter_change(param_name):
         if fnmatch.fnmatch(param_name, "*_ENABLE") or fnmatch.fnmatch(param_name, "*_ENABLED"):
@@ -1657,6 +1669,9 @@ class AutoTest(ABC):
             self.set_parameter("RC%u_OPTION" % interlock_channel, 32)
         self.set_rc(interlock_channel, 1000)
         self.set_throttle_zero()
+        # Disable auto disarm for next tests
+        # Rover and Sub don't have auto disarm
+        self.set_autodisarm_delay(0)
         self.start_test("Test normal arm and disarm features")
         self.wait_ready_to_arm()
         self.progress("default arm_vehicle() call")
@@ -1678,17 +1693,6 @@ class AutoTest(ABC):
             self.progress("disarm with rc input")
             if not self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to disarm with RC input")
-        # Disable auto disarm for next test
-        # Rover and Sub don't have auto disarm
-        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
-                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
-                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
-                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
-                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
-                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
-            self.set_parameter("DISARM_DELAY", 0)
-        elif self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
-            self.set_parameter("LAND_DISARMDELAY", 0)
         # Sub has no 'switches'
         if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
             self.start_test("Test arm and disarm with switch")
@@ -1702,6 +1706,7 @@ class AutoTest(ABC):
             if not self.disarm_motors_with_switch(arming_switch):
                 raise NotAchievedException("Failed to disarm with switch")
             self.set_rc(arming_switch, 1000)
+
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
                                  mavutil.mavlink.MAV_TYPE_HELICOPTER,
                                  mavutil.mavlink.MAV_TYPE_HEXAROTOR,
