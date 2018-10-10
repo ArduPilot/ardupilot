@@ -139,6 +139,4 @@ void Plane::set_home_persistently(const Location &loc)
 void Plane::set_home(const Location &loc)
 {
     ahrs.set_home(loc);
-    ahrs.Log_Write_Home_And_Origin();
-    gcs().send_home();
 }
