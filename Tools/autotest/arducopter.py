@@ -5249,6 +5249,46 @@ class AutoTestHeli(AutoTestCopter):
     def loiter_requires_position(self):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
+    def get_collective_out(self):
+        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        chan_pwm = (servo.servo1_raw + servo.servo2_raw + servo.servo3_raw)/3.0
+        return chan_pwm
+
+    def rotor_runup_complete_checks(self):
+        # Takeoff and landing in Loiter
+        TARGET_RUNUP_TIME = 10
+        self.zero_throttle()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        coll = servo.servo1_raw
+        coll = coll + 50
+        self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
+        self.progress("Initiate Runup by putting some throttle")
+        self.set_rc(8, 2000)
+        self.set_rc(3, 1700)
+        self.progress("Collective threshold PWM %u" % coll)
+        tstart = self.get_sim_time()
+        self.progress("Wait that collective PWM pass threshold value")
+        servo = self.mav.recv_match(condition='SERVO_OUTPUT_RAW.servo1_raw>%u' % coll, blocking=True)
+        runup_time = self.get_sim_time() - tstart
+        self.progress("Collective is now at PWM %u" % servo.servo1_raw)
+        self.mav.wait_heartbeat()
+        if runup_time < TARGET_RUNUP_TIME:
+            self.zero_throttle()
+            self.set_rc(8, 1000)
+            self.disarm_vehicle()
+            self.mav.wait_heartbeat()
+            raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
+        self.progress("Runup time %u" % runup_time)
+        self.zero_throttle()
+        self.set_rc(8, 1000)
+        self.mavproxy.send('mode LAND\n')
+        self.wait_mode('LAND')
+        self.mav.motors_disarmed_wait()
+        self.mav.wait_heartbeat()
+
     # fly_avc_test - fly AVC mission
     def fly_avc_test(self):
         # Arm
@@ -5300,12 +5340,14 @@ class AutoTestHeli(AutoTestCopter):
         ex = None
         try:
             self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.mavproxy.send('mode POSHOLD\n')
-            self.wait_mode('POSHOLD')
-            self.set_rc(3, 1000)
+            self.change_mode('POSHOLD')
+            self.zero_throttle()
             self.set_rc(8, 1000)
             self.wait_ready_to_arm()
+            self.run_test("Arm features", self.test_arm_feature)
+            # Arm
             self.arm_vehicle()
+            self.progress("Raising rotor speed")
             self.set_rc(8, 2000)
             self.progress("wait for rotor runup to complete")
             self.wait_servo_channel_value(8, 1660, timeout=10)
@@ -5450,6 +5492,10 @@ class AutoTestHeli(AutoTestCopter):
         ret = AutoTest.tests(self)
         ret.extend([
             ("AVCMission", "Fly AVC mission", self.fly_avc_test),
+
+            ("RotorRunUp",
+             "Test rotor runup",
+             self.rotor_runup_complete_checks),
 
             ("PosHoldTakeOff",
              "Fly POSHOLD takeoff",
