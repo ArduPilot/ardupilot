@@ -263,6 +263,11 @@ void AP_Baro::calibrate(bool save)
 */
 void AP_Baro::update_calibration()
 {
+    const uint32_t now = AP_HAL::millis();
+    const bool do_notify = now - _last_notify_ms > 10000;
+    if (do_notify) {
+        _last_notify_ms = now;
+    }
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
             float corrected_pressure = get_pressure(i) + sensors[i].p_correction;
@@ -270,10 +275,8 @@ void AP_Baro::update_calibration()
         }
 
         // don't notify the GCS too rapidly or we flood the link
-        uint32_t now = AP_HAL::millis();
-        if (now - _last_notify_ms > 10000) {
+        if (do_notify) {
             sensors[i].ground_pressure.notify();
-            _last_notify_ms = now;
         }
     }
 
