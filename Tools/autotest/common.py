@@ -196,7 +196,7 @@ class AutoTest(ABC):
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
         self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("tilt alignment complete")
+        self.mavproxy.expect("Initialising APM")
         # empty mav to avoid getting old timestamps:
         if self.mav is not None:
             while self.mav.recv_match(blocking=False):
@@ -1293,7 +1293,9 @@ class AutoTest(ABC):
             # self.arm_vehicle()
             # if not self.autodisarm_motors():
             #     raise NotAchievedException("Did not autodisarm")
-            # Disable auto disarm for next test
+
+        # Disable auto disarm for next test
+        # Rover and Sub don't have auto disarm
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
                                  mavutil.mavlink.MAV_TYPE_HELICOPTER,
                                  mavutil.mavlink.MAV_TYPE_HEXAROTOR,
@@ -1303,16 +1305,20 @@ class AutoTest(ABC):
             self.set_parameter("DISARM_DELAY", 0)
         if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
             self.set_parameter("LAND_DISARMDELAY", 0)
-        # Rover and Sub don't have auto disarm
-        self.start_test("Test arm and disarm with switch")
-        arming_switch = 7
-        self.set_parameter("RC%d_OPTION" % arming_switch, 41)
-        self.set_rc(arming_switch, 1000)
-        if not self.arm_motors_with_switch(arming_switch):
-            raise NotAchievedException("Failed to arm with switch")
-        if not self.disarm_motors_with_switch(arming_switch):
-            raise NotAchievedException("Failed to disarm with switch")
-        self.set_rc(arming_switch, 1000)
+        # Sub has no 'switches'
+        if self.mav.mav_type == mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            if not self.disarm_vehicle():
+                raise NotAchievedException("Failed to isarm")
+        else:
+            self.start_test("Test arm and disarm with switch")
+            arming_switch = 7
+            self.set_parameter("RC%d_OPTION" % arming_switch, 41)
+            self.set_rc(arming_switch, 1000)
+            if not self.arm_motors_with_switch(arming_switch):
+                raise NotAchievedException("Failed to arm with switch")
+            if not self.disarm_motors_with_switch(arming_switch):
+                raise NotAchievedException("Failed to disarm with switch")
+            self.set_rc(arming_switch, 1000)
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
                                  mavutil.mavlink.MAV_TYPE_HELICOPTER,
                                  mavutil.mavlink.MAV_TYPE_HEXAROTOR,
@@ -1334,24 +1340,28 @@ class AutoTest(ABC):
                 raise NotAchievedException("Failed to NOT ARM")
             self.set_throttle_zero()
             self.set_rc(arming_switch, 1000)
-        self.start_test("Test arming failure with ARMING_RUDDER=0")
-        self.set_parameter("ARMING_RUDDER", 0)
-        if self.arm_motors_with_rc_input():
-            raise NotAchievedException("Failed to NOT ARM")
-        self.start_test("Test disarming failure with ARMING_RUDDER=0")
-        self.arm_vehicle()
-        if self.disarm_motors_with_rc_input():
-            raise NotAchievedException("Failed to NOT DISARM")
-        self.disarm_vehicle()
-        self.mav.wait_heartbeat()
-        self.start_test("Test disarming failure with ARMING_RUDDER=1")
-        self.set_parameter("ARMING_RUDDER", 1)
-        self.arm_vehicle()
-        if self.disarm_motors_with_rc_input():
-            raise NotAchievedException("Failed to NOT ARM")
-        self.disarm_vehicle()
-        self.mav.wait_heartbeat()
-        self.set_parameter("ARMING_RUDDER", 2)
+
+        # Sub doesn't have 'stick commands'
+        if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            self.start_test("Test arming failure with ARMING_RUDDER=0")
+            self.set_parameter("ARMING_RUDDER", 0)
+            if self.arm_motors_with_rc_input():
+                raise NotAchievedException("Failed to NOT ARM")
+            self.start_test("Test disarming failure with ARMING_RUDDER=0")
+            self.arm_vehicle()
+            if self.disarm_motors_with_rc_input():
+                raise NotAchievedException("Failed to NOT DISARM")
+            self.disarm_vehicle()
+            self.mav.wait_heartbeat()
+            self.start_test("Test disarming failure with ARMING_RUDDER=1")
+            self.set_parameter("ARMING_RUDDER", 1)
+            self.arm_vehicle()
+            if self.disarm_motors_with_rc_input():
+                raise NotAchievedException("Failed to NOT ARM")
+            self.disarm_vehicle()
+            self.mav.wait_heartbeat()
+            self.set_parameter("ARMING_RUDDER", 2)
+
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
                                  mavutil.mavlink.MAV_TYPE_HELICOPTER,
                                  mavutil.mavlink.MAV_TYPE_HEXAROTOR,
