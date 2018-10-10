@@ -752,7 +752,7 @@ class AutoTest(ABC):
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
                 return True
-        raise AutoTestTimeoutException("Unable to ARM with mavlink")
+        raise AutoTestTimeoutException("Failed to ARM with mavlink")
 
     def disarm_vehicle(self, timeout=20):
         """Disarm vehicle with mavlink disarm message."""
@@ -772,7 +772,7 @@ class AutoTest(ABC):
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
                 return True
-        raise AutoTestTimeoutException("Unable to DISARM with mavlink")
+        raise AutoTestTimeoutException("Failed to DISARM with mavlink")
 
     def mavproxy_arm_vehicle(self):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
@@ -807,7 +807,7 @@ class AutoTest(ABC):
             print("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
-        self.progress("FAILED TO ARM WITH RADIO")
+        self.progress("Failed to ARM with radio")
         self.set_output_to_trim(self.get_rudder_channel())
         return False
 
@@ -824,7 +824,7 @@ class AutoTest(ABC):
                 self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
-        self.progress("FAILED TO DISARM WITH RADIO")
+        self.progress("Failed to DISARM with radio")
         self.set_output_to_trim(self.get_rudder_channel())
         return False
 
@@ -838,7 +838,7 @@ class AutoTest(ABC):
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
                 return True
-        self.progress("FAILED TO ARM WITH SWITCH")
+        self.progress("Failed to ARM with switch")
         return False
 
     def disarm_motors_with_switch(self, switch_chan, timeout=20):
@@ -851,7 +851,7 @@ class AutoTest(ABC):
             if not self.mav.motors_armed():
                 self.progress("MOTORS DISARMED OK WITH SWITCH")
                 return True
-        self.progress("FAILED TO DISARM WITH SWITCH")
+        self.progress("Failed to DISARM with switch")
         return False
 
     def autodisarm_motors(self):
@@ -869,7 +869,7 @@ class AutoTest(ABC):
                 self.progress("MOTORS AUTODISARMED")
                 self.progress("Autodisarm in %ss" % disarm_delay)  # TODO check disarming time
                 return True
-        self.progress("FAILED TO AUTODISARM")
+        self.progress("Unable to AUTODISARMED")
         return False
 
     @staticmethod
