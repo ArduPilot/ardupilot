@@ -95,6 +95,9 @@ class AutoTestSub(AutoTest):
 
         self.progress("Ready to start testing!")
 
+    def is_sub(self):
+        return True
+
     def dive_manual(self):
         self.wait_ready_to_arm()
         self.arm_vehicle()
