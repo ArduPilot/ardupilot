@@ -19,22 +19,26 @@
 #ifndef AP_MOTIONCONTROLLER_H_
 #define AP_MOTIONCONTROLLER_H_
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_RoboClaw.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Param/AP_Param.h>
 
 class AP_MotionController
 {
-  public:
-    AP_MotionController();
-    ~AP_MotionController();
-    static const AP_Param::GroupInfo var_info[];
-    void init(void);
-    void update(void);
+public:
+  AP_MotionController();
+  ~AP_MotionController();
+  static const AP_Param::GroupInfo var_info[];
+  void update(uint16_t steering, uint16_t throtle);
+  void init(void);
+  static double constrain_map(double x, double in_min, double in_max, double out_min, double out_max);
 
-  protected:
-    AP_Int8 bitmask;
-    AP_HAL::UARTDriver *port;
+protected:
+  AP_Int8 bitmask, bitmask1;
+  AP_HAL::UARTDriver *port;
+
+private:
+  AP_RoboClaw roboclaw;
 };
 
-#endif
+#endif /*AP_MOTIONCONTROLLER_H_*/

@@ -27,13 +27,13 @@
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #endif
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL &hal;
 
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::instance;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
-AP_MotionController* SRV_Channels::motioncontroller_ptr;
+AP_MotionController *SRV_Channels::motioncontroller_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
 AP_BLHeli *SRV_Channels::blheli_ptr;
@@ -49,74 +49,74 @@ SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_f
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: 1_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[0], "1_",  1, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[0], "1_", 1, SRV_Channels, SRV_Channel),
 
     // @Group: 2_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[1], "2_",  2, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[1], "2_", 2, SRV_Channels, SRV_Channel),
 
     // @Group: 3_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[2], "3_",  3, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[2], "3_", 3, SRV_Channels, SRV_Channel),
 
     // @Group: 4_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[3], "4_",  4, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[3], "4_", 4, SRV_Channels, SRV_Channel),
 
     // @Group: 5_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[4], "5_",  5, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[4], "5_", 5, SRV_Channels, SRV_Channel),
 
     // @Group: 6_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[5], "6_",  6, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[5], "6_", 6, SRV_Channels, SRV_Channel),
 
     // @Group: 7_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[6], "7_",  7, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[6], "7_", 7, SRV_Channels, SRV_Channel),
 
     // @Group: 8_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[7], "8_",  8, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[7], "8_", 8, SRV_Channels, SRV_Channel),
 
     // @Group: 9_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[8], "9_",  9, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[8], "9_", 9, SRV_Channels, SRV_Channel),
 
     // @Group: 10_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[9], "10_",  10, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[9], "10_", 10, SRV_Channels, SRV_Channel),
 
     // @Group: 11_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[10], "11_",  11, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[10], "11_", 11, SRV_Channels, SRV_Channel),
 
     // @Group: 12_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[11], "12_",  12, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[11], "12_", 12, SRV_Channels, SRV_Channel),
 
     // @Group: 13_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[12], "13_",  13, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[12], "13_", 13, SRV_Channels, SRV_Channel),
 
     // @Group: 14_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[13], "14_",  14, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[13], "14_", 14, SRV_Channels, SRV_Channel),
 
     // @Group: 15_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[14], "15_",  15, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[14], "15_", 15, SRV_Channels, SRV_Channel),
 
     // @Group: 16_
     // @Path: SRV_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[15], "16_",  16, SRV_Channels, SRV_Channel),
+    AP_SUBGROUPINFO(obj_channels[15], "16_", 16, SRV_Channels, SRV_Channel),
 
     // @Param: _AUTO_TRIM
     // @DisplayName: Automatic servo trim
     // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("_AUTO_TRIM", 17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
 
     // @Param: _RATE
     // @DisplayName: Servo default output rate
@@ -124,28 +124,27 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Range: 25 400
     // @User: Advanced
     // @Units: Hz
-    AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
+    AP_GROUPINFO("_RATE", 18, SRV_Channels, default_rate, 50),
 
     // @Group: _VOLZ_
     // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
-    AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
+    AP_SUBGROUPINFO(volz, "_VOLZ_", 19, SRV_Channels, AP_Volz_Protocol),
 
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
-    AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+    AP_SUBGROUPINFO(sbus, "_SBUS_", 20, SRV_Channels, AP_SBusOut),
 
     // @Group: _MOCR_
     // @Path: ../AP_MotionController/AP_MotionController.cpp
-    AP_SUBGROUPINFO(motioncontroller, "_MOCR_",  21, SRV_Channels, AP_MotionController),
+    AP_SUBGROUPINFO(motioncontroller, "_MOCR_", 21, SRV_Channels, AP_MotionController),
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
     // @Path: ../AP_BLHeli/AP_BLHeli.cpp
-    AP_SUBGROUPINFO(blheli, "_BLH_",  22, SRV_Channels, AP_BLHeli),
+    AP_SUBGROUPINFO(blheli, "_BLH_", 22, SRV_Channels, AP_BLHeli),
 #endif
 
-    AP_GROUPEND
-};
+    AP_GROUPEND};
 
 /*
   constructor
@@ -159,14 +158,15 @@ SRV_Channels::SRV_Channels(void)
     AP_Param::setup_object_defaults(this, var_info);
 
     // setup ch_num on channels
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++)
+    {
         channels[i].ch_num = i;
     }
 
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     motioncontroller_ptr = &motioncontroller;
-    
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -177,8 +177,10 @@ SRV_Channels::SRV_Channels(void)
  */
 void SRV_Channels::save_trim(void)
 {
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (trimmed_mask & (1U<<i)) {
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++)
+    {
+        if (trimmed_mask & (1U << i))
+        {
             channels[i].servo_trim.set_and_save(channels[i].servo_trim.get());
         }
     }
@@ -187,9 +189,11 @@ void SRV_Channels::save_trim(void)
 
 void SRV_Channels::setup_failsafe_trim_all_non_motors(void)
 {
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if (!SRV_Channel::is_motor(channels[i].get_function())) {
-            hal.rcout->set_failsafe_pwm(1U<<channels[i].ch_num, channels[i].servo_trim);
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++)
+    {
+        if (!SRV_Channel::is_motor(channels[i].get_function()))
+        {
+            hal.rcout->set_failsafe_pwm(1U << channels[i].ch_num, channels[i].servo_trim);
         }
     }
 }
@@ -199,7 +203,8 @@ void SRV_Channels::setup_failsafe_trim_all_non_motors(void)
  */
 void SRV_Channels::calc_pwm(void)
 {
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++)
+    {
         channels[i].calc_pwm(functions[channels[i].function].output_scaled);
     }
 }
@@ -207,7 +212,8 @@ void SRV_Channels::calc_pwm(void)
 // set output value for a specific function channel as a pwm value
 void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
 {
-    if (chan < NUM_SERVO_CHANNELS) {
+    if (chan < NUM_SERVO_CHANNELS)
+    {
         channels[chan].set_output_pwm(value);
     }
 }
@@ -233,8 +239,13 @@ void SRV_Channels::push()
     // give sbus library a chance to update
     sbus_ptr->update();
 
+    //initialize the motioncontroller serial communication
+    //motioncontroller_ptr->init();
+
     // give AP_MotionController library a chance to update
-    motioncontroller_ptr->update();
+    motioncontroller_ptr->update(
+        SRV_Channels::srv_channel(1)->get_output_pwm(),
+        SRV_Channels::srv_channel(3)->get_output_pwm());
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
@@ -244,9 +255,11 @@ void SRV_Channels::push()
 #if HAL_WITH_UAVCAN
     // push outputs to UAVCAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
-    for (uint8_t i = 0; i < can_num_drivers; i++) {
+    for (uint8_t i = 0; i < can_num_drivers; i++)
+    {
         AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-        if (ap_uavcan == nullptr) {
+        if (ap_uavcan == nullptr)
+        {
             continue;
         }
         ap_uavcan->SRV_push_servos();

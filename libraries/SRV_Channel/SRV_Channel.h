@@ -427,6 +427,9 @@ public:
     // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
 
+    // support for AP_MotionController
+    static AP_MotionController* motioncontroller_ptr;
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -453,7 +456,6 @@ private:
 
     // support for AP_MotionController
     AP_MotionController motioncontroller;
-    static AP_MotionController* motioncontroller_ptr;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol

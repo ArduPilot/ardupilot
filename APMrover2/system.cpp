@@ -72,7 +72,7 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts(serial_manager);
 
-    // setup frsky telemetry
+// setup frsky telemetry
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
 #endif
@@ -113,10 +113,10 @@ void Rover::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    set_control_channels();  // setup radio channels and ouputs ranges
-    init_rc_in();            // sets up rc channels deadzone
-    g2.motors.init();        // init motors including setting servo out channels ranges
-    init_rc_out();           // enable output
+    set_control_channels(); // setup radio channels and ouputs ranges
+    init_rc_in();           // sets up rc channels deadzone
+    g2.motors.init();       // init motors including setting servo out channels ranges
+    init_rc_out();          // enable output
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -145,7 +145,8 @@ void Rover::init_ardupilot()
     startup_ground();
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
-    if (initial_mode == nullptr) {
+    if (initial_mode == nullptr)
+    {
         initial_mode = &mode_initializing;
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
@@ -156,6 +157,11 @@ void Rover::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // AP_MotionController initialization
+#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    if (SRV_Channels::motioncontroller_ptr != nullptr)
+        SRV_Channels::motioncontroller_ptr->init();
+#endif
     // flag that initialisation has completed
     initialised = true;
 }
@@ -169,10 +175,10 @@ void Rover::startup_ground(void)
 
     gcs().send_text(MAV_SEVERITY_INFO, "<startup_ground> Ground start");
 
-    #if(GROUND_START_DELAY > 0)
-        gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
-        delay(GROUND_START_DELAY * 1000);
-    #endif
+#if (GROUND_START_DELAY > 0)
+    gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
+    delay(GROUND_START_DELAY * 1000);
+#endif
 
     // IMU ground start
     //------------------------
@@ -183,12 +189,11 @@ void Rover::startup_ground(void)
     // initialise mission library
     mission.init();
 
-    // initialise DataFlash library
+// initialise DataFlash library
 #if LOGGING_ENABLED == ENABLED
     DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
+        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
     // we don't want writes to the serial port to cause us to pause
@@ -205,20 +210,25 @@ void Rover::update_ahrs_flyforward()
     bool flyforward = false;
 
     // boats never use movement to estimate heading
-    if (!is_boat()) {
+    if (!is_boat())
+    {
         // throttle threshold is 15% or 1/2 cruise throttle
         bool throttle_over_thresh = g2.motors.get_throttle() > MIN(g.throttle_cruise * 0.50f, 15.0f);
         // desired speed threshold of 1m/s
         bool desired_speed_over_thresh = g2.attitude_control.speed_control_active() && (g2.attitude_control.get_desired_speed() > 0.5f);
-        if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh)) {
+        if (throttle_over_thresh || (is_positive(g2.motors.get_throttle()) && desired_speed_over_thresh))
+        {
             uint32_t now = AP_HAL::millis();
             // if throttle over threshold start timer
-            if (flyforward_start_ms == 0) {
+            if (flyforward_start_ms == 0)
+            {
                 flyforward_start_ms = now;
             }
             // if throttle over threshold for 2 seconds set flyforward to true
             flyforward = (now - flyforward_start_ms > 2000);
-        } else {
+        }
+        else
+        {
             // reset timer
             flyforward_start_ms = 0;
         }
@@ -229,13 +239,15 @@ void Rover::update_ahrs_flyforward()
 
 bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
 {
-    if (control_mode == &new_mode) {
+    if (control_mode == &new_mode)
+    {
         // don't switch modes if we are already in the correct mode.
         return true;
     }
 
     Mode &old_mode = *control_mode;
-    if (!new_mode.enter()) {
+    if (!new_mode.enter())
+    {
         // Log error that we failed to enter desired flight mode
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE, new_mode.mode_number());
         gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
@@ -326,7 +338,8 @@ void Rover::change_arm_state(void)
  */
 bool Rover::arm_motors(AP_Arming::ArmingMethod method)
 {
-    if (!arming.arm(method)) {
+    if (!arming.arm(method))
+    {
         AP_Notify::events.arming_failed = true;
         return false;
     }
@@ -349,10 +362,12 @@ bool Rover::arm_motors(AP_Arming::ArmingMethod method)
  */
 bool Rover::disarm_motors(void)
 {
-    if (!arming.disarm()) {
+    if (!arming.disarm())
+    {
         return false;
     }
-    if (control_mode != &mode_auto) {
+    if (control_mode != &mode_auto)
+    {
         // reset the mission on disarm if we are not in auto
         mission.reset();
     }
