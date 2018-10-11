@@ -25,12 +25,6 @@ extern const AP_HAL::HAL& hal;
 // initialisation
 void DataFlash_MAVLink::Init()
 {
-    semaphore = hal.util->new_semaphore();
-    if (semaphore == nullptr) {
-        AP_HAL::panic("Failed to create DataFlash_MAVLink semaphore");
-        return;
-    }
-
     DataFlash_Backend::Init();
 
     _blocks = nullptr;
@@ -128,13 +122,13 @@ bool DataFlash_MAVLink::WritesOK() const
 // DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
 bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (!semaphore->take_nonblocking()) {
+    if (!semaphore.take_nonblocking()) {
         _dropped++;
         return false;
     }
 
     if (! WriteBlockCheckStartupMessages()) {
-        semaphore->give();
+        semaphore.give();
         return false;
     }
 
@@ -143,7 +137,7 @@ bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             // do not count the startup packets as being dropped...
             _dropped++;
         }
-        semaphore->give();
+        semaphore.give();
         return false;
     }
 
@@ -155,7 +149,7 @@ bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
                 internal_error();
-                semaphore->give();
+                semaphore.give();
                 return false;
             }
         }
@@ -172,7 +166,7 @@ bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
         }
     }
 
-    semaphore->give();
+    semaphore.give();
 
     return true;
 }
@@ -278,7 +272,7 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
 {
     mavlink_remote_log_block_status_t packet;
     mavlink_msg_remote_log_block_status_decode(msg, &packet);
-    if (!semaphore->take_nonblocking()) {
+    if (!semaphore.take_nonblocking()) {
         return;
     }
     if(packet.status == 0){
@@ -286,7 +280,7 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
     } else{
         handle_ack(chan, msg, packet.seqno);
     }
-    semaphore->give();
+    semaphore.give();
 }
 
 void DataFlash_MAVLink::handle_retry(uint32_t seqno)
@@ -400,7 +394,7 @@ void DataFlash_MAVLink::stats_collect()
     if (!_initialised) {
         return;
     }
-    if (!semaphore->take_nonblocking()) {
+    if (!semaphore.take_nonblocking()) {
         return;
     }
     uint8_t pending = queue_size(_blocks_pending);
@@ -411,7 +405,7 @@ void DataFlash_MAVLink::stats_collect()
     if (sfree != _blockcount_free) {
         internal_error();
     }
-    semaphore->give();
+    semaphore.give();
 
     stats.state_pending += pending;
     stats.state_sent += sent;
@@ -478,20 +472,20 @@ void DataFlash_MAVLink::push_log_blocks()
 
     DataFlash_Backend::WriteMoreStartupMessages();
 
-    if (!semaphore->take_nonblocking()) {
+    if (!semaphore.take_nonblocking()) {
         return;
     }
 
     if (! send_log_blocks_from_queue(_blocks_retry)) {
-        semaphore->give();
+        semaphore.give();
         return;
     }
 
     if (! send_log_blocks_from_queue(_blocks_pending)) {
-        semaphore->give();
+        semaphore.give();
         return;
     }
-    semaphore->give();
+    semaphore.give();
 }
 
 void DataFlash_MAVLink::do_resends(uint32_t now)
@@ -506,7 +500,7 @@ void DataFlash_MAVLink::do_resends(uint32_t now)
     }
     uint32_t oldest = now - 100; // 100 milliseconds before resend.  Hmm.
     while (count_to_send-- > 0) {
-        if (!semaphore->take_nonblocking()) {
+        if (!semaphore.take_nonblocking()) {
             return;
         }
         for (struct dm_block *block=_blocks_sent.oldest; block != nullptr; block=block->next) {
@@ -514,13 +508,13 @@ void DataFlash_MAVLink::do_resends(uint32_t now)
             if (block->last_sent < oldest) {
                 if (! send_log_block(*block)) {
                     // failed to send the block; try again later....
-                    semaphore->give();
+                    semaphore.give();
                     return;
                 }
                 stats.resends++;
             }
         }
-        semaphore->give();
+        semaphore.give();
     }
 }
 

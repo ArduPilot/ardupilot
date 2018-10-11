@@ -58,13 +58,6 @@ void DataFlash_File::Init()
 
     if(HAL_F4Light::state.sd_busy) return; // SD mounted via USB
 
-    semaphore = hal.util->new_semaphore();
-    if (semaphore == nullptr) {
-        AP_HAL::panic("Failed to create DataFlash_File semaphore");
-        return;
-    }
-
-
     // create the log directory if need be
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
@@ -457,7 +450,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         return false;
     }
 
-    if (!semaphore->take(1)) {
+    if (!semaphore.take(1)) {
         return false;
     }
         
@@ -471,7 +464,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // things:
         if (space < non_messagewriter_message_reserved_space()) {
             // this message isn't dropped, it will be sent again...
-            semaphore->give();
+            semaphore.give();
             return false;
         }
     } else {
@@ -479,7 +472,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         if (!is_critical && space < critical_message_reserved_space()) {
 //            printf("dropping NC block! size=%d\n", size);
             _dropped++;
-            semaphore->give();
+            semaphore.give();
             return false;
         }
     }
@@ -490,14 +483,14 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         printf("dropping block! size=%d\n", size);
 
         _dropped++;
-        semaphore->give();
+        semaphore.give();
         return false;
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
     has_data=true;
     
-    semaphore->give();
+    semaphore.give();
     return true;
 }
 
