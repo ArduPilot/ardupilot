@@ -121,16 +121,13 @@ void AP_Baro_SITL::_timer()
 // Read the sensor
 void AP_Baro_SITL::update(void)
 {
-    if (_sem.take_nonblocking()) {
-        if (!_has_sample) {
-            _sem.give();
-            return;
-        }
-
-        _copy_to_frontend(_instance, _recent_press, _recent_temp);
-        _has_sample = false;
-        _sem.give();
+    if (!_has_sample) {
+        return;
     }
+
+    WITH_SEMAPHORE(_sem);
+    _copy_to_frontend(_instance, _recent_press, _recent_temp);
+    _has_sample = false;
 }
 
 #endif  // CONFIG_HAL_BOARD
