@@ -27,6 +27,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -130,12 +131,10 @@ void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 {
     uint16_t d;
     if (get_reading(d)) {
-        if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            distance = d;
-            new_distance = true;
-            state.last_reading_ms = AP_HAL::millis();
-            _sem->give();
-        }
+        WITH_SEMAPHORE(_sem);
+        distance = d;
+        new_distance = true;
+        state.last_reading_ms = AP_HAL::millis();
     }
 }
 
@@ -144,15 +143,13 @@ void AP_RangeFinder_MaxsonarI2CXL::_timer(void)
 */
 void AP_RangeFinder_MaxsonarI2CXL::update(void)
 {
-    if (_sem->take_nonblocking()) {
-        if (new_distance) {
-            state.distance_cm = distance;
-            new_distance = false;
-            update_status();
-        } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
-            // if no updates for 0.3 seconds set no-data
-            set_status(RangeFinder::RangeFinder_NoData);
-        }
-        _sem->give();
+    WITH_SEMAPHORE(_sem);
+    if (new_distance) {
+        state.distance_cm = distance;
+        new_distance = false;
+        update_status();
+    } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
+        // if no updates for 0.3 seconds set no-data
+        set_status(RangeFinder::RangeFinder_NoData);
     }
 }

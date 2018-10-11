@@ -69,7 +69,7 @@ protected:
     RangeFinder::RangeFinder_State &state;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;    
+    HAL_Semaphore _sem;
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
 };
