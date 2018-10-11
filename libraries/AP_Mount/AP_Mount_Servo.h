@@ -36,8 +36,8 @@ public:
     // set_mode - sets mount's mode
     virtual void set_mode(enum MAV_MOUNT_MODE mode);
 
-    // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    virtual void status_msg(mavlink_channel_t chan);
+    // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 
