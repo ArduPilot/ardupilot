@@ -1,6 +1,7 @@
 #include "AP_Compass_SITL.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/Semaphore.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 extern const AP_HAL::HAL& hal;
@@ -123,9 +124,7 @@ void AP_Compass_SITL::_timer()
         _mag_accum[i] += f;
     }
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
     _accum_count++;
     if (_accum_count == 10) {
@@ -135,28 +134,24 @@ void AP_Compass_SITL::_timer()
         _accum_count = 5;
         _has_sample = true;
     }
-    _sem->give();
 }
 
 void AP_Compass_SITL::read()
 {
-    if (_sem->take_nonblocking()) {
-        if (!_has_sample) {
-            _sem->give();
-            return;
-        }
+    WITH_SEMAPHORE(_sem);
 
-        for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
-            Vector3f field(_mag_accum[i]);
-            field /= _accum_count;
-            _mag_accum[i].zero();
-            publish_filtered_field(field, _compass_instance[i]);
-        }
-        _accum_count = 0;
-
-        _has_sample = false;
-        _sem->give();
+    if (!_has_sample) {
+        return;
     }
 
+    for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
+        Vector3f field(_mag_accum[i]);
+        field /= _accum_count;
+        _mag_accum[i].zero();
+        publish_filtered_field(field, _compass_instance[i]);
+    }
+    _accum_count = 0;
+
+    _has_sample = false;
 }
 #endif
