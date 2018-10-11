@@ -58,5 +58,5 @@ protected:
     uint8_t get_address(void) const { return frontend._address; }
     
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;
+    HAL_Semaphore _sem;
 };
