@@ -103,12 +103,12 @@ AP_SBusOut::update()
         /* construct sbus frame representing channels 1 through 16 (max) */
         uint8_t nchan = MIN(NUM_SERVO_CHANNELS, SBUS_CHANNELS);
         for (unsigned i = 0; i < nchan; ++i) {
-            SRV_Channel *ch = SRV_Channels::srv_channel(i);
-            if (ch == nullptr) {
+            SRV_Channel *c = SRV_Channels::srv_channel(i);
+            if (c == nullptr) {
                 continue;
             }
             /*protect from out of bounds values and limit to 11 bits*/
-            uint16_t pwmval = MAX(ch->get_output_pwm(), SBUS_MIN);
+            uint16_t pwmval = MAX(c->get_output_pwm(), SBUS_MIN);
             value = (uint16_t)((pwmval - SBUS_MIN) * SBUS_SCALE);
             if (value > 0x07ff) {
                 value = 0x07ff;
