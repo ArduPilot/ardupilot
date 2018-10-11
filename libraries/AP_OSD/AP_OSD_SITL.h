@@ -68,7 +68,7 @@ private:
     void load_font();
 
     pthread_t thread;
-    AP_HAL::Semaphore *mutex;
+    HAL_Semaphore mutex;
     uint32_t counter;
     uint32_t last_counter;
 };
