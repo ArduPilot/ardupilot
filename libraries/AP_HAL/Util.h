@@ -99,9 +99,6 @@ public:
     virtual void perf_end(perf_counter_t h) {}
     virtual void perf_count(perf_counter_t h) {}
 
-    // create a new semaphore
-    virtual Semaphore *new_semaphore(void) { return nullptr; }
-
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,
