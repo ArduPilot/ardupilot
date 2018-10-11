@@ -209,10 +209,8 @@ void AP_Baro::calibrate(bool save)
         hal.scheduler->delay(100);
     }
 
-    // now average over 5 values for the ground pressure and
-    // temperature settings
+    // now average over 5 values for the ground pressure settings
     float sum_pressure[BARO_MAX_INSTANCES] = {0};
-    float sum_temperature[BARO_MAX_INSTANCES] = {0};
     uint8_t count[BARO_MAX_INSTANCES] = {0};
     const uint8_t num_samples = 5;
 
@@ -228,7 +226,6 @@ void AP_Baro::calibrate(bool save)
         for (uint8_t i=0; i<_num_sensors; i++) {
             if (healthy(i)) {
                 sum_pressure[i] += sensors[i].pressure;
-                sum_temperature[i] += sensors[i].temperature;
                 count[i] += 1;
             }
         }
