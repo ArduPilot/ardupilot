@@ -24,21 +24,18 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
 }
 
-// configure_msg - process MOUNT_CONFIGURE messages received from GCS.  deprecated.
-void AP_Mount_Backend::configure_msg(mavlink_message_t* msg)
+// process MOUNT_CONFIGURE messages received from GCS.  deprecated.
+void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &packet)
 {
-    __mavlink_mount_configure_t packet;
-    mavlink_msg_mount_configure_decode(msg, &packet);
-
     set_mode((MAV_MOUNT_MODE)packet.mount_mode);
+    _state._stab_roll = packet.stab_roll;
+    _state._stab_tilt = packet.stab_pitch;
+    _state._stab_pan = packet.stab_yaw;
 }
 
-// control_msg - process MOUNT_CONTROL messages received from GCS. deprecated.
-void AP_Mount_Backend::control_msg(mavlink_message_t *msg)
+// process MOUNT_CONTROL messages received from GCS. deprecated.
+void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {
-    __mavlink_mount_control_t packet;
-    mavlink_msg_mount_control_decode(msg, &packet);
-
     control((int32_t)packet.input_a, (int32_t)packet.input_b, (int32_t)packet.input_c, _state._mode);
 }
 
@@ -159,7 +156,7 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
         // calc absolute heading and then onvert to vehicle relative yaw
         angles_to_target_rad.z = atan2f(GPS_vector_x, GPS_vector_y);
         if (relative_pan) {
-            angles_to_target_rad.z = wrap_PI(angles_to_target_rad.z - _frontend._ahrs.yaw);
+            angles_to_target_rad.z = wrap_PI(angles_to_target_rad.z - AP::ahrs().yaw);
         }
     }
 }
