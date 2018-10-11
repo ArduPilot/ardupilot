@@ -44,5 +44,5 @@ private:
         AP_Airspeed_UAVCAN *driver;
     } _detected_modules[AIRSPEED_MAX_SENSORS];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };
