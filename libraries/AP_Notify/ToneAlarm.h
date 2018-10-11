@@ -77,7 +77,7 @@ private:
 
     const static Tone _tones[];
 
-    AP_HAL::Semaphore* _sem;
+    HAL_Semaphore _sem;
     MMLPlayer _mml_player;
     char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE];
 };
