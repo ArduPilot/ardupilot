@@ -38,9 +38,9 @@ class SoloGimbal : AP_AccelCal_Client
 {
 public:
     //Constructor
-    SoloGimbal(const AP_AHRS_NavEKF &ahrs) :
-        _ekf(ahrs),
-        _ahrs(ahrs),
+    SoloGimbal() :
+        _ekf(AP::ahrs_navekf()),
+        _ahrs(AP::ahrs_navekf()),
         _state(GIMBAL_STATE_NOT_PRESENT),
         _vehicle_yaw_rate_ef_filt(0.0f),
         _vehicle_to_gimbal_quat(),
@@ -58,7 +58,7 @@ public:
     }
 
     void    update_target(Vector3f newTarget);
-    void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
+    void    receive_feedback(mavlink_channel_t chan, const mavlink_message_t *msg);
 
     void update_fast();
 
@@ -74,7 +74,7 @@ public:
     void disable_torque_report() { _gimbalParams.set_param(GMB_PARAM_GMB_SND_TORQUE, 0); }
     void fetch_params() { _gimbalParams.fetch_params(); }
 
-    void handle_param_value(mavlink_message_t *msg) {
+    void handle_param_value(const mavlink_message_t *msg) {
         _gimbalParams.handle_param_value(msg);
     }
 

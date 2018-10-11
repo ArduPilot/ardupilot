@@ -172,7 +172,7 @@ void SoloGimbal_Parameters::update()
     }
 }
 
-void SoloGimbal_Parameters::handle_param_value(mavlink_message_t *msg)
+void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t *msg)
 {
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
