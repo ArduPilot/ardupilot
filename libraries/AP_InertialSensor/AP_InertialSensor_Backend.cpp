@@ -14,7 +14,6 @@ const extern AP_HAL::HAL& hal;
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
     _imu(imu)
 {
-    _sem = hal.util->new_semaphore();
 }
 
 /*
@@ -192,7 +191,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     delta_coning = delta_coning % delta_angle;
     delta_coning *= 0.5f;
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    {
+        WITH_SEMAPHORE(_sem);
         // integrate delta angle accumulator
         // the angles and coning corrections are accumulated separately in the
         // referenced paper, but in simulation little difference was found between
@@ -209,7 +209,6 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             _imu._gyro_filter[instance].reset();
         }
         _imu._new_gyro_data[instance] = true;
-        _sem->give();
     }
 
     log_gyro_raw(instance, sample_us, gyro);
@@ -310,7 +309,9 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     
     _imu.calc_vibration_and_clipping(instance, accel, dt);
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    {
+        WITH_SEMAPHORE(_sem);
+
         // delta velocity
         _imu._delta_velocity_acc[instance] += accel * dt;
         _imu._delta_velocity_acc_dt[instance] += dt;
@@ -323,7 +324,6 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _imu.set_accel_peak_hold(instance, _imu._accel_filtered[instance]);
 
         _imu._new_accel_data[instance] = true;
-        _sem->give();
     }
 
     log_accel_raw(instance, sample_us, accel);
@@ -426,9 +426,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
  */
 void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 {    
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
@@ -440,8 +438,6 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
         _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
         _last_gyro_filter_hz[instance] = _gyro_filter_cutoff();
     }
-
-    _sem->give();
 }
 
 /*
@@ -449,9 +445,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
  */
 void AP_InertialSensor_Backend::update_accel(uint8_t instance)
 {    
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
     if (_imu._new_accel_data[instance]) {
         _publish_accel(instance, _imu._accel_filtered[instance]);
@@ -463,8 +457,6 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance)
         _imu._accel_filter[instance].set_cutoff_frequency(_accel_raw_sample_rate(instance), _accel_filter_cutoff());
         _last_accel_filter_hz[instance] = _accel_filter_cutoff();
     }
-
-    _sem->give();
 }
 
 bool AP_InertialSensor_Backend::should_log_imu_raw() const
