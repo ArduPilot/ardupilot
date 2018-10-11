@@ -28,12 +28,10 @@ AP_Airspeed_Backend::AP_Airspeed_Backend(AP_Airspeed &_frontend, uint8_t _instan
     frontend(_frontend),
     instance(_instance)
 {
-    sem = hal.util->new_semaphore();
 }
 
 AP_Airspeed_Backend::~AP_Airspeed_Backend(void)
 {
-    delete sem;
 }
  
 
