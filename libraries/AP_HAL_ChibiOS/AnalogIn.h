@@ -50,7 +50,7 @@ private:
     float _sum_ratiometric;
     void _add_value(float v, float vcc5V);
     float _pin_scaler();
-    AP_HAL::Semaphore *_semaphore;
+    HAL_Semaphore _semaphore;
 };
 
 class ChibiOS::AnalogIn : public AP_HAL::AnalogIn {
