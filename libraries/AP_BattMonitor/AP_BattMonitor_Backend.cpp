@@ -143,7 +143,7 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
     return AP_BattMonitor::BatteryFailsafe_None;
 }
 
-bool update_check(size_t buflen, char *buffer, bool failed, const char *message)
+static bool update_check(size_t buflen, char *buffer, bool failed, const char *message)
 {
     if (failed) {
         strncpy(buffer, message, buflen);
