@@ -48,5 +48,5 @@ private:
         AP_Compass_UAVCAN *driver;
     } _detected_modules[COMPASS_MAX_BACKEND];
 
-    static AP_HAL::Semaphore *_sem_registry;
+    static HAL_Semaphore _sem_registry;
 };
