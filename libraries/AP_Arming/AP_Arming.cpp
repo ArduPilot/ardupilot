@@ -449,19 +449,19 @@ bool AP_Arming::rc_calibration_checks(bool report)
     bool check_passed = true;
     const uint8_t num_channels = RC_Channels::get_valid_channel_count();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        const RC_Channel *ch = rc().channel(i);
-        if (ch == nullptr) {
+        const RC_Channel *c = rc().channel(i);
+        if (c == nullptr) {
             continue;
         }
-        if (i >= num_channels && !(ch->has_override())) {
+        if (i >= num_channels && !(c->has_override())) {
             continue;
         }
-        const uint16_t trim = ch->get_radio_trim();
-        if (ch->get_radio_min() > trim) {
+        const uint16_t trim = c->get_radio_trim();
+        if (c->get_radio_min() > trim) {
             check_failed(ARMING_CHECK_RC, report, "RC%d minimum is greater than trim", i + 1);
             check_passed = false;
         }
-        if (ch->get_radio_max() < trim) {
+        if (c->get_radio_max() < trim) {
             check_failed(ARMING_CHECK_RC, report, "RC%d maximum is less than trim", i + 1);
             check_passed = false;
         }
@@ -492,17 +492,17 @@ bool AP_Arming::servo_checks(bool report) const
 {
     bool check_passed = true;
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        const SRV_Channel *ch = SRV_Channels::srv_channel(i);
-        if (ch == nullptr || ch->get_function() == SRV_Channel::k_none) {
+        const SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (c == nullptr || c->get_function() == SRV_Channel::k_none) {
             continue;
         }
 
-        const uint16_t trim = ch->get_trim();
-        if (ch->get_output_min() > trim) {
+        const uint16_t trim = c->get_trim();
+        if (c->get_output_min() > trim) {
             check_failed(ARMING_CHECK_NONE, report, "SERVO%d minimum is greater than trim", i + 1);
             check_passed = false;
         }
-        if (ch->get_output_max() < trim) {
+        if (c->get_output_max() < trim) {
             check_failed(ARMING_CHECK_NONE, report, "SERVO%d maximum is less than trim", i + 1);
             check_passed = false;
         }
