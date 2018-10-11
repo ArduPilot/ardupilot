@@ -169,7 +169,7 @@ private:
 
     uint8_t _SRV_armed;
     uint32_t _SRV_last_send_us;
-    AP_HAL::Semaphore *SRV_sem;
+    HAL_Semaphore SRV_sem;
 
     ///// LED /////
     struct led_device {
@@ -185,7 +185,7 @@ private:
         uint64_t last_update;
     } _led_conf;
 
-    AP_HAL::Semaphore *_led_out_sem;
+    HAL_Semaphore _led_out_sem;
 };
 
 #endif /* AP_UAVCAN_H_ */
