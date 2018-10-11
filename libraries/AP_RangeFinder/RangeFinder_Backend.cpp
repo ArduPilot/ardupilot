@@ -27,7 +27,6 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state) :
         state(_state)
 {
-    _sem = hal.util->new_semaphore();    
 }
 
 MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {
