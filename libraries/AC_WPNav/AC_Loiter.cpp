@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
 
     // @Param: BRK_JERK
     // @DisplayName: Loiter braking jerk
-    // @Description: Loiter braking jerk in cm/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking manuver.
+    // @Description: Loiter braking jerk in cm/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver.
     // @Units: cm/s/s/s
     // @Range: 500 5000
     // @Increment: 1
