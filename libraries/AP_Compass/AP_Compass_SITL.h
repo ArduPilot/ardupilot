@@ -17,6 +17,10 @@ public:
 
     void read(void);
 
+protected:
+    // disable data freeze checking
+    uint8_t get_freeze_threshold() const { return 0; }
+    
 private:
     uint8_t _compass_instance[SITL_NUM_COMPASSES];
     SITL::SITL *_sitl;

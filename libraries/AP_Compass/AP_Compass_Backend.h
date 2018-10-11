@@ -21,6 +21,8 @@
 
 #include "AP_Compass.h"
 
+#define FREEZE_THRESHOLD 30
+
 class Compass;  // forward declaration
 class AP_Compass_Backend
 {
@@ -112,11 +114,20 @@ protected:
     bool field_ok(const Vector3f &field);
     
     uint32_t get_error_count() const { return _error_count; }
+    
+    virtual uint8_t get_freeze_threshold() const { return FREEZE_THRESHOLD; }
+    
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
+    
+    // check the field value is same all the time
+    bool is_frozen(const Vector3f &field);
     
     // mean field length for range filter
     float _mean_field_length;
     // number of dropped samples. Not used for now, but can be usable to choose more reliable sensor
     uint32_t _error_count;
+    
+    Vector3f _frozen_check_field;
+    uint8_t _field_freeze_count;
 };

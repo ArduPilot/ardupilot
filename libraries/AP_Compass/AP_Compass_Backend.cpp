@@ -7,7 +7,9 @@
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_Backend::AP_Compass_Backend()
-    : _compass(AP::compass())
+    : _compass(AP::compass()),
+    _frozen_check_field(),
+    _field_freeze_count(0)
 {
     _sem = hal.util->new_semaphore();
 }
@@ -99,7 +101,10 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
   copy latest data to the frontend from a backend
  */
 void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t instance)
-{
+{    
+    if (is_frozen(mag))
+        return;
+    
     Compass::mag_state &state = _compass._state[instance];
 
     state.field = mag;
@@ -203,6 +208,26 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
     return ret;
 }
 
+bool AP_Compass_Backend::is_frozen(const Vector3f &field)
+{    
+    uint8_t threshold = get_freeze_threshold();
+
+    if (threshold == 0)
+        return false;
+        
+    if (_frozen_check_field == field) {
+        if (_field_freeze_count < 255)
+        _field_freeze_count++;
+    }
+    else {
+        if (_field_freeze_count > 0)
+            _field_freeze_count--;
+        
+        _frozen_check_field = field;
+    }
+    
+    return _field_freeze_count > threshold;
+}
 
 enum Rotation AP_Compass_Backend::get_board_orientation(void) const
 {
