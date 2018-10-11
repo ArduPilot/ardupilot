@@ -180,8 +180,9 @@ void Gimbal::update(void)
 void Gimbal::send_report(void)
 {
     if (AP_HAL::millis() < 10000) {
-        // simulated aircraft don't appear until 10s after startup. This avoids a windows
-        // threading issue with non-blocking sockets and the initial wait on uartA
+        // don't send gimbal reports until 10s after startup. This
+        // avoids a windows threading issue with non-blocking sockets
+        // and the initial wait on uartA
         return;
     }
     if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
