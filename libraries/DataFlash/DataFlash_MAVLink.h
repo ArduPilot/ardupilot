@@ -178,7 +178,7 @@ private:
     AP_HAL::Util::perf_counter_t  _perf_packing;
     AP_HAL::Util::perf_counter_t  _perf_overruns;
 
-    AP_HAL::Semaphore *semaphore;
+    HAL_Semaphore semaphore;
 };
 
 #endif // DATAFLASH_MAVLINK_SUPPORT

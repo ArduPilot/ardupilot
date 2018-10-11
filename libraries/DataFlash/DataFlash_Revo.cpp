@@ -387,14 +387,13 @@ void DataFlash_Revo::Init()
     }
 
     
+    {
+        WITH_SEMAPHORE(_spi_sem);
+        _spi->set_speed(AP_HAL::Device::SPEED_LOW);
 
-    _spi_sem->take(10);
-    _spi->set_speed(AP_HAL::Device::SPEED_LOW);
-
-    DataFlash_Backend::Init();
+        DataFlash_Backend::Init();
+    }
     
-    _spi_sem->give();
-
     df_NumPages   = BOARD_DATAFLASH_PAGES - 1;     // reserve last page for config information
 
     ReadManufacturerID();

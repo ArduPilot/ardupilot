@@ -97,7 +97,7 @@ private:
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(const uint16_t log_num) const;
     char *_lastlog_file_name() const;
-    uint32_t _get_log_size(const uint16_t log_num) const;
+    uint32_t _get_log_size(const uint16_t log_num);
     uint32_t _get_log_time(const uint16_t log_num) const;
 
     void stop_logging(void);
@@ -127,7 +127,7 @@ private:
 
     float avail_space_percent(uint32_t *free = NULL);
 
-    AP_HAL::Semaphore *semaphore;
+    HAL_Semaphore semaphore;
 
     bool has_data;
 
