@@ -20,6 +20,7 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -159,12 +160,13 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
     uint16_t _raw_distance = 0;
     uint16_t _distance_cm = 0;
 
-    if (collect_raw(_raw_distance) && _sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (collect_raw(_raw_distance)) {
+        WITH_SEMAPHORE(_sem);
+
         if (process_raw_measure(_raw_distance, _distance_cm)){
             accum.sum += _distance_cm;
             accum.count++;
         }
-        _sem->give();
     }
     // and immediately ask for a new reading
     measure();
@@ -175,16 +177,15 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
 */
 void AP_RangeFinder_TeraRangerI2C::update(void)
 {
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (accum.count > 0) {
-            state.distance_cm = accum.sum / accum.count;
-            state.last_reading_ms = AP_HAL::millis();
-            accum.sum = 0;
-            accum.count = 0;
-            update_status();
-        } else {
-            set_status(RangeFinder::RangeFinder_NoData);
-        }
-        _sem->give();
+    WITH_SEMAPHORE(_sem);
+
+    if (accum.count > 0) {
+        state.distance_cm = accum.sum / accum.count;
+        state.last_reading_ms = AP_HAL::millis();
+        accum.sum = 0;
+        accum.count = 0;
+        update_status();
+    } else {
+        set_status(RangeFinder::RangeFinder_NoData);
     }
 }
