@@ -194,7 +194,7 @@ void AP_Baro::calibrate(bool save)
     }
 
     // let the barometer settle for a full second after startup
-    // the MS5611 reads quite a long way off for the first second,
+    // the MS5611 reads quite a long way off for the first second(maximum end time 6100 ms),
     // leading to about 1m of error if we don't wait
     for (uint8_t i = 0; i < 10; i++) {
         uint32_t tstart = AP_HAL::millis();
@@ -211,6 +211,7 @@ void AP_Baro::calibrate(bool save)
 
     // now average over 5 values for the ground pressure and
     // temperature settings
+    // maximum end time 3050 ms
     float sum_pressure[BARO_MAX_INSTANCES] = {0};
     float sum_temperature[BARO_MAX_INSTANCES] = {0};
     uint8_t count[BARO_MAX_INSTANCES] = {0};
@@ -234,6 +235,7 @@ void AP_Baro::calibrate(bool save)
         }
         hal.scheduler->delay(100);
     }
+    // This process will wait up to 9 seconds. (6100 ms + 3050 ms)
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (count[i] == 0) {
             sensors[i].calibrated = false;
