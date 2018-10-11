@@ -48,8 +48,6 @@ void CompassLearn::update(void)
         R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
         mag_ef = R * mag_ef;
 
-        sem = hal.util->new_semaphore();
-
         have_earth_field = true;
 
         // form eliptical correction matrix and invert it. This is
@@ -85,8 +83,9 @@ void CompassLearn::update(void)
     if (field_change.length() < min_field_change) {
         return;
     }
-    
-    if (sem->take_nonblocking()) {
+
+    {
+        WITH_SEMAPHORE(sem);
         // give a sample to the backend to process
         new_sample.field = field;
         new_sample.offsets = compass.get_offsets(0);
@@ -94,7 +93,6 @@ void CompassLearn::update(void)
         sample_available = true;
         last_field = field;
         num_samples++;
-        sem->give();
     }
 
     if (sample_available) {
@@ -109,7 +107,9 @@ void CompassLearn::update(void)
                                                num_samples);
     }
 
-    if (!converged && sem->take_nonblocking()) {
+    if (!converged) {
+        WITH_SEMAPHORE(sem);
+
         // stop updating the offsets once converged
         compass.set_offsets(0, best_offsets);
         if (num_samples > 30 && best_error < 50 && worst_error > 65) {
@@ -120,7 +120,6 @@ void CompassLearn::update(void)
             compass.set_learn_type(Compass::LEARN_EKF, true);
             converged = true;
         }
-        sem->give();
     }
 }
 
@@ -132,13 +131,14 @@ void CompassLearn::io_timer(void)
     if (!sample_available) {
         return;
     }
+
     struct sample s;
-    if (!sem->take_nonblocking()) {
-        return;
+
+    {
+        WITH_SEMAPHORE(sem);
+        s = new_sample;
+        sample_available = false;
     }
-    s = new_sample;
-    sample_available = false;
-    sem->give();
 
     process_sample(s);
 }
@@ -192,12 +192,11 @@ void CompassLearn::process_sample(const struct sample &s)
         }
     }
 
-    if (sem->take_nonblocking()) {
-        // pass the current estimate to the front-end
-        best_offsets = predicted_offsets[besti];
-        best_error = bestv;
-        worst_error = worstv;
-        best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    // pass the current estimate to the front-end
+    best_offsets = predicted_offsets[besti];
+    best_error = bestv;
+    worst_error = worstv;
+    best_yaw_deg = wrap_360(degrees(s.attitude.z) + besti * (360/num_sectors));
 }

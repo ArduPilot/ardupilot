@@ -36,7 +36,7 @@ UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
 UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
-AP_HAL::Semaphore* AP_Compass_UAVCAN::_sem_registry = nullptr;
+HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
     : _ap_uavcan(ap_uavcan)
@@ -72,15 +72,12 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
 bool AP_Compass_UAVCAN::take_registry()
 {
-    if (_sem_registry == nullptr) {
-        _sem_registry = hal.util->new_semaphore();
-    }
-    return _sem_registry->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    return _sem_registry.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 }
 
 void AP_Compass_UAVCAN::give_registry()
 {
-    _sem_registry->give();
+    _sem_registry.give();
 }
 
 AP_Compass_Backend* AP_Compass_UAVCAN::probe()

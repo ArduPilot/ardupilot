@@ -110,7 +110,7 @@ protected:
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;
+    HAL_Semaphore_Recursive _sem;
 
     // accumulated samples, protected by _sem
     Vector3f    _accum;

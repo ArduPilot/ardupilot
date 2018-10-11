@@ -11,7 +11,6 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_Backend::AP_Compass_Backend()
     : _compass(AP::compass())
 {
-    _sem = hal.util->new_semaphore();
 }
 
 void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
@@ -126,12 +125,9 @@ void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
 void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
                                                    const Vector3f *scaling)
 {
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
     if (_accum_count == 0) {
-        _sem->give();
         return;
     }
 
@@ -144,8 +140,6 @@ void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
 
     _accum.zero();
     _accum_count = 0;
-
-    _sem->give();
 }
 
 /*

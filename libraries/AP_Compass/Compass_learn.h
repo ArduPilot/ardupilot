@@ -30,7 +30,7 @@ private:
     Vector3f mag_ef;
 
     // semaphore for access to shared data with IO thread
-    AP_HAL::Semaphore *sem;    
+    HAL_Semaphore sem;
     
     struct sample {
         // milliGauss body field and offsets
