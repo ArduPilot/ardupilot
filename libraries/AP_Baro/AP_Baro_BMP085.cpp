@@ -66,9 +66,7 @@ bool AP_Baro_BMP085::_init()
     AP_HAL::Semaphore *sem = _dev->get_semaphore();
 
     // take i2c bus sempahore
-    if (!sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("BMP085: unable to get semaphore");
-    }
+    WITH_SEMAPHORE(sem);
 
     if (BMP085_EOC >= 0) {
         _eoc = hal.gpio->channel(BMP085_EOC);
@@ -79,7 +77,6 @@ bool AP_Baro_BMP085::_init()
     uint8_t id;
 
     if (!_dev->read_registers(0xD0, &id, 1)) {
-        sem->give();
         return false;
     }
 
@@ -106,7 +103,6 @@ bool AP_Baro_BMP085::_init()
         }
     }
     if (!prom_ok) {
-        sem->give();
         return false;
     }
 
@@ -140,8 +136,6 @@ bool AP_Baro_BMP085::_init()
     _state = 0;
 
     _instance = _frontend.register_sensor();
-
-    sem->give();
 
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP085::_timer, void));
     return true;
@@ -203,18 +197,16 @@ void AP_Baro_BMP085::_timer(void)
  */
 void AP_Baro_BMP085::update(void)
 {
-    if (_sem.take_nonblocking()) {
-        if (!_has_sample) {
-            _sem.give();
-            return;
-        }
+    WITH_SEMAPHORE(_sem);
 
-        float temperature = 0.1f * _temp;
-        float pressure = _pressure_filter.getf();
-
-        _copy_to_frontend(_instance, pressure, temperature);
-        _sem.give();
+    if (!_has_sample) {
+        return;
     }
+
+    float temperature = 0.1f * _temp;
+    float pressure = _pressure_filter.getf();
+
+    _copy_to_frontend(_instance, pressure, temperature);
 }
 
 // Send command to Read Pressure

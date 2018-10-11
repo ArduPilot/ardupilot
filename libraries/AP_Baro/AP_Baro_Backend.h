@@ -31,7 +31,7 @@ protected:
     void _copy_to_frontend(uint8_t instance, float pressure, float temperature);
 
     // semaphore for access to shared frontend data
-    HAL_Semaphore _sem;    
+    HAL_Semaphore_Recursive _sem;
 
     virtual void update_healthy_flag(uint8_t instance);
 

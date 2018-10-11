@@ -205,16 +205,13 @@ void AP_Baro_LPS2XH::_timer(void)
 // transfer data to the frontend
 void AP_Baro_LPS2XH::update(void)
 {
-    if (_sem.take_nonblocking()) {
-        if (!_has_sample) {
-            _sem.give();
-            return;
-        }
-
-        _copy_to_frontend(_instance, _pressure, _temperature);
-        _has_sample = false;
-        _sem.give();
+    if (!_has_sample) {
+        return;
     }
+
+    WITH_SEMAPHORE(_sem);
+    _copy_to_frontend(_instance, _pressure, _temperature);
+    _has_sample = false;
 }
 
 // calculate temperature
@@ -224,14 +221,13 @@ void AP_Baro_LPS2XH::_update_temperature(void)
     _dev->read_registers(TEMP_OUT_ADDR, pu8, 2);
     int16_t Temp_Reg_s16 = (uint16_t)(pu8[1]<<8) | pu8[0];
     
-    if (_sem.take_nonblocking()) {
-    	if(_lps2xh_type == BARO_LPS25H){
-    		_temperature=((float)(Temp_Reg_s16/480)+42.5);
-    	}
-    	if(_lps2xh_type == BARO_LPS22H){
-    		_temperature=(float)(Temp_Reg_s16/100);
-    	}
-        _sem.give();
+    WITH_SEMAPHORE(_sem);
+
+    if (_lps2xh_type == BARO_LPS25H) {
+        _temperature=((float)(Temp_Reg_s16/480)+42.5);
+    }
+    if (_lps2xh_type == BARO_LPS22H) {
+        _temperature=(float)(Temp_Reg_s16/100);
     }
 }
 
@@ -242,8 +238,7 @@ void AP_Baro_LPS2XH::_update_pressure(void)
     _dev->read_registers(PRESS_OUT_XL_ADDR, pressure, 3);
     int32_t Pressure_Reg_s32 = ((uint32_t)pressure[2]<<16)|((uint32_t)pressure[1]<<8)|(uint32_t)pressure[0];
     int32_t Pressure_mb = Pressure_Reg_s32 * (100.0 / 4096); // scale for pa
-    if (_sem.take_nonblocking()) {
-        _pressure=Pressure_mb;
-        _sem.give();
-    }
+
+    WITH_SEMAPHORE(_sem);
+    _pressure = Pressure_mb;
 }
