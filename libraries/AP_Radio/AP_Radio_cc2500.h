@@ -87,7 +87,7 @@ private:
     void radio_init(void);
 
     // semaphore between ISR and main thread
-    AP_HAL::Semaphore *sem;    
+    HAL_Semaphore sem;
 
     AP_Radio::stats stats;
     AP_Radio::stats last_stats;

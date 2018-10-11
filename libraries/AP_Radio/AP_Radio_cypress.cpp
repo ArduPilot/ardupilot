@@ -277,8 +277,6 @@ bool AP_Radio_cypress::init(void)
 #endif
     load_bind_info();
 
-    sem = hal.util->new_semaphore();    
-    
     return reset();
 }
 
@@ -418,7 +416,7 @@ uint8_t AP_Radio_cypress::num_channels(void)
 void AP_Radio_cypress::check_fw_ack(void)
 {
     Debug(4,"check need_ack\n");
-    if (fwupload.need_ack && sem->take_nonblocking()) {
+    if (fwupload.need_ack && sem.take_nonblocking()) {
         // ack the send of a DATA96 fw packet to TX
         fwupload.need_ack = false;
         uint8_t data16[16] {};
@@ -426,7 +424,7 @@ void AP_Radio_cypress::check_fw_ack(void)
         memcpy(&data16[0], &ack_to, 4);
         mavlink_msg_data16_send(fwupload.chan, 42, 4, data16);
         Debug(4,"sent ack DATA16\n");
-        sem->give();
+        sem.give();
     }
 }
 
@@ -808,14 +806,14 @@ bool AP_Radio_cypress::parse_dsm_channels(const uint8_t *data)
             // got an ack from key 0
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
                   v, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
-            if (fwupload.sequence == v && sem->take_nonblocking()) {
+            if (fwupload.sequence == v && sem.take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
                 if (fwupload.acked == fwupload.length) {
                     // trigger send of DATA16 ack to client
                     fwupload.need_ack = true;
                 }
-                sem->give();
+                sem.give();
             }
         }
         if (chan == 7) {
@@ -1596,7 +1594,7 @@ void AP_Radio_cypress::send_telem_packet(void)
     if (fwupload.length != 0 &&
         fwupload.length > fwupload.acked &&
         ((fwupload.counter++ & 0x07) != 0) &&
-        sem->take_nonblocking()) {
+        sem.take_nonblocking()) {
         pkt.type = fwupload.fw_type;
         pkt.payload.fw.seq = fwupload.sequence;
         uint32_t len = fwupload.length>fwupload.acked?fwupload.length - fwupload.acked:0;
@@ -1609,7 +1607,7 @@ void AP_Radio_cypress::send_telem_packet(void)
                pkt.payload.fw.offset,
                pkt.payload.fw.len,
                pkt.type);
-        sem->give();
+        sem.give();
         pkt.crc = crc_crc8((const uint8_t *)&pkt.type, 15);
     } else {
         pkt.type = TELEM_STATUS;
@@ -1702,7 +1700,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
     Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
-    if (sem->take_nonblocking()) {
+    if (sem.take_nonblocking()) {
         fwupload.chan = chan;
         fwupload.need_ack = false;
         fwupload.offset = ofs;
@@ -1720,7 +1718,7 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
             fwupload.fw_type = TELEM_FW;
             memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
         }
-        sem->give();
+        sem.give();
     } 
 }
 

@@ -169,7 +169,7 @@ private:
     };
 
     // semaphore between ISR and main thread
-    AP_HAL::Semaphore *sem;    
+    HAL_Semaphore sem;
     
     // dsm config data and status
     struct {
