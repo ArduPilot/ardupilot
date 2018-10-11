@@ -702,9 +702,9 @@ void ToyMode::trim_update(void)
     // get throttle mid from channel trim
     uint16_t throttle_trim = copter.channel_throttle->get_radio_trim();
     if (abs(throttle_trim - 1500) <= trim_auto) {
-        RC_Channel *ch = copter.channel_throttle;
-        uint16_t ch_min = ch->get_radio_min();
-        uint16_t ch_max = ch->get_radio_max();
+        RC_Channel *c = copter.channel_throttle;
+        uint16_t ch_min = c->get_radio_min();
+        uint16_t ch_max = c->get_radio_max();
         // remember the throttle midpoint
         int16_t new_value = 1000UL * (throttle_trim - ch_min) / (ch_max - ch_min);
         if (new_value != throttle_mid) {
@@ -758,8 +758,8 @@ void ToyMode::trim_update(void)
     
     uint8_t need_trim = 0;
     for (uint8_t i=0; i<4; i++) {
-        RC_Channel *ch = RC_Channels::rc_channel(i);
-        if (ch && abs(chan[i] - ch->get_radio_trim()) > noise_limit) {
+        RC_Channel *c = RC_Channels::rc_channel(i);
+        if (c && abs(chan[i] - c->get_radio_trim()) > noise_limit) {
             need_trim |= 1U<<i;
         }
     }
@@ -768,8 +768,8 @@ void ToyMode::trim_update(void)
     }
     for (uint8_t i=0; i<4; i++) {
         if (need_trim & (1U<<i)) {
-            RC_Channel *ch = RC_Channels::rc_channel(i);
-            ch->set_and_save_radio_trim(chan[i]);
+            RC_Channel *c = RC_Channels::rc_channel(i);
+            c->set_and_save_radio_trim(chan[i]);
         }
     }
 
