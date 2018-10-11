@@ -68,8 +68,6 @@ bool AP_Radio_cc2500::init(void)
                      irq_handler_thd,  /* Thread function.     */
                      NULL);                     /* Thread parameter.    */
 #endif
-    sem = hal.util->new_semaphore();    
-    
     return reset();
 }
 
@@ -340,26 +338,26 @@ void AP_Radio_cc2500::handle_data_packet(mavlink_channel_t chan, const mavlink_d
     uint32_t ofs=0;
     memcpy(&ofs, &m.data[0], 4);
     Debug(4, "got data96 of len %u from chan %u at offset %u\n", m.len, chan, unsigned(ofs));
-    if (sem->take_nonblocking()) {
-        fwupload.chan = chan;
-        fwupload.need_ack = false;
-        fwupload.offset = ofs;
-        fwupload.length = MIN(m.len-4, 92);
-        fwupload.acked = 0;
-        fwupload.sequence++;
-        if (m.type == 43) {
-            // sending a tune to play - for development testing
-            fwupload.fw_type = TELEM_PLAY;
-            fwupload.length = MIN(m.len, 90);
-            fwupload.offset = 0;
-            memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
-        } else {
-            // sending a chunk of firmware OTA upload
-            fwupload.fw_type = TELEM_FW;
-            memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
-        }
-        sem->give();
-    } 
+
+    WITH_SEMAPHORE(sem);
+
+    fwupload.chan = chan;
+    fwupload.need_ack = false;
+    fwupload.offset = ofs;
+    fwupload.length = MIN(m.len-4, 92);
+    fwupload.acked = 0;
+    fwupload.sequence++;
+    if (m.type == 43) {
+        // sending a tune to play - for development testing
+        fwupload.fw_type = TELEM_PLAY;
+        fwupload.length = MIN(m.len, 90);
+        fwupload.offset = 0;
+        memcpy(&fwupload.pending_data[0], &m.data[0], fwupload.length);
+    } else {
+        // sending a chunk of firmware OTA upload
+        fwupload.fw_type = TELEM_FW;
+        memcpy(&fwupload.pending_data[0], &m.data[4], fwupload.length);
+    }
 }
 
 /*
@@ -462,14 +460,14 @@ bool AP_Radio_cc2500::handle_SRT_packet(const uint8_t *packet)
             // got an fw upload ack 
             Debug(4, "ack %u seq=%u acked=%u length=%u len=%u\n",
                   data, fwupload.sequence, unsigned(fwupload.acked), unsigned(fwupload.length), fwupload.len);
-            if (fwupload.sequence == data && sem->take_nonblocking()) {
+            if (fwupload.sequence == data && sem.take_nonblocking()) {
                 fwupload.sequence++;
                 fwupload.acked += fwupload.len;
                 if (fwupload.acked == fwupload.length) {
                     // trigger send of DATA16 ack to client
                     fwupload.need_ack = true;
                 }
-                sem->give();
+                sem.give();
             }
         break;
     }
@@ -1030,7 +1028,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
     if (fwupload.length != 0 &&
         fwupload.length > fwupload.acked &&
         ((fwupload.counter++ & 0x07) != 0) &&
-        sem->take_nonblocking()) {
+        sem.take_nonblocking()) {
         pkt.type = fwupload.fw_type;
         pkt.payload.fw.seq = fwupload.sequence;
         uint32_t len = fwupload.length>fwupload.acked?fwupload.length - fwupload.acked:0;
@@ -1043,7 +1041,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
                pkt.payload.fw.offset,
                pkt.payload.fw.len,
                pkt.type);
-        sem->give();
+        sem.give();
     } else {
         pkt.type = TELEM_STATUS;
         pkt.payload.status = t_status;
@@ -1070,7 +1068,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
  */
 void AP_Radio_cc2500::check_fw_ack(void)
 {
-    if (fwupload.need_ack && sem->take_nonblocking()) {
+    if (fwupload.need_ack && sem.take_nonblocking()) {
         // ack the send of a DATA96 fw packet to TX
         fwupload.need_ack = false;
         uint8_t data16[16] {};
@@ -1078,7 +1076,7 @@ void AP_Radio_cc2500::check_fw_ack(void)
         memcpy(&data16[0], &ack_to, 4);
         mavlink_msg_data16_send(fwupload.chan, 42, 4, data16);
         Debug(4,"sent ack DATA16\n");
-        sem->give();
+        sem.give();
     }
 }
 
