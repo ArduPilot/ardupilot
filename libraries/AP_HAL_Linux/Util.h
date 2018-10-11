@@ -90,9 +90,6 @@ public:
         return Perf::get_instance()->count(perf);
     }
 
-    // create a new semaphore
-    AP_HAL::Semaphore *new_semaphore(void) override { return new Semaphore; }
-
     int get_hw_arm32();
 
     bool toneAlarm_init() override { return _toneAlarm.init(); }
