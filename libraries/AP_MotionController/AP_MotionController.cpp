@@ -16,6 +16,7 @@
     two motors, therefore, eight motors in total. 
  */
 #include <GCS_MAVLink/GCS.h>
+#include <DataFlash/DataFlash.h>
 #include "AP_MotionController.h"
 
 extern const AP_HAL::HAL &hal; // External reference for console debugging
@@ -72,9 +73,10 @@ void AP_MotionController::update(uint16_t steering, uint16_t throttle)
     //roboclaw.SpeedM1M2(AP_RoboClaw::ROBOCLAW_ADDR, steering, throttle);
     if (++counter >= 10) // Call every fifth of a second (50Hz calling rate)
     {
-        hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, m1, m2);
+        //hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, m1, m2);
         //port->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64()/1000.0, steering, throttle);
         //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, steering, throttle);
+        DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,Steering,Throttle", "Qff", AP_HAL::micros64(), m1, m2);
         counter = 0;
     }
 }
