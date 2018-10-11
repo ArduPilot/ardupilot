@@ -5,6 +5,7 @@
  */
 
 #include "AP_RAMTRON.h"
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -38,9 +39,10 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
 bool AP_RAMTRON::init(void)
 {
     dev = hal.spi->get_device("ramtron");
-    if (!dev || !dev->get_semaphore()->take(0)) {
+    if (!dev) {
         return false;
     }
+    WITH_SEMAPHORE(dev->get_semaphore());
 
     struct rdid {
         uint8_t manufacturer[6];
@@ -49,10 +51,8 @@ bool AP_RAMTRON::init(void)
         uint8_t id2;
     } rdid;
     if (!dev->read_registers(RAMTRON_RDID, (uint8_t *)&rdid, sizeof(rdid))) {
-        dev->get_semaphore()->give();
         return false;
     }
-    dev->get_semaphore()->give();
 
     for (uint8_t i=0; i<ARRAY_SIZE(ramtron_ids); i++) {
         if (ramtron_ids[i].id1 == rdid.id1 &&
@@ -93,9 +93,8 @@ bool AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
         size -= maxread;
     }
 
-    if (!dev->get_semaphore()->take(0)) {
-        return false;
-    }
+    WITH_SEMAPHORE(dev->get_semaphore());
+
     dev->set_chip_select(true);
 
     send_offset(RAMTRON_READ, offset);
@@ -104,7 +103,6 @@ bool AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
     dev->transfer(nullptr, 0, buf, size);
 
     dev->set_chip_select(false);
-    dev->get_semaphore()->give();
 
     return true;
 }
@@ -112,9 +110,8 @@ bool AP_RAMTRON::read(uint32_t offset, uint8_t *buf, uint32_t size)
 // write to device
 bool AP_RAMTRON::write(uint32_t offset, const uint8_t *buf, uint32_t size)
 {
-    if (!dev->get_semaphore()->take(0)) {
-        return false;
-    }
+    WITH_SEMAPHORE(dev->get_semaphore());
+
     // write enable
     uint8_t r = RAMTRON_WREN;
     dev->transfer(&r, 1, nullptr, 0);
@@ -127,6 +124,5 @@ bool AP_RAMTRON::write(uint32_t offset, const uint8_t *buf, uint32_t size)
 
     dev->set_chip_select(false);
 
-    dev->get_semaphore()->give();
     return true;
 }
