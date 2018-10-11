@@ -98,17 +98,6 @@ void DataFlash_File::Init()
     int ret;
     struct stat st;
 
-    semaphore = hal.util->new_semaphore();
-    if (semaphore == nullptr) {
-        AP_HAL::panic("Failed to create DataFlash_File semaphore");
-        return;
-    }
-    write_fd_semaphore = hal.util->new_semaphore();
-    if (write_fd_semaphore == nullptr) {
-        AP_HAL::panic("Failed to create DataFlash_File write_fd_semaphore");
-        return;
-    }
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
     // try to cope with an existing lowercase log directory
     // name. NuttX does not handle case insensitive VFAT well
@@ -542,7 +531,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         return false;
     }
 
-    if (!semaphore->take(1)) {
+    if (!semaphore.take(1)) {
         return false;
     }
         
@@ -559,7 +548,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space()) {
             // this message isn't dropped, it will be sent again...
-            semaphore->give();
+            semaphore.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -567,7 +556,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space()) {
             _dropped++;
-            semaphore->give();
+            semaphore.give();
             return false;
         }
     }
@@ -576,13 +565,13 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     if (space < size) {
         hal.util->perf_count(_perf_overruns);
         _dropped++;
-        semaphore->give();
+        semaphore.give();
         return false;
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size);
-    semaphore->give();
+    semaphore.give();
     return true;
 }
 
@@ -613,20 +602,20 @@ uint16_t DataFlash_File::find_last_log()
     return ret;
 }
 
-uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
+uint32_t DataFlash_File::_get_log_size(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
     }
-    if (_write_fd != -1 && write_fd_semaphore->take_nonblocking()) {
+    if (_write_fd != -1 && write_fd_semaphore.take_nonblocking()) {
         if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
             // it is the file we are currently writing
             free(fname);
-            write_fd_semaphore->give();
+            write_fd_semaphore.give();
             return _write_offset;
         }
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
     }
     struct stat st;
     if (::stat(fname, &st) != 0) {
@@ -638,24 +627,24 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num) const
     return st.st_size;
 }
 
-uint32_t DataFlash_File::_get_log_time(const uint16_t log_num) const
+uint32_t DataFlash_File::_get_log_time(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
     }
-    if (_write_fd != -1 && write_fd_semaphore->take_nonblocking()) {
+    if (_write_fd != -1 && write_fd_semaphore.take_nonblocking()) {
         if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
             // it is the file we are currently writing
             free(fname);
-            write_fd_semaphore->give();
+            write_fd_semaphore.give();
             uint64_t utc_usec;
             if (!AP::rtc().get_utc_usec(utc_usec)) {
                 return 0;
             }
             return utc_usec / 1000000U;
         }
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
     }
     struct stat st;
     if (::stat(fname, &st) != 0) {
@@ -837,14 +826,14 @@ uint16_t DataFlash_File::get_num_logs()
 void DataFlash_File::stop_logging(void)
 {
     // best-case effort to avoid annoying the IO thread
-    const bool have_sem = write_fd_semaphore->take(1);
+    const bool have_sem = write_fd_semaphore.take(1);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
         ::close(fd);
     }
     if (have_sem) {
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
     } else {
         _internal_errors++;
     }
@@ -892,7 +881,7 @@ uint16_t DataFlash_File::start_new_log(void)
     if (log_num > MAX_LOG_FILES) {
         log_num = 1;
     }
-    if (!write_fd_semaphore->take(1)) {
+    if (!write_fd_semaphore.take(1)) {
         _open_error = true;
         return 0xFFFF;
     }
@@ -903,7 +892,7 @@ uint16_t DataFlash_File::start_new_log(void)
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
         _open_error = true;
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
         return 0xFFFF;
     }
 #if HAL_OS_POSIX_IO
@@ -917,7 +906,7 @@ uint16_t DataFlash_File::start_new_log(void)
     if (_write_fd == -1) {
         _initialised = false;
         _open_error = true;
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  _write_filename, strerror(saved_errno));
@@ -928,7 +917,7 @@ uint16_t DataFlash_File::start_new_log(void)
     _last_write_ms = AP_HAL::millis();
     _write_offset = 0;
     _writebuf.clear();
-    write_fd_semaphore->give();
+    write_fd_semaphore.give();
 
     // now update lastlog.txt with the new log number
     char *fname = _lastlog_file_name();
@@ -974,11 +963,11 @@ void DataFlash_File::flush(void)
         }
         _io_timer();
     }
-    if (write_fd_semaphore->take(1)) {
+    if (write_fd_semaphore.take(1)) {
         if (_write_fd != -1) {
             ::fsync(_write_fd);
         }
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
     } else {
         _internal_errors++;
     }
@@ -1042,11 +1031,11 @@ void DataFlash_File::_io_timer(void)
     }
 
     last_io_operation = "write";
-    if (!write_fd_semaphore->take(1)) {
+    if (!write_fd_semaphore.take(1)) {
         return;
     }
     if (_write_fd == -1) {
-        write_fd_semaphore->give();
+        write_fd_semaphore.give();
         return;
     }
     ssize_t nwritten = ::write(_write_fd, head, nbytes);
@@ -1080,7 +1069,7 @@ void DataFlash_File::_io_timer(void)
         last_io_operation = "";
 #endif
     }
-    write_fd_semaphore->give();
+    write_fd_semaphore.give();
     hal.util->perf_end(_perf_write);
 }
 

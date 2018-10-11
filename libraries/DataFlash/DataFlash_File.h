@@ -109,8 +109,8 @@ private:
     char *_log_file_name_long(const uint16_t log_num) const;
     char *_log_file_name_short(const uint16_t log_num) const;
     char *_lastlog_file_name() const;
-    uint32_t _get_log_size(const uint16_t log_num) const;
-    uint32_t _get_log_time(const uint16_t log_num) const;
+    uint32_t _get_log_size(const uint16_t log_num);
+    uint32_t _get_log_time(const uint16_t log_num);
 
     void stop_logging(void) override;
 
@@ -146,11 +146,11 @@ private:
     const uint32_t _free_space_min_avail = 8388608; // bytes
 
     // semaphore mediates access to the ringbuffer
-    AP_HAL::Semaphore *semaphore;
+    HAL_Semaphore semaphore;
     // write_fd_semaphore mediates access to write_fd so the frontend
     // can open/close files without causing the backend to write to a
     // bad fd
-    AP_HAL::Semaphore *write_fd_semaphore;
+    HAL_Semaphore write_fd_semaphore;
     
     // performance counters
     AP_HAL::Util::perf_counter_t  _perf_write;
