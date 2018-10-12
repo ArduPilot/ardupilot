@@ -50,28 +50,28 @@ public:
 
     // calculate an angle given dead_zone and trim. This is used by the quadplane code
     // for hover throttle
-    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim);
+    int16_t     pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
     /*
       return a normalised input for a channel, in range -1 to 1,
       centered around the channel trim. Ignore deadzone.
      */
-    float       norm_input();
+    float       norm_input() const;
 
     /*
       return a normalised input for a channel, in range -1 to 1,
       centered around the channel trim. Take into account the deadzone
     */
-    float       norm_input_dz();
+    float       norm_input_dz() const;
 
-    uint8_t     percent_input();
-    int16_t     pwm_to_range();
-    int16_t     pwm_to_range_dz(uint16_t dead_zone);
+    uint8_t     percent_input() const;
+    int16_t     pwm_to_range() const;
+    int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
     // return true if input is within deadzone of trim
-    bool       in_trim_dz();
+    bool       in_trim_dz() const;
 
     int16_t    get_radio_in() const { return radio_in;}
     void       set_radio_in(int16_t val) {radio_in = val;}
@@ -84,7 +84,7 @@ public:
     bool       has_override() const;
 
     // get control input with zero deadzone
-    int16_t     get_control_in_zero_dz(void);
+    int16_t     get_control_in_zero_dz(void) const;
     
     int16_t    get_radio_min() const {return radio_min.get();}
     void       set_radio_min(int16_t val) { radio_min = val;}
@@ -227,8 +227,8 @@ private:
     uint16_t override_value;
     uint32_t last_override_time;
 
-    int16_t pwm_to_angle();
-    int16_t pwm_to_angle_dz(uint16_t dead_zone);
+    int16_t pwm_to_angle() const;
+    int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
 
     // pwm value above which the option will be invoked:
     static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
