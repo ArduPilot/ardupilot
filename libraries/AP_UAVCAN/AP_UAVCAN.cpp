@@ -180,28 +180,26 @@ void AP_UAVCAN::init(uint8_t driver_index)
     hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
     hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
 
-    uint8_t len = hw_version.unique_id.capacity();
-    uint8_t *unique_id = new uint8_t[len];
+    const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+    uint8_t uid_len = uid_buf_len;
+    uint8_t unique_id[uid_buf_len];
 
-    if (unique_id) {
-        hal.util->get_system_id_unformatted(unique_id, len);
-        uavcan::copy(unique_id, unique_id + len, hw_version.unique_id.begin());
-    } else {
-        AP_HAL::panic("UAVCAN: Failed to allocate Unique ID");
-    }
+    if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+        uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
 
-    _node->setHardwareVersion(hw_version);
+        _node->setHardwareVersion(hw_version);
 
-    int start_res = _node->start();
-    if (start_res < 0) {
-        debug_uavcan(1, "UAVCAN: node start problem, error %d\n\r", start_res);
-        return;
-    }
+        int start_res = _node->start();
+        if (start_res < 0) {
+            debug_uavcan(1, "UAVCAN: node start problem, error %d\n\r", start_res);
+            return;
+        }
 
-    //Start Servers
+        //Start Servers
 #ifdef HAS_UAVCAN_SERVERS
-    _servers.init(*_node);
+        _servers.init(*_node);
 #endif
+    }
     // Roundup all subscribers from supported drivers
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);
