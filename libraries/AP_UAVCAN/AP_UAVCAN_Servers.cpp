@@ -83,13 +83,7 @@ class AP_UAVCAN_FileEventTracer : public uavcan::dynamic_node_id_server::IEventT
 protected:
     virtual void onEvent(uavcan::dynamic_node_id_server::TraceCode code, uavcan::int64_t argument)
     {
-        struct log_UAVCAN_EVT pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_UAVCAN_EVT_MSG),
-            time_us    : AP_HAL::micros64(),
-            code       : code,
-            argument   : argument
-        };
-        DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+        DataFlash_Class::instance()->Log_Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
     }
 };
 
