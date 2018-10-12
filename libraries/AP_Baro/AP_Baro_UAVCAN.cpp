@@ -165,7 +165,7 @@ void AP_Baro_UAVCAN::handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, c
         }
         {
             WITH_SEMAPHORE(driver->_sem_baro);
-            driver->_temperature = cb.msg->static_temperature;
+            driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
         }
         give_registry();
     }
