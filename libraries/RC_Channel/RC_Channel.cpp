@@ -182,7 +182,7 @@ int16_t RC_Channel::get_control_mid() const
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
+RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
     int16_t radio_trim_low  = _trim - _dead_zone;
@@ -202,7 +202,7 @@ RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim)
   the current radio_in value using the specified dead_zone
  */
 int16_t
-RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone)
+RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
 {
     return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
 }
@@ -212,7 +212,7 @@ RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone)
   the current radio_in value
  */
 int16_t
-RC_Channel::pwm_to_angle()
+RC_Channel::pwm_to_angle() const
 {
 	return pwm_to_angle_dz(dead_zone);
 }
@@ -223,7 +223,7 @@ RC_Channel::pwm_to_angle()
   range, using the specified deadzone
  */
 int16_t
-RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
+RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
 {
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
@@ -244,13 +244,13 @@ RC_Channel::pwm_to_range_dz(uint16_t _dead_zone)
   range
  */
 int16_t
-RC_Channel::pwm_to_range()
+RC_Channel::pwm_to_range() const
 {
     return pwm_to_range_dz(dead_zone);
 }
 
 
-int16_t RC_Channel::get_control_in_zero_dz(void)
+int16_t RC_Channel::get_control_in_zero_dz(void) const
 {
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         return pwm_to_range_dz(0);
@@ -261,7 +261,7 @@ int16_t RC_Channel::get_control_in_zero_dz(void)
 // ------------------------------------------
 
 float
-RC_Channel::norm_input()
+RC_Channel::norm_input() const
 {
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
@@ -280,7 +280,7 @@ RC_Channel::norm_input()
 }
 
 float
-RC_Channel::norm_input_dz()
+RC_Channel::norm_input_dz() const
 {
     int16_t dz_min = radio_trim - dead_zone;
     int16_t dz_max = radio_trim + dead_zone;
@@ -300,7 +300,7 @@ RC_Channel::norm_input_dz()
   get percentage input from 0 to 100. This ignores the trim value.
  */
 uint8_t
-RC_Channel::percent_input()
+RC_Channel::percent_input() const
 {
     if (radio_in <= radio_min) {
         return reversed?100:0;
@@ -318,7 +318,7 @@ RC_Channel::percent_input()
 /*
   Return true if the channel is at trim and within the DZ
 */
-bool RC_Channel::in_trim_dz()
+bool RC_Channel::in_trim_dz() const
 {
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
