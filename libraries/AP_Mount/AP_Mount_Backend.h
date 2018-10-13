@@ -83,8 +83,8 @@ protected:
     void update_targets_from_rc();
 
     // angle_input, angle_input_rad - convert RC input into an earth-frame target angle
-    int32_t angle_input(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
-    float angle_input_rad(RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    int32_t angle_input(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
     void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
@@ -96,4 +96,8 @@ protected:
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+
+private:
+
+    void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
 };
