@@ -190,7 +190,9 @@ public:
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
+    void send_mount_status() const;
     void send_named_float(const char *name, float value) const;
+    void send_gimbal_report() const;
     void send_home() const;
     void send_ekf_origin() const;
     virtual void send_position_target_global_int() { };
@@ -302,7 +304,8 @@ protected:
     void handle_common_rally_message(mavlink_message_t *msg);
     void handle_rally_fetch_point(mavlink_message_t *msg);
     void handle_rally_point(mavlink_message_t *msg);
-    void handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const;
+    virtual void handle_mount_message(const mavlink_message_t *msg);
+    void handle_param_value(mavlink_message_t *msg);
     void handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
     void handle_vision_position_delta(mavlink_message_t *msg);
@@ -354,10 +357,14 @@ protected:
 
     void handle_command_long(mavlink_message_t* msg);
     MAV_RESULT handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_send_banner(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_do_set_roi(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_do_set_roi(const Location &roi_loc);
     MAV_RESULT handle_command_do_gripper(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_home_position(const mavlink_command_long_t &packet);
