@@ -348,10 +348,44 @@ void DataFlash_Class::validate_structures(const struct LogStructure *logstructur
     Debug("Validating structures");
     bool passed = true;
 
-    for (uint16_t i=0; i<num_types; i++) {
-        const struct LogStructure *logstructure = &logstructures[i];
-        passed = validate_structure(logstructure, i) && passed;
+    // ensure units are unique:
+    for (uint16_t i=0; i<ARRAY_SIZE(log_Units); i++) {
+        const struct UnitStructure &a = log_Units[i];
+        for (uint16_t j=i+1; j<ARRAY_SIZE(log_Units); j++) {
+            const struct UnitStructure &b = log_Units[j];
+            if (a.ID == b.ID) {
+                Debug("duplicate unit id=%c (%s/%s)", a.ID, a.unit, b.unit);
+                passed = false;
+            }
+            if (streq(a.unit, b.unit)) {
+                Debug("duplicate unit=%s (%c/%c)", a.unit, a.ID, b.ID);
+                passed = false;
+            }
+        }
     }
+
+    // ensure multipliers are unique:
+    for (uint16_t i=0; i<ARRAY_SIZE(log_Multipliers); i++) {
+        const struct MultiplierStructure &a = log_Multipliers[i];
+        for (uint16_t j=i+1; j<ARRAY_SIZE(log_Multipliers); j++) {
+            const struct MultiplierStructure &b = log_Multipliers[j];
+            if (a.ID == b.ID) {
+                Debug("duplicate multiplier id=%c (%f/%f)",
+                      a.ID, a.multiplier, b.multiplier);
+                passed = false;
+            }
+            if (is_equal(a.multiplier, b.multiplier)) {
+                if (a.ID == '?' && b.ID == '0') {
+                    // special case
+                    continue;
+                }
+                Debug("duplicate multiplier=%f (%c/%c)",
+                      a.multiplier, a.ID, b.ID);
+                passed = false;
+            }
+        }
+    }
+
     if (!passed) {
         Debug("Log structures are invalid");
         abort();
