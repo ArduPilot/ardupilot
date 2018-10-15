@@ -89,4 +89,4 @@ fi
 pip install --user -U argparse empy pyserial pexpect future lxml
 pip install --user -U mavproxy
 pip install --user -U intelhex
-
+pip install --user -U numpy
