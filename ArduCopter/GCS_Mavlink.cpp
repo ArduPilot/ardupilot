@@ -757,7 +757,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         if (packet.param2 > 0.0f) {
             if (packet.param1 > 2.9f) { // 3 = speed down
                 copter.wp_nav->set_speed_z(packet.param2 * 100.0f, copter.wp_nav->get_speed_up());
-		    } else if (packet.param1 > 1.9f) { // 2 = speed up
+            } else if (packet.param1 > 1.9f) { // 2 = speed up
                 copter.wp_nav->set_speed_z(copter.wp_nav->get_speed_down(), packet.param2 * 100.0f);
             } else {
                 copter.wp_nav->set_speed_xy(packet.param2 * 100.0f);
