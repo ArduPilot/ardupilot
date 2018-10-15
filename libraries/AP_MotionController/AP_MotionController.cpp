@@ -19,15 +19,14 @@
 #include <DataFlash/DataFlash.h>
 #include "AP_MotionController.h"
 
-    // @Param: 
-    // @DisplayName: SERVO_MOCR_
-    // @Description: 
-    // @Range: 
-    // @Units: DN
-    // @Increment: 1
-    // @User: Advanced
-    //AP_GROUPINFO("", , AP_MotionController, , 0),
-
+// @Param:
+// @DisplayName: SERVO_MOCR_
+// @Description:
+// @Range:
+// @Units: DN
+// @Increment: 1
+// @User: Advanced
+//AP_GROUPINFO("", , AP_MotionController, , 0),
 
 extern const AP_HAL::HAL &hal; // External reference for console debugging
 
@@ -75,7 +74,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 2
     // @User: Advanced
-    AP_GROUPINFO("RC1", 4, AP_MotionController, Address[0], 0x80),
+    AP_GROUPINFO("RC1", 4, AP_MotionController, rc[0].address, 0x80),
 
     // @Param: RC2
     // @DisplayName: SERVO_MOCR_RC2
@@ -84,7 +83,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 2
     // @User: Advanced
-    AP_GROUPINFO("RC2", 5, AP_MotionController, Address[1], 0x82),
+    AP_GROUPINFO("RC2", 5, AP_MotionController, rc[1].address, 0x82),
 
     // @Param: RC3
     // @DisplayName: SERVO_MOCR_RC3
@@ -93,7 +92,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 2
     // @User: Advanced
-    AP_GROUPINFO("RC3", 6, AP_MotionController, Address[2], 0x84),
+    AP_GROUPINFO("RC3", 6, AP_MotionController, rc[2].address, 0x84),
 
     // @Param: RC4
     // @DisplayName: SERVO_MOCR_RC4
@@ -102,7 +101,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 2
     // @User: Advanced
-    AP_GROUPINFO("RC4", 7, AP_MotionController, Address[3], 0x86),
+    AP_GROUPINFO("RC4", 7, AP_MotionController, rc[3].address, 0x86),
 
     // =============================================================================================
     // @Param: VKP1
@@ -112,7 +111,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKP1", 8, AP_MotionController, controlSettings[0][0], AP_MOTIONCONTROLLER_VEL_KP),
+    AP_GROUPINFO("VKP1", 8, AP_MotionController, rc[0].m1.vel.kp, AP_MOTIONCONTROLLER_VEL_KP),
 
     // @Param: VKI1
     // @DisplayName: SERVO_MOCR_VKI1
@@ -121,7 +120,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKI1", 9, AP_MotionController, controlSettings[0][1], AP_MOTIONCONTROLLER_VEL_KI),
+    AP_GROUPINFO("VKI1", 9, AP_MotionController, rc[0].m1.vel.ki, AP_MOTIONCONTROLLER_VEL_KI),
 
     // @Param: VKD1
     // @DisplayName: SERVO_MOCR_VKD1
@@ -130,16 +129,16 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKD1", 10, AP_MotionController, controlSettings[0][2], AP_MOTIONCONTROLLER_VEL_KD),
+    AP_GROUPINFO("VKD1", 10, AP_MotionController, rc[0].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
     // @Param: VQP1
-    // @DisplayName: SERVO_MOCR_VQP1    
+    // @DisplayName: SERVO_MOCR_VQP1
     // @Description: Velocity controller qudrature pulses per seconds for first roboclaw
     // @Range: 0 1e6
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("VQP1", 11, AP_MotionController, controlSettings[0][3], AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("VQP1", 11, AP_MotionController, rc[0].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
 
     // @Param: PKP1
     // @DisplayName: SERVO_MOCR_PKP1
@@ -148,7 +147,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKP1", 12, AP_MotionController, controlSettings[0][4], AP_MOTIONCONTROLLER_POS_KP),
+    AP_GROUPINFO("PKP1", 12, AP_MotionController, rc[0].m2.pos.kp, AP_MOTIONCONTROLLER_POS_KP),
 
     // @Param: PKI1
     // @DisplayName: SERVO_MOCR_PKI1
@@ -157,7 +156,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKI1", 13, AP_MotionController, controlSettings[0][5], AP_MOTIONCONTROLLER_POS_KI),
+    AP_GROUPINFO("PKI1", 13, AP_MotionController, rc[0].m2.pos.ki, AP_MOTIONCONTROLLER_POS_KI),
 
     // @Param: PKD1
     // @DisplayName: SERVO_MOCR_PKD1
@@ -166,7 +165,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKD1", 14, AP_MotionController, controlSettings[0][6], AP_MOTIONCONTROLLER_POS_KD),
+    AP_GROUPINFO("PKD1", 14, AP_MotionController, rc[0].m2.pos.kd, AP_MOTIONCONTROLLER_POS_KD),
 
     // @Param: PIM1
     // @DisplayName: SERVO_MOCR_PIM1
@@ -175,7 +174,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PIM1", 15, AP_MotionController, controlSettings[0][7], AP_MOTIONCONTROLLER_POS_IMAX),
+    AP_GROUPINFO("PIM1", 15, AP_MotionController, rc[0].m2.pos.maxi, AP_MOTIONCONTROLLER_POS_IMAX),
 
     // @Param: PDB1
     // @DisplayName: SERVO_MOCR_PDB1
@@ -184,7 +183,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB1", 16, AP_MotionController, controlSettings[0][8], AP_MOTIONCONTROLLER_POS_DEADBAND),
+    AP_GROUPINFO("PDB1", 16, AP_MotionController, rc[0].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX1
     // @DisplayName: SERVO_MOCR_PMX1
@@ -193,7 +192,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX1", 17, AP_MotionController, controlSettings[0][9], AP_MOTIONCONTROLLER_POS_MAXPOS),
+    AP_GROUPINFO("PMX1", 17, AP_MotionController, rc[0].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN1
     // @DisplayName: SERVO_MOCR_PMN1
@@ -202,7 +201,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN1", 18, AP_MotionController, controlSettings[0][10], AP_MOTIONCONTROLLER_POS_MINPOS),
+    AP_GROUPINFO("PMN1", 18, AP_MotionController, rc[0].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC1
     // @DisplayName: SERVO_MOCR_PAC1
@@ -211,7 +210,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS/S
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PAC1", 19, AP_MotionController, controlSettings[0][11], AP_MOTIONCONTROLLER_POS_ACCEL),
+    AP_GROUPINFO("PAC1", 19, AP_MotionController, rc[0].m2.acceleration, AP_MOTIONCONTROLLER_POS_ACCEL),
 
     // @Param: PVE1
     // @DisplayName: SERVO_MOCR_PVE1
@@ -220,7 +219,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PVE1", 20, AP_MotionController, controlSettings[0][12], AP_MOTIONCONTROLLER_POS_VEL),
+    AP_GROUPINFO("PVE1", 20, AP_MotionController, rc[0].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
 
     // =============================================================================================
     // @Param: VKP2
@@ -230,7 +229,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKP2", 21, AP_MotionController, controlSettings[1][0], AP_MOTIONCONTROLLER_VEL_KP),
+    AP_GROUPINFO("VKP2", 21, AP_MotionController, rc[1].m1.vel.kp, AP_MOTIONCONTROLLER_VEL_KP),
 
     // @Param: VKI2
     // @DisplayName: SERVO_MOCR_VKI2
@@ -239,7 +238,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKI2", 22, AP_MotionController, controlSettings[1][1], AP_MOTIONCONTROLLER_VEL_KI),
+    AP_GROUPINFO("VKI2", 22, AP_MotionController, rc[1].m1.vel.ki, AP_MOTIONCONTROLLER_VEL_KI),
 
     // @Param: VKD2
     // @DisplayName: SERVO_MOCR_VKD2
@@ -248,7 +247,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKD2", 23, AP_MotionController, controlSettings[1][2], AP_MOTIONCONTROLLER_VEL_KD),
+    AP_GROUPINFO("VKD2", 23, AP_MotionController, rc[1].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
     // @Param: VQP2
     // @DisplayName: SERVO_MOCR_VQP2
@@ -257,7 +256,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("VQP2", 24, AP_MotionController, controlSettings[1][3], AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("VQP2", 24, AP_MotionController, rc[1].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
 
     // @Param: PKP2
     // @DisplayName: SERVO_MOCR_PKP2
@@ -266,7 +265,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKP2", 25, AP_MotionController, controlSettings[1][4], AP_MOTIONCONTROLLER_POS_KP),
+    AP_GROUPINFO("PKP2", 25, AP_MotionController, rc[1].m2.pos.kp, AP_MOTIONCONTROLLER_POS_KP),
 
     // @Param: PKI2
     // @DisplayName: SERVO_MOCR_PKI2
@@ -275,7 +274,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKI2", 26, AP_MotionController, controlSettings[1][5], AP_MOTIONCONTROLLER_POS_KI),
+    AP_GROUPINFO("PKI2", 26, AP_MotionController, rc[1].m2.pos.ki, AP_MOTIONCONTROLLER_POS_KI),
 
     // @Param: PKD2
     // @DisplayName: SERVO_MOCR_PKD2
@@ -284,7 +283,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKD2", 27, AP_MotionController, controlSettings[1][6], AP_MOTIONCONTROLLER_POS_KD),
+    AP_GROUPINFO("PKD2", 27, AP_MotionController, rc[1].m2.pos.kd, AP_MOTIONCONTROLLER_POS_KD),
 
     // @Param: PIM2
     // @DisplayName: SERVO_MOCR_PIM2
@@ -293,7 +292,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PIM2", 28, AP_MotionController, controlSettings[1][7], AP_MOTIONCONTROLLER_POS_IMAX),
+    AP_GROUPINFO("PIM2", 28, AP_MotionController, rc[1].m2.pos.maxi, AP_MOTIONCONTROLLER_POS_IMAX),
 
     // @Param: PDB2
     // @DisplayName: SERVO_MOCR_PDB2
@@ -302,7 +301,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB2", 29, AP_MotionController, controlSettings[1][8], AP_MOTIONCONTROLLER_POS_DEADBAND),
+    AP_GROUPINFO("PDB2", 29, AP_MotionController, rc[1].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX2
     // @DisplayName: SERVO_MOCR_PMX2
@@ -311,7 +310,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX2", 30, AP_MotionController, controlSettings[1][9], AP_MOTIONCONTROLLER_POS_MAXPOS),
+    AP_GROUPINFO("PMX2", 30, AP_MotionController, rc[1].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN2
     // @DisplayName: SERVO_MOCR_PMN2
@@ -320,7 +319,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN2", 31, AP_MotionController, controlSettings[1][10], AP_MOTIONCONTROLLER_POS_MINPOS),
+    AP_GROUPINFO("PMN2", 31, AP_MotionController, rc[1].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC2
     // @DisplayName: SERVO_MOCR_PAC2
@@ -329,7 +328,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS/S
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PAC2", 32, AP_MotionController, controlSettings[1][11], AP_MOTIONCONTROLLER_POS_ACCEL),
+    AP_GROUPINFO("PAC2", 32, AP_MotionController, rc[1].m2.acceleration, AP_MOTIONCONTROLLER_POS_ACCEL),
 
     // @Param: PVE2
     // @DisplayName: SERVO_MOCR_PVE2
@@ -338,8 +337,8 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PVE2", 33, AP_MotionController, controlSettings[1][12], AP_MOTIONCONTROLLER_POS_VEL),
-	
+    AP_GROUPINFO("PVE2", 33, AP_MotionController, rc[1].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
+
     // =============================================================================================
     // @Param: VKP3
     // @DisplayName: SERVO_MOCR_VKP3
@@ -348,7 +347,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKP3", 34, AP_MotionController, controlSettings[2][0], AP_MOTIONCONTROLLER_VEL_KP),
+    AP_GROUPINFO("VKP3", 34, AP_MotionController, rc[2].m1.vel.kp, AP_MOTIONCONTROLLER_VEL_KP),
 
     // @Param: VKI3
     // @DisplayName: SERVO_MOCR_VKI3
@@ -357,7 +356,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKI3", 35, AP_MotionController, controlSettings[2][1], AP_MOTIONCONTROLLER_VEL_KI),
+    AP_GROUPINFO("VKI3", 35, AP_MotionController, rc[2].m1.vel.ki, AP_MOTIONCONTROLLER_VEL_KI),
 
     // @Param: VKD3
     // @DisplayName: SERVO_MOCR_VKD3
@@ -366,16 +365,16 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKD3", 36, AP_MotionController, controlSettings[2][2], AP_MOTIONCONTROLLER_VEL_KD),
+    AP_GROUPINFO("VKD3", 36, AP_MotionController, rc[2].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
     // @Param: VQP3
-    // @DisplayName: SERVO_MOCR_VQP3    
+    // @DisplayName: SERVO_MOCR_VQP3
     // @Description: Velocity controller qudrature pulses per seconds for third roboclaw
     // @Range: 0 1e6
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("VQP3", 37, AP_MotionController, controlSettings[2][3], AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("VQP3", 37, AP_MotionController, rc[2].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
 
     // @Param: PKP3
     // @DisplayName: SERVO_MOCR_PKP3
@@ -384,7 +383,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKP3", 38, AP_MotionController, controlSettings[2][4], AP_MOTIONCONTROLLER_POS_KP),
+    AP_GROUPINFO("PKP3", 38, AP_MotionController, rc[2].m2.pos.kp, AP_MOTIONCONTROLLER_POS_KP),
 
     // @Param: PKI3
     // @DisplayName: SERVO_MOCR_PKI3
@@ -393,7 +392,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKI3", 39, AP_MotionController, controlSettings[2][5], AP_MOTIONCONTROLLER_POS_KI),
+    AP_GROUPINFO("PKI3", 39, AP_MotionController, rc[2].m2.pos.ki, AP_MOTIONCONTROLLER_POS_KI),
 
     // @Param: PKD3
     // @DisplayName: SERVO_MOCR_PKD3
@@ -402,7 +401,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKD3", 40, AP_MotionController, controlSettings[2][6], AP_MOTIONCONTROLLER_POS_KD),
+    AP_GROUPINFO("PKD3", 40, AP_MotionController, rc[2].m2.pos.kd, AP_MOTIONCONTROLLER_POS_KD),
 
     // @Param: PIM3
     // @DisplayName: SERVO_MOCR_PIM3
@@ -411,7 +410,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PIM3", 41, AP_MotionController, controlSettings[2][7], AP_MOTIONCONTROLLER_POS_IMAX),
+    AP_GROUPINFO("PIM3", 41, AP_MotionController, rc[2].m2.pos.maxi, AP_MOTIONCONTROLLER_POS_IMAX),
 
     // @Param: PDB3
     // @DisplayName: SERVO_MOCR_PDB3
@@ -420,7 +419,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB3", 42, AP_MotionController, controlSettings[2][8], AP_MOTIONCONTROLLER_POS_DEADBAND),
+    AP_GROUPINFO("PDB3", 42, AP_MotionController, rc[2].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX3
     // @DisplayName: SERVO_MOCR_PMX3
@@ -429,7 +428,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX3", 43, AP_MotionController, controlSettings[2][9], AP_MOTIONCONTROLLER_POS_MAXPOS),
+    AP_GROUPINFO("PMX3", 43, AP_MotionController, rc[2].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN3
     // @DisplayName: SERVO_MOCR_PMN3
@@ -438,7 +437,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN3", 44, AP_MotionController, controlSettings[2][10], AP_MOTIONCONTROLLER_POS_MINPOS),
+    AP_GROUPINFO("PMN3", 44, AP_MotionController, rc[2].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC3
     // @DisplayName: SERVO_MOCR_PAC3
@@ -447,7 +446,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS/S
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PAC3", 45, AP_MotionController, controlSettings[2][11], AP_MOTIONCONTROLLER_POS_ACCEL),
+    AP_GROUPINFO("PAC3", 45, AP_MotionController, rc[2].m2.acceleration, AP_MOTIONCONTROLLER_POS_ACCEL),
 
     // @Param: PVE3
     // @DisplayName: SERVO_MOCR_PVE3
@@ -456,7 +455,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PVE3", 46, AP_MotionController, controlSettings[2][12], AP_MOTIONCONTROLLER_POS_VEL),
+    AP_GROUPINFO("PVE3", 46, AP_MotionController, rc[2].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
 
     // =============================================================================================
     // @Param: VKP4
@@ -466,7 +465,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKP4", 47, AP_MotionController, controlSettings[3][0], AP_MOTIONCONTROLLER_VEL_KP),
+    AP_GROUPINFO("VKP4", 47, AP_MotionController, rc[3].m1.vel.kp, AP_MOTIONCONTROLLER_VEL_KP),
 
     // @Param: VKI4
     // @DisplayName: SERVO_MOCR_VKI4
@@ -475,7 +474,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKI4", 48, AP_MotionController, controlSettings[3][1], AP_MOTIONCONTROLLER_VEL_KI),
+    AP_GROUPINFO("VKI4", 48, AP_MotionController, rc[3].m1.vel.ki, AP_MOTIONCONTROLLER_VEL_KI),
 
     // @Param: VKD4
     // @DisplayName: SERVO_MOCR_VKD4
@@ -484,7 +483,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VKD4", 49, AP_MotionController, controlSettings[3][2], AP_MOTIONCONTROLLER_VEL_KD),
+    AP_GROUPINFO("VKD4", 49, AP_MotionController, rc[3].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
     // @Param: VQP4
     // @DisplayName: SERVO_MOCR_VQP4
@@ -493,7 +492,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("VQP4", 50, AP_MotionController, controlSettings[3][3], AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("VQP4", 50, AP_MotionController, rc[3].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
 
     // @Param: PKP4
     // @DisplayName: SERVO_MOCR_PKP4
@@ -502,7 +501,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKP4", 51, AP_MotionController, controlSettings[3][4], AP_MOTIONCONTROLLER_POS_KP),
+    AP_GROUPINFO("PKP4", 51, AP_MotionController, rc[3].m2.pos.kp, AP_MOTIONCONTROLLER_POS_KP),
 
     // @Param: PKI4
     // @DisplayName: SERVO_MOCR_PKI4
@@ -511,7 +510,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKI4", 52, AP_MotionController, controlSettings[3][5], AP_MOTIONCONTROLLER_POS_KI),
+    AP_GROUPINFO("PKI4", 52, AP_MotionController, rc[3].m2.pos.ki, AP_MOTIONCONTROLLER_POS_KI),
 
     // @Param: PKD4
     // @DisplayName: SERVO_MOCR_PKD4
@@ -520,7 +519,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PKD4", 53, AP_MotionController, controlSettings[3][6], AP_MOTIONCONTROLLER_POS_KD),
+    AP_GROUPINFO("PKD4", 53, AP_MotionController, rc[3].m2.pos.kd, AP_MOTIONCONTROLLER_POS_KD),
 
     // @Param: PIM4
     // @DisplayName: SERVO_MOCR_PIM4
@@ -529,7 +528,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("PIM4", 54, AP_MotionController, controlSettings[3][7], AP_MOTIONCONTROLLER_POS_IMAX),
+    AP_GROUPINFO("PIM4", 54, AP_MotionController, rc[3].m2.pos.maxi, AP_MOTIONCONTROLLER_POS_IMAX),
 
     // @Param: PDB4
     // @DisplayName: SERVO_MOCR_PDB4
@@ -538,7 +537,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB4", 55, AP_MotionController, controlSettings[3][8], AP_MOTIONCONTROLLER_POS_DEADBAND),
+    AP_GROUPINFO("PDB4", 55, AP_MotionController, rc[3].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX4
     // @DisplayName: SERVO_MOCR_PMX4
@@ -547,7 +546,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX4", 56, AP_MotionController, controlSettings[3][9], AP_MOTIONCONTROLLER_POS_MAXPOS),
+    AP_GROUPINFO("PMX4", 56, AP_MotionController, rc[3].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN4
     // @DisplayName: SERVO_MOCR_PMN4
@@ -556,7 +555,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN4", 57, AP_MotionController, controlSettings[3][10], AP_MOTIONCONTROLLER_POS_MINPOS),
+    AP_GROUPINFO("PMN4", 57, AP_MotionController, rc[3].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC4
     // @DisplayName: SERVO_MOCR_PAC4
@@ -565,7 +564,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS/S
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PAC4", 58, AP_MotionController, controlSettings[3][11], AP_MOTIONCONTROLLER_POS_ACCEL),
+    AP_GROUPINFO("PAC4", 58, AP_MotionController, rc[3].m2.acceleration, AP_MOTIONCONTROLLER_POS_ACCEL),
 
     // @Param: PVE4
     // @DisplayName: SERVO_MOCR_PVE4
@@ -574,21 +573,18 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QPPS
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PVE4", 59, AP_MotionController, controlSettings[3][12], AP_MOTIONCONTROLLER_POS_VEL),
-	
+    AP_GROUPINFO("PVE4", 59, AP_MotionController, rc[3].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
+
     AP_GROUPEND};
 
 AP_MotionController::AP_MotionController()
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
-    QPPM = QPPR / (2 * M_PI * Rw); // Quadrature pulses per meter
-    QPPRAD = QPPR / (2 * M_PI);    // Quadrature pulses per Radian
 }
 
 AP_MotionController::~AP_MotionController()
 {
-
 }
 
 void AP_MotionController::init(void)
@@ -596,6 +592,20 @@ void AP_MotionController::init(void)
     AP_SerialManager &serial_manager = AP::serialmanager();
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry, 0);
     roboclaw.init(port, 10000);
+    for (int i = 0; i < 4; i++)
+    {
+        roboclaw.ResetEncoders(rc[i].address);
+        roboclaw.SetEncM1(rc[i].address, 0);
+        roboclaw.SetEncM2(rc[i].address, 0);
+        //roboclaw.SetLogicVoltages(rc[i].address, 5, 34);
+        //roboclaw.SetMainVoltages(rc[i].address, 5, 34);
+        //roboclaw.SetM1MaxCurrent(rc[i].address, 15);
+        //roboclaw.SetM2MaxCurrent(rc[i].address, 15);
+        roboclaw.SetM1VelocityPID(rc[i].address, rc[i].m1.vel.kp, rc[i].m1.vel.ki, rc[i].m1.vel.kd, rc[i].m1.vel.qpps);
+        roboclaw.SetM2VelocityPID(rc[i].address, 0, 0, 0, 50); //TODO
+        roboclaw.SetM2PositionPID(rc[i].address, rc[i].m2.pos.kp, rc[i].m2.pos.ki, rc[i].m2.pos.kd, rc[i].m2.pos.maxi, rc[i].m2.pos.deadband, rc[i].m2.pos.minpos, rc[i].m2.pos.maxpos);
+        //roboclaw.WriteNVM(rc[i].address); // Store settings into EEPROM, TODO: read and compare if settings needs to be resaved
+    }
     //hal.console->printf("AP_MotionController initialized.\n");
     //gcs().send_text(MAV_SEVERITY_INFO, "AP_MotionController Initialized.");
 }
@@ -607,25 +617,88 @@ double AP_MotionController::constrain_map(double x, double in_min, double in_max
         x = in_min;
     else if (x > in_max)
         x = in_max;
-    //map the value from the scale (in_min->in_max) into scale (out_min->out_max)
+    //map the value from the in-scale (in_min->in_max) into out-scale (out_min->out_max)
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 void AP_MotionController::update(uint16_t steering, uint16_t throttle)
 {
     static int counter = 0;
-    uint32_t m1 = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(1)->get_output_min(), SRV_Channels::srv_channel(1)->get_output_max(), 0, 127);
-    uint32_t m2 = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(3)->get_output_min(), SRV_Channels::srv_channel(3)->get_output_max(), 0, 127);
-    roboclaw.ForwardBackwardM1(Address[0], m1);
-    roboclaw.ForwardBackwardM2(Address[0], m2);
-    //roboclaw.SpeedM1M2(Address[0], steering, throttle);
-    if (++counter >= 10) // Call every fifth of a second (50Hz calling rate)
+    const double QPPM = QPPR / (2 * M_PI * Rw); // Quadrature pulses per meter
+    const double QPPRAD = QPPR / (2 * M_PI);    // Quadrature pulses per Radian
+    // Convert the input steering and throttle value into angular and linear velocity respectively.
+    double v = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(1)->get_output_min(), SRV_Channels::srv_channel(1)->get_output_max(), -1, 1);
+    double w = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(3)->get_output_min(), SRV_Channels::srv_channel(3)->get_output_max(), -0.5236, 0.5236);
+    if (fabsf(w) <= 1e-5)
     {
-        //hal.console->printf("RC1:%d RC2:%d RC3:%d RC4:%d\n", (int)Address[0], (int)Address[1], (int)Address[2], (int)Address[3]);
-        //hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, m1, m2);
-        //port->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64()/1000.0, steering, throttle);
-        //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, steering, throttle);
-        DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,Steering,Throttle", "Qff", AP_HAL::micros64(), m1, m2);
+        //Velocity Setpoints (M1):
+        rc[0].m1.vel.setpoint = QPPM * v / Rw;
+        rc[1].m1.vel.setpoint = QPPM * v / Rw;
+        rc[2].m1.vel.setpoint = rc[0].m1.vel.setpoint;
+        rc[3].m1.vel.setpoint = rc[1].m1.vel.setpoint;
+        //Position/Angle Setpoints (M2):
+        rc[0].m2.pos.setpoint = 0;
+        rc[1].m2.pos.setpoint = 0;
+        rc[2].m2.pos.setpoint = 0;
+        rc[3].m2.pos.setpoint = 0;
+    }
+    else
+    {
+        //Velocity Setpoints (M1):
+        float Rins = fabsf(v / w);
+        rc[0].m1.vel.setpoint = QPPM * v * (2.0 / (Rw * Rins)) * powf((powf(Rins / 2.0 - Iy, 2.0) + powf(Ix / 2.0, 2.0)), 0.5);
+        rc[1].m1.vel.setpoint = QPPM * v * (2.0 / (Rw * Rins)) * powf((powf(Rins / 2.0 + Iy, 2.0) + powf(Ix / 2.0, 2.0)), 0.5);
+        rc[2].m1.vel.setpoint = rc[0].m1.vel.setpoint;
+        rc[3].m1.vel.setpoint = rc[1].m1.vel.setpoint;
+        //Position/Angle Setpoints (M2):
+        rc[0].m2.pos.setpoint = ((w > 0) ? 1 : -1) * QPPRAD * atan2f(Iy, Rins - Ix);
+        rc[1].m2.pos.setpoint = ((w > 0) ? 1 : -1) * QPPRAD * atan2f(Iy, Rins + Ix);
+        rc[2].m2.pos.setpoint = -rc[0].m2.pos.setpoint;
+        rc[3].m2.pos.setpoint = -rc[1].m2.pos.setpoint;
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        roboclaw.SpeedAccelM1(rc[i].address, rc[i].m1.acceleration, rc[i].m1.vel.setpoint);
+        roboclaw.SpeedAccelDeccelPositionM2(rc[i].address, rc[i].m2.acceleration, rc[i].m2.velocity, rc[i].m2.acceleration, rc[i].m2.pos.setpoint, 1);
+        //roboclaw.ForwardBackwardM1(rc[i].address, v);
+        //roboclaw.ForwardBackwardM2(rc[i].address, w);
+    }
+    if (++counter >= 10) // Call every fifth of a second (given 50Hz calling rate)
+    {
+        uint32_t tempUINT32;
+        uint16_t tempUINT16;
+        int16_t tempINT16_1, tempINT16_2;
+        for (int i = 0; i < 4; i++)
+        {
+            tempUINT32 = roboclaw.ReadSpeedM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
+            if (rc[i].m1.valid)
+                rc[i].m1.speed = tempUINT32;
+            tempUINT32 = roboclaw.ReadSpeedM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
+            if (rc[i].m2.valid)
+                rc[i].m2.speed = tempUINT32;
+            tempUINT32 = roboclaw.ReadEncM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
+            if (rc[i].m1.valid)
+                rc[i].m1.encoder = tempUINT32;
+            tempUINT32 = roboclaw.ReadEncM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
+            if (rc[i].m2.valid)
+                rc[i].m2.encoder = tempUINT32;
+            if (roboclaw.ReadCurrents(rc[i].address, tempINT16_1, tempINT16_2))
+            {
+                rc[i].m1.current = tempINT16_1;
+                rc[i].m2.current = tempINT16_2;
+            }
+            tempUINT16 = roboclaw.ReadMainBatteryVoltage(rc[i].address, &rc[i].m1.valid);
+            if (rc[i].m1.valid)
+                rc[i].batteryVoltage = tempUINT16;
+            tempUINT16 = roboclaw.ReadLogicBatteryVoltage(rc[i].address, &rc[i].m1.valid);
+            if (rc[i].m1.valid)
+                rc[i].logicVoltage = tempUINT16;
+            if (roboclaw.ReadTemp(rc[i].address, tempUINT16))
+                rc[i].temperature = tempUINT16;
+        }
+        //hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, v, w);
+        //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, v, w);
+        DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,AngVel,LinVel", "Qff", AP_HAL::micros64(), v, w);
         counter = 0;
     }
 }
