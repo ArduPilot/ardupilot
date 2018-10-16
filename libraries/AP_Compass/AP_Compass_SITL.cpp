@@ -8,7 +8,6 @@ extern const AP_HAL::HAL& hal;
 
 AP_Compass_SITL::AP_Compass_SITL()
     : _sitl(AP::sitl())
-    , _has_sample(false)
 {
     if (_sitl != nullptr) {
         _compass._setup_earth_field();
@@ -121,37 +120,14 @@ void AP_Compass_SITL::_timer()
         publish_raw_field(f, _compass_instance[i]);
         correct_field(f, _compass_instance[i]);
 
-        _mag_accum[i] += f;
-    }
-
-    WITH_SEMAPHORE(_sem);
-
-    _accum_count++;
-    if (_accum_count == 10) {
-        for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
-            _mag_accum[i] /= 2;
-        }
-        _accum_count = 5;
-        _has_sample = true;
+        accumulate_sample(f, _compass_instance[i], 10);
     }
 }
 
 void AP_Compass_SITL::read()
 {
-    WITH_SEMAPHORE(_sem);
-
-    if (!_has_sample) {
-        return;
-    }
-
     for (uint8_t i=0; i<SITL_NUM_COMPASSES; i++) {
-        Vector3f field(_mag_accum[i]);
-        field /= _accum_count;
-        _mag_accum[i].zero();
-        publish_filtered_field(field, _compass_instance[i]);
+        drain_accumulated_samples(_compass_instance[i], nullptr);
     }
-    _accum_count = 0;
-
-    _has_sample = false;
 }
 #endif
