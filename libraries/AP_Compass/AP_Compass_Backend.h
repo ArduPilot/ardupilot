@@ -112,10 +112,6 @@ protected:
     // semaphore for access to shared frontend data
     HAL_Semaphore_Recursive _sem;
 
-    // accumulated samples, protected by _sem
-    Vector3f    _accum;
-    uint32_t    _accum_count;
-
     // Check that the compass field is valid by using a mean filter on the vector length
     bool field_ok(const Vector3f &field);
     

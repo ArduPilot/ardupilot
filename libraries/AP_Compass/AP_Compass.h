@@ -454,6 +454,10 @@ private:
 
         // board specific orientation
         enum Rotation rotation;
+
+        // accumulated samples, protected by _sem, used by AP_Compass_Backend
+        Vector3f accum;
+        uint32_t accum_count;
     } _state[COMPASS_MAX_INSTANCES];
 
     AP_Int16 _offset_max;
