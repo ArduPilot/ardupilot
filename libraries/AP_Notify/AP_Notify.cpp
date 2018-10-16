@@ -147,6 +147,15 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
+#if !defined(HAL_BUZZER_PIN)
+    // @Param: BUZZ_ON_LVL
+    // @DisplayName: Buzzer-on pin logic level
+    // @Description: Specifies pin level that indicates buzzer should play
+    // @Values: 0:LowIsOn,1:HighIsOn
+    // @User: Advanced
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, 1),
+#endif
+
     AP_GROUPEND
 };
 
