@@ -19,15 +19,6 @@
 #include <DataFlash/DataFlash.h>
 #include "AP_MotionController.h"
 
-// @Param:
-// @DisplayName: SERVO_MOCR_
-// @Description:
-// @Range:
-// @Units: DN
-// @Increment: 1
-// @User: Advanced
-//AP_GROUPINFO("", , AP_MotionController, , 0),
-
 extern const AP_HAL::HAL &hal; // External reference for console debugging
 
 const AP_Param::GroupInfo AP_MotionController::var_info[] = {
@@ -575,7 +566,9 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PVE4", 59, AP_MotionController, rc[3].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
 
-    AP_GROUPEND};
+    AP_GROUPEND
+};
+
 
 AP_MotionController::AP_MotionController()
 {
@@ -627,9 +620,9 @@ void AP_MotionController::update(uint16_t steering, uint16_t throttle)
     const double QPPM = QPPR / (2 * M_PI * Rw); // Quadrature pulses per meter
     const double QPPRAD = QPPR / (2 * M_PI);    // Quadrature pulses per Radian
     // Convert the input steering and throttle value into angular and linear velocity respectively.
-    double v = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(1)->get_output_min(), SRV_Channels::srv_channel(1)->get_output_max(), -1, 1);
-    double w = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(3)->get_output_min(), SRV_Channels::srv_channel(3)->get_output_max(), -0.5236, 0.5236);
-    if (fabsf(w) <= 1e-5)
+    double w = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(1)->get_output_min(), SRV_Channels::srv_channel(1)->get_output_max(), -1, 1); // -1 to +1 m/sec
+    double v = AP_MotionController::constrain_map(throttle, SRV_Channels::srv_channel(3)->get_output_min(), SRV_Channels::srv_channel(3)->get_output_max(), -0.5236, 0.5236); // -30 to +30 deg/sec 
+    if (fabsf(w) <= FLT_EPSILON)
     {
         //Velocity Setpoints (M1):
         rc[0].m1.vel.setpoint = QPPM * v / Rw;
@@ -698,6 +691,7 @@ void AP_MotionController::update(uint16_t steering, uint16_t throttle)
         }
         //hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, v, w);
         //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, v, w);
+        // TODO: Time, Des_V, Des_W, V, W, Avg_Voltage, Total_Current, I1, I2, I3, I4, Temp1, Temp2, Temp3, Temp4
         DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,AngVel,LinVel", "Qff", AP_HAL::micros64(), v, w);
         counter = 0;
     }
