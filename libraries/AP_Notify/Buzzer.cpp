@@ -22,8 +22,13 @@
 #include "AP_Notify.h"
 
 #ifndef HAL_BUZZER_ON
- #define HAL_BUZZER_ON 1
- #define HAL_BUZZER_OFF 0 
+  #if !defined(HAL_BUZZER_PIN)
+    #define HAL_BUZZER_ON (pNotify->get_buzz_level())
+    #define HAL_BUZZER_OFF (!pNotify->get_buzz_level())
+  #else
+    #define HAL_BUZZER_ON 1
+    #define HAL_BUZZER_OFF 0 
+  #endif
 #endif
 
 
