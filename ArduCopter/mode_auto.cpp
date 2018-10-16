@@ -733,32 +733,6 @@ void Copter::ModeAuto::takeoff_run()
         const Vector3f target = wp_nav->get_wp_destination();
         wp_start(target);
     }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-    }
-
-    // aircraft stays in landed state until rotor speed runup has finished
-    if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
-        set_land_complete(false);
-    } else {
-        wp_nav->shift_wp_origin_to_current_pos();
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();
-
-    // call attitude controller
-    copter.auto_takeoff_attitude_run(target_yaw_rate);
 }
 
 // auto_wp_run - runs the auto waypoint controller
@@ -861,6 +835,7 @@ void Copter::ModeAuto::land_run()
     // if not auto armed or landed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
@@ -870,6 +845,7 @@ void Copter::ModeAuto::land_run()
     // if landed, spool down motors (disarm is handled in verify_land)
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);

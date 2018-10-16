@@ -109,6 +109,7 @@ bool Copter::ModePosHold::init(bool ignore_checks)
     }
 
     // initialise loiter
+    loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
 
     // initialise wind_comp each time PosHold is switched on
@@ -175,7 +176,7 @@ void Copter::ModePosHold::run()
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         loiter_nav->init_target();
-        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update();
 
         // set poshold state to pilot override
         poshold.roll_mode = POSHOLD_PILOT_OVERRIDE;
@@ -203,7 +204,7 @@ void Copter::ModePosHold::run()
 
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->init_target();
-        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update();
 
         // set position controller targets
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -222,7 +223,7 @@ void Copter::ModePosHold::run()
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
         loiter_nav->init_target();
-        loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+        loiter_nav->update();
         if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
             attitude_control->reset_rate_controller_I_terms();
             attitude_control->set_yaw_target_to_current_heading();
@@ -510,7 +511,7 @@ void Copter::ModePosHold::run()
                 poshold_update_brake_angle_from_velocity(poshold.brake_pitch, -vel_fw);
 
                 // run loiter controller
-                loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+                loiter_nav->update();
 
                 // calculate final roll and pitch output by mixing loiter and brake controls
                 poshold.roll = poshold_mix_controls(brake_to_loiter_mix, poshold.brake_roll + poshold.wind_comp_roll, loiter_nav->get_roll());
@@ -541,7 +542,7 @@ void Copter::ModePosHold::run()
 
             case POSHOLD_LOITER:
                 // run loiter controller
-                loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+                loiter_nav->update();
 
                 // set roll angle based on loiter controller outputs
                 poshold.roll = loiter_nav->get_roll();

@@ -61,6 +61,7 @@ void Copter::ModeLand::gps_run()
         } else {
             zero_throttle_and_hold_attitude();
         }  
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         pos_control->relax_alt_hold_controllers(0.0f);
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
@@ -73,6 +74,7 @@ void Copter::ModeLand::gps_run()
     // if landed, spool down motors and disarm
     if (ap.land_complete) {
         zero_throttle_and_hold_attitude();
+        loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         return;
