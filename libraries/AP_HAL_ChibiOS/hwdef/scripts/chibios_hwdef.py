@@ -177,7 +177,10 @@ class generic_pin(object):
         self.type = type
         self.extra = extra
         self.af = None
-        self.sig_dir = 'INPUT'
+        if type == 'OUTPUT':
+            self.sig_dir = 'OUTPUT'
+        else:
+            self.sig_dir = 'INPUT'
         if mcu_series == "STM32F100" and self.label is not None:
             self.f1_pin_setup()
 
