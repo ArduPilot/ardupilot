@@ -764,7 +764,7 @@ class AutoTestCopter(AutoTest):
 
         # wait until 100m from home
         try:
-            self.wait_distance(100, 5, 60)
+            self.wait_distance(100, 5, 90)
         except Exception as e:
             if self.use_map:
                 self.show_gps_and_sim_positions(False)
