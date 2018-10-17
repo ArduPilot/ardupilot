@@ -181,6 +181,15 @@ void AC_WPNav::set_speed_z(float speed_down_cms, float speed_up_cms)
     _flags.recalc_wp_leash = true;
 }
 
+/// set_accel_xy - allows main code to pass target horizontal acceleration for wp navigation
+void AC_WPNav::set_accel_xy(float accel_xy_cmss)
+{
+   _wp_accel_cmss = accel_xy_cmss;
+    _pos_control.set_max_accel_xy(_wp_accel_cmss);
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
+}
+
 /// set_wp_destination waypoint using location class
 ///     returns false if conversion from location to vector from ekf origin cannot be calculated
 bool AC_WPNav::set_wp_destination(const Location_Class& destination)
