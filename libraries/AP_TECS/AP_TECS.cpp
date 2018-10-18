@@ -852,7 +852,7 @@ void AP_TECS::_update_pitch(void)
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
     // During flare a different damping gain is used
     float gainInv = (_TAS_state * timeConstant() * GRAVITY_MSS);
-    float temp = SEB_error + SEBdot_dem * timeConstant();
+    float temp = SEB_error + 0.5*SEBdot_dem * timeConstant();
 
     float pitch_damp = _ptchDamp;
     if (_landing.is_flaring()) {
