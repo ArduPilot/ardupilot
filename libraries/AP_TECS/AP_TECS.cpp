@@ -249,6 +249,20 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
+    // @Param: PTCH_FF_V0
+    // @DisplayName: Baseline airspeed for pitch feed-forward.
+    // @Description: This parameter sets the airspeed at which no feed-forward is applied between demanded airspeed and pitch. It should correspond to the airspeed at which the plane glides at zero pitch.
+    // @Range 5.0 50.0
+    // @User: Advanced
+    AP_GROUPINFO("PTCH_FF_V0", 29, AP_TECS, _pitch_ff_v0, 12.0),
+
+    // @Param: PTCH_FF_K
+    // @DisplayName: Gain for pitch feed-forward.
+    // @Description: This parameter sets the gain between demanded airspeed and pitch. It should generally be negative.
+    // @Range -5.0 0.0
+    // @User: Advanced
+    AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
+    
     AP_GROUPEND
 };
 
@@ -885,6 +899,10 @@ void AP_TECS::_update_pitch(void)
 
     // Calculate pitch demand from specific energy balance signals
     _pitch_dem_unc = (temp + _integSEB_state) / gainInv;
+
+
+    // Add a feedforward term from demanded airspeed to pitch.
+    _pitch_dem_unc += (_TAS_dem_adj - _pitch_ff_v0) * _pitch_ff_k;
 
     // Constrain pitch demand
     _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);

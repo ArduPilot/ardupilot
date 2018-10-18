@@ -177,6 +177,9 @@ private:
         OPTION_GLIDER_ONLY=(1<<0),
     };
 
+    AP_Float _pitch_ff_v0;
+    AP_Float _pitch_ff_k;
+
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
     
