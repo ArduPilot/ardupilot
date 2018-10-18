@@ -82,14 +82,13 @@ public:
     void update_thermalling();
     void update_cruising();
     bool is_active() const;
+    void set_throttle_suppressed(bool suppressed);
+
     bool get_throttle_suppressed() const
     {
         return _throttle_suppressed;
     }
-    void set_throttle_suppressed(bool suppressed)
-    {
-        _throttle_suppressed = suppressed;
-    }
+
     float get_vario_reading() const
     {
         return _vario.displayed_reading;

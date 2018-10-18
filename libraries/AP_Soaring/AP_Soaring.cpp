@@ -151,12 +151,14 @@ bool SoaringController::suppress_throttle()
 
     if (_throttle_suppressed && (alt < alt_min)) {
         // Time to throttle up
-        _throttle_suppressed = false;
+        set_throttle_suppressed(false);
     } else if ((!_throttle_suppressed) && (alt > alt_cutoff)) {
         // Start glide
-        _throttle_suppressed = true;
+        set_throttle_suppressed(true);
+
         // Zero the pitch integrator - the nose is currently raised to climb, we need to go back to glide.
         _spdHgt.reset_pitch_I();
+
         _cruise_start_time_us = AP_HAL::micros64();
         // Reset the filtered vario rate - it is currently elevated due to the climb rate and would otherwise take a while to fall again,
         // leading to false positives.
@@ -229,10 +231,10 @@ void SoaringController::init_thermalling()
 
 void SoaringController::init_cruising()
 {
-    if (is_active() && suppress_throttle()) {
+    if (is_active()) {
         _cruise_start_time_us = AP_HAL::micros64();
         // Start glide. Will be updated on the next loop.
-        _throttle_suppressed = true;
+        set_throttle_suppressed(true);
     }
 }
 
@@ -332,4 +334,12 @@ bool SoaringController::is_active() const
     }
     // active when above 1700
     return RC_Channels::get_radio_in(soar_active_ch-1) >= 1700;
+}
+
+void SoaringController::set_throttle_suppressed(bool suppressed)
+{
+    _throttle_suppressed = suppressed;
+
+    // Let the TECS know.
+    _spdHgt.set_gliding_requested_flag(suppressed);
 }

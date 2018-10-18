@@ -456,16 +456,6 @@ void Plane::set_servos_controlled(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
             constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
     }
-
-#if SOARING_ENABLED == ENABLED
-    // suppress throttle when soaring is active
-    if ((control_mode == &mode_fbwb || control_mode == &mode_cruise ||
-        control_mode == &mode_auto || control_mode == &mode_loiter) &&
-        g2.soaring_controller.is_active() &&
-        g2.soaring_controller.get_throttle_suppressed()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
-    }
-#endif
 }
 
 /*
