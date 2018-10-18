@@ -1252,7 +1252,7 @@ class AutoTest(ABC):
                 # check for lambda: test_function without paranthesis
                 faulty_strings = re.findall(r"lambda\s*:\s*\w+.\w+\s*\)", f.read())
                 if faulty_strings:
-                    desc = ("Syntax error in autotest lamda at : " +
+                    desc = ("Syntax error in autotest lambda at : " +
                             faulty_strings)
                     raise ErrorException(desc)
         except ErrorException:
