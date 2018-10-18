@@ -768,7 +768,7 @@ void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
             return;
         }
 
-        float esc_amps = td.current;
+        float esc_amps = td.current * 0.01;
         backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
     }
 }
