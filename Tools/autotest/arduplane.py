@@ -184,8 +184,7 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            self.progress("Failed to maintain altitude")
-            raise NotAchievedException()
+            raise NotAchievedException("Failed to maintain altitude")
 
         self.progress("Completed Loiter OK")
 
@@ -214,8 +213,7 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            self.progress("Failed to maintain altitude")
-            raise NotAchievedException()
+            raise NotAchievedException("Failed to maintain altitude")
 
         self.progress("Completed CIRCLE OK")
 
@@ -234,8 +232,7 @@ class AutoTestPlane(AutoTest):
             if math.fabs(roll) <= accuracy and math.fabs(pitch) <= accuracy:
                 self.progress("Attained level flight")
                 return
-        self.progress("Failed to attain level flight")
-        raise NotAchievedException()
+        raise NotAchievedException("Failed to attain level flight")
 
     def change_altitude(self, altitude, accuracy=30):
         """Get to a given altitude."""
@@ -323,7 +320,7 @@ class AutoTestPlane(AutoTest):
             state = state_roll_over
             while state != state_done:
                 if self.get_sim_time() - tstart > 20:
-                    raise NotAchievedException()
+                    raise AutoTestTimeoutException("Manuevers not completed")
 
                 m = self.mav.recv_match(type='ATTITUDE',
                                         blocking=True,
@@ -347,14 +344,13 @@ class AutoTestPlane(AutoTest):
                     if self.get_sim_time() - hold_start > 10:
                         state = state_roll_back
                     if abs(r - target_roll_degrees) > 10:
-                        self.progress("Failed to hold attitude")
-                        raise NotAchievedException()
+                        raise NotAchievedException("Failed to hold attitude")
                 elif state == state_roll_back:
                     target_roll_degrees = 0
                     if abs(r - target_roll_degrees) < 10:
                         state = state_done
                 else:
-                    raise ValueError()
+                    raise ValueError("Unknown state %s" % str(state))
 
                 self.progress("%s Roll: %f desired=%f" %
                               (state, r, target_roll_degrees))
@@ -524,8 +520,7 @@ class AutoTestPlane(AutoTest):
         self.wait_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
-            self.progress("Failed to maintain altitude")
-            raise NotAchievedException()
+            raise NotAchievedException("Failed to maintain altitude")
 
         return self.wait_level_flight()
 
@@ -584,9 +579,8 @@ class AutoTestPlane(AutoTest):
             delta_time_min = 0.5
             delta_time_max = 1.5
             if delta_time < delta_time_min or delta_time > delta_time_max:
-                self.progress("Flaps Slew not working (%f seconds)" %
-                              (delta_time,))
-                raise NotAchievedException()
+                raise NotAchievedException((
+                    "Flaps Slew not working (%f seconds)" % (delta_time,)))
             # undeploy flaps:
             self.set_rc(flaps_ch, flaps_ch_min)
             self.wait_servo_channel_value(servo_ch, servo_ch_min)
@@ -639,25 +633,25 @@ class AutoTestPlane(AutoTest):
         '''test toggling channel 12 toggles relay'''
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
-            raise PreconditionFailedException()
+            raise PreconditionFailedException("SIM_MASK_PIN off")
         self.set_rc(12, 2000)
         self.mav.wait_heartbeat()
         self.mav.wait_heartbeat()
         on = self.get_parameter("SIM_PIN_MASK")
         if not on:
-            raise NotAchievedException()
+            raise NotAchievedException("SIM_PIN_MASK doesn't reflect ON")
         self.set_rc(12, 1000)
         self.mav.wait_heartbeat()
         self.mav.wait_heartbeat()
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
-            raise NotAchievedException()
+            raise NotAchievedException("SIM_PIN_MASK doesn't reflect OFF")
 
     def test_rc_option_camera_trigger(self):
         '''test toggling channel 12 takes picture'''
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
         if x is not None:
-            raise PreconditionFailedException()
+            raise PreconditionFailedException("Receiving CAMERA_FEEDBACK?!")
         self.set_rc(12, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 10:
@@ -667,7 +661,7 @@ class AutoTestPlane(AutoTest):
             self.mav.wait_heartbeat()
         self.set_rc(12, 1000)
         if x is None:
-            raise NotAchievedException()
+            raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
     def autotest(self):
         """Autotest ArduPlane in SITL."""

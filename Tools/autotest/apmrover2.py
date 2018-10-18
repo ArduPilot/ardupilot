@@ -197,7 +197,7 @@ class AutoTestRover(AutoTest):
             num_wp = self.save_mission_to_file(
                 os.path.join(testdir, "rover-ch7_mission.txt"))
             if num_wp != 6:
-                raise NotAchievedException()
+                raise NotAchievedException("Did not get 6 waypoints")
 
             # TODO: actually drive the mission
 
@@ -386,8 +386,7 @@ class AutoTestRover(AutoTest):
             if time.time() - start > 10:
                 break
 
-        self.progress("banner not received")
-        raise MsgRcvTimeoutException()
+        raise MsgRcvTimeoutException("banner not received")
 
     def drive_brake_get_stopping_distance(self, speed):
         # measure our stopping distance:
@@ -444,12 +443,11 @@ class AutoTestRover(AutoTest):
 
         delta = distance_without_brakes - distance_with_brakes
         if delta < distance_without_brakes * 0.05:  # 5% isn't asking for much
-            self.progress("Brakes have negligible effect"
-                          "(with=%0.2fm without=%0.2fm delta=%0.2fm)" %
-                          (distance_with_brakes,
-                           distance_without_brakes,
-                           delta))
-            raise NotAchievedException()
+            raise NotAchievedException("""
+Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
+""" % (distance_with_brakes,
+                   distance_without_brakes,
+                   delta))
 
         self.progress(
             "Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" %
@@ -470,13 +468,14 @@ class AutoTestRover(AutoTest):
                                 blocking=True,
                                 timeout=0.1)
         if m is None:
-            self.progress("Did not receive NAV_CONTROLLER_OUTPUT message")
-            raise MsgRcvTimeoutException()
+            raise MsgRcvTimeoutException(
+                "Did not receive NAV_CONTROLLER_OUTPUT message")
 
         wp_dist_min = 5
         if m.wp_dist < wp_dist_min:
-            self.progress("Did not start at least 5 metres from destination")
-            raise PreconditionFailedException()
+            raise PreconditionFailedException(
+                "Did not start at least %u metres from destination" %
+                (wp_dist_min))
 
         self.progress("NAV_CONTROLLER_OUTPUT.wp_dist looks good (%u >= %u)" %
                       (m.wp_dist, wp_dist_min,))
@@ -487,9 +486,9 @@ class AutoTestRover(AutoTest):
         home_distance = self.get_distance(HOME, pos)
         home_distance_max = 5
         if home_distance > home_distance_max:
-            self.progress("Did not get home (%u metres distant > %u)" %
-                          (home_distance, home_distance_max))
-            raise NotAchievedException()
+            raise NotAchievedException(
+                "Did not get home (%u metres distant > %u)" %
+                (home_distance, home_distance_max))
         self.mavproxy.send('switch 6\n')
         self.wait_mode('MANUAL')
         self.progress("RTL Mission OK")
@@ -500,8 +499,8 @@ class AutoTestRover(AutoTest):
         self.mavproxy.send("relay set 0 1\n")
         on = self.get_parameter("SIM_PIN_MASK")
         if on == off:
-            self.progress("Pin mask unchanged after relay command")
-            raise NotAchievedException()
+            raise NotAchievedException(
+                "Pin mask unchanged after relay cmd")
         self.progress("Pin mask changed after relay command")
 
     def test_setting_modes_via_mavproxy_switch(self):

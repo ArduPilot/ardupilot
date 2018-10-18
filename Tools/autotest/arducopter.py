@@ -214,13 +214,13 @@ class AutoTestCopter(AutoTest):
             alt_delta = math.fabs(m.alt - start_altitude)
             self.progress("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
             if alt_delta > maxaltchange:
-                self.progress("Loiter alt shifted %u meters (> limit of %u)" %
-                              (alt_delta, maxaltchange))
-                raise NotAchievedException()
+                raise NotAchievedException(
+                    "Loiter alt shifted %u meters (> limit %u)" %
+                    (alt_delta, maxaltchange))
             if delta > maxdistchange:
-                self.progress("Loiter shifted %u meters (> limit of %u)" %
+                raise NotAchievedException(
+                    "Loiter shifted %u meters (> limit of %u)" %
                               (delta, maxdistchange))
-                raise NotAchievedException()
         self.progress("Loiter OK for %u seconds" % holdtime)
 
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
@@ -350,8 +350,11 @@ class AutoTestCopter(AutoTest):
                           (alt, home_distance, home))
             # our post-condition is that we are disarmed:
             if not self.armed():
+                if home == "":
+                    raise NotAchievedException("Did not get home")
+                # success!
                 return
-        raise AutoTestTimeoutException()
+        raise AutoTestTimeoutException("Did not get home and disarm")
 
     def fly_throttle_failsafe(self, side=60, timeout=180):
         """Fly east, Failsafe, return, land."""
@@ -413,8 +416,6 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(3, 1000)
                 self.arm_vehicle()
                 return
-        self.progress("Failed to land on failsafe RTL - "
-                      "timed out after %u seconds" % timeout)
         # reduce throttle
         self.set_rc(3, 1100)
         # switch back to stabilize mode
@@ -422,7 +423,9 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LAND')
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
-        raise AutoTestTimeoutException()
+        raise AutoTestTimeoutException(
+            ("Failed to land on failsafe RTL - "
+             "timed out after %u seconds" % timeout))
 
     def fly_battery_failsafe(self, timeout=300):
         # switch to loiter mode so that we hold position
@@ -488,13 +491,13 @@ class AutoTestCopter(AutoTest):
             alt_delta = math.fabs(m.alt - start_altitude)
             self.progress("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
             if alt_delta > maxaltchange:
-                self.progress("Loiter alt shifted %u meters (> limit of %u)" %
-                              (alt_delta, maxaltchange))
-                raise NotAchievedException()
+                raise NotAchievedException(
+                    "Loiter alt shifted %u meters (> limit %u)" %
+                    (alt_delta, maxaltchange))
             if delta > maxdistchange:
-                self.progress("Loiter shifted %u meters (> limit of %u)" %
-                              (delta, maxdistchange))
-                raise NotAchievedException()
+                raise NotAchievedException(
+                    ("Loiter shifted %u meters (> limit of %u)" %
+                     (delta, maxdistchange)))
 
         # restore motor 1 to 100% efficiency
         self.set_parameter("SIM_ENGINE_MUL", 1.0)
@@ -567,9 +570,10 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LAND')
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
-        self.progress("Fence test failed to reach home - "
-                      "timed out after %u seconds" % timeout)
-        raise AutoTestTimeoutException()
+        self.progress()
+        raise AutoTestTimeoutException(
+            ("Fence test failed to reach home - "
+             "timed out after %u seconds" % timeout))
 
     # fly_alt_fence_test - fly up until you hit the fence
     def fly_alt_max_fence_test(self):
@@ -703,9 +707,9 @@ class AutoTestCopter(AutoTest):
                 moved_distance = self.get_distance(curr_pos, start_pos)
                 self.progress("Alt: %u  Moved: %.0f" % (alt, moved_distance))
                 if moved_distance > max_distance:
-                    self.progress("Moved over %u meters, Failed!" %
-                                  max_distance)
-                    raise NotAchievedException()
+                    self.progress()
+                    raise NotAchievedException(
+                        "Moved over %u meters, Failed!" % max_distance)
 
         # disable gps glitch
         if glitch_current != -1:
@@ -747,8 +751,7 @@ class AutoTestCopter(AutoTest):
         global num_wp
         num_wp = self.load_mission("copter_glitch_mission.txt")
         if not num_wp:
-            self.progress("load copter_glitch_mission failed")
-            raise NotAchievedException()
+            raise NotAchievedException("load copter_glitch_mission failed")
 
         # turn on simulator display of gps and actual position
         if self.use_map:
@@ -809,9 +812,9 @@ class AutoTestCopter(AutoTest):
         dist_to_home = self.get_distance(HOME, pos)
         while dist_to_home > 5:
             if self.get_sim_time() > (tstart + timeout):
-                self.progress("GPS Glitch testing failed"
-                              "- exceeded timeout %u seconds" % timeout)
-                raise AutoTestTimeoutException()
+                raise AutoTestTimeoutException(
+                    ("GPS Glitch testing failed"
+                     "- exceeded timeout %u seconds" % timeout))
 
             self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
@@ -988,8 +991,8 @@ class AutoTestCopter(AutoTest):
                 self.progress("%0.1f: Low Speed: %f" %
                               (self.get_sim_time_cached() - tstart, spd))
                 if spd > 8:
-                    self.progress("Speed should be limited by EKF optical flow limits")
-                    raise NotAchievedException()
+                    raise NotAchievedException(("Speed should be limited by"
+                                                "EKF optical flow limits"))
 
             self.progress("Moving higher")
             self.change_alt(60)
@@ -1028,9 +1031,9 @@ class AutoTestCopter(AutoTest):
                 # near enough for now:
                 return
 
-        self.progress("AUTOTUNE failed (%u seconds)" %
-                      (self.get_sim_time() - tstart))
-        raise NotAchievedException()
+        self.progress()
+        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
+                                   (self.get_sim_time() - tstart))
 
     # fly_auto_test - fly mission which tests a significant number of commands
     def fly_auto_test(self):
@@ -1040,8 +1043,7 @@ class AutoTestCopter(AutoTest):
         global num_wp
         num_wp = self.load_mission("copter_mission.txt")
         if not num_wp:
-            self.progress("load copter_mission failed")
-            raise NotAchievedException()
+            raise NotAchievedException("load copter_mission failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.mavproxy.send('wp set 1\n')
@@ -1075,8 +1077,7 @@ class AutoTestCopter(AutoTest):
         global num_wp
         num_wp = self.load_mission("copter_AVC2013_mission.txt")
         if not num_wp:
-            self.progress("load copter_AVC2013_mission failed")
-            raise NotAchievedException()
+            raise NotAchievedException("load copter_AVC2013_mission failed")
 
         self.progress("Fly AVC mission from 1 to %u" % num_wp)
         self.mavproxy.send('wp set 1\n')
@@ -1200,8 +1201,7 @@ class AutoTestCopter(AutoTest):
                 self.progress("----")
 
                 if alt_delta < -20:
-                    self.progress("Vehicle is descending")
-                    raise NotAchievedException()
+                    raise NotAchievedException("Vehicle is descending")
 
             self.set_parameter("SIM_ENGINE_FAIL", 0)
             self.set_parameter("SIM_ENGINE_MUL", 1.0)
@@ -1265,7 +1265,7 @@ class AutoTestCopter(AutoTest):
                     break
 
                 if self.get_sim_time() - tstart > 10:
-                    raise AutoTestTimeoutException()
+                    raise AutoTestTimeoutException("Did not get non-zero lat")
 
             self.takeoff()
             self.set_rc(1, 1600)
@@ -1281,7 +1281,7 @@ class AutoTestCopter(AutoTest):
                     break
 
                 if self.get_sim_time() - tstart > 100:
-                    raise AutoTestTimeoutException()
+                    raise AutoTestTimeoutException("Vicon showed no movement")
 
             # recenter controls:
             self.set_rc(1, 1500)
@@ -1291,7 +1291,7 @@ class AutoTestCopter(AutoTest):
             tstart = self.get_sim_time()
             while True:
                 if self.get_sim_time() - tstart > 200:
-                    raise NotAchievedException()
+                    raise NotAchievedException("Did not disarm")
                 self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                     blocking=True)
                 # print("gpi=%s" % str(gpi))
@@ -1340,7 +1340,7 @@ class AutoTestCopter(AutoTest):
             while self.armed(): # we RTL at end of mission
                 now = self.get_sim_time_cached()
                 if now - tstart > 120:
-                    raise AutoTestTimeoutException()
+                    raise AutoTestTimeoutException("Did not disarm as expected")
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
                 if ((now - last_mission_current_msg) > 1 or
                     m.seq != last_seq):
@@ -1364,7 +1364,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Stopped for %u seconds (want >=%u seconds)" %
                           (calculated_delay, want_delay))
             if calculated_delay < want_delay:
-                raise NotAchievedException()
+                raise NotAchievedException("Did not delay for long enough")
 
         except Exception as e:
             self.progress("Exception caught")
@@ -1462,7 +1462,8 @@ class AutoTestCopter(AutoTest):
             tstart = self.get_sim_time()
             while True:
                 if self.get_sim_time_cached() - tstart > 3:
-                    raise NotAchievedException()
+                    raise NotAchievedException(
+                        "Did not receive MISSION_REQUEST")
                 self.mav.mav.mission_write_partial_list_send(1,
                                                              1,
                                                              seq,
@@ -1481,9 +1482,9 @@ class AutoTestCopter(AutoTest):
             # we have to change out the delay time...
             now = self.mav.messages["SYSTEM_TIME"]
             if now is None:
-                raise PreconditionFailedException()
+                raise PreconditionFailedException("Never got SYSTEM_TIME")
             if now.time_unix_usec == 0:
-                raise PreconditionFailedException()
+                raise PreconditionFailedException("system time is zero")
             (hours, mins, secs, ms) = self.calc_delay(
                 now.time_unix_usec/1000000)
 
@@ -1543,7 +1544,7 @@ class AutoTestCopter(AutoTest):
             while self.armed(): # we RTL at end of mission
                 now = self.get_sim_time()
                 if now - tstart > 120:
-                    raise AutoTestTimeoutException()
+                    raise AutoTestTimeoutException("Did not disarm as expected")
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
                 self.progress("MISSION_CURRENT.seq=%u" % (m.seq,))
                 if m.seq == delay_item_seq:
@@ -1558,8 +1559,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Stopped for %u seconds (want >=%u seconds)" %
                           (calculated_delay, delay_for_seconds))
             if error > 2:
-                self.progress("Too far outside expectations")
-                raise NotAchievedException()
+                raise NotAchievedException("delay outside expectations")
 
         except Exception as e:
             self.progress("Exception caught")
@@ -1612,13 +1612,13 @@ class AutoTestCopter(AutoTest):
                         took_off = True
                         delta_time = now - reset_at
                         if abs(delta_time - delay_for_seconds) > 2:
-                            self.progress("Did not take off on time "
-                                          "measured=%f want=%f" %
-                                          (delta_time, delay_for_seconds))
-                            raise NotAchievedException()
+                            raise NotAchievedException((
+                                "Did not take off on time "
+                                "measured=%f want=%f" %
+                                (delta_time, delay_for_seconds)))
 
             if not took_off:
-                raise NotAchievedException()
+                raise NotAchievedException("Did not take off")
 
         except Exception as e:
             self.progress("Exception caught")
@@ -1731,7 +1731,7 @@ class AutoTestCopter(AutoTest):
             tstart = self.get_sim_time()
             while True:
                 if self.get_sim_time() - tstart > 200:
-                    raise NotAchievedException()
+                    raise NotAchievedException("Did not move far enough")
                 # send a position-control command
                 self.mav.mav.set_position_target_global_int_send(
                     0, # timestamp
@@ -1789,6 +1789,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)
+
             self.run_test("Fly Nav Delay (takeoff)",
                           self.fly_nav_takeoff_delay_abstime)
 
