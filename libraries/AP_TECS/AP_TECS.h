@@ -75,7 +75,7 @@ public:
 
     // return current target airspeed
     float get_target_airspeed(void) const override {
-        return _TAS_dem / _ahrs.get_EAS2TAS();
+        return _TAS_dem_adj / _ahrs.get_EAS2TAS();
     }
 
     // return maximum climb rate
