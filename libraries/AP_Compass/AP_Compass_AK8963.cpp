@@ -180,19 +180,7 @@ void AP_Compass_AK8963::read()
         return;
     }
 
-    if (_accum_count == 0) {
-        return;
-    }
-
-    Vector3f field;
-    {
-        WITH_SEMAPHORE(_sem);
-        field = Vector3f(_mag_x_accum, _mag_y_accum, _mag_z_accum) / _accum_count;
-        _mag_x_accum = _mag_y_accum = _mag_z_accum = 0;
-        _accum_count = 0;
-    }
-
-    publish_filtered_field(field, _compass_instance);
+    drain_accumulated_samples(_compass_instance);
 }
 
 void AP_Compass_AK8963::_make_adc_sensitivity_adjustment(Vector3f& field) const
@@ -234,27 +222,7 @@ void AP_Compass_AK8963::_update()
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK8963_MILLIGAUSS_SCALE;
 
-    // rotate raw_field from sensor frame to body frame
-    rotate_field(raw_field, _compass_instance);
-
-    // publish raw_field (uncorrected point sample) for calibration use
-    publish_raw_field(raw_field, _compass_instance);
-
-    // correct raw_field for known errors
-    correct_field(raw_field, _compass_instance);
-
-    WITH_SEMAPHORE(_sem);
-
-    _mag_x_accum += raw_field.x;
-    _mag_y_accum += raw_field.y;
-    _mag_z_accum += raw_field.z;
-    _accum_count++;
-    if (_accum_count == 10) {
-        _mag_x_accum /= 2;
-        _mag_y_accum /= 2;
-        _mag_z_accum /= 2;
-        _accum_count = 5;
-    }
+    accumulate_sample(raw_field, _compass_instance, 10);
 }
 
 bool AP_Compass_AK8963::_check_id()
