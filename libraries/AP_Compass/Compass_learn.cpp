@@ -6,16 +6,17 @@
 #include <DataFlash/DataFlash.h>
 
 #include "Compass_learn.h"
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
 
 // constructor
-CompassLearn::CompassLearn(AP_AHRS &_ahrs, Compass &_compass) :
-    ahrs(_ahrs),
+CompassLearn::CompassLearn(Compass &_compass) :
     compass(_compass)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
 }
 
 /*
@@ -23,6 +24,7 @@ CompassLearn::CompassLearn(AP_AHRS &_ahrs, Compass &_compass) :
  */
 void CompassLearn::update(void)
 {
+    const AP_AHRS &ahrs = AP::ahrs();
     if (converged || compass.get_learn_type() != Compass::LEARN_INFLIGHT ||
         !hal.util->get_soft_armed() || ahrs.get_time_flying_ms() < 3000) {
         // only learn when flying and with enough time to be clear of
@@ -70,6 +72,7 @@ void CompassLearn::update(void)
             errors[i] = intensity_gauss*1000;
         }
         
+        gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: have earth field");
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
 
@@ -119,6 +122,7 @@ void CompassLearn::update(void)
             compass.set_use_for_yaw(0, true);
             compass.set_learn_type(Compass::LEARN_EKF, true);
             converged = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
         }
     }
 }
