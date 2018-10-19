@@ -221,6 +221,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(auto_man_alt, "AUTO_MAN_ALT", AUTO_MAN_ALT),
 
+    // @Param: ENBL_CRS_LOCK
+    // @DisplayName: Enable Course Locked
+    // @Description: Flight mode developed by Aerospace Scannig Technologies AERSOCANTECH. Programmed by Systems Engineer ANDRES ARDILA SEDANO nick name a2sAndres.Allows course blocking (YAW) point in the direction next waypoint (no pilot input accepted)
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(enbl_crs_lock, "ENBL_CRS_LOCK", ENBL_CRS_LOCK),
+
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s

@@ -316,7 +316,6 @@ public:
         k_param_simple_modes,
         k_param_flight_mode_chan,
        
-
         //
         // 210: Waypoint data
         //
@@ -376,7 +375,7 @@ public:
         k_param_enbl_crs_lock, // activate enabled course locked func add a2sAndres
 
         // the k_param_* space is 9-bits in size
-        // 511: reserved
+        // 511: reserved        
     };
 
     AP_Int16        format_version;
@@ -437,9 +436,8 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-    AP_Int8         auto_man_alt;
+    AP_Int32        auto_man_alt;
     AP_Int8         enbl_crs_lock;
-
 
     // Misc
     //
