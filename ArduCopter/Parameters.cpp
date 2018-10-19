@@ -197,7 +197,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Compass enable/disable
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
     // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
+    // @User: Standard
     GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
     // @Param: SUPER_SIMPLE
@@ -220,13 +220,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     GSCALAR(auto_man_alt, "AUTO_MAN_ALT", AUTO_MAN_ALT),
-
-    // @Param: ENBL_CRS_LOCK
-    // @DisplayName: Enabled Course Locked 
-    // @Description: Parameter developed by Aerospace Scannig Technologies AERSOCANTECH. Programmed by Systems Engineer ANDRES ARDILA SEDANO nick name a2sAndres.point in the direction next waypoint (no pilot input accepted)
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(enbl_crs_lock, "ENBL_CRS_LOCK", ENBL_CRS_LOCK),
 
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
