@@ -39,6 +39,9 @@ void CompassLearn::update(void)
             return;
         }
 
+        // remember primary mag
+        primary_mag = compass.get_primary();
+
         // setup the expected earth field at this location
         float declination_deg=0, inclination_deg=0, intensity_gauss=0;
         AP_Declination::get_mag_field_ef(loc.lat*1.0e-7, loc.lng*1.0e-7, intensity_gauss, declination_deg, inclination_deg);
@@ -55,8 +58,8 @@ void CompassLearn::update(void)
         // form eliptical correction matrix and invert it. This is
         // needed to remove the effects of the eliptical correction
         // when calculating new offsets
-        const Vector3f &diagonals = compass.get_diagonals(0);
-        const Vector3f &offdiagonals = compass.get_offdiagonals(0);
+        const Vector3f &diagonals = compass.get_diagonals(primary_mag);
+        const Vector3f &offdiagonals = compass.get_offdiagonals(primary_mag);
         mat = Matrix3f(
             diagonals.x, offdiagonals.x, offdiagonals.y,
             offdiagonals.x,    diagonals.y, offdiagonals.z,
@@ -81,7 +84,7 @@ void CompassLearn::update(void)
         return;
     }
 
-    Vector3f field = compass.get_field(0);
+    Vector3f field = compass.get_field(primary_mag);
     Vector3f field_change = field - last_field;
     if (field_change.length() < min_field_change) {
         return;
@@ -91,7 +94,7 @@ void CompassLearn::update(void)
         WITH_SEMAPHORE(sem);
         // give a sample to the backend to process
         new_sample.field = field;
-        new_sample.offsets = compass.get_offsets(0);
+        new_sample.offsets = compass.get_offsets(primary_mag);
         new_sample.attitude = Vector3f(ahrs.roll, ahrs.pitch, ahrs.yaw);
         sample_available = true;
         last_field = field;
@@ -113,13 +116,30 @@ void CompassLearn::update(void)
     if (!converged) {
         WITH_SEMAPHORE(sem);
 
+        // set offsets to current best guess
+        compass.set_offsets(primary_mag, best_offsets);
+
+        // set non-primary offsets to match primary
+        Vector3f field_primary = compass.get_field(primary_mag);
+        for (uint8_t i=0; i<compass.get_count(); i++) {
+            if (i == primary_mag || !compass._state[i].use_for_yaw) {
+                continue;
+            }
+            Vector3f field2 = compass.get_field(i);
+            Vector3f new_offsets = compass.get_offsets(i) + (field_primary - field2);
+            compass.set_offsets(i, new_offsets);
+        }
+
         // stop updating the offsets once converged
-        compass.set_offsets(0, best_offsets);
         if (num_samples > 30 && best_error < 50 && worst_error > 65) {
             // set the offsets and enable compass for EKF use. Let the
             // EKF learn the remaining compass offset error
-            compass.save_offsets(0);
-            compass.set_use_for_yaw(0, true);
+            for (uint8_t i=0; i<compass.get_count(); i++) {
+                if (compass._state[i].use_for_yaw) {
+                    compass.save_offsets(i);
+                    compass.set_use_for_yaw(i, true);
+                }
+            }
             compass.set_learn_type(Compass::LEARN_EKF, true);
             converged = true;
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
