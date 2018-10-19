@@ -101,6 +101,13 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PORT",  8, AP_BLHeli, control_port, 0),
     
+    // @Param: POLES
+    // @DisplayName: Motor Poles
+    // @Description: This allows calculation of true RPM from ESC's eRPM. The default is 14.
+    // @Values: 1-127
+    // @User: Advanced
+    AP_GROUPINFO("POLES",  9, AP_BLHeli, motor_poles, 14),
+    
     AP_GROUPEND
 };
 
@@ -1327,7 +1334,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     td.voltage = (buf[1]<<8) | buf[2];
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
-    td.rpm = (buf[7]<<8) | buf[8];
+    td.rpm = ((buf[7]<<8) | buf[8]) * motor_poles;
     td.timestamp_ms = AP_HAL::millis();
 
     last_telem[last_telem_esc] = td;
