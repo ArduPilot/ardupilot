@@ -53,10 +53,6 @@ private:
     AP_AK8963_BusDriver *_bus;
 
     float _magnetometer_ASA[3] {0, 0, 0};
-    float _mag_x_accum;
-    float _mag_y_accum;
-    float _mag_z_accum;
-    uint32_t _accum_count;
 
     uint8_t _compass_instance;
     bool _initialized;
