@@ -141,7 +141,16 @@ void CompassLearn::update(void)
                 }
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);
-            converged = true;
+            // setup so use can trigger it again
+            converged = false;
+            sample_available = false;
+            num_samples = 0;
+            have_earth_field = false;
+            memset(predicted_offsets, 0, sizeof(predicted_offsets));
+            worst_error = 0;
+            best_error = 0;
+            best_yaw_deg = 0;
+            best_offsets.zero();
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
         }
     }
