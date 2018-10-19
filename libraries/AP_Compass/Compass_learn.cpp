@@ -140,7 +140,7 @@ void CompassLearn::update(void)
                     compass.set_use_for_yaw(i, true);
                 }
             }
-            compass.set_learn_type(Compass::LEARN_EKF, true);
+            compass.set_learn_type(Compass::LEARN_NONE, true);
             converged = true;
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
         }
