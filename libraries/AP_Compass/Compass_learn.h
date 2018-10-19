@@ -51,6 +51,7 @@ private:
     float best_yaw_deg;
     float worst_error;
     bool converged;
+    uint8_t primary_mag;
 
     void io_timer(void);
     void process_sample(const struct sample &s);
