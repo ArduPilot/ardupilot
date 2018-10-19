@@ -29,7 +29,7 @@ sudo resize2fs /dev/sda1
 usermod -a -G dialout $VAGRANT_USER
 
 echo "calling pre-reqs script..."
-/vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+sudo -H -u $VAGRANT_USER /vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
 echo "...pre-reqs script done... initvagrant.sh continues."
 
 # run-in-terminal-window uses xterm:
