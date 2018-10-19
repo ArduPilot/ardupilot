@@ -315,6 +315,7 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+       
 
         //
         // 210: Waypoint data
@@ -369,6 +370,10 @@ public:
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
+
+        // Semi auto mode param
+        k_param_auto_man_alt = 256, // activate semi auto mode add a2sAndres
+        k_param_enbl_crs_lock, // activate enabled course locked func add a2sAndres
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -432,6 +437,9 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
+    AP_Int8         auto_man_alt;
+    AP_Int8         enbl_crs_lock;
+
 
     // Misc
     //

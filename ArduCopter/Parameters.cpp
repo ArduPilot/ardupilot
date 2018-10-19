@@ -197,7 +197,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Compass enable/disable
     // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass
     // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
+    // @User: Advanced
     GSCALAR(compass_enabled,        "MAG_ENABLE",   MAGNETOMETER),
 
     // @Param: SUPER_SIMPLE
@@ -213,6 +213,20 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
+
+    // @Param: AUTO_MAN_ALT
+    // @DisplayName: Auto Manual Altitude Control
+    // @Description: Flight mode developed by Aerospace Scannig Technologies AERSOCANTECH. Programmed by Systems Engineer ANDRES ARDILA SEDANO nick name a2sAndres.This flight mode is based on the Auto and Alt_hold flight modes, which allows manual altitude control.While entering the height control the aircraft stops.it re starts the forward advance by giving it pitch input and continuing with the flight plan
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(auto_man_alt, "AUTO_MAN_ALT", AUTO_MAN_ALT),
+
+    // @Param: ENBL_CRS_LOCK
+    // @DisplayName: Enabled Course Locked 
+    // @Description: Parameter developed by Aerospace Scannig Technologies AERSOCANTECH. Programmed by Systems Engineer ANDRES ARDILA SEDANO nick name a2sAndres.point in the direction next waypoint (no pilot input accepted)
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(enbl_crs_lock, "ENBL_CRS_LOCK", ENBL_CRS_LOCK),
 
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
