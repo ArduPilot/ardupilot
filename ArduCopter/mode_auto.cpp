@@ -56,7 +56,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void Copter::ModeAuto::run()
 {
-	 // call the correct auto controller
+	// call the correct auto controller
     switch (_mode) {
 
     case Auto_TakeOff:
@@ -202,8 +202,7 @@ void Copter::ModeAuto::wp_start(const Location_Class& dest_loc)
     // send target to waypoint controller
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
-        //copter.failsafe_terrain_on_event();
-        copter.failsafe_disable();
+        copter.failsafe_terrain_on_event();
         return;
     }
 
@@ -773,7 +772,7 @@ void Copter::ModeAuto::wp_run()
         return;
     }
     float target_yaw_rate = 0;
-     
+
     //Enable course locked add a2sandres
     if (g.enbl_crs_lock == 1) {
         if (!copter.failsafe.radio) {
@@ -784,27 +783,26 @@ void Copter::ModeAuto::wp_run()
             }
         }
     }
-    else{
-       if (!copter.failsafe.radio) {
-          // get pilot's desired yaw rate
-          target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-          if (!is_zero(target_yaw_rate)) {
-              auto_yaw.set_mode(AUTO_YAW_HOLD);
-          }
-       }
+    else {
+        if (!copter.failsafe.radio) {
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+            if (!is_zero(target_yaw_rate)) {
+                auto_yaw.set_mode(AUTO_YAW_HOLD);
+            }
+        }
     }
-    
+
    // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller 
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());  
       
-       // cambio canales
+     // mode semi auto
     if (g.auto_man_alt == 1) {
-        // hal.console->printf("Parametro  esta activo\n");
-
-         // get pilot desired climb rate alt control Alt_Hold add a2sAndres
+        
+        // get pilot desired climb rate alt control Alt_Hold add a2sAndres
         float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
@@ -820,19 +818,18 @@ void Copter::ModeAuto::wp_run()
             //Re initialise wpnav targets after stopping when giving control of alt
             wp_nav->shift_wp_origin_to_current_pos();
         }
-
+        
         // call attitude controller
-        //attitude Alt_Hold add a2sAndres
+        // attitude Alt_Hold add a2sAndres
         pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
         pos_control->set_accel_z(g.pilot_accel_z);
         pos_control->set_alt_target_to_current_alt();
-        //change (inertial_nav.get_velocity_z ()) by (target_climb_rate) to add more control to the alt add a2sAndres
+        // change (inertial_nav.get_velocity_z ()) by (target_climb_rate) to add more control to the alt add a2sAndres
         pos_control->set_desired_velocity_z(target_climb_rate);
 
         // call position controller Alt_Hold add a2sAndres
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-
 
         // adjust climb rate using rangefinder Alt_Hold add a2sAndres
         if (copter.rangefinder_alt_ok()) {
@@ -842,9 +839,6 @@ void Copter::ModeAuto::wp_run()
 
         // update altitude target and call position controller Alt_Hold add a2sAndres
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
-
-        // call z-axis position controller (wpnav should have already updated it's alt target)
-        pos_control->update_z_controller();
     }
         
     // call z-axis position controller (wpnav should have already updated it's alt target)
@@ -868,10 +862,9 @@ void Copter::ModeAuto::wp_run()
         }
         else {
             // roll, pitch from waypoint controller, yaw heading from auto_heading()
-            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
-        }    
+            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+        }
     }
-    
 }
 
 // auto_spline_run - runs the auto spline controller
@@ -894,7 +887,7 @@ void Copter::ModeAuto::spline_run()
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-           auto_yaw.set_mode(AUTO_YAW_HOLD);            
+            auto_yaw.set_mode(AUTO_YAW_HOLD);            
         }
     }
 
@@ -909,7 +902,7 @@ void Copter::ModeAuto::spline_run()
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-       // roll & pitch from waypoint controller, yaw rate from pilot
+        // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
