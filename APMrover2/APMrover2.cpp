@@ -302,6 +302,10 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+
+    // need to set "likely flying" when armed to allow for compass
+    // learning to run
+    ahrs.set_likely_flying(hal.util->get_soft_armed());
 }
 
 void Rover::update_GPS(void)
