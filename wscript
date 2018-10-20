@@ -512,7 +512,7 @@ def _build_dynamic_sources(bld):
     if bld.get_board().with_uavcan or bld.env.HAL_WITH_UAVCAN==True:
         bld(
             features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* uavcan_vendor_specific_types/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/uavcan/dsdl/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
