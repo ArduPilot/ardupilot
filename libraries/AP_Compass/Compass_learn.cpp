@@ -79,6 +79,8 @@ void CompassLearn::update(void)
         hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&CompassLearn::io_timer, void));
     }
 
+    AP_Notify::flags.compass_cal_running = true;
+
     if (sample_available) {
         // last sample still being processed by IO thread
         return;
@@ -152,6 +154,8 @@ void CompassLearn::update(void)
             best_yaw_deg = 0;
             best_offsets.zero();
             gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: finished");
+            AP_Notify::flags.compass_cal_running = false;
+            AP_Notify::events.compass_cal_saved = true;
         }
     }
 }
