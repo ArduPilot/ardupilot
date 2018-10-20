@@ -49,6 +49,7 @@ public:
         BEBOP = 3,
         CXOF = 4,
         MAVLINK = 5,
+        UAVCAN = 6,
         SITL = 10
     };
 
