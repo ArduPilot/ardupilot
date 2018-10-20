@@ -141,9 +141,9 @@ public:
         MOTOR_ESTOP =         31, // Emergency Stop Switch
         MOTOR_INTERLOCK =     32, // Motor On/Off switch
         BRAKE =               33, // Brake flight mode
-        RELAY2 =              34, // Relay2 pin on/off (in Mission planner set RC8_OPTION  = 34)
-        RELAY3 =              35, // Relay3 pin on/off (in Mission planner set RC9_OPTION  = 35)
-        RELAY4 =              36, // Relay4 pin on/off (in Mission planner set RC10_OPTION = 36)
+        RELAY2 =              34, // Relay2 pin on/off
+        RELAY3 =              35, // Relay3 pin on/off
+        RELAY4 =              36, // Relay4 pin on/off
         THROW =               37,  // change to THROW flight mode
         AVOID_ADSB =          38,  // enable AP_Avoidance library
         PRECISION_LOITER =    39,  // enable precision loiter
