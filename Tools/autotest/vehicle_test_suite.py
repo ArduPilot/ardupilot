@@ -5899,10 +5899,6 @@ class TestSuite(abc.ABC):
         out_trim = int(self.get_parameter("RC%u_TRIM" % chan))
         self.set_rc(chan, out_trim)
 
-    def get_stick_arming_channel(self):
-        """Return the Rudder channel number as set in parameter."""
-        raise ErrorException("Rudder parameter is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
-
     def get_disarm_delay(self):
         """Return disarm delay value."""
         raise ErrorException("Disarm delay is not supported by vehicle %s frame %s", (self.vehicleinfo_key(), self.frame))
@@ -5933,6 +5929,22 @@ class TestSuite(abc.ABC):
             verbose=True,
             timeout=30
         )
+
+    def max_rc_channels(self):
+        return 16
+
+    def rc_option_value_for_arming_channel(self):
+        return 204
+
+    def get_stick_arming_channel(self):
+        option = self.rc_option_value_for_arming_channel()
+        for i in range(1, self.max_rc_channels() + 1):
+            v = self.get_parameter("RC%u_OPTION" % i)
+            self.progress("v=%u" % v)
+            if v == option:
+                self.progress("yaw is on channel %u" % i)
+                return i
+        raise PreconditionFailedException("No stick arming channel configured")
 
     def armed(self, cached=False):
         """Return True if vehicle is armed and safetyoff"""
