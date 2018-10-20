@@ -78,9 +78,9 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
-    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 28:Relay On/Off, 30:Lost Rover Sound, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple
-    // @Values{Plane}: 0:Do Nothing, 9:Camera Trigger, 28:Relay On/Off, 34:Relay2 On/Off, 30:Lost Plane Sound, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 58:Clear Waypoints
+    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 37:Throw, 38:ADSB-Avoidance, 39:PrecLoiter, 40:Object Avoidance, 41:ArmDisarm, 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 45:WinchControl, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 7:Save WP, 9:Camera Trigger, 16:Auto, 28:Relay On/Off, 30:Lost Rover Sound, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple, 62:Compass Learn
+    // @Values{Plane}: 0:Do Nothing, 9:Camera Trigger, 28:Relay On/Off, 34:Relay2 On/Off, 30:Lost Plane Sound, 35:Relay3 On/Off, 36:Relay4 On/Off, 41:ArmDisarm, 43:InvertedFlight, 46:RC Override Enable, 58:Clear Waypoints, 62:Compass Learn
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
 
@@ -435,6 +435,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case LOST_VEHICLE_SOUND:
     case DO_NOTHING:
     case CLEAR_WP:
+    case COMPASS_LEARN:
         break;
     case GRIPPER:
     case SPRAYER:
@@ -614,6 +615,13 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
     case LOST_VEHICLE_SOUND:
         do_aux_function_lost_vehicle_sound(ch_flag);
+        break;
+
+    case COMPASS_LEARN:
+        if (ch_flag == HIGH) {
+            Compass &compass = AP::compass();
+            compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
+        }
         break;
 
     default:
