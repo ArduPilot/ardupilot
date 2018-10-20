@@ -122,14 +122,14 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VKD1", 10, AP_MotionController, rc[0].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
-    // @Param: VQP1
-    // @DisplayName: SERVO_MOCR_VQP1
-    // @Description: Velocity controller qudrature pulses per seconds for first roboclaw
-    // @Range: 0 1e6
-    // @Units: DN
-    // @Increment: 1
+    // @Param: VMAX
+    // @DisplayName: SERVO_MOCR_VMAX
+    // @Description: Maximum velocity limit of the speed controller
+    // @Range: 0 100
+    // @Units: m/Sec
+    // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VQP1", 11, AP_MotionController, rc[0].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("VMAX", 11, AP_MotionController, Vmax, AP_MOTIONCONTROLLER_VMAX),
 
     // @Param: PKP1
     // @DisplayName: SERVO_MOCR_PKP1
@@ -174,7 +174,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB1", 16, AP_MotionController, rc[0].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
+    // <<<<<<<<<<AP_GROUPINFO("PDB1", 16, AP_MotionController, rc[0].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX1
     // @DisplayName: SERVO_MOCR_PMX1
@@ -183,7 +183,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX1", 17, AP_MotionController, rc[0].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMX1", 17, AP_MotionController, rc[0].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN1
     // @DisplayName: SERVO_MOCR_PMN1
@@ -192,7 +192,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN1", 18, AP_MotionController, rc[0].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMN1", 18, AP_MotionController, rc[0].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC1
     // @DisplayName: SERVO_MOCR_PAC1
@@ -240,14 +240,14 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VKD2", 23, AP_MotionController, rc[1].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
-    // @Param: VQP2
-    // @DisplayName: SERVO_MOCR_VQP2
-    // @Description: Velocity controller qudrature pulses per seconds for second roboclaw
-    // @Range: 0 1e6
-    // @Units: DN
+    // @Param: AMAX
+    // @DisplayName: SERVO_MOCR_AMAX
+    // @Description: Maximum steering angle of the motors
+    // @Range: 0 45
+    // @Units: Degree
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("VQP2", 24, AP_MotionController, rc[1].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("AMAX", 24, AP_MotionController, Amax, AP_MOTIONCONTROLLER_AMAX),
 
     // @Param: PKP2
     // @DisplayName: SERVO_MOCR_PKP2
@@ -292,7 +292,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB2", 29, AP_MotionController, rc[1].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
+    // <<<<<<<<<<AP_GROUPINFO("PDB2", 29, AP_MotionController, rc[1].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX2
     // @DisplayName: SERVO_MOCR_PMX2
@@ -301,7 +301,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX2", 30, AP_MotionController, rc[1].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMX2", 30, AP_MotionController, rc[1].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN2
     // @DisplayName: SERVO_MOCR_PMN2
@@ -310,7 +310,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN2", 31, AP_MotionController, rc[1].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMN2", 31, AP_MotionController, rc[1].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC2
     // @DisplayName: SERVO_MOCR_PAC2
@@ -358,14 +358,14 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VKD3", 36, AP_MotionController, rc[2].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
-    // @Param: VQP3
-    // @DisplayName: SERVO_MOCR_VQP3
-    // @Description: Velocity controller qudrature pulses per seconds for third roboclaw
-    // @Range: 0 1e6
-    // @Units: DN
-    // @Increment: 1
+    // @Param: DZON
+    // @DisplayName: SERVO_MOCR_DZON
+    // @Description: Deadzone area around the center position of the joystick (%age of output range)
+    // @Range: 0 100
+    // @Units: %age
+    // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VQP3", 37, AP_MotionController, rc[2].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("DZON", 37, AP_MotionController, DZ, AP_MOTIONCONTROLLER_DEADZONE),
 
     // @Param: PKP3
     // @DisplayName: SERVO_MOCR_PKP3
@@ -410,7 +410,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB3", 42, AP_MotionController, rc[2].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
+    // <<<<<<<<<<AP_GROUPINFO("PDB3", 42, AP_MotionController, rc[2].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX3
     // @DisplayName: SERVO_MOCR_PMX3
@@ -419,7 +419,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX3", 43, AP_MotionController, rc[2].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMX3", 43, AP_MotionController, rc[2].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN3
     // @DisplayName: SERVO_MOCR_PMN3
@@ -428,7 +428,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN3", 44, AP_MotionController, rc[2].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMN3", 44, AP_MotionController, rc[2].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC3
     // @DisplayName: SERVO_MOCR_PAC3
@@ -476,14 +476,14 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("VKD4", 49, AP_MotionController, rc[3].m1.vel.kd, AP_MOTIONCONTROLLER_VEL_KD),
 
-    // @Param: VQP4
-    // @DisplayName: SERVO_MOCR_VQP4
-    // @Description: Velocity controller qudrature pulses per seconds for fourth roboclaw
-    // @Range: 0 1e6
-    // @Units: DN
-    // @Increment: 1
+    // @Param: WMAX
+    // @DisplayName: SERVO_MOCR_WMAX
+    // @Description: Maximum robot angular velocity
+    // @Range: 0 360
+    // @Units: deg/sec
+    // @Increment: 0.001
     // @User: Advanced
-    AP_GROUPINFO("VQP4", 50, AP_MotionController, rc[3].m1.vel.qpps, AP_MOTIONCONTROLLER_VEL_QPPS),
+    AP_GROUPINFO("WMAX", 50, AP_MotionController, Wmax, AP_MOTIONCONTROLLER_WMAX),
 
     // @Param: PKP4
     // @DisplayName: SERVO_MOCR_PKP4
@@ -528,7 +528,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: DN
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PDB4", 55, AP_MotionController, rc[3].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
+    // <<<<<<<<<<AP_GROUPINFO("PDB4", 55, AP_MotionController, rc[3].m2.pos.deadband, AP_MOTIONCONTROLLER_POS_DEADBAND),
 
     // @Param: PMX4
     // @DisplayName: SERVO_MOCR_PMX4
@@ -537,7 +537,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMX4", 56, AP_MotionController, rc[3].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMX4", 56, AP_MotionController, rc[3].m2.pos.maxpos, AP_MOTIONCONTROLLER_POS_MAXPOS),
 
     // @Param: PMN4
     // @DisplayName: SERVO_MOCR_PMN4
@@ -546,7 +546,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @Units: QP
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PMN4", 57, AP_MotionController, rc[3].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
+    // <<<<<<<<<<AP_GROUPINFO("PMN4", 57, AP_MotionController, rc[3].m2.pos.minpos, AP_MOTIONCONTROLLER_POS_MINPOS),
 
     // @Param: PAC4
     // @DisplayName: SERVO_MOCR_PAC4
@@ -566,9 +566,7 @@ const AP_Param::GroupInfo AP_MotionController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PVE4", 59, AP_MotionController, rc[3].m2.velocity, AP_MOTIONCONTROLLER_POS_VEL),
 
-    AP_GROUPEND
-};
-
+    AP_GROUPEND};
 
 AP_MotionController::AP_MotionController()
 {
@@ -585,25 +583,35 @@ void AP_MotionController::init(void)
     AP_SerialManager &serial_manager = AP::serialmanager();
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry, 0);
     roboclaw.init(port, 10000);
+
+    const double qppr = QPPR.get();
+    const double qpps_vmax = Vmax.get() * qppr / (2 * M_PI * Rw.get()); // Maximum linear velocity interm of qpps
+    const double qp_amax = Amax.get() * DEG_TO_RAD * qppr / (2 * M_PI); // Maximum angle interm of quadratur pulses (qp)
+    const double dz = DZ.get() * qp_amax / 100.0;                       // Dead zone around target position
+
     for (int i = 0; i < 4; i++)
     {
-        roboclaw.ResetEncoders(rc[i].address);
-        roboclaw.SetEncM1(rc[i].address, 0);
-        roboclaw.SetEncM2(rc[i].address, 0);
-        //roboclaw.SetLogicVoltages(rc[i].address, 5, 34);
-        //roboclaw.SetMainVoltages(rc[i].address, 5, 34);
-        //roboclaw.SetM1MaxCurrent(rc[i].address, 15);
-        //roboclaw.SetM2MaxCurrent(rc[i].address, 15);
-        roboclaw.SetM1VelocityPID(rc[i].address, rc[i].m1.vel.kp, rc[i].m1.vel.ki, rc[i].m1.vel.kd, rc[i].m1.vel.qpps);
-        roboclaw.SetM2VelocityPID(rc[i].address, 0, 0, 0, 50); //TODO
-        roboclaw.SetM2PositionPID(rc[i].address, rc[i].m2.pos.kp, rc[i].m2.pos.ki, rc[i].m2.pos.kd, rc[i].m2.pos.maxi, rc[i].m2.pos.deadband, rc[i].m2.pos.minpos, rc[i].m2.pos.maxpos);
-        //roboclaw.WriteNVM(rc[i].address); // Store settings into EEPROM, TODO: read and compare if settings needs to be resaved
+        rc[i].m1.vel.qpps = qpps_vmax;
+        rc[i].m2.pos.minpos = -qp_amax;
+        rc[i].m2.pos.maxpos = qp_amax;
+        rc[i].m2.pos.deadzone = dz;
+        roboclaw.ResetEncoders(rc[i].address.get());
+        roboclaw.SetEncM1(rc[i].address.get(), 0);
+        roboclaw.SetEncM2(rc[i].address.get(), 0);
+        //roboclaw.SetLogicVoltages(rc[i].address.get(), 5, 34);
+        //roboclaw.SetMainVoltages(rc[i].address.get(), 5, 34);
+        //roboclaw.SetM1MaxCurrent(rc[i].address.get(), 15);
+        //roboclaw.SetM2MaxCurrent(rc[i].address.get(), 15);
+        roboclaw.SetM1VelocityPID(rc[i].address.get(), rc[i].m1.vel.kp.get(), rc[i].m1.vel.ki.get(), rc[i].m1.vel.kd.get(), rc[i].m1.vel.qpps);
+        roboclaw.SetM2VelocityPID(rc[i].address.get(), 0, 0, 0, 50); //TODO
+        roboclaw.SetM2PositionPID(rc[i].address.get(), rc[i].m2.pos.kp.get(), rc[i].m2.pos.ki.get(), rc[i].m2.pos.kd.get(), rc[i].m2.pos.maxi.get(), rc[i].m2.pos.deadzone, rc[i].m2.pos.minpos, rc[i].m2.pos.maxpos);
+        //roboclaw.WriteNVM(rc[i].address.get()); // Store settings into EEPROM, TODO: read and compare if settings needs to be resaved
     }
     //hal.console->printf("AP_MotionController initialized.\n");
     //gcs().send_text(MAV_SEVERITY_INFO, "AP_MotionController Initialized.");
 }
 
-double AP_MotionController::constrain_map(double x, double in_min, double in_max, double out_min, double out_max)
+double AP_MotionController::constrain_map_deadzone(double x, double in_min, double in_max, double out_min, double out_max, double out_dz)
 {
     //constrain the input value between in_min and in_max
     if (x < in_min)
@@ -611,88 +619,101 @@ double AP_MotionController::constrain_map(double x, double in_min, double in_max
     else if (x > in_max)
         x = in_max;
     //map the value from the in-scale (in_min->in_max) into out-scale (out_min->out_max)
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    double out_range = out_max - out_min;
+    double in_range = in_max - in_min;
+    double out_mid = (out_min + out_max) / 2.0;
+    double out = (x - in_min) * (out_range / in_range) + out_min;
+    // Check and apply the deadzone limit (%age of the output range)
+    out = (fabsf(out - out_mid) <= (out_dz * out_range / 100.0)) ? out_mid : out;
+    return out;
 }
 
-void AP_MotionController::update(uint16_t steering, uint16_t throttle)
+void AP_MotionController::update(float lin_vel, float ang_vel, float steer_ang)
 {
     static int counter = 0;
-    const double QPPM = QPPR / (2 * M_PI * Rw); // Quadrature pulses per meter
-    const double QPPRAD = QPPR / (2 * M_PI);    // Quadrature pulses per Radian
-    // Convert the input steering and throttle value into angular and linear velocity respectively.
-    double w = AP_MotionController::constrain_map(steering, SRV_Channels::srv_channel(1)->get_output_min(), SRV_Channels::srv_channel(1)->get_output_max(), -1, 1); // -1 to +1 m/sec
-    double v = AP_MotionController::constrain_map(throttle, SRV_Channels::srv_channel(3)->get_output_min(), SRV_Channels::srv_channel(3)->get_output_max(), -0.5236, 0.5236); // -30 to +30 deg/sec 
-    if (fabsf(w) <= FLT_EPSILON)
-    {
-        //Velocity Setpoints (M1):
-        rc[0].m1.vel.setpoint = QPPM * v / Rw;
-        rc[1].m1.vel.setpoint = QPPM * v / Rw;
-        rc[2].m1.vel.setpoint = rc[0].m1.vel.setpoint;
-        rc[3].m1.vel.setpoint = rc[1].m1.vel.setpoint;
-        //Position/Angle Setpoints (M2):
-        rc[0].m2.pos.setpoint = 0;
-        rc[1].m2.pos.setpoint = 0;
-        rc[2].m2.pos.setpoint = 0;
-        rc[3].m2.pos.setpoint = 0;
-    }
-    else
-    {
-        //Velocity Setpoints (M1):
-        float Rins = fabsf(v / w);
-        rc[0].m1.vel.setpoint = QPPM * v * (2.0 / (Rw * Rins)) * powf((powf(Rins / 2.0 - Iy, 2.0) + powf(Ix / 2.0, 2.0)), 0.5);
-        rc[1].m1.vel.setpoint = QPPM * v * (2.0 / (Rw * Rins)) * powf((powf(Rins / 2.0 + Iy, 2.0) + powf(Ix / 2.0, 2.0)), 0.5);
-        rc[2].m1.vel.setpoint = rc[0].m1.vel.setpoint;
-        rc[3].m1.vel.setpoint = rc[1].m1.vel.setpoint;
-        //Position/Angle Setpoints (M2):
-        rc[0].m2.pos.setpoint = ((w > 0) ? 1 : -1) * QPPRAD * atan2f(Iy, Rins - Ix);
-        rc[1].m2.pos.setpoint = ((w > 0) ? 1 : -1) * QPPRAD * atan2f(Iy, Rins + Ix);
-        rc[2].m2.pos.setpoint = -rc[0].m2.pos.setpoint;
-        rc[3].m2.pos.setpoint = -rc[1].m2.pos.setpoint;
-    }
+    const double qppr = QPPR.get();
+    const double qppm = qppr / (2 * M_PI * Rw.get()); // Quadrature pulses per meter
+    const double qppdeg = qppr / 360.0;               // Quadrature pulses per degree
+    const double dz = DZ.get();                       // Deadzone area around joystick center position
+    const double lin_vel_max = Vmax.get();
+    const double lin_vel_min = -lin_vel_max;
+    const double ang_vel_max = Wmax.get();
+    const double ang_vel_min = -ang_vel_max;
+    const double steer_ang_max = Amax.get();
+    const double steer_ang_min = -steer_ang_max;
+
+    // Convert the input steering and throttle values into angular and linear velocity respectively.
+    double v = AP_MotionController::constrain_map_deadzone(lin_vel, -1, 1, lin_vel_min, lin_vel_max, dz);
+    double w = AP_MotionController::constrain_map_deadzone(ang_vel, -1, 1, ang_vel_min, ang_vel_max, dz);
+    double a = AP_MotionController::constrain_map_deadzone(steer_ang, -1, 1, steer_ang_min, steer_ang_max, dz);
+
+    // Steering angle setpoints (M2):
+    rc[0].m2.pos.setpoint = a * qppdeg;
+    rc[1].m2.pos.setpoint = a * qppdeg;
+    rc[2].m2.pos.setpoint = a * qppdeg;
+    rc[3].m2.pos.setpoint = a * qppdeg;
+
+    //Velocity setpoints (M1):
+    rc[0].m1.vel.setpoint = (v + (w * DEG_TO_RAD) * Iy.get()) * qppm;
+    rc[1].m1.vel.setpoint = (v - (w * DEG_TO_RAD) * Iy.get()) * qppm;
+    rc[2].m1.vel.setpoint = rc[0].m1.vel.setpoint;
+    rc[3].m1.vel.setpoint = rc[1].m1.vel.setpoint;
+
     for (int i = 0; i < 4; i++)
     {
-        roboclaw.SpeedAccelM1(rc[i].address, rc[i].m1.acceleration, rc[i].m1.vel.setpoint);
-        roboclaw.SpeedAccelDeccelPositionM2(rc[i].address, rc[i].m2.acceleration, rc[i].m2.velocity, rc[i].m2.acceleration, rc[i].m2.pos.setpoint, 1);
-        //roboclaw.ForwardBackwardM1(rc[i].address, v);
-        //roboclaw.ForwardBackwardM2(rc[i].address, w);
+        roboclaw.SpeedAccelM1(rc[i].address.get(), rc[i].m1.acceleration.get(), rc[i].m1.vel.setpoint);
+        roboclaw.SpeedAccelDeccelPositionM2(rc[i].address, rc[i].m2.acceleration.get(), rc[i].m2.velocity.get(), rc[i].m2.acceleration.get(), rc[i].m2.pos.setpoint, 1);
     }
     if (++counter >= 10) // Call every fifth of a second (given 50Hz calling rate)
     {
-        uint32_t tempUINT32;
-        uint16_t tempUINT16;
-        int16_t tempINT16_1, tempINT16_2;
         for (int i = 0; i < 4; i++)
         {
-            tempUINT32 = roboclaw.ReadSpeedM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
-            if (rc[i].m1.valid)
-                rc[i].m1.speed = tempUINT32;
-            tempUINT32 = roboclaw.ReadSpeedM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
-            if (rc[i].m2.valid)
-                rc[i].m2.speed = tempUINT32;
-            tempUINT32 = roboclaw.ReadEncM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
-            if (rc[i].m1.valid)
-                rc[i].m1.encoder = tempUINT32;
-            tempUINT32 = roboclaw.ReadEncM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
-            if (rc[i].m2.valid)
-                rc[i].m2.encoder = tempUINT32;
-            if (roboclaw.ReadCurrents(rc[i].address, tempINT16_1, tempINT16_2))
-            {
-                rc[i].m1.current = tempINT16_1;
-                rc[i].m2.current = tempINT16_2;
-            }
-            tempUINT16 = roboclaw.ReadMainBatteryVoltage(rc[i].address, &rc[i].m1.valid);
-            if (rc[i].m1.valid)
-                rc[i].batteryVoltage = tempUINT16;
-            tempUINT16 = roboclaw.ReadLogicBatteryVoltage(rc[i].address, &rc[i].m1.valid);
-            if (rc[i].m1.valid)
-                rc[i].logicVoltage = tempUINT16;
-            if (roboclaw.ReadTemp(rc[i].address, tempUINT16))
-                rc[i].temperature = tempUINT16;
+            // uint32_t tempUINT32;
+            // uint16_t tempUINT16;
+            // int16_t tempINT16_1, tempINT16_2;
+            // tempUINT32 = roboclaw.ReadSpeedM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
+            // if (rc[i].m1.valid)
+            //     rc[i].m1.speed = tempUINT32;
+            // tempUINT32 = roboclaw.ReadSpeedM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
+            // if (rc[i].m2.valid)
+            //     rc[i].m2.speed = tempUINT32;
+            // tempUINT32 = roboclaw.ReadEncM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
+            // if (rc[i].m1.valid)
+            //     rc[i].m1.encoder = tempUINT32;
+            // tempUINT32 = roboclaw.ReadEncM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
+            // if (rc[i].m2.valid)
+            //     rc[i].m2.encoder = tempUINT32;
+            // if (roboclaw.ReadCurrents(rc[i].address, tempINT16_1, tempINT16_2))
+            // {
+            //     rc[i].m1.current = tempINT16_1;
+            //     rc[i].m2.current = tempINT16_2;
+            // }
+            // tempUINT16 = roboclaw.ReadMainBatteryVoltage(rc[i].address, &rc[i].m1.valid);
+            // if (rc[i].m1.valid)
+            //     rc[i].batteryVoltage = tempUINT16;
+            // tempUINT16 = roboclaw.ReadLogicBatteryVoltage(rc[i].address, &rc[i].m1.valid);
+            // if (rc[i].m1.valid)
+            //     rc[i].logicVoltage = tempUINT16;
+            // if (roboclaw.ReadTemp(rc[i].address, tempUINT16))
+            //     rc[i].temperature = tempUINT16;
         }
-        //hal.console->printf("Time:%05.3f Steering:%d Throttle:%d\n", AP_HAL::millis64() / 1000.0, v, w);
+        // hal.console->printf("Time:%05.3f RCIN %f %f %f %f\n", AP_HAL::millis64() / 1000.0,
+        //                     RC_Channels::rc_channel(CH_1)->norm_input(),
+        //                     RC_Channels::rc_channel(CH_2)->norm_input(),
+        //                     RC_Channels::rc_channel(CH_3)->norm_input(),
+        //                     RC_Channels::rc_channel(CH_4)->norm_input());
+        // hal.console->printf("Time:%05.3f RCOUT %d %d %d %d\n", AP_HAL::millis64() / 1000.0,
+        //                     hal.rcout->read(0),
+        //                     hal.rcout->read(1),
+        //                     hal.rcout->read(2),
+        //                     hal.rcout->read(3));
+        // hal.console->printf("Time:%05.3f RC[0].m1.setpoint:%d RC[1].m1.setpoint:%d RC[0].m2.setpoint:%d RC[1].m2.setpoint:%d\n",
+        // AP_HAL::millis64() / 1000.0, rc[0].m1.vel.setpoint, rc[1].m1.vel.setpoint, rc[0].m2.pos.setpoint, rc[1].m2.pos.setpoint);
+        // hal.console->printf("Time:%05.3f Lin_Vel:%f Ang_Vel:%f Steer_Ang:%f\n", AP_HAL::millis64() / 1000.0, lin_vel, ang_vel, steer_ang);
+        hal.console->printf("Time:%05.3f V:%f W:%f A:%f\n", AP_HAL::millis64() / 1000.0, v, w, a);
         //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, v, w);
         // TODO: Time, Des_V, Des_W, V, W, Avg_Voltage, Total_Current, I1, I2, I3, I4, Temp1, Temp2, Temp3, Temp4
-        DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,AngVel,LinVel", "Qff", AP_HAL::micros64(), v, w);
+        //DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,Lin_Vel,Ang_Vel,Steer_Ang", "Qff", AP_HAL::micros64(), lin_vel, ang_vel, steer_ang);
         counter = 0;
     }
 }

@@ -21,6 +21,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "SRV_Channel.h"
+#include <RC_Channel/RC_Channel.h>
 
 #if HAL_WITH_UAVCAN
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -244,8 +245,12 @@ void SRV_Channels::push()
 
     // give AP_MotionController library a chance to update
     motioncontroller_ptr->update(
-        SRV_Channels::srv_channel(1)->get_output_pwm(),
-        SRV_Channels::srv_channel(3)->get_output_pwm());
+        RC_Channels::rc_channel(CH_1)->norm_input(),
+        RC_Channels::rc_channel(CH_2)->norm_input(),
+        RC_Channels::rc_channel(CH_3)->norm_input());
+        // SRV_Channels::srv_channel(1)->get_output_pwm(),
+        // SRV_Channels::srv_channel(2)->get_output_pwm(),
+        // SRV_Channels::srv_channel(3)->get_output_pwm());
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update

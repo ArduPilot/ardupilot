@@ -27,6 +27,10 @@
 #define AP_MOTIONCONTROLLER_IY 0.2645f
 #define AP_MOTIONCONTROLLER_RW 0.0790f
 #define AP_MOTIONCONTROLLER_QPPR 908
+#define AP_MOTIONCONTROLLER_VMAX 1.0f
+#define AP_MOTIONCONTROLLER_WMAX 45.0f
+#define AP_MOTIONCONTROLLER_AMAX 25.0f
+#define AP_MOTIONCONTROLLER_DEADZONE 5.0f
 #define AP_MOTIONCONTROLLER_VEL_KP 1000.0f
 #define AP_MOTIONCONTROLLER_VEL_KI 1000.0f
 #define AP_MOTIONCONTROLLER_VEL_KD 0.0f
@@ -35,20 +39,21 @@
 #define AP_MOTIONCONTROLLER_POS_KI 1.0f
 #define AP_MOTIONCONTROLLER_POS_KD 0.0f
 #define AP_MOTIONCONTROLLER_POS_IMAX 0.0f
-#define AP_MOTIONCONTROLLER_POS_DEADBAND 0.0f
-#define AP_MOTIONCONTROLLER_POS_MAXPOS 50.0f
-#define AP_MOTIONCONTROLLER_POS_MINPOS -50.0f
-#define AP_MOTIONCONTROLLER_POS_ACCEL 50.0f
-#define AP_MOTIONCONTROLLER_POS_VEL 50.0f
+#define AP_MOTIONCONTROLLER_POS_DEADZONE 0.0f
+#define AP_MOTIONCONTROLLER_POS_MAXPOS 63.0f
+#define AP_MOTIONCONTROLLER_POS_MINPOS -63.0f
+#define AP_MOTIONCONTROLLER_POS_ACCEL 63.0f
+#define AP_MOTIONCONTROLLER_POS_VEL 63.0f
 
 class AP_MotionController
 {
 private:
   struct control
   {
-    AP_Float kp, ki, kd;                           // PID controller constants
-    int32_t setpoint;                              // Control setpoint
-    AP_Int32 qpps, maxi, deadband, maxpos, minpos; // Additional ontroller parameters
+    AP_Float kp, ki, kd;                    // PID controller constants
+    int32_t setpoint;                       // Control setpoint
+    int32_t qpps, deadzone, maxpos, minpos; // Additional controller parameters needs to claculated
+    AP_Int32 maxi;                          // Additional controller parameter needs to be saved
   };
 
   struct motor
@@ -73,15 +78,19 @@ public:
   AP_MotionController();
   ~AP_MotionController();
   static const AP_Param::GroupInfo var_info[];
-  void update(uint16_t steering, uint16_t throtle);
+  void update(float lin_vel, float ang_vel, float steer_ang);
   void init(void);
-  static double constrain_map(double x, double in_min, double in_max, double out_min, double out_max);
+  static double constrain_map_deadzone(double x, double in_min, double in_max, double out_min, double out_max, double dz_out_range_percent);
 
 protected:
   AP_Float Ix;              // Longitudinal wheel offset from robot center [m]
   AP_Float Iy;              // Lateral wheel offset from robot center [m]
   AP_Float Rw;              // Wheel Radius [m]
   AP_Float QPPR;            // Quadrature pulses per revolution
+  AP_Float Vmax;            // Maximum robot linear velocity in m/sec
+  AP_Float Wmax;            // Maximum robot angular velocity in deg/sec
+  AP_Float Amax;            // Maximum robot steering angle in degrees
+  AP_Float DZ;              // Deadzone in percentage (of output range) around joystick center position
   AP_HAL::UARTDriver *port; // Serial port configured through serial_manager
   AP_RoboClaw roboclaw;     // Roboclaw communication protocol implementation
   settings rc[4];           // Structure variable to store roboclaw boards settings and data
