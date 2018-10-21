@@ -32,6 +32,9 @@ class RC_Channels_Rover : public RC_Channels
 
 public:
 
+    void init() override;
+    void set_control_channels(void);
+
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;
@@ -45,7 +48,25 @@ public:
         return &obj_channels[chan];
     }
 
+    // primary control channels
+    RC_Channel *channel_throttle;
+    RC_Channel *channel_steer;
+    RC_Channel *channel_lateral;
+
+protected:
+
+    bool k_param_rcmap_for_conversion(uint8_t &k_param_rcmap) const override;
+
+    // get_option_defaults provides a map from user-visible channel
+    // numbers to the default _OPTION value for that channel number.
+    // For example, typically users have STEERING input on channel 1.
+    void get_option_defaults(const struct RC_Channels::OptionDefault *&defaults,
+                             uint8_t &num_defaults) override;
+
 private:
 
     int8_t flight_mode_channel_number() const override;
+
+    static const RC_Channels::OptionDefault option_defaults[];
+
 };

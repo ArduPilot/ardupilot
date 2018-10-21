@@ -3,12 +3,12 @@
 /*
   allow for runtime change of control channel ordering
  */
-void Rover::set_control_channels(void)
+void RC_Channels_Rover::set_control_channels(void)
 {
-    // check change on RCMAP
-    channel_steer    = rc().channel(rcmap.roll()-1);
-    channel_throttle = rc().channel(rcmap.throttle()-1);
-    channel_lateral  = rc().channel(rcmap.yaw()-1);
+    // check change on RC channel values
+    init_channel(channel_steer, RC_Channel::AUX_FUNC::STEER, "Steer");
+    init_channel(channel_throttle, RC_Channel::AUX_FUNC::THROTTLE, "Throttle");
+    channel_lateral = find_channel_for_option(RC_Channel::AUX_FUNC::LATERAL);
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);
@@ -35,23 +35,27 @@ void Rover::set_control_channels(void)
     }    
 
     // sailboat rc input init
-    g2.sailboat.init_rc_in();
+    rover.g2.sailboat.init_rc_in();
 
     // Allow to reconfigure output when not armed
-    if (!arming.is_armed()) {
-        g2.motors.setup_servo_output();
+    if (!rover.arming.is_armed()) {
         // For a rover safety is TRIM throttle
-        g2.motors.setup_safety_output();
+        rover.g2.motors.setup_servo_output();
+        rover.g2.motors.setup_safety_output();
     }
     // setup correct scaling for ESCs like the UAVCAN ESCs which
     // take a proportion of speed. Default to 1000 to 2000 for systems without
     // a k_throttle output
     hal.rcout->set_esc_scaling(1000, 2000);
-    g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
+    rover.g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
 }
 
-void Rover::init_rc_in()
+void RC_Channels_Rover::init()
 {
+    RC_Channels::init();
+
+    set_control_channels();  // setup radio channels and ouputs ranges
+
     // set rc dead zones
     channel_steer->set_default_dead_zone(30);
     channel_throttle->set_default_dead_zone(30);
