@@ -337,6 +337,9 @@ AP_GPS_SBP2::_attempt_state_update()
             case 4:
                 state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
                 break;
+            case 6:
+                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                break;
             default:
                 state.status = AP_GPS::NO_FIX;
                 break;
