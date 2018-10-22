@@ -67,7 +67,7 @@ License, version 3.
 
 Ardupilot is comprised of several parts, vehicles and boards. The list below
 contains the people that regularly contribute to the project and are responsible
-for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
+for reviewing patches on their specific area.  See also the list of developers with [merge rights] (https://github.com/orgs/ArduPilot/teams/ardupilot-maintainers/members).
 
 - [Andrew Tridgell](https://github.com/tridge):
   - ***Vehicle***: Plane, AntennaTracker
@@ -112,8 +112,6 @@ for reviewing patches on their specific area. See [CONTRIBUTING.md](.github/CONT
   - ***Vehicle***: 3DR Solo & Solo based vehicles
 - [Gustavo José de Sousa](https://github.com/guludo):
   - ***Subsystem***: Build system
-- [Craig Elder](https://github.com/CraigElder):
-  - ***Administration***: ArduPilot Technical Community Manager
 - [Jacob Walser](https://github.com/jaxxzer):
   - ***Vehicle***: Sub
 - [Pierre Kancir](https://github.com/khancyr):
