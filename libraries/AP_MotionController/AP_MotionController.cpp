@@ -621,16 +621,20 @@ double AP_MotionController::constrain_map_deadzone(double x, double in_min, doub
     //map the value from the in-scale (in_min->in_max) into out-scale (out_min->out_max)
     double out_range = out_max - out_min;
     double in_range = in_max - in_min;
-    double out_mid = (out_min + out_max) / 2.0;
+    double out_mid = out_min + ((out_min + out_max) / 2.0);
     double out = (x - in_min) * (out_range / in_range) + out_min;
     // Check and apply the deadzone limit (%age of the output range)
     out = (fabsf(out - out_mid) <= (out_dz * out_range / 100.0)) ? out_mid : out;
     return out;
 }
 
-void AP_MotionController::update(float lin_vel, float ang_vel, float steer_ang)
+void AP_MotionController::update(void)
 {
-    static int counter = 0;
+    float lin_vel = RC_Channels::rc_channel(rcmap.forward())->norm_input();   //CH_3
+    float ang_vel = RC_Channels::rc_channel(rcmap.yaw())->norm_input();       //CH_2
+    float steer_ang = RC_Channels::rc_channel(rcmap.lateral())->norm_input(); //CH_4
+
+    static int counter = 0, idx = 0;
     const double qppr = QPPR.get();
     const double qppm = qppr / (2 * M_PI * Rw.get()); // Quadrature pulses per meter
     const double qppdeg = qppr / 360.0;               // Quadrature pulses per degree
@@ -666,37 +670,38 @@ void AP_MotionController::update(float lin_vel, float ang_vel, float steer_ang)
     }
     if (++counter >= 10) // Call every fifth of a second (given 50Hz calling rate)
     {
-        for (int i = 0; i < 4; i++)
+        uint32_t tempUINT32;
+        uint16_t tempUINT16;
+        int16_t tempINT16_1, tempINT16_2;
+        tempUINT32 = roboclaw.ReadSpeedM1(rc[idx].address, &rc[idx].m1.stat, &rc[idx].m1.valid);
+        if (rc[idx].m1.valid)
+            rc[idx].m1.speed = tempUINT32;
+        tempUINT32 = roboclaw.ReadSpeedM2(rc[idx].address, &rc[idx].m2.stat, &rc[idx].m2.valid);
+        if (rc[idx].m2.valid)
+            rc[idx].m2.speed = tempUINT32;
+        tempUINT32 = roboclaw.ReadEncM1(rc[idx].address, &rc[idx].m1.stat, &rc[idx].m1.valid);
+        if (rc[idx].m1.valid)
+            rc[idx].m1.encoder = tempUINT32;
+        tempUINT32 = roboclaw.ReadEncM2(rc[idx].address, &rc[idx].m2.stat, &rc[idx].m2.valid);
+        if (rc[idx].m2.valid)
+            rc[idx].m2.encoder = tempUINT32;
+        if (roboclaw.ReadCurrents(rc[idx].address, tempINT16_1, tempINT16_2))
         {
-            // uint32_t tempUINT32;
-            // uint16_t tempUINT16;
-            // int16_t tempINT16_1, tempINT16_2;
-            // tempUINT32 = roboclaw.ReadSpeedM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
-            // if (rc[i].m1.valid)
-            //     rc[i].m1.speed = tempUINT32;
-            // tempUINT32 = roboclaw.ReadSpeedM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
-            // if (rc[i].m2.valid)
-            //     rc[i].m2.speed = tempUINT32;
-            // tempUINT32 = roboclaw.ReadEncM1(rc[i].address, &rc[i].m1.stat, &rc[i].m1.valid);
-            // if (rc[i].m1.valid)
-            //     rc[i].m1.encoder = tempUINT32;
-            // tempUINT32 = roboclaw.ReadEncM2(rc[i].address, &rc[i].m2.stat, &rc[i].m2.valid);
-            // if (rc[i].m2.valid)
-            //     rc[i].m2.encoder = tempUINT32;
-            // if (roboclaw.ReadCurrents(rc[i].address, tempINT16_1, tempINT16_2))
-            // {
-            //     rc[i].m1.current = tempINT16_1;
-            //     rc[i].m2.current = tempINT16_2;
-            // }
-            // tempUINT16 = roboclaw.ReadMainBatteryVoltage(rc[i].address, &rc[i].m1.valid);
-            // if (rc[i].m1.valid)
-            //     rc[i].batteryVoltage = tempUINT16;
-            // tempUINT16 = roboclaw.ReadLogicBatteryVoltage(rc[i].address, &rc[i].m1.valid);
-            // if (rc[i].m1.valid)
-            //     rc[i].logicVoltage = tempUINT16;
-            // if (roboclaw.ReadTemp(rc[i].address, tempUINT16))
-            //     rc[i].temperature = tempUINT16;
+            rc[idx].m1.current = tempINT16_1;
+            rc[idx].m2.current = tempINT16_2;
         }
+        tempUINT16 = roboclaw.ReadMainBatteryVoltage(rc[idx].address, &rc[idx].m1.valid);
+        if (rc[idx].m1.valid)
+            rc[idx].batteryVoltage = tempUINT16;
+        tempUINT16 = roboclaw.ReadLogicBatteryVoltage(rc[idx].address, &rc[idx].m1.valid);
+        if (rc[idx].m1.valid)
+            rc[idx].logicVoltage = tempUINT16;
+        if (roboclaw.ReadTemp(rc[idx].address, tempUINT16))
+            rc[idx].temperature = tempUINT16;
+
+        if (idx++ > 3)
+            idx = 0;
+
         // hal.console->printf("Time:%05.3f RCIN %f %f %f %f\n", AP_HAL::millis64() / 1000.0,
         //                     RC_Channels::rc_channel(CH_1)->norm_input(),
         //                     RC_Channels::rc_channel(CH_2)->norm_input(),

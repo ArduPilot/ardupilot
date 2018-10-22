@@ -22,6 +22,8 @@
 #include "AP_RoboClaw.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Param/AP_Param.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 
 #define AP_MOTIONCONTROLLER_IX 0.2360f
 #define AP_MOTIONCONTROLLER_IY 0.2645f
@@ -78,7 +80,7 @@ public:
   AP_MotionController();
   ~AP_MotionController();
   static const AP_Param::GroupInfo var_info[];
-  void update(float lin_vel, float ang_vel, float steer_ang);
+  void update(void);
   void init(void);
   static double constrain_map_deadzone(double x, double in_min, double in_max, double out_min, double out_max, double dz_out_range_percent);
 
@@ -94,6 +96,7 @@ protected:
   AP_HAL::UARTDriver *port; // Serial port configured through serial_manager
   AP_RoboClaw roboclaw;     // Roboclaw communication protocol implementation
   settings rc[4];           // Structure variable to store roboclaw boards settings and data
+  RCMapper rcmap;           // RC controls input channel
 };
 
 #endif /*AP_MOTIONCONTROLLER_H_*/
