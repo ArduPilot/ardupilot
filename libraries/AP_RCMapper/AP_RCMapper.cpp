@@ -46,7 +46,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     // @Values{Sub}: 1-8
-    AP_GROUPINFO_FRAME("FORWARD",    4, RCMapper, _ch_forward, 6, AP_PARAM_FRAME_SUB),
+    AP_GROUPINFO_FRAME("FORWARD",    4, RCMapper, _ch_forward, 6, AP_PARAM_FRAME_SUB|AP_PARAM_FRAME_ROVER),
 
     // @Param: LATERAL
     // @DisplayName: Lateral channel
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     // @Values{Sub}: 1-8
-    AP_GROUPINFO_FRAME("LATERAL",    5, RCMapper, _ch_lateral, 7, AP_PARAM_FRAME_SUB),
+    AP_GROUPINFO_FRAME("LATERAL",    5, RCMapper, _ch_lateral, 7, AP_PARAM_FRAME_SUB|AP_PARAM_FRAME_ROVER),
 
     AP_GROUPEND
 };

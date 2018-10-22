@@ -157,7 +157,7 @@ void Rover::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
-    // AP_MotionController initialization
+    //AP_MotionController: initialize the motioncontroller serial communication
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (SRV_Channels::motioncontroller_ptr != nullptr)
         SRV_Channels::motioncontroller_ptr->init();

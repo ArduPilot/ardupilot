@@ -239,12 +239,9 @@ void SRV_Channels::push()
     // give sbus library a chance to update
     sbus_ptr->update();
 
-    //initialize the motioncontroller serial communication
-    //motioncontroller_ptr->init();
-
     // give AP_MotionController library a chance to update
     motioncontroller_ptr->update();
-    
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();

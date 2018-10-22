@@ -715,7 +715,12 @@ void AP_MotionController::update(void)
         // hal.console->printf("Time:%05.3f RC[0].m1.setpoint:%d RC[1].m1.setpoint:%d RC[0].m2.setpoint:%d RC[1].m2.setpoint:%d\n",
         // AP_HAL::millis64() / 1000.0, rc[0].m1.vel.setpoint, rc[1].m1.vel.setpoint, rc[0].m2.pos.setpoint, rc[1].m2.pos.setpoint);
         // hal.console->printf("Time:%05.3f Lin_Vel:%f Ang_Vel:%f Steer_Ang:%f\n", AP_HAL::millis64() / 1000.0, lin_vel, ang_vel, steer_ang);
-        hal.console->printf("Time:%05.3f V:%f W:%f A:%f\n", AP_HAL::millis64() / 1000.0, v, w, a);
+        hal.console->printf("Time:%05.3f   S[0]:%04d   S[1]:%04d   S[2]:%04d   S[3]:%04d\n", AP_HAL::millis64() / 1000.0,
+                            SRV_Channels::srv_channel(0)->get_output_pwm(),
+                            SRV_Channels::srv_channel(1)->get_output_pwm(),
+                            SRV_Channels::srv_channel(2)->get_output_pwm(),
+                            SRV_Channels::srv_channel(3)->get_output_pwm());
+        //hal.console->printf("Time:%05.3f V:%f W:%f A:%f\n", AP_HAL::millis64() / 1000.0, v, w, a);
         //gcs().send_text(MAV_SEVERITY_INFO, "Time:%05.3f Steering:%d Throttle:%d", AP_HAL::millis64()/1000.0, v, w);
         // TODO: Time, Des_V, Des_W, V, W, Avg_Voltage, Total_Current, I1, I2, I3, I4, Temp1, Temp2, Temp3, Temp4
         //DataFlash_Class::instance()->Log_Write("MOCR", "TimeUS,Lin_Vel,Ang_Vel,Steer_Ang", "Qff", AP_HAL::micros64(), lin_vel, ang_vel, steer_ang);
