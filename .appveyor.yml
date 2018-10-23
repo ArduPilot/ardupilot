@@ -1,0 +1,19 @@
+image: ubuntu1804
+version: '{branch}-{build}'
+
+configuration:
+  - build.APMrover2 drive.APMrover2
+  - build.ArduCopter fly.ArduCopter
+  - build.ArduPlane fly.ArduPlane
+  - build.ArduSub dive.ardusub
+
+cache:
+  - $HOME/.cache -> .appveyor.yml
+
+before_build:
+  - git submodule update --init --recursive
+  - sudo apt -y install build-essential ccache g++
+  - sudo pip install -r Tools/scripts/requirements.txt
+
+build_script:
+  - python Tools/autotest/autotest.py $CONFIGURATION
