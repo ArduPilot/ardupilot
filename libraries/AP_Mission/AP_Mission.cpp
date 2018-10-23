@@ -264,6 +264,10 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     switch (cmd.id) {
         // do-commands always return true for verify:
     case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -275,6 +279,11 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     switch (cmd.id) {
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+        return start_command_do_servorelayevents(cmd);
     default:
         return _cmd_start_fn(cmd);
     }
