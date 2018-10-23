@@ -519,12 +519,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if GRIPPER_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
-        do_gripper(cmd);
-        break;
-#endif
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
         do_guided_limits(cmd);
@@ -714,7 +708,6 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
-    case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
@@ -1373,27 +1366,6 @@ void Copter::ModeAuto::do_parachute(const AP_Mission::Mission_Command& cmd)
             break;
         case PARACHUTE_RELEASE:
             copter.parachute_release();
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-#endif
-
-#if GRIPPER_ENABLED == ENABLED
-// do_gripper - control gripper
-void Copter::ModeAuto::do_gripper(const AP_Mission::Mission_Command& cmd)
-{
-    // Note: we ignore the gripper num parameter because we only support one gripper
-    switch (cmd.content.gripper.action) {
-        case GRIPPER_ACTION_RELEASE:
-            g2.gripper.release();
-            Log_Write_Event(DATA_GRIPPER_RELEASE);
-            break;
-        case GRIPPER_ACTION_GRAB:
-            g2.gripper.grab();
-            Log_Write_Event(DATA_GRIPPER_GRAB);
             break;
         default:
             // do nothing
