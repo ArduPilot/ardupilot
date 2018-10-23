@@ -140,12 +140,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if GRIPPER_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
-        do_gripper(cmd);
-        break;
-#endif
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
         do_guided_limits(cmd);
@@ -244,7 +238,6 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
@@ -532,27 +525,6 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
-
-#if GRIPPER_ENABLED == ENABLED
-// do_gripper - control gripper
-void Sub::do_gripper(const AP_Mission::Mission_Command& cmd)
-{
-    // Note: we ignore the gripper num parameter because we only support one gripper
-    switch (cmd.content.gripper.action) {
-    case GRIPPER_ACTION_RELEASE:
-        g2.gripper.release();
-        Log_Write_Event(DATA_GRIPPER_RELEASE);
-        break;
-    case GRIPPER_ACTION_GRAB:
-        g2.gripper.grab();
-        Log_Write_Event(DATA_GRIPPER_GRAB);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-}
-#endif
 
 #if NAV_GUIDED == ENABLED
 // do_guided_limits - pass guided limits to guided controller
