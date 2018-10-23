@@ -663,6 +663,25 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+    def test_gripper_mission(self):
+        self.context_push()
+        ex = None
+        try:
+            self.wp_load(os.path.join(testdir, "plane-gripper-mission.txt"))
+            self.mavproxy.send('switch 1\n')  # auto mode
+            self.wait_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.mavproxy.expect("Gripper Grabbed")
+            self.mavproxy.expect("Gripper Released")
+            self.mavproxy.expect("Auto disarmed")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest ArduPlane in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -678,6 +697,9 @@ class AutoTestPlane(AutoTest):
             self.set_rc_default()
             self.set_rc(3, 1000)
             self.set_rc(8, 1800)
+
+            self.run_test("Test Gripper mission items",
+                          self.test_gripper_mission)
 
             self.set_parameter("RC12_OPTION", 9)
             self.reboot_sitl() # needed for RC12_OPTION to take effect
@@ -733,6 +755,9 @@ class AutoTestPlane(AutoTest):
             self.run_test("Mission test",
                           lambda: self.fly_mission(
                               os.path.join(testdir, "ap1.txt")))
+
+            self.run_test("Test Gripper mission items",
+                          self.test_gripper_mission)
 
             self.run_test("Log download",
                           lambda: self.log_download(
