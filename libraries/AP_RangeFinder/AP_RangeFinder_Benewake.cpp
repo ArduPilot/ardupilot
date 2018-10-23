@@ -23,6 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 #define BENEWAKE_FRAME_HEADER 0x59
 #define BENEWAKE_FRAME_LENGTH 9
+#define BENEWAKE_DIST_MAX_CM 32768
 
 // format of serial packets received from benewake lidar
 //
@@ -112,7 +113,7 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm, bool &signal_ok)
                     signal_ok = true;
                     // calculate distance and add to sum
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
-                    if (dist != 0xFFFF) {
+                    if (dist < BENEWAKE_DIST_MAX_CM) {
                         // TFmini has short distance mode (mm)
                         if (model_type == BENEWAKE_TFmini) {
                             if (linebuf[6] == 0x02) {
