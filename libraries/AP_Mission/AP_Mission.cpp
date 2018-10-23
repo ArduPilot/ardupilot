@@ -261,12 +261,23 @@ void AP_Mission::update()
 
 bool AP_Mission::verify_command(const Mission_Command& cmd)
 {
-    return _cmd_verify_fn(cmd);
+    switch (cmd.id) {
+        // do-commands always return true for verify:
+    case MAV_CMD_DO_GRIPPER:
+        return true;
+    default:
+        return _cmd_verify_fn(cmd);
+    }
 }
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
-    return _cmd_start_fn(cmd);
+    switch (cmd.id) {
+    case MAV_CMD_DO_GRIPPER:
+        return start_command_do_gripper(cmd);
+    default:
+        return _cmd_start_fn(cmd);
+    }
 }
 
 ///

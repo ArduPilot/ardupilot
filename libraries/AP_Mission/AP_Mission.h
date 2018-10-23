@@ -578,6 +578,9 @@ private:
     // multi-thread support. This is static so it can be used from
     // const functions
     static HAL_Semaphore_Recursive _rsem;
+
+    // mission items common to all vehicles:
+    bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP {
