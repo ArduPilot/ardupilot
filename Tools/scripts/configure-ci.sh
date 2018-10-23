@@ -3,6 +3,9 @@
 
 set -ex
 
+# Get script path
+SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
 # Disable ccache for the configure phase, it's not worth it
 export CCACHE_DISABLE="true"
 
@@ -86,7 +89,4 @@ fi
 
 . ~/.profile
 
-pip install --user -U argparse empy pyserial pexpect future lxml
-pip install --user -U mavproxy
-pip install --user -U intelhex
-pip install --user -U numpy
+pip install --user -r "$SCRIPT_PATH/requirements.txt"
