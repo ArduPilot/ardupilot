@@ -658,10 +658,6 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
 #endif
 
-#if GRIPPER_ENABLED == ENABLED
-    void do_gripper(const AP_Mission::Mission_Command& cmd);
-#endif
-
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL(void);
