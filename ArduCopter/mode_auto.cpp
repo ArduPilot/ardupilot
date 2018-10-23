@@ -456,24 +456,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_SERVO:
-        copter.ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
-        break;
-        
-    case MAV_CMD_DO_SET_RELAY:
-        copter.ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
-        break;
-        
-    case MAV_CMD_DO_REPEAT_SERVO:
-        copter.ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
-                                         cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
-        break;
-        
-    case MAV_CMD_DO_REPEAT_RELAY:
-        copter.ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
-                                         cmd.content.repeat_relay.cycle_time * 1000.0f);
-        break;
-
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the copter and camera at a region of interest (ROI)
         do_roi(cmd);
@@ -697,10 +679,6 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_SET_SERVO:
-    case MAV_CMD_DO_SET_RELAY:
-    case MAV_CMD_DO_REPEAT_SERVO:
-    case MAV_CMD_DO_REPEAT_RELAY:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_CONTROL_VIDEO:
