@@ -378,9 +378,6 @@ private:
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
-#if GRIPPER_ENABLED == ENABLED
-    void do_gripper(const AP_Mission::Mission_Command& cmd);
-#endif
 #if WINCH_ENABLED == ENABLED
     void do_winch(const AP_Mission::Mission_Command& cmd);
 #endif
