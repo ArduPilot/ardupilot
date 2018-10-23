@@ -1774,6 +1774,28 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_gripper_mission(self):
+        self.context_push()
+        ex = None
+        try:
+            self.load_mission("copter-gripper-mission.txt")
+            self.mavproxy.send('mode loiter\n')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+            self.set_rc(3, 1500)
+            self.mavproxy.expect("Gripper Grabbed")
+            self.mavproxy.expect("Gripper Released")
+        except Exception as e:
+            self.progress("Exception caught")
+            self.mavproxy.send('mode land\n')
+            ex = e
+        self.context_pop()
+        self.mav.motors_disarmed_wait()
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest ArduCopter in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -1987,6 +2009,9 @@ class AutoTestCopter(AutoTest):
 
             # Gripper test
             self.run_test("Test gripper", self.test_gripper)
+
+            self.run_test("Test gripper mission items",
+                          self.test_gripper_mission);
 
             '''vision position'''  # expects vehicle to be disarmed
             self.run_test("Fly Vision Position", self.fly_vision_position)

@@ -713,8 +713,8 @@ class AutoTest(ABC):
             self.progress("ACK received: %s" % str(m))
             if m.command == command:
                 if m.result != want_result:
-                    raise ValueError("Expected %s got %s" % (command,
-                                                             m.command))
+                    raise ValueError("Expected %s got %s" % (want_result,
+                                                             m.result))
                 break
 
     #################################################
