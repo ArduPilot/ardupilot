@@ -118,24 +118,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_SERVO:
-        ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
-        break;
-
-    case MAV_CMD_DO_SET_RELAY:
-        ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
-        break;
-
-    case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
-                                         cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
-        break;
-
-    case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
-                                         cmd.content.repeat_relay.cycle_time * 1000.0f);
-        break;
-
     case MAV_CMD_DO_INVERTED_FLIGHT:
         if (cmd.p1 == 0 || cmd.p1 == 1) {
             auto_state.inverted_flight = (bool)cmd.p1;
@@ -316,10 +298,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_SET_SERVO:
-    case MAV_CMD_DO_SET_RELAY:
-    case MAV_CMD_DO_REPEAT_SERVO:
-    case MAV_CMD_DO_REPEAT_RELAY:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
