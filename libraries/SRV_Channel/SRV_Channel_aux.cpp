@@ -607,6 +607,21 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
     return channels[chan].get_output_norm();
 }
 
+// return the servo angle as read by analog pin or vitual feedback
+int16_t SRV_Channels::get_feedback_scaled(SRV_Channel::Aux_servo_function_t function)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            if (channels[i].feedback_enabled()) {
+                return channels[i].get_feedback_scaled();
+            //} else {
+            //    return channels[i].get_virtual_feedback_scaled();
+            }
+        }
+    }
+    return 0;
+}
+
 /*
   limit slew rate for an output function to given rate in percent per
   second. This assumes output has not yet done to the hal

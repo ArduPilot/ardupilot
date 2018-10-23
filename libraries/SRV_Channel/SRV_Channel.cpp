@@ -69,6 +69,49 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
 
+    // @Param: FEEDBACK
+    // @DisplayName: Servo analog feedback pin
+    // @Description: Analog position feedback pin from servo potentiomiter
+    // @Values: 0:Disabled,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6,15:Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    // @User: Advanced
+    AP_GROUPINFO("FEEDBACK",  6, SRV_Channel, feedback_pin, 0),
+
+    // @Param: MIN_VOLT
+    // @DisplayName: feedback voltage when servo is in min position
+    // @Description: feedback voltage when servo is in min position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Advanced
+    AP_GROUPINFO("MIN_VOLT",  7, SRV_Channel, min_feedback_volt, 0),
+
+    // @Param: MAX_VOLT
+    // @DisplayName: feedback voltage when servo is in max position
+    // @Description: feedback voltage when servo is in max position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Advanced
+    AP_GROUPINFO("MAX_VOLT",  8, SRV_Channel, max_feedback_volt, 0),
+
+    // @Param: TRIM_VOLT
+    // @DisplayName: feedback voltage when servo is in trim position
+    // @Description: feedback voltage when servo is in trim position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Advanced
+    AP_GROUPINFO("TRIM_VOLT",  9, SRV_Channel, trim_feedback_volt, 0),
+
+    // @Param: MIN_RATE
+    // @DisplayName: minumum rate the servo should respond at
+    // @Description: the minimum rate the servo should move at as detected by feedback if the servo moves slower it must be stuck or broken, if using vitual feedback this is the typical rate the servo moves at
+    // @Units: deg/s
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Advanced
+    AP_GROUPINFO("MIN_RATE",  10, SRV_Channel, feedback_rate, 0),
+
     AP_GROUPEND
 };
 
@@ -186,4 +229,24 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 {
     return ((function >= SRV_Channel::k_motor1 && function <= SRV_Channel::k_motor8) ||
             (function >= SRV_Channel::k_motor9 && function <= SRV_Channel::k_motor12));
+}
+
+uint16_t SRV_Channel::get_feedback_scaled(void)
+{
+    // not sure how to do the analog pin in the class??
+    const float analog_voltage = 0.5f;// servo_feedback->voltage_average();
+
+    float scaled_feedback_value;
+
+    if (analog_voltage >= trim_feedback_volt) {
+        scaled_feedback_value = linear_interpolate(0.0f, high_out, analog_voltage, trim_feedback_volt, max_feedback_volt);
+    } else {
+        scaled_feedback_value = linear_interpolate(-high_out, 0.0f, analog_voltage, min_feedback_volt, trim_feedback_volt);
+    }
+
+    if (reversed) {
+        scaled_feedback_value = -scaled_feedback_value;
+    }
+
+    return (uint16_t)scaled_feedback_value;
 }

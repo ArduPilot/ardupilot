@@ -169,6 +169,11 @@ public:
         return servo_trim;
     }
 
+    // is feedback enabled
+    uint8_t feedback_enabled(void) const {
+        return feedback_pin != 0;
+    }
+
     // return true if function is for a multicopter motor
     static bool is_motor(SRV_Channel::Aux_servo_function_t function);
 
@@ -193,7 +198,9 @@ public:
     bool function_configured(void) const {
         return function.configured();
     }
-    
+
+    uint16_t get_feedback_scaled(void);
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -201,6 +208,13 @@ private:
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
     AP_Int8 function;
+
+    // feeback params
+    AP_Int8 feedback_pin;
+    AP_Float min_feedback_volt;
+    AP_Float max_feedback_volt;
+    AP_Float trim_feedback_volt;
+    AP_Float feedback_rate;
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -286,7 +300,10 @@ public:
 
     // get output channel mask for a function
     static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
-    
+
+    // get scaled feedback for a function
+    static int16_t get_feedback_scaled(SRV_Channel::Aux_servo_function_t function);
+
     // limit slew rate to given limit in percent per second
     static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
 
