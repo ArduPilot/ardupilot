@@ -1,0 +1,12 @@
+# Basic modules
+argparse
+empy
+pyserial
+pexpect
+future
+lxml
+
+# General modules
+mavproxy
+intelhex
+numpy
