@@ -86,6 +86,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Rover" "build.APMrover2" "drive.APMrover2"
         continue
     fi
+    if [ "$t" == "sitltest-sub" ]; then
+        run_autotest "Sub" "build.ArduSub" "dive.ArduSub"
+        continue
+    fi
 
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
