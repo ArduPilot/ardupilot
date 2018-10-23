@@ -380,6 +380,16 @@ class AutoTestRover(AutoTest):
         self.disarm_vehicle()
         self.progress("Mission OK")
 
+    def test_gripper_mission(self):
+        self.load_mission("rover-gripper-mission.txt")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.mavproxy.expect("Gripper Grabbed")
+        self.mavproxy.expect("Gripper Released")
+        self.wait_mode("HOLD")
+        self.disarm_vehicle()
+
     def do_get_banner(self):
         self.mavproxy.send("long DO_SEND_BANNER 1\n")
         start = time.time()
@@ -1000,6 +1010,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("CameraMission",
              "Test Camera Mission Items",
              self.test_camera_mission_items),
+
+            # Gripper test
+            ("Gripper",
+             "Test gripper",
+             self.test_gripper),
+
+            ("GripperMission",
+             "Test Gripper Mission Items",
+             self.test_gripper_mission),
 
             ("SET_MESSAGE_INTERVAL",
              "Test MAV_CMD_SET_MESSAGE_INTERVAL",
