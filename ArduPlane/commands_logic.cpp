@@ -227,23 +227,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                             cmd.content.do_engine_control.cold_start,
                                             cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
-#if GRIPPER_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
-        switch (cmd.content.gripper.action) {
-            case GRIPPER_ACTION_RELEASE:
-                plane.g2.gripper.release();
-                gcs().send_text(MAV_SEVERITY_INFO, "Gripper Released");
-                break;
-            case GRIPPER_ACTION_GRAB:
-                plane.g2.gripper.grab();
-                gcs().send_text(MAV_SEVERITY_INFO, "Gripper Grabbed");
-                break;
-            default:
-                // do nothing
-                break;
-        }
-        break;
-#endif
 
     default:
         // unable to use the command, allow the vehicle to try the next command
@@ -349,7 +332,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
-    case MAV_CMD_DO_GRIPPER:
         return true;
 
     default:
