@@ -668,6 +668,7 @@ class AutoTestPlane(AutoTest):
         ex = None
         try:
             self.wp_load(os.path.join(testdir, "plane-gripper-mission.txt"))
+            self.mavproxy.send("wp set 1\n")
             self.mavproxy.send('switch 1\n')  # auto mode
             self.wait_mode('AUTO')
             self.wait_ready_to_arm()
@@ -697,9 +698,6 @@ class AutoTestPlane(AutoTest):
             self.set_rc_default()
             self.set_rc(3, 1000)
             self.set_rc(8, 1800)
-
-            self.run_test("Test Gripper mission items",
-                          self.test_gripper_mission)
 
             self.set_parameter("RC12_OPTION", 9)
             self.reboot_sitl() # needed for RC12_OPTION to take effect
