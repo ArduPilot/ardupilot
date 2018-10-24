@@ -124,8 +124,8 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPINFO("RATE_P_MAX", 18, AC_AttitudeControl, _ang_vel_pitch_max, 0.0f),
 
     // @Param: RATE_Y_MAX
-    // @DisplayName: Angular Velocity Max for Pitch
-    // @Description: Maximum angular velocity in pitch axis
+    // @DisplayName: Angular Velocity Max for Yaw
+    // @Description: Maximum angular velocity in yaw axis
     // @Units: deg/s
     // @Range: 0 1080
     // @Increment: 1
