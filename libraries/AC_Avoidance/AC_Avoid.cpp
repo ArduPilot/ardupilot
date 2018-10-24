@@ -435,7 +435,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
 
     // for stopping
     float speed = safe_vel.length();
-    Vector2f stopping_point = position_xy + safe_vel*((2.0f + get_stopping_distance(kP, accel_cmss, speed))/speed);
+    Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
 
     uint16_t i, j;
     for (i = 0, j = num_points-1; i < num_points; j = i++) {
@@ -460,7 +460,7 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
         } else {
             // find intersection with line segment
             Vector2f intersection;
-            if (Vector2f::segment_intersection(position_xy, stopping_point, start, end, intersection)) {
+            if (Vector2f::segment_intersection(position_xy, stopping_point_plus_margin, start, end, intersection)) {
                 // vector from current position to point on current edge
                 Vector2f limit_direction = intersection - position_xy;
                 const float limit_distance_cm = limit_direction.length();
