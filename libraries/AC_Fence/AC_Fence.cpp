@@ -449,8 +449,12 @@ void AC_Fence::manual_recovery_start()
 /// returns pointer to array of polygon points and num_points is filled in with the total number
 Vector2f* AC_Fence::get_polygon_points(uint16_t& num_points) const
 {
-    num_points = _boundary_num_points;
-    return _boundary;
+    // return array minus the first point which holds the return location
+    num_points = (_boundary_num_points <= 1) ? 0 : _boundary_num_points - 1;
+    if ((_boundary == nullptr) || (num_points == 0)) {
+        return nullptr;
+    }
+    return &_boundary[1];
 }
 
 /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
