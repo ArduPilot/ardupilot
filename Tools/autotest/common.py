@@ -550,7 +550,7 @@ class AutoTest(ABC):
         self.progress("Arm motors with radio")
         self.set_output_to_max(self.get_rudder_channel())
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while True:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 arm_delay = self.get_sim_time() - tstart
@@ -558,6 +558,10 @@ class AutoTest(ABC):
                 self.set_output_to_trim(self.get_rudder_channel())
                 self.progress("Arm in %ss" % arm_delay)  # TODO check arming time
                 return True
+            tdelta = self.get_sim_time() - tstart
+            print("Not armed after %f seconds" % (tdelta))
+            if tdelta > timeout:
+                break
         self.progress("FAILED TO ARM WITH RADIO")
         self.set_output_to_trim(self.get_rudder_channel())
         return False
