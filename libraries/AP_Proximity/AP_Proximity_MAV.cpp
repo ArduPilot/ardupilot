@@ -21,6 +21,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define PROXIMITY_MAV_TIMEOUT_MS    500 // distance messages must arrive within this many milliseconds
+
 /* 
    The constructor also initialises the proximity sensor. Note that this
    constructor is not called until detect() returns true, so we

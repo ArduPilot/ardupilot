@@ -3,8 +3,6 @@
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
-#define PROXIMITY_MAV_TIMEOUT_MS    200 // requests timeout after 0.2 seconds
-
 class AP_Proximity_MAV : public AP_Proximity_Backend
 {
 
