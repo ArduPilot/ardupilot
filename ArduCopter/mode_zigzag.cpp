@@ -19,12 +19,6 @@ bool Copter::ModeZigZag::init(bool ignore_checks)
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
 
-    // initialise position_z and desired velocity_z
-    if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    }
-
     // initialise waypoint state
     stage = STORING_POINTS;
     dest_A.zero();

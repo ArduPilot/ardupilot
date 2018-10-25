@@ -22,12 +22,6 @@ bool Copter::ModeLand::init(bool ignore_checks)
     pos_control->set_max_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());
     pos_control->set_max_accel_z(wp_nav->get_accel_z());
 
-    // initialise position and desired velocity
-    if (!pos_control->is_active_z()) {
-        pos_control->set_alt_target_to_current_alt();
-        pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    }
-    
     land_start_time = millis();
 
     land_pause = false;
