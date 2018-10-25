@@ -656,10 +656,6 @@ bool Sub::auto_terrain_recover_start()
     pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
-    // Reset vertical position and velocity targets
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
-
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
 }
