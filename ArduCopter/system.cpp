@@ -77,11 +77,12 @@ void Copter::init_ardupilot()
     // init winch and wheel encoder
     winch_init();
 
+    //Setting the mode to INITIALISING
+    set_mode(INITIALISING, MODE_REASON_INITIALISING);
+
     // initialise notify system
     notify.init();
 
-    //Setting the mode to INITIALISING
-    set_mode(INITIALISING, MODE_REASON_UNKNOWN);
     notify_flight_mode();
 
     // initialise battery monitor
