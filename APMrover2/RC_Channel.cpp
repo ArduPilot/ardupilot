@@ -78,6 +78,9 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const aux_s
 {
     // init channel options
     switch(ch_option) {
+    case AVOID_PROXIMITY:
+        do_aux_function(ch_option, ch_flag);
+        break;
         // the following functions do not need initialising:
     case SAVE_WP:
     case LEARN_CRUISE:
@@ -158,6 +161,20 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
                     hal.console->printf("Added waypoint %u", (unsigned)rover.mission.num_commands());
                 }
             }
+        }
+        break;
+
+    case AVOID_PROXIMITY:
+        switch (ch_flag) {
+            case HIGH:
+                rover.g2.avoid.proximity_avoidance_enable(true);
+                break;
+            case MIDDLE:
+                // nothing
+                break;
+            case LOW:
+                rover.g2.avoid.proximity_avoidance_enable(false);
+                break;
         }
         break;
 
