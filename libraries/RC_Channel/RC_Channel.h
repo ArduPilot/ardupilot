@@ -144,13 +144,13 @@ public:
         RELAY2 =              34, // Relay2 pin on/off
         RELAY3 =              35, // Relay3 pin on/off
         RELAY4 =              36, // Relay4 pin on/off
-        THROW =               37,  // change to THROW flight mode
-        AVOID_ADSB =          38,  // enable AP_Avoidance library
-        PRECISION_LOITER =    39,  // enable precision loiter
-        AVOID_PROXIMITY =     40,  // enable object avoidance using proximity sensors (ie. horizontal lidar)
-        ARMDISARM =           41,  // arm or disarm vehicle
+        THROW =               37, // change to THROW flight mode
+        AVOID_ADSB =          38, // enable AP_Avoidance library
+        PRECISION_LOITER =    39, // enable precision loiter
+        AVOID_PROXIMITY =     40, // enable object avoidance using proximity sensors (ie. horizontal lidar)
+        ARMDISARM =           41, // arm or disarm vehicle
         SMART_RTL =           42, // change to SmartRTL flight mode
-        INVERTED  =           43,  // enable inverted flight
+        INVERTED  =           43, // enable inverted flight
         WINCH_ENABLE =        44, // winch enable/disable
         WINCH_CONTROL =       45, // winch control
         RC_OVERRIDE_ENABLE =  46, // enable RC Override
@@ -169,7 +169,7 @@ public:
         SIMPLE       =        59, // simple mode
         ZIGZAG       =        60, // zigzag mode
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
-        COMPASS_LEARN =       62, // zigzag save waypoint
+        COMPASS_LEARN =       62, // learn compass offsets
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };
