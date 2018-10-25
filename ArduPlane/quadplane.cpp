@@ -751,7 +751,7 @@ void QuadPlane::run_z_controller(void)
         // set alt target to current height on transition. This
         // starts the Z controller off with the right values
         gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude() / 100);
-        set_alt_target_current();
+        pos_control->set_alt_target_to_current_alt();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
         // initialize vertical speeds and leash lengths
@@ -794,7 +794,7 @@ void QuadPlane::init_hover(void)
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
@@ -859,7 +859,7 @@ void QuadPlane::init_loiter(void)
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
@@ -2132,7 +2132,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     
     // also update nav_controller for status output
@@ -2163,7 +2163,7 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
 
     throttle_wait = false;
     landing_detect.lower_limit_start_ms = 0;
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
@@ -2183,7 +2183,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
     transition_state = is_tailsitter() ? TRANSITION_ANGLE_WAIT_FW : TRANSITION_AIRSPEED_WAIT;
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
-    set_alt_target_current();
+    pos_control->set_alt_target_to_current_alt();
 
     plane.complete_auto_takeoff();
     
@@ -2478,14 +2478,6 @@ bool QuadPlane::guided_mode_enabled(void)
         return false;
     }
     return guided_mode != 0;
-}
-
-/*
-  set altitude target to current altitude
- */
-void QuadPlane::set_alt_target_current(void)
-{
-    pos_control->set_alt_target(inertial_nav.get_altitude());
 }
 
 /*
