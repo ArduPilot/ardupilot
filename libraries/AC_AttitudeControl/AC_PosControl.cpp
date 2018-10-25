@@ -468,6 +468,8 @@ void AC_PosControl::update_z_controller()
     if (now - _last_update_z_ms > POSCONTROL_ACTIVE_TIMEOUT_MS) {
         _flags.reset_rate_to_accel_z = true;
         _flags.reset_accel_to_throttle = true;
+        set_alt_target_to_current_alt();
+        set_desired_velocity_z(_inav.get_velocity_z());
     }
     _last_update_z_ms = now;
 
