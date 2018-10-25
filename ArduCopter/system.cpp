@@ -79,6 +79,9 @@ void Copter::init_ardupilot()
 
     // initialise notify system
     notify.init();
+
+    //Setting the mode to INITIALISING
+    set_mode(INITIALISING, MODE_REASON_UNKNOWN);
     notify_flight_mode();
 
     // initialise battery monitor
@@ -261,6 +264,9 @@ void Copter::init_ardupilot()
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly
     serial_manager.set_blocking_writes_all(false);
+
+    //Setting the mode to default initial_mode
+    set_mode((control_mode_t)g.initial_mode.get(), MODE_REASON_UNKNOWN);
 
     // enable CPU failsafe
     failsafe_enable();
