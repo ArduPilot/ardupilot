@@ -24,7 +24,7 @@ bool Mode::enter()
     if (!ignore_checks) {
 
 	// get EKF filter status
-	nav_filter_status filt_status;
+        nav_filter_status filt_status;
 
         const bool is_position_ok = rover.position_ok(filt_status);
         if (requires_position() && !is_position_ok) {
