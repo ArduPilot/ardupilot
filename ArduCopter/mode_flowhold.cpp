@@ -89,7 +89,7 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     }
 
     // initialize vertical speeds and leash lengths
-    copter.pos_control->set_max_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
     copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // initialise position and desired velocity
@@ -223,7 +223,7 @@ void Copter::ModeFlowHold::run()
     update_height_estimate();
 
     // initialize vertical speeds and acceleration
-    copter.pos_control->set_max_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
     copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
@@ -236,7 +236,7 @@ void Copter::ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate = copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
     float target_yaw_rate = copter.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
