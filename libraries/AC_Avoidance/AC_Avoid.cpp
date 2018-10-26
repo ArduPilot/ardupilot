@@ -57,6 +57,8 @@ AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AC_Fence& fence, const AP_Proximit
       _proximity(proximity),
       _beacon(beacon)
 {
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -570,4 +572,16 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
             }
         }
     }
+}
+
+// singleton instance
+AC_Avoid *AC_Avoid::_singleton;
+
+namespace AP {
+
+AC_Avoid *ac_avoid()
+{
+    return AC_Avoid::get_singleton();
+}
+
 }
