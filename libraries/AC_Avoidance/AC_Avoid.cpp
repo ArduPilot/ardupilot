@@ -68,7 +68,7 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
     }
 
     // limit acceleration
-    float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+    const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         adjust_velocity_circle_fence(kP, accel_cmss_limited, desired_vel_cms, dt);
@@ -128,7 +128,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     }
 
     // limit acceleration
-    float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+    const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
     bool limit_alt = false;
     float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
@@ -283,7 +283,7 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
     }
     position_xy *= 100.0f; // m -> cm
 
-    float speed = desired_vel_cms.length();
+    const float speed = desired_vel_cms.length();
     // get the fence radius in cm
     const float fence_radius = _fence.get_radius() * 100.0f;
     // get the margin to the fence in cm
@@ -341,7 +341,7 @@ void AC_Avoid::adjust_velocity_polygon_fence(float kP, float accel_cmss, Vector2
     // get polygon boundary
     // Note: first point in list is the return-point (which copter does not use)
     uint16_t num_points;
-    Vector2f* boundary = _fence.get_polygon_points(num_points);
+    const Vector2f* boundary = _fence.get_polygon_points(num_points);
 
     // adjust velocity using polygon
     adjust_velocity_polygon(kP, accel_cmss, desired_vel_cms, boundary, num_points, true, _fence.get_margin(), dt);
@@ -431,11 +431,11 @@ void AC_Avoid::adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &des
     }
 
     // calc margin in cm
-    float margin_cm = MAX(margin * 100.0f, 0.0f);
+    const float margin_cm = MAX(margin * 100.0f, 0.0f);
 
     // for stopping
-    float speed = safe_vel.length();
-    Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
+    const float speed = safe_vel.length();
+    const Vector2f stopping_point_plus_margin = position_xy + safe_vel*((2.0f + margin_cm + get_stopping_distance(kP, accel_cmss, speed))/speed);
 
     uint16_t i, j;
     for (i = 0, j = num_points-1; i < num_points; j = i++) {
@@ -538,7 +538,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         return;
     }
 
-    uint8_t obj_count = _proximity.get_object_count();
+    const uint8_t obj_count = _proximity.get_object_count();
 
     // if no objects return
     if (obj_count == 0) {
