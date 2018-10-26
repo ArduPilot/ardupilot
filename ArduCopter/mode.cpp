@@ -107,6 +107,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_INITIALISING_ENABLED == ENABLED
+        case INITIALISING:
+            ret = &mode_initialising;
+            break;
+#endif
+
 #if MODE_POSHOLD_ENABLED == ENABLED
         case POSHOLD:
             ret = &mode_poshold;

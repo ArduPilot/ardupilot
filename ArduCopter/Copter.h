@@ -348,11 +348,11 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    control_mode_t control_mode;
-    mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
+    control_mode_t control_mode = INITIALISING;
+    mode_reason_t control_mode_reason = MODE_REASON_INITIALISING;
 
-    control_mode_t prev_control_mode;
-    mode_reason_t prev_control_mode_reason = MODE_REASON_UNKNOWN;
+    control_mode_t prev_control_mode = INITIALISING;
+    mode_reason_t prev_control_mode_reason = MODE_REASON_INITIALISING;
 
     RCMapper rcmap;
 
@@ -936,6 +936,9 @@ private:
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
     ModeAutoTune mode_autotune;
+#endif
+#if MODE_INITIALISING_ENABLED == ENABLED
+    ModeInitialising mode_initialising;
 #endif
 #if MODE_BRAKE_ENABLED == ENABLED
     ModeBrake mode_brake;

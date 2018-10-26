@@ -278,6 +278,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Initialising mode - allows vehicle to initialise before switching to default 
+#ifndef MODE_INITIALISING_ENABLED
+# define MODE_INITIALISING_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
 # define MODE_BRAKE_ENABLED ENABLED
@@ -389,7 +395,9 @@
 #ifndef FLIGHT_MODE_6
  # define FLIGHT_MODE_6                  STABILIZE
 #endif
-
+#ifndef INITIAL_MODE
+ # define INITIAL_MODE                   STABILIZE
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Throttle Failsafe
