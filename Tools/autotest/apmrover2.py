@@ -493,6 +493,57 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_mode('MANUAL')
         self.progress("RTL Mission OK")
 
+    def wait_distance_home_gt(self, distance, timeout=60):
+        home_distance = None
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < timeout:
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            pos = self.mav.location()
+            home_distance = self.get_distance(HOME, pos)
+            if home_distance > distance:
+                return
+        raise NotAchievedException("Failed to get %fm from home (now=%f)" %
+                                   (distance, home_distance))
+
+    def drive_fence_ac_avoidance(self):
+        self.context_push()
+        ex = None
+        try:
+            self.mavproxy.send("fence load Tools/autotest/rover-fence-ac-avoid.txt\n")
+            self.mavproxy.expect("Loaded 6 geo-fence")
+            self.set_parameter("FENCE_ENABLE", 0)
+            self.set_parameter("PRX_TYPE", 10)
+            self.set_parameter("RC10_OPTION", 40) # proximity-enable
+            self.reboot_sitl()
+            start = self.mav.location()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            # first make sure we can breach the fence:
+            self.set_rc(10, 1000)
+            self.mavproxy.send("mode acro\n")
+            self.wait_mode("ACRO")
+            self.set_rc(3, 1550)
+            self.wait_distance_home_gt(25)
+            self.mavproxy.send("mode RTL\n")
+            self.wait_mode("RTL")
+            self.mavproxy.expect("APM: Reached destination")
+            # now enable avoidance and make sure we can't:
+            self.set_rc(10, 2000)
+            self.mavproxy.send("mode acro\n")
+            self.wait_mode("ACRO")
+            self.wait_groundspeed(0, 0.7, timeout=60)
+            # watch for speed zero
+            self.wait_groundspeed(0, 0.2, timeout=120)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.mavproxy.send("fence clear\n")
+        self.reboot_sitl()
+        if ex:
+            raise ex
+
     def test_servorelayevents(self):
         self.mavproxy.send("relay set 0 0\n")
         off = self.get_parameter("SIM_PIN_MASK")
@@ -756,6 +807,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.run_test("Test RC overrides", self.test_rc_overrides)
 
             self.run_test("Test Sprayer", self.test_sprayer)
+
+            self.run_test("Test AC Avoidance switch",
+                          self.drive_fence_ac_avoidance)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
