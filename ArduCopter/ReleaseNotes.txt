@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.0 26-Oct-2018
+Changes from 3.6.0-rc12
+1) Bug Fixes:
+    a) Object avoidance fix when using 360 Lidar (mini fence was not including first distance)
+    b) Flowhold mode descending fix
+2) ChibiOS related fixes:
+    a) Kakutef7 support pin mapping fixes
+    b) PixRacer LED fix
+    c) I2C Lidar driver fix to avoid freeze at startup if sensor not connected
+------------------------------------------------------------------
 Copter 3.6.0-rc12 05-Oct-2018
 Changes from 3.6.0-rc11
 1) Bug Fixes:
