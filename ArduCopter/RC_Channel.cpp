@@ -78,7 +78,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case MOTOR_INTERLOCK:
     case AVOID_ADSB:
     case PRECISION_LOITER:
-    case AVOID_PROXIMITY:
     case INVERTED:
     case WINCH_ENABLE:
         do_aux_function(ch_option, ch_flag);
@@ -418,23 +417,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #endif
             break;
 
-        case AVOID_PROXIMITY:
-#if PROXIMITY_ENABLED == ENABLED && AC_AVOID_ENABLED == ENABLED
-            switch (ch_flag) {
-                case HIGH:
-                    copter.avoid.proximity_avoidance_enable(true);
-                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_ENABLE);
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case LOW:
-                    copter.avoid.proximity_avoidance_enable(false);
-                    copter.Log_Write_Event(DATA_AVOIDANCE_PROXIMITY_DISABLE);
-                    break;
-            }
-#endif
-            break;
         case ARMDISARM:
             // arm or disarm the vehicle
             switch (ch_flag) {
