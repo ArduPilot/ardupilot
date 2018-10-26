@@ -265,6 +265,10 @@ private:
         uint32_t start_time;
         uint8_t triggered;
         uint32_t last_valid_rc_ms;
+
+	uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
+	uint8_t gcs                  : 1; // A status flag for the ground station fails
+	uint8_t ekf                  : 1; // true if ekf failsafe has occurred
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
@@ -433,13 +437,19 @@ private:
     void do_digicam_control(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+    uint8_t get_mis_done_behave() { return g2.mis_done_behave.get(); }
+
+    enum Mis_Done_Behave {
+        Mis_Done_Behave_Hold      = 0,
+        Mis_Done_Behave_Loiter    = 1
+    };
 
     // commands.cpp
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
     void update_home();
-
+    
     // compat.cpp
     void delay(uint32_t ms);
 
@@ -549,6 +559,7 @@ private:
     bool is_boat() const;
     void read_mode_switch();
     void read_aux_all();
+    bool position_ok(nav_filter_status& filt_status);
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,

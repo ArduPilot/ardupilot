@@ -647,6 +647,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_HEEL_MAX", 35, ParametersG2, sail_heel_angle_max, 15),
+
+    // @Param: MIS_DONE_BEHAVE
+    // @DisplayName: Mission done behave
+    // @Description: Mode to become after mission done.
+    // @Values: 0:HOLD,1:LOITER
+    // @User: Standard
+    AP_GROUPINFO("MIS_DONE_BEHAVE", 36, ParametersG2, mis_done_behave, 0),
+
     AP_GROUPEND
 };
 

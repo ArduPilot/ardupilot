@@ -10,6 +10,7 @@
 #define MODE_NEXT_HEADING_UNKNOWN   99999.0f    // used to indicate to set_desired_location method that next leg's heading is unknown
 
 // pre-define ModeRTL so Auto can appear higher in this file
+class ModeLoiter;
 class ModeRTL;
 
 class Mode
@@ -230,7 +231,7 @@ class ModeAuto : public Mode
 public:
 
     // constructor
-    ModeAuto(ModeRTL& mode_rtl);
+    ModeAuto(ModeLoiter& mode_loiter, ModeRTL& mode_rtl);
 
     uint32_t mode_number() const override { return AUTO; }
     const char *name4() const override { return "AUTO"; }
@@ -253,6 +254,8 @@ public:
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
     bool reached_heading();
 
+    // start loiter
+    bool loiter_start();
     // start RTL (within auto)
     void start_RTL();
 
@@ -264,6 +267,7 @@ protected:
     enum AutoSubMode {
         Auto_WP,                // drive to a given location
         Auto_HeadingAndSpeed,   // turn to a given heading
+        Auto_Loiter,            // perform Loiter within auto mode
         Auto_RTL                // perform RTL within auto mode
     } _submode;
 
@@ -272,6 +276,7 @@ private:
     bool check_trigger(void);
 
     // references
+    ModeLoiter& _mode_loiter;
     ModeRTL& _mode_rtl;
 
     // this is set to true when auto has been triggered to start

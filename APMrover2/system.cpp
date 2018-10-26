@@ -369,3 +369,21 @@ bool Rover::is_boat() const
 {
     return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
 }
+
+// position_ok - returns true if the horizontal absolute position is ok and home position is set
+bool Rover::position_ok(nav_filter_status& filt_status)
+{
+    // return false if ekf failsafe has triggered
+    if (failsafe.ekf) {
+        return false;
+    }
+
+    // get EKF filter status
+    rover.ahrs.get_filter_status(filt_status);
+
+    // check position estimate. requires origin and at lease one horizontal position flag to be true
+    Location origin;
+    return ahrs.get_origin(origin) &&
+	   (filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs ||
+	    filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
+}
