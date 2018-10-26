@@ -19,7 +19,7 @@ bool Copter::ModeRTL::init(bool ignore_checks)
     }
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
-    build_path(!copter.failsafe.terrain);
+    path_built = false;
     climb_start();
     return true;
 }
@@ -39,6 +39,11 @@ void Copter::ModeRTL::restart_without_terrain()
 // should be called at 100hz or more
 void Copter::ModeRTL::run(bool disarm_on_land)
 {
+    if (!path_built) {
+        path_built = true;
+        build_path(!copter.failsafe.terrain);
+    }
+
     // check if we need to move to next state
     if (_state_complete) {
         switch (_state) {
