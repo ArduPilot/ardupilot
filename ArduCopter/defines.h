@@ -160,6 +160,7 @@ enum GuidedMode {
 
 // RTL states
 enum RTLState {
+    RTL_Starting,
     RTL_InitialClimb,
     RTL_ReturnHome,
     RTL_LoiterAtHome,

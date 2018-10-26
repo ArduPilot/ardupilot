@@ -1009,10 +1009,9 @@ private:
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
-    void build_path(bool terrain_following_allowed);
-    void compute_return_target(bool terrain_following_allowed);
+    void build_path();
+    void compute_return_target();
 
-    // RTL
     RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
@@ -1029,7 +1028,7 @@ private:
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time;
 
-    bool path_built;
+    bool terrain_following_allowed;
 };
 
 
