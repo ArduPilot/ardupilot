@@ -204,7 +204,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
     if (log_counter++ % 20 == 0) {
-        DataFlash_Class::instance()->Log_Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffffff",
+        DataFlash_Class::instance()->Log_Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
                                                AP_HAL::micros64(),
                                                (double)sensor_flow.x, (double)sensor_flow.y,
                                                (double)bf_angles.x, (double)bf_angles.y,
