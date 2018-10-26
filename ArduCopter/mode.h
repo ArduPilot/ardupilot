@@ -1027,7 +1027,9 @@ private:
     } rtl_path;
 
     // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time = 0;
+    uint32_t _loiter_start_time;
+
+    bool path_built;
 };
 
 
