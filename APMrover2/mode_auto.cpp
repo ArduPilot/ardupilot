@@ -77,8 +77,8 @@ void ModeAuto::update()
         }
 
         case Auto_Loiter:
-	    _mode_loiter.update();
-	    break;
+            _mode_loiter.update();
+            break;
 
         case Auto_RTL:
             _mode_rtl.update();
