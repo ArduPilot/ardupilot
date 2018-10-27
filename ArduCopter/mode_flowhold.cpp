@@ -30,6 +30,13 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Increment: 10
     // @Units: cdeg
     // @User: Advanced
+
+    // @Param: _XY_FILT_HZ
+    // @DisplayName: FlowHold filter on input to control
+    // @Description: FlowHold (horizontal) filter on input to control
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
     AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, Copter::ModeFlowHold, AC_PI_2D),
 
     // @Param: _FLOW_MAX
