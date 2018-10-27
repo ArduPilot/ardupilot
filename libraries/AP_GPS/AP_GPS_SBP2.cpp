@@ -271,14 +271,14 @@ AP_GPS_SBP2::_attempt_state_update()
         //
         // Check Flags for Valid Messages
         //
-        if (last_gps_time.flags.fix_mode    == 0 ||
-            last_vel_ned.flags.fix_mode     == 0 ||
+        if (last_gps_time.flags.time_src    == 0 ||
+            last_vel_ned.flags.vel_mode     == 0 ||
             last_pos_llh.flags.fix_mode     == 0 ||
             last_dops.flags.fix_mode        == 0) {
 
             Debug("Message Marked as Invalid. NO FIX! Flags: {GPS_TIME: %d, VEL_NED: %d, POS_LLH: %d, DOPS: %d}",
-                   last_gps_time.flags.fix_mode,
-                   last_vel_ned.flags.fix_mode,
+                   last_gps_time.flags.time_src,
+                   last_vel_ned.flags.vel_mode,
                    last_pos_llh.flags.fix_mode,
                    last_dops.flags.fix_mode);
 
