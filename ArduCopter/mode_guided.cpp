@@ -376,7 +376,7 @@ void Copter::Mode::auto_takeoff_run()
 {
     // if not armed set throttle to zero and exit immediately
     // todo: this code is used in multiple places
-    if (!motors->armed() || !ap.auto_armed || ap.land_complete) {
+    if (!motors->armed() || !ap.auto_armed) {
         make_safe_shut_down();
         return;
     }
