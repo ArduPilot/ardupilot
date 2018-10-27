@@ -266,9 +266,9 @@ private:
         uint8_t triggered;
         uint32_t last_valid_rc_ms;
 
-	uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
-	uint8_t gcs                  : 1; // A status flag for the ground station fails
-	uint8_t ekf                  : 1; // true if ekf failsafe has occurred
+        uint8_t pilot_input          : 1; // true if pilot input failsafe is active, handles things like joystick being disconnected during operation
+        uint8_t gcs                  : 1; // A status flag for the ground station fails
+        uint8_t ekf                  : 1; // true if ekf failsafe has occurred
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)

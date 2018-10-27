@@ -23,7 +23,7 @@ bool Mode::enter()
     const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
 
-	// get EKF filter status
+        // get EKF filter status
         nav_filter_status filt_status;
 
         const bool is_position_ok = rover.position_ok(filt_status);
