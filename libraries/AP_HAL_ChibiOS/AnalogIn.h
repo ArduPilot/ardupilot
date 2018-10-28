@@ -24,7 +24,7 @@
 // number of samples on each channel to gather on each DMA callback
 #define ADC_DMA_BUF_DEPTH 8
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
 class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
