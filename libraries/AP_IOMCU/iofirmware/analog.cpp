@@ -52,9 +52,9 @@ static uint16_t adc_sample_channel(uint32_t channel)
 
     /* capture one sample */
     ADC1->SQR3 = channel;
-	ADC1->CR2 |= ADC_CR2_ADON;
+    ADC1->CR2 |= ADC_CR2_ADON;
 
-	/* wait for the conversion to complete */
+    /* wait for the conversion to complete */
     uint32_t counter = 16;
 
     while (!(ADC1->SR & ADC_SR_EOC)) {
@@ -62,8 +62,8 @@ static uint16_t adc_sample_channel(uint32_t channel)
             // ensure EOC is clear
             ADC1->SR = 0;
             return 0xffff;
-		}
-	}
+        }
+    }
 
     // return sample (this also clears EOC flag)
     return ADC1->DR;

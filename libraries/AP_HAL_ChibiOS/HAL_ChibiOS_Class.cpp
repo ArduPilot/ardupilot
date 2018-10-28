@@ -59,7 +59,7 @@ static ChibiOS::SPIDeviceManager spiDeviceManager;
 static Empty::SPIDeviceManager spiDeviceManager;
 #endif
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 static ChibiOS::AnalogIn analogIn;
 #else
 static Empty::AnalogIn analogIn;
