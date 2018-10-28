@@ -28,6 +28,7 @@ private:
     void schedule_reboot(uint32_t time_ms);
     void safety_update();
     void rcout_mode_update();
+    void page_status_update(void);
 
     struct PACKED {
         /* default to RSSI ADC functionality */

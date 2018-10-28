@@ -1,5 +1,20 @@
-//IO Controller Firmware
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+/*
+  IOMCU main firmware
+ */
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -9,6 +24,7 @@
 #include "iofirmware.h"
 #include "hal.h"
 #include <AP_HAL_ChibiOS/RCInput.h>
+#include "analog.h"
 extern const AP_HAL::HAL &hal;
 
 //#pragma GCC optimize("Og")
@@ -139,6 +155,8 @@ void AP_IOMCU_FW::init()
     if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
         has_heater = true;
     }
+
+    adc_init();
 }
 
 
@@ -267,6 +285,15 @@ void AP_IOMCU_FW::process_io_packet()
     }
 }
 
+/*
+  update dynamic elements of status page
+ */
+void AP_IOMCU_FW::page_status_update(void)
+{
+    reg_status.vrssi = adc_sample_vrssi();
+    reg_status.vservo = adc_sample_vservo();
+}
+
 bool AP_IOMCU_FW::handle_code_read()
 {
     uint16_t *values = nullptr;
@@ -284,6 +311,7 @@ bool AP_IOMCU_FW::handle_code_read()
         COPY_PAGE(rc_input);
         break;
     case PAGE_STATUS:
+        page_status_update();
         COPY_PAGE(reg_status);
         break;
     case PAGE_SERVOS:
