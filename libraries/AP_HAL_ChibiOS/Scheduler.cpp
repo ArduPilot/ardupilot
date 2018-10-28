@@ -268,7 +268,7 @@ void Scheduler::_run_timers()
         _failsafe();
     }
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
     // process analog input
     ((AnalogIn *)hal.analogin)->_timer_tick();
 #endif
