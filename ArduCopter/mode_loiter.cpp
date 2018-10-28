@@ -159,13 +159,13 @@ void Copter::ModeLoiter::run()
 
     case AltHold_Landed_Ground_Idle:
 
-        loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         // FALLTHROUGH
 
     case AltHold_Landed_Pre_Takeoff:
 
+        loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         pos_control->update_z_controller();
