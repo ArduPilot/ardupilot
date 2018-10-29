@@ -342,8 +342,6 @@ bool AP_IOMCU_FW::handle_code_read()
     default:
         return false;
     }
-    last_page = rx_io_packet.page;
-    last_offset = rx_io_packet.offset;
 
     /* if the offset is at or beyond the end of the page, we have no data */
     if (rx_io_packet.offset >= tx_io_packet.count) {
@@ -353,6 +351,7 @@ bool AP_IOMCU_FW::handle_code_read()
     /* correct the data pointer and count for the offset */
     values += rx_io_packet.offset;
     tx_io_packet.count -= rx_io_packet.offset;
+    tx_io_packet.count = MIN(tx_io_packet.count, rx_io_packet.count);
     memcpy(tx_io_packet.regs, values, sizeof(uint16_t)*tx_io_packet.count);
     tx_io_packet.crc = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
