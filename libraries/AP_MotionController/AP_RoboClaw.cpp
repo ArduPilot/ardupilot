@@ -28,10 +28,10 @@ AP_RoboClaw::AP_RoboClaw()
 
 AP_RoboClaw::~AP_RoboClaw() = default;
 
-void AP_RoboClaw::init(AP_HAL::UARTDriver *uart, uint32_t tout)
+void AP_RoboClaw::init(AP_HAL::UARTDriver *uart, uint32_t tout=10000)
 {
-    if (uart != nullptr)
-        hserial = uart;
+    //if (uart != nullptr) // Disabled in order to disable serial port using init function using nullptr
+    hserial = uart;
     _timeout = tout;
 }
 

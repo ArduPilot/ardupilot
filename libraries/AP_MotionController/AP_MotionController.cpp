@@ -584,6 +584,27 @@ void AP_MotionController::init(void)
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry, 0);
     roboclaw.init(port, 10000);
 
+    // Check if the serial port communication successed
+    char buff[48];
+    bool bSuccess = false;
+    for (int i = 0; i < 4; i++)
+    {
+        if (roboclaw.ReadVersion(rc[i].address.get(), buff))
+        {
+            hal.console->printf("RoboClaw[%d] Version: %s\n", i, buff);
+            bSuccess = true;
+        }
+        else
+        {
+            hal.console->printf("RoboClaw[%d] is not connected or responding\n", i);
+        }
+    }
+    // Reset roboclaw communication port
+    if (bSuccess == false)
+    {
+        roboclaw.init(nullptr, 10000);
+    }
+
     const double qppr = QPPR.get();
     const double qpps_vmax = Vmax.get() * qppr / (2 * M_PI * Rw.get()); // Maximum linear velocity interm of qpps
     const double qp_amax = Amax.get() * DEG_TO_RAD * qppr / (2 * M_PI); // Maximum angle interm of quadratur pulses (qp)
@@ -630,9 +651,12 @@ double AP_MotionController::constrain_map_deadzone(double x, double in_min, doub
 
 void AP_MotionController::update(void)
 {
-    float lin_vel = RC_Channels::rc_channel(rcmap.forward())->norm_input();   //CH_3
-    float ang_vel = RC_Channels::rc_channel(rcmap.yaw())->norm_input();       //CH_2
-    float steer_ang = RC_Channels::rc_channel(rcmap.lateral())->norm_input(); //CH_4
+    // float lin_vel = RC_Channels::rc_channel(rcmap.forward())->norm_input();   //CH_3
+    // float ang_vel = RC_Channels::rc_channel(rcmap.yaw())->norm_input();       //CH_2
+    // float steer_ang = RC_Channels::rc_channel(rcmap.lateral())->norm_input(); //CH_4
+    float lin_vel = RC_Channels::rc_channel(CH_3)->norm_input();   //CH_3
+    float ang_vel = RC_Channels::rc_channel(CH_2)->norm_input();   //CH_2
+    float steer_ang = RC_Channels::rc_channel(CH_4)->norm_input(); //CH_4
 
     static int counter = 0, idx = 0;
     const double qppr = QPPR.get();
@@ -668,6 +692,7 @@ void AP_MotionController::update(void)
         roboclaw.SpeedAccelM1(rc[i].address.get(), rc[i].m1.acceleration.get(), rc[i].m1.vel.setpoint);
         roboclaw.SpeedAccelDeccelPositionM2(rc[i].address, rc[i].m2.acceleration.get(), rc[i].m2.velocity.get(), rc[i].m2.acceleration.get(), rc[i].m2.pos.setpoint, 1);
     }
+
     if (++counter >= 10) // Call every fifth of a second (given 50Hz calling rate)
     {
         uint32_t tempUINT32;
@@ -699,7 +724,11 @@ void AP_MotionController::update(void)
         if (roboclaw.ReadTemp(rc[idx].address, tempUINT16))
             rc[idx].temperature = tempUINT16;
 
-        if (idx++ > 3)
+        // char buff[48] = "Ahmad Kamal Nasir";
+        // roboclaw.ReadVersion(rc[idx].address.get(), buff);
+        // hal.console->printf("RoboClaw[%d] Version: %s\n", idx, buff);
+
+        if (++idx > 3)
             idx = 0;
 
         // hal.console->printf("Time:%05.3f RCIN %f %f %f %f\n", AP_HAL::millis64() / 1000.0,
