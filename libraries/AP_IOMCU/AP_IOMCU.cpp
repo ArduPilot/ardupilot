@@ -85,7 +85,7 @@ void AP_IOMCU::thread_main(void)
     
     trigger_event(IOEVENT_INIT);
     
-    while (true) {
+    while (!do_shutdown) {
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
 
         // check for pending IO events
@@ -213,6 +213,7 @@ void AP_IOMCU::thread_main(void)
             }
         }
     }
+    done_shutdown = true;
 }
 
 /*
@@ -625,8 +626,13 @@ bool AP_IOMCU::check_crc(void)
 	}
 
     uint32_t io_crc = 0;
-    if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc) &&
-        io_crc == crc) {
+    uint8_t tries = 32;
+    while (tries--) {
+        if (read_registers(PAGE_SETUP, PAGE_REG_SETUP_CRC, 2, (uint16_t *)&io_crc)) {
+            break;
+        }
+    }
+    if (io_crc == crc) {
         hal.console->printf("IOMCU: CRC ok\n");
         crc_is_ok = true;
         free(fw);
@@ -705,6 +711,17 @@ bool AP_IOMCU::healthy(void)
 {
     // for now just check CRC
     return crc_is_ok;
+}
+
+/*
+  shutdown protocol, ready for reboot
+ */
+void AP_IOMCU::shutdown(void)
+{
+    do_shutdown = true;
+    while (!done_shutdown) {
+        hal.scheduler->delay(1);
+    }
 }
 
 #endif // HAL_WITH_IO_MCU

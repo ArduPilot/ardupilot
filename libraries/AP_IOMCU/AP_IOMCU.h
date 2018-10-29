@@ -86,6 +86,9 @@ public:
     // check if IO is healthy
     bool healthy(void);
 
+    // shutdown IO protocol (for reboot)
+    void shutdown();
+
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -171,6 +174,8 @@ private:
     uint32_t last_servo_out_us;
 
     bool corked;
+    bool do_shutdown;
+    bool done_shutdown;
 
     bool crc_is_ok;
 
