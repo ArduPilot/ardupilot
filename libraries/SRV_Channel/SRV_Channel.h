@@ -20,6 +20,7 @@
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_MotionController/AP_MotionController.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -426,6 +427,9 @@ public:
     // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
 
+    // support for AP_MotionController
+    static AP_MotionController* motioncontroller_ptr;
+
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -449,6 +453,9 @@ private:
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
+
+    // support for AP_MotionController
+    AP_MotionController motioncontroller;
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
