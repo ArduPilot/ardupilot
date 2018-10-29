@@ -25,6 +25,8 @@
 #include "hal.h"
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include "analog.h"
+#include "sbus_out.h"
+
 extern const AP_HAL::HAL &hal;
 
 //#pragma GCC optimize("Og")
@@ -129,6 +131,10 @@ static UARTConfig uart_cfg = {
 
 void setup(void)
 {
+    // we need to release the JTAG reset pin to be used as a GPIO, otherwise we can't enable
+    // or disable SBUS out
+    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
+
     hal.rcin->init();
     hal.rcout->init();
 
@@ -157,6 +163,7 @@ void AP_IOMCU_FW::init()
     }
 
     adc_init();
+    sbus_out_init();
 }
 
 
@@ -175,8 +182,18 @@ void AP_IOMCU_FW::update()
         pwm_out_update();
     }
 
-    // run remaining functions at 1kHz
     uint32_t now = AP_HAL::millis();
+
+    // output SBUS if enabled
+    if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) &&
+        reg_status.flag_safety_off &&
+        now - sbus_last_ms >= sbus_interval_ms) {
+        // output a new SBUS frame
+        sbus_last_ms = now;
+        sbus_out_write(reg_servo.pwm, IOMCU_MAX_CHANNELS);
+    }
+
+    // run remaining functions at 1kHz
     if (now != last_loop_ms) {
         last_loop_ms = now;
         heater_update();
@@ -290,7 +307,12 @@ void AP_IOMCU_FW::process_io_packet()
  */
 void AP_IOMCU_FW::page_status_update(void)
 {
-    reg_status.vrssi = adc_sample_vrssi();
+    if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) == 0) {
+        // we can only get VRSSI when sbus is disabled
+        reg_status.vrssi = adc_sample_vrssi();
+    } else {
+        reg_status.vrssi = 0;
+    }
     reg_status.vservo = adc_sample_vservo();
 }
 
@@ -381,6 +403,8 @@ bool AP_IOMCU_FW::handle_code_write()
             update_default_rate = true;
             break;
         case PAGE_REG_SETUP_SBUS_RATE:
+            reg_setup.sbus_rate = rx_io_packet.regs[0];
+            sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
             break;
         case PAGE_REG_SETUP_FEATURES:
             reg_setup.features = rx_io_packet.regs[0];
@@ -389,6 +413,12 @@ bool AP_IOMCU_FW::handle_code_write()
                 reg_setup.features &= ~(P_SETUP_FEATURES_PWM_RSSI |
                                         P_SETUP_FEATURES_ADC_RSSI |
                                         P_SETUP_FEATURES_SBUS2_OUT);
+
+                // enable SBUS output at specified rate
+                sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
+                palClearLine(HAL_GPIO_PIN_SBUS_OUT_EN);
+            } else {
+                palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             }
             break;
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
