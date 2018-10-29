@@ -80,6 +80,10 @@ private:
         uint16_t sbus_rate_hz;
     } rate;
 
+    // sbus rate handling
+    uint32_t sbus_last_ms;
+    uint32_t sbus_interval_ms;
+
     uint8_t last_page;
     uint8_t last_offset;
     uint32_t fmu_data_received_time;
