@@ -23,7 +23,11 @@ public:
 
     void update();
 
+    // public format function for use by IOMCU
+    static void sbus_format_frame(uint16_t *channels, uint8_t num_channels, uint8_t buffer[25]);
+
 private:
+
     AP_HAL::UARTDriver *sbus1_uart;
 
     void init(void);
