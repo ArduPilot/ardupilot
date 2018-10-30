@@ -74,11 +74,6 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
       _last_update_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    memset(&_state, 0, sizeof(_state));
-
-    // healthy flag will be overwritten on update
-    _flags.healthy = false;
 }
 
 void OpticalFlow::init(void)
