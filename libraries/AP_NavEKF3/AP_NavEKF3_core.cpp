@@ -303,8 +303,8 @@ void NavEKF3_core::InitialiseVariables()
     velResetSource = DEFAULT;
 
     // range beacon fusion variables
-    memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
-    memset(&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
+    memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
+    memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
     rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
@@ -342,8 +342,8 @@ void NavEKF3_core::InitialiseVariables()
     bcnOriginEstInit = false;
 
     // body frame displacement fusion
-    memset(&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
-    memset(&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
+    memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
+    memset((void *)&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
     lastbodyVelPassTime_ms = 0;
     memset(&bodyVelTestRatio, 0, sizeof(bodyVelTestRatio));
     memset(&varInnovBodyVel, 0, sizeof(varInnovBodyVel));
