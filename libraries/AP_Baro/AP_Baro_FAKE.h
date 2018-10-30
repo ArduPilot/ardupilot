@@ -15,6 +15,7 @@ public:
 
 private:
     uint8_t instance;
-    const float fake_pressure = 931.0;
-    const float fake_temperature = 25.0;
+    // deliberately bad data, so we can tell it is a fake baro in any log
+    const float fake_pressure = 1.0;
+    const float fake_temperature = -100.0;
 };
