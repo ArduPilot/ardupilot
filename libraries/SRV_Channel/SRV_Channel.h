@@ -126,6 +126,22 @@ public:
         k_cam_aperture          = 91,
         k_cam_focus             = 92,
         k_cam_shutter_speed     = 93,
+        k_scripting1            = 94,           ///< Scripting related outputs
+        k_scripting2            = 95,
+        k_scripting3            = 96,
+        k_scripting4            = 97,
+        k_scripting5            = 98,
+        k_scripting6            = 99,
+        k_scripting7            = 100,
+        k_scripting8            = 101,
+        k_scripting9            = 102,
+        k_scripting10           = 103,
+        k_scripting11           = 104,
+        k_scripting12           = 105,
+        k_scripting13           = 106,
+        k_scripting14           = 107,
+        k_scripting15           = 108,
+        k_scripting16           = 109,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
