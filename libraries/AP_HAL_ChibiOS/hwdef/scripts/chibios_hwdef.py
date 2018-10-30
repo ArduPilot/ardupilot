@@ -288,8 +288,26 @@ class generic_pin(object):
                 v = e
         return "PIN_PUPDR_%s(%uU)" % (v, self.pin)
 
+    def get_ODR_F1(self):
+        '''return one of LOW, HIGH'''
+        values = ['LOW', 'HIGH']
+        v = 'HIGH'
+        if self.type == 'OUTPUT':
+            v = 'LOW'
+        for e in self.extra:
+            if e in values:
+                v = e
+        #for some controllers input pull up down is selected by ODR
+        if self.type == "INPUT":
+            v = 'LOW'
+            if 'PULLUP' in self.extra:
+                v = "HIGH"
+        return "PIN_ODR_%s(%uU)" % (v, self.pin)
+
     def get_ODR(self):
         '''return one of LOW, HIGH'''
+        if mcu_series == "STM32F100":
+            return self.get_ODR_F1()
         values = ['LOW', 'HIGH']
         v = 'HIGH'
         for e in self.extra:
@@ -315,24 +333,6 @@ class generic_pin(object):
         if self.pin < 8:
             return None
         return self.get_AFIO()
-
-    #F1 series GPIO Cfg methods
-
-    def get_ODR(self):
-        '''return one of LOW, HIGH'''
-        values = ['LOW', 'HIGH']
-        v = 'HIGH'
-        if self.type == 'OUTPUT':
-            v = 'LOW'
-        for e in self.extra:
-            if e in values:
-                v = e
-        #for some controllers input pull up down is selected by ODR
-        if self.type == "INPUT":
-            v = 'LOW'
-            if 'PULLUP' in self.extra:
-                v = "HIGH"
-        return "PIN_ODR_%s(%uU)" % (v, self.pin)
 
     def get_CR(self):
         '''return CR FLAGS'''
