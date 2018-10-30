@@ -845,6 +845,11 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
     }
     extNavDataNew.angErr = angErr;
     extNavDataNew.body_offset = &sensOffset;
+    timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
