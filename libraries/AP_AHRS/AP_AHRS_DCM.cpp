@@ -73,7 +73,7 @@ AP_AHRS_DCM::update(bool skip_ins_update)
     // otherwise we may move too far. This happens when arming motors
     // in ArduCopter
     if (delta_t > 0.2f) {
-        memset(&_ra_sum[0], 0, sizeof(_ra_sum));
+        memset((void *)&_ra_sum[0], 0, sizeof(_ra_sum));
         _ra_deltat = 0;
         return;
     }
@@ -890,7 +890,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     // zero our accumulator ready for the next GPS step
-    memset(&_ra_sum[0], 0, sizeof(_ra_sum));
+    memset((void *)&_ra_sum[0], 0, sizeof(_ra_sum));
     _ra_deltat = 0;
     _ra_sum_start = last_correction_time;
 
