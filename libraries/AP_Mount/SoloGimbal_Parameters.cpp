@@ -113,7 +113,7 @@ void SoloGimbal_Parameters::set_param(gmb_param_t param, float value) {
     // make a temporary copy of the ID; mavlink_msg_param_set_send
     // expects an array of the full length
     char tmp_name[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN+1] {};
-    strncpy(tmp_name, get_param_name(param), sizeof(tmp_name));
+    strncpy(tmp_name, get_param_name(param), MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN);
 
     mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, tmp_name, _params[param].value, MAV_PARAM_TYPE_REAL32);
 
