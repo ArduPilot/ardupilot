@@ -42,7 +42,7 @@ SoloGimbalEKF::SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs) :
 void SoloGimbalEKF::reset()
 {
     memset(&states,0,sizeof(states));
-    memset(&gSense,0,sizeof(gSense));
+    memset((void *)&gSense,0,sizeof(gSense));
     memset(&Cov,0,sizeof(Cov));
     TiltCorrection = 0;
     StartTime_ms = 0;
@@ -70,7 +70,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         FiltInit = false;
         newDataMag = false;
         YawAligned = false;
-        memset(&state, 0, sizeof(state));
+        memset((void *)&state, 0, sizeof(state));
         state.quat[0] = 1.0f;
 
         bool main_ekf_healthy = false;
