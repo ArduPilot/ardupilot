@@ -258,8 +258,8 @@ void NavEKF2_core::InitialiseVariables()
     memset(&velPosObs, 0, sizeof(velPosObs));
 
     // range beacon fusion variables
-    memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
-    memset(&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
+    memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
+    memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
     rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
@@ -297,8 +297,8 @@ void NavEKF2_core::InitialiseVariables()
     last_gps_idx = 0;
 
     // external nav data fusion
-    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
-    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    memset((void *)&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset((void *)&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
     extNavDataToFuse = false;
     extNavMeasTime_ms = 0;
     extNavLastPosResetTime_ms = 0;
