@@ -97,9 +97,17 @@ class Board:
                 LUA_32BITS = 1,
                 )
 
+            env.ROMFS_FILES += [
+                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
+                ]
+
             env.AP_LIBRARIES += [
                 'AP_Scripting',
                 'AP_Scripting/lua/src',
+                ]
+
+            env.CXXFLAGS += [
+                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
                 ]
 
         if 'clang' in cfg.env.COMPILER_CC:
