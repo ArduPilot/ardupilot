@@ -40,6 +40,7 @@
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
+#include "AP_Baro_FAKE.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
@@ -617,6 +618,17 @@ void AP_Baro::init(void)
 
 #ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
     _probe_i2c_barometers();
+#endif
+
+#if HAL_BARO_DEFAULT == HAL_BARO_FAKE
+    /*
+      if enabled, we use the fake baro when the user has not
+      configured any external baro. This is used for boards with no
+      builtin baro
+     */
+    if (_baro_probe_ext.get() == 0) {
+        ADD_BACKEND(AP_Baro_FAKE::probe(*this));
+    }
 #endif
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_F4LIGHT && !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
