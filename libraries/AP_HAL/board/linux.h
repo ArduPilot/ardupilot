@@ -75,6 +75,7 @@
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.21 / (3.6 * 2.0 * 240 / 64))
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
+#define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #define HAL_BOARD_LOG_DIRECTORY "/data/ftp/internal_000/ardupilot/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/data/ftp/internal_000/ardupilot/terrain"
@@ -118,6 +119,7 @@
 #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 0
 // the disco has challenges with its magnetic setup
 #define AP_COMPASS_OFFSETS_MAX_DEFAULT 2200
+#define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
 #define HAL_GPIO_A_LED_PIN 0
 #define HAL_GPIO_B_LED_PIN 1
