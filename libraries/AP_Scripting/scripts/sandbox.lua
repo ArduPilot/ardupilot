@@ -27,6 +27,9 @@ function get_sandbox_env ()
           utf8 = { char = utf8.char, charpattern = utf8.charpattern, codes = utf8.codes,
                    codepoint = utf8.codepoint, len = utf8.len, offsets = utf8.offsets},
           os = { clock = os.clock, difftime = os.difftime, time = os.time },
+
+          -- ArduPilot specific
           gcs = { send_text = gcs.send_text},
+          servo = { set_output_pwm = servo.set_output_pwm},
         }
 end
