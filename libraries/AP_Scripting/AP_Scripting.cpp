@@ -16,6 +16,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_ROMFS/AP_ROMFS.h>
 
 #include "lua_bindings.h"
 
@@ -80,18 +81,24 @@ void AP_Scripting::thread(void) {
     luaL_openlibs(state);
     load_lua_bindings(state);
 
-//    luaL_loadstring(state, "gcs.send_text(string.format(\"1 + 2 = %d\", 1+2))");
-
     // load the sandbox creation function
-    if (luaL_dofile(state, "sandbox.lua")) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "SFATAL: %s", lua_tostring(state, -1));
+    uint32_t sandbox_size;
+    char *sandbox_data = (char *)AP_ROMFS::find_decompress("sandbox.lua", sandbox_size);
+    if (sandbox_data == nullptr) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not find sandbox");
         return;
     }
 
-    luaL_loadfile(state, "test.lua");
-    lua_getglobal(state, "get_sandbox_env"); //find the sandbox creation function
+    if (luaL_dostring(state, sandbox_data)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Loading sandbox: %s", lua_tostring(state, -1));
+        return;
+    }
+    free(sandbox_data);
+
+    luaL_loadstring(state, "gcs.send_text(string.format(\"math.cos(1 + 2) = %f\", math.cos(1+2)))");
+    lua_getglobal(state, "get_sandbox_env"); // find the sandbox creation function
     if (lua_pcall(state, 0, LUA_MULTRET, 0)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "SFATAL: %s", lua_tostring(state, -1));
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not create sandbox: %s", lua_tostring(state, -1));
         return;
     }
     lua_setupvalue(state, -2, 1);
@@ -111,7 +118,7 @@ void AP_Scripting::thread(void) {
         }
         const uint32_t runEnd = AP_HAL::micros();
         const uint32_t endMem = hal.util->available_memory();
-        gcs().send_text(MAV_SEVERITY_INFO, "Execution: %d Memory: %d", runEnd - loadEnd, startMem - endMem);
+        gcs().send_text(MAV_SEVERITY_INFO, "Time: %d Memory: %d", runEnd - loadEnd, startMem - endMem);
     }
 }
 
