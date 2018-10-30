@@ -6,8 +6,6 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_ANYFCF7
-
 # board ID for firmware load
 APJ_BOARD_ID 132
 
@@ -79,6 +77,7 @@ PD13 I2C4_SDA I2C4 NODMA
 # mag is on I2C2 if connected
 
 # also allow for probing of external barometers
+define HAL_BARO_DEFAULT HAL_BARO_FAKE
 define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
