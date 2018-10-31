@@ -268,7 +268,7 @@ void AP_IOMCU_FW::rcin_update()
     if (mixing.enabled &&
         mixing.rc_chan_override > 0 &&
         mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
-        override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1800);
+        override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
     } else {
         override_active = false;
     }
