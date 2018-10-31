@@ -23,13 +23,10 @@ extern const AP_HAL::HAL &hal;
 enum ioevents {
     IOEVENT_INIT=1,
     IOEVENT_SEND_PWM_OUT,
-    IOEVENT_SET_DISARMED_PWM,
-    IOEVENT_SET_FAILSAFE_PWM,
     IOEVENT_FORCE_SAFETY_OFF,
     IOEVENT_FORCE_SAFETY_ON,
     IOEVENT_SET_ONESHOT_ON,
     IOEVENT_SET_RATES,
-    IOEVENT_GET_RCIN,
     IOEVENT_ENABLE_SBUS,
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
@@ -226,7 +223,7 @@ void AP_IOMCU::thread_main(void)
         // update safety pwm
         if (pwm_out.safety_pwm_set != pwm_out.safety_pwm_sent) {
             uint8_t set = pwm_out.safety_pwm_set;
-            if (write_registers(PAGE_DISARMED_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
+            if (write_registers(PAGE_SAFETY_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.safety_pwm)) {
                 pwm_out.safety_pwm_sent = set;
             }
         }
@@ -809,6 +806,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan)
         MIX_UPDATE(mixing.servo_min[i], ch->get_output_min());
         MIX_UPDATE(mixing.servo_max[i], ch->get_output_max());
         MIX_UPDATE(mixing.servo_function[i], ch->get_function());
+        MIX_UPDATE(mixing.servo_reversed[i], ch->get_reversed());
     }
     // update RCMap
     MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
@@ -826,8 +824,18 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan)
         MIX_UPDATE(mixing.rc_min[i], ch->get_radio_min());
         MIX_UPDATE(mixing.rc_max[i], ch->get_radio_max());
         MIX_UPDATE(mixing.rc_trim[i], ch->get_radio_trim());
+        MIX_UPDATE(mixing.rc_reversed[i], ch->get_reverse());
+
+        // cope with reversible throttle
+        if (i == 2 && ch->get_type() == RC_Channel::RC_CHANNEL_TYPE_ANGLE) {
+            MIX_UPDATE(mixing.throttle_is_angle, 1);
+        } else {
+            MIX_UPDATE(mixing.throttle_is_angle, 0);
+        }
     }
+
     MIX_UPDATE(mixing.rc_chan_override, override_chan);
+
     // and enable
     MIX_UPDATE(mixing.enabled, 1);
     if (changed) {
