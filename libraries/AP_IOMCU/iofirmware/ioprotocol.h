@@ -166,6 +166,9 @@ struct PACKED page_mixing {
     // is the throttle an angle input?
     uint8_t throttle_is_angle;
 
+    // mask of channels which are pure manual in override
+    uint16_t manual_rc_mask;
+
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
 
