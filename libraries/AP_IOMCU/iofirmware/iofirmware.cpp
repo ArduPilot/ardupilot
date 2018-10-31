@@ -24,7 +24,7 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include "analog.h"
-#include "sbus_out.h"
+#include "rc.h"
 
 extern const AP_HAL::HAL &hal;
 

@@ -19,7 +19,7 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "sbus_out.h"
+#include "rc.h"
 #include <AP_SBusOut/AP_SBusOut.h>
 
 static const SerialConfig uart3_cfg = {
