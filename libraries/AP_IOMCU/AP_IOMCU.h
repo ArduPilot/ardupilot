@@ -91,7 +91,7 @@ public:
     void shutdown();
 
     // setup for FMU failsafe mixing
-    bool setup_mixing(RCMapper *rcmap, int8_t override_chan);
+    bool setup_mixing(RCMapper *rcmap, int8_t override_chan, float mixing_gain);
     
 private:
     AP_HAL::UARTDriver &uart;

@@ -157,12 +157,15 @@ struct PACKED page_mixing {
     uint8_t rc_reversed[IOMCU_MAX_CHANNELS];
     uint8_t rc_channel[4];
 
+    // gain for elevon and vtail mixing, x1000
+    uint16_t mixing_gain;
+
     // channel which when high forces mixer
     int8_t rc_chan_override;
 
     // is the throttle an angle input?
     uint8_t throttle_is_angle;
-    
+
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
 

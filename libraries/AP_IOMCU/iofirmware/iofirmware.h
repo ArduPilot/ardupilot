@@ -34,6 +34,7 @@ private:
     int16_t mix_input_range(uint8_t channel, uint16_t radio_in) const;
     uint16_t mix_output_angle(uint8_t channel, int16_t angle) const;
     uint16_t mix_output_range(uint8_t channel, int16_t value) const;
+    int16_t mix_elevon_vtail(int16_t angle1, int16_t angle2, bool first_output) const;
 
     struct PACKED {
         /* default to RSSI ADC functionality */
