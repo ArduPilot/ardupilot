@@ -536,11 +536,7 @@ void Plane::update_flight_mode(void)
 
     case ACRO: {
         // handle locked/unlocked control
-        if (acro_state.locked_roll) {
-            nav_roll_cd = acro_state.locked_roll_err;
-        } else {
-            nav_roll_cd = ahrs.roll_sensor;
-        }
+        nav_roll_cd        = 0;
         if (acro_state.locked_pitch) {
             nav_pitch_cd = acro_state.locked_pitch_cd;
         } else {
