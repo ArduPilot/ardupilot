@@ -22,6 +22,7 @@
 #include "iofirmware.h"
 #include "hal.h"
 #include <AP_HAL_ChibiOS/RCInput.h>
+#include <AP_HAL_ChibiOS/RCOutput.h>
 #include "analog.h"
 #include "sbus_out.h"
 
@@ -218,8 +219,10 @@ void AP_IOMCU_FW::pwm_out_update()
     memcpy(reg_servo.pwm, reg_direct_pwm.pwm, sizeof(reg_direct_pwm));
     hal.rcout->cork();
     for (uint8_t i = 0; i < SERVO_COUNT; i++) {
-        if (reg_servo.pwm[i] != 0) {
-            hal.rcout->write(i, reg_status.flag_safety_off?reg_servo.pwm[i]:0);
+        if (reg_status.flag_safety_off || (reg_setup.ignore_safety & (1U<<i))) {
+            hal.rcout->write(i, reg_servo.pwm[i]);
+        } else {
+            hal.rcout->write(i, 0);
         }
     }
     hal.rcout->push();
@@ -467,6 +470,11 @@ bool AP_IOMCU_FW::handle_code_write()
             schedule_reboot(100);
             break;
 
+        case PAGE_REG_SETUP_IGNORE_SAFETY:
+            reg_setup.ignore_safety = rx_io_packet.regs[0];
+            ((ChibiOS::RCOutput *)hal.rcout)->set_safety_mask(reg_setup.ignore_safety);
+            break;
+            
         default:
             break;
         }
