@@ -1042,11 +1042,15 @@ def write_GPIO_config(f):
     '''write GPIO config defines'''
     f.write('// GPIO config\n')
     gpios = []
+    gpioset = set()
     for l in bylabel:
         p = bylabel[l]
         gpio = p.extra_value('GPIO', type=int)
         if gpio is None:
             continue
+        if gpio in gpioset:
+            error("Duplicate GPIO value %u" % gpio)
+        gpioset.add(gpio)
         # see if it is also a PWM pin
         pwm = p.extra_value('PWM', type=int, default=0)
         port = p.port
