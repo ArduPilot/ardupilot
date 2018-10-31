@@ -156,6 +156,8 @@ void loop(void)
 
 void AP_IOMCU_FW::init()
 {
+    config.protocol_version = IOMCU_PROTOCOL_VERSION;
+
     thread_ctx = chThdGetSelfX();
 
     if (palReadLine(HAL_GPIO_PIN_IO_HW_DETECT1) == 1 && palReadLine(HAL_GPIO_PIN_IO_HW_DETECT2) == 0) {
@@ -261,8 +263,18 @@ void AP_IOMCU_FW::rcin_update()
 void AP_IOMCU_FW::process_io_packet()
 {
     uint8_t rx_crc = rx_io_packet.crc;
+    uint8_t calc_crc;
     rx_io_packet.crc = 0;
-    uint8_t calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, rx_io_packet.get_size());
+    uint8_t pkt_size = rx_io_packet.get_size();
+    if (rx_io_packet.code == CODE_READ) {
+        // allow for more bandwidth efficient read packets
+        calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, 4);
+        if (calc_crc != rx_crc) {
+            calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, pkt_size);
+        }
+    } else {
+        calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, pkt_size);
+    }
     if (rx_crc != calc_crc) {
         memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
         tx_io_packet.count = 0;

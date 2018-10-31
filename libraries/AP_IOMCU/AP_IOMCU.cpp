@@ -360,14 +360,20 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.page = page;
     pkt.offset = offset;
     pkt.crc = 0;
+
+    uint8_t pkt_size = pkt.get_size();
+    if (config.protocol_version == IOMCU_PROTOCOL_VERSION) {
+        // save bandwidth on reads
+        pkt_size = 4;
+    }
     
     /*
       the protocol is a bit strange, as it unnecessarily sends the
       same size packet that it expects to receive. This means reading
       a large number of registers wastes a lot of serial bandwidth
      */
-    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
-    if (uart.write((uint8_t *)&pkt, pkt.get_size()) != pkt.get_size()) {
+    pkt.crc = crc_crc8((const uint8_t *)&pkt, pkt_size);
+    if (uart.write((uint8_t *)&pkt, pkt_size) != pkt_size) {
         protocol_fail_count++;
         return false;
     }
