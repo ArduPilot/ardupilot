@@ -11,6 +11,7 @@
 
 #include "ch.h"
 #include "iofirmware/ioprotocol.h"
+#include <AP_RCMapper/AP_RCMapper.h>
 
 class AP_IOMCU {
 public:
@@ -89,6 +90,9 @@ public:
     // shutdown IO protocol (for reboot)
     void shutdown();
 
+    // setup for FMU failsafe mixing
+    bool setup_mixing(RCMapper *rcmap, int8_t override_chan);
+    
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -137,12 +141,18 @@ private:
     void discard_input(void);
     void event_failed(uint8_t event);
     void update_safety_options(void);
-    
+
+    // CONFIG page
+    struct page_config config;
+
     // PAGE_STATUS values
     struct page_reg_status reg_status;
 
     // PAGE_RAW_RCIN values
     struct page_rc_input rc_input;
+
+    // MIXER values
+    struct page_mixing mixing;
     
     // output pwm values
     struct {
@@ -180,6 +190,9 @@ private:
     bool done_shutdown;
 
     bool crc_is_ok;
+    bool initialised;
+
+    uint32_t protocol_fail_count;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
