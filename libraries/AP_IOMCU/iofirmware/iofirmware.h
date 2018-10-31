@@ -35,6 +35,7 @@ private:
     uint16_t mix_output_angle(uint8_t channel, int16_t angle) const;
     uint16_t mix_output_range(uint8_t channel, int16_t value) const;
     int16_t mix_elevon_vtail(int16_t angle1, int16_t angle2, bool first_output) const;
+    void dsm_bind_step(void);
 
     struct PACKED {
         /* default to RSSI ADC functionality */
@@ -128,5 +129,7 @@ private:
     uint32_t last_status_ms;
     uint32_t last_ms;
     uint32_t loop_counter;
+    uint8_t dsm_bind_state;
+    uint32_t last_dsm_bind_ms;
 };
 
