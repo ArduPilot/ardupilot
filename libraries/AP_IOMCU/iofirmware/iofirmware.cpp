@@ -209,12 +209,15 @@ void AP_IOMCU_FW::update()
     }
 
     // handle FMU failsafe
-    if (now - fmu_data_received_time > 10) {
-        // we are not getting input from the FMU. Fill in failsafe values
-        fill_failsafe_pwm();
-        chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
-        // mark as done
-        fmu_data_received_time = now;
+    if (now - fmu_data_received_time > 200) {
+        // we are not getting input from the FMU. Fill in failsafe values at 100Hz
+        if (now - last_failsafe_ms > 10) {
+            fill_failsafe_pwm();
+            chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+            last_failsafe_ms = now;
+        }
+    } else {
+        last_failsafe_ms = now;
     }
 
     // update status page at 20Hz
