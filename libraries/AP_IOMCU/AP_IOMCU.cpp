@@ -814,9 +814,6 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan, float mixing_
     MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
     MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
     for (uint8_t i=0; i<4; i++) {
-        if (mixing.rc_channel[i] <= 0 || mixing.rc_channel[i] >= NUM_RC_CHANNELS) {
-            continue;
-        }
         const RC_Channel *ch = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
         if (!ch) {
             continue;
