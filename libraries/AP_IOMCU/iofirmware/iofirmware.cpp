@@ -195,6 +195,15 @@ void AP_IOMCU_FW::update()
         sbus_out_write(reg_servo.pwm, IOMCU_MAX_CHANNELS);
     }
 
+    // handle FMU failsafe
+    if (now - fmu_data_received_time > 10) {
+        // we are not getting input from the FMU. Fill in failsafe values
+        fill_failsafe_pwm();
+        chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+        // mark as done
+        fmu_data_received_time = now;
+    }
+    
     // run remaining functions at 1kHz
     if (now != last_loop_ms) {
         last_loop_ms = now;
@@ -208,7 +217,6 @@ void AP_IOMCU_FW::update()
 
 void AP_IOMCU_FW::pwm_out_update()
 {
-    //TODO: PWM mixing
     memcpy(reg_servo.pwm, reg_direct_pwm.pwm, sizeof(reg_direct_pwm));
     hal.rcout->cork();
     for (uint8_t i = 0; i < SERVO_COUNT; i++) {
@@ -258,6 +266,14 @@ void AP_IOMCU_FW::rcin_update()
         hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
     }
 
+    // check for active override channel
+    if (mixing.enabled &&
+        mixing.rc_chan_override > 0 &&
+        mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
+        override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1800);
+    } else {
+        override_active = false;
+    }
 }
 
 void AP_IOMCU_FW::process_io_packet()
@@ -457,7 +473,12 @@ bool AP_IOMCU_FW::handle_code_write()
             break;
         }
         break;
+
     case PAGE_DIRECT_PWM: {
+        if (override_active) {
+            // no input when override is active
+            break;
+        }
         /* copy channel data */
         uint8_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         while ((offset < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
@@ -476,9 +497,22 @@ bool AP_IOMCU_FW::handle_code_write()
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
         break;
     }
+
     case PAGE_MIXING: {
         uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         memcpy(((uint16_t *)&mixing)+offset, &rx_io_packet.regs[0], num_values*2);
+        break;
+    }
+
+    case PAGE_SAFETY_PWM: {
+        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        memcpy((&reg_safety_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
+        break;
+    }
+
+    case PAGE_FAILSAFE_PWM: {
+        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        memcpy((&reg_failsafe_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
 
@@ -573,6 +607,23 @@ void AP_IOMCU_FW::rcout_mode_update(void)
         hal.rcout->set_esc_scaling(1000, 2000);
         hal.rcout->set_output_mode(reg_setup.pwm_rates, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(reg_setup.pwm_rates, reg_setup.pwm_altrate);
+    }
+}
+
+/*
+  fill in failsafe PWM values
+ */
+void AP_IOMCU_FW::fill_failsafe_pwm(void)
+{
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+        if (reg_status.flag_safety_off) {
+            reg_direct_pwm.pwm[i] = reg_failsafe_pwm.pwm[i];
+        } else {
+            reg_direct_pwm.pwm[i] = reg_safety_pwm.pwm[i];
+        }
+    }
+    if (mixing.enabled) {
+        run_mixer();
     }
 }
 

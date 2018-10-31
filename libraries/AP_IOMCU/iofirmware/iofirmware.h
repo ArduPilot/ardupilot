@@ -28,6 +28,12 @@ private:
     void safety_update();
     void rcout_mode_update();
     void page_status_update(void);
+    void fill_failsafe_pwm(void);
+    void run_mixer(void);
+    int16_t mix_input_angle(uint8_t channel, uint16_t radio_in) const;
+    int16_t mix_input_range(uint8_t channel, uint16_t radio_in) const;
+    uint16_t mix_output_angle(uint8_t channel, int16_t angle) const;
+    uint16_t mix_output_range(uint8_t channel, int16_t value) const;
 
     struct PACKED {
         /* default to RSSI ADC functionality */
@@ -69,11 +75,21 @@ private:
         uint16_t pwm[IOMCU_MAX_CHANNELS];
     } reg_servo;
 
-    // PAGE_SERVO values
+    // PAGE_DIRECT_PWM values
     struct {
         uint16_t pwm[IOMCU_MAX_CHANNELS];
     } reg_direct_pwm;
 
+    // PAGE_FAILSAFE_PWM
+    struct {
+        uint16_t pwm[IOMCU_MAX_CHANNELS];
+    } reg_failsafe_pwm;
+
+    // PAGE_SAFETY_PWM
+    struct {
+        uint16_t pwm[IOMCU_MAX_CHANNELS];
+    } reg_safety_pwm;
+    
     // output rates
     struct {
         uint16_t freq;
@@ -84,6 +100,9 @@ private:
 
     // MIXER values
     struct page_mixing mixing;
+
+    // true when override channel active
+    bool override_active;
     
     // sbus rate handling
     uint32_t sbus_last_ms;
