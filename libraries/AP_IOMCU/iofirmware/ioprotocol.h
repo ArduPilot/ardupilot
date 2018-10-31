@@ -90,7 +90,7 @@ enum iopage {
 #define FORCE_SAFETY_MAGIC 22027
 
 struct PACKED page_config {
-    uint16_t protocol_version = IOMCU_PROTOCOL_VERSION;
+    uint16_t protocol_version;
 };
 
 struct PACKED page_reg_status {
