@@ -24,6 +24,7 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
 
@@ -34,6 +35,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_Visca;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -49,6 +51,8 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_Visca;
+
 
 public:
     AP_Mount(const struct Location &current_loc);
@@ -69,7 +73,8 @@ public:
         Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+        Mount_Type_SToRM32_serial = 5,   /// SToRM32 mount using custom serial protocol
+        Mount_Type_Visca = 6
     };
 
     // init - detect and initialise all mounts
@@ -167,6 +172,9 @@ protected:
 
         AP_Float        _roll_stb_lead;     // roll lead control gain
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
+
+        AP_Int8         _control_mode;      // type of control for visca
+        AP_Int8         _zoom_rc_in;        // type of control for visca
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
         struct Location _roi_target;        // roi target location
