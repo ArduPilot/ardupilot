@@ -140,7 +140,12 @@ public:
       set PWM to send to a set of channels if the FMU firmware dies
      */
     void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
-    
+
+    /*
+      set safety mask for IOMCU
+     */
+    void set_safety_mask(uint16_t mask) { safety_mask = mask; }
+
 private:
     struct pwm_group {
         // only advanced timers can do high clocks needed for more than 400Hz
