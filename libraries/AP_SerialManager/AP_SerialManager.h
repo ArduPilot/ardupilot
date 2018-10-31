@@ -88,6 +88,10 @@
 #define AP_SERIALMANAGER_SLCAN_BAUD             115200
 #define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
 #define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
+// Visca protocol default baud rates and buffer sizes  
+#define AP_SERIALMANAGER_VISCA_BAUD             9600
+#define AP_SERIALMANAGER_VISCA_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_VISCA_BUFSIZE_TX       128
 
 class AP_SerialManager {
 public:
@@ -123,6 +127,7 @@ public:
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
         SerialProtocol_RCIN = 23,
+        SerialProtocol_Visca = 24,
         SerialProtocol_Hott = 27,
     };
 

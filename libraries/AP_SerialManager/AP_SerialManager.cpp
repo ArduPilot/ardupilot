@@ -474,6 +474,13 @@ void AP_SerialManager::init()
                     break;
 #endif
                     
+                case SerialProtocol_Visca:
+                    state[i].baud = AP_SERIALMANAGER_VISCA_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(AP_SERIALMANAGER_VISCA_BAUD,
+                                         AP_SERIALMANAGER_VISCA_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_VISCA_BUFSIZE_TX);
+                    break;
+                    
                 default:
                     state[i].uart->begin(map_baudrate(state[i].baud));
             }
