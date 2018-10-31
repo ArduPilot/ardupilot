@@ -141,6 +141,12 @@ void AP_IOMCU_FW::run_mixer(void)
     for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
         SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)mixing.servo_function[i];
         uint16_t &pwm = reg_direct_pwm.pwm[i];
+
+        if (mixing.manual_rc_mask & (1U<<i)) {
+            // treat as pass-thru if this channel is set in MANUAL_RC_MASK
+            function = SRV_Channel::k_manual;
+        }
+
         switch (function) {
         case SRV_Channel::k_manual:
             pwm = rc_input.pwm[i];
