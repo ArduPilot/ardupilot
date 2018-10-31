@@ -795,7 +795,7 @@ void AP_IOMCU::bind_dsm(uint8_t mode)
         return;
     }
     uint16_t reg = mode;
-    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, &reg);
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSM_BIND, 1, &reg);
 }
 
 /*

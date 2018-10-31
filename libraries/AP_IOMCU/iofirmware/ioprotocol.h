@@ -78,6 +78,7 @@ enum iopage {
 #define PAGE_REG_SETUP_SBUS_RATE    19
 #define PAGE_REG_SETUP_IGNORE_SAFETY 20 /* bitmask of surfaces to ignore the safety status */
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
+#define PAGE_REG_SETUP_DSM_BIND     22
 
 // config page registers
 #define PAGE_CONFIG_PROTOCOL_VERSION 0
