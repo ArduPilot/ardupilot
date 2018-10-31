@@ -11,7 +11,7 @@ class AP_IOMCU_FW {
 public:
     void process_io_packet();
 
-    struct IOPacket rx_io_packet, tx_io_packet;
+    struct IOPacket rx_io_packet, tx_io_packet, rx_io_last;
 
     void init();
     void update();
@@ -125,5 +125,8 @@ private:
     bool brushed_enabled;
     thread_t *thread_ctx;
     bool last_safety_off;
+    uint32_t last_status_ms;
+    uint32_t last_ms;
+    uint32_t loop_counter;
 };
 
