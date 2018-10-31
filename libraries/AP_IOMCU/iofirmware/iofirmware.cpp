@@ -42,8 +42,10 @@ enum ioevents {
     IOEVENT_PWM=1,
 };
 
-static uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt;
-static uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
+static struct {
+    uint32_t num_code_read, num_bad_crc, num_write_pkt, num_unknown_pkt;
+    uint32_t num_idle_rx, num_dma_complete_rx, num_total_rx, num_rx_error;
+} stats;
 
 static void dma_rx_end_cb(UARTDriver *uart)
 {
@@ -57,8 +59,8 @@ static void dma_rx_end_cb(UARTDriver *uart)
     dmaStreamDisable(uart->dmatx);
 
     iomcu.process_io_packet();
-    num_total_rx++;
-    num_dma_complete_rx = num_total_rx - num_idle_rx;
+    stats.num_total_rx++;
+    stats.num_dma_complete_rx = stats.num_total_rx - stats.num_idle_rx;
 
     dmaStreamSetMemory0(uart->dmarx, &iomcu.rx_io_packet);
     dmaStreamSetTransactionSize(uart->dmarx, sizeof(iomcu.rx_io_packet));
@@ -88,7 +90,7 @@ static void idle_rx_handler(UARTDriver *uart)
         osalSysLockFromISR();
         uart->usart->SR = ~USART_SR_LBD;
         uart->usart->CR1 |= USART_CR1_SBK;
-        num_rx_error++;
+        stats.num_rx_error++;
         uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
         (void)uart->usart->SR;
         (void)uart->usart->DR;
@@ -108,7 +110,7 @@ static void idle_rx_handler(UARTDriver *uart)
 
     if (sr & USART_SR_IDLE) {
         dma_rx_end_cb(uart);
-        num_idle_rx++;
+        stats.num_idle_rx++;
     }
 }
 
@@ -165,6 +167,9 @@ void AP_IOMCU_FW::init()
 
     adc_init();
     sbus_out_init();
+
+    // we do no allocations after setup completes
+    reg_status.freemem = hal.util->available_memory();
 }
 
 
@@ -172,7 +177,12 @@ void AP_IOMCU_FW::update()
 {
     eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
 
-    if (do_reboot && (AP_HAL::millis() > reboot_time)) {
+    // we get the timestamp once here, and avoid fetching it
+    // within the DMA callbacks
+    last_ms = AP_HAL::millis();
+    loop_counter++;
+
+    if (do_reboot && (last_ms > reboot_time)) {
         hal.scheduler->reboot(true);
         while (true) {}
     }
@@ -183,7 +193,7 @@ void AP_IOMCU_FW::update()
         pwm_out_update();
     }
 
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = last_ms;
 
     // output SBUS if enabled
     if ((reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) &&
@@ -202,7 +212,13 @@ void AP_IOMCU_FW::update()
         // mark as done
         fmu_data_received_time = now;
     }
-    
+
+    // update status page at 20Hz
+    if (now - last_status_ms > 50) {
+        last_status_ms = now;
+        page_status_update();
+    }
+
     // run remaining functions at 1kHz
     if (now != last_loop_ms) {
         last_loop_ms = now;
@@ -230,10 +246,10 @@ void AP_IOMCU_FW::pwm_out_update()
 
 void AP_IOMCU_FW::heater_update()
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = last_ms;
     if (!has_heater) {
-        // use blue LED as heartbeat
-        if (now - last_blue_led_ms > 500) {
+        // use blue LED as heartbeat, run it 4x faster when override active
+        if (now - last_blue_led_ms > (override_active?125:500)) {
             palToggleLine(HAL_GPIO_PIN_HEATER);
             last_blue_led_ms = now;
         }
@@ -292,18 +308,18 @@ void AP_IOMCU_FW::process_io_packet()
     } else {
         calc_crc = crc_crc8((const uint8_t *)&rx_io_packet, pkt_size);
     }
-    if (rx_crc != calc_crc) {
+    if (rx_crc != calc_crc || rx_io_packet.count > PKT_MAX_REGS) {
         memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
         tx_io_packet.count = 0;
         tx_io_packet.code = CODE_CORRUPT;
         tx_io_packet.crc = 0;
         tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
-        num_bad_crc++;
+        stats.num_bad_crc++;
         return;
     }
     switch (rx_io_packet.code) {
     case CODE_READ: {
-        num_code_read++;
+        stats.num_code_read++;
         if (!handle_code_read()) {
             memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
             tx_io_packet.count = 0;
@@ -314,7 +330,7 @@ void AP_IOMCU_FW::process_io_packet()
     }
     break;
     case CODE_WRITE: {
-        num_write_pkt++;
+        stats.num_write_pkt++;
         if (!handle_code_write()) {
             memset(&tx_io_packet, 0xFF, sizeof(tx_io_packet));
             tx_io_packet.count = 0;
@@ -325,10 +341,12 @@ void AP_IOMCU_FW::process_io_packet()
     }
     break;
     default: {
-        num_unknown_pkt++;
+        stats.num_unknown_pkt++;
     }
     break;
     }
+    rx_io_last = rx_io_packet;
+    memset((void *)&rx_io_packet, 0x42, sizeof(rx_io_packet));
 }
 
 /*
@@ -365,7 +383,6 @@ bool AP_IOMCU_FW::handle_code_read()
         COPY_PAGE(rc_input);
         break;
     case PAGE_STATUS:
-        page_status_update();
         COPY_PAGE(reg_status);
         break;
     case PAGE_SERVOS:
@@ -376,7 +393,7 @@ bool AP_IOMCU_FW::handle_code_read()
     }
 
     /* if the offset is at or beyond the end of the page, we have no data */
-    if (rx_io_packet.offset >= tx_io_packet.count) {
+    if (rx_io_packet.offset + rx_io_packet.count > tx_io_packet.count) {
         return false;
     }
 
@@ -384,6 +401,7 @@ bool AP_IOMCU_FW::handle_code_read()
     values += rx_io_packet.offset;
     tx_io_packet.count -= rx_io_packet.offset;
     tx_io_packet.count = MIN(tx_io_packet.count, rx_io_packet.count);
+    tx_io_packet.count = MIN(tx_io_packet.count, PKT_MAX_REGS);
     memcpy(tx_io_packet.regs, values, sizeof(uint16_t)*tx_io_packet.count);
     tx_io_packet.crc = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
@@ -454,7 +472,7 @@ bool AP_IOMCU_FW::handle_code_write()
             break;
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
             reg_setup.heater_duty_cycle = rx_io_packet.regs[0];
-            last_heater_ms = AP_HAL::millis();
+            last_heater_ms = last_ms;
             break;
 
         case PAGE_REG_SETUP_REBOOT_BL:
@@ -486,7 +504,10 @@ bool AP_IOMCU_FW::handle_code_write()
             break;
         }
         /* copy channel data */
-        uint8_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        uint16_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(reg_direct_pwm.pwm)/2) {
+            return false;
+        }
         while ((offset < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
             /* XXX range-check value? */
             if (rx_io_packet.regs[i] != PWM_IGNORE_THIS_CHANNEL) {
@@ -497,7 +518,7 @@ bool AP_IOMCU_FW::handle_code_write()
             num_values--;
             i++;
         }
-        fmu_data_received_time = AP_HAL::millis();
+        fmu_data_received_time = last_ms;
         reg_status.flag_fmu_ok = true;
         reg_status.flag_raw_pwm = true;
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
@@ -505,19 +526,28 @@ bool AP_IOMCU_FW::handle_code_write()
     }
 
     case PAGE_MIXING: {
-        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(mixing)/2) {
+            return false;
+        }
         memcpy(((uint16_t *)&mixing)+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
 
     case PAGE_SAFETY_PWM: {
-        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(reg_safety_pwm.pwm)/2) {
+            return false;
+        }
         memcpy((&reg_safety_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
 
     case PAGE_FAILSAFE_PWM: {
-        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(reg_failsafe_pwm.pwm)/2) {
+            return false;
+        }
         memcpy((&reg_failsafe_pwm.pwm[0])+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
@@ -536,7 +566,7 @@ bool AP_IOMCU_FW::handle_code_write()
 void AP_IOMCU_FW::schedule_reboot(uint32_t time_ms)
 {
     do_reboot = true;
-    reboot_time = AP_HAL::millis() + time_ms;
+    reboot_time = last_ms + time_ms;
 }
 
 void AP_IOMCU_FW::calculate_fw_crc(void)
@@ -561,7 +591,7 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
  */
 void AP_IOMCU_FW::safety_update(void)
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = last_ms;
     if (now - safety_update_ms < 100) {
         // update safety at 10Hz
         return;
