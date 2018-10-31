@@ -244,6 +244,11 @@ void Plane::afs_fs_check(void)
     afs.check(failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
 }
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 void Plane::one_second_loop()
 {
     // send a heartbeat
@@ -258,6 +263,10 @@ void Plane::one_second_loop()
         setup_failsafe_mixing();
     }
 #endif // CONFIG_HAL_BOARD
+
+#if HAL_WITH_IO_MCU
+    iomcu.setup_mixing(&rcmap, g.override_channel.get());
+#endif
 
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
