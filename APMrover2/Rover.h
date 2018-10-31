@@ -265,6 +265,7 @@ private:
         uint32_t start_time;
         uint8_t triggered;
         uint32_t last_valid_rc_ms;
+        uint32_t last_heartbeat_ms;
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
@@ -272,9 +273,6 @@ private:
 
     // true if we have a position estimate from AHRS
     bool have_position;
-
-    // the time when the last HEARTBEAT message arrived from a GCS
-    uint32_t last_heartbeat_ms;
 
     // obstacle detection information
     struct {

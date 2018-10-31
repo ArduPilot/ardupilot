@@ -813,7 +813,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
                 break;
             }
 
-            rover.last_heartbeat_ms = AP_HAL::millis();
+            rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
             rover.failsafe_trigger(FAILSAFE_EVENT_GCS, false);
             break;
         }
