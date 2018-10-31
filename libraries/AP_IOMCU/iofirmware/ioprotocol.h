@@ -2,7 +2,8 @@
   common protocol definitions between AP_IOMCU and iofirmware
  */
 
-#define PKT_MAX_REGS 32
+// 22 is enough for the rc_input page in one transfer
+#define PKT_MAX_REGS 22
 #define IOMCU_MAX_CHANNELS 16
 
 //#define IOMCU_DEBUG
