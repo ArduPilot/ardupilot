@@ -780,6 +780,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(6, packet.chan7_raw, tnow);
         RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
+        // an RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+        rover.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -803,18 +805,18 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
         RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
 
+        // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+        rover.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
     case MAVLINK_MSG_ID_HEARTBEAT:
         {
-            // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
+            // we keep track of the last time we received a heartbeat from our GCS for failsafe purposes
             if (msg->sysid != rover.g.sysid_my_gcs) {
                 break;
             }
-
             rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
-            rover.failsafe_trigger(FAILSAFE_EVENT_GCS, false);
             break;
         }
 
