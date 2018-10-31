@@ -49,7 +49,3 @@ void load_lua_bindings(lua_State *state) {
     lua_setglobal(state, "servo");
 }
 
-void hook(lua_State *L, lua_Debug *ar) {
-    gcs().send_text(MAV_SEVERITY_INFO, "got a debug hook");
-    lua_error(L);
-}

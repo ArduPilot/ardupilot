@@ -42,6 +42,7 @@ private:
     bool _running;
 
     AP_Int8 _enable;
+    AP_Int32 _script_vm_exec_count;
 
     static AP_Scripting *_singleton;
 
