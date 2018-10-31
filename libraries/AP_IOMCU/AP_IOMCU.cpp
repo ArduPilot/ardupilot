@@ -788,7 +788,8 @@ void AP_IOMCU::shutdown(void)
   setup for mixing. This allows fixed wing aircraft to fly in manual
   mode if the FMU dies
  */
-bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan, float mixing_gain)
+bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
+                            float mixing_gain, uint16_t manual_rc_mask)
 {
     if (config.protocol_version != IOMCU_PROTOCOL_VERSION) {
         return false;
@@ -833,6 +834,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan, float mixing_
 
     MIX_UPDATE(mixing.rc_chan_override, override_chan);
     MIX_UPDATE(mixing.mixing_gain, (uint16_t)(mixing_gain*1000));
+    MIX_UPDATE(mixing.manual_rc_mask, manual_rc_mask);
 
     // and enable
     MIX_UPDATE(mixing.enabled, 1);
