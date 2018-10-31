@@ -52,7 +52,9 @@ static memory_heap_t dtcm_heap;
 #define DMA_RESERVE_SIZE 4096
 #endif
 
+#if DMA_RESERVE_SIZE != 0
 static memory_heap_t dma_reserve_heap;
+#endif
 
 static void *malloc_dtcm(size_t size);
 
