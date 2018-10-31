@@ -79,6 +79,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPEND
 };
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 AP_Arming::AP_Arming()
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -508,6 +513,13 @@ bool AP_Arming::servo_checks(bool report) const
         }
     }
 
+#if HAL_WITH_IO_MCU
+    if (!iomcu.healthy()) {
+        check_failed(ARMING_CHECK_NONE, report, "IOMCU is unhealthy");
+        check_passed = false;
+    }
+#endif
+    
     return check_passed;
 }
 
