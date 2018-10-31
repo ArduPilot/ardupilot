@@ -178,7 +178,7 @@ bool RCInput::rc_bind(int dsmMode)
 
 #if HAL_USE_ICU == TRUE
     // ask AP_RCProtocol to start a bind
-    rcin_prot.start_bind(dsmMode);
+    rcin_prot.start_bind();
 #endif
     
 #if HAL_RCINPUT_WITH_AP_RADIO
