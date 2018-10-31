@@ -4,7 +4,6 @@
 #include "ch.h"
 #include "ioprotocol.h"
 
-#define IOMCU_MAX_CHANNELS 16
 #define PWM_IGNORE_THIS_CHANNEL UINT16_MAX
 #define SERVO_COUNT 8
 
@@ -56,6 +55,9 @@ private:
         uint16_t pwm_altclock = 1;
     } reg_setup;
 
+    // CONFIG values
+    struct page_config config;
+
     // PAGE_STATUS values
     struct page_reg_status reg_status;
 
@@ -80,6 +82,9 @@ private:
         uint16_t sbus_rate_hz;
     } rate;
 
+    // MIXER values
+    struct page_mixing mixing;
+    
     // sbus rate handling
     uint32_t sbus_last_ms;
     uint32_t sbus_interval_ms;

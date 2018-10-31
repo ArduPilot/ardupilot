@@ -50,6 +50,7 @@ enum iopage {
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
     PAGE_DISARMED_PWM = 108,
+    PAGE_MIXING = 200,
 };
 
 // setup page registers
@@ -77,12 +78,20 @@ enum iopage {
 #define PAGE_REG_SETUP_IGNORE_SAFETY 20 /* bitmask of surfaces to ignore the safety status */
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 
+// config page registers
+#define PAGE_CONFIG_PROTOCOL_VERSION 0
+#define IOMCU_PROTOCOL_VERSION       10
+
 // magic value for rebooting to bootloader
 #define REBOOT_BL_MAGIC 14662
 
 #define PAGE_REG_SETUP_FORCE_SAFETY_OFF 12
 #define PAGE_REG_SETUP_FORCE_SAFETY_ON  14
 #define FORCE_SAFETY_MAGIC 22027
+
+struct PACKED page_config {
+    uint16_t protocol_version = IOMCU_PROTOCOL_VERSION;
+};
 
 struct PACKED page_reg_status {
     uint16_t freemem;
@@ -129,4 +138,26 @@ struct PACKED page_rc_input {
     uint16_t pwm[IOMCU_MAX_CHANNELS];
     uint16_t last_frame_count;
     uint32_t last_input_us;
+};
+
+/*
+  data for mixing on FMU failsafe
+ */
+struct PACKED page_mixing {
+    uint16_t servo_min[IOMCU_MAX_CHANNELS];
+    uint16_t servo_max[IOMCU_MAX_CHANNELS];
+    uint16_t servo_trim[IOMCU_MAX_CHANNELS];
+    uint8_t servo_function[IOMCU_MAX_CHANNELS];
+
+    // RC input arrays are in AETR order
+    uint16_t rc_min[4];
+    uint16_t rc_max[4];
+    uint16_t rc_trim[4];
+    uint8_t rc_channel[4];
+
+    // channel which when high forces mixer
+    int8_t rc_chan_override;
+
+    // enabled needs to be 1 to enable mixing
+    uint8_t enabled;
 };

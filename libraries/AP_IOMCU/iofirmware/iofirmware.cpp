@@ -326,6 +326,9 @@ bool AP_IOMCU_FW::handle_code_read()
 	} while(0);
 
     switch (rx_io_packet.page) {
+    case PAGE_CONFIG:
+        COPY_PAGE(config);
+        break;
     case PAGE_SETUP:
         COPY_PAGE(reg_setup);
         break;
@@ -459,6 +462,11 @@ bool AP_IOMCU_FW::handle_code_write()
         reg_status.flag_fmu_ok = true;
         reg_status.flag_raw_pwm = true;
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
+        break;
+    }
+    case PAGE_MIXING: {
+        uint8_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        memcpy(((uint16_t *)&mixing)+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
 
