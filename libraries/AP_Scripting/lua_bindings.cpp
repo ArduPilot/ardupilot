@@ -17,8 +17,8 @@ static const luaL_Reg gcs_functions[] =
 };
 
 int lua_servo_set_output_pwm(lua_State *state) {
-    int servo_function = luaL_checkinteger(state, 1);
-    int output_value = luaL_checknumber(state, 2);
+    int servo_function = luaL_checkinteger(state, -2);
+    int output_value = luaL_checknumber(state, -1);
 
     // range check the output function
     if ((servo_function < SRV_Channel::Aux_servo_function_t::k_scripting1) ||
