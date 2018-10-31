@@ -49,7 +49,7 @@ enum iopage {
     PAGE_SETUP = 50,
     PAGE_DIRECT_PWM = 54,
     PAGE_FAILSAFE_PWM = 55,
-    PAGE_DISARMED_PWM = 108,
+    PAGE_SAFETY_PWM = 108,
     PAGE_MIXING = 200,
 };
 
@@ -148,16 +148,23 @@ struct PACKED page_mixing {
     uint16_t servo_max[IOMCU_MAX_CHANNELS];
     uint16_t servo_trim[IOMCU_MAX_CHANNELS];
     uint8_t servo_function[IOMCU_MAX_CHANNELS];
+    uint8_t servo_reversed[IOMCU_MAX_CHANNELS];
 
     // RC input arrays are in AETR order
     uint16_t rc_min[4];
     uint16_t rc_max[4];
     uint16_t rc_trim[4];
+    uint8_t rc_reversed[IOMCU_MAX_CHANNELS];
     uint8_t rc_channel[4];
 
     // channel which when high forces mixer
     int8_t rc_chan_override;
 
+    // is the throttle an angle input?
+    uint8_t throttle_is_angle;
+    
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
+
+    uint8_t pad; // pad to even size
 };
