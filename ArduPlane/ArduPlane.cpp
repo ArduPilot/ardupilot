@@ -265,7 +265,7 @@ void Plane::one_second_loop()
 #endif // CONFIG_HAL_BOARD
 
 #if HAL_WITH_IO_MCU
-    iomcu.setup_mixing(&rcmap, g.override_channel.get());
+    iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain);
 #endif
 
     // make it possible to change orientation at runtime
