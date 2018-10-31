@@ -505,7 +505,9 @@ bool AP_IOMCU_FW::handle_code_write()
             break;
 
         case PAGE_REG_SETUP_DSM_BIND:
-            dsm_bind_state = 1;
+            if (dsm_bind_state == 0) {
+                dsm_bind_state = 1;
+            }
             break;
             
         default:
@@ -675,58 +677,6 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
     }
     if (mixing.enabled) {
         run_mixer();
-    }
-}
-
-/*
-  perform a DSM bind operation
- */
-void AP_IOMCU_FW::dsm_bind_step(void)
-{
-    uint32_t now = last_ms;
-    switch (dsm_bind_state) {
-    case 1:
-        palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
-        palClearLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
-        palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_OUT, PAL_MODE_OUTPUT_PUSHPULL);
-        palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
-        dsm_bind_state = 2;
-        last_dsm_bind_ms = now;
-        break;
-
-    case 2:
-        if (now - last_dsm_bind_ms >= 500) {
-            palSetLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
-            dsm_bind_state = 3;
-            last_dsm_bind_ms = now;
-        }
-        break;
-
-    case 3: {
-        if (now - last_dsm_bind_ms >= 72) {
-            // 9 pulses works with all satellite receivers, and supports the highest
-            // available protocol
-            const uint8_t num_pulses = 9;
-            for (uint8_t i=0; i<num_pulses; i++) {
-                hal.scheduler->delay_microseconds(120);
-                palClearLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
-                hal.scheduler->delay_microseconds(120);
-                palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
-            }
-            last_dsm_bind_ms = now;
-            dsm_bind_state = 4;
-        }
-        break;
-    }
-
-    case 4:
-        if (now - last_dsm_bind_ms >= 50) {
-            // set back as alternate function with pullup for UART input
-            palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_OUT, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
-            palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
-            dsm_bind_state = 0;
-        }
-        break;
     }
 }
 
