@@ -131,5 +131,6 @@ private:
     uint32_t loop_counter;
     uint8_t dsm_bind_state;
     uint32_t last_dsm_bind_ms;
+    uint32_t last_failsafe_ms;
 };
 
