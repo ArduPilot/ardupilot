@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Visca.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -385,9 +386,24 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Visca protocol
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+    // @Param: _CTRL_MODE
+    // @DisplayName: Visca camera operating zoom mode
+    // @Description: Zoom mode for camera with visca protocol
+    // @Values: 0:direct, 1: progresive(not suported yet), 2: mavlink(not suported yet)
+    // @User: Standard
+    AP_GROUPINFO("2_VSCTRL_MD",      43, AP_Mount, state[1]._control_mode, 0),
+
+    // @Param: _CTRL_CH
+    // @DisplayName: Visca camera zoom channel input
+    // @Description: Channel used for zoom control of visca protocol camera
+    // @Values: 6,7,8,..
+    // @User: Standard
+    AP_GROUPINFO("2_VSCTRL_CH",         44, AP_Mount, state[1]._zoom_rc_in, 0),
+
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
@@ -461,6 +477,11 @@ void AP_Mount::init()
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
+            _num_instances++;
+
+        // check for camera mounts using Visca protocol
+        } else if (mount_type == Mount_Type_Visca) {
+            _backends[instance] = new AP_Mount_Visca(*this, state[instance], instance);
             _num_instances++;
         }
 
@@ -544,8 +565,14 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
         return;
     }
 
-    // call backend's set_mode
-    _backends[instance]->set_mode(mode);
+    MountType mount_type = get_mount_type(instance);
+
+    // check that mount type is not Visca, because Visca doesn't support camera mounts modes
+    if (mount_type != Mount_Type_Visca){
+
+        // call backend's set_mode
+        _backends[instance]->set_mode(mode);
+    }
 }
 
 // set_angle_targets - sets angle targets in degrees
