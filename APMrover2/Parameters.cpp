@@ -134,10 +134,12 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
-    // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
+    // @Description: The time in seconds that a failsafe condition must persist before the failsafe action is triggered
     // @Units: s
+    // @Range: 1 100
+    // @Increment: 0.5
     // @User: Standard
-    GSCALAR(fs_timeout,    "FS_TIMEOUT",     5),
+    GSCALAR(fs_timeout,    "FS_TIMEOUT",     1.5),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
