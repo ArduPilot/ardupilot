@@ -47,6 +47,14 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Scripting, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
+    // @Param: VM_I_COUNT
+    // @DisplayName: Scripting Virtual Machine Instruction Count
+    // @Description: The number virtual machine instructions that can be run before considering a script to have taken an excessive amount of time
+    // @Range: 1000 1000000
+    // @Increment: 10000
+    // @User: Advanced
+    AP_GROUPINFO("VM_I_COUNT", 2, AP_Scripting, _script_vm_exec_count, 10000),
+
     AP_GROUPEND
 };
 
@@ -75,6 +83,22 @@ bool AP_Scripting::init(void) {
     return true;
 }
 
+struct {
+    bool overtime; // script exceeded it's execution slot, and we are bailing out with pcalls
+} current_script;
+
+void hook(lua_State *state, lua_Debug *ar) {
+    gcs().send_text(MAV_SEVERITY_INFO, "got a debug hook");
+
+    current_script.overtime = true;
+
+    // we need to aggressively bail out as we are over time
+    // so we will aggressively trap errors until we clear out
+    lua_sethook(state, hook, LUA_MASKCOUNT, 1);
+
+    luaL_error(state, "Exceeded CPU time");
+}
+
 void AP_Scripting::thread(void) {
     unsigned int loop = 0;
     lua_State *state = luaL_newstate();
@@ -96,6 +120,7 @@ void AP_Scripting::thread(void) {
     free(sandbox_data);
 
     luaL_loadstring(state, "gcs.send_text(string.format(\"math.cos(1 + 2) = %f\", math.cos(1+2)))");
+//    luaL_loadfile(state, "test.lua");
     lua_getglobal(state, "get_sandbox_env"); // find the sandbox creation function
     if (lua_pcall(state, 0, LUA_MULTRET, 0)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: Could not create sandbox: %s", lua_tostring(state, -1));
@@ -105,14 +130,30 @@ void AP_Scripting::thread(void) {
 
     while (true) {
         hal.scheduler->delay(1000);
+
         gcs().send_text(MAV_SEVERITY_INFO, "Scripting Loop: %u", loop++);
+
+        // number of VM instructions to run, enforce a minimum script length, don't cap the upper end
+        const int32_t vm_steps = MAX(_script_vm_exec_count, 1000);
+
+        // reset the current script tracking information
+        memset(&current_script, 0, sizeof(current_script));
+        // always reset the hook in case we bailed out
+        lua_sethook(state, hook, LUA_MASKCOUNT, vm_steps);
 
         const uint32_t startMem = hal.util->available_memory();
         const uint32_t loadEnd = AP_HAL::micros();
         lua_pushvalue(state, -1);
         if(lua_pcall(state, 0, LUA_MULTRET, 0)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(state, -1));
-            hal.console->printf("Lua: %s", lua_tostring(state, -1));
+            if (current_script.overtime) {
+                // script has consumed an excessive amount of CPU time
+                // FIXME: Find the chunkname for the error message
+                // FIXME: Remove from future execution/restart?
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: exceeded time limit (%d)",  vm_steps);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "Lua: %s", lua_tostring(state, -1));
+                hal.console->printf("Lua: %s", lua_tostring(state, -1));
+            }
             lua_pop(state, 1);
             continue;
         }
