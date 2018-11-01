@@ -169,7 +169,7 @@ void AP_IOMCU_FW::init()
 
     // power on spektrum port
     palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
-    palSetLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
+    SPEKTRUM_POWER(1);
 
     rcprotocol = AP_RCProtocol::get_instance();
 
@@ -217,8 +217,12 @@ void AP_IOMCU_FW::update()
             chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
             last_failsafe_ms = now;
         }
+        // turn amber on
+        AMBER_SET(1);
     } else {
         last_failsafe_ms = now;
+        // turn amber off
+        AMBER_SET(0);
     }
 
     // update status page at 20Hz
@@ -262,14 +266,15 @@ void AP_IOMCU_FW::heater_update()
     if (!has_heater) {
         // use blue LED as heartbeat, run it 4x faster when override active
         if (now - last_blue_led_ms > (override_active?125:500)) {
-            palToggleLine(HAL_GPIO_PIN_HEATER);
+            BLUE_TOGGLE();
             last_blue_led_ms = now;
         }
     } else if (reg_setup.heater_duty_cycle == 0 || (now - last_heater_ms > 3000UL)) {
-        palWriteLine(HAL_GPIO_PIN_HEATER, 0);
+        // turn off the heater
+        HEATER_SET(0);
     } else {
         uint8_t cycle = ((now / 10UL) % 100U);
-        palWriteLine(HAL_GPIO_PIN_HEATER, !(cycle >= reg_setup.heater_duty_cycle));
+        HEATER_SET(!(cycle >= reg_setup.heater_duty_cycle));
     }
 }
 
