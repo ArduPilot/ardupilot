@@ -82,7 +82,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
         for (uint8_t i=0; i<n; i++) {
             rcprotocol->process_byte(b[i]);
         }
-        //palToggleLine(HAL_GPIO_PIN_HEATER);
+        //BLUE_TOGGLE();
     }
 }
 
@@ -104,16 +104,16 @@ void AP_IOMCU_FW::dsm_bind_step(void)
     switch (dsm_bind_state) {
     case 1:
         palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
-        palClearLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
+        SPEKTRUM_POWER(0);
         palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_OUT, PAL_MODE_OUTPUT_PUSHPULL);
-        palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
+        SPEKTRUM_SET(1);
         dsm_bind_state = 2;
         last_dsm_bind_ms = now;
         break;
 
     case 2:
         if (now - last_dsm_bind_ms >= 500) {
-            palSetLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
+            SPEKTRUM_POWER(1);
             dsm_bind_state = 3;
             last_dsm_bind_ms = now;
         }
@@ -129,9 +129,9 @@ void AP_IOMCU_FW::dsm_bind_step(void)
                 // the delay should be 120us, but we are running our
                 // clock at 1kHz, and 1ms works fine
                 delay_one_ms(now);
-                palClearLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
+                SPEKTRUM_SET(0);
                 delay_one_ms(now);
-                palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
+                SPEKTRUM_SET(1);
             }
             last_dsm_bind_ms = now;
             dsm_bind_state = 4;
