@@ -167,10 +167,10 @@ void Rover::Log_Write_Sail()
     }
 
     // get wind direction
-    float wind_dir_abs = 0.0f;
-    float wind_dir_rel = 0.0f;
-    float wind_speed_true = 0.0f;
-    float wind_speed_apparent = 0.0f;
+    float wind_dir_abs = DataFlash.quiet_nanf();
+    float wind_dir_rel = DataFlash.quiet_nanf();
+    float wind_speed_true = DataFlash.quiet_nanf();
+    float wind_speed_apparent = DataFlash.quiet_nanf();
     if (rover.g2.windvane.enabled()) {
         wind_dir_abs = degrees(g2.windvane.get_absolute_wind_direction_rad());
         wind_dir_rel = degrees(g2.windvane.get_apparent_wind_direction_rad());

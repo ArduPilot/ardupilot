@@ -658,7 +658,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("SAIL_NO_GO_ANGLE", 36, ParametersG2, sail_no_go, 45),
 
     // @Group: ARSPD
-    // @Path: ../libraries/AP_WindVane/AP_WindVane.cpp
+    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed, "ARSPD", 37, ParametersG2, AP_Airspeed),
 
     AP_GROUPEND
