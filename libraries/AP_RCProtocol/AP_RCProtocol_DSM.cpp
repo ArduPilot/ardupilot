@@ -440,3 +440,25 @@ void AP_RCProtocol_DSM::update(void)
     }
 #endif
 }
+
+// support byte input
+void AP_RCProtocol_DSM::process_byte(uint8_t b)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - byte_input.last_byte_ms > 3 ||
+        byte_input.ofs == sizeof(byte_input.buf)) {
+        byte_input.ofs = 0;
+    }
+    byte_input.last_byte_ms = now;
+    byte_input.buf[byte_input.ofs++] = b;
+    if (byte_input.ofs == 16) {
+        uint16_t values[8];
+        uint16_t num_values=0;
+        if (dsm_decode(AP_HAL::micros64(), byte_input.buf, values, &num_values, 8) &&
+            num_values >= MIN_RCIN_CHANNELS) {
+            add_input(num_values, values, false);
+        }
+
+        byte_input.ofs = 0;
+    }
+}
