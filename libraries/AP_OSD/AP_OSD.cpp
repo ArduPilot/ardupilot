@@ -150,6 +150,10 @@ AP_OSD::AP_OSD()
 #ifdef WITH_SITL_OSD
     osd_type.set_default(2);
 #endif
+    
+#ifdef HAL_OSD_TYPE_DEFAULT
+    osd_type.set_default(HAL_OSD_TYPE_DEFAULT);
+#endif
 }
 
 void AP_OSD::init()
