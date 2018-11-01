@@ -68,6 +68,9 @@ PB13 SAFETY_LED OUTPUT HIGH
 # amber LED
 PB15 AMBER_LED OUTPUT LOW
 
+# green ring LED on cube
+PA11 RING_LED OUTPUT LOW
+
 # UART for DSM input
 # TX side is for IO debug, and is unused
 PA9  USART1_TX USART1 SPEED_HIGH
