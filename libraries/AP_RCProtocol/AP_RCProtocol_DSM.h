@@ -23,6 +23,7 @@ class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_DSM(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_byte(uint8_t byte) override;
     void start_bind(void) override;
     void update(void) override;
 
@@ -51,4 +52,9 @@ private:
     } bind_state;
     uint32_t bind_last_ms;
 
+    struct {
+        uint8_t buf[16];
+        uint8_t ofs;
+        uint32_t last_byte_ms;
+    } byte_input;
 };
