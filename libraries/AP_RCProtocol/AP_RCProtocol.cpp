@@ -40,6 +40,10 @@ void AP_RCProtocol::init()
 
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
+    if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes) {
+        // we're using byte inputs, discard pulses
+        return;
+    }
     uint32_t now = AP_HAL::millis();
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && now - _last_input_ms < 200) {
@@ -59,6 +63,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 _new_input = true;
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
                 _last_input_ms = AP_HAL::millis();
+                _detected_with_bytes = false;
             }
         }
     }
@@ -66,6 +71,10 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 
 void AP_RCProtocol::process_byte(uint8_t byte)
 {
+    if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes) {
+        // we're using pulse inputs, discard bytes
+        return;
+    }
     uint32_t now = AP_HAL::millis();
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && now - _last_input_ms < 200) {
@@ -85,6 +94,7 @@ void AP_RCProtocol::process_byte(uint8_t byte)
                 _new_input = true;
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
                 _last_input_ms = AP_HAL::millis();
+                _detected_with_bytes = true;
             }
         }
     }
