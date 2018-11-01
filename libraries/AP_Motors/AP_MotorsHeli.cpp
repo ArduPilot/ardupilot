@@ -229,6 +229,10 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // record successful initialisation if what we setup was the desired frame_class
     _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+
+    // set flag to true so targets are initialized once aircraft is armed for first time
+    _heliflags.init_targets_on_arming = true;
+
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
@@ -375,8 +379,11 @@ void AP_MotorsHeli::output_logic()
     if (_flags.armed) {
         if (!_flags.interlock) {
             _spool_desired = DESIRED_GROUND_IDLE;
+        } else {
+        _heliflags.init_targets_on_arming = false;
         }
     } else {
+        _heliflags.init_targets_on_arming = true;
         _spool_desired = DESIRED_SHUT_DOWN;
         _spool_mode = SHUT_DOWN;
     }

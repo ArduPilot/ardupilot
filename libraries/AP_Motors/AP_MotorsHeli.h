@@ -130,6 +130,9 @@ public:
 
     float get_throttle_hover() const { return 0.5f; }
 
+    // support passing init_targets_on_arming flag to greater code
+    bool init_targets_on_arming() const { return _heliflags.init_targets_on_arming; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -195,6 +198,7 @@ protected:
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
         uint8_t inverted_flight         : 1;    // true for inverted flight
+        uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
     } _heliflags;
 
     // parameters
