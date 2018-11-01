@@ -74,8 +74,16 @@
 #define ERROR_SUBSYSTEM_FAILSAFE_FENCE  9
 #define ERROR_SUBSYSTEM_FLIGHT_MODE     10
 #define ERROR_SUBSYSTEM_CRASH_CHECK     12
+#define ERROR_SUBSYSTEM_EKFCHECK        16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
+// EKF check definitions
+#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
+// subsystem specific error codes -- ekf failsafe
+#define ERROR_CODE_FAILSAFE_RESOLVED        0
+#define ERROR_CODE_FAILSAFE_OCCURRED        1
 
 // radio failsafe enum (FS_THR_ENABLE parameter)
 enum fs_thr_enable {
@@ -95,6 +103,11 @@ enum fs_crash_action {
   FS_CRASH_DISABLE = 0,
   FS_CRASH_HOLD = 1,
   FS_CRASH_HOLD_AND_DISARM = 2
+};
+
+enum fs_ekf_action {
+    FS_EKF_DISABLE = 0,
+    FS_EFK_HOLD = 1
 };
 
 #define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
