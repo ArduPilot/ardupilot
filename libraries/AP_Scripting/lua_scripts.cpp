@@ -18,6 +18,22 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 
+#if HAL_OS_POSIX_IO
+#include <dirent.h>
+#endif
+
+#if HAL_OS_FATFS_IO
+#include <stdio.h>
+#endif
+
+#ifndef SCRIPTING_DIRECTORY
+  #if HAL_OS_FATFS_IO
+    #define SCRIPTING_DIRECTORY "/APM/scripts"
+  #else
+    #define SCRIPTING_DIRECTORY "./scripts"
+  #endif //HAL_OS_FATFS_IO
+#endif // SCRIPTING_DIRECTORY
+
 extern const AP_HAL::HAL& hal;
 
 bool lua_scripts::overtime;
@@ -37,7 +53,7 @@ void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
     luaL_error(L, "Exceeded CPU time");
 }
 
-lua_scripts::script_info *lua_scripts::load_script(lua_State *L, const char *filename) {
+lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename) {
     if (int error = luaL_loadfile(L, filename)) {
         switch (error) {
             case LUA_ERRSYNTAX:
@@ -76,6 +92,49 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, const char *fil
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
 
     return new_script;
+}
+
+void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
+    if (dirname == nullptr) {
+        return;
+    }
+
+    DIR *d = opendir(dirname);
+    if (d == nullptr) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Lua: Could not find a scripts directory");
+        return;
+    }
+
+    // load anything that ends in .lua
+    for (struct dirent *de=readdir(d); de; de=readdir(d)) {
+        uint8_t length = strlen(de->d_name);
+        if (length < 5) {
+            // not long enough
+            continue;
+        }
+
+        if (strncmp(&de->d_name[length-4], ".lua", 4)) {
+            // doesn't end in .lua
+            continue;
+        }
+
+        // FIXME: because chunk name fetching is not working we are allocating and storing an extra string we shouldn't need to
+        size_t size = strlen(dirname) + strlen(de->d_name) + 2;
+        char * filename = (char *)luaM_malloc(L, size);
+        if (filename == nullptr) {
+            continue;
+        }
+        snprintf(filename, size, "%s/%s", dirname, de->d_name);
+
+        // we have something that looks like a lua file, attempt to load it
+        script_info * script = load_script(L, filename);
+        if (script == nullptr) {
+            luaM_free(L, filename);
+            continue;
+        }
+        reschedule_script(script);
+
+    }
 }
 
 void lua_scripts::run_next_script(lua_State *L) {
@@ -175,6 +234,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     }
 
     luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
+    luaM_free(L, script->name);
     luaM_free(L, script);
 }
 
@@ -232,9 +292,8 @@ void lua_scripts::run(void) {
     }
     free(sandbox_data);
 
-    // FIXME: Scan the filesystem in an appropriate manner and autostart scripts
-    // FIXME: This panic's SITL if the file is not found
-    reschedule_script(load_script(L, "test.lua"));
+    // Scan the filesystem in an appropriate manner and autostart scripts
+    load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
 
     while (true) {
         if (scripts != nullptr) {

@@ -37,11 +37,13 @@ private:
     typedef struct script_info {
        int lua_ref;          // reference to the loaded script object
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
-       const char *name;     // filename for the script // FIXME: This information should be available from Lua
+       char *name;           // filename for the script // FIXME: This information should be available from Lua
        script_info *next;
     } script_info;
 
-    script_info *load_script(lua_State *L, const char *filename);
+    script_info *load_script(lua_State *L, char *filename);
+
+    void load_all_scripts_in_dir(lua_State *L, const char *dirname);
 
     void run_next_script(lua_State *L);
 
