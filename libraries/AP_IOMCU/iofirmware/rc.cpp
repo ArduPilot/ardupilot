@@ -25,6 +25,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+static bool sbus_out_initialised;
+
+// usart3 is for SBUS input and output
 static const SerialConfig uart3_cfg = {
     100000,   // speed
     USART_CR1_PCE | USART_CR1_M, // cr1, enable even parity
@@ -34,16 +37,53 @@ static const SerialConfig uart3_cfg = {
     nullptr,  // ctx
 };
 
-void sbus_out_init(void)
-{
-    sdStart(&SD3, &uart3_cfg);
-}
-
 void sbus_out_write(uint16_t *channels, uint8_t nchannels)
 {
+    if (!sbus_out_initialised) {
+        sdStart(&SD3, &uart3_cfg);
+        sbus_out_initialised = true;
+    }
     uint8_t buffer[25];
     AP_SBusOut::sbus_format_frame(channels, nchannels, buffer);
     chnWrite(&SD3, buffer, sizeof(buffer));
+}
+
+// usart1 is for DSM input and (optionally) debug to FMU
+static const SerialConfig uart1_cfg = {
+    115200,   // speed
+    0,        // cr1
+    0,        // cr2
+    0,        // cr3
+    nullptr,  // irq_cb
+    nullptr,  // ctx
+};
+
+/*
+  init rcin on DSM USART1
+ */
+void AP_IOMCU_FW::rcin_serial_init(void)
+{
+    sdStart(&SD1, &uart1_cfg);
+}
+
+
+static uint32_t num_dsm_bytes;
+
+/*
+  check for data on DSM RX uart
+ */
+void AP_IOMCU_FW::rcin_serial_update(void)
+{
+    uint8_t b[16];
+    uint32_t n;
+    if ((n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+        n = MIN(n, sizeof(b));
+        num_dsm_bytes += n;
+        for (uint8_t i=0; i<n; i++) {
+            rcprotocol->process_byte(b[i]);
+        }
+        //palToggleLine(HAL_GPIO_PIN_HEATER);
+    }
 }
 
 /*
@@ -101,9 +141,8 @@ void AP_IOMCU_FW::dsm_bind_step(void)
 
     case 4:
         if (now - last_dsm_bind_ms >= 50) {
-            // set back as alternate function with pullup for UART input
-            palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_OUT, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
-            palSetLine(HAL_GPIO_PIN_SPEKTRUM_OUT);
+            // set back as input pin
+            palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_OUT, PAL_MODE_INPUT);
             dsm_bind_state = 0;
         }
         break;
