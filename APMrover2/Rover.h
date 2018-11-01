@@ -257,6 +257,7 @@ private:
         uint8_t triggered;          // bit flags of failsafes that have triggered an action
         uint32_t last_valid_rc_ms;  // system time of most recent RC input from pilot
         uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
+        bool ekf;
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
@@ -418,6 +419,13 @@ private:
     void cruise_learn_start();
     void cruise_learn_update();
     void cruise_learn_complete();
+
+    // ekf_check.cpp
+    void ekf_check();
+    bool ekf_over_threshold();
+    bool ekf_position_ok();
+    void failsafe_ekf_event();
+    void failsafe_ekf_off_event(void);
 
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);

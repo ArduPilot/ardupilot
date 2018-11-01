@@ -47,6 +47,14 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return true;
     }
 
+    // check for ekf failsafe
+    if (rover.failsafe.ekf) {
+        if (display_failure) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: EKF failsafe");
+        }
+        return false;
+    }
+
     // call parent gps checks
     return AP_Arming::gps_checks(display_failure);
 }
