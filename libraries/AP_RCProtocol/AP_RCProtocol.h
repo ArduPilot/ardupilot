@@ -61,6 +61,7 @@ public:
 
 private:
     enum rcprotocol_t _detected_protocol = NONE;
+    bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input = false;
     uint32_t _last_input_ms;
