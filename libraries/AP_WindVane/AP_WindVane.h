@@ -107,19 +107,19 @@ private:
     // parameters
     AP_Int8 _type;                                  // type of windvane being used
     AP_Int8 _rc_in_no;                              // RC input channel to use
-    AP_Int8 _analog_pin_no;                         // analog pin connected to sensor
-    AP_Float _analog_volt_min;                      // minimum voltage read by windvane
-    AP_Float _analog_volt_max;                      // maximum voltage read by windvane
-    AP_Float _analog_head_bearing_offset;           // angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
-    AP_Float _vane_filt_hz;                         // vane Low pass filter frequency
+    AP_Int8 _dir_analog_pin;                        // analog pin connected to wind vane direction sensor
+    AP_Float _dir_analog_volt_min;                  // minimum voltage read by windvane
+    AP_Float _dir_analog_volt_max;                  // maximum voltage read by windvane
+    AP_Float _dir_analog_bearing_offset;            // angle offset when windvane is indicating a headwind, ie 0 degress relative to vehicle
+    AP_Float _dir_analog_deadzone;                  // analog pot deadzone in degrees
+    AP_Float _dir_filt_hz;                          // vane Low pass filter frequency
     AP_Int8 _calibration;                           // enter calibration
-    AP_Float _analog_deadzone;                      // analog pot deadzone in degrees
-    AP_Float _vane_wind_speed_cutoff;               // vane cutoff wind speed
-    AP_Int8 _wind_speed_sensor_type;                // wind speed sensor type
-    AP_Int8 _wind_speed_sensor_speed_pin;           // speed sensor analog pin for reading speed
-    AP_Float _wind_speed_sensor_temp_pin;           // speed sensor analog pin for reading temp, -1 if disable
-    AP_Float _wind_speed_sensor_voltage_offset;     // analog speed zero wind voltage offset
-    AP_Float _wind_speed_filt_hz;                   // speed sensor low pass filter frequency
+    AP_Float _dir_speed_cutoff;                     // vane cutoff wind speed
+    AP_Int8 _speed_sensor_type;                     // wind speed sensor type
+    AP_Int8 _speed_sensor_speed_pin;                // speed sensor analog pin for reading speed
+    AP_Float _speed_sensor_temp_pin;                // speed sensor analog pin for reading temp, -1 if disable
+    AP_Float _speed_sensor_voltage_offset;          // analog speed zero wind voltage offset
+    AP_Float _speed_filt_hz;                        // speed sensor low pass filter frequency
 
     static AP_WindVane *_singleton;
 
@@ -146,14 +146,14 @@ private:
     };
 
     // pin for reading analog voltage
-    AP_HAL::AnalogSource *windvane_analog_source;
-    AP_HAL::AnalogSource *wind_speed_analog_source;
-    AP_HAL::AnalogSource *wind_speed_temp_analog_source;
+    AP_HAL::AnalogSource *dir_analog_source;
+    AP_HAL::AnalogSource *speed_analog_source;
+    AP_HAL::AnalogSource *speed_temp_analog_source;
 
-    // low pass filters of direction
-    LowPassFilterFloat wind_sin_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat wind_cos_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat wind_speed_filt = LowPassFilterFloat(2.0f);
+    // low pass filters of direction and speed
+    LowPassFilterFloat _dir_sin_filt = LowPassFilterFloat(2.0f);
+    LowPassFilterFloat _dir_cos_filt = LowPassFilterFloat(2.0f);
+    LowPassFilterFloat _speed_filt = LowPassFilterFloat(2.0f);
 };
 
 namespace AP {
