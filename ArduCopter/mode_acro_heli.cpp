@@ -44,12 +44,14 @@ void Copter::ModeAcro_Heli::run()
 
     if (motors->get_spool_mode() == AP_Motors::SHUT_DOWN) {
         // Motors Stopped
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->set_attitude_target_to_current_attitude();
         attitude_control->reset_rate_controller_I_terms();
     } else if (motors->get_spool_mode() == AP_Motors::GROUND_IDLE) {
         // Landed
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->reset_rate_controller_I_terms();
+        if (motors->init_targets_on_arming()) {
+            attitude_control->set_attitude_target_to_current_attitude();
+            attitude_control->reset_rate_controller_I_terms();
+        }
     } else if (motors->get_spool_mode() == AP_Motors::THROTTLE_UNLIMITED) {
         // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
