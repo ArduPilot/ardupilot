@@ -389,13 +389,15 @@ private:
 
     // sailboat variables
     enum Sailboat_Tack {
-        Tack_Port,
-        Tack_STBD
+        TACK_PORT,
+        TACK_STARBOARD
     };
-    bool _sailboat_tacking;                 // true when sailboat is in the process of tacking to a new heading
-    float _sailboat_tack_heading_rad;       // target heading in radians while tacking in either acro or autonomous modes
-    uint32_t _sailboat_auto_tack_request_ms;// system time user requested tack in autonomous modes
-    uint32_t _sailboat_auto_tack_start_ms;  // system time when tack was started in autonomous mode
+    struct {
+        bool tacking;                   // true when sailboat is in the process of tacking to a new heading
+        float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
+        uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
+        uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
+    } sailboat;
 
 private:
 
