@@ -334,9 +334,42 @@ class generic_pin(object):
             return None
         return self.get_AFIO()
 
+    def get_CR_F1(self):
+        '''return CR FLAGS for STM32F1xx'''
+        #Check Speed
+        if self.sig_dir != "INPUT" or self.af is not None:
+            speed_values = ['SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
+            v = 'SPEED_MEDIUM'
+            for e in self.extra:
+                if e in speed_values:
+                    v = e
+            speed_str = "PIN_%s(%uU) |" % (v, self.pin)
+        else:
+            speed_str = ""
+        if self.af is not None:
+            if self.label.endswith('_RX'):
+                # uart RX is configured as a input, and can be pullup, pulldown or float
+                if 'PULLUP' in self.extra or 'PULLDOWN' in self.extra:
+                    v = 'PUD'
+                else:
+                    v = "NOPULL"
+            else:
+                v = "AF_PP"
+        elif self.sig_dir == 'OUTPUT':
+            v = "OUTPUT_PP"
+        elif self.type.startswith('ADC'):
+            v = "ANALOG"
+        else:
+            v = "PUD"
+            if 'FLOATING' in self.extra:
+                v = "NOPULL"
+        mode_str = "PIN_MODE_%s(%uU)" % (v, self.pin)
+        return "%s %s" % (speed_str, mode_str)
+
     def get_CR(self):
         '''return CR FLAGS'''
-        #Check Speed
+        if mcu_series == "STM32F100":
+            return self.get_CR_F1()
         if self.sig_dir != "INPUT":
             speed_values = ['SPEED_LOW', 'SPEED_MEDIUM', 'SPEED_HIGH']
             v = 'SPEED_MEDIUM'
