@@ -22,8 +22,12 @@
 #define MIN_RCIN_CHANNELS  5
 
 class AP_RCProtocol_Backend;
+
 class AP_RCProtocol {
 public:
+    AP_RCProtocol() {
+        instance = this;
+    }
     enum rcprotocol_t {
         PPM = 0,
         SBUS,
@@ -50,12 +54,19 @@ public:
     bool new_input();
     void start_bind(void);
 
+    // access to singleton
+    static AP_RCProtocol *get_instance(void) {
+        return instance;
+    }
+
 private:
     enum rcprotocol_t _detected_protocol = NONE;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input = false;
     uint32_t _last_input_ms;
     bool _valid_serial_prot = false;
+
+    static AP_RCProtocol *instance;
 };
 
 #include "AP_RCProtocol_Backend.h"
