@@ -24,6 +24,9 @@
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
 
+// singleton
+AP_RCProtocol *AP_RCProtocol::instance;
+
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
