@@ -132,10 +132,6 @@ static UARTConfig uart_cfg = {
 
 void setup(void)
 {
-    // we need to release the JTAG reset pin to be used as a GPIO, otherwise we can't enable
-    // or disable SBUS out
-    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
-
     hal.rcin->init();
     hal.rcout->init();
 
@@ -166,11 +162,13 @@ void AP_IOMCU_FW::init()
     }
 
     adc_init();
-    sbus_out_init();
+    rcin_serial_init();
 
     // power on spektrum port
     palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
     palSetLine(HAL_GPIO_PIN_SPEKTRUM_PWR_EN);
+
+    rcprotocol = AP_RCProtocol::get_instance();
 
     // we do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
@@ -233,6 +231,7 @@ void AP_IOMCU_FW::update()
         rcin_update();
         safety_update();
         rcout_mode_update();
+        rcin_serial_update();
         hal.rcout->timer_tick();
         if (dsm_bind_state) {
             dsm_bind_step();
@@ -475,6 +474,11 @@ bool AP_IOMCU_FW::handle_code_write()
 
                 // enable SBUS output at specified rate
                 sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
+
+                // we need to release the JTAG reset pin to be used as a GPIO, otherwise we can't enable
+                // or disable SBUS out
+                AFIO->MAPR = AFIO_MAPR_SWJ_CFG_NOJNTRST;
+
                 palClearLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             } else {
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);

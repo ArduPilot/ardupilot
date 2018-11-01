@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 
 #include "ch.h"
@@ -27,6 +28,8 @@ private:
     void schedule_reboot(uint32_t time_ms);
     void safety_update();
     void rcout_mode_update();
+    void rcin_serial_init();
+    void rcin_serial_update();
     void page_status_update(void);
     void fill_failsafe_pwm(void);
     void run_mixer(void);
@@ -109,6 +112,8 @@ private:
     // sbus rate handling
     uint32_t sbus_last_ms;
     uint32_t sbus_interval_ms;
+
+    AP_RCProtocol *rcprotocol;
 
     uint32_t fmu_data_received_time;
     uint32_t last_heater_ms;
