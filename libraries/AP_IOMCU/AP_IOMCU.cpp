@@ -105,11 +105,12 @@ void AP_IOMCU::thread_main(void)
 
         if (mask & EVENT_MASK(IOEVENT_INIT)) {
             // get protocol version
-            if (!read_registers(PAGE_CONFIG, PAGE_CONFIG_PROTOCOL_VERSION, sizeof(config)/2, (uint16_t *)&config)) {
+            if (!read_registers(PAGE_CONFIG, 0, sizeof(config)/2, (uint16_t *)&config)) {
                 event_failed(IOEVENT_INIT);
                 continue;
             }
-            debug("io protocol: %u\n", config.protocol_version);
+            is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
+                                  config.protocol_version2 == IOMCU_PROTOCOL_VERSION2);
 
             // set IO_ARM_OK and FMU_ARMED
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
@@ -359,7 +360,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.crc = 0;
 
     uint8_t pkt_size = pkt.get_size();
-    if (config.protocol_version == IOMCU_PROTOCOL_VERSION) {
+    if (is_chibios_backend) {
         // save bandwidth on reads
         pkt_size = 4;
     }
@@ -789,8 +790,7 @@ void AP_IOMCU::shutdown(void)
  */
 void AP_IOMCU::bind_dsm(uint8_t mode)
 {
-    if (config.protocol_version != IOMCU_PROTOCOL_VERSION ||
-        hal.util->get_soft_armed()) {
+    if (!is_chibios_backend || hal.util->get_soft_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
@@ -805,7 +805,7 @@ void AP_IOMCU::bind_dsm(uint8_t mode)
 bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
                             float mixing_gain, uint16_t manual_rc_mask)
 {
-    if (config.protocol_version != IOMCU_PROTOCOL_VERSION) {
+    if (!is_chibios_backend) {
         return false;
     }
     bool changed = false;
