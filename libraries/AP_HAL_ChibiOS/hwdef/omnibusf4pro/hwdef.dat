@@ -129,6 +129,7 @@ define BOARD_RSSI_ANA_PIN 0
 define HAL_GPIO_A_LED_PIN 57
 
 define OSD_ENABLED ENABLED
+define HAL_OSD_TYPE_DEFAULT 1
 
 #To complementary channels work we define this
 define STM32_PWM_USE_ADVANCED TRUE
