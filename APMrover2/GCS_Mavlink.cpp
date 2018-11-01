@@ -279,21 +279,6 @@ void Rover::send_fence_status(mavlink_channel_t chan)
     fence_send_mavlink_status(chan);
 }
 
-void Rover::send_wind(mavlink_channel_t chan)
-{
-    // exit immediately if no wind vane
-    if (!rover.g2.windvane.enabled()) {
-        return;
-    }
-
-    // send wind
-    mavlink_msg_wind_send(
-        chan,
-        wrap_360(degrees(g2.windvane.get_absolute_wind_direction_rad())),
-        g2.windvane.get_true_wind_speed(),
-        0);
-}
-
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
 {
     // send wheel encoder data using rpm message
@@ -372,7 +357,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
-        rover.send_wind(chan);
+        rover.g2.windvane.send_wind(chan);
         break;
 
     case MSG_PID_TUNING:
