@@ -81,8 +81,10 @@ enum iopage {
 #define PAGE_REG_SETUP_DSM_BIND     22
 
 // config page registers
-#define PAGE_CONFIG_PROTOCOL_VERSION 0
-#define IOMCU_PROTOCOL_VERSION       10
+#define PAGE_CONFIG_PROTOCOL_VERSION  0
+#define PAGE_CONFIG_PROTOCOL_VERSION2 1
+#define IOMCU_PROTOCOL_VERSION       4
+#define IOMCU_PROTOCOL_VERSION2     10
 
 // magic value for rebooting to bootloader
 #define REBOOT_BL_MAGIC 14662
@@ -93,6 +95,7 @@ enum iopage {
 
 struct PACKED page_config {
     uint16_t protocol_version;
+    uint16_t protocol_version2;
 };
 
 struct PACKED page_reg_status {
