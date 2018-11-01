@@ -195,6 +195,7 @@ private:
 
     bool crc_is_ok;
     bool initialised;
+    bool is_chibios_backend;
 
     uint32_t protocol_fail_count;
 

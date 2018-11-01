@@ -153,7 +153,10 @@ void loop(void)
 
 void AP_IOMCU_FW::init()
 {
+    // the first protocol version must be 4 to allow downgrade to
+    // old NuttX based firmwares
     config.protocol_version = IOMCU_PROTOCOL_VERSION;
+    config.protocol_version2 = IOMCU_PROTOCOL_VERSION2;
 
     thread_ctx = chThdGetSelfX();
 
@@ -408,9 +411,12 @@ bool AP_IOMCU_FW::handle_code_read()
 
     /* correct the data pointer and count for the offset */
     values += rx_io_packet.offset;
+    tx_io_packet.page = rx_io_packet.page;
+    tx_io_packet.offset = rx_io_packet.offset;
     tx_io_packet.count -= rx_io_packet.offset;
     tx_io_packet.count = MIN(tx_io_packet.count, rx_io_packet.count);
     tx_io_packet.count = MIN(tx_io_packet.count, PKT_MAX_REGS);
+    tx_io_packet.code = CODE_SUCCESS;
     memcpy(tx_io_packet.regs, values, sizeof(uint16_t)*tx_io_packet.count);
     tx_io_packet.crc = 0;
     tx_io_packet.crc =  crc_crc8((const uint8_t *)&tx_io_packet, tx_io_packet.get_size());
