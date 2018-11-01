@@ -67,6 +67,9 @@ public:
     // start calibration routine
     bool start_calibration();
 
+    // send mavlink wind message
+    void send_wind(mavlink_channel_t chan);
+
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
 

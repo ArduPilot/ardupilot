@@ -243,6 +243,22 @@ bool AP_WindVane::start_calibration()
     return false;
 }
 
+// send mavlink wind message
+void AP_WindVane::send_wind(mavlink_channel_t chan)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    // send wind
+    mavlink_msg_wind_send(
+        chan,
+        wrap_360(degrees(get_absolute_wind_direction_rad())),
+        get_true_wind_speed(),
+        0);
+}
+
 // read an analog port and calculate the wind direction in earth-frame in radians
 // assumes voltage increases as wind vane moves clockwise
 float AP_WindVane::read_analog_direction_ef()
