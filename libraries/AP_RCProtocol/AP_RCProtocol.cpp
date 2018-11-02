@@ -64,6 +64,10 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
         if (backend[i] != nullptr) {
             backend[i]->process_pulse(width_s0, width_s1);
             if (backend[i]->new_input()) {
+                _good_frames[i]++;
+                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+                    continue;
+                }
                 _new_input = true;
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
                 _last_input_ms = now;
@@ -95,6 +99,10 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         if (backend[i] != nullptr) {
             backend[i]->process_byte(byte, baudrate);
             if (backend[i]->new_input()) {
+                _good_frames[i]++;
+                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+                    continue;
+                }
                 _new_input = true;
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
                 _last_input_ms = now;
