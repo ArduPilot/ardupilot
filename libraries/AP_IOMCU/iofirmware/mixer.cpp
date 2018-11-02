@@ -120,20 +120,22 @@ int16_t AP_IOMCU_FW::mix_elevon_vtail(int16_t angle1, int16_t angle2, bool first
  */
 void AP_IOMCU_FW::run_mixer(void)
 {
-    int16_t rcin[4] {};
+    int16_t rcin[4] = {0, 0, 0, 0};
     int16_t &roll = rcin[0];
     int16_t &pitch = rcin[1];
     int16_t &throttle = rcin[2];
     int16_t &rudder = rcin[3];
 
     // get RC input angles
-    for (uint8_t i=0;i<4; i++) {
-        if (mixing.rc_channel[i] > 0 && mixing.rc_channel[i] <= IOMCU_MAX_CHANNELS) {
-            uint8_t chan = mixing.rc_channel[i]-1;
-            if (i == 2 && !mixing.throttle_is_angle) {
-                rcin[i] = mix_input_range(i, rc_input.pwm[chan]);
-            } else {
-                rcin[i] = mix_input_angle(i, rc_input.pwm[chan]);
+    if (rc_input.flags_rc_ok) {
+        for (uint8_t i=0;i<4; i++) {
+            if (mixing.rc_channel[i] > 0 && mixing.rc_channel[i] <= IOMCU_MAX_CHANNELS) {
+                uint8_t chan = mixing.rc_channel[i]-1;
+                if (i == 2 && !mixing.throttle_is_angle) {
+                    rcin[i] = mix_input_range(i, rc_input.pwm[chan]);
+                } else {
+                    rcin[i] = mix_input_angle(i, rc_input.pwm[chan]);
+                }
             }
         }
     }
