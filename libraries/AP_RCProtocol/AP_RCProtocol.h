@@ -64,6 +64,9 @@ public:
     bool new_input();
     void start_bind(void);
 
+    // return protocol name as a string
+    const char *protocol_name(void) const;
+
     // access to singleton
     static AP_RCProtocol *get_instance(void) {
         return instance;
