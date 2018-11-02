@@ -66,6 +66,15 @@ void AP_IOMCU_FW::rcin_serial_init(void)
                                &sd3_listener,
                                EVENT_MASK(1),
                                SD_PARITY_ERROR);
+    rcprotocol = AP_RCProtocol::get_instance();
+
+    // disable input for DSM and SBUS with pulses, we will use uarts
+    // for those. This allows us to use the RCIN port for a much wider
+    // range of protocols, relying on the 16 bit CRC on those
+    // protocols to keep them glitch free
+    rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS);
+    rcprotocol->disable_for_pulses(AP_RCProtocol::SBUS_NI);
+    rcprotocol->disable_for_pulses(AP_RCProtocol::DSM);
 }
 
 static struct {
