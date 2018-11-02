@@ -1035,6 +1035,9 @@ private:
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();
 #endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+    void update_nav_info();
+#endif
     void accel_cal_update(void);
     void update_soft_armed();
 #if SOARING_ENABLED == ENABLED

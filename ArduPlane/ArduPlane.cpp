@@ -104,6 +104,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+    SCHED_TASK(update_nav_info, 1, 10),
+#endif
 };
 
 constexpr int8_t Plane::_failsafe_priorities[6];
@@ -950,6 +953,19 @@ void Plane::publish_osd_info()
     nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
     nav_info.wp_number = mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
+}
+#endif
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+void Plane::update_nav_info()
+{
+    AP_Frsky_Telem::NavInfo nav_info;
+    nav_info.wp_distance = auto_state.wp_distance;
+    nav_info.wp_bearing = nav_controller->target_bearing_cd();
+    nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
+    nav_info.wp_number = mission.get_current_nav_index();
+    nav_info.wp_count = mission.num_commands();
+    frsky_telemetry.set_nav_info(nav_info);
 }
 #endif
 
