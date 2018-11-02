@@ -873,6 +873,9 @@ private:
 #if OSD_ENABLED == ENABLED
     void publish_osd_info();
 #endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+    void update_nav_info();
+#endif
 
 #include "mode.h"
 

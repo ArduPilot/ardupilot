@@ -194,6 +194,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+#if FRSKY_TELEM_ENABLED == ENABLED
+    SCHED_TASK(update_nav_info, 1, 10),
+#endif
 };
 
 constexpr int8_t Copter::_failsafe_priorities[7];
@@ -584,6 +587,19 @@ void Copter::publish_osd_info()
     nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
     nav_info.wp_number = mode_auto.mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
+}
+#endif
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+void Copter::update_nav_info()
+{
+    AP_Frsky_Telem::NavInfo nav_info;
+    nav_info.wp_distance = flightmode->wp_distance() * 1.0e-2f;
+    nav_info.wp_bearing = flightmode->wp_bearing();
+    nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
+    nav_info.wp_number = mode_auto.mission.get_current_nav_index();
+    nav_info.wp_count = mode_auto.mission.num_commands();
+    frsky_telemetry.set_nav_info(nav_info);
 }
 #endif
 
