@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: POLES
     // @DisplayName: Motor Poles
     // @Description: This allows calculation of true RPM from ESC's eRPM. The default is 14.
-    // @Values: 1-127
+    // @Range: 1 127
     // @User: Advanced
     AP_GROUPINFO("POLES",  9, AP_BLHeli, motor_poles, 14),
     
