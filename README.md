@@ -84,8 +84,9 @@ for reviewing patches on their specific area.  See also the list of developers w
 - [Lucas De Marchi](https://github.com/lucasdemarchi):
   - ***Subsystem***: Linux
 - [Michael du Breuil](https://github.com/WickedShell):
+  - ***Subsystem***: Batteries
   - ***Subsystem***: GPS
-  - ***Subsystem***: SMBus Batteries
+  - ***Subsystem***: Scripting
 - [Peter Barker](https://github.com/peterbarker):
   - ***Subsystem***: DataFlash, Tools
 - [Randy Mackay](https://github.com/rmackay9):
