@@ -171,8 +171,6 @@ void AP_IOMCU_FW::init()
     palSetLineMode(HAL_GPIO_PIN_SPEKTRUM_PWR_EN, PAL_MODE_OUTPUT_PUSHPULL);
     SPEKTRUM_POWER(1);
 
-    rcprotocol = AP_RCProtocol::get_instance();
-
     // we do no allocations after setup completes
     reg_status.freemem = hal.util->available_memory();
 }
