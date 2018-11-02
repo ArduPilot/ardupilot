@@ -50,6 +50,11 @@ public:
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
 
+    // for protocols without strong CRCs we require 3 good frames to lock on
+    bool requires_3_frames(enum rcprotocol_t p) {
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM);
+    }
+    
     enum rcprotocol_t protocol_detected()
     {
         return _detected_protocol;
@@ -72,6 +77,7 @@ private:
     bool _new_input = false;
     uint32_t _last_input_ms;
     bool _valid_serial_prot = false;
+    uint8_t _good_frames[NONE];
 
     static AP_RCProtocol *instance;
 };
