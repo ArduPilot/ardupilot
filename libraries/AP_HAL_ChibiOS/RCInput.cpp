@@ -26,6 +26,7 @@ extern AP_IOMCU iomcu;
 #endif
 
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
@@ -132,6 +133,10 @@ void RCInput::_timer_tick(void)
             _rc_values[i] = rcin_prot.read(i);
         }
         rcin_mutex.give();
+        if (rcin_prot.protocol_name() != last_protocol) {
+            last_protocol = rcin_prot.protocol_name();
+            gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        }
     }
 #endif
 
