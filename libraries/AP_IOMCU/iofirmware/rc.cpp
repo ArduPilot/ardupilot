@@ -25,8 +25,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-static bool sbus_out_initialised;
-
 // usart3 is for SBUS input and output
 static const SerialConfig uart3_cfg = {
     100000,   // speed
@@ -39,10 +37,6 @@ static const SerialConfig uart3_cfg = {
 
 void sbus_out_write(uint16_t *channels, uint8_t nchannels)
 {
-    if (!sbus_out_initialised) {
-        sdStart(&SD3, &uart3_cfg);
-        sbus_out_initialised = true;
-    }
     uint8_t buffer[25];
     AP_SBusOut::sbus_format_frame(channels, nchannels, buffer);
     chnWrite(&SD3, buffer, sizeof(buffer));
@@ -64,6 +58,7 @@ static const SerialConfig uart1_cfg = {
 void AP_IOMCU_FW::rcin_serial_init(void)
 {
     sdStart(&SD1, &uart1_cfg);
+    sdStart(&SD3, &uart3_cfg);
 }
 
 
@@ -76,11 +71,23 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 {
     uint8_t b[16];
     uint32_t n;
+
+    // read from DSM port
     if ((n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         n = MIN(n, sizeof(b));
         num_dsm_bytes += n;
         for (uint8_t i=0; i<n; i++) {
-            rcprotocol->process_byte(b[i]);
+            rcprotocol->process_byte(b[i], 115200);
+        }
+        //BLUE_TOGGLE();
+    }
+
+    // read from SBUS port
+    if ((n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
+        n = MIN(n, sizeof(b));
+        num_dsm_bytes += n;
+        for (uint8_t i=0; i<n; i++) {
+            rcprotocol->process_byte(b[i], 100000);
         }
         //BLUE_TOGGLE();
     }
