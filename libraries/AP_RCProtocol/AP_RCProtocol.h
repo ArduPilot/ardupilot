@@ -45,6 +45,11 @@ public:
     }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_byte(uint8_t byte, uint32_t baudrate);
+
+    void disable_for_pulses(enum rcprotocol_t protocol) {
+        _disabled_for_pulses |= (1U<<(uint8_t)protocol);
+    }
+
     enum rcprotocol_t protocol_detected()
     {
         return _detected_protocol;
@@ -61,6 +66,7 @@ public:
 
 private:
     enum rcprotocol_t _detected_protocol = NONE;
+    uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input = false;
