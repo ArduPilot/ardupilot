@@ -1780,7 +1780,7 @@ class AutoTest(ABC):
                 tstart = self.get_sim_time()
                 while True:
                     if self.get_sim_time_cached() - tstart > 20:
-                        self.set_rc(8, 1000)
+                        self.set_rc(interlock_channel, 1000)
                         break # success!
                     m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
                                             blocking=True,
@@ -1789,16 +1789,15 @@ class AutoTest(ABC):
                         continue
                     m_value = getattr(m, channel_field, None)
                     if m_value is None:
-                        self.set_rc(8, 1000)
+                        self.set_rc(interlock_channel, 1000)
                         raise ValueError("Message has no %s field" %
                                          channel_field)
                     self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
                                   (channel_field, m_value, interlock_value))
                     if m_value != interlock_value:
-                        self.set_rc(8, 1000)
+                        self.set_rc(interlock_channel, 1000)
                         raise NotAchievedException("Motor interlock was changed while disarmed")
-
-            self.set_rc(8, 1000)
+            self.set_rc(interlock_channel, 1000)
         self.progress("ALL PASS")
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
