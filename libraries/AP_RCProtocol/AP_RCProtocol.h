@@ -44,7 +44,7 @@ public:
         return _valid_serial_prot;
     }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
-    void process_byte(uint8_t byte);
+    void process_byte(uint8_t byte, uint32_t baudrate);
     enum rcprotocol_t protocol_detected()
     {
         return _detected_protocol;

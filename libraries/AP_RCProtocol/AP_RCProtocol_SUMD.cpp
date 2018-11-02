@@ -125,7 +125,7 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 break;
             }
             byte = ((v>>1) & 0xFF);
-            process_byte(byte);
+            process_byte(byte, 115200);
         }
         memset(&sumd_state, 0, sizeof(sumd_state));
     }
@@ -145,8 +145,11 @@ reset:
     memset(&sumd_state, 0, sizeof(sumd_state));
 }
 
-void AP_RCProtocol_SUMD::process_byte(uint8_t byte)
+void AP_RCProtocol_SUMD::process_byte(uint8_t byte, uint32_t baudrate)
 {
+    if (baudrate != 115200) {
+        return;
+    }
     switch (_decode_state) {
     case SUMD_DECODE_STATE_UNSYNCED:
 #ifdef SUMD_DEBUG

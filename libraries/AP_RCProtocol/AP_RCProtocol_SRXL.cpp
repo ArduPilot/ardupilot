@@ -90,7 +90,7 @@ void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 break;
             }
             byte = ((v>>1) & 0xFF);
-            process_byte(byte);
+            process_byte(byte, 115200);
         }
         memset(&srxl_state, 0, sizeof(srxl_state));
     }
@@ -249,7 +249,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::process_byte(uint8_t byte)
+void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint64_t timestamp_us = AP_HAL::micros64();
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */

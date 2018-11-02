@@ -280,3 +280,30 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 reset:
     memset(&sbus_state, 0, sizeof(sbus_state));
 }
+
+// support byte input
+void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
+{
+    if (baudrate != 100000) {
+        return;
+    }
+    uint32_t now = AP_HAL::millis();
+    if (now - byte_input.last_byte_ms > 2 ||
+        byte_input.ofs == sizeof(byte_input.buf)) {
+        byte_input.ofs = 0;
+    }
+    byte_input.last_byte_ms = now;
+    byte_input.buf[byte_input.ofs++] = b;
+    if (byte_input.ofs == sizeof(byte_input.buf)) {
+        uint16_t values[SBUS_INPUT_CHANNELS];
+        uint16_t num_values=0;
+        bool sbus_failsafe = false;
+        bool sbus_frame_drop = false;
+        if (sbus_decode(byte_input.buf, values, &num_values,
+                        &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
+            num_values >= MIN_RCIN_CHANNELS) {
+            add_input(num_values, values, false);
+        }
+        byte_input.ofs = 0;
+    }
+}

@@ -24,7 +24,7 @@ class AP_RCProtocol_SUMD : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SUMD(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte) override;
+    void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     static uint16_t sumd_crc16(uint16_t crc, uint8_t value);
     static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
