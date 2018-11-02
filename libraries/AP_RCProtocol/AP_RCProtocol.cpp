@@ -153,3 +153,28 @@ void AP_RCProtocol::start_bind(void)
         }
     }
 }
+
+/*
+  return protocol name
+ */
+const char *AP_RCProtocol::protocol_name(void) const
+{
+    switch (_detected_protocol) {
+    case PPM:
+        return "PPM";
+    case SBUS:
+    case SBUS_NI:
+        return "SBUS";
+    case DSM:
+        return "DSM";
+    case SUMD:
+        return "SUMD";
+    case SRXL:
+        return "SRXL";
+    case ST24:
+        return "ST24";
+    case NONE:
+        break;
+    }
+    return nullptr;
+}
