@@ -39,7 +39,7 @@ class AP_RCProtocol_ST24 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_ST24(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
-    void process_byte(uint8_t byte) override;
+    void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     static uint8_t st24_crc8(uint8_t *ptr, uint8_t len);
     enum ST24_PACKET_TYPE {

@@ -442,8 +442,11 @@ void AP_RCProtocol_DSM::update(void)
 }
 
 // support byte input
-void AP_RCProtocol_DSM::process_byte(uint8_t b)
+void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
 {
+    if (baudrate != 115200) {
+        return;
+    }
     uint32_t now = AP_HAL::millis();
     if (now - byte_input.last_byte_ms > 3 ||
         byte_input.ofs == sizeof(byte_input.buf)) {
