@@ -108,6 +108,15 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
+// for waypoint number,distance, xtrack error and bearing
+#define WAYPOINT_NUMBER_LIMIT       0x3FF
+#define WAYPOINT_DISTANCE_LIMIT     102300
+#define WAYPOINT_DISTANCE_OFFSET    10
+#define WAYPOINT_XTRACK_LIMIT       0x7F
+#define WAYPOINT_XTRACK_OFFSET      22
+#define WAYPOINT_BEARING_LIMIT      0x7
+#define WAYPOINT_BEARING_OFFSET     29
+#define WAYPOINT_ARROW_COUNT        8
 
 
 
@@ -143,6 +152,16 @@ public:
     static ObjectArray<mavlink_statustext_t> _statustext_queue;
 
     void set_frame_string(const char *string) { _frame_string = string; }
+
+    struct NavInfo {
+        float wp_distance;
+        int32_t wp_bearing;
+        float wp_xtrack_error;
+        uint16_t wp_number;
+        uint16_t wp_count;
+    };
+
+    void set_nav_info(NavInfo &nav_info);
 
 private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
@@ -197,6 +216,7 @@ private:
         uint32_t home_timer;
         uint32_t velandyaw_timer;
         uint32_t gps_latlng_timer;
+        uint32_t waypoint_timer;
     } _passthrough;
     
     struct
@@ -221,6 +241,8 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
     
+    struct NavInfo _nav_info;
+
     // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
     void send_SPort_Passthrough(void);
     // main transmission function when protocol is FrSky SPort
@@ -249,6 +271,7 @@ private:
     uint32_t calc_home(void);
     uint32_t calc_velandyaw(void);
     uint32_t calc_attiandrng(void);
+    uint32_t calc_wp(void);    
     uint16_t prep_number(int32_t number, uint8_t digits, uint8_t power);
 
     // methods to convert flight controller data to FrSky D or SPort format

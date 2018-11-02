@@ -147,6 +147,11 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
                 _passthrough.gps_status_timer = AP_HAL::millis();
                 return;
             }
+            if ((now - _passthrough.waypoint_timer) >= 1000) {
+                send_uint32(DIY_FIRST_ID+9, calc_wp());
+                _passthrough.waypoint_timer = AP_HAL::millis();
+                return;
+            }
             if ((now - _passthrough.home_timer) >= 500) {
                 send_uint32(DIY_FIRST_ID+4, calc_home());
                 _passthrough.home_timer = AP_HAL::millis();
@@ -592,7 +597,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     uint32_t param = 0;
 
     // cycle through paramIDs
-    if (_paramID >= 5) {
+    if (_paramID >= 6) {
         _paramID = 0;
     }
     _paramID++;
@@ -609,6 +614,9 @@ uint32_t AP_Frsky_Telem::calc_param(void)
     case 5:
         param = (uint32_t)roundf(_battery.pack_capacity_mah(1)); // battery pack capacity in mAh
         break;
+    case 6:
+        param = (uint32_t)_nav_info.wp_count; // mission wp count
+        break;        
     }
     //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
     param = (_paramID << PARAM_ID_OFFSET) | (param & PARAM_VALUE_LIMIT);
@@ -795,6 +803,44 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
 }
 
 /*
+ * prepare waypoint data
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+uint32_t AP_Frsky_Telem::calc_wp(void)
+{
+    uint32_t waypoint;
+
+    // wp number, max is 1023 encoded as 10bits
+    waypoint = MIN(_nav_info.wp_number,WAYPOINT_NUMBER_LIMIT);
+    // max wp distance is 1023*100m = 102.3Km encoded as 12bits: 10 + 2 for 10^power
+    waypoint |= prep_number(MIN(_nav_info.wp_distance,WAYPOINT_DISTANCE_LIMIT),3,2) << WAYPOINT_DISTANCE_OFFSET;
+    // xtrack error, max is +/- 150m encoded as 6bits: 4 + 1 for 10^power + 1 for sign
+    waypoint |= prep_number(MIN(_nav_info.wp_xtrack_error,WAYPOINT_XTRACK_LIMIT),1,1) << WAYPOINT_XTRACK_OFFSET;
+    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
+    if (gotGPS) {
+        const int32_t cog = AP::gps().ground_course_cd(); //cog in centidegrees
+        int32_t angle = wrap_360_cd(_nav_info.wp_bearing - cog);
+        int32_t interval = 36000 / WAYPOINT_ARROW_COUNT;
+        // hint from OSD code to avoid unreliable bearing at small distances
+        if (_nav_info.wp_distance < 2.0f) {
+            angle = 0;
+        }
+        // bearing expressed as offset from cog as multiple of 45° ( 8 sectors) encoded as 3bits
+        waypoint |= (((angle + interval / 2) / interval) % WAYPOINT_ARROW_COUNT) << WAYPOINT_BEARING_OFFSET;
+    }
+    return waypoint;
+}
+
+/*
+ * set navigation information (callback from vehicle code)
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_Telem::set_nav_info(NavInfo &navinfo)
+{
+    _nav_info = navinfo;
+}
+
+/*
  * prepare value for transmission through FrSky link
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
@@ -803,7 +849,18 @@ uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t pow
     uint16_t res = 0;
     uint32_t abs_number = abs(number);
 
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
+    if ((digits == 1) && (power == 1)) { // number encoded on 5 bits: 4 bits for digits + 1 for 10^power
+        if (abs_number < 10) {
+            res = abs_number<<1;
+        } else if (abs_number < 150) {
+            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
+        } else { // transmit max possible value (0x0F x 10^1 = 150)
+            res = 0x1F;
+        }
+        if (number < 0) { // if number is negative, add sign bit in front
+            res |= 0x1<<5;
+        }
+    } else if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
         if (abs_number < 100) {
             res = abs_number<<1;
         } else if (abs_number < 1270) {
