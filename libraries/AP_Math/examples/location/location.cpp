@@ -93,8 +93,8 @@ static void test_one_offset(const struct Location &loc,
 static const struct {
     float ofs_north, ofs_east, distance, bearing;
 } test_offsets[] = {
-    { 1000.0f, 1000.0f,  sqrtf(2.0f) * 1000.0f, 45.0f },
-    { 1000.0f, -1000.0f, sqrtf(2.0f) * 1000.0f, -45.0f },
+    { 1000.0f, 1000.0f,  safe_sqrt(2.0f) * 1000.0f, 45.0f },
+    { 1000.0f, -1000.0f, safe_sqrt(2.0f) * 1000.0f, -45.0f },
     { 1000.0f, 0.0f,     1000.0f,               0.0f },
     { 0.0f,    1000.0f,  1000.0f,               90.0f },
 };

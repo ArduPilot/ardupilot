@@ -22,8 +22,8 @@ TEST(ThreatTests, Distance)
     TEST_DISTANCE_BOTH( 0, 0,  0, 0, 0);
     TEST_DISTANCE_BOTH( 0, 0,  0, 1, 1);
 
-    TEST_DISTANCE_BOTH( 1, 1,  1, 0, sqrt(0.5));
-    TEST_DISTANCE_BOTH(-1,-1, -1, 0, sqrt(0.5));
+    TEST_DISTANCE_BOTH( 1, 1,  1, 0, safe_sqrt(0.5));
+    TEST_DISTANCE_BOTH(-1,-1, -1, 0, safe_sqrt(0.5));
 
     TEST_DISTANCE_BOTH( 3, 1,  3, 0, 0.94868332);
     TEST_DISTANCE_BOTH( 1, 3,  0, 3, 0.94868332);
@@ -32,13 +32,13 @@ TEST(ThreatTests, Distance)
     TEST_DISTANCE_BOTH(-1,-3,  0,-3, 0.94868332);
 
     TEST_DISTANCE_BOTH( 2, 2,  1, 1, 0.0);
-    TEST_DISTANCE_BOTH( 2, 2,  3, 3, sqrt(2));
+    TEST_DISTANCE_BOTH( 2, 2,  3, 3, safe_sqrt(2));
     TEST_DISTANCE_BOTH( 2, 2,  2, 2, 0);
-    TEST_DISTANCE_BOTH( 0, 0,  1, 1, sqrt(2));
-    TEST_DISTANCE_BOTH( 0, 0,  1, 1, sqrt(2));
+    TEST_DISTANCE_BOTH( 0, 0,  1, 1, safe_sqrt(2));
+    TEST_DISTANCE_BOTH( 0, 0,  1, 1, safe_sqrt(2));
 
-    TEST_DISTANCE_BOTH( 0, 0,  1, 1, sqrt(2));
-    TEST_DISTANCE_BOTH( 1, 1,  0, 3, sqrt(5));
+    TEST_DISTANCE_BOTH( 0, 0,  1, 1, safe_sqrt(2));
+    TEST_DISTANCE_BOTH( 1, 1,  0, 3, safe_sqrt(5));
 }
 
 AP_GTEST_MAIN()
