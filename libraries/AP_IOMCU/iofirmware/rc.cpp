@@ -35,6 +35,9 @@ static const SerialConfig uart3_cfg = {
     nullptr,  // ctx
 };
 
+// listen for parity errors on sd3 input
+static event_listener_t sd3_listener;
+
 void sbus_out_write(uint16_t *channels, uint8_t nchannels)
 {
     uint8_t buffer[25];
@@ -59,10 +62,18 @@ void AP_IOMCU_FW::rcin_serial_init(void)
 {
     sdStart(&SD1, &uart1_cfg);
     sdStart(&SD3, &uart3_cfg);
+    chEvtRegisterMaskWithFlags(chnGetEventSource(&SD3),
+                               &sd3_listener,
+                               EVENT_MASK(1),
+                               SD_PARITY_ERROR);
 }
 
-
-static uint32_t num_dsm_bytes;
+static struct {
+    uint32_t num_dsm_bytes;
+    uint32_t num_sbus_bytes;
+    uint32_t num_sbus_errors;
+    eventflags_t sbus_error;
+} rc_stats;
 
 /*
   check for data on DSM RX uart
@@ -75,7 +86,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
     // read from DSM port
     if ((n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         n = MIN(n, sizeof(b));
-        num_dsm_bytes += n;
+        rc_stats.num_dsm_bytes += n;
         for (uint8_t i=0; i<n; i++) {
             rcprotocol->process_byte(b[i], 115200);
         }
@@ -84,12 +95,17 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 
     // read from SBUS port
     if ((n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
-        n = MIN(n, sizeof(b));
-        num_dsm_bytes += n;
-        for (uint8_t i=0; i<n; i++) {
-            rcprotocol->process_byte(b[i], 100000);
+        eventflags_t flags;
+        if ((flags = chEvtGetAndClearFlags(&sd3_listener)) & SD_PARITY_ERROR) {
+            rc_stats.sbus_error = flags;
+            rc_stats.num_sbus_errors++;
+        } else {
+            n = MIN(n, sizeof(b));
+            rc_stats.num_sbus_bytes += n;
+            for (uint8_t i=0; i<n; i++) {
+                rcprotocol->process_byte(b[i], 100000);
+            }
         }
-        //BLUE_TOGGLE();
     }
 }
 
