@@ -92,25 +92,25 @@ void Quaternion::from_rotation_matrix(const Matrix3f &m)
     float tr = m00 + m11 + m22;
 
     if (tr > 0) {
-        float S = sqrtf(tr+1) * 2;
+        float S = safe_sqrt(tr+1) * 2;
         qw = 0.25f * S;
         qx = (m21 - m12) / S;
         qy = (m02 - m20) / S;
         qz = (m10 - m01) / S;
     } else if ((m00 > m11) && (m00 > m22)) {
-        float S = sqrtf(1.0f + m00 - m11 - m22) * 2.0f;
+        float S = safe_sqrt(1.0f + m00 - m11 - m22) * 2.0f;
         qw = (m21 - m12) / S;
         qx = 0.25f * S;
         qy = (m01 + m10) / S;
         qz = (m02 + m20) / S;
     } else if (m11 > m22) {
-        float S = sqrtf(1.0f + m11 - m00 - m22) * 2.0f;
+        float S = safe_sqrt(1.0f + m11 - m00 - m22) * 2.0f;
         qw = (m02 - m20) / S;
         qx = (m01 + m10) / S;
         qy = 0.25f * S;
         qz = (m12 + m21) / S;
     } else {
-        float S = sqrtf(1.0f + m22 - m00 - m11) * 2.0f;
+        float S = safe_sqrt(1.0f + m22 - m00 - m11) * 2.0f;
         qw = (m10 - m01) / S;
         qx = (m02 + m20) / S;
         qy = (m12 + m21) / S;
@@ -188,7 +188,7 @@ void Quaternion::rotate(const Vector3f &v)
 
 void Quaternion::to_axis_angle(Vector3f &v)
 {
-    float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
+    float l = safe_sqrt(sq(q2)+sq(q3)+sq(q4));
     v = Vector3f(q2,q3,q4);
     if (!is_zero(l)) {
         v /= l;
@@ -286,7 +286,7 @@ Vector3f Quaternion::to_vector312(void) const
 
 float Quaternion::length(void) const
 {
-    return sqrtf(sq(q1) + sq(q2) + sq(q3) + sq(q4));
+    return safe_sqrt(sq(q1) + sq(q2) + sq(q3) + sq(q4));
 }
 
 Quaternion Quaternion::inverse(void) const

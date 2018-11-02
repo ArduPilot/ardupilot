@@ -194,7 +194,7 @@ float sq(const T first, const Params... parameters)
 template<typename T, typename U, typename... Params>
 float norm(const T first, const U second, const Params... parameters)
 {
-    return sqrtf(sq(first, second, parameters...));
+    return safe_sqrt(sq(first, second, parameters...));
 }
 
 template<typename A, typename B>
