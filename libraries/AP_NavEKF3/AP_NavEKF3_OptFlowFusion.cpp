@@ -224,7 +224,7 @@ void NavEKF3_core::EstimateTerrainOffset()
             float t22 = sq(t2);
             float t23 = 1.0f/(t8*t8*t8);
             float t32 = sq(t12);
-            H_OPT = 0.5f*(t13*t22*t23*2.0f+t13*t23*t32*2.0f)/sqrtf(t9*t13*t22+t9*t13*t32);
+            H_OPT = 0.5f*(t13*t22*t23*2.0f+t13*t23*t32*2.0f)/safe_sqrt(t9*t13*t22+t9*t13*t32);
 
             // calculate innovation variances
             auxFlowObsInnovVar = H_OPT*Popt*H_OPT + R_LOS;

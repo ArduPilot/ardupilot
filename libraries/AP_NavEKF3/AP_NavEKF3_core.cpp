@@ -1645,7 +1645,7 @@ Vector3f NavEKF3_core::calcRotVecVariances()
         float t8 = 1.0f/powf(t4,1.5f);
         float t9 = q0*q1*t3*t8*2.0f;
         float t10 = t7+t9;
-        float t11 = 1.0f/sqrtf(t4);
+        float t11 = 1.0f/safe_sqrt(t4);
         float t12 = q2*t6*2.0f;
         float t13 = q0*q2*t3*t8*2.0f;
         float t14 = t12+t13;
@@ -1695,12 +1695,12 @@ void NavEKF3_core::initialiseQuatCovariances(Vector3f &rotVarVec)
     float t5 = rotZ*rotZ;
     float t6 = t2+t4+t5;
     if (t6 > 1e-9f) {
-        float t7 = sqrtf(t6);
+        float t7 = safe_sqrt(t6);
         float t8 = t7*0.5f;
         float t3 = sinf(t8);
         float t9 = t3*t3;
         float t10 = 1.0f/t6;
-        float t11 = 1.0f/sqrtf(t6);
+        float t11 = 1.0f/safe_sqrt(t6);
         float t12 = cosf(t8);
         float t13 = 1.0f/powf(t6,1.5f);
         float t14 = t3*t11;
