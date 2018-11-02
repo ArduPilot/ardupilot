@@ -56,13 +56,11 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
 
     // otherwise scan all protocols
-    rcprotocol_t last_protocol = AP_RCProtocol::NONE;
-#ifdef HAL_RCIN_PULSE_PPM_ONLY
-    // only uses pulses for PPM on this board, using process_byte() for
-    // other protocols
-    last_protocol = (rcprotocol_t)1;
-#endif
-    for (uint8_t i = 0; i < last_protocol; i++) {
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (_disabled_for_pulses & (1U << i)) {
+            // this protocol is disabled for pulse input
+            continue;
+        }
         if (backend[i] != nullptr) {
             backend[i]->process_pulse(width_s0, width_s1);
             if (backend[i]->new_input()) {
