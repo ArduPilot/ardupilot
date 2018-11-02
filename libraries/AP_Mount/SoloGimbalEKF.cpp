@@ -658,7 +658,7 @@ void SoloGimbalEKF::fuseVelocity()
     }
 
     // calculate tilt component of angle correction
-    TiltCorrection = sqrtf(sq(angErrVec.x) + sq(angErrVec.y));
+    TiltCorrection = safe_sqrt(sq(angErrVec.x) + sq(angErrVec.y));
 }
 
 // check for new magnetometer data and update store measurements if available
