@@ -17,7 +17,10 @@ float Plane::get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
+        // ensure we have scaling over the full configured airspeed
+        float scale_min = MIN(0.5, (0.5 * aparm.airspeed_min) / g.scaling_speed);
+        float scale_max = MAX(2.0, (1.5 * aparm.airspeed_max) / g.scaling_speed);
+        speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
 
         if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
             // when in VTOL modes limit surface movement at low speed to prevent instability
