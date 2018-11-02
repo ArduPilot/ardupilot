@@ -141,8 +141,9 @@ struct PACKED page_rc_input {
     uint16_t frame_count;
     uint16_t lost_frame_count;
     uint16_t pwm[IOMCU_MAX_CHANNELS];
+    // the following two fields are not transferred to the FMU
     uint16_t last_frame_count;
-    uint32_t last_input_us;
+    uint32_t last_input_ms;
 };
 
 /*

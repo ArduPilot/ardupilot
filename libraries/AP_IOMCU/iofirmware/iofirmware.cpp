@@ -281,15 +281,14 @@ void AP_IOMCU_FW::heater_update()
 void AP_IOMCU_FW::rcin_update()
 {
     ((ChibiOS::RCInput *)hal.rcin)->_timer_tick();
-    uint32_t now = AP_HAL::micros();
     if (hal.rcin->new_input()) {
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
         for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS; i++) {
             rc_input.pwm[i] = hal.rcin->read(i);
         }
-        rc_input.last_input_us = now;
-    } else if (now - rc_input.last_input_us > 200000U) {
+        rc_input.last_input_ms = last_ms;
+    } else if (last_ms - rc_input.last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
     if (update_rcout_freq) {
@@ -303,6 +302,7 @@ void AP_IOMCU_FW::rcin_update()
     // check for active override channel
     if (mixing.enabled &&
         mixing.rc_chan_override > 0 &&
+        rc_input.flags_rc_ok &&
         mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
         override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
     } else {
