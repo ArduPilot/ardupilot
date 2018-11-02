@@ -266,7 +266,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     // from turning the dv correction above into an equivalent
     // pressure correction. We need to do this so the airspeed ratio
     // calibrator can work, as it operates on pressure values
-    float press_correction = sq(sqrtf(press_uncorrected*ratio)+dv)/ratio - press_uncorrected;
+    float press_correction = sq(safe_sqrt(press_uncorrected*ratio)+dv)/ratio - press_uncorrected;
 
     return (press_uncorrected + press_correction) * sign;
 }

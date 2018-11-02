@@ -30,7 +30,7 @@ Airspeed_Calibration::Airspeed_Calibration()
  */
 void Airspeed_Calibration::init(float initial_ratio)
 {
-    state.z = 1.0f / sqrtf(initial_ratio);
+    state.z = 1.0f / safe_sqrt(initial_ratio);
 }
 
 /*
@@ -60,7 +60,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
         // avoid division by a small number
         return state.z;
     }
-    float SH2 = 1/sqrtf(SH1);
+    float SH2 = 1/safe_sqrt(SH1);
 
     // observation Jacobian
     Vector3f H_TAS(
@@ -122,11 +122,11 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
     // very useful both for testing and to force a reasonable value.
     float ratio = constrain_float(param[i].ratio, 1.0f, 4.0f);
 
-    state[i].calibration.state.z = 1.0f / sqrtf(ratio);
+    state[i].calibration.state.z = 1.0f / safe_sqrt(ratio);
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = MAX(get_differential_pressure(), 0);
-    float true_airspeed = sqrtf(dpress) * state[i].EAS2TAS;
+    float true_airspeed = safe_sqrt(dpress) * state[i].EAS2TAS;
 
     float zratio = state[i].calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
 
