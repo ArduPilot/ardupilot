@@ -202,7 +202,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         cb.msg->position_covariance.unpackSquareMatrix(pos_cov);
         if (!uavcan::isNaN(pos_cov[8])) {
             if (pos_cov[8] > 0) {
-                interim_state.vertical_accuracy = sqrtf(pos_cov[8]);
+                interim_state.vertical_accuracy = safe_sqrt(pos_cov[8]);
                 interim_state.have_vertical_accuracy = true;
             } else {
                 interim_state.have_vertical_accuracy = false;
@@ -214,7 +214,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         const float horizontal_pos_variance = MAX(pos_cov[0], pos_cov[4]);
         if (!uavcan::isNaN(horizontal_pos_variance)) {
             if (horizontal_pos_variance > 0) {
-                interim_state.horizontal_accuracy = sqrtf(horizontal_pos_variance);
+                interim_state.horizontal_accuracy = safe_sqrt(horizontal_pos_variance);
                 interim_state.have_horizontal_accuracy = true;
             } else {
                 interim_state.have_horizontal_accuracy = false;
@@ -226,7 +226,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         float vel_cov[9];
         cb.msg->velocity_covariance.unpackSquareMatrix(vel_cov);
         if (!uavcan::isNaN(vel_cov[0])) {
-            interim_state.speed_accuracy = sqrtf((vel_cov[0] + vel_cov[4] + vel_cov[8]) / 3.0);
+            interim_state.speed_accuracy = safe_sqrt((vel_cov[0] + vel_cov[4] + vel_cov[8]) / 3.0);
             interim_state.have_speed_accuracy = true;
         } else {
             interim_state.have_speed_accuracy = false;
