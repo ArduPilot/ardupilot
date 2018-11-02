@@ -489,6 +489,10 @@ private:
     void read_rangefinders(void);
     void init_proximity();
     void read_airspeed();
+    void update_sensor_status_flags(void);
+#if FRSKY_TELEM_ENABLED == ENABLED
+    void update_nav_info();
+#endif    
 
     // Steering.cpp
     bool use_pivot_steering_at_next_WP(float yaw_error_cd);

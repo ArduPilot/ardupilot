@@ -103,6 +103,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
+#if FRSKY_TELEM_ENABLED == ENABLED
+    SCHED_TASK(update_nav_info,         1,    10),
+#endif    
 };
 
 constexpr int8_t Rover::_failsafe_priorities[7];
@@ -322,5 +325,18 @@ void Rover::update_current_mode(void)
 {
     control_mode->update();
 }
+
+#if FRSKY_TELEM_ENABLED == ENABLED
+void Rover::update_nav_info()
+{
+    AP_Frsky_Telem::NavInfo nav_info;
+    nav_info.wp_distance = control_mode->get_distance_to_destination();
+    nav_info.wp_bearing = nav_controller->nav_bearing_cd();
+    nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
+    nav_info.wp_number = mission.get_current_nav_index();
+    nav_info.wp_count = mission.num_commands();
+    frsky_telemetry.set_nav_info(nav_info);
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&rover);
