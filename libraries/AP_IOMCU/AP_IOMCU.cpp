@@ -277,7 +277,7 @@ void AP_IOMCU::read_rc_input()
     uint8_t n = MIN(MAX(9, rc_input.count), IOMCU_MAX_CHANNELS);
     read_registers(PAGE_RAW_RCIN, 0, 6+n, (uint16_t *)&rc_input);
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
-        rc_input.last_input_us = AP_HAL::micros();
+        rc_input.last_input_ms = AP_HAL::millis();
     }
 }
 
@@ -607,10 +607,10 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 */
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
-    if (last_frame_us != rc_input.last_input_us) {
+    if (last_frame_us != uint32_t(rc_input.last_input_ms * 1000U)) {
         num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
-        last_frame_us = rc_input.last_input_us;
+        last_frame_us = uint32_t(rc_input.last_input_ms * 1000U);
         return true;
     }
     return false;
