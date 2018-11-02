@@ -33,7 +33,7 @@ public:
         delete[] bits;
     }
 
-    Bitmask &operator=(const Bitmask&other) = delete;
+    Bitmask &operator=(const Bitmask&other);
     Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
@@ -119,7 +119,7 @@ public:
     }
 
 private:
-    const uint16_t numbits;
-    const uint16_t numwords;
+    uint16_t numbits;
+    uint16_t numwords;
     uint32_t *bits;
 };
