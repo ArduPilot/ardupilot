@@ -81,7 +81,7 @@ void Perf::_debug_counters()
                     "max: %" PRIu64 "\t"
                     "avg: %.4f\t"
                     "stddev: %.4f\n",
-                    c.name, c.count, c.min, c.max, c.avg, sqrt(c.m2));
+                    c.name, c.count, c.min, c.max, c.avg, safe_sqrt(c.m2));
         } else {
             fprintf(stderr, "%-30s\t"
                     "count: %" PRIu64 "\n",
