@@ -67,7 +67,7 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     HAGL = terrainState - stateStruct.position.z;
     rngInnov = innovRng;
     range = rangeDataDelayed.rng;
-    gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
+    gndOffsetErr = safe_sqrt(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
 // return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
@@ -455,14 +455,14 @@ void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 // also return the delta in position due to the last position reset
 void  NavEKF2_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    velVar   = sqrtf(velTestRatio);
-    posVar   = sqrtf(posTestRatio);
-    hgtVar   = sqrtf(hgtTestRatio);
+    velVar   = safe_sqrt(velTestRatio);
+    posVar   = safe_sqrt(posTestRatio);
+    hgtVar   = safe_sqrt(hgtTestRatio);
     // If we are using simple compass yaw fusion, populate all three components with the yaw test ratio to provide an equivalent output
-    magVar.x = sqrtf(MAX(magTestRatio.x,yawTestRatio));
-    magVar.y = sqrtf(MAX(magTestRatio.y,yawTestRatio));
-    magVar.z = sqrtf(MAX(magTestRatio.z,yawTestRatio));
-    tasVar   = sqrtf(tasTestRatio);
+    magVar.x = safe_sqrt(MAX(magTestRatio.x,yawTestRatio));
+    magVar.y = safe_sqrt(MAX(magTestRatio.y,yawTestRatio));
+    magVar.z = safe_sqrt(MAX(magTestRatio.z,yawTestRatio));
+    tasVar   = safe_sqrt(tasTestRatio);
     offset   = posResetNE;
 }
 
@@ -584,7 +584,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     // range finder is fitted for other applications
     float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
-        temp = sqrtf(auxRngTestRatio);
+        temp = safe_sqrt(auxRngTestRatio);
     } else {
         temp = 0.0f;
     }

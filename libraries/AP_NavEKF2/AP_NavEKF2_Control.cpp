@@ -69,7 +69,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
             // which assumes the vehicle has launched into the wind
              Vector3f tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
-            float windSpeed =  sqrtf(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
+            float windSpeed =  safe_sqrt(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
             stateStruct.wind_vel.x = windSpeed * cosf(tempEuler.z);
             stateStruct.wind_vel.y = windSpeed * sinf(tempEuler.z);
 
