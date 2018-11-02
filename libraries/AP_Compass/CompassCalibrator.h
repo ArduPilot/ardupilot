@@ -52,7 +52,7 @@ public:
     float get_completion_percent() const;
     completion_mask_t& get_completion_mask();
     enum compass_cal_status_t get_status() const { return _status; }
-    float get_fitness() const { return sqrtf(_fitness); }
+    float get_fitness() const { return safe_sqrt(_fitness); }
     float get_orientation_confidence() const { return _orientation_confidence; }
     uint8_t get_attempt() const { return _attempt; }
 
