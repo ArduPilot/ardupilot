@@ -27,6 +27,8 @@ void Sub::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
+    init_capabilities();
+
     // load parameters from EEPROM
     load_parameters();
 
@@ -202,9 +204,6 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
-
-    // init vehicle capabilties
-    init_capabilities();
 
     // disable safety if requested
     BoardConfig.init_safety();    
