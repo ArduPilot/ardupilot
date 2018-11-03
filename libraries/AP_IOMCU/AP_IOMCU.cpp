@@ -78,6 +78,7 @@ void AP_IOMCU::event_failed(uint8_t event)
 void AP_IOMCU::thread_main(void)
 {
     thread_ctx = chThdGetSelfX();
+    chEvtSignal(thread_ctx, initial_event_mask);
 
     uart.begin(1500*1000, 256, 256);
     uart.set_blocking_writes(false);
@@ -465,6 +466,9 @@ void AP_IOMCU::trigger_event(uint8_t event)
 {
     if (thread_ctx != nullptr) {
         chEvtSignal(thread_ctx, EVENT_MASK(event));
+    } else {
+        // thread isn't started yet, trigger this event once it is started
+        initial_event_mask |= EVENT_MASK(event);
     }
 }
 
