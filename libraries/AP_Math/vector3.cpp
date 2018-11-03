@@ -415,7 +415,7 @@ float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3
     float c = (seg_end-*this).length();
 
     // protect against divide by zero later
-    if (fabsf(b) < FLT_EPSILON) {
+    if (::is_zero(b)) {
         return 0.0f;
     }
 
