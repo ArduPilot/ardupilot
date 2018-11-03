@@ -77,6 +77,29 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
 }
 
+/*
+  process an array of pulses. n must be even
+ */
+void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap)
+{
+    if (n & 1) {
+        return;
+    }
+    while (n) {
+        uint32_t widths0 = widths[0];
+        uint32_t widths1 = widths[1];
+        if (need_swap) {
+            uint32_t tmp = widths1;
+            widths1 = widths0;
+            widths0 = tmp;
+        }
+        widths1 -= widths0;
+        process_pulse(widths0, widths1);
+        widths += 2;
+        n -= 2;
+    }
+}
+
 void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes) {
