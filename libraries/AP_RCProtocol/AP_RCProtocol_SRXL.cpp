@@ -55,6 +55,9 @@ void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
     uint8_t bit_ofs, byte_ofs;
     uint16_t nbits;
 
+    // keep a clock based on the pulses
+    clock_us += (width_s0 + width_s1);
+
     if (bits_s0 == 0 || bits_s1 == 0) {
         // invalid data
         goto reset;
@@ -90,7 +93,7 @@ void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 break;
             }
             byte = ((v>>1) & 0xFF);
-            process_byte(byte, 115200);
+            _process_byte(clock_us, byte, 115200);
         }
         memset(&srxl_state, 0, sizeof(srxl_state));
     }
@@ -249,9 +252,8 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
 {
-    uint64_t timestamp_us = AP_HAL::micros64();
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
     if ((timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
@@ -309,8 +311,8 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
         if (buflen == frame_len_full) {
             /* CRC check here */
             crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
-            if (crc_receiver == crc_fmu) {
-                /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
+             if (crc_receiver == crc_fmu) {
+               /* at this point buffer contains all frame data and crc is valid --> extract channel info according to SRXL variant */
                 uint16_t values[SRXL_MAX_CHANNELS];
                 uint8_t num_values;
                 bool failsafe_state;
@@ -330,7 +332,7 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
                 default:
                     break;
                 }
-            }
+             }
             decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
         } else {
             /* frame not completely received --> frame data buffering still ongoing  */
@@ -344,4 +346,12 @@ void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
 
     decode_state = decode_state_next;
     last_data_us = timestamp_us;
+}
+
+/*
+  process a byte provided by a uart
+ */
+void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
+{
+    _process_byte(AP_HAL::micros(), byte, baudrate);
 }

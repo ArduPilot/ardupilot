@@ -40,6 +40,9 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
     uint8_t bit_ofs, byte_ofs;
     uint16_t nbits;
 
+    // maintain time using pulse widths
+    clock_us += (width_s0 + width_s1);
+
     if (bits_s0 == 0 || bits_s1 == 0) {
         // invalid data
         goto reset;
@@ -83,7 +86,7 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
             }
             uint16_t values[8];
             uint16_t num_values=0;
-            if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) &&
+            if (dsm_decode(clock_us, bytes, values, &num_values, 8) &&
                 num_values >= MIN_RCIN_CHANNELS) {
                 add_input(num_values, values, false);
             }
@@ -247,7 +250,7 @@ void AP_RCProtocol_DSM::dsm_guess_format(bool reset, const uint8_t dsm_frame[16]
  * Decode the entire dsm frame (all contained channels)
  *
  */
-bool AP_RCProtocol_DSM::dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16],
+bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time, const uint8_t dsm_frame[16],
                                    uint16_t *values, uint16_t *num_values, uint16_t max_values)
 {
 #if 0
@@ -457,7 +460,7 @@ void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
     if (byte_input.ofs == 16) {
         uint16_t values[8];
         uint16_t num_values=0;
-        if (dsm_decode(AP_HAL::micros64(), byte_input.buf, values, &num_values, 8) &&
+        if (dsm_decode(AP_HAL::micros(), byte_input.buf, values, &num_values, 8) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, false);
         }
