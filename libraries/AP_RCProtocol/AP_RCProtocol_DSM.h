@@ -31,10 +31,10 @@ private:
     void dsm_decode();
     bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
     void dsm_guess_format(bool reset, const uint8_t dsm_frame[16]);
-    bool dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16],
+    bool dsm_decode(uint32_t frame_time, const uint8_t dsm_frame[16],
                     uint16_t *values, uint16_t *num_values, uint16_t max_values);
 
-    uint64_t dsm_last_frame_time;		/**< Timestamp for start of last dsm frame */
+    uint32_t dsm_last_frame_time;		/**< Timestamp for start of last dsm frame */
     unsigned dsm_channel_shift;			/**< Channel resolution, 0=unknown, 10=10 bit, 11=11 bit */
     // state of DSM decoder
     struct {
@@ -51,6 +51,9 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
+
+    // sum of clock pulses
+    uint32_t clock_us;
 
     struct {
         uint8_t buf[16];
