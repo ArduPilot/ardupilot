@@ -117,14 +117,24 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
+
+#if HAL_USE_ICU == TRUE
     const uint32_t *p;
     uint32_t n;
     while ((p = sig_reader.sigbuf.readptr(n)) != nullptr) {
         rcin_prot.process_pulse_list(p, n, sig_reader.need_swap);
         sig_reader.sigbuf.advance(n);
     }
+#endif
 
+#if HAL_USE_EICU == TRUE
+    uint32_t width_s0, width_s1;
+    while(sig_reader.read(width_s0, width_s1)) {
+        rcin_prot.process_pulse(width_s0, width_s1);
+    }
+#endif
+    
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     if (rcin_prot.new_input()) {
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = AP_HAL::micros();
