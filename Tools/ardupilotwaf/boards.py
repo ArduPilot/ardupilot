@@ -112,6 +112,11 @@ class Board:
                 '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
                 ]
 
+        if cfg.options.scripting_checks:
+            env.DEFINES.update(
+                AP_SCRIPTING_CHECKS = 1,
+                )
+
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
@@ -283,6 +288,7 @@ class sitl(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
 
         env.CXXFLAGS += [
