@@ -184,25 +184,25 @@ void lua_scripts::run_next_script(lua_State *L) {
             case 2:
                 {
                    // sanity check the return types
-                   if (lua_type(L, -2) != LUA_TNUMBER) {
-                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a delay (0x%d)", script->name, lua_type(L, -2));
+                   if (lua_type(L, -1) != LUA_TNUMBER) {
+                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a delay (0x%d)", script->name, lua_type(L, -1));
                        lua_pop(L, 2);
                        remove_script(L, script);
                        return;
                    }
-                   if (lua_type(L, -1) != LUA_TFUNCTION) {
-                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a function (0x%d)", script->name, lua_type(L, -1));
+                   if (lua_type(L, -2) != LUA_TFUNCTION) {
+                       gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: %s did not return a function (0x%d)", script->name, lua_type(L, -2));
                        lua_pop(L, 2);
                        remove_script(L, script);
                        return;
                    }
 
                    // types match the expectations, go ahead and reschedule
+                   script->next_run_ms = AP_HAL::millis64() + (uint64_t)luaL_checknumber(L, -1);
+                   lua_pop(L, 1);
                    int old_ref = script->lua_ref;
                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
                    luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
-                   script->next_run_ms = AP_HAL::millis64() + (uint64_t)luaL_checknumber(L, -1);
-                   lua_pop(L, 1);
                    reschedule_script(script);
                    break;
                 }
