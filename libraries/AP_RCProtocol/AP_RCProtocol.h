@@ -44,6 +44,7 @@ public:
         return _valid_serial_prot;
     }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
+    void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
     void process_byte(uint8_t byte, uint32_t baudrate);
 
     void disable_for_pulses(enum rcprotocol_t protocol) {
