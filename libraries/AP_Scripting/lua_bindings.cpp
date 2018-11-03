@@ -31,8 +31,6 @@ int lua_servo_set_output_pwm(lua_State *state) {
     }
 
     SRV_Channels::set_output_pwm((SRV_Channel::Aux_servo_function_t)servo_function, output_value);
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Set to %d", output_value);
     return 0;
 }
 
