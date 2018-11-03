@@ -114,6 +114,8 @@ private:
     // IOMCU thread
     thread_t *thread_ctx;
 
+    eventmask_t initial_event_mask;
+
     // time when we last read various pages
     uint32_t last_status_read_ms;
     uint32_t last_rc_read_ms;
