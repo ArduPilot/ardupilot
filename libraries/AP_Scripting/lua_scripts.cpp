@@ -139,9 +139,9 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
 void lua_scripts::run_next_script(lua_State *L) {
     if (scripts == nullptr) {
-        #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         AP_HAL::panic("Lua: Attempted to run a script without any scripts queued");
-        #endif // #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif // defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         return;
     }
 
@@ -240,9 +240,9 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
 
 void lua_scripts::reschedule_script(script_info *script) {
     if (script == nullptr) {
-       #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
        AP_HAL::panic("Lua: Attempted to schedule a null pointer");
-       #endif // #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif // defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
        return;
     }
 
@@ -297,6 +297,17 @@ void lua_scripts::run(void) {
 
     while (true) {
         if (scripts != nullptr) {
+#if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
+              // Sanity check that the scripts list is ordered correctly
+              script_info *sanity = scripts;
+              while (sanity->next != nullptr) {
+                  if (sanity->next_run_ms > sanity->next->next_run_ms) {
+                      AP_HAL::panic("Lua: Script tasking order has been violated");
+                  }
+                  sanity = sanity->next;
+              }
+#endif // defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
+
             // compute delay time
             uint64_t now_ms = AP_HAL::millis64();
             if (now_ms < scripts->next_run_ms) {
