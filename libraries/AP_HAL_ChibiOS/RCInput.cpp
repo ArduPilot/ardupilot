@@ -26,7 +26,10 @@ extern AP_IOMCU iomcu;
 #endif
 
 #include <AP_Math/AP_Math.h>
+
+#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
+#endif
 
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
