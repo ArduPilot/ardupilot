@@ -27,6 +27,7 @@ void Plane::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
+    init_capabilities();
 
     //
     // Check the EEPROM format version before loading any parameters from EEPROM
@@ -179,8 +180,6 @@ void Plane::init_ardupilot()
      *  the RC library being initialised.
      */
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
-
-    init_capabilities();
 
     quadplane.setup();
 
