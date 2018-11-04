@@ -178,7 +178,9 @@ void AP_IOMCU_FW::init()
 
 void AP_IOMCU_FW::update()
 {
-    eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(1));
+    // we are not running any other threads, so we can use an
+    // immediate timeout here for lowest latency
+    eventmask_t mask = chEvtWaitAnyTimeout(~0, TIME_IMMEDIATE);
 
     // we get the timestamp once here, and avoid fetching it
     // within the DMA callbacks
