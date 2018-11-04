@@ -65,6 +65,10 @@ float safe_sqrt(const T v)
 {
     float ret = sqrtf(static_cast<float>(v));
     if (isnan(ret)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        ::fprintf(stderr, "sqrtf returned nan!");
+        abort();
+#endif
         return 0;
     }
     return ret;
