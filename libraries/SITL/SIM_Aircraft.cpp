@@ -215,6 +215,11 @@ void Aircraft::update_mag_field_bf()
     // calculate frame height above ground
     const float frame_height_agl = fmaxf((-position.z) + home.alt * 0.01f - ground_level, 0.0f);
 
+    if (!sitl) {
+        // running example program
+        return;
+    }
+
     // calculate scaling factor that varies from 1 at ground level to 1/8 at sitl->mag_anomaly_hgt
     // Assume magnetic anomaly strength scales with 1/R**3
     float anomaly_scaler = (sitl->mag_anomaly_hgt / (frame_height_agl + sitl->mag_anomaly_hgt));
