@@ -1397,21 +1397,26 @@ class AutoTest(ABC):
                 interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
                 tstart = self.get_sim_time()
                 while True:
-                    remaining = 20 - (self.get_sim_time_cached() - tstart)
-                    if remaining <= 0:
-                        break
+                    if self.get_sim_time_cached() - tstart > 20:
+                        self.set_rc(8, 1000)
+                        break # success!
                     m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
                                             blocking=True,
-                                            timeout=remaining)
+                                            timeout=2)
+                    if m is None:
+                        continue
                     m_value = getattr(m, channel_field, None)
                     if m_value is None:
+                        self.set_rc(8, 1000)
                         raise ValueError("Message has no %s field" %
                                          channel_field)
                     self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
                                   (channel_field, m_value, interlock_value))
                     if m_value != interlock_value:
+                        self.set_rc(8, 1000)
                         raise NotAchievedException(
                                 "Motor interlock was changed while disarmed")
+
             self.set_rc(8, 1000)
         self.progress("ALL PASS")
         self.context_pop()
