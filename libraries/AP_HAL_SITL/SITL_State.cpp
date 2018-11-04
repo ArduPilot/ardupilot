@@ -508,6 +508,11 @@ void SITL_State::set_height_agl(void)
 {
     static float home_alt = -1;
 
+    if (!_sitl) {
+        // in example program
+        return;
+    }
+
     if (is_equal(home_alt, -1.0f) && _sitl->state.altitude > 0) {
         // remember home altitude as first non-zero altitude
         home_alt = _sitl->state.altitude;
