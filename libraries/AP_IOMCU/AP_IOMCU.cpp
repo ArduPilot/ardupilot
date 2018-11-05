@@ -16,6 +16,7 @@
 #include <AP_Math/crc.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -856,6 +857,17 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
         trigger_event(IOEVENT_MIXING);
     }
     return true;
+}
+
+/*
+  return the RC protocol name
+ */
+const char *AP_IOMCU::get_rc_protocol(void)
+{
+    if (!is_chibios_backend) {
+        return nullptr;
+    }
+    return AP_RCProtocol::protocol_name_from_protocol((AP_RCProtocol::rcprotocol_t)rc_input.data);
 }
 
 #endif // HAL_WITH_IO_MCU
