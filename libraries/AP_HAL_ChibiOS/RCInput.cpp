@@ -136,7 +136,11 @@ void RCInput::_timer_tick(void)
         rcin_prot.process_pulse(width_s0, width_s1);
     }
 #endif
-    
+
+#ifndef HAL_NO_UARTDRIVER
+    const char *rc_protocol = nullptr;
+#endif
+
 #if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     if (rcin_prot.new_input()) {
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
@@ -148,10 +152,7 @@ void RCInput::_timer_tick(void)
         }
         rcin_mutex.give();
 #ifndef HAL_NO_UARTDRIVER
-        if (rcin_prot.protocol_name() != last_protocol) {
-            last_protocol = rcin_prot.protocol_name();
-            gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
-        }
+        rc_protocol = rcin_prot.protocol_name();
 #endif
     }
 #endif
@@ -175,10 +176,19 @@ void RCInput::_timer_tick(void)
     if (AP_BoardConfig::io_enabled() &&
         iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
         _rcin_timestamp_last_signal = last_iomcu_us;
+#ifndef HAL_NO_UARTDRIVER
+        rc_protocol = iomcu.get_rc_protocol();
+#endif
     }
     rcin_mutex.give();
 #endif
-    
+
+#ifndef HAL_NO_UARTDRIVER
+    if (rc_protocol && rc_protocol != last_protocol) {
+        last_protocol = rc_protocol;
+        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+    }
+#endif
 
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
