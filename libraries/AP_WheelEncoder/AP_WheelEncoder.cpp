@@ -269,7 +269,7 @@ float AP_WheelEncoder::get_rate(uint8_t instance) const
     }
 
     // calculate delta_angle (in radians) per second
-    return M_2PI * (state[instance].dist_count_change / _counts_per_revolution[instance]) / (state[instance].dt_ms / 1000.0f);
+    return M_2PI * (state[instance].dist_count_change / ((float)_counts_per_revolution[instance])) / (state[instance].dt_ms * 1e-3f);
 }
 
 // get the total number of sensor reading from the encoder
