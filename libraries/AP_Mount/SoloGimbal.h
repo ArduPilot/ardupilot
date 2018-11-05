@@ -39,8 +39,7 @@ class SoloGimbal : AP_AccelCal_Client
 public:
     //Constructor
     SoloGimbal() :
-        _ekf(AP::ahrs_navekf()),
-        _ahrs(AP::ahrs_navekf()),
+        _ekf(),
         _state(GIMBAL_STATE_NOT_PRESENT),
         _vehicle_yaw_rate_ef_filt(0.0f),
         _vehicle_to_gimbal_quat(),
@@ -107,7 +106,6 @@ private:
 
     // private member variables
     SoloGimbalEKF            _ekf;      // state of small EKF for gimbal
-    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF
 
     gimbal_state_t _state;
 
