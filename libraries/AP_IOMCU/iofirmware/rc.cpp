@@ -29,7 +29,7 @@ extern const AP_HAL::HAL& hal;
 static const SerialConfig uart3_cfg = {
     100000,   // speed
     USART_CR1_PCE | USART_CR1_M, // cr1, enable even parity
-    0,        // cr2
+    USART_CR2_STOP_1,            // cr2, two stop bits
     0,        // cr3
     nullptr,  // irq_cb
     nullptr,  // ctx
