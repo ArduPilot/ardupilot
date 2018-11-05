@@ -288,6 +288,7 @@ void AP_IOMCU_FW::rcin_update()
             rc_input.pwm[i] = hal.rcin->read(i);
         }
         rc_input.last_input_ms = last_ms;
+        rc_input.data = (uint16_t)rcprotocol->protocol_detected();
     } else if (last_ms - rc_input.last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
