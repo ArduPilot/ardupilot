@@ -124,8 +124,8 @@ void RCInput::_timer_tick(void)
 #if HAL_USE_ICU == TRUE
     const uint32_t *p;
     uint32_t n;
-    while ((p = sig_reader.sigbuf.readptr(n)) != nullptr) {
-        rcin_prot.process_pulse_list(p, n, sig_reader.need_swap);
+    while ((p = (const uint32_t *)sig_reader.sigbuf.readptr(n)) != nullptr) {
+        rcin_prot.process_pulse_list(p, n*2, sig_reader.need_swap);
         sig_reader.sigbuf.advance(n);
     }
 #endif
