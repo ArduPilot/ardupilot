@@ -102,28 +102,9 @@ void SoftSigReader::_irq_handler(void* self, uint32_t flags)
     dmaStreamSetTransactionSize(sig_reader->dma, SOFTSIG_BOUNCE_BUF_SIZE);
     dmaStreamSetMode(sig_reader->dma, sig_reader->dmamode);
     dmaStreamEnable(sig_reader->dma);
-    sig_reader->sigbuf.push(sig_reader->signal2, SOFTSIG_BOUNCE_BUF_SIZE);
+    sig_reader->sigbuf.push((const pulse_t *)sig_reader->signal2, SOFTSIG_BOUNCE_BUF_SIZE/2);
 }
 
-
-bool SoftSigReader::read(uint32_t &widths0, uint32_t &widths1)
-{
-    if (sigbuf.pop(widths0) && sigbuf.pop(widths1)) {
-        //the data is period and width, order depending on which
-        //channel is used and width type (0 or 1) depends on mode
-        //being set to HIGH or LOW. We need to swap the words when on
-        //channel 1
-        if (need_swap) {
-            uint32_t tmp = widths1;
-            widths1 = widths0;
-            widths0 = tmp;
-        }
-        widths1 -= widths0;
-    } else {
-        return false;
-    }
-    return true;
-}
 
 #endif // HAL_USE_ICU
 

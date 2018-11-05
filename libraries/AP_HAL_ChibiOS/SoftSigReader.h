@@ -25,7 +25,7 @@
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 
 #ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
-#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 256
+#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 128
 #endif
 
 // we use a small bounce buffer size to minimise time in the DMA
@@ -36,7 +36,6 @@ class ChibiOS::SoftSigReader {
     friend class ChibiOS::RCInput;
 public:
     bool attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel);
-    bool read(uint32_t &widths0, uint32_t &widths1);
 
 private:
     uint32_t *signal;
@@ -49,7 +48,11 @@ private:
     uint32_t dmamode;
     ICUConfig icucfg;
     ICUDriver* _icu_drv = nullptr;
-    ObjectBuffer<uint32_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
+    typedef struct PACKED {
+        uint32_t w0;
+        uint32_t w1;
+    } pulse_t;
+    ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     bool need_swap;
 };
 
