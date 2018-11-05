@@ -198,9 +198,9 @@ void AP_RCProtocol::start_bind(void)
 /*
   return protocol name
  */
-const char *AP_RCProtocol::protocol_name(void) const
+const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 {
-    switch (_detected_protocol) {
+    switch (protocol) {
     case PPM:
         return "PPM";
     case SBUS:
@@ -218,4 +218,12 @@ const char *AP_RCProtocol::protocol_name(void) const
         break;
     }
     return nullptr;
+}
+
+/*
+  return protocol name
+ */
+const char *AP_RCProtocol::protocol_name(void) const
+{
+    return protocol_name_from_protocol(_detected_protocol);
 }
