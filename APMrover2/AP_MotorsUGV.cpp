@@ -356,7 +356,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
 {
     // check if the motor_seq is valid
-    if (motor_seq > MOTOR_TEST_THROTTLE_RIGHT) {
+    if (motor_seq >= MOTOR_TEST_LAST) {
         return false;
     }
     pct = constrain_float(pct, -100.0f, 100.0f);
@@ -404,7 +404,7 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             }
             break;
         }
-        default:
+        case MOTOR_TEST_LAST:
             return false;
     }
     SRV_Channels::calc_pwm();
