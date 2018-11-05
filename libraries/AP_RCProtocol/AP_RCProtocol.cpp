@@ -19,7 +19,6 @@
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_SBUS.h"
-#include "AP_RCProtocol_SBUS_NI.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_ST24.h"
@@ -30,8 +29,8 @@ AP_RCProtocol *AP_RCProtocol::instance;
 void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
-    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this);
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS_NI(*this);
+    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true);
+    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
