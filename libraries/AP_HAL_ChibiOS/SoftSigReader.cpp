@@ -34,10 +34,6 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     if (signal == nullptr) {
         return false;
     }
-    signal2 = (uint32_t*)hal.util->malloc_type(sizeof(uint32_t)*SOFTSIG_BOUNCE_BUF_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
-    if (signal2 == nullptr) {
-        return false;
-    }
     _icu_drv = icu_drv;
     //Setup Burst transfer of period and width measurement
     dma = STM32_DMA_STREAM(dma_stream);
