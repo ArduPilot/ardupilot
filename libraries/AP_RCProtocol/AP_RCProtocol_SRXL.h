@@ -42,7 +42,7 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
     static uint16_t srxl_crc16(uint16_t crc, uint8_t new_byte);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
@@ -62,7 +62,6 @@ private:
     uint8_t decode_state_next = STATE_IDLE;      /* State of frame decoding thatwill be applied when the next byte from dataframe drops in  */
     uint16_t crc_fmu = 0U;                       /* CRC calculated over payload from srxl datastream on this machine */
     uint16_t crc_receiver = 0U;                  /* CRC extracted from srxl datastream  */
-    uint32_t clock_us;                           /* clock calculated from pulse lengths */
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
