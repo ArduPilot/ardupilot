@@ -43,7 +43,7 @@ void SoloGimbalEKF::reset()
     memset(&states,0,sizeof(states));
     memset((void *)&gSense,0,sizeof(gSense));
     memset(&Cov,0,sizeof(Cov));
-    TiltCorrection = 0;
+    TiltCorrectionSquared = 0;
     StartTime_ms = 0;
     FiltInit = false;
     lastMagUpdate = 0;
@@ -137,7 +137,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
     
     // Align the heading once there has been enough time for the filter to settle and the tilt corrections have dropped below a threshold
     // Force it to align if too much time has lapsed
-    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrection < 1e-4f) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
+    if (((((imuSampleTime_ms - StartTime_ms) > 8000 && TiltCorrectionSquared < sq(1e-4f)) || (imuSampleTime_ms - StartTime_ms) > 30000)) && !YawAligned) {
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
@@ -661,7 +661,7 @@ void SoloGimbalEKF::fuseVelocity()
     }
 
     // calculate tilt component of angle correction
-    TiltCorrection = safe_sqrt(sq(angErrVec.x) + sq(angErrVec.y));
+    TiltCorrectionSquared = sq(angErrVec.x) + sq(angErrVec.y);
 }
 
 // check for new magnetometer data and update store measurements if available
