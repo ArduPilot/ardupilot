@@ -1,3 +1,30 @@
+Release 3.9.3beta1, 6th November 2018
+-------------------------------------
+
+This is the first beta release for the 3.9.3 firmware. This release
+has the following changes over 3.9.2:
+
+ - fixed error handling for corrupt RC input that could lead to a
+   crash in unusual circumstances
+
+ - fixed a race condition in IOMCU event startup that could lead to
+   the safety not being disabled on boot with BRD_SAFETYENABLE=0
+
+ - ensure surface speed scaling covers full range of configured
+   airspeeds
+
+ - added builds for new boards F35Lightning, omnibusf4v6, mRoX21-777
+
+ - updated GPIO numbers on AUX pins on all boards to be consistent
+   with docs
+
+ - updated KakuteF7 UARTs and buzzer
+
+ - added ESC sensor uart on OmnibusNanoV6
+
+Happy flying!
+
+
 Release 3.9.2, 10th October 2018
 --------------------------------
 
