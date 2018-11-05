@@ -21,9 +21,9 @@ STM32_ST_USE_TIMER 5
 # flash size
 FLASH_SIZE_KB 2048
 
-# serial port for stdout
-STDOUT_SERIAL SD7
-STDOUT_BAUDRATE 57600
+# serial port for stdout disabled, use USB console
+# STDOUT_SERIAL SD7
+# STDOUT_BAUDRATE 57600
 
 # only one I2C bus
 I2C_ORDER I2C1
