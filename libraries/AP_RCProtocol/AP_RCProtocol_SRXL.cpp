@@ -51,10 +51,8 @@ void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint8_t b;
     if (ss.process_pulse(width_s0, width_s1, b)) {
-        _process_byte(clock_us, b, 115200);
+        _process_byte(ss.get_byte_timestamp_us(), b);
     }
-    // keep a clock based on the pulses
-    clock_us += (width_s0 + width_s1);
 }
 
 
@@ -195,7 +193,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
 {
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
@@ -296,5 +294,8 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte, uint
  */
 void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
 {
-    _process_byte(AP_HAL::micros(), byte, baudrate);
+    if (baudrate != 115200) {
+        return;
+    }
+    _process_byte(AP_HAL::micros(), byte);
 }
