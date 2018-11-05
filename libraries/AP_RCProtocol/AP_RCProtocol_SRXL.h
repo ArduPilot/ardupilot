@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+#include "SoftSerial.h"
 
 #define SRXL_MIN_FRAMESPACE_US 8000U    /* Minumum space between srxl frames in us (applies to all variants)  */
 #define SRXL_MAX_CHANNELS 20U           /* Maximum number of channels from srxl datastream  */
@@ -62,8 +63,6 @@ private:
     uint16_t crc_fmu = 0U;                       /* CRC calculated over payload from srxl datastream on this machine */
     uint16_t crc_receiver = 0U;                  /* CRC extracted from srxl datastream  */
     uint32_t clock_us;                           /* clock calculated from pulse lengths */
-    struct {
-        uint16_t bytes[SRXL_FRAMELEN_MAX];
-        uint16_t bit_ofs;
-    } srxl_state;
+
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

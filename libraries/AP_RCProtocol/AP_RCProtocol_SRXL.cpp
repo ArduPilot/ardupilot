@@ -49,69 +49,12 @@ uint16_t AP_RCProtocol_SRXL::srxl_crc16(uint16_t crc, uint8_t new_byte)
 
 void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to about 4usec error, assuming 115200 bps
-    uint16_t bits_s0 = ((width_s0+4)*(uint32_t)115200) / 1000000;
-    uint16_t bits_s1 = ((width_s1+4)*(uint32_t)115200) / 1000000;
-    uint8_t bit_ofs, byte_ofs;
-    uint16_t nbits;
-
+    uint8_t b;
+    if (ss.process_pulse(width_s0, width_s1, b)) {
+        _process_byte(clock_us, b, 115200);
+    }
     // keep a clock based on the pulses
     clock_us += (width_s0 + width_s1);
-
-    if (bits_s0 == 0 || bits_s1 == 0) {
-        // invalid data
-        goto reset;
-    }
-
-    byte_ofs = srxl_state.bit_ofs/10;
-    bit_ofs = srxl_state.bit_ofs%10;
-    if (byte_ofs >= SRXL_FRAMELEN_MAX) {
-        goto reset;
-    }
-    // pull in the high bits
-    nbits = bits_s0;
-    if (nbits+bit_ofs > 10) {
-        nbits = 10 - bit_ofs;
-    }
-    srxl_state.bytes[byte_ofs] |= ((1U<<nbits)-1) << bit_ofs;
-    srxl_state.bit_ofs += nbits;
-    bit_ofs += nbits;
-    if (bits_s0 - nbits > 10) {
-        // we have a full frame
-        uint8_t byte;
-        uint8_t i;
-        for (i=0; i <= byte_ofs; i++) {
-            // get raw data
-            uint16_t v = srxl_state.bytes[i];
-
-            // check start bit
-            if ((v & 1) != 0) {
-                break;
-            }
-            // check stop bits
-            if ((v & 0x200) != 0x200) {
-                break;
-            }
-            byte = ((v>>1) & 0xFF);
-            _process_byte(clock_us, byte, 115200);
-        }
-        memset(&srxl_state, 0, sizeof(srxl_state));
-    }
-
-    byte_ofs = srxl_state.bit_ofs/10;
-    bit_ofs = srxl_state.bit_ofs%10;
-
-    if (bits_s1+bit_ofs > 10) {
-        // invalid data
-        goto reset;
-    }
-
-    // pull in the low bits
-    srxl_state.bit_ofs += bits_s1;
-
-    return;
-reset:
-    memset(&srxl_state, 0, sizeof(srxl_state));
 }
 
 
