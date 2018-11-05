@@ -39,13 +39,20 @@ public:
         PARSE_TYPE_SIGREAD,
         PARSE_TYPE_SERIAL
     };
+
+    // get number of frames, ignoring failsafe
+    uint32_t get_rc_frame_count(void) const {
+        return rc_frame_count;
+    }
+
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
 
 private:
     AP_RCProtocol &frontend;
-    unsigned int rc_input_count;
-    unsigned int last_rc_input_count;
+    uint32_t rc_input_count;
+    uint32_t last_rc_input_count;
+    uint32_t rc_frame_count;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
