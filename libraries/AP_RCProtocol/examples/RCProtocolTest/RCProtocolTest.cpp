@@ -77,7 +77,7 @@ static bool test_byte_protocol(const char *name, uint32_t baudrate,
         }
         hal.scheduler->delay(10);
         if (repeat > repeats) {
-            ret &= check_result(name, false, values, nvalues);
+            ret &= check_result(name, true, values, nvalues);
         }
     }
     return ret;
@@ -196,7 +196,13 @@ void loop()
                                  0x26, 0x16, 0x34, 0x01, 0x04, 0x75, 0x1C, 0x40};
     const uint16_t dsm_output[] = {1501, 1004, 1568, 1537, 1814, 2015, 1500};
 
+    const uint8_t sumd_bytes[] = {0xA8, 0x01, 0x08, 0x2F, 0x50, 0x31, 0xE8, 0x21, 0xA0,
+                                  0x2F, 0x50, 0x22, 0x60, 0x22, 0x60, 0x2E, 0xE0, 0x2E,
+                                  0xE0, 0x87, 0xC6};
+    const uint16_t sumd_output[] = {1597, 1076, 1514, 1514, 1100, 1100, 1500, 1500};
+
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
+    test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
 
     // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
     test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3);
