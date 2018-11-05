@@ -86,12 +86,15 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint8_t b;
     if (ss.process_pulse(width_s0, width_s1, b)) {
-        _process_byte(b);
+        _process_byte(ss.get_byte_timestamp_us(), b);
     }
 }
 
-void AP_RCProtocol_SUMD::_process_byte(uint8_t byte)
+void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 {
+    if (timestamp_us - last_packet_us > 3000U) {
+        _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+    }
     switch (_decode_state) {
     case SUMD_DECODE_STATE_UNSYNCED:
 #ifdef SUMD_DEBUG
@@ -111,6 +114,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint8_t byte)
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_HEADER: %x \n", byte) ;
 #endif
+            last_packet_us = timestamp_us;
         }
         break;
 
@@ -335,6 +339,6 @@ void AP_RCProtocol_SUMD::process_byte(uint8_t byte, uint32_t baudrate)
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(byte);
+    _process_byte(AP_HAL::micros(), byte);
 }
 
