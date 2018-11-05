@@ -29,6 +29,7 @@ public:
         instance = this;
     }
     ~AP_RCProtocol();
+
     enum rcprotocol_t {
         PPM = 0,
         SBUS,
@@ -67,8 +68,16 @@ public:
     void start_bind(void);
 
     // return protocol name as a string
+    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
+
+    // return protocol name as a string
     const char *protocol_name(void) const;
 
+    // return protocol name as a string
+    enum rcprotocol_t protocol_detected(void) const {
+        return _detected_protocol;
+    }
+    
     // access to singleton
     static AP_RCProtocol *get_instance(void) {
         return instance;
