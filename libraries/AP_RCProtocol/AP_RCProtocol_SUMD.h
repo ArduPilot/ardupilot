@@ -29,7 +29,7 @@ public:
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:
-    void _process_byte(uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
     static uint16_t sumd_crc16(uint16_t crc, uint8_t value);
     static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
 
@@ -65,6 +65,7 @@ private:
     uint16_t 	_crc16  = 0x0000;
     bool 		_sumd	= true;
     bool		_crcOK	= false;
+    uint32_t last_packet_us;
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
