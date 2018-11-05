@@ -28,6 +28,7 @@ public:
     AP_RCProtocol() {
         instance = this;
     }
+    ~AP_RCProtocol();
     enum rcprotocol_t {
         PPM = 0,
         SBUS,
