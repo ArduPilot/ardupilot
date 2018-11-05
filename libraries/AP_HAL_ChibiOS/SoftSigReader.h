@@ -40,7 +40,7 @@ public:
 
 private:
     uint32_t *signal;
-    uint32_t *signal2;
+    uint32_t signal2[SOFTSIG_BOUNCE_BUF_SIZE];
     static void _irq_handler(void* self, uint32_t flags);
     uint8_t num_timer_channels;
     uint8_t enable_chan_mask;
