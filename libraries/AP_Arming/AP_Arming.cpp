@@ -82,6 +82,17 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 AP_Arming::AP_Arming()
 {
     AP_Param::setup_object_defaults(this, var_info);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Arming must be singleton");
+    }
+#endif
+    _singleton = this;
+}
+
+AP_Arming &AP_Arming::get_singleton()
+{
+    return *_singleton;
 }
 
 uint16_t AP_Arming::compass_magfield_expected() const
@@ -691,3 +702,14 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
     }
     return ret;
 }
+
+AP_Arming *AP_Arming::_singleton;
+
+namespace AP {
+
+AP_Arming &arming()
+{
+    return AP_Arming::get_singleton();
+}
+
+};
