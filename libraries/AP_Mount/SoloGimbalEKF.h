@@ -120,7 +120,7 @@ private:
 
     float Cov[9][9];                // covariance matrix
     Matrix3f Tsn;                   // Sensor to NED rotation matrix
-    float TiltCorrection;           // Angle correction applied to tilt from last velocity fusion (rad)
+    float TiltCorrectionSquared;    // Angle correction applied to tilt from last velocity fusion (rad)
     bool newDataMag;                // true when new magnetometer data is waiting to be used
     uint32_t StartTime_ms;          // time the EKF was started (msec)
     bool FiltInit;                  // true when EKF is initialised
