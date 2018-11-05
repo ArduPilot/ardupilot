@@ -63,8 +63,9 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             continue;
         }
         if (backend[i] != nullptr) {
+            uint32_t frame_count = backend[i]->get_rc_frame_count();
             backend[i]->process_pulse(width_s0, width_s1);
-            if (backend[i]->new_input()) {
+            if (frame_count != backend[i]->get_rc_frame_count()) {
                 _good_frames[i]++;
                 if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
                     continue;
@@ -74,6 +75,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 memset(_good_frames, 0, sizeof(_good_frames));
                 _last_input_ms = now;
                 _detected_with_bytes = false;
+                break;
             }
         }
     }
@@ -123,8 +125,9 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
+            uint32_t frame_count = backend[i]->get_rc_frame_count();
             backend[i]->process_byte(byte, baudrate);
-            if (backend[i]->new_input()) {
+            if (frame_count != backend[i]->get_rc_frame_count()) {
                 _good_frames[i]++;
                 if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
                     continue;
@@ -134,6 +137,7 @@ void AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 memset(_good_frames, 0, sizeof(_good_frames));
                 _last_input_ms = now;
                 _detected_with_bytes = true;
+                break;
             }
         }
     }
