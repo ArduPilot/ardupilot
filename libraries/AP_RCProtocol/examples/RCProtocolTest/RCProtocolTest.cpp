@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <stdio.h>
 
 void setup();
 void loop();
@@ -209,8 +210,6 @@ void loop()
 
     // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
     test_protocol("DSM", 115200, dsm_bytes, sizeof(dsm_bytes), dsm_output, ARRAY_SIZE(dsm_output), 9);
-
-    fflush(stdout);
 }
 
 AP_HAL_MAIN();
