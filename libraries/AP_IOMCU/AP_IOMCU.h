@@ -68,6 +68,9 @@ public:
     // Do DSM receiver binding
     void bind_dsm(uint8_t mode);
 
+    // get the name of the RC protocol
+    const char *get_rc_protocol(void);
+
     /*
       get servo rail voltage
      */
