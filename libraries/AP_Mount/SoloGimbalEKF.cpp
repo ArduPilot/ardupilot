@@ -28,8 +28,7 @@ const AP_Param::GroupInfo SoloGimbalEKF::var_info[] = {
 #define GYRO_BIAS_LIMIT 0.349066f // maximum allowed gyro bias (rad/sec)
 
 // constructor
-SoloGimbalEKF::SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs) :
-    _ahrs(ahrs),
+SoloGimbalEKF::SoloGimbalEKF() :
     states(),
     state(*reinterpret_cast<struct state_elements *>(&states))
 {
@@ -75,6 +74,8 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
 
         bool main_ekf_healthy = false;
         nav_filter_status main_ekf_status;
+
+        const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
 
         if (_ahrs.get_filter_status(main_ekf_status)) {
             if (main_ekf_status.flags.attitude) {
@@ -595,6 +596,8 @@ void SoloGimbalEKF::predictCovariance()
 // Fuse the SoloGimbalEKF velocity estimates - this enables alevel reference to be maintained during constant turns
 void SoloGimbalEKF::fuseVelocity()
 {
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+
     if (!_ahrs.have_inertial_nav()) {
         return;
     }
@@ -664,6 +667,8 @@ void SoloGimbalEKF::fuseVelocity()
 // check for new magnetometer data and update store measurements if available
 void SoloGimbalEKF::readMagData()
 {
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+
     if (_ahrs.get_compass() &&
         _ahrs.get_compass()->use_for_yaw() &&
         _ahrs.get_compass()->last_update_usec() != lastMagUpdate) {
@@ -860,6 +865,8 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     Tms[0][2] = -sinTheta*cosPhi;
     Tms[1][2] = sinPhi;
     Tms[2][2] = cosTheta*cosPhi;
+
+    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
 
     // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
     Vector3f earth_magfield = Vector3f(0,0,0);
