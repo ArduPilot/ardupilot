@@ -18,6 +18,7 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+#include "SoftSerial.h"
 
 class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
@@ -28,6 +29,7 @@ public:
     void update(void) override;
 
 private:
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
     void dsm_decode();
     bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
     void dsm_guess_format(bool reset, const uint8_t dsm_frame[16]);
@@ -42,6 +44,11 @@ private:
         uint16_t bit_ofs;
     } dsm_state;
 
+    // format guessing state
+    uint32_t	cs10;
+    uint32_t	cs11;
+    unsigned samples;
+
     // bind state machine
     enum {
         BIND_STATE_NONE,
@@ -52,12 +59,11 @@ private:
     } bind_state;
     uint32_t bind_last_ms;
 
-    // sum of clock pulses
-    uint32_t clock_us;
-
     struct {
         uint8_t buf[16];
         uint8_t ofs;
-        uint32_t last_byte_ms;
+        uint32_t last_byte_us;
     } byte_input;
+
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
