@@ -75,7 +75,7 @@ public:
 #endif
 
     // Constructor
-    SoloGimbalEKF(const AP_AHRS_NavEKF &ahrs);
+    SoloGimbalEKF();
 
     // Run the EKF main loop once every time we receive sensor data
     void RunEKF(float delta_time, const Vector3f &delta_angles, const Vector3f &delta_velocity, const Vector3f &joint_angles);
@@ -100,7 +100,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    const AP_AHRS_NavEKF &_ahrs;
 
     // the states are available in two forms, either as a Vector13 or
     // broken down as individual elements. Both are equivalent (same
