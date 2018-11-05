@@ -37,6 +37,17 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
 }
 
+AP_RCProtocol::~AP_RCProtocol()
+{
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            delete backend[i];
+            backend[i] = nullptr;
+        }
+    }
+    instance = nullptr;
+}
+
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
