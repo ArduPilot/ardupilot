@@ -704,7 +704,7 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     // calculate spline velocity at origin
     if (stopped_at_start || !prev_segment_exists) {
     	// if vehicle is stopped at the origin, set origin velocity to 0.02 * distance vector from origin to destination
-    	_spline_origin_vel = (destination - origin) * dt;
+    	_spline_origin_vel = (destination - origin) * 0.02f;
     	_spline_time = 0.0f;
     	_spline_vel_scaler = 0.0f;
     }else{
@@ -742,13 +742,13 @@ bool AC_WPNav::set_spline_origin_and_destination(const Vector3f& origin, const V
     case SEGMENT_END_STRAIGHT:
         // if next segment is straight, vehicle's final velocity should face along the next segment's position
         _spline_destination_vel = (next_destination - destination);
-        _flags.fast_waypoint = true;
+        _flags.fast_waypoint = false;
         break;
 
     case SEGMENT_END_SPLINE:
         // if next segment is splined, vehicle's final velocity should face parallel to the line from the origin to the next destination
         _spline_destination_vel = (next_destination - origin);
-        _flags.fast_waypoint = true;
+        _flags.fast_waypoint = false;
         break;
     }
 
