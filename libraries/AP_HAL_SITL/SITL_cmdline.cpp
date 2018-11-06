@@ -227,7 +227,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         switch (opt) {
         case 'w':
             AP_Param::erase_all();
-            unlink("dataflash.bin");
+            unlink("eeprom.bin");
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);
@@ -246,6 +246,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'I': {
             _instance = atoi(gopt.optarg);
+
+            char sysid_string[18];
+            snprintf(sysid_string, sizeof(sysid_string), "SYSID_THISMAV=%s", gopt.optarg);
+            _set_param_default(sysid_string);
+               printf("Param change called %s\n",sysid_string);
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }

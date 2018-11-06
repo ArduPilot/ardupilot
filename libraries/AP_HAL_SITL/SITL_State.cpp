@@ -51,6 +51,7 @@ void SITL_State::_set_param_default(const char *parm)
         printf("Unable to set parameter %s\n", pdup);
         exit(1);
     }
+    vp->save_sync(true);
     printf("Set parameter %s to %f\n", pdup, value);
     free(pdup);
 }
