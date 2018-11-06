@@ -300,6 +300,8 @@ void AP_IOMCU_FW::rcin_update()
         hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
     }
 
+    bool old_override = override_active;
+
     // check for active override channel
     if (mixing.enabled &&
         mixing.rc_chan_override > 0 &&
@@ -308,6 +310,12 @@ void AP_IOMCU_FW::rcin_update()
         override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
     } else {
         override_active = false;
+    }
+    if (old_override != override_active) {
+        if (override_active) {
+            fill_failsafe_pwm();
+        }
+        chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
     }
 }
 
