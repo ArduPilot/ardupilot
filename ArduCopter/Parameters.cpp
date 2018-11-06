@@ -814,7 +814,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: DEV_OPTIONS
     // @DisplayName: Development options
     // @Description: Bitmask of developer options. The meanings of the bit fields in this parameter may vary at any time. Developers should check the source code for current meaning
-    // @Bitmask: 0:ADSBMavlinkProcessing
+    // @Bitmask: 0:ADSBMavlinkProcessing,1:DevOptionVFR_HUDRelativeAlt
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
@@ -1034,21 +1034,15 @@ ParametersG2::ParametersG2(void)
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
-    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
-    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
-    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
-    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
-    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
     { Parameters::k_param_arming_check_old,   0,      AP_PARAM_INT8,  "ARMING_CHECK" },
     // battery
-    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_INT8,  "BATT_FS_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_INT8,  "BATT_FS_LOW_MAH" },
-    { Parameters::k_param_failsafe_battery_enabled,0, AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
+    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_FLOAT,  "BATT_LOW_VOLT" },
+    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
+    { Parameters::k_param_failsafe_battery_enabled,0, AP_PARAM_INT8,   "BATT_FS_LOW_ACT" },
 
     { Parameters::Parameters::k_param_ch7_option_old,   0,      AP_PARAM_INT8,  "RC7_OPTION" },
     { Parameters::Parameters::k_param_ch8_option_old,   0,      AP_PARAM_INT8,  "RC8_OPTION" },

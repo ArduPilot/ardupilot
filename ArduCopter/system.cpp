@@ -23,13 +23,12 @@ void Copter::init_ardupilot()
     // initialise serial port
     serial_manager.init_console();
 
-    // init vehicle capabilties
-    init_capabilities();
-
     hal.console->printf("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
+
+    init_capabilities();
 
     //
     // Report firmware version code expect on console (check of actual EEPROM format version is done in load_parameters function)

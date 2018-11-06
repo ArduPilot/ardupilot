@@ -522,6 +522,8 @@ def check_logs(step):
         vehicle = step[4:]
     elif step.startswith('drive.'):
         vehicle = step[6:]
+    elif step.startswith('dive.'):
+        vehicle = step[5:]
     else:
         return
     logs = glob.glob("logs/*.BIN")

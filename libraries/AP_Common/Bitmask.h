@@ -18,6 +18,9 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <string.h>
+
 class Bitmask {
 public:
     Bitmask(uint16_t num_bits) :
@@ -29,6 +32,9 @@ public:
     ~Bitmask(void) {
         delete[] bits;
     }
+
+    Bitmask &operator=(const Bitmask&other) = delete;
+    Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
     void set(uint16_t bit) {

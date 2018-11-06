@@ -200,7 +200,7 @@ private:
         simplify_start_finish_t* stack;
         uint16_t stack_max;     // maximum number of elements in the _simplify_stack array
         uint16_t stack_count;   // number of elements in _simplify_stack array
-        Bitmask bitmask = Bitmask(SMARTRTL_POINTS_MAX);  // simplify algorithm clears bits for each point that can be removed
+        Bitmask bitmask{SMARTRTL_POINTS_MAX};  // simplify algorithm clears bits for each point that can be removed
     } _simplify;
 
     // Pruning
