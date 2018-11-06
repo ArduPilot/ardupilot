@@ -690,6 +690,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_PX4_PWM(state[instance], _powersave_range, estimated_terrain_height);
         }
         break;
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    case RangeFinder_TYPE_PX4_PWM:
+        // to ease moving from PX4 to ChibiOS we'll lie a little about
+        // the backend driver...
+        if (AP_RangeFinder_PWM::detect()) {
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance]);
+        }
+        break;
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
     case RangeFinder_TYPE_BBB_PRU:
