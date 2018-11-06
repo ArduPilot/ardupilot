@@ -437,10 +437,10 @@ def find_location_by_name(autotest, locname):
                 (name, loc) = line.split("=")
                 if name == locname:
                     if (cmd_opts.swarm):
-	                (lat,lon,alt,heading)=loc.split(",")	
-			g=mp_util.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance-1))
-			loc=str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
-			return loc	
+                        (lat,lon,alt,heading)=loc.split(",")	
+                        g=mp_util.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance-1))
+	                    loc=str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
+			            return loc	
                     return loc
 
     print("Failed to find location (%s)" % cmd_opts.location)
