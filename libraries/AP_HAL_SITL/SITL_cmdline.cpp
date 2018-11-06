@@ -246,11 +246,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'I': {
             _instance = atoi(gopt.optarg);
-
+            int id = _instance+1;
+            char sysid[4];
             char sysid_string[18];
-            snprintf(sysid_string, sizeof(sysid_string), "SYSID_THISMAV=%s", gopt.optarg);
+            snprintf(sysid, sizeof(int),"%d", id);
+            snprintf(sysid_string, sizeof(sysid_string), "SYSID_THISMAV=%s", sysid);
             _set_param_default(sysid_string);
-               printf("Param change called %s\n",sysid_string);
+            printf("Param change called %s\n",sysid_string);
+            
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
