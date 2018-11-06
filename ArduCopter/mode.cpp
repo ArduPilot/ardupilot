@@ -23,9 +23,6 @@ Copter::Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
-#if FRAME_CONFIG == HELI_FRAME
-    heli_flags(copter.heli_flags),
-#endif
     ap(copter.ap)
 { };
 
