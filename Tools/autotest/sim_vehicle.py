@@ -21,12 +21,14 @@ import tempfile
 import textwrap
 import time
 import shlex
+from geographiclib.geodesic import Geodesic
+import math
 
 from pysim import vehicleinfo
 
 # List of open terminal windows for macosx
 windowID = []
-
+geod = Geodesic.WGS84
 
 class CompatError(Exception):
     """A custom exception class to hold state if we encounter the parse
@@ -133,6 +135,12 @@ class CompatOptionParser(optparse.OptionParser):
             opts.ensure_value("mavproxy_args", " ".join(mavproxy_args))
 
         return opts, args
+
+def new_loc(loc):
+	(lat,lon,alt,head)=loc.split(",")	
+	g=geod.Direct((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance-1))
+	loc=str(g['lat2'])+","+str(g['lon2'])+","+str(alt)+","+str(head)
+	return loc	
 
 
 def cygwin_pidof(proc_name):
@@ -419,6 +427,7 @@ def get_user_locations_path():
 
 
 def find_location_by_name(autotest, locname):
+    
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
                                         get_user_locations_path())
@@ -436,6 +445,8 @@ def find_location_by_name(autotest, locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
+                    if (cmd_opts.swarm):
+	                 return new_loc(loc)
                     return loc
 
     print("Failed to find location (%s)" % cmd_opts.location)
@@ -533,7 +544,6 @@ def start_antenna_tracker(autotest, opts):
 
 def start_vehicle(binary, autotest, opts, stuff, loc):
     """Run the ArduPilot binary"""
-
     cmd_name = opts.vehicle
     cmd = []
     if opts.valgrind:
@@ -621,7 +631,7 @@ def start_mavproxy(opts, stuff):
             cmd.extend(["--sitl", simout_port])
 
     if not opts.no_extra_ports:
-        ports = [p + 10 * cmd_opts.instance for p in [14550, 14551]]
+        ports = [p + 10 * (cmd_opts.instance-1 ) for p in [14550, 14551]]
         for port in ports:
             if os.path.isfile("/ardupilot.vagrant"):
                 # We're running inside of a vagrant guest; forward our
@@ -629,6 +639,7 @@ def start_mavproxy(opts, stuff):
                 cmd.extend(["--out", "10.0.2.2:" + str(port)])
             else:
                 cmd.extend(["--out", "127.0.0.1:" + str(port)])
+		cmd.extend(["--out", "tcpin:127.0.0.1:" + str(port-1000)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -796,8 +807,12 @@ group_build.add_option("", "--waf-build-arg",
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
+group_sim.add_option("-Z","--swarm",
+                     action='store_true',
+		     default=False,
+		     help="Use when implementing swarm")
 group_sim.add_option("-I", "--instance",
-                     default=0,
+                     default=1,
                      type='int',
                      help="instance of simulator")
 group_sim.add_option("-V", "--valgrind",
@@ -925,7 +940,9 @@ cmd_opts, cmd_args = parser.parse_args()
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
-
+if (cmd_opts.instance < 1)or(cmd_opts.instance >255):
+	print("Enter an instance number between 1 - 255")
+	sys.exit(1)
 progress("Start")
 
 if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
