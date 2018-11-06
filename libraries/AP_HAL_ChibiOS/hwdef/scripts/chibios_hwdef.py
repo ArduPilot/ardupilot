@@ -356,7 +356,10 @@ class generic_pin(object):
             else:
                 v = "AF_PP"
         elif self.sig_dir == 'OUTPUT':
-            v = "OUTPUT_PP"
+            if 'OPENDRAIN' in self.extra:
+                v = 'OUTPUT_OD'
+            else:
+                v = "OUTPUT_PP"
         elif self.type.startswith('ADC'):
             v = "ANALOG"
         else:
