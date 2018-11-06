@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.1-rc1 06-Nov-2018
+Changes from 3.6.0
+1) Garmin LidarLite V3HP support 
+2) VFR HUD messages send relative altitude if DEV_OPTIONS = 2.  Useful for older OSDs and GCSs
+3) Bug fixes:
+    a) Battery failsafe voltage parameter conversion fix
+    b) Safety switch startup fix (was occasionally not initialised properly)
+    c) Benewake TFmini and TF02 driver discards distances over 327m (avoids reporting 655m when can't read distance)
+    d) Dataflash erase only availabled when disarmed (avoids crash if user attempted to erase logs while flying)
+4) ChibiOS fixes and enhancements:
+    a) Pixracer LEDs colours fixed
+    b) Terrain support fixed on Pixracer, MindPx-v2, Radiolink mini-pix
+    c) RC input processing fix to avoid memory corruption in some rare cases
+    d) FuriousFPV F-35 Lightning board support
+    e) SpeedyBee F4 board support
+    f) Bootloaders for OmnibusF4v6, mRoX2.1-777, Radiolink mini-pix 
+    g) Revo-mini support for external barometer
+    h) Pins numbers made consistent across boards (setup of some features now more consistent across boards)
+    i) enable safety switch on Pixhawk family f7 boards
+------------------------------------------------------------------
 Copter 3.6.0 26-Oct-2018
 Changes from 3.6.0-rc12
 1) Bug Fixes:
