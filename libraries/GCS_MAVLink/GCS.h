@@ -373,6 +373,7 @@ protected:
     virtual float vfr_hud_climbrate() const;
     virtual float vfr_hud_airspeed() const;
     virtual int16_t vfr_hud_throttle() const { return 0; }
+    virtual float vfr_hud_alt() const;
     Vector3f vfr_hud_velned;
 
     static constexpr const float magic_force_arm_value = 2989.0f;

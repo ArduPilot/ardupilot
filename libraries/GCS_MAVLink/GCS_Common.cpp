@@ -1751,6 +1751,11 @@ float GCS_MAVLINK::vfr_hud_climbrate() const
     return -vfr_hud_velned.z;
 }
 
+float GCS_MAVLINK::vfr_hud_alt() const
+{
+    return global_position_current_loc.alt * 0.01f; // cm -> m
+}
+
 void GCS_MAVLINK::send_vfr_hud()
 {
     AP_AHRS &ahrs = AP::ahrs();
@@ -1765,7 +1770,7 @@ void GCS_MAVLINK::send_vfr_hud()
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         vfr_hud_throttle(),
-        global_position_current_loc.alt * 0.01f, // cm -> m
+        vfr_hud_alt(),
         vfr_hud_climbrate());
 }
 
