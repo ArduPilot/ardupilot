@@ -1041,9 +1041,12 @@ class AutoTestCopter(AutoTest):
             while self.get_sim_time_cached() - tstart < timeout:
                 m = self.mav.recv_match(type='VFR_HUD', blocking=True)
                 spd = m.groundspeed
-                self.progress("%0.1f: Low Speed: %f" %
-                              (self.get_sim_time_cached() - tstart, spd))
-                if spd > 8:
+                max_speed = 8
+                self.progress("%0.1f: Low Speed: %f (want <= %u)" %
+                              (self.get_sim_time_cached() - tstart,
+                               spd,
+                               max_speed))
+                if spd > max_speed:
                     raise NotAchievedException(("Speed should be limited by"
                                                 "EKF optical flow limits"))
 
