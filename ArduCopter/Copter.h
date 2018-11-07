@@ -543,7 +543,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain{ahrs, mission, rally};
+    AP_Terrain terrain{mission, rally};
 #endif
 
     // Precision Landing
