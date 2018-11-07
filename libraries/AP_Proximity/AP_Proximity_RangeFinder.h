@@ -13,14 +13,14 @@ public:
     AP_Proximity_RangeFinder(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const { return _distance_max; }
-    float distance_min() const { return _distance_min; }
+    float distance_max() const override { return _distance_max; }
+    float distance_min() const override { return _distance_min; }
 
     // get distance upwards in meters. returns true on success
-    bool get_upward_distance(float &distance) const;
+    bool get_upward_distance(float &distance) const override;
 
 private:
 
