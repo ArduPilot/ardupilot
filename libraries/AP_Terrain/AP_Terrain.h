@@ -76,7 +76,7 @@
 
 class AP_Terrain {
 public:
-    AP_Terrain(AP_AHRS &_ahrs, const AP_Mission &_mission, const AP_Rally &_rally);
+    AP_Terrain(const AP_Mission &_mission, const AP_Rally &_rally);
 
     /* Do not allow copies */
     AP_Terrain(const AP_Terrain &other) = delete;
@@ -335,10 +335,6 @@ private:
     // parameters
     AP_Int8  enable;
     AP_Int16 grid_spacing; // meters between grid points
-
-    // reference to AHRS, so we can ask for our position,
-    // heading and speed
-    AP_AHRS &ahrs;
 
     // reference to AP_Mission, so we can ask preload terrain data for 
     // all waypoints
