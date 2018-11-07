@@ -204,7 +204,8 @@ class Board:
             ]
         else:
             env.CXXFLAGS += [
-                '-Werror=unused-but-set-variable'
+                '-Werror=unused-but-set-variable',
+                '-Werror=suggest-override',
             ]
 
         if cfg.env.DEBUG:
