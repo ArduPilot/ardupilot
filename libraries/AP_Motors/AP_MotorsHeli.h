@@ -59,16 +59,16 @@ public:
     };
 
     // init
-    void init(motor_frame_class frame_class, motor_frame_type frame_type);
+    void init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set update rate to motors - a value in hertz
-    virtual void set_update_rate( uint16_t speed_hz ) = 0;
+    virtual void set_update_rate( uint16_t speed_hz ) override = 0;
 
     // output_min - sets servos to neutral point with motors stopped
-    void output_min();
+    void output_min() override;
 
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
@@ -114,7 +114,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t get_motor_mask() = 0;
+    virtual uint16_t get_motor_mask() override = 0;
 
     virtual void set_acro_tail(bool set) {}
 
@@ -122,12 +122,12 @@ public:
     virtual void ext_gyro_gain(float gain) {}
 
     // output - sends commands to the motors
-    void output();
+    void output() override;
 
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
-    float get_throttle_hover() const { return 0.5f; }
+    float get_throttle_hover() const override { return 0.5f; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -145,7 +145,7 @@ protected:
     };
 
     // output - sends commands to the motors
-    void output_armed_stabilizing();
+    void output_armed_stabilizing() override;
     void output_armed_zero_throttle();
     void output_disarmed();
 
@@ -156,7 +156,7 @@ protected:
     void reset_flight_controls();
 
     // update the throttle input filter
-    void update_throttle_filter();
+    void update_throttle_filter() override;
 
     // move_actuators - moves swash plate and tail rotor
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
