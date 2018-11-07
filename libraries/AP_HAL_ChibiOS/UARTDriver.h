@@ -32,13 +32,13 @@ class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
 
-    void begin(uint32_t b);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized();
-    void set_blocking_writes(bool blocking);
-    bool tx_pending();
+    void begin(uint32_t b) override;
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override;
+    void set_blocking_writes(bool blocking) override;
+    bool tx_pending() override;
 
 
     uint32_t available() override;
@@ -46,8 +46,8 @@ public:
     int16_t read() override;
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
     bool lock_port(uint32_t key) override;
