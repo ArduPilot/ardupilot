@@ -164,8 +164,10 @@ void Rover::ahrs_update()
     // update position
     have_position = ahrs.get_position(current_loc);
 
-    // update home from EKF if necessary
-    update_home_from_EKF();
+    // set home from EKF if necessary and possible
+    if (!ahrs.home_is_set()) {
+        set_home_to_current_location(false);
+    }
 
     // if using the EKF get a speed update now (from accelerometers)
     Vector3f velocity;
@@ -281,10 +283,8 @@ void Rover::one_second_loop(void)
     // cope with changes to mavlink system ID
     mavlink_system.sysid = g.sysid_this_mav;
 
-    // update home position if not soft armed and gps position has
-    // changed. Update every 1s at most
-    if (!hal.util->get_soft_armed() &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    // attempt to update home position and baro calibration if not armed:
+    if (!hal.util->get_soft_armed()) {
         update_home();
     }
 
