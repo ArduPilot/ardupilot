@@ -20,7 +20,7 @@ public:
     AP_InertialSensor_PX4(AP_InertialSensor &imu);
 
     /* update accel and gyro state */
-    bool update();
+    bool update() override;
 
     // detect the sensor
     static AP_InertialSensor_Backend *detect(AP_InertialSensor &imu);
