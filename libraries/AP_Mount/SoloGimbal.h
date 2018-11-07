@@ -95,10 +95,10 @@ private:
 
     void readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
-    void _acal_save_calibrations();
-    bool _acal_get_ready_to_sample();
-    bool _acal_get_saving();
-    AccelCalibrator* _acal_get_calibrator(uint8_t instance);
+    void _acal_save_calibrations() override;
+    bool _acal_get_ready_to_sample() override;
+    bool _acal_get_saving() override;
+    AccelCalibrator* _acal_get_calibrator(uint8_t instance) override;
 
     gimbal_mode_t get_mode();
 
