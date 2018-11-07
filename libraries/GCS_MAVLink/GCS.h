@@ -152,6 +152,13 @@ public:
     // return true if this channel has hardware flow control
     bool have_flow_control();
 
+    bool is_active() const {
+        return GCS_MAVLINK::active_channel_mask() & (1 << (chan-MAVLINK_COMM_0));
+    }
+    bool is_streaming() const {
+        return GCS_MAVLINK::streaming_channel_mask() & (1 << (chan-MAVLINK_COMM_0));
+    }
+
     mavlink_channel_t get_chan() const { return chan; }
     uint32_t get_last_heartbeat_time() const { return last_heartbeat_time; };
 
