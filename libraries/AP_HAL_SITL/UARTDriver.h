@@ -26,22 +26,22 @@ public:
     }
     
     /* Implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) {
+    void begin(uint32_t b) override {
         begin(b, 0, 0);
     }
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized() {
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override {
         return true;
     }
 
-    void set_blocking_writes(bool blocking)
+    void set_blocking_writes(bool blocking) override
     {
         _nonblocking_writes = !blocking;
     }
 
-    bool tx_pending() {
+    bool tx_pending() override {
         return false;
     }
 
@@ -51,21 +51,21 @@ public:
     int16_t read() override;
 
     /* Implementations of Print virtual methods */
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     // file descriptor, exposed so SITL_State::loop_hook() can use it
     int _fd;
 
     bool _unbuffered_writes;
 
-    enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
+    enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
     bool set_unbuffered_writes(bool on) override;
 
-    void _timer_tick(void);
+    void _timer_tick(void) override;
 
     /*
       return timestamp estimate in microseconds for when the start of
