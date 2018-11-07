@@ -384,7 +384,9 @@ public:
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static bool sitl_has_reset_param;
+#endif
     /// Returns the first variable
     ///
     /// @return             The first variable in _var_info, or nullptr if

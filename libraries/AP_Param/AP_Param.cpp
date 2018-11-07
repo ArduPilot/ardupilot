@@ -91,7 +91,9 @@ StorageAccess AP_Param::_storage(StorageManager::StorageParam);
 
 // flags indicating frame type
 uint16_t AP_Param::_frame_type_flags;
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+bool AP_Param::sitl_has_reset_param;
+#endif
 // write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
@@ -114,6 +116,12 @@ void AP_Param::write_sentinal(uint16_t ofs)
 // a sentinal
 void AP_Param::erase_all(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (sitl_has_reset_param) {
+        sitl_has_reset_param = false;
+        return;
+    }
+#endif
     struct EEPROM_header hdr;
 
     // write the header
