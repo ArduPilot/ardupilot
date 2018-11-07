@@ -13,7 +13,7 @@ public:
                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 protected:
 
