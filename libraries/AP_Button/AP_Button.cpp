@@ -142,21 +142,13 @@ void AP_Button::timer_update(void)
  */
 void AP_Button::send_report(void)
 {
-    uint8_t chan_mask = GCS_MAVLINK::active_channel_mask();
-    uint32_t now = AP_HAL::millis();
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        if ((chan_mask & (1U<<i)) == 0) {
-            // not active
-            continue;
-        }
-        mavlink_channel_t chan = (mavlink_channel_t)i;
-        if (HAVE_PAYLOAD_SPACE(chan, BUTTON_CHANGE)) {
-            mavlink_msg_button_change_send(chan,
-                                           now,
-                                           (uint32_t)last_change_time_ms,
-                                           last_mask);
-        }
-    }
+    const mavlink_button_change_t packet{
+            time_boot_ms: AP_HAL::millis(),
+            last_change_ms: uint32_t(last_change_time_ms),
+            state: last_mask
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_BUTTON_CHANGE,
+                                  (const char *)&packet);
 }
 
 /*
