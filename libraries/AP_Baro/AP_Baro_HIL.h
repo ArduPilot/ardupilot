@@ -10,7 +10,7 @@ class AP_Baro_HIL : public AP_Baro_Backend
 {
 public:
     AP_Baro_HIL(AP_Baro &baro);
-    void update(void);
+    void update(void) override;
 
 private:
     uint8_t _instance;
