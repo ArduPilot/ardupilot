@@ -37,7 +37,7 @@ public:
     bool released() const override;
 
     // valid - returns true if the backend should be working
-    bool valid() const;
+    bool valid() const override;
 
 protected:
 
