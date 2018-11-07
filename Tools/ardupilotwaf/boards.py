@@ -225,6 +225,11 @@ class Board:
             env.CXXFLAGS += [
                 '-Werror=unused-but-set-variable'
             ]
+            (major, minor, patchlevel) = cfg.env.CC_VERSION
+            if int(major) >= 5 and int(minor) > 1:
+                env.CXXFLAGS += [
+                    '-Werror=suggest-override',
+                ]
 
         if cfg.env.DEBUG:
             env.CXXFLAGS += [
