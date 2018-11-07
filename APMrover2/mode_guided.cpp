@@ -90,10 +90,11 @@ float ModeGuided::get_distance_to_destination() const
 }
 
 // set desired location
-void ModeGuided::set_desired_location(const struct Location& destination)
+void ModeGuided::set_desired_location(const struct Location& destination,
+                                      float next_leg_bearing_cd)
 {
     // call parent
-    Mode::set_desired_location(destination);
+    Mode::set_desired_location(destination, next_leg_bearing_cd);
 
     // handle guided specific initialisation and logging
     _guided_mode = ModeGuided::Guided_WP;
