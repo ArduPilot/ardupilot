@@ -30,7 +30,7 @@ public:
     ModeFilter(uint8_t return_element);
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
+    virtual T        apply(T sample) override;
 
     // get - get latest filtered value from filter (equal to the value returned by latest call to apply method)
     virtual T        get() const {
