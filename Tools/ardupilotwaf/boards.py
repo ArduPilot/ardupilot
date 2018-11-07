@@ -89,6 +89,7 @@ class Board:
             '-Wno-trigraphs',
             '-Werror=return-type',
             '-Werror=unused-result',
+            '-Werror=narrowing',
         ]
 
         if cfg.options.enable_scripting:
@@ -118,7 +119,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
             ]
 
         if cfg.env.DEBUG:
@@ -154,6 +154,7 @@ class Board:
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
+            '-Werror=narrowing',
             '-Werror=return-type',
             '-Werror=switch',
             '-Werror=sign-compare',
@@ -171,7 +172,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
             ]
         else:
             env.CXXFLAGS += [
