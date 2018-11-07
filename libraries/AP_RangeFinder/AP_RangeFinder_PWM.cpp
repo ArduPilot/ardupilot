@@ -43,8 +43,9 @@ void AP_RangeFinder_PWM::irq_handler(uint8_t pin, bool pin_high, uint32_t timest
         irq_pulse_start_us = timestamp_us;
     } else {
         if (irq_pulse_start_us != 0) {
-            irq_value_us = timestamp_us - irq_pulse_start_us;
+            irq_value_us += timestamp_us - irq_pulse_start_us;
             irq_pulse_start_us = 0;
+            irq_sample_count++;
         }
     }
 }
@@ -55,13 +56,15 @@ bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
     // disable interrupts and grab state
     void *irqstate = hal.scheduler->disable_interrupts_save();
     const uint32_t value_us = irq_value_us;
+    const uint16_t sample_count = irq_sample_count;
     irq_value_us = 0;
+    irq_sample_count = 0;
     hal.scheduler->restore_interrupts(irqstate);
 
-    if (value_us == 0) {
+    if (value_us == 0 || sample_count == 0) {
         return false;
     }
-    reading_cm = value_us * 1e-1f; // correct for LidarLite.  Parameter needed?
+    reading_cm = (value_us/sample_count) * 1e-1f; // correct for LidarLite.  Parameter needed?
     return true;
 }
 

@@ -45,8 +45,9 @@ private:
     int8_t last_pin; // last pin used for reading pwm (used to recognise change in pin assignment)
     uint32_t last_reading_ms;      // system time of last read (used for health reporting)
 
-    // the following two members are updated by the interrupt handler
-    uint32_t irq_value_us;         // last calculated pwm value (irq copy)
+    // the following three members are updated by the interrupt handler
+    uint32_t irq_value_us;         // some of calculated pwm values (irq copy)
+    uint16_t irq_sample_count;     // number of pwm values in irq_value_us (irq copy)
     uint32_t irq_pulse_start_us;   // system time of start of pulse
 
     void irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us);
