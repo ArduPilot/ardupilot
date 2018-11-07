@@ -109,7 +109,7 @@ enum fs_ekf_action {
     FS_EFK_HOLD = 1
 };
 
-#define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
+#define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
 enum mode_reason_t {
     MODE_REASON_INITIALISED = 0,
