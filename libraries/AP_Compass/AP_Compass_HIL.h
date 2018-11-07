@@ -8,7 +8,7 @@ class AP_Compass_HIL : public AP_Compass_Backend
 {
 public:
     AP_Compass_HIL();
-    void read(void);
+    void read(void) override;
     bool init(void);
 
     // detect the sensor
