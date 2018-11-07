@@ -324,6 +324,24 @@ public:
     virtual void packetReceived(const mavlink_status_t &status,
                                 mavlink_message_t &msg);
 
+    // send a mavlink_message_t out this GCS_MAVLINK connection.
+    // Caller is responsible for ensuring space.
+    void send_message(uint32_t msgid, const char *pkt) const {
+        const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+        if (entry == nullptr) {
+            return;
+        }
+        send_message(pkt, entry);
+    }
+    void send_message(const char *pkt, const mavlink_msg_entry_t *entry) const {
+        _mav_finalize_message_chan_send(chan,
+                                        entry->msgid,
+                                        pkt,
+                                        entry->min_msg_len,
+                                        entry->max_msg_len,
+                                        entry->crc_extra);
+    }
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
@@ -925,6 +943,8 @@ public:
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_TYPE frame_type() const = 0;
     virtual const char* frame_string() const { return nullptr; }
+
+    void send_to_active_channels(uint32_t msgid, const char *pkt);
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
