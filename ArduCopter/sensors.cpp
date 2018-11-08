@@ -405,7 +405,7 @@ void Copter::update_sensor_status_flags(void)
 #if RANGEFINDER_ENABLED == ENABLED
     if (rangefinder_state.enabled) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (!rangefinder_state.alt_healthy) {
+        if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
