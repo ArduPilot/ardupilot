@@ -24,19 +24,19 @@ public:
     AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager) override;
+    void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    virtual void update() override;
+    void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const override;
+    bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
+    void set_mode(enum MAV_MOUNT_MODE mode) override;
 
     // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    virtual void send_mount_status(mavlink_channel_t chan) override;
+    void send_mount_status(mavlink_channel_t chan) override;
 
     // handle a GIMBAL_REPORT message
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) override;
@@ -46,7 +46,7 @@ public:
     // send a GIMBAL_REPORT message to the GCS
     void send_gimbal_report(mavlink_channel_t chan) override;
 
-    virtual void update_fast() override;
+    void update_fast() override;
 
 private:
     // internal variables
