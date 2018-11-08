@@ -34,8 +34,8 @@ protected:
 private:
 
     // get a reading
-    // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
-    bool get_reading(uint16_t &reading_cm, bool &signal_ok);
+    // distance returned in reading_cm
+    bool get_reading(uint16_t &reading_cm);
 
     AP_HAL::UARTDriver *uart = nullptr;
     benewake_model_type model_type;
