@@ -46,6 +46,11 @@ public:
         return rc_frame_count;
     }
 
+    // get number of frames, honoring failsafe
+    uint32_t get_rc_input_count(void) const {
+        return rc_input_count;
+    }
+    
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
 
