@@ -91,6 +91,7 @@ void AP_RangeFinder_PWM::check_pin()
     }
 
     // install interrupt handler on rising and falling edge
+    hal.gpio->pinMode(state.pin, HAL_GPIO_INPUT);
     if (!hal.gpio->attach_interrupt(
             state.pin,
             FUNCTOR_BIND_MEMBER(&AP_RangeFinder_PWM::irq_handler,
