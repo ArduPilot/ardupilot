@@ -241,7 +241,7 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
         if (sbus_decode(byte_input.buf, values, &num_values,
                         &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
-            add_input(num_values, values, false);
+            add_input(num_values, values, sbus_failsafe);
         }
         byte_input.ofs = 0;
     }
