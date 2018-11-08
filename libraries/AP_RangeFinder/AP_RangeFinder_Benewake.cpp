@@ -109,31 +109,29 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
                 }
                 // if checksum matches extract contents
                 if ((uint8_t)(checksum & 0xFF) == linebuf[BENEWAKE_FRAME_LENGTH-1]) {
-                    // calculate distance and add to sum
+                    // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
-                    if (dist < BENEWAKE_DIST_MAX_CM) {
+                    if (dist >= BENEWAKE_DIST_MAX_CM) {
+                        // this reading is out of range
+                        count_out_of_range++;
+                    } else if (model_type == BENEWAKE_TFmini) {
                         // TFmini has short distance mode (mm)
-                        if (model_type == BENEWAKE_TFmini) {
-                            if (linebuf[6] == 0x02) {
-                                dist *= 0.1f;
-                            }
-                            // no signal byte from TFmini so add distance to sum
+                        if (linebuf[6] == 0x02) {
+                            dist *= 0.1f;
+                        }
+                        // no signal byte from TFmini so add distance to sum
+                        sum_cm += dist;
+                        count++;
+                    } else {
+                        // TF02 provides signal reliability (good = 7 or 8)
+                        if (linebuf[6] >= 7) {
+                            // add distance to sum
                             sum_cm += dist;
                             count++;
                         } else {
-                            // TF02 provides signal reliability (good = 7 or 8)
-                            if (linebuf[6] >= 7) {
-                                // add distance to sum
-                                sum_cm += dist;
-                                count++;
-                            } else {
-                                // this reading is out of range
-                                count_out_of_range++;
-                            }
+                            // this reading is out of range
+                            count_out_of_range++;
                         }
-                    } else {
-                        // this reading is out of range
-                        count_out_of_range++;
                     }
                 }
                 // clear buffer
