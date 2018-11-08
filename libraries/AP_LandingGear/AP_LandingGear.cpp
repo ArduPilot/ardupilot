@@ -7,8 +7,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MASK_LOG_CTUN                   (1<<4)
-
 const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: SERVO_RTRACT
@@ -38,8 +36,8 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     
     // @Param: DEPLOY_PIN
     // @DisplayName: Chassis deployment feedback pin
-    // @Description: Pin number to use for feedback of gear deployment. If set to -1 feedback is disabled.
-    // @Values: -1:Disabled,50:PX4 AUX1,51:PX4 AUX2,52:PX4 AUX3,53:PX4 AUX4,54:PX4 AUX5,55:PX4 AUX6
+    // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled.
+    // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("DEPLOY_PIN", 3, AP_LandingGear, _pin_deployed, -1),
@@ -54,7 +52,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Param: WOW_PIN
     // @DisplayName: Weight on wheels feedback pin
     // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled.
-    // @Values: -1:Disabled,50:PX4 AUX1,51:PX4 AUX2,52:PX4 AUX3,53:PX4 AUX4,54:PX4 AUX5,55:PX4 AUX6
+    // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("WOW_PIN", 5, AP_LandingGear, _pin_weight_on_wheels, DEFAULT_PIN_WOW),
@@ -76,13 +74,15 @@ void AP_LandingGear::init()
 {
     if (_pin_deployed != -1) {
         hal.gpio->pinMode(_pin_deployed, HAL_GPIO_INPUT);
-        hal.gpio->write(_pin_deployed, 1);
+        // set pullup/pulldown to default to non-deployed state
+        hal.gpio->write(_pin_deployed, !_pin_deployed_polarity);
         log_wow_state(wow_state_current);
     }
     
     if (_pin_weight_on_wheels != -1) {
         hal.gpio->pinMode(_pin_weight_on_wheels, HAL_GPIO_INPUT);
-        hal.gpio->write(_pin_weight_on_wheels, 1);
+        // set pullup/pulldown to default to flying state
+        hal.gpio->write(_pin_weight_on_wheels, !_pin_weight_on_wheels_polarity);
         log_wow_state(wow_state_current);
     }
     
@@ -213,9 +213,7 @@ void AP_LandingGear::update()
 // log weight on wheels state
 void AP_LandingGear::log_wow_state(LG_WOW_State state)
 {
-    if (DataFlash_Class::instance()->should_log(MASK_LOG_CTUN)) {
-        DataFlash_Class::instance()->Log_Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
-                                               AP_HAL::micros64(),
-                                               (int8_t)gear_state_current, (int8_t)state);
-    }
+    DataFlash_Class::instance()->Log_Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
+                                           AP_HAL::micros64(),
+                                           (int8_t)gear_state_current, (int8_t)state);
 }
