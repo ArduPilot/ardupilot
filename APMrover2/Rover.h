@@ -437,6 +437,11 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
 
+    enum Mis_Done_Behave {
+        MIS_DONE_BEHAVE_HOLD      = 0,
+        MIS_DONE_BEHAVE_LOITER    = 1
+    };
+
     // commands.cpp
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
