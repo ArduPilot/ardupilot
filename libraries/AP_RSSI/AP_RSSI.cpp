@@ -223,6 +223,7 @@ void AP_RSSI::check_pwm_pin_rssi()
     }
 
     // install interrupt handler on rising and falling edge
+    hal.gpio->pinMode(rssi_analog_pin, HAL_GPIO_INPUT);
     if (!hal.gpio->attach_interrupt(
             rssi_analog_pin,
             FUNCTOR_BIND_MEMBER(&AP_RSSI::irq_handler,
