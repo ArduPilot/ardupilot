@@ -34,7 +34,6 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     // the following functions do not need to be initialised:
     case ARMDISARM:
     case INVERTED:
-    case LANDING_GEAR:
         break;
     default:
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -62,20 +61,6 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         break;
     case INVERTED:
         plane.inverted_flight = (ch_flag == HIGH);
-        break;
-
-    case LANDING_GEAR:
-        switch (ch_flag) {
-        case LOW:
-            plane.g2.landing_gear.set_position(AP_LandingGear::LandingGear_Deploy);
-            break;
-        case MIDDLE:
-            // nothing
-            break;
-        case HIGH:
-            plane.g2.landing_gear.set_position(AP_LandingGear::LandingGear_Retract);
-            break;
-        }
         break;
 
     default:
