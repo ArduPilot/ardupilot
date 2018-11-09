@@ -28,7 +28,13 @@ void Plane::set_control_channels(void)
         channel_throttle->set_range(100);
     } else {
         // reverse thrust
-        channel_throttle->set_angle(100);
+        if (have_reverse_throttle_rc_option) {
+            // when we have a reverse throttle RC option setup we use throttle
+            // as a range, and rely on the RC switch to get reverse thrust
+            channel_throttle->set_range(100);
+        } else {
+            channel_throttle->set_angle(100);
+        }
         SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
         SRV_Channels::set_angle(SRV_Channel::k_throttleLeft, 100);
         SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
