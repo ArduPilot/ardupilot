@@ -1079,6 +1079,10 @@ void Copter::load_parameters(void)
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
+
+    // convert landing gear parameters
+    convert_lgr_parameters();
+
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 
     // setup AP_Param frame type flags
@@ -1202,5 +1206,87 @@ void Copter::convert_pid_parameters(void)
     if (SRV_Channels::upgrade_parameters(old_rc_keys, old_aux_chan_mask, nullptr)) {
         // the rest needs to be done after motors allocation
         upgrading_frame_params = true;
+    }
+}
+
+/*
+  convert landing gear parameters
+ */
+void Copter::convert_lgr_parameters(void)
+{
+    // convert landing gear PWM values
+    uint8_t chan;
+    if (!SRV_Channels::find_channel(SRV_Channel::k_landing_gear_control, chan)) {
+        return;
+    }
+    // parameter names are 1 based
+    chan += 1;
+
+    char pname[17];
+    AP_Int16 *servo_min, *servo_max, *servo_trim;
+    AP_Int16 *servo_reversed;
+
+    enum ap_var_type ptype;
+    // get pointers to the servo min, max and trim parameters
+    snprintf(pname, sizeof(pname), "SERVO%u_MIN", chan);
+    servo_min = (AP_Int16 *)AP_Param::find(pname, &ptype);
+
+    snprintf(pname, sizeof(pname), "SERVO%u_MAX", chan);
+    servo_max = (AP_Int16 *)AP_Param::find(pname, &ptype);
+
+    snprintf(pname, sizeof(pname), "SERVO%u_TRIM", chan);
+    servo_trim = (AP_Int16 *)AP_Param::find(pname, &ptype);
+
+    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan);
+    servo_reversed = (AP_Int16 *)AP_Param::find(pname, &ptype);
+
+    if (!servo_min || !servo_max || !servo_trim || !servo_reversed) {
+        // this shouldn't happen
+        return;
+    }
+    if (servo_min->configured_in_storage() ||
+        servo_max->configured_in_storage() ||
+        servo_trim->configured_in_storage() ||
+        servo_reversed->configured_in_storage()) {
+        // has been previously saved, don't upgrade
+        return;
+    }
+
+    // get the old PWM values
+    AP_Int16 old_pwm;
+    uint16_t old_retract=0, old_deploy=0;
+    const AP_Param::ConversionInfo cinfo_ret { Parameters::k_param_landinggear, 0, AP_PARAM_INT16, nullptr };
+    const AP_Param::ConversionInfo cinfo_dep { Parameters::k_param_landinggear, 1, AP_PARAM_INT16, nullptr };
+    if (AP_Param::find_old_parameter(&cinfo_ret, &old_pwm)) {
+        old_retract = (uint16_t)old_pwm.get();
+    }
+    if (AP_Param::find_old_parameter(&cinfo_dep, &old_pwm)) {
+        old_deploy = (uint16_t)old_pwm.get();
+    }
+
+    if (old_retract == 0 && old_deploy == 0) {
+        // old parameters were never set
+        return;
+    }
+
+    // use old defaults
+    if (old_retract == 0) {
+        old_retract = 1250;
+    }
+    if (old_deploy == 0) {
+        old_deploy = 1750;
+    }
+
+    // set and save correct values on the servo
+    if (old_retract <= old_deploy) {
+        servo_max->set_and_save(old_deploy);
+        servo_min->set_and_save(old_retract);
+        servo_trim->set_and_save(old_retract);
+        servo_reversed->set_and_save_ifchanged(0);
+    } else {
+        servo_max->set_and_save(old_retract);
+        servo_min->set_and_save(old_deploy);
+        servo_trim->set_and_save(old_deploy);
+        servo_reversed->set_and_save_ifchanged(1);
     }
 }
