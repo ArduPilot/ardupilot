@@ -133,7 +133,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
 
-    if (aparm.throttle_min < 0) {
+    if (have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
     if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
@@ -295,7 +295,7 @@ void Plane::update_sensor_status_flags(void)
         }
     }
 
-    if (aparm.throttle_min < 0 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
+    if (have_reverse_thrust() && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
         control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
