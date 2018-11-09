@@ -102,7 +102,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
 #if LANDING_GEAR_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_LandingGear, &plane.g2.landing_gear, update, 10, 50),
+    SCHED_TASK(landing_gear_update, 5, 50),
 #endif
 };
 
