@@ -272,3 +272,14 @@ void Plane::complete_auto_takeoff(void)
     }
 #endif
 }
+
+
+#if LANDING_GEAR_ENABLED == ENABLED
+/*
+  update landing gear
+ */
+void Plane::landing_gear_update(void)
+{
+    g2.landing_gear.update(relative_ground_altitude(g.rangefinder_landing));
+}
+#endif
