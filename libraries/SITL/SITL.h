@@ -197,6 +197,9 @@ public:
     // differential pressure sensor tube order
     AP_Int8 arspd_signflip;
 
+    // weight on wheels pin
+    AP_Int8 wow_pin;
+    
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
