@@ -114,10 +114,7 @@ class AutoTestSub(AutoTest):
 
     def dive_mission(self, filename):
         self.progress("Executing mission %s" % filename)
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Saved [0-9]+ waypoints')
+        self.load_mission(filename)
         self.set_rc_default()
 
         self.arm_vehicle()
@@ -141,9 +138,7 @@ class AutoTestSub(AutoTest):
                 self.progress("Skipping; Gripper not enabled in config?")
                 return
 
-            self.mavproxy.send('wp load %s\n' %
-                               os.path.join(testdir,
-                                            "sub-gripper-mission.txt"))
+            self.load_mission("sub-gripper-mission.txt")
             self.mavproxy.send('mode loiter\n')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -188,8 +183,7 @@ class AutoTestSub(AutoTest):
             self.run_test("Dive manual", self.dive_manual)
 
             self.run_test("Dive mission",
-                          lambda: self.dive_mission(
-                              os.path.join(testdir, "sub_mission.txt")))
+                          lambda: self.dive_mission("sub_mission.txt"))
 
             self.run_test("Test gripper mission items",
                           self.test_gripper_mission);
