@@ -5,9 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 
-#define AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT    1250    // default PWM value to move servo to when landing gear is up
-#define AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT     1750    // default PWM value to move servo to when landing gear is down
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define DEFAULT_PIN_WOW 8
 #define DEFAULT_PIN_WOW_POL 1
@@ -88,8 +85,6 @@ public:
 
 private:
     // Parameters
-    AP_Int16    _servo_retract_pwm;     // PWM value to move servo to when gear is retracted
-    AP_Int16    _servo_deploy_pwm;      // PWM value to move servo to when gear is deployed
     AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
     
     AP_Int8     _pin_deployed;
