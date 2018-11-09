@@ -84,7 +84,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
     
-    void update();
+    void update(float height_above_ground_m);
 
 private:
     // Parameters
@@ -96,13 +96,17 @@ private:
     AP_Int8     _pin_deployed_polarity;
     AP_Int8     _pin_weight_on_wheels;
     AP_Int8     _pin_weight_on_wheels_polarity;
+    AP_Int16    _deploy_alt;
+    AP_Int16    _retract_alt;
 
     // internal variables
     bool        _deployed;              // true if the landing gear has been deployed, initialized false
+    bool        _have_changed;          // have we changed the servo state?
 
     bool        _deploy_lock;           // used to force landing gear to remain deployed until another regular Deploy command is received to reduce accidental retraction
     bool        _deploy_pin_state;
     bool        _weight_on_wheels_pin_state;
+    int16_t     _last_height_above_ground;
     
     // debounce
     LG_WOW_State wow_state_current = LG_WOW_UNKNOWN;
