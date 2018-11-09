@@ -53,7 +53,6 @@ LIBRARIES += AC_Fence
 LIBRARIES += AP_Tuning
 LIBRARIES += AP_Stats
 LIBRARIES += AP_Landing
-LIBRARIES += AP_LandingGear
 LIBRARIES += AP_Beacon
 LIBRARIES += PID
 LIBRARIES += AP_Soaring
