@@ -28,4 +28,14 @@ void Copter::landinggear_update()
     }
 
     last_deploy_status = landinggear.deployed();
+
+    // support height based triggering
+    float height;
+    if (rangefinder_alt_ok()) {
+        height = rangefinder_state.alt_cm_filt.get() * 0.01;
+    } else {
+        height = current_loc.alt * 0.01;
+    }
+
+    landinggear.update(height);
 }
