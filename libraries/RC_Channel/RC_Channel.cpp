@@ -32,6 +32,7 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_LandingGear/AP_LandingGear.h>
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
@@ -438,6 +439,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const aux_switch_
     case DO_NOTHING:
     case CLEAR_WP:
     case COMPASS_LEARN:
+    case LANDING_GEAR:
         break;
     case GRIPPER:
     case SPRAYER:
@@ -649,6 +651,25 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             compass.set_learn_type(Compass::LEARN_INFLIGHT, false);
         }
         break;
+
+    case LANDING_GEAR: {
+        AP_LandingGear *lg = AP_LandingGear::instance();
+        if (lg == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+        case LOW:
+            lg->set_position(AP_LandingGear::LandingGear_Deploy);
+            break;
+        case MIDDLE:
+            // nothing
+            break;
+        case HIGH:
+            lg->set_position(AP_LandingGear::LandingGear_Retract);
+            break;
+        }
+        break;
+    }
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", ch_option);
