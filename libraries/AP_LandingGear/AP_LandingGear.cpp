@@ -10,23 +10,7 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
-    // @Param: SERVO_RTRACT
-    // @DisplayName: Landing Gear Servo Retracted PWM Value
-    // @Description: Servo PWM value in microseconds when landing gear is retracted
-    // @Range: 1000 2000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SERVO_RTRACT", 0, AP_LandingGear, _servo_retract_pwm, AP_LANDINGGEAR_SERVO_RETRACT_PWM_DEFAULT),
-
-    // @Param: SERVO_DEPLOY
-    // @DisplayName: Landing Gear Servo Deployed PWM Value
-    // @Description: Servo PWM value in microseconds when landing gear is deployed
-    // @Range: 1000 2000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("SERVO_DEPLOY", 1, AP_LandingGear, _servo_deploy_pwm, AP_LANDINGGEAR_SERVO_DEPLOY_PWM_DEFAULT),
+    // 0 and 1 used by previous retract and deploy pwm, now replaced with SERVOn_MIN/MAX/REVERSED
 
     // @Param: STARTUP
     // @DisplayName: Landing Gear Startup position
@@ -136,7 +120,7 @@ void AP_LandingGear::set_position(LandingGearCommand cmd)
 void AP_LandingGear::deploy()
 {
     // set servo PWM to deployed position
-    SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_deploy_pwm);
+    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::SRV_CHANNEL_LIMIT_MAX);
 
     // set deployed flag
     _deployed = true;
@@ -149,7 +133,7 @@ void AP_LandingGear::deploy()
 void AP_LandingGear::retract()
 {
     // set servo PWM to retracted position
-    SRV_Channels::set_output_pwm(SRV_Channel::k_landing_gear_control, _servo_retract_pwm);
+    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
 
     // reset deployed flag
     _deployed = false;
