@@ -146,6 +146,15 @@ public:
      */
     void set_safety_mask(uint16_t mask) { safety_mask = mask; }
 
+    /*
+     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    void set_reversible_mask(uint16_t chanmask) override {
+        reversible_mask |= chanmask;
+    }
+    
 private:
     struct pwm_group {
         // only advanced timers can do high clocks needed for more than 400Hz
@@ -252,6 +261,7 @@ private:
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
     uint16_t io_fast_channel_mask;
+    uint16_t reversible_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
