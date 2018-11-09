@@ -811,6 +811,7 @@ private:
     // Parameters.cpp
     void load_parameters(void);
     void convert_pid_parameters(void);
+    void convert_lgr_parameters(void);
 
     // position_vector.cpp
     Vector3f pv_location_to_vector(const Location& loc);
