@@ -51,6 +51,13 @@ public:
     virtual void     write(uint8_t chan, uint16_t period_us) = 0;
 
     /*
+     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    virtual void     set_reversible_mask(uint16_t chanmask) {}
+    
+    /*
      * Delay subsequent calls to write() going to the underlying hardware in
      * order to group related writes together. When all the needed writes are
      * done, call push() to commit the changes.
