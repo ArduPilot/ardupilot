@@ -4,6 +4,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -63,6 +64,24 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Values: 0:Low,1:High
     // @User: Standard
     AP_GROUPINFO("WOW_POL", 6, AP_LandingGear, _pin_weight_on_wheels_polarity, DEFAULT_PIN_WOW_POL),
+
+    // @Param: DEPLOY_ALT
+    // @DisplayName: Landing gear deployment altitude
+    // @Description: Altitude where the landing gear will be deployed. This should be lower than the RETRACT_ALT. If zero then altitude is not used for deploying landing gear. Only applies when vehicle is armed.
+    // @Units: m
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DEPLOY_ALT", 7, AP_LandingGear, _deploy_alt, 0),
+
+    // @Param: RETRACT_ALT
+    // @DisplayName: Landing gear retract altitude
+    // @Description: Altitude where the landing gear will be retracted. This should be higher than the DEPLOY_ALT. If zero then altitude is not used for retracting landing gear. Only applies when vehicle is armed.
+    // @Units: m
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RETRACT_ALT", 8, AP_LandingGear, _retract_alt, 0),
     
     AP_GROUPEND
 };
@@ -121,6 +140,9 @@ void AP_LandingGear::deploy()
 
     // set deployed flag
     _deployed = true;
+    _have_changed = true;
+
+    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
 }
 
 /// retract - retract landing gear
@@ -131,6 +153,9 @@ void AP_LandingGear::retract()
 
     // reset deployed flag
     _deployed = false;
+    _have_changed = true;
+
+    gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
 }
 
 bool AP_LandingGear::deployed()
@@ -170,7 +195,7 @@ uint32_t AP_LandingGear::get_wow_state_duration_ms()
     return AP_HAL::millis() - last_wow_event_ms;
 }
 
-void AP_LandingGear::update()
+void AP_LandingGear::update(float height_above_ground_m)
 {
     if (_pin_weight_on_wheels == -1) {
         last_wow_event_ms = 0;
@@ -208,6 +233,30 @@ void AP_LandingGear::update()
         
         gear_state_current = gear_state_new;
     }
+
+    /*
+      check for height based triggering
+     */
+    int16_t alt_m = constrain_int16(height_above_ground_m, 0, INT16_MAX);
+
+    if (hal.util->get_soft_armed()) {
+        // only do height based triggering when armed
+        if ((!_deployed || !_have_changed) &&
+            _deploy_alt > 0 &&
+            alt_m <= _deploy_alt &&
+            _last_height_above_ground > _deploy_alt) {
+            deploy();
+        }
+        if ((_deployed || !_have_changed) &&
+            _retract_alt > 0 &&
+            _retract_alt >= _deploy_alt &&
+            alt_m >= _retract_alt &&
+            _last_height_above_ground < _retract_alt) {
+            retract();
+        }
+    }
+
+    _last_height_above_ground = alt_m;
 }
 
 // log weight on wheels state
