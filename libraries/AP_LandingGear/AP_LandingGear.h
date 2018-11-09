@@ -35,8 +35,8 @@ public:
     AP_LandingGear &operator=(const AP_LandingGear&) = delete;
     
     // get singleton instance
-    static AP_LandingGear &instance(void) {
-        return *_singleton;
+    static AP_LandingGear *instance(void) {
+        return _singleton;
     }
 
     // Gear command modes
