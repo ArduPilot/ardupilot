@@ -300,7 +300,7 @@ bool Plane::setup_failsafe_mixing(void)
     if (old_state == AP_HAL::Util::SAFETY_ARMED) {
         // make sure the throttle has a non-zero failsafe value before we
         // disable safety. This prevents sending zero PWM during switch over
-        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, aparm.throttle_min<0?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+        SRV_Channels::set_safety_limit(SRV_Channel::k_throttle, have_reverse_thrust()?SRV_Channel::SRV_CHANNEL_LIMIT_TRIM:SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
     }
 
     // we need to force safety on to allow us to load a mixer. We call

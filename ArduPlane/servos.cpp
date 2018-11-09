@@ -257,7 +257,7 @@ void Plane::set_servos_manual_passthrough(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, channel_roll->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, channel_pitch->get_control_in_zero_dz());
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, channel_rudder->get_control_in_zero_dz());
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
 }
 
 /*
@@ -360,7 +360,7 @@ void Plane::set_servos_controlled(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
         if (g.throttle_suppress_manual) {
             // manual pass through of throttle while throttle is suppressed
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
     } else if (g.throttle_passthru_stabilize && 
                (control_mode == STABILIZE || 
@@ -371,11 +371,11 @@ void Plane::set_servos_controlled(void)
                !failsafe.throttle_counter) {
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     } else if ((control_mode == GUIDED || control_mode == AVOID_ADSB) &&
                guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     } else if (quadplane.in_vtol_mode()) {
         // ask quadplane code for forward throttle
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
@@ -542,7 +542,7 @@ void Plane::servos_twin_engine_mix(void)
 
     float throttle_left, throttle_right;
 
-    if (throttle < 0 && aparm.throttle_min < 0) {
+    if (throttle < 0 && have_reverse_thrust() && allow_reverse_thrust()) {
         // doing reverse thrust
         throttle_left  = constrain_float(throttle + 50 * rudder, -100, 0);
         throttle_right = constrain_float(throttle - 50 * rudder, -100, 0);
