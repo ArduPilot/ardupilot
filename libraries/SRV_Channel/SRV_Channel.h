@@ -446,6 +446,16 @@ public:
     // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
 
+    // add to mask of outputs which can do reverse thrust using digital controls
+    static void set_reversible_mask(uint16_t mask) {
+        reversible_mask |= mask;
+    }
+
+    // add to mask of outputs which use digital (non-PWM) output, such as DShot
+    static void set_digital_mask(uint16_t mask) {
+        digital_mask |= mask;
+    }
+    
 private:
     struct {
         bool k_throttle_reversible:1;
@@ -476,7 +486,14 @@ private:
     static AP_BLHeli *blheli_ptr;
 #endif
     static uint16_t disabled_mask;
+
+    // mask of outputs which use a digital output protocol, not
+    // PWM (eg. DShot)
+    static uint16_t digital_mask;
     
+    // mask of outputs which are digitally reversible (eg. DShot-3D)
+    static uint16_t reversible_mask;
+
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     static struct srv_function {
