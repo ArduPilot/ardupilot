@@ -948,6 +948,7 @@ private:
     void takeoff_calc_pitch(void);
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
+    void landing_gear_update(void);
     void complete_auto_takeoff(void);
     void ahrs_update();
     void update_speed_height(void);
