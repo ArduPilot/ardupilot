@@ -95,7 +95,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case THROW:
     case SMART_RTL:
     case GUIDED:
-    case LANDING_GEAR:
     case PARACHUTE_RELEASE:
     case ARMDISARM:
     case WINCH_CONTROL:
@@ -349,20 +348,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     break;
             }
 #endif
-            break;
-
-       case LANDING_GEAR:
-            switch (ch_flag) {
-                case LOW:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
-                    break;
-                case MIDDLE:
-                    // nothing
-                    break;
-                case HIGH:
-                    copter.landinggear.set_position(AP_LandingGear::LandingGear_Retract);
-                    break;
-            }
             break;
 
         case MOTOR_ESTOP:
