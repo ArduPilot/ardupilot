@@ -1124,10 +1124,6 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Auto mission completed: passed!")
 
-    def load_mission(self, mission):
-        path = os.path.join(testdir, mission)
-        return self.load_mission_from_file(path)
-
     # fly_avc_test - fly AVC mission
     def fly_avc_test(self):
         # upload mission from file

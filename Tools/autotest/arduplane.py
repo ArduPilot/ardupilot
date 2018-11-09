@@ -12,6 +12,7 @@ from pymavlink import mavutil
 from pysim import util
 
 from common import AutoTest
+from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
@@ -524,16 +525,10 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def wp_load(self, filename):
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
-
     def fly_mission(self, filename):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        self.wp_load(filename)
+        self.load_mission(filename)
         self.mavproxy.send('switch 1\n')  # auto mode
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 7, max_dist=60)
@@ -586,7 +581,7 @@ class AutoTestPlane(AutoTest):
             self.wait_servo_channel_value(servo_ch, servo_ch_min)
 
             self.progress("Flying mission %s" % filename)
-            self.wp_load(filename)
+            self.load_mission(filename)
             self.mavproxy.send('wp set 1\n')
             self.mavproxy.send('switch 1\n')  # auto mode
             self.wait_mode('AUTO')
@@ -667,7 +662,7 @@ class AutoTestPlane(AutoTest):
         self.context_push()
         ex = None
         try:
-            self.wp_load(os.path.join(testdir, "plane-gripper-mission.txt"))
+            self.load_mission("plane-gripper-mission.txt")
             self.mavproxy.send("wp set 1\n")
             self.mavproxy.send('switch 1\n')  # auto mode
             self.wait_mode('AUTO')

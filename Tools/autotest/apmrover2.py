@@ -118,7 +118,7 @@ class AutoTestRover(AutoTest):
     # def test_mission(self, filename):
     #     """Test a mission from a file."""
     #     self.progress("Test mission %s" % filename)
-    #     num_wp = self.load_mission_from_file(filename)
+    #     num_wp = self.load_mission(filename)
     #     self.mavproxy.send('wp set 1\n')
     #     self.mav.wait_heartbeat()
     #     self.mavproxy.send('switch 4\n')  # auto mode
@@ -359,19 +359,13 @@ class AutoTestRover(AutoTest):
     def drive_mission(self, filename):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
+        self.load_mission(filename)
         self.mavproxy.send('switch 4\n')  # auto mode
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
         self.wait_mode('HOLD', timeout=300)
         self.progress("Mission OK")
-
-    def drive_mission_rover1(self):
-        self.drive_mission(os.path.join(testdir, "rover1.txt"))
 
     def do_get_banner(self):
         self.mavproxy.send("long DO_SEND_BANNER 1\n")
@@ -454,11 +448,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             (distance_with_brakes, distance_without_brakes, delta))
 
     def drive_rtl_mission(self):
-        mission_filepath = os.path.join(testdir,
-                                        "ArduRover-Missions",
-                                        "rtl.txt")
-        self.mavproxy.send('wp load %s\n' % mission_filepath)
-        self.mavproxy.expect('Flight plan received')
+        mission_filepath = os.path.join("ArduRover-Missions", "rtl.txt")
+        self.load_mission(mission_filepath)
         self.mavproxy.send('switch 4\n')  # auto mode
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
@@ -740,8 +731,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         ex = None
         try:
-            self.mavproxy.send('wp load %s\n' %
-                               os.path.join(testdir, "rover-camera-mission.txt"))
+            self.load_mission("rover-camera-mission.txt")
             self.wait_ready_to_arm()
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
@@ -830,7 +820,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                           self.drive_square)
 
             self.run_test("Drive Mission %s" % "rover1.txt",
-                          self.drive_mission_rover1)
+                          lambda : self.drive_mission("rover1.txt"))
 
             # disabled due to frequent failures in travis. This test needs re-writing
             # self.run_test("Drive Brake", self.drive_brake)
