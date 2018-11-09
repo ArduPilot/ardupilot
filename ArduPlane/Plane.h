@@ -1065,6 +1065,8 @@ private:
 
     void read_aux_all();
 
+    bool reversed_throttle;
+    bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
     bool have_reverse_thrust(void) const;
     int16_t get_throttle_input(bool no_deadzone=false) const;
