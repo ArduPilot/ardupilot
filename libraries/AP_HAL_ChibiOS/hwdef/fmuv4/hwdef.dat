@@ -48,7 +48,6 @@ PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 
 PA9 VBUS INPUT
-PA10 FRSKY_INV OUTPUT GPIO(78)
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -142,6 +141,12 @@ PD15 MPU9250_DRDY INPUT
 # UART8 serial4 FrSky
 PE0 UART8_RX UART8
 PE1 UART8_TX UART8
+
+# allow this uart to be inverted for transmit under user control
+# the polarity is the value to use on the GPIO to change the polarity
+# to the opposite of the default
+PA10 UART8_TXINV OUTPUT HIGH GPIO(78) POL(0)
+
 PE3 VDD_SENSORS_EN OUTPUT HIGH
 
 # UART7 is debug
