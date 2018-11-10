@@ -44,7 +44,15 @@ public:
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
-    
+
+    // control optional features
+    virtual bool set_options(uint8_t options) { return options==0; }
+
+    enum {
+        OPTION_RXINV=(1U<<0), // invert RX line
+        OPTION_TXINV=(1U<<1), // invert TX line
+    };
+
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
     };
