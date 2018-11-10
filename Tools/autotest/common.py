@@ -349,7 +349,7 @@ class AutoTest(ABC):
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting 0 waypoints')
 
-    def log_download(self, filename, timeout=360):
+    def log_download(self, filename, timeout=360, upload_logs=False):
         """Download latest log."""
         self.mav.wait_heartbeat()
         self.mavproxy.send("log list\n")
@@ -361,6 +361,17 @@ class AutoTest(ABC):
         self.mavproxy.expect("Finished downloading", timeout=timeout)
         self.mav.wait_heartbeat()
         self.mav.wait_heartbeat()
+        if upload_logs and not os.getenv("AUTOTEST_NO_UPLOAD"):
+            # optionally upload logs to server so we can see travis failure logs
+            import subprocess, glob, datetime
+            logdir=os.path.dirname(filename)
+            datedir=datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+            flist = glob.glob("logs/*.BIN")
+            for e in ['BIN','bin','tlog']:
+                flist += glob.glob(os.path.join(logdir, '*.%s' % e))
+            print("Uploading %u logs to http://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
+            cmd = ['rsync', '-avz'] + flist + ['cilogs@autotest.ardupilot.org::CI-Logs/%s/' % datedir]
+            subprocess.call(cmd)
 
     def show_gps_and_sim_positions(self, on_off):
         """Allow to display gps and actual position on map."""

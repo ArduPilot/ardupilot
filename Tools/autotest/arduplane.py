@@ -759,7 +759,8 @@ class AutoTestPlane(AutoTest):
 
             self.run_test("Log download",
                           lambda: self.log_download(
-                              self.buildlogs_path("ArduPlane-log.bin")))
+                              self.buildlogs_path("ArduPlane-log.bin"),
+                              upload_logs=True))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
