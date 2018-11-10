@@ -864,7 +864,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
-                              self.buildlogs_path("APMrover2-log.bin")))
+                              self.buildlogs_path("APMrover2-log.bin"),
+                              upload_logs=len(self.fail_list)>0))
     #        if not drive_left_circuit(self):
     #            self.progress("Failed left circuit")
     #            failed = True
