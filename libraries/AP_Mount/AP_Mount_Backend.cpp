@@ -77,12 +77,12 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
     }
 }
 
-void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const
+void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *chan, float min, float max) const
 {
-    if (ch == nullptr) {
+    if (chan == nullptr) {
         return;
     }
-    out += ch->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
+    out += chan->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
     out = constrain_float(out, radians(min*0.01f), radians(max*0.01f));
 }
 
