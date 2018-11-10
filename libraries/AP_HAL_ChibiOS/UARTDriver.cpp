@@ -1081,4 +1081,57 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return last_receive_us;
 }
 
+// set optional features, return true on success
+bool UARTDriver::set_options(uint8_t options)
+{
+    if (options == 0) {
+        return true;
+    }
+    if (sdef.is_usb) {
+        return false;
+    }
+#if defined(STM32F7) && HAL_USE_SERIAL == TRUE
+    // F7 has built-in support for inversion in all uarts
+    SerialDriver *sd = (SerialDriver*)(sdef.serial);
+    uint32_t cr2 = sd->usart->CR2;
+    bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
+    if (options & OPTION_RXINV) {
+        cr2 |= USART_CR2_RXINV;
+    } else {
+        cr2 &= ~USART_CR2_RXINV;
+    }
+    if (options & OPTION_TXINV) {
+        cr2 |= USART_CR2_TXINV;
+    } else {
+        cr2 &= ~USART_CR2_TXINV;
+    }
+    if (was_enabled) {
+        sd->usart->CR1 &= ~USART_CR1_UE;
+    }
+    sd->usart->CR2 = cr2;
+    if (was_enabled) {
+        sd->usart->CR1 |= USART_CR1_UE;
+    }
+    return true;
+#else
+    // external pin based inversion control, relying on TXINV and RXINV lines in hwdef.dat
+    bool ret = true;
+    if (options & OPTION_RXINV) {
+        if (sdef.rxinv_gpio >= 0) {
+            hal.gpio->write(sdef.rxinv_gpio, sdef.rxinv_polarity);
+        } else {
+            ret = false;
+        }
+    }
+    if (options & OPTION_TXINV) {
+        if (sdef.txinv_gpio >= 0) {
+            hal.gpio->write(sdef.txinv_gpio, sdef.txinv_polarity);
+        } else {
+            ret = false;
+        }
+    }
+    return ret;
+#endif
+}
+
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
