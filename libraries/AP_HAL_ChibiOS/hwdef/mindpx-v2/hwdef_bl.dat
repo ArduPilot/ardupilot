@@ -1,0 +1,85 @@
+# for bootloader for MindPX-v2 and MindRacer hardware
+
+# MCU class and specific type
+MCU STM32F4xx STM32F427xx
+
+# board ID for firmware load
+APJ_BOARD_ID 88
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+# board voltage
+STM32_VDD 330U
+
+# Chibios system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# location of application code
+define FLASH_BOOTLOADER_LOAD_KB 16
+
+# bootloader loads at start of flash
+FLASH_RESERVE_START_KB 0
+
+# USB setup
+USB_VENDOR 0x0483 # ST
+USB_PRODUCT 0x5740
+USB_STRING_MANUFACTURER "ArduPilot"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# baudrate to run bootloader at on uarts
+define BOOTLOADER_BAUDRATE 115200
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
+
+# Use Timer 14 for tone generation
+PA7 TIM14_CH1 TIM14 GPIO(32) ALARM
+
+PA8 RUN_LED OUTPUT GPIO(0)
+PA10 SBUS_INV OUTPUT
+
+# this is the pin that senses USB being connected. It is an input pin
+PA9 VBUS INPUT
+
+# now we define the pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# these are the pins for SWD debugging with a STlinkv2 or black-magic probe
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# USART2 serial2 telem1
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+PD7 NRF_CSN INPUT
+
+# USART3 serial3 telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD10 NRF_INT INPUT
+PD11 ACCEL_MAG_CS CS
+
+# UART8 is FrSky
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+
+# UART7 is debug
+PE7 UART7_RX UART7 
+PE8 UART7_TX UART7
+
+define HAL_CHIBIOS_ARCH_MINDPXV2 1
+
+define HAL_STORAGE_SIZE 16384
+
+# define a LED
+PA8 LED_BOOTLOADER OUTPUT
+define HAL_LED_ON 1
+
