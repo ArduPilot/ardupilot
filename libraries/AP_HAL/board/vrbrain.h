@@ -84,6 +84,10 @@
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #endif
 
+#ifndef HAL_HAVE_BOARD_VOLTAGE
+#define HAL_HAVE_SERVO_VOLTAGE 1
+#endif
+
 #ifndef HAL_PX4_HAVE_MTD_SUPPORT
 #define HAL_PX4_HAVE_MTD_SUPPORT 1
 #endif
