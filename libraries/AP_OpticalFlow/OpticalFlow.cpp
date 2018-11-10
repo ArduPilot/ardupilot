@@ -64,7 +64,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  OpticalFlow, _address,   0),
-    
+
     AP_GROUPEND
 };
 
@@ -74,6 +74,11 @@ OpticalFlow::OpticalFlow(AP_AHRS_NavEKF &ahrs)
       _last_update_ms(0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    memset(&_state, 0, sizeof(_state));
+
+    // healthy flag will be overwritten on update
+    _flags.healthy = false;
 }
 
 void OpticalFlow::init(void)
@@ -87,8 +92,8 @@ void OpticalFlow::init(void)
 #if AP_FEATURE_BOARD_DETECT
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK ||
             AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2 ||
-            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PCNC1) {
-            // possibly have pixhart on external SPI
+            AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PCNC1 {
+            // possibly have pixart on external SPI
             backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
         }
         if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_SP01) {
@@ -103,6 +108,8 @@ void OpticalFlow::init(void)
         backend = new AP_OpticalFlow_Onboard(*this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
+#elif defined(HAL_HAVE_PIXARTFLOW_SPI)
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
@@ -121,4 +128,3 @@ void OpticalFlow::update(void)
     // only healthy if the data is less than 0.5s old
     _flags.healthy = (AP_HAL::millis() - _last_update_ms < 500);
 }
-
