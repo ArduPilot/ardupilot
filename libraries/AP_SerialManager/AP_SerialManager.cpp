@@ -148,7 +148,55 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,500:500000,921:921600,1500:1500000
     // @User: Standard
     AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, SERIAL6_BAUD),
-    
+
+    // @Param: 1_OPTIONS
+    // @DisplayName: Telem1 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, 0),
+
+    // @Param: 2_OPTIONS
+    // @DisplayName: Telem2 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, 0),
+
+    // @Param: 3_OPTIONS
+    // @DisplayName: Serial3 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, 0),
+
+    // @Param: 4_OPTIONS
+    // @DisplayName: Serial4 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, 0),
+
+    // @Param: 5_OPTIONS
+    // @DisplayName: Serial5 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, 0),
+
+    // @Param: 6_OPTIONS
+    // @DisplayName: Serial6 options
+    // @Description: Control over UART options
+    // @Bitmask: 0:InvertRX,1:InvertTX
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("6_OPTIONS",  19, AP_SerialManager, state[6].options, 0),
+
     AP_GROUPEND
 };
 
@@ -201,6 +249,12 @@ void AP_SerialManager::init()
 #endif
         
         if (state[i].uart != nullptr) {
+
+            // see if special options have been requested
+            if (state[i].protocol != SerialProtocol_None && state[i].options) {
+                set_options(i);
+            }
+
             switch (state[i].protocol) {
                 case SerialProtocol_None:
                     break;
@@ -423,6 +477,16 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
     }
 
     return false;
+}
+
+// setup any special options
+void AP_SerialManager::set_options(uint8_t i)
+{
+    struct UARTState &opt = state[i];
+    // pass through to HAL
+    if (!opt.uart->set_options(opt.options)) {
+        hal.console->printf("Unable to setup options for Serial%u\n", i);
+    }
 }
 
 
