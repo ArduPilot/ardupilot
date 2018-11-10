@@ -56,10 +56,11 @@ PE2 SPI4_SCK SPI4
 PE13 SPI4_MISO SPI4
 PE6 SPI4_MOSI SPI4
 
-# SPI5 - external1 (disabled to save DMA channels)
-PF7 SPI5_SCK SPI5
-PF8 SPI5_MISO SPI5
-PF9 SPI5_MOSI SPI5
+# SPI5 - external1 (configure for pixartflow)
+PF7  SPI5_SCK  SPI5
+PF8  SPI5_MISO SPI5
+PF9  SPI5_MOSI SPI5
+PI10 FLOW_CS CS
 
 # SPI6 - external2 (disabled to save DMA channels)
 # PG13 SPI6_SCK SPI6
