@@ -773,6 +773,7 @@ def write_UART_config(f):
             '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
         )
         uart_list.append(config['IOMCU_UART'][0])
+        f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n') # make the assumption that IO gurantees servo monitoring
     else:
         f.write('#define HAL_WITH_IO_MCU 0\n')
     f.write('\n')
