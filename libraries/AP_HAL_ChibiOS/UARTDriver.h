@@ -52,6 +52,9 @@ public:
     // lock a port for exclusive use. Use a key of 0 to unlock
     bool lock_port(uint32_t key) override;
 
+    // control optional features
+    bool set_options(uint8_t options) override;
+
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
@@ -66,6 +69,10 @@ public:
         uint8_t dma_tx_stream_id;
         uint32_t dma_tx_channel_id; 
         ioline_t rts_line;
+        int8_t rxinv_gpio;
+        uint8_t rxinv_polarity;
+        int8_t txinv_gpio;
+        uint8_t txinv_polarity;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
