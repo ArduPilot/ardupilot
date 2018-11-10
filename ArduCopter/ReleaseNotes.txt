@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.1-rc1 06-Nov-2018
+Copter 3.6.1 10-Nov-2018 / 3.6.1-rc1 06-Nov-2018
 Changes from 3.6.0
 1) Garmin LidarLite V3HP support 
 2) VFR HUD messages send relative altitude if DEV_OPTIONS = 2.  Useful for older OSDs and GCSs
