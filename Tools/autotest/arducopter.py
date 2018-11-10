@@ -2403,7 +2403,8 @@ class AutoTestCopter(AutoTest):
             # Download logs
             self.run_test("log download",
                           lambda: self.log_download(
-                              self.buildlogs_path("ArduCopter-log.bin")))
+                              self.buildlogs_path("ArduCopter-log.bin"),
+                              upload_logs=len(self.fail_list)>0))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
@@ -2449,7 +2450,8 @@ class AutoTestCopter(AutoTest):
             # mission ends with disarm so should be ok to download logs now
             self.run_test("log download",
                           lambda: self.log_download(
-                              self.buildlogs_path("Helicopter-log.bin")))
+                              self.buildlogs_path("Helicopter-log.bin"),
+                              upload_logs=len(self.fail_list)>0))
 
         except pexpect.TIMEOUT:
             self.fail_list.append("Failed with timeout")
