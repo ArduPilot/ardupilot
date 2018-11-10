@@ -1,3 +1,37 @@
+Release 3.9.3, 10th November 2018
+---------------------------------
+
+The ArduPilot development team are delighted to announce the 3.9.3
+stable release of the ArduPilot plane code. This release includes a
+number of small but important fixes over 3.9.2:
+
+ - fixed error handling for corrupt RC input that could lead to a
+   crash in unusual circumstances
+
+ - fixed a race condition in IOMCU event startup that could lead to
+   the safety not being disabled on boot with BRD_SAFETYENABLE=0
+
+ - ensure surface speed scaling covers full range of configured
+   airspeeds
+
+ - added builds for new boards F35Lightning, omnibusf4v6, mRoX21-777
+
+ - updated GPIO numbers on AUX pins on all boards to be consistent
+   with docs
+
+ - updated KakuteF7 UARTs and buzzer
+
+ - added ESC sensor uart on OmnibusNanoV6
+
+ - fix for Benewake rangefinder at long ranges
+
+ - prevent attempts to erase dataflash logs while armed
+
+Many thanks to the people who tested this release!
+
+Happy flying!
+
+
 Release 3.9.3beta1, 6th November 2018
 -------------------------------------
 
