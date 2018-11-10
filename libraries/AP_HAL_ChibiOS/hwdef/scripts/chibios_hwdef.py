@@ -121,6 +121,10 @@ def get_alt_function(mcu, pin, function):
     '''return alternative function number for a pin'''
     lib = get_mcu_lib(mcu)
 
+    if function.endswith('_TXINV') or function.endswith('_RXINV'):
+        # RXINV and TXINV are special labels for inversion pins, not alt-functions
+        return None
+    
     if hasattr(lib, "AltFunction_map"):
         alt_map = lib.AltFunction_map
     else:
@@ -741,6 +745,20 @@ def write_SPI_config(f):
     write_SPI_table(f)
 
 
+def get_gpio_bylabel(label):
+    '''get GPIO(n) setting on a pin label, or -1'''
+    p = bylabel.get(label)
+    if p is None:
+        return -1
+    return p.extra_value('GPIO', type=int, default=-1)
+
+def get_extra_bylabel(label, name, default=None):
+    '''get extra setting for a label by name'''
+    p = bylabel.get(label)
+    if p is None:
+        return default
+    return p.extra_value(name, type=str, default=default)
+
 def write_UART_config(f):
     '''write UART config defines'''
     get_config('UART_ORDER')
@@ -806,8 +824,15 @@ def write_UART_config(f):
             f.write(
                 "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, "
                 % (dev, n))
-            f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s}\n" %
+            f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, " %
                     (dev, dev, rts_line))
+
+            # add inversion pins, if any
+            f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
+            f.write("%s, " % get_extra_bylabel(dev + "_RXINV", "POL", "0"))
+            f.write("%d, " % get_gpio_bylabel(dev + "_TXINV"))
+            f.write("%s}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
+
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
         f.write('''
