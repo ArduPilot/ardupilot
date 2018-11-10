@@ -143,6 +143,19 @@ public:
 #endif
     }
 
+#if HAL_HAVE_BOARD_VOLTAGE
+    // get minimum board voltage
+    static float get_minimum_board_voltage(void) {
+        return instance?instance->_vbus_min.get():0;
+    }
+#endif
+
+#if HAL_HAVE_SERVO_VOLTAGE
+    // get minimum servo voltage
+    static float get_minimum_servo_voltage(void) {
+        return instance?instance->_vservo_min.get():0;
+    }
+#endif
     
 private:
     static AP_BoardConfig *instance;
@@ -207,4 +220,12 @@ private:
 
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
+
+#if HAL_HAVE_BOARD_VOLTAGE
+    AP_Float _vbus_min;
+#endif
+
+#if HAL_HAVE_SERVO_VOLTAGE
+    AP_Float _vservo_min;
+#endif
 };
