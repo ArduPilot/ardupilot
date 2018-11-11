@@ -314,7 +314,7 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
             #if FRAME_CONFIG == HELI_FRAME
             const char *failmsg = "Collective below Failsafe";
             #else
-            const char *failmsg = "Throttle below Failsafe";
+            const char *failmsg = "Radio below Failsafe";
             #endif
             check_failed(ARMING_CHECK_RC, display_failure, failmsg);
             return false;
