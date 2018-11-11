@@ -105,6 +105,8 @@ void OpticalFlow::init(void)
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
+#elif defined(HAL_HAVE_PIXARTFLOW_SPI)
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif
     }
 
