@@ -89,7 +89,6 @@
 #define HAL_INS_LSM9DS0     11
 #define HAL_INS_MPU9250_I2C 13
 #define HAL_INS_BH          14
-#define HAL_INS_BBBMINI     17
 #define HAL_INS_AERO        18
 #define HAL_INS_MPU6500     19
 #define HAL_INS_EDGE        20
@@ -128,7 +127,6 @@
 #define HAL_COMPASS_HMC5843_MPU6000     7
 #define HAL_COMPASS_AK8963_MPU9250_I2C  9
 #define HAL_COMPASS_BH                 10
-#define HAL_COMPASS_BBBMINI            13
 #define HAL_COMPASS_NAVIO2             14
 #define HAL_COMPASS_NAVIO              15
 #define HAL_COMPASS_AERO               16
@@ -265,4 +263,3 @@
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
-
