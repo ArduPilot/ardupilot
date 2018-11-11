@@ -82,6 +82,8 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
     
     void update(float height_above_ground_m);
+    
+    bool check_before_land(void);
 
 private:
     // Parameters
