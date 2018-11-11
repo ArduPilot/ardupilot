@@ -123,6 +123,7 @@ enum tuning_pid_bits {
     TUNING_BITS_YAW   = (1 <<  2),
     TUNING_BITS_STEER = (1 <<  3),
     TUNING_BITS_LAND  = (1 <<  4),
+    TUNING_BITS_ACCZ  = (1 <<  5),
     TUNING_BITS_END // dummy just used for static checking
 };
 
