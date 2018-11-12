@@ -335,6 +335,7 @@ enum LoggingParameters {
 #define DATA_WINCH_RATE_CONTROL             70
 #define DATA_ZIGZAG_STORE_A                 71
 #define DATA_ZIGZAG_STORE_B                 72
+#define DATA_LAND_REPO_ACTIVE               73
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1

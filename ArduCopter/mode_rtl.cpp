@@ -289,6 +289,9 @@ void Copter::ModeRTL::descent_run()
 
             // record if pilot has overriden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!ap.land_repo_active) {
+                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
+                }
                 ap.land_repo_active = true;
             }
         }
