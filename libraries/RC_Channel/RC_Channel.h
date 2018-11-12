@@ -204,6 +204,7 @@ public:
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
+        AIRBRAKE =           210, // manual airbrake control
 
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
