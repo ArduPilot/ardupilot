@@ -286,43 +286,44 @@ void Plane::dspoiler_update(void)
 }
 
 /*
- set airbrakes if throttle_min is negative. This is the same mechanism as used for reverse thrust.
+ set airbrakes based on reverse thrust and/or manual input RC channel
  */
 void Plane::airbrake_update(void)
 {
+    // Calculate any manual airbrake input from RC channel option.
     int8_t manual_airbrake_percent = 0;
 
-    // work out any manual airbrake input
-    RC_Channel *airbrakein = RC_Channels::rc_channel(g2.airbrake_in_channel-1);
-    if (airbrakein != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        manual_airbrake_percent = airbrakein->percent_input();
+    RC_Channel *airbrake_in_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
+
+    if (airbrake_in_ch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
+        manual_airbrake_percent = airbrake_in_ch->percent_input();
     }
 
-
+    // Calculate auto airbrake from negative throttle.
     float throttle_min = aparm.throttle_min.get();
-    int16_t spoiler_pc = 0;
+    int16_t airbrake_pc = 0;
 
     int throttle_pc = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
 
-    if (throttle_min<0) {
+    if (throttle_min < 0) {
         if (landing.is_flaring()) {
-            // Full airbrakes during the flare
-            spoiler_pc = 100;
+            // Full airbrakes during the flare.
+            airbrake_pc = 100;
         }
         else {
             // Determine fraction between zero and full negative throttle.
-            spoiler_pc = -constrain_int16(throttle_pc, -100, 0);
+            airbrake_pc = constrain_int16(-throttle_pc, 0, 100);
         }
     }
 
-    if (spoiler_pc<manual_airbrake_percent) {
-        spoiler_pc = manual_airbrake_percent;
+    // Manual overrides auto airbrake setting.
+    if (airbrake_pc < manual_airbrake_percent) {
+        airbrake_pc = manual_airbrake_percent;
     }
 
     // Output to airbrake servo types.
-    SRV_Channels::set_output_scaled(SRV_Channel::k_airbrake, spoiler_pc);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_airbrake, airbrake_pc);
 }
-
 /*
     Set CROW. CROW is a mix between flaps and airbrakes. There are two types of CROW outputs available -
     corresponding to inner and outer flaps.
