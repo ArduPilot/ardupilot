@@ -148,6 +148,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_throttle:
     case k_throttleLeft:
     case k_throttleRight:
+    case k_airbrake:
         // fixed wing throttle
         set_range(100);
         break;
