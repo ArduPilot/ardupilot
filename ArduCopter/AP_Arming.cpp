@@ -56,6 +56,7 @@ bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
     return fence_checks(display_failure)
         & parameter_checks(display_failure)
         & motor_checks(display_failure)
+        & radio_checks(display_failure)
         & pilot_throttle_checks(display_failure) &
         AP_Arming::pre_arm_checks(display_failure);
 }
@@ -317,6 +318,22 @@ bool AP_Arming_Copter::pilot_throttle_checks(bool display_failure)
             const char *failmsg = "Throttle below Failsafe";
             #endif
             check_failed(ARMING_CHECK_RC, display_failure, failmsg);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool AP_Arming_Copter::radio_checks(bool display_failure)
+{
+    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
+        if (copter.channel_throttle->get_radio_in() < copter.channel_throttle->get_radio_min() ||
+            copter.channel_roll->get_radio_in() < copter.channel_roll->get_radio_min() ||
+            copter.channel_pitch->get_radio_in() < copter.channel_pitch->get_radio_min() ||
+            copter.channel_yaw->get_radio_in() < copter.channel_yaw->get_radio_min()) {
+            const char *failmsg = "Radio Failsafe";
+            check_failed(ARMING_CHECK_NONE, display_failure, failmsg);
             return false;
         }
     }

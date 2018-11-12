@@ -43,6 +43,7 @@ protected:
     bool fence_checks(bool display_failure);
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
+    bool radio_checks(bool display_failure);
     bool pilot_throttle_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
