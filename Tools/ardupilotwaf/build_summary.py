@@ -197,7 +197,8 @@ def size_summary(bld, nodes):
 
 @conf
 def build_summary_post_fun(bld):
-    bld.add_post_fun(_build_summary)
+    #bld.add_post_fun(_build_summary)
+    return 0
 
 @feature('cprogram', 'cxxprogram')
 @before_method('process_rule')

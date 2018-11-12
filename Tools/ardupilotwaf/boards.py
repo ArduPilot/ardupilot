@@ -82,7 +82,6 @@ class Board:
             '-Wshadow',
             '-Wpointer-arith',
             '-Wcast-align',
-            '-Wundef',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -354,6 +353,40 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+
+class esp32(Board):
+    toolchain = 'xtensa-esp32-elf'
+    def configure_env(self, cfg, env):
+        def expand_path(p):
+            idf = os.environ['IDF_PATH']
+            return cfg.root.find_dir(idf+p).abspath()
+        super(esp32, self).configure_env(cfg, env)
+        cfg.load('esp32')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_FC',
+        )
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+        ]
+        env.INCLUDES += [ expand_path('/components/driver/include'),
+                          expand_path('/components/esp32/include'),
+                          expand_path('/components/freertos/include'),
+                          expand_path('/components/soc/esp32/include'),
+                          expand_path('/components/soc/include'),
+                          expand_path('/components/heap/include'),
+                          cfg.bldnode.make_node('esp32/idf-plane/include').abspath()] 
+        env.CXXFLAGS += ['-mlongcalls',
+                         '-Os',
+                         '-g3',
+                         '-ffunction-sections',
+                         '-fdata-sections',
+                         '-fstrict-volatile-bitfields']
+        env.AP_PROGRAM_AS_STLIB = True
+    def build(self, bld):
+        super(esp32, self).build(bld)
+        bld.load('esp32')
+
 
 class chibios(Board):
     abstract = True
