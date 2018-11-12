@@ -803,7 +803,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Ground Effect Compensation Enable/Disable
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 0),
+    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
 
 #if ADVANCED_FAILSAFE == ENABLED
     // @Group: AFS_
