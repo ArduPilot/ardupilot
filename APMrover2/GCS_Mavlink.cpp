@@ -642,12 +642,16 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     switch (packet.command) {
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND);
-        return MAV_RESULT_ACCEPTED;
+        if (rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
-        rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
-        return MAV_RESULT_ACCEPTED;
+        if (rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
 
     case MAV_CMD_COMPONENT_ARM_DISARM:
         if (is_equal(packet.param1, 1.0f)) {
@@ -725,7 +729,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
 
         // exit if vehicle is not in Guided mode
         if (rover.control_mode != &rover.mode_guided) {
-            return MAV_RESULT_UNSUPPORTED;
+            return MAV_RESULT_FAILED;
         }
 
         // send yaw change and target speed to guided mode controller
