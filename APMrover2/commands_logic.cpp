@@ -109,8 +109,7 @@ void Rover::exit_mission()
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER) {
-        set_mode(mode_loiter, MODE_REASON_MISSION_END);
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && set_mode(mode_loiter, MODE_REASON_MISSION_END)) {
         return;
     }
     set_mode(mode_hold, MODE_REASON_MISSION_END);
