@@ -1847,7 +1847,7 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % str(e))
             self.mavproxy.send('mode land\n')
             ex = e
         self.context_pop()
