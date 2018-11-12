@@ -232,7 +232,7 @@ private:
     AP_Float transition_decel;
 
     // Quadplane trim, degrees
-    AP_Float quadplane_ahrs_trim_pitch;
+    AP_Float ahrs_trim_pitch;
 
     AP_Int16 rc_speed;
 
