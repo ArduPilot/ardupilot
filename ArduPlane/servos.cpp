@@ -290,6 +290,46 @@ void Plane::dspoiler_update(void)
 }
 
 /*
+ set airbrakes based on reverse thrust and/or manual input RC channel
+ */
+void Plane::airbrake_update(void)
+{
+    // Calculate any manual airbrake input from RC channel option.
+    int8_t manual_airbrake_percent = 0;
+    
+    RC_Channel *airbrake_in_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
+    
+    if (airbrake_in_ch != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
+        manual_airbrake_percent = airbrake_in_ch->percent_input();
+    }
+
+    // Calculate auto airbrake from negative throttle.
+    float throttle_min = aparm.throttle_min.get();
+    int16_t airbrake_pc = 0;
+
+    int throttle_pc = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+
+    if (throttle_min < 0) {
+        if (landing.is_flaring()) {
+            // Full airbrakes during the flare.
+            airbrake_pc = 100;
+        }
+        else {
+            // Determine fraction between zero and full negative throttle.
+            airbrake_pc = constrain_int16(-throttle_pc, 0, 100);
+        }
+    }
+
+    // Manual overrides auto airbrake setting.
+    if (airbrake_pc < manual_airbrake_percent) {
+        airbrake_pc = manual_airbrake_percent;
+    }
+
+    // Output to airbrake servo types.
+    SRV_Channels::set_output_scaled(SRV_Channel::k_airbrake, airbrake_pc);
+}
+
+/*
   setup servos for idle mode
   Idle mode is used during balloon launch to keep servos still, apart
   from occasional wiggle to prevent freezing up
@@ -770,6 +810,9 @@ void Plane::set_servos(void)
     // setup landing gear output
     set_landing_gear();
 #endif
+
+    // set airbrake outputs
+    airbrake_update();
     
     if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
