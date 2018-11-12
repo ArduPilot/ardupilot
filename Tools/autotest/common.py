@@ -21,7 +21,7 @@ testdir = os.path.dirname(os.path.realpath(__file__))
 
 # Check python version for abstract base class
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 4:
-        ABC = abc.ABC
+    ABC = abc.ABC
 else:
     ABC = abc.ABCMeta('ABC', (), {})
 
