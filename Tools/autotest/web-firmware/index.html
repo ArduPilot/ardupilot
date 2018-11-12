@@ -151,26 +151,6 @@ the bottom right corner of the screen.</li>
 
 <b><a href="https://pixhawk.ethz.ch/px4/downloads">Download QUpgrade</a></b></li>
 
-<h2>Loading APM1 or APM2 firmware on Linux or MacOS</h2>
-
-If you don't use Mission Planner on Linux then you can load firmware
-using the avrdude command. A typical command for uploading a file
-called ArduPlane.hex to an APM2 or APM1-2560 is:
-
-<pre>
-avrdude -patmega2560 -cstk500v2 -P /dev/ttyACM0 -b115200 -D -Uflash:w:ArduPlane.hex:i
-</pre>
-
-You will need to replace the /dev/ttyACM0 path with the path to your
-APM device. You may wish to use the device paths in /dev/serial/by-id
-so the path doesn't change.
-
-If you have an APM1-1280 then the command would be:
-
-<pre>
-avrdude -patmega1280 -cstk500v1 -P /dev/ttyUSB1 -b115200 -D -Uflash:w:ArduPlane.hex:i
-</pre>
-
 <h2>Loading PX4FMU firmware on Linux or MacOS</h2>
 
 To load a PX4FMU firmware on a Linux or MacOS machine you will need to
