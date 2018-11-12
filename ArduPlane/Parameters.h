@@ -570,6 +570,8 @@ public:
     // EFI Engine Monitor
     AP_EFI efi;
 #endif
+
+    AP_Int8 airbrake_in_channel;
 };
 
 extern const AP_Param::Info var_info[];

@@ -1242,6 +1242,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_EFI/AP_EFI.cpp
     AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
 #endif
+    // @Param: AIRBRK_IN_CH
+    // @DisplayName: RC channel used to manually set airbrake.
+    // @Description: This RC channel will override the automatically selected airbrake setting if it is larger.
+    // @Range: 1 8
+    // @User: User
+    AP_GROUPINFO("AIRBRK_IN_CH", 23, ParametersG2, airbrake_in_channel, 0),
 
     AP_GROUPEND
 };

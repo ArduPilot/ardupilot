@@ -946,6 +946,7 @@ private:
     void change_landing_gear(AP_LandingGear::LandingGearCommand cmd);
     void set_landing_gear(void);
     void dspoiler_update(void);
+    void airbrake_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
