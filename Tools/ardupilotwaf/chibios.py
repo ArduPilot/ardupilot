@@ -54,7 +54,7 @@ class upload_fw(Task.Task):
     def run(self):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         src = self.inputs[0]
-        return self.exec_command("{} '{}/px_uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
+        return self.exec_command("{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src))
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -93,7 +93,7 @@ class generate_bin(Task.Task):
 
 class generate_apj(Task.Task):
     color='CYAN'
-    run_str="${PYTHON} '${UPLOAD_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
+    run_str="${PYTHON} '${MKFW_TOOLS}/px_mkfw.py' --image '${SRC}' --prototype '${BUILDROOT}/apj.prototype' > '${TGT}'"
     always_run = True
     def keyword(self):
         return "Generating"
@@ -240,7 +240,8 @@ def configure(cfg):
     env.BUILDROOT = bldpath('')
     env.SRCROOT = srcpath('')
     env.PT_DIR = srcpath('Tools/ardupilotwaf/chibios/image')
-    env.UPLOAD_TOOLS = srcpath('Tools/ardupilotwaf')
+    env.MKFW_TOOLS = srcpath('Tools/ardupilotwaf')
+    env.UPLOAD_TOOLS = srcpath('Tools/scripts')
     env.CHIBIOS_SCRIPTS = srcpath('libraries/AP_HAL_ChibiOS/hwdef/scripts')
     env.TOOLS_SCRIPTS = srcpath('Tools/scripts')
     env.APJ_TOOL = srcpath('Tools/scripts/apj_tool.py')
