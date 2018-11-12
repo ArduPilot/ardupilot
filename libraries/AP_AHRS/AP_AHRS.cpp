@@ -359,15 +359,15 @@ void AP_AHRS::update_cd_values(void)
 }
 
 /*
-  create a rotated view of AP_AHRS with pitch trim
+  create a rotated view of AP_AHRS with optional pitch trim
  */
-AP_AHRS_View *AP_AHRS::create_view_trim(enum Rotation rotation, float pitch_trim)
+AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
 {
     if (_view != nullptr) {
         // can only have one
         return nullptr;
     }
-    _view = new AP_AHRS_View(*this, rotation, pitch_trim);
+    _view = new AP_AHRS_View(*this, rotation, pitch_trim_deg);
     return _view;
 }
 
