@@ -74,24 +74,24 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         RC_Channels::clear_overrides();
 
         switch (g.fs_action) {
-            case 0:
+            case Failsafe_Action_None:
                 break;
-            case 1:
+            case Failsafe_Action_RTL:
                 if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
                     set_mode(mode_hold, MODE_REASON_FAILSAFE);
                 }
                 break;
-            case 2:
+            case Failsafe_Action_Hold:
                 set_mode(mode_hold, MODE_REASON_FAILSAFE);
                 break;
-            case 3:
+            case Failsafe_Action_SmartRTL:
                 if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
                     if (!set_mode(mode_rtl, MODE_REASON_FAILSAFE)) {
                         set_mode(mode_hold, MODE_REASON_FAILSAFE);
                     }
                 }
                 break;
-            case 4:
+            case Failsafe_Action_SmartRTL_Hold:
                 if (!set_mode(mode_smartrtl, MODE_REASON_FAILSAFE)) {
                     set_mode(mode_hold, MODE_REASON_FAILSAFE);
                 }
