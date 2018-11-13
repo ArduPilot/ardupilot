@@ -77,6 +77,15 @@
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
 
+// failsafe action enum used for radio and gcs failsafe
+enum fs_action {
+    FS_ACTION_NONE             = 0,
+    FS_ACTION_RTL              = 1,
+    FS_ACTION_HOLD             = 2,
+    FS_ACTION_SMARTRTL_OR_RTL  = 3,
+    FS_ACTION_SMARTRTL_OR_HOLD = 4,
+};
+
 enum fs_crash_action {
   FS_CRASH_DISABLE = 0,
   FS_CRASH_HOLD = 1,
