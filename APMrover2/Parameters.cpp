@@ -144,9 +144,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel goes below the FS_THR_VALUE for FS_TIMEOUT seconds.
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled Continue with Mission in Auto
     // @User: Standard
-    GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     1),
+    GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     FS_THR_ENABLED),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
@@ -159,9 +159,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
     // @Description: Enable ground control station telemetry failsafe. When enabled the Rover will execute the FS_ACTION when it fails to receive MAVLink heartbeat packets for FS_TIMEOUT seconds.
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled Continue with Mission in Auto
     // @User: Standard
-    GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
+    GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   FS_GCS_DISABLED),
 
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check action

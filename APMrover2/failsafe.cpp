@@ -73,7 +73,12 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
         // clear rc overrides
         RC_Channels::clear_overrides();
 
-        switch (g.fs_action) {
+        if ((control_mode == &mode_auto) &&
+            ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
+             (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
+            // continue with mission in auto mode
+        } else {
+            switch (g.fs_action) {
             case Failsafe_Action_None:
                 break;
             case Failsafe_Action_RTL:
@@ -96,6 +101,7 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
                     set_mode(mode_hold, MODE_REASON_FAILSAFE);
                 }
                 break;
+            }
         }
     }
 }
