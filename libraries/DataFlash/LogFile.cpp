@@ -188,8 +188,10 @@ void DataFlash_Class::Log_Write_RFND(const RangeFinder &rangefinder)
         LOG_PACKET_HEADER_INIT((uint8_t)(LOG_RFND_MSG)),
         time_us       : AP_HAL::micros64(),
         dist1         : s0 ? s0->distance_cm() : (uint16_t)0,
+        status1       : s0 ? (uint8_t)s0->status() : (uint8_t)0,
         orient1       : s0 ? s0->orientation() : ROTATION_NONE,
         dist2         : s1 ? s1->distance_cm() : (uint16_t)0,
+        status2       : s1 ? (uint8_t)s1->status() : (uint8_t)0,
         orient2       : s1 ? s1->orientation() : ROTATION_NONE,
     };
     WriteBlock(&pkt, sizeof(pkt));
