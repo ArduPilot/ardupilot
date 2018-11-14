@@ -196,8 +196,7 @@ void Rover::ahrs_update()
  */
 void Rover::gcs_failsafe_check(void)
 {
-    if (!g.fs_gcs_enabled ||
-            (g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION && control_mode == &mode_auto)) {
+    if (!g.fs_gcs_enabled) {
         // gcs failsafe disabled
         return;
     }

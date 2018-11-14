@@ -125,8 +125,7 @@ void Rover::read_radio()
 
 void Rover::radio_failsafe_check(uint16_t pwm)
 {
-    if (!g.fs_throttle_enabled ||
-            (g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION && control_mode == &mode_auto)) {
+    if (!g.fs_throttle_enabled) {
         // radio failsafe disabled
         return;
     }
