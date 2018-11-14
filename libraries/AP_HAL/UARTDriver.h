@@ -49,8 +49,9 @@ public:
     virtual bool set_options(uint8_t options) { return options==0; }
 
     enum {
-        OPTION_RXINV=(1U<<0), // invert RX line
-        OPTION_TXINV=(1U<<1), // invert TX line
+        OPTION_RXINV=(1U<<0),  // invert RX line
+        OPTION_TXINV=(1U<<1),  // invert TX line
+        OPTION_HDPLEX=(1U<<2), // half-duplex (one-wire) mode
     };
 
     enum flow_control {
