@@ -37,6 +37,7 @@ static uint8_t nibble2hex(uint8_t x)
 }
 
 static bool hex2nibble_error;
+SLCAN::SLCANRouter* SLCAN::SLCANRouter::_singleton = nullptr;
 
 static uint8_t hex2nibble(char ch)
 {
