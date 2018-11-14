@@ -130,7 +130,7 @@ private:
     Interface _interfaces[MAX_NUMBER_OF_CAN_INTERFACES];
     Driver _drivers[MAX_NUMBER_OF_CAN_DRIVERS];
     uint8_t _num_drivers;
-
+    AP_Int8 _slcan_rt;
     static AP_BoardConfig_CAN *_singleton;
 };
 

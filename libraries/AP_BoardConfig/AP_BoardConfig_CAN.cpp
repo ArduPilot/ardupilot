@@ -34,10 +34,11 @@
 #include <AP_HAL_Linux/CAN.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CAN.h>
+#include <AP_HAL_ChibiOS/CANSerialRouter.h>
 #endif
 
 #include <AP_Vehicle/AP_Vehicle.h>
-
+#include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
@@ -83,6 +84,13 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
+    // @Param: SLCAN_RT
+    // @DisplayName: SLCAN Route
+    // @Description: CAN Driver ID to be routed to SLCAN, 0 means no routing
+    // @Range: 0 3
+    // @User: Advanced
+    AP_GROUPINFO("SLCAN_RT", 7, AP_BoardConfig_CAN, _slcan_rt, 0),
+
     AP_GROUPEND
 };
 
@@ -106,7 +114,6 @@ void AP_BoardConfig_CAN::init()
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
         // Check the driver number assigned to this physical interface
         uint8_t drv_num = _interfaces[i]._driver_number_cache = _interfaces[i]._driver_number;
-
         if (drv_num != 0 && drv_num <= MAX_NUMBER_OF_CAN_DRIVERS) {
             if (hal.can_mgr[drv_num - 1] == nullptr) {
                 // CAN Manager is the driver
@@ -123,6 +130,12 @@ void AP_BoardConfig_CAN::init()
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
+                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+                    if (_slcan_rt == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
+                        ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
+                        slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
+                    }
+                #endif
             } else {
                 printf("Failed to initialize can interface %d\n\r", i + 1);
             }
@@ -172,8 +185,11 @@ void AP_BoardConfig_CAN::init()
             } else {
                 continue;
             }
-
-            _drivers[i]._driver->init(i);
+            if (_slcan_rt == 0) {
+                _drivers[i]._driver->init(i, true);
+            } else {
+                _drivers[i]._driver->init(i, false);
+            }
         }
     }
 }
