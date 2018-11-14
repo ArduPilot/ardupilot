@@ -353,6 +353,11 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
 //  return value is a new speed (in m/s) which up to the projected maximum speed based on the cruise speed and cruise throttle
 float Mode::calc_speed_nudge(float target_speed, float cruise_speed, float cruise_throttle)
 {
+    // return immediately during RC/GCS failsafe
+    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
+        return target_speed;
+    }
+
     // return immediately if pilot is not attempting to nudge speed
     // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
     const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
