@@ -252,22 +252,28 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 _device_initialised = true;
             }
             sercfg.speed = _baudrate;
+
+            // start with options from set_options()
+            sercfg.cr1 = 0;
+            sercfg.cr2 = _cr2_options;
+            sercfg.cr3 = _cr3_options;
+
             if (!sdef.dma_tx && !sdef.dma_rx) {
-                sercfg.cr1 = 0;
-                sercfg.cr3 = 0;
             } else {
                 if (sdef.dma_rx) {
-                    sercfg.cr1 = USART_CR1_IDLEIE;
-                    sercfg.cr3 = USART_CR3_DMAR;
+                    sercfg.cr1 |= USART_CR1_IDLEIE;
+                    sercfg.cr3 |= USART_CR3_DMAR;
                 }
                 if (sdef.dma_tx) {
                     sercfg.cr3 |= USART_CR3_DMAT;
                 }
             }
-            sercfg.cr2 = USART_CR2_STOP1_BITS;
+            sercfg.cr2 |= USART_CR2_STOP1_BITS;
             sercfg.irq_cb = rx_irq_cb;
             sercfg.ctx = (void*)this;
+
             sdStart((SerialDriver*)sdef.serial, &sercfg);
+
             if(sdef.dma_rx) {
                 //Configure serial driver to skip handling RX packets
                 //because we will handle them via DMA
@@ -1034,12 +1040,13 @@ void UARTDriver::set_stop_bits(int n)
     
     switch (n) {
     case 1:
-        sercfg.cr2 = USART_CR2_STOP1_BITS;
+        sercfg.cr2 = _cr2_options | USART_CR2_STOP1_BITS;
         break;
     case 2:
-        sercfg.cr2 = USART_CR2_STOP2_BITS;
+        sercfg.cr2 = _cr2_options | USART_CR2_STOP2_BITS;
         break;
     }
+
     sdStart((SerialDriver*)sdef.serial, &sercfg);
     if(sdef.dma_rx) {
         //Configure serial driver to skip handling RX packets
@@ -1084,38 +1091,33 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 // set optional features, return true on success
 bool UARTDriver::set_options(uint8_t options)
 {
-    if (options == 0) {
-        return true;
-    }
     if (sdef.is_usb) {
-        return false;
+        // no options allowed on USB
+        return (options == 0);
     }
-#if defined(STM32F7) && HAL_USE_SERIAL == TRUE
-    // F7 has built-in support for inversion in all uarts
+    bool ret = true;
+
+#if HAL_USE_SERIAL == TRUE
     SerialDriver *sd = (SerialDriver*)(sdef.serial);
     uint32_t cr2 = sd->usart->CR2;
+    uint32_t cr3 = sd->usart->CR3;
     bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
+
+#ifdef STM32F7
+    // F7 has built-in support for inversion in all uarts
     if (options & OPTION_RXINV) {
-        cr2 |= USART_CR2_RXINV;
-    } else {
+        _cr2_options |= USART_CR2_RXINV;
         cr2 &= ~USART_CR2_RXINV;
     }
     if (options & OPTION_TXINV) {
         cr2 |= USART_CR2_TXINV;
+        _cr2_options |= USART_CR2_TXINV;
     } else {
         cr2 &= ~USART_CR2_TXINV;
     }
-    if (was_enabled) {
-        sd->usart->CR1 &= ~USART_CR1_UE;
-    }
-    sd->usart->CR2 = cr2;
-    if (was_enabled) {
-        sd->usart->CR1 |= USART_CR1_UE;
-    }
-    return true;
-#else
-    // external pin based inversion control, relying on TXINV and RXINV lines in hwdef.dat
-    bool ret = true;
+#else // STM32F4
+    // F4 can do inversion by GPIO if enabled in hwdef.dat, using
+    // TXINV and RXINV options
     if (options & OPTION_RXINV) {
         if (sdef.rxinv_gpio >= 0) {
             hal.gpio->write(sdef.rxinv_gpio, sdef.rxinv_polarity);
@@ -1130,8 +1132,34 @@ bool UARTDriver::set_options(uint8_t options)
             ret = false;
         }
     }
+#endif // STM32xx
+
+    // both F4 and F7 can do half-duplex
+    if (options & OPTION_HDPLEX) {
+        cr3 |= USART_CR3_HDSEL;
+        _cr3_options |= USART_CR3_HDSEL;
+    } else {
+        cr3 &= ~USART_CR3_HDSEL;
+    }
+
+    if (sd->usart->CR2 == cr2 &&
+        sd->usart->CR3 == cr3) {
+        // no change
+        return ret;
+    }
+
+    if (was_enabled) {
+        sd->usart->CR1 &= ~USART_CR1_UE;
+    }
+
+    sd->usart->CR2 = cr2;
+    sd->usart->CR3 = cr3;
+
+    if (was_enabled) {
+        sd->usart->CR1 |= USART_CR1_UE;
+    }
+#endif // HAL_USE_SERIAL == TRUE
     return ret;
-#endif
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
