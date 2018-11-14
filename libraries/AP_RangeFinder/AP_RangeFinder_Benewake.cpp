@@ -105,12 +105,12 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
             // if buffer now has 9 items try to decode it
             if (linebuf_len == BENEWAKE_FRAME_LENGTH) {
                 // calculate checksum
-                uint16_t checksum = 0;
+                uint8_t checksum = 0;
                 for (uint8_t i=0; i<BENEWAKE_FRAME_LENGTH-1; i++) {
-                    checksum += linebuf[i];
+                    checksum += (uint8_t)linebuf[i];
                 }
                 // if checksum matches extract contents
-                if ((uint8_t)(checksum & 0xFF) == linebuf[BENEWAKE_FRAME_LENGTH-1]) {
+                if (checksum == (uint8_t)linebuf[BENEWAKE_FRAME_LENGTH-1]) {
                     // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
                     if (dist >= BENEWAKE_DIST_MAX_CM) {
