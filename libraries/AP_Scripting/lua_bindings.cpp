@@ -26,7 +26,7 @@ int lua_servo_set_output_pwm(lua_State *state) {
         return luaL_error(state, "Servo function (%d) is not a scriptable output", servo_function);
     }
 
-    if (output_value > UINT16_MAX) {
+    if (output_value > (int)UINT16_MAX) {
         return luaL_error(state, "Servo range (%d) is out of range", output_value);
     }
 
