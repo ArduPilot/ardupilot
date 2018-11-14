@@ -256,16 +256,13 @@ private:
     // This is set to -1 when we need to re-read the switch
     uint8_t oldSwitchPosition;
 
-    // Failsafe
-    // A tracking variable for type of failsafe active
-    // Used for failsafe based on loss of RC signal or GCS signal. See
-    // FAILSAFE_EVENT_*
+    // structure for holding failsafe state
     struct {
-        uint8_t bits;
-        uint32_t start_time;
-        uint8_t triggered;
-        uint32_t last_valid_rc_ms;
-        uint32_t last_heartbeat_ms;
+        uint8_t bits;               // bit flags of failsafes that have started (but not necessarily triggered an action)
+        uint32_t start_time;        // start time of the earliest failsafe
+        uint8_t triggered;          // bit flags of failsafes that have triggered an action
+        uint32_t last_valid_rc_ms;  // system time of most recent RC input from pilot
+        uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
