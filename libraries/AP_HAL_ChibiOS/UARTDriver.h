@@ -169,7 +169,11 @@ private:
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
     uint32_t _total_written;
-    
+
+    // we remember cr2 and cr2 options from set_options to apply on sdStart()
+    uint32_t _cr3_options;
+    uint32_t _cr2_options;
+
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
     
