@@ -81,11 +81,9 @@ void AP_RCProtocol_DSM::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 }
                 bytes[i] = ((v>>1) & 0xFF);
             }
-            uint16_t values[8];
-            uint16_t num_values=0;
-            if (dsm_decode(AP_HAL::micros64(), bytes, values, &num_values, 8) &&
-                num_values >= MIN_RCIN_CHANNELS) {
-                add_input(num_values, values, false);
+            if (dsm_decode(AP_HAL::micros64(), bytes, last_values, &num_channels, AP_DSM_MAX_CHANNELS) &&
+                num_channels >= MIN_RCIN_CHANNELS) {
+                add_input(num_channels, last_values, false);
             }
         }
         memset(&dsm_state, 0, sizeof(dsm_state));
