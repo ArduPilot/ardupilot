@@ -276,3 +276,26 @@ void peripheral_power_enable(void)
 #endif
 #endif
 }
+
+#if defined(STM32F7) || defined(STM32F4)
+/*
+  read mode of a pin. This allows a pin config to be read, changed and
+  then written back
+ */
+iomode_t palReadLineMode(ioline_t line)
+{
+    ioportid_t port = PAL_PORT(line);
+    uint8_t pad = PAL_PAD(line);
+    iomode_t ret = 0;
+    ret |= (port->MODER >> (pad*2)) & 0x3;
+    ret |= ((port->OTYPER >> pad)&1) << 2;
+    ret |= ((port->OSPEEDR >> (pad*2))&3) << 3;
+    ret |= ((port->PUPDR >> (pad*2))&3) << 5;
+    if (pad < 8) {
+        ret |= ((port->AFRL >> (pad*4))&0xF) << 7;
+    } else {
+        ret |= ((port->AFRH >> ((pad-8)*4))&0xF) << 7;
+    }
+    return ret;
+}
+#endif
