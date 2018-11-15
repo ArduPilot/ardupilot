@@ -1027,6 +1027,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("RNGFND_SCALING", 12.12, epsilon=0.01)
 
             self.set_parameter("SIM_GPS_DISABLE", 1)
+            self.set_parameter("SIM_TERRAIN", 0)
 
             self.reboot_sitl()
 
