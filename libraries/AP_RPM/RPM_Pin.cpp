@@ -136,6 +136,7 @@ void AP_RPM_Pin::update(void)
         stm32_gpiosetevent(gpio, true, false, false,
                            state.instance==0?irq_handler0:irq_handler1);
 #else // other HALs
+        hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
         hal.gpio->attach_interrupt(last_pin, state.instance==0?irq_handler0:irq_handler1,
                                    HAL_GPIO_INTERRUPT_RISING);
 #endif
