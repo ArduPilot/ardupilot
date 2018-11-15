@@ -388,14 +388,14 @@
 // SEMI_AUTO_MODE
 //
 #ifndef AUTO_MAN_ALT
-# define AUTO_MAN_ALT   ENABLED
+# define AUTO_MAN_ALT   DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ENBL_CRS_LOCK
 //
 #ifndef ENBL_CRS_LOCK
-# define ENBL_CRS_LOCK   ENABLED
+# define ENBL_CRS_LOCK   DISABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
