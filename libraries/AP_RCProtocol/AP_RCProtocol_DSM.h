@@ -20,6 +20,8 @@
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
+#define AP_DSM_MAX_CHANNELS 12
+
 class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_DSM(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
@@ -58,6 +60,9 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
+
+    uint16_t last_values[AP_DSM_MAX_CHANNELS];
+    uint16_t num_channels;
 
     struct {
         uint8_t buf[16];
