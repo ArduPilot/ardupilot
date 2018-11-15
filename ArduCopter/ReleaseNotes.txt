@@ -1,10 +1,11 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.2-rc1 15-Nov-2018
+Copter 3.6.2-rc1/rc2 15-Nov-2018
 Changes from 3.6.1
 1) Bug fixes:
     a) Benewake TFmini and TF02 driver checksum fix (was missing many sensor readings)
     b) Range finders report healthy to GCS when out-of-range
+    c) RPM sensor reliability fix by initialising analog input pin
 ------------------------------------------------------------------
 Copter 3.6.1 10-Nov-2018 / 3.6.1-rc1 06-Nov-2018
 Changes from 3.6.0
