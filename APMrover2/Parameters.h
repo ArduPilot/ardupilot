@@ -55,6 +55,7 @@ public:
         k_param_serial0_baud,   // deprecated, can be deleted
         k_param_serial1_baud,   // deprecated, can be deleted
         k_param_serial2_baud,   // deprecated, can be deleted
+        k_param_fs_ekf_thresh,
 
         // 97: RSSI
         k_param_rssi = 97,
@@ -249,6 +250,7 @@ public:
     AP_Int16    fs_throttle_value;
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
+    AP_Float    fs_ekf_thresh;
 
     // obstacle avoidance control
     AP_Int16    rangefinder_trigger_cm;

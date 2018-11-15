@@ -60,6 +60,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_mission,         50,    200),
     SCHED_TASK(update_logging1,        10,    200),
     SCHED_TASK(update_logging2,        10,    200),
+    SCHED_TASK(ekf_check,              10,     75),
     SCHED_TASK(gcs_retry_deferred,     50,    500),
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,   1000),

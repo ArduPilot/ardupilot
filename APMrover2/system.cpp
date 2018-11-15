@@ -371,3 +371,24 @@ bool Rover::is_boat() const
 {
     return ((enum frame_class)g2.frame_class.get() == FRAME_BOAT);
 }
+
+// ekf_position_ok - returns true if the ekf claims it's horizontal absolute position estimate is ok and home position is set
+bool Rover::ekf_position_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow navigation with dcm position
+        return false;
+    }
+
+    // get EKF filter status
+    nav_filter_status filt_status;
+    rover.ahrs.get_filter_status(filt_status);
+
+    // if disarmed we accept a predicted horizontal position
+    if (!arming.is_armed()) {
+        return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
+    } else {
+        // once armed we require a good absolute position and EKF must not be in const_pos_mode
+        return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
+    }
+}

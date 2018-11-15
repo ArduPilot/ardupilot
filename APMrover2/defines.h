@@ -21,6 +21,10 @@
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
 
+// EKF check definitions
+#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
+#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
+
 //  Logging parameters
 #define LOG_THR_MSG             0x01
 #define LOG_NTUN_MSG            0x02
@@ -71,11 +75,16 @@
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED       0
 // Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE  9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE     10
-#define ERROR_SUBSYSTEM_CRASH_CHECK     12
+#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
+#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
+#define ERROR_SUBSYSTEM_CRASH_CHECK         12
+#define ERROR_SUBSYSTEM_EKFCHECK            16
+#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
+// subsystem specific error codes -- gps
+#define ERROR_CODE_FAILSAFE_RESOLVED        0
+#define ERROR_CODE_FAILSAFE_OCCURRED        1
 
 // radio failsafe enum (FS_THR_ENABLE parameter)
 enum fs_thr_enable {

@@ -263,6 +263,7 @@ private:
         uint8_t triggered;          // bit flags of failsafes that have triggered an action
         uint32_t last_valid_rc_ms;  // system time of most recent RC input from pilot
         uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
+        uint8_t ekf            : 1; // true if ekf failsafe has occurred
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
@@ -457,6 +458,12 @@ private:
     void cruise_learn_update();
     void cruise_learn_complete();
 
+    // ekf_check.cpp
+    void ekf_check();
+    bool ekf_over_threshold();
+    void failsafe_ekf_event();
+    void failsafe_ekf_off_event(void);
+
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, bool on);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
@@ -559,6 +566,7 @@ private:
     bool is_boat() const;
     void read_mode_switch();
     void read_aux_all();
+    bool ekf_position_ok();
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,
