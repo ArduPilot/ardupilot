@@ -12,6 +12,7 @@ from pymavlink import mavutil
 from pysim import util
 
 from common import AutoTest
+from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
