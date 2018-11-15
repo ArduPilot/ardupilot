@@ -381,11 +381,9 @@ void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_us, uint8_t b)
     byte_input.last_byte_us = timestamp_us;
     byte_input.buf[byte_input.ofs++] = b;
     if (byte_input.ofs == 16) {
-        uint16_t values[8];
-        uint16_t num_values=0;
-        if (dsm_decode(timestamp_us, byte_input.buf, values, &num_values, 8) &&
-            num_values >= MIN_RCIN_CHANNELS) {
-            add_input(num_values, values, false);
+        if (dsm_decode(timestamp_us, byte_input.buf, &last_values[0], &num_channels, AP_DSM_MAX_CHANNELS) &&
+            num_channels >= MIN_RCIN_CHANNELS) {
+            add_input(num_channels, last_values, false);
         }
 
         byte_input.ofs = 0;
