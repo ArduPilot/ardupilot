@@ -19,10 +19,13 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
 #include "AP_UAVCAN_SLCAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/Semaphore.h>
+
+#include <AP_HAL_ChibiOS/CANSerialRouter.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,7 +40,6 @@ static uint8_t nibble2hex(uint8_t x)
 }
 
 static bool hex2nibble_error;
-SLCAN::SLCANRouter* SLCAN::SLCANRouter::_singleton = nullptr;
 
 static uint8_t hex2nibble(char ch)
 {
@@ -77,6 +79,7 @@ bool SLCAN::CAN::push_Frame(uavcan::CanFrame &frame)
     frm.frame = frame;
     frm.flags = 0;
     frm.utc_usec = AP_HAL::micros64();
+    slcan_router().route_frame_to_can(frm.frame, frm.utc_usec);
     return rx_queue_.push(frm);
 }
 
@@ -204,7 +207,7 @@ static inline const char* getASCIIStatusCode(bool status) { return status ? "\r"
 
 bool SLCAN::CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    if (driver_.init(1000000, SLCAN::CAN::NormalMode) < 0) {
+    if (driver_.init(bitrate, SLCAN::CAN::NormalMode) < 0) {
         return false;
     }
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCAN::CANManager::reader_trampoline, void), "SLCAN", 4096, AP_HAL::Scheduler::PRIORITY_CAN, -1)) {
@@ -476,7 +479,7 @@ void SLCAN::CAN::reader() {
         return;
     }
     if (!_port_initialised) {
-        _port->begin(921600);
+        _port->begin(bitrate_);
         _port_initialised = true;
 
     }
