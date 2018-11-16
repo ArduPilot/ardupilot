@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  * Based on stm32 can driver by Pavel Kirienko
  */
@@ -20,14 +20,13 @@
 
 #if HAL_WITH_UAVCAN
 
-#include <uavcan_stm32/../../src/internal.hpp>
+#include "CANInternal.h"
+#include "CANClock.h"
 
-using namespace ChibiOS;
-using namespace uavcan_stm32;
 
 extern const AP_HAL::HAL& hal;
-
-namespace uavcan_stm32 {
+using namespace ChibiOS;
+namespace ChibiOS_CAN {
 
 uint64_t clock::getUtcUSecFromCanInterrupt()
 {
@@ -43,7 +42,7 @@ uavcan::MonotonicTime clock::getMonotonic()
 
 bool CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    return (can_helper.init(bitrate, CanIface::OperatingMode::NormalMode, can_number) == 0);
+    return (can_helper.init(bitrate, ChibiOS_CAN::CanIface::OperatingMode::NormalMode, can_number) == 0);
 }
 
 bool CANManager::is_initialized()
