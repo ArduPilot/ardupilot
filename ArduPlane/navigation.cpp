@@ -139,7 +139,17 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-
+    } else if ((control_mode == AUTO) &&
+               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        if (is_positive(land_airspeed)) {
+            target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
+        } else {
+            // fallover to normal airspeed
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        }
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;

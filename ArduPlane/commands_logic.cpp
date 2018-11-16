@@ -430,8 +430,6 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
     }
 
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
-
-    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
 }
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
