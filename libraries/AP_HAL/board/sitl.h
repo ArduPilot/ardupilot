@@ -27,3 +27,7 @@
 #define HAL_Semaphore HALSITL::Semaphore
 #define HAL_Semaphore_Recursive HALSITL::Semaphore_Recursive
 
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "."
+#endif
+
