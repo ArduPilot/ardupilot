@@ -42,7 +42,7 @@ public:
      * if initialization doesn't have errors, protocol class
      * should create a thread to do send and receive operations
      */
-    virtual void init(uint8_t driver_index) = 0;
+    virtual void init(uint8_t driver_index, bool enable_filters) = 0;
 };
 
 /**
