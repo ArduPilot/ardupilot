@@ -235,6 +235,9 @@ private:
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
 
+    // fw landing approach radius
+    AP_Float fw_land_approach_radius;
+
     AP_Int16 rc_speed;
 
     // min and max PWM for throttle
