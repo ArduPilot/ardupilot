@@ -246,16 +246,16 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        return verify_loiter_unlim();
+        return verify_loiter_unlim(cmd);
 
     case MAV_CMD_NAV_LOITER_TURNS:
-        return verify_loiter_turns();
+        return verify_loiter_turns(cmd);
 
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        return verify_loiter_to_alt(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
@@ -498,7 +498,7 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
     auto_state.idle_mode = true;
 }
 
-void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd) 
+void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     //set target alt  
     Location loc = cmd.content.location;
@@ -641,15 +641,15 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-bool Plane::verify_loiter_unlim()
+bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
-    if (mission.get_current_nav_cmd().p1 <= 1 && abs(g.rtl_radius) > 1) {
+    if (cmd.p1 <= 1 && abs(g.rtl_radius) > 1) {
         // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
         loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
         update_loiter(abs(g.rtl_radius));
     } else {
         // else use mission radius
-        update_loiter(mission.get_current_nav_cmd().p1);
+        update_loiter(cmd.p1);
     }
     return false;
 }
@@ -684,10 +684,10 @@ bool Plane::verify_loiter_time()
     return result;
 }
 
-bool Plane::verify_loiter_turns()
+bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    uint16_t radius = HIGHBYTE(mission.get_current_nav_cmd().p1);
+    uint16_t radius = HIGHBYTE(cmd.p1);
     update_loiter(radius);
 
     // LOITER_TURNS makes no sense as VTOL
@@ -716,10 +716,10 @@ bool Plane::verify_loiter_turns()
   reached both the desired altitude and desired heading. The desired
   altitude only needs to be reached once.
  */
-bool Plane::verify_loiter_to_alt() 
+bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    update_loiter(mission.get_current_nav_cmd().p1);
+    update_loiter(cmd.p1);
 
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {
@@ -971,7 +971,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
         case LOITER_TO_ALT:
-            if (verify_loiter_to_alt()) {
+            if (verify_loiter_to_alt(cmd)) {
                 Vector3f wind = ahrs.wind_estimate();
                 vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                 gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);

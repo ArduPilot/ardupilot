@@ -862,10 +862,10 @@ private:
     void set_home(const Location &loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
-    bool verify_loiter_unlim();
+    bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_time();
-    bool verify_loiter_turns();
-    bool verify_loiter_to_alt();
+    bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
+    bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();
