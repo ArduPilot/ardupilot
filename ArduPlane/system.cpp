@@ -733,7 +733,7 @@ int8_t Plane::throttle_percentage(void)
         return quadplane.throttle_percentage();
     }
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (aparm.throttle_min >= 0) {
+    if (!have_reverse_thrust()) {
         return constrain_int16(throttle, 0, 100);
     }
     return constrain_int16(throttle, -100, 100);

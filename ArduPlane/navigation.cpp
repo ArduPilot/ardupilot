@@ -113,7 +113,7 @@ void Plane::calc_airspeed_errors()
             float control_min = 0.0f;
             float control_mid = 0.0f;
             const float control_max = channel_throttle->get_range();
-            const float control_in = channel_throttle->get_control_in();
+            const float control_in = get_throttle_input();
             switch (channel_throttle->get_type()) {
                 case RC_Channel::RC_CHANNEL_TYPE_ANGLE:
                     control_min = -control_max;
@@ -133,7 +133,7 @@ void Plane::calc_airspeed_errors()
             }
         } else {
             target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
-                                  channel_throttle->get_control_in()) + ((int32_t)aparm.airspeed_min * 100);
+                                  get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {

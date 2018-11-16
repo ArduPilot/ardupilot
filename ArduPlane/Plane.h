@@ -993,7 +993,6 @@ private:
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
-    bool allow_reverse_thrust(void);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
@@ -1065,6 +1064,12 @@ private:
 #endif
 
     void read_aux_all();
+
+    bool reversed_throttle;
+    bool have_reverse_throttle_rc_option;
+    bool allow_reverse_thrust(void) const;
+    bool have_reverse_thrust(void) const;
+    int16_t get_throttle_input(bool no_deadzone=false) const;
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);

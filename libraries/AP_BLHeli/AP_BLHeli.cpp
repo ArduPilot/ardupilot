@@ -100,14 +100,21 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Values: 0:Console,1:Telem1,2:Telem2,3:Telem3,4:Telem4,5:Telem5
     // @User: Advanced
     AP_GROUPINFO("PORT",  8, AP_BLHeli, control_port, 0),
-    
+
     // @Param: POLES
     // @DisplayName: Motor Poles
     // @Description: This allows calculation of true RPM from ESC's eRPM. The default is 14.
     // @Range: 1 127
     // @User: Advanced
     AP_GROUPINFO("POLES",  9, AP_BLHeli, motor_poles, 14),
-    
+
+    // @Param: REMASK
+    // @DisplayName: Channel Reversible Bitmask
+    // @Description: Mask of channels which are reversible. This is used for ESCs which have been configured in '3D' mode, allowing for the motor to spin in either direction
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @User: Advanced
+    AP_GROUPINFO("REMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
+
     AP_GROUPEND
 };
 
@@ -387,13 +394,10 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
-        uint16_t min_pwm = 1000;
-        uint16_t max_pwm = 2000;
-        hal.rcout->get_esc_scaling(min_pwm, max_pwm);
         uint8_t buf[6];
-        putU16(&buf[0], min_pwm+30); // min throttle
-        putU16(&buf[2], max_pwm); // max throttle
-        putU16(&buf[4], min_pwm); // min command
+        putU16(&buf[0], 1030); // min throttle
+        putU16(&buf[2], 2000); // max throttle
+        putU16(&buf[4], 1000); // min command
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -402,9 +406,6 @@ void AP_BLHeli::msp_process_command(void)
         debug("MSP_MOTOR");
         // get the output going to each motor
         uint8_t buf[16] {};
-        uint16_t min_pwm = 1000;
-        uint16_t max_pwm = 2000;
-        hal.rcout->get_esc_scaling(min_pwm, max_pwm);
         for (uint8_t i = 0; i < num_motors; i++) {
             uint16_t v = hal.rcout->read(motor_map[i]);
             putU16(&buf[2*i], v);
@@ -427,7 +428,9 @@ void AP_BLHeli::msp_process_command(void)
             }
             uint16_t v = getU16(&msp.buf[i*2]);
             debug("MSP_SET_MOTOR %u %u", i, v);
-            hal.rcout->write(motor_map[i], v);
+            // map from a MSP value to a value in the range 1000 to 2000
+            uint16_t pwm = (v < 1000)?0:v;
+            hal.rcout->write(motor_map[i], pwm);
         }
         hal.rcout->push();
         break;
@@ -1255,7 +1258,12 @@ void AP_BLHeli::update(void)
         }
     }
 #endif
-    
+
+    // tell SRV_Channels about ESC capabilities
+    SRV_Channels::set_digital_mask(mask);
+    SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
+    hal.rcout->set_reversible_mask(channel_reversible_mask.get() & mask);
+
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
         if (mask & (1U<<i)) {

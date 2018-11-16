@@ -171,6 +171,7 @@ public:
         ZIGZAG_SaveWP =       61, // zigzag save waypoint
         COMPASS_LEARN =       62, // learn compass offsets
         SAILBOAT_TACK =       63, // rover sailboat tack
+        REVERSE_THROTTLE =    64, // reverse throttle input
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
     };

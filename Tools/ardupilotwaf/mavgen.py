@@ -51,23 +51,16 @@ class mavgen(Task.Task):
         return nodes, names
 
     def run(self):
-        python = self.env.get_flat('PYTHON')
-        mavgen = self.env.get_flat('MAVGEN')
-        out = self.env.get_flat('OUTPUT_DIR')
-        src = self.env.get_flat('SRC')
-        ret = self.exec_command("{} '{}' --lang=C --wire-protocol=2.0 --output '{}' '{}'".format(
-                                python, mavgen, out, self.inputs[0].abspath()))
-
-        if ret != 0:
-            # ignore if there was a signal to the interpreter rather
-            # than a real error in the script. Some environments use a
-            # signed and some an unsigned return for this
-            if ret > 128 or ret < 0:
-                Logs.warn('mavgen crashed with code: {}'.format(ret))
-                ret = 0
-            else:
-                Logs.error('mavgen returned {} error code'.format(ret))
-        return ret
+        from pymavlink.generator import mavgen
+        class mavgen_options:
+            language = 'C'
+            wire_protocol = '2.0'
+            validate = False
+            output = self.env.get_flat('OUTPUT_DIR')
+        xml = self.inputs[0].abspath()
+        if mavgen.mavgen(mavgen_options(), [xml]):
+            return 0
+        return 1
 
     def post_run(self):
         super(mavgen, self).post_run()
