@@ -418,7 +418,16 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 {
-    do_loiter_to_alt(cmd);
+    //set target alt
+    Location loc = cmd.content.location;
+    location_sanitize(current_loc, loc);
+    set_next_WP(loc);
+
+    if (is_negative(quadplane.fw_land_approach_radius)) {
+        loiter.direction = -1;
+    } else if (is_positive(quadplane.fw_land_approach_radius)) {
+        loiter.direction = 1;
+    }
 
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
 
@@ -719,6 +728,7 @@ bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
+
     update_loiter(cmd.p1);
 
     // condition_value == 0 means alt has never been reached
@@ -971,21 +981,23 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
         case LOITER_TO_ALT:
-            if (verify_loiter_to_alt(cmd)) {
-                Vector3f wind = ahrs.wind_estimate();
-                vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
-                gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
-                // select target approach direction
-                // select detransition distance (add in extra distance if the approach does not fit in the required space)
-                // validate turn
-                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+            {
+                update_loiter(quadplane.fw_land_approach_radius);
+
+                if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
+                    Vector3f wind = ahrs.wind_estimate();
+                    vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
+                    gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
+                    vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+                }
+                break;
             }
-            break;
         case WAIT_FOR_BREAKOUT:
             {
                 const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + 270));
+                const float radius =  is_zero(quadplane.fw_land_approach_radius) ? aparm.loiter_radius : quadplane.fw_land_approach_radius;
 
-                nav_controller->update_loiter(cmd.content.location, aparm.loiter_radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
+                nav_controller->update_loiter(cmd.content.location, radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
 
                 // breakout when within 5 degrees of the opposite direction
                 if (fabsf(ahrs.yaw - breakout_direction_rad) < radians(5.0f)) {
@@ -1045,7 +1057,7 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
+    if (get_distance(next_WP_loc, next_nav_cmd.content.location) < fabsf(aparm.loiter_radius)) {
         /* Whenever next waypoint is within the loiter radius,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
