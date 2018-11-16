@@ -123,7 +123,7 @@ AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t driver_index)
     return static_cast<AP_UAVCAN*>(AP::can().get_driver(driver_index));
 }
 
-void AP_UAVCAN::init(uint8_t driver_index)
+void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     if (_initialized) {
         debug_uavcan(2, "UAVCAN: init called more than once\n\r");
@@ -219,8 +219,9 @@ void AP_UAVCAN::init(uint8_t driver_index)
     rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
     _led_conf.devices_count = 0;
-
-    configureCanAcceptanceFilters(*_node);
+    if (enable_filters) {
+        configureCanAcceptanceFilters(*_node);
+    }
 
     /*
      * Informing other nodes that we're ready to work.

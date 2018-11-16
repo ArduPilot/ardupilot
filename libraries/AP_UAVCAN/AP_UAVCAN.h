@@ -68,7 +68,7 @@ public:
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_UAVCAN *get_uavcan(uint8_t driver_index);
 
-    void init(uint8_t driver_index) override;
+    void init(uint8_t driver_index, bool enable_filters) override;
 
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() { return _driver_index; }
