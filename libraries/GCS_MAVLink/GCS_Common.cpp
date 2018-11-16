@@ -1005,6 +1005,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         // stop waypoint receiving if timeout
         if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
             waypoint_receiving = false;
+            gcs().send_text(MAV_SEVERITY_WARNING, "Mission upload timeout");
         } else if (tnow - waypoint_timelast_request > wp_recv_time) {
             waypoint_timelast_request = tnow;
             send_message(MSG_NEXT_WAYPOINT);
