@@ -93,6 +93,59 @@ uint32_t Util::available_memory(void)
     return 256*1024;
 }
 
+#ifndef HAL_LINUX_DEFAULT_SYSTEM_ID
+#define HAL_LINUX_DEFAULT_SYSTEM_ID "linux-unknown"
+#endif
+
+/*
+  get a (hopefully unique) machine ID
+ */
+bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    char *cbuf = (char *)buf;
+
+    // try first to use machine-id file. Most systems will have this
+    const char *paths[] = { "/etc/machine-id", "/var/lib/dbus/machine-id" };
+    for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
+        int fd = open(paths[i], O_RDONLY);
+        if (fd == -1) {
+            continue;
+        }
+        ssize_t ret = read(fd, buf, len);
+        close(fd);
+        if (ret <= 0) {
+            continue;
+        }
+        len = ret;
+        char *p = strchr(cbuf, '\n');
+        if (p) {
+            *p = 0;
+        }
+        len = strnlen(cbuf, len);
+        return true;
+    }
+
+    // fallback to hostname
+    if (gethostname(cbuf, len) != 0) {
+        // use a default name so this always succeeds. Without it we can't
+        // implement some features (such as UAVCAN)
+        strncpy(cbuf, HAL_LINUX_DEFAULT_SYSTEM_ID, len);
+    }
+    len = strnlen(cbuf, len);
+    return true;
+}
+
+/*
+  as get_system_id_unformatted will already be ascii, we use the same
+  ID here
+ */
+bool Util::get_system_id(char buf[40])
+{
+    uint8_t len = 40;
+    return get_system_id_unformatted((uint8_t *)buf, len);
+}
+
+
 int Util::write_file(const char *path, const char *fmt, ...)
 {
     errno = 0;
