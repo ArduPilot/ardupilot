@@ -1,17 +1,18 @@
 
 #pragma once
 
-#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
+#include <AP_HAL/AP_HAL.h>
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#include <AP_HAL/CAN.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include "AP_HAL/utility/RingBuffer.h"
 
 
-
 #define SLCAN_BUFFER_SIZE 200
-#define SLCAN_STM32_RX_QUEUE_SIZE 64
+#define SLCAN_RX_QUEUE_SIZE 64
 #define SLCAN_DRIVER_INDEX 2
+
+class SLCANRouter;
 
 namespace SLCAN {
 /**
@@ -41,9 +42,9 @@ struct CanRxItem {
     {
     }
 };
-
 class CAN: public AP_HAL::CAN {
     friend class CANManager;
+    friend class ::SLCANRouter;
     struct TxItem {
         uavcan::MonotonicTime deadline;
         uavcan::CanFrame frame;
@@ -105,10 +106,9 @@ class CAN: public AP_HAL::CAN {
     bool handle_FrameRTRExt(const char* cmd);
     bool handle_FrameDataStd(const char* cmd);
     bool handle_FrameDataExt(const char* cmd);
+    void reader(void);
 
     inline void addByte(const uint8_t byte);
-
-    void reader(void);
 
     bool initialized_;
     bool _port_initialised;
@@ -185,7 +185,7 @@ class CANManager: public AP_HAL::CANManager, public uavcan::ICanDriver {
     thread_t *_irq_handler_ctx = nullptr;
 public:
     CANManager()
-        :  AP_HAL::CANManager(this), initialized_(false), driver_(SLCAN_DRIVER_INDEX, SLCAN_STM32_RX_QUEUE_SIZE)
+        :  AP_HAL::CANManager(this), initialized_(false), driver_(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE)
         { }
 
     /**
@@ -216,12 +216,10 @@ public:
         return _ifaces_num;
     }
 
-    static void reader(void);
     void reader_trampoline(void);
 };
 
 }
+#include <AP_HAL_ChibiOS/CANSerialRouter.h>
 
 #endif //#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
-
-
