@@ -32,6 +32,7 @@
 #include "AP_RangeFinder_uLanding.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_VL53L1X.h"
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
@@ -692,8 +693,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_VL53L0X:
         if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
                                                          hal.i2c_mgr->get_device(1, 0x29)))) {
-            _add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
-                                                        hal.i2c_mgr->get_device(0, 0x29)));
+            if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
+                                                             hal.i2c_mgr->get_device(0, 0x29)))) {
+                if (!_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance],
+                                                                 hal.i2c_mgr->get_device(1, 0x29)))) {
+                    _add_backend(AP_RangeFinder_VL53L1X::detect(state[instance],
+                                                                hal.i2c_mgr->get_device(0, 0x29)));
+                }
+            }
         }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
