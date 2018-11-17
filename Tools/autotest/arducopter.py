@@ -1397,6 +1397,7 @@ class AutoTestCopter(AutoTest):
             self.arm_vehicle()
             self.mavproxy.send('mode auto\n')
             self.wait_mode('AUTO')
+            self.set_parameter("DISARM_DELAY", 0)
             self.set_rc(3, 1600)
             count_start = -1
             count_stop = -1
