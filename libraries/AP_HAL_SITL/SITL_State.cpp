@@ -379,25 +379,35 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
         wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
         
-        // pass wind into simulators using different wind types via param SIM_WIND_T*.
-        switch (_sitl->wind_type) {
-        case SITL::SITL::WIND_TYPE_SQRT:
-            if (altitude < _sitl->wind_type_alt) {
-                wind_speed *= sqrtf(MAX(altitude / _sitl->wind_type_alt, 0));
+        // give 5 seconds to calibrate airspeed sensor at 0 wind speed
+        switch (wind_start_delay) {
+        case 0:
+            wind_start_delay = 1;
+            wind_start_delay_micros = now;
+            wind_speed = 0.0;
+            break;
+        case 1:
+            if ((now - wind_start_delay_micros) >= 5000000) {
+                wind_start_delay = 2;
+            }
+            wind_speed = 0.0;
+            break;
+        default:
+            switch (_sitl->wind_type) {
+            case SITL::SITL::WIND_TYPE_SQRT:
+                if (altitude < _sitl->wind_type_alt) {
+                    wind_speed *= sqrtf(MAX(altitude / _sitl->wind_type_alt, 0));
+                }
+                break;
+            case SITL::SITL::WIND_TYPE_NO_LIMIT:
+                break;
+            case SITL::SITL::WIND_TYPE_COEF:
+                wind_speed += (altitude - _sitl->wind_type_alt) * _sitl->wind_type_coef;
+                wind_speed = MAX(wind_speed, 0.0);
+                break;
             }
             break;
-
-        case SITL::SITL::WIND_TYPE_COEF:
-            wind_speed += (altitude - _sitl->wind_type_alt) * _sitl->wind_type_coef;
-            break;
-
-        case SITL::SITL::WIND_TYPE_NO_LIMIT:
-        default:
-            break;
         }
-
-        // never allow negative wind velocity
-        wind_speed = MAX(wind_speed, 0);
     }
 
     input.wind.speed = wind_speed;
