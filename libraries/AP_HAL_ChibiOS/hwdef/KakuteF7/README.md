@@ -21,16 +21,16 @@ The KakuteF7 AIO is a flight controller produced by [Holybro](http://www.holybro
 ## UART Mapping
 
  - SERIAL0 -> USB
- - SERIAL1 -> UART3 (Telem1)
+ - SERIAL1 -> UART1 (Telem1)
  - SERIAL2 -> UART2 (Telem2)
- - SERIAL3 -> UART1 (GPS)
+ - SERIAL3 -> UART3 (GPS)
  - SERIAL4 -> UART4
  - SERIAL5 -> UART7
  - SERIAL6 -> UART6 (Transmit only, FrSky)
  
 ## RC Input
  
- RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols.
+RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols.
  
 ## FrSky Telemetry
  
