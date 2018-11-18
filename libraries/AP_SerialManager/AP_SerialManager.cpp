@@ -36,6 +36,12 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
+#ifdef HAL_SERIAL2_PROTOCOL
+#define SERIAL2_PROTOCOL_DEFAULT HAL_SERIAL2_PROTOCOL
+#else
+#define SERIAL2_PROTOCOL_DEFAULT SerialProtocol_MAVLink
+#endif
+
 #ifndef HAL_SERIAL6_PROTOCOL
 #define SERIAL6_PROTOCOL SerialProtocol_None
 #define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
@@ -78,7 +84,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SerialProtocol_MAVLink),
+    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SERIAL2_PROTOCOL_DEFAULT),
 
     // @Param: 2_BAUD
     // @DisplayName: Telemetry 2 Baud Rate
