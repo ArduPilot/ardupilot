@@ -8,7 +8,7 @@ The **mavgen.py** program is a code generator which creates mavlink header files
 
 from waflib import Logs, Task, Utils, Node
 from waflib.TaskGen import feature, before_method, extension
-import os
+import os, sys
 import os.path
 from xml.etree import ElementTree as et
 
@@ -51,6 +51,7 @@ class mavgen(Task.Task):
         return nodes, names
 
     def run(self):
+        sys.path.insert(0,self.env.get_flat('MAVLINK_DIR'))
         from pymavlink.generator import mavgen
         class mavgen_options:
             language = 'C'
@@ -98,6 +99,4 @@ def configure(cfg):
     cfg.check_python_version(minver=(2,7,0))
 
     env = cfg.env
-
     env.MAVLINK_DIR = cfg.srcnode.make_node('modules/mavlink/').abspath()
-    env.MAVGEN = env.MAVLINK_DIR  + '/pymavlink/tools/mavgen.py'
