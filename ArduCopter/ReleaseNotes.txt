@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.2-rc3 19-Nov-2018
+Changes from 3.6.2-rc2
+1) Bug fixes:
+    a) Benewake TFmini and TF02 driver reliability fix
+    b) Spektrum RC parsing fix when more than 7 channels
+2) remove bootloader from px4-v2 builds (reduces firmware size)
+------------------------------------------------------------------
 Copter 3.6.2-rc1/rc2 15-Nov-2018
 Changes from 3.6.1
 1) Bug fixes:
