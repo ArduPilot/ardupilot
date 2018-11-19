@@ -154,7 +154,7 @@ void AC_WPNav::wp_and_spline_init()
     _pos_control.set_max_accel_z(_wp_accel_z_cmss);
     _pos_control.calc_leash_length_xy();
     _pos_control.calc_leash_length_z();
-
+    _wp_last_update = 0;
     // initialise yaw heading to current heading target
     _flags.wp_yaw_set = false;
 }
