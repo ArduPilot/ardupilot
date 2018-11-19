@@ -205,24 +205,39 @@ void Plane::dspoiler_update(void)
     float dspoiler2_left = elevon_left;
     float dspoiler1_right = elevon_right;
     float dspoiler2_right = elevon_right;
-    RC_Channel *flapin = RC_Channels::rc_channel(g.flapin_channel-1);
-	int8_t flap_percent = flapin->percent_input();;
+
     if (rudder > 0) {
         // apply rudder to right wing
         dspoiler1_right = constrain_float(elevon_right + rudder, -4500, 4500);
         dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
     } else {
         // apply rudder to left wing
-        dspoiler1_left = constrain_float(elevon_left - rudder, -4500, 4500);
-        dspoiler2_left = constrain_float(elevon_left + rudder, -4500, 4500);
+        dspoiler1_left = constrain_float(elevon_left + rudder, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left - rudder, -4500, 4500);
     }
-	if (flap_percent > 0) {
-		//apply crow brakes to both wings
-	    dspoiler1_left = constrain_float(elevon_left + flap_percent * 25, -4500, 4500);
-        dspoiler2_left = constrain_float(elevon_left - flap_percent * 45, -4500, 4500);
-	    dspoiler1_right = constrain_float(elevon_right + flap_percent * 25, -4500, 4500);
-        dspoiler2_right = constrain_float(elevon_right - flap_percent * 45, -4500, 4500); 
-	}
+
+    const int16_t weight1 = g2.crow_flap_weight1.get();
+    const int16_t weight2 = g2.crow_flap_weight2.get();
+    if (weight1 > 0 || weight2 > 0) {
+        /*
+          apply crow flaps by apply the same split of the differential
+          spoilers to both wings. Get flap percentage from k_flap_auto, which is set
+          in set_servos_flaps() as the maximum of manual and auto flap control
+         */
+        int16_t flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto);
+
+        // scale flaps so when weights are 100 they give full up or down
+        const float flap_scaled = ((float)flap_percent) * 0.45;
+
+        if (flap_percent > 0) {
+            //apply crow brakes to both wings using flap percentage
+            dspoiler1_left  = constrain_float(dspoiler1_left  + flap_scaled * weight1, -4500, 4500);
+            dspoiler2_left  = constrain_float(dspoiler2_left  - flap_scaled * weight2, -4500, 4500);
+            dspoiler1_right = constrain_float(dspoiler1_right + flap_scaled * weight1, -4500, 4500);
+            dspoiler2_right = constrain_float(dspoiler2_right - flap_scaled * weight2, -4500, 4500);
+        }
+    }
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler1_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler2_left);
     SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler1_right);

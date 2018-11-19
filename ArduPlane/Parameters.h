@@ -555,6 +555,10 @@ public:
 #if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landing_gear;
 #endif
+
+    // crow flaps weighting
+    AP_Int8 crow_flap_weight1;
+    AP_Int8 crow_flap_weight2;
 };
 
 extern const AP_Param::Info var_info[];
