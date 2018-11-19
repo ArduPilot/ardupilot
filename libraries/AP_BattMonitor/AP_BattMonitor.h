@@ -35,6 +35,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Solo;
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_UAVCAN;
+    friend class AP_BattMonitor_Sum;
 
 public:
 
