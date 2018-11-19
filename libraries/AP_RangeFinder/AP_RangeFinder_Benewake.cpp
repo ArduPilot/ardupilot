@@ -85,7 +85,11 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
     // read any available lines from the lidar
     int16_t nbytes = uart->available();
     while (nbytes-- > 0) {
-        char c = uart->read();
+        int16_t r = uart->read();
+        if (r < 0) {
+            continue;
+        }
+        uint8_t c = (uint8_t)r;
         // if buffer is empty and this byte is 0x59, add to buffer
         if (linebuf_len == 0) {
             if (c == BENEWAKE_FRAME_HEADER) {
@@ -107,10 +111,10 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
                 // calculate checksum
                 uint8_t checksum = 0;
                 for (uint8_t i=0; i<BENEWAKE_FRAME_LENGTH-1; i++) {
-                    checksum += (uint8_t)linebuf[i];
+                    checksum += linebuf[i];
                 }
                 // if checksum matches extract contents
-                if (checksum == (uint8_t)linebuf[BENEWAKE_FRAME_LENGTH-1]) {
+                if (checksum == linebuf[BENEWAKE_FRAME_LENGTH-1]) {
                     // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
                     if (dist >= BENEWAKE_DIST_MAX_CM) {
