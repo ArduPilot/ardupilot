@@ -286,6 +286,9 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
             _pos_target.z += climb_rate_cms*dt;
             _vel_desired.z = climb_rate_cms;    // recorded for reporting purposes
         }
+    } else {
+        // recorded for reporting purposes
+        _vel_desired.z = 0.0f;
     }
 
     // do not let target get too far from current altitude
