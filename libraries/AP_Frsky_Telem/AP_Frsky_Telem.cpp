@@ -303,8 +303,8 @@ void AP_Frsky_Telem::send_D(void)
         send_uint16(DATA_ID_BARO_ALT_BP, _gps.alt_nav_meters); // send nav altitude integer part
         send_uint16(DATA_ID_BARO_ALT_AP, _gps.alt_nav_cm); // send nav altitude decimal part
     }
-    // send frame2 every second
-    if (now - _D.last_1000ms_frame >= 1000) {
+    // send frame2 every 100ms
+    if (now - _D.last_1000ms_frame >= 200) {
         _D.last_1000ms_frame = now;
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
