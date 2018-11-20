@@ -39,7 +39,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL4 -> UART4
  - SERIAL5 -> UART7
  - SERIAL6 -> UART6 (Transmit only, FrSky)
- 
+
+The SERIAL5 port (UART7) is for ESC telemetry, and has a R7 pad on
+each of the four corners of the KakuteF7 AIO board.
+
 ## RC Input
  
 RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols.
