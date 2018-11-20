@@ -32,6 +32,7 @@ The full schematics of the board are available here:
 
 ![CubeBlack Board](CubeBlack-pinout.jpg "CubeBlack")
 
+On each connector the red dot indicates pin 1.
 
 ## UART Mapping
 
@@ -274,7 +275,7 @@ receivers. It is needed to allow for software controlled binding of
 satellite receivers.
 
 The pinout of the SPKT port given below is given with the 3.3V power
-pin closest to the cube.
+pin closest to the cube (pin 3).
 
    <table border="1" class="docutils">
    <tbody>
@@ -285,7 +286,7 @@ pin closest to the cube.
    </tr>
    <tr>
    <td>1</td>
-   <td>3.3v</td>
+   <td>RX (IN)</td>
    <td>+3.3V</td>
    </tr>
    <tr>
@@ -295,7 +296,7 @@ pin closest to the cube.
    </tr>
    <tr>
    <td>3</td>
-   <td>RX (IN)</td>
+   <td>3.3v</td>
    <td>+3.3V</td>
    </tr>
    </tbody>
