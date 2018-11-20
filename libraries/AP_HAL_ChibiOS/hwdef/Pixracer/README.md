@@ -21,7 +21,7 @@ The full schematics of the board are available here:
  - External Buzzer
  - builtin RGB LEDs
  - external safety Switch
- - voltage monitoring for servo rail and Vcc
+ - voltage monitoring for Vcc
  - dedicated power input port for external power brick
 
 ## Pinout
