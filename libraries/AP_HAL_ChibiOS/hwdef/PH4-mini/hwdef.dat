@@ -8,6 +8,9 @@ include ../fmuv5/hwdef.dat
 # us to use TIM2 for extra PWM outputs
 STM32_ST_USE_TIMER 5
 
+# order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
+UART_ORDER OTG1 USART1 USART2 UART4 USART6 UART7
+
 # disable the IOMCU UART
 undef IOMCU_UART
 undef UART8_TX
