@@ -679,9 +679,9 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case RangeFinder_TYPE_VL53L0X:
         if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
-                                                         hal.i2c_mgr->get_device(1, 0x29)))) {
+                                                         hal.i2c_mgr->get_device(1, (state[instance].address!=0?state[instance].address:0x29))))) {
             _add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
-                                                        hal.i2c_mgr->get_device(0, 0x29)));
+                                                        hal.i2c_mgr->get_device(0, (state[instance].address!=0?state[instance].address:0x29))));
         }
         break;
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
