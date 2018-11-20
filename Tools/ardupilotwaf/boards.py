@@ -268,12 +268,29 @@ def get_boards_names():
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
+def get_removed_boards():
+    '''list of boards which have been removed'''
+    return sorted(['px4-v1', 'px4-v2', 'px4-v3', 'px4-v4', 'px4-v4pro'])
+
 @conf
 def get_board(ctx):
     global _board
     if not _board:
         if not ctx.env.BOARD:
             ctx.fatal('BOARD environment variable must be set before first call to get_board()')
+        if ctx.env.BOARD in get_removed_boards():
+            print('''
+The board target %s has been removed from ArduPilot with the removal of NuttX support and HAL_PX4.
+
+Please use a replacement build as follows:
+
+ px4-v2     Use Pixhawk1 build
+ px4-v3     Use Pixhawk1 or CubeBlack builds
+ px4-v4     Use Pixracer build
+ px4-v4pro  Use DrotekP3Pro build
+''' % ctx.env.BOARD)
+            sys.exit(1)
+
         _board = _board_classes[ctx.env.BOARD]()
     return _board
 
