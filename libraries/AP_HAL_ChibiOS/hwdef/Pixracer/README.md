@@ -375,7 +375,9 @@ receiver.
  
 FrSky Telemetry is supported using SERIAL4, on the port marked as
 FrSky. You need to set the following parameters to enable support for
-FrSky S.PORT
+FrSky S.PORT. You also need to cross-connect the TX and RX pins by
+creating a cable that connects both the TX and RX pins of the FrSky
+port to the FrSky S.Port pin on your receiver.
  
   - SERIAL4_PROTOCOL 10
   - SERIAL4_OPTIONS 0
