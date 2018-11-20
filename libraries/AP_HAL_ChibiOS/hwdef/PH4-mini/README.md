@@ -9,7 +9,7 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/
  - MS5611 SPI barometer
  - builtin SPI IST8310 magnetometer
  - microSD card slot
- - 3 UARTs plus USB
+ - 5 UARTs plus USB
  - 8 PWM outputs
  - Two I2C and one CAN ports
  - External Buzzer
@@ -26,31 +26,44 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/
  - SERIAL1 -> UART2 (Telem1)
  - SERIAL2 -> UART3 (Telem2)
  - SERIAL3 -> UART1 (GPS)
+ - SERIAL5 -> UART6 (RCIN port)
  - SERIAL6 -> UART7 (debug)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
+
+The RCIN port can be used as RX or TX as a general UART using the
+SERIAL5_OPTIONS bits to swap pins. It is not used for RC input (the
+PPM pin is used for RC input)
 
 The UART7 connector is inside the case and labelled as debug, but is
 available as a general purpose UART with ArduPilot.
 
 ## RC Input
  
-RC input is configured on the port marked RC IN. This connector
-supports all RC protocols. Two cables are available for this port. To
-use software binding of Spektrum satellite receivers you need to use
-the Spektrum satellite cable.
+RC input is configured on the port marked PPM. This connector supports
+all RC protocols (including SBUS, DSM, ST24, SRXL and PPM). The RCIN
+port is not used for RC input.
 
 ## PWM Output
 
-The Pixhawk4-Mini supports up to 8 PWM outputs. All 8 outputs support all
-normal PWM output formats. Only the first 6 outputs support DShot.
+The Pixhawk4-Mini supports up to 11 PWM outputs. All 11 outputs
+support all normal PWM output formats. All outputs except numbers 7
+and 8 support DShot.
 
-The 8 auxillary PWM outputs are in 3 groups:
+The first 8 outputs are labelled "MAIN OUT" on the case. The next 3
+outputs are labelled CAP1 to CAP3 on the case. The CAP4 pin cannot be
+used as a PWM output.
+
+In order to use outputs 9, 10 and 11 you need to change BRD_PWM_COUNT
+to 11.
+
+The 11 PWM outputs are in 4 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2
  - PWM 7 and 8 in group3
+ - PWM 9, 10 and 11 in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -58,8 +71,8 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has two dedicated power monitor ports on 6 pin
-connectors. The correct battery setting parameters are dependent on
+The board has a dedicated power monitor port with a 6 pin
+connector. The correct battery setting parameters are dependent on
 the type of power brick which is connected.
 
 ## Compass
@@ -70,11 +83,11 @@ part of a GPS/Compass combination.
 
 ## GPIOs
 
-The 8 PWM ports can be used as GPIOs (relays, buttons, RPM etc). To
-use them you need to limit the number of these pins that is used for
-PWM by setting the BRD_PWM_COUNT to a number less than 8. For example
-if you set BRD_PWM_COUNT to 6 then PWM6 and PWM7 will be available for
-use as GPIOs.
+The 11 PWM ports plus the CAP4 port can be used as GPIOs (relays,
+buttons, RPM etc). To use them you need to limit the number of these
+pins that is used for PWM by setting the BRD_PWM_COUNT to a number
+less than 11. For example if you set BRD_PWM_COUNT to 8 then CAP1,
+CAP2 and CAP3 will be available for use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
@@ -87,13 +100,14 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
  - PWM7 56
  - PWM8 57
 
-In addition there are 4 pins on the servo rail marked CAP1 to
-CAP4. The first 3 of these are available as GPIOs in ArduPilot using
-the following GPIO numbers:
+In addition the 4 pins on the servo rail marked CAP1 to CAP4 can be
+used as GPIOs. These are available as GPIOs in ArduPilot using the
+following GPIO numbers:
 
  - CAP1 58
  - CAP2 59
  - CAP3 60
+ - CAP4 61
 
 ## Analog inputs
 
