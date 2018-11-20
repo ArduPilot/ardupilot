@@ -20,7 +20,7 @@ list some basic and more used commands as example.
     supported and the next section shows how to get a full list of them.
 
     ```sh
-    ./waf configure --board fmuv3
+    ./waf configure --board CubeBlack
     ./waf copter
     ```
 
@@ -62,10 +62,9 @@ list some basic and more used commands as example.
     ./waf configure --board fmuv3          # Pixhawk2/Cube using ChibiOS
     ./waf configure --board fmuv4          # Pixracer using ChibiOS
     ./waf configure --board navio2         # emlid navio2
-    ./waf configure --board px4-v1         # the very old two layer Pixhawk (almost none exist)
-    ./waf configure --board px4-v2         # older Pixhawks that suffer from the 1MB flash limit issue
-    ./waf configure --board px4-v3         # Pixhawk2/Cube and newer Pixhawks with no 1MB flash limit issue
-    ./waf configure --board px4-v4         # Pixracer
+    ./waf configure --board Pixhawk1       # Pixhawk1
+    ./waf configure --board CubeBlack      # Pixhawk2
+    ./waf configure --board Pixracer       # Pixracer
     ./waf configure --board skyviper-v2450 # SkyRocket's SkyViper GPS drone using ChibiOS
     ./waf configure --board sitl           # software-in-the-loop simulator
     ./waf configure --board sitl --debug   # software-in-the-loop simulator with debug symbols

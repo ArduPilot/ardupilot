@@ -6,7 +6,6 @@
 # xterm # X11 forwarding should work
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --valgrind
-# time (cd /vagrant && ./waf configure --board=px4-v2 && ./waf build --target=bin/ardusub) # ~17 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)

@@ -116,24 +116,9 @@ def build_binaries():
     return True
 
 
-def build_devrelease():
-    """Run the build_devrelease.sh script."""
-    print("Running build_devrelease.sh")
-    # copy the script as it changes git branch, which can change the
-    # script while running
-    orig = util.reltopdir('Tools/scripts/build_devrelease.sh')
-    copy = util.reltopdir('./build_devrelease.sh')
-    shutil.copy2(orig, copy)
-
-    if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
-        print("Failed build_devrelease.sh")
-        return False
-    return True
-
-
 def build_examples():
     """Build examples."""
-    for target in 'fmuv2', 'px4-v2', 'navio', 'linux':
+    for target in 'fmuv2', 'Pixhawk1', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
             util.build_examples(target)
@@ -434,9 +419,6 @@ def run_step(step):
     if step == 'build.Binaries':
         return build_binaries()
 
-    if step == 'build.DevRelease':
-        return build_devrelease()
-
     if step == 'build.examples':
         return build_examples()
 
@@ -722,7 +704,6 @@ if __name__ == "__main__":
         'prerequisites',
         'build.All',
         'build.Binaries',
-        # 'build.DevRelease',
         'build.Parameters',
 
         'build.unit_tests',
