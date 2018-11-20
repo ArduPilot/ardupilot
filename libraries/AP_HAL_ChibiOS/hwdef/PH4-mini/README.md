@@ -24,13 +24,12 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
+ - SERIAL2 -> UART4 (Telem2)
  - SERIAL3 -> UART1 (GPS)
- - SERIAL5 -> UART6 (RCIN port)
- - SERIAL6 -> UART7 (debug)
+ - SERIAL4 -> UART6 (RCIN port)
+ - SERIAL5 -> UART7 (debug)
 
-The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
-have RTS/CTS.
+The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 The RCIN port can be used as RX or TX as a general UART using the
 SERIAL5_OPTIONS bits to swap pins. It is not used for RC input (the
