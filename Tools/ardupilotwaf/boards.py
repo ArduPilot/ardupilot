@@ -279,7 +279,7 @@ def get_board(ctx):
         if not ctx.env.BOARD:
             ctx.fatal('BOARD environment variable must be set before first call to get_board()')
         if ctx.env.BOARD in get_removed_boards():
-            print('''
+            ctx.fatal('''
 The board target %s has been removed from ArduPilot with the removal of NuttX support and HAL_PX4.
 
 Please use a replacement build as follows:
@@ -289,7 +289,6 @@ Please use a replacement build as follows:
  px4-v4     Use Pixracer build
  px4-v4pro  Use DrotekP3Pro build
 ''' % ctx.env.BOARD)
-            sys.exit(1)
 
         _board = _board_classes[ctx.env.BOARD]()
     return _board
