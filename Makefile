@@ -9,8 +9,7 @@ VEHICLES = copter plane rover sub heli
 
 BOARD_LIST := $(shell $(WAF) list_boards | head -1)
 
-all: $(WAF_BINARY)
-	@$(WAF) build
+all: help
 
 $(WAF_BINARY):
 	@git submodule init && git submodule update
@@ -45,12 +44,7 @@ help:
 	@echo "more than what this wrapper provides, it's a good idea to use waf directly."
 	@echo "The waf executable is at '$(WAF_BINARY)'."
 	@echo ""
-	@echo "WARNING: Ardupilot's Waf build system is still a work in progress, it's still"
-	@echo "missing features from the current official build system."
-	@echo ""
-	@echo "Note: The examples in this help consider this wrapper being named as Makefile"
-	@echo "or makefile. In a Linux environment, alias make='make -f THIS_MAKEFILE'"
-	@echo "should make them work."
+	@echo "For more detailed instructions see http://ardupilot.org/dev/docs/building-the-code.html"
 	@echo ""
 	@echo "Boards"
 	@echo "------"
