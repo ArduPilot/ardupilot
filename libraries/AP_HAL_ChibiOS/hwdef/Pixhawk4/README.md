@@ -1,16 +1,11 @@
-# CUAVv5 Flight Controller
+# Pixhawk4 Flight Controller
 
-The CUAVv5 flight controller is sold by [CUAV](http://store.cuav.net/)
-
-The full schematics of the board are available here:
-
-  https://github.com/ArduPilot/Schematics/tree/master/CUAV/CUAVv5
+The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/product/55)
 
 ## Features
 
  - STM32F765 microcontroller
- - Three IMUs: ICM20689, MPU6000 and BMI055
- - internal vibration isolation for IMUs
+ - Two IMUs: ICM20689 and BMI055
  - MS5611 SPI barometer
  - builtin SPI IST8310 magnetometer
  - microSD card slot
@@ -18,14 +13,13 @@ The full schematics of the board are available here:
  - 14 PWM outputs
  - Four I2C and two CAN ports
  - External Buzzer
- - builtin RGB LED
  - external safety Switch
  - voltage monitoring for servo rail and Vcc
  - two dedicated power input ports for external power bricks
 
 ## Pinout
 
-![CUAVv5 Board](CUAVv5-pinout.jpg "CUAVv5")
+![Pixhawk4 Board](pixhawk4-pinout.jpg "Pixhawk4")
 
 ## UART Mapping
 
@@ -45,21 +39,20 @@ purpose UART with ArduPilot.
 
 ## RC Input
  
-RC input is configured on the RCIN pin, at one end of the servo rail,
-marked RC in the above diagram. This pin supports all RC protocols.
+RC input is configured on the port marked DSM/SBUS RC. This connector
+supports all RC protocols. Two cables are available for this port. To
+use software binding of Spektrum satellite receivers you need to use
+the Spektrum satellite cable.
 
 ## PWM Output
 
-The CUAVv5 supports up to 14 PWM outputs. First first 8 outputs (labelled
+The Pixhawk4 supports up to 14 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
 
 The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxillary"
 outputs. These are directly attached to the STM32F765 and support all
 PWM protocols as well as DShot.
-
-All 14 PWM outputs have GND on the top row, 5V on the middle row and
-signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
@@ -84,7 +77,7 @@ the type of power brick which is connected.
 
 ## Compass
 
-The CUAVv5 has a builtin IST8310 compass. Due to potential
+The Pixhawk4 has a builtin IST8310 compass. Due to potential
 interference the board is usually used with an external I2C compass as
 part of a GPS/Compass combination.
 
@@ -107,7 +100,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 
 ## Analog inputs
 
-The CUAVv5 has 7 analog inputs
+The Pixhawk4 has 7 analog inputs
 
  - ADC Pin0 -> Battery Voltage
  - ADC Pin1 -> Battery Current Sensor
@@ -127,4 +120,6 @@ compatible ground station.
 
 ## Acknowledgements
 
-Thanks to [CUAV](http://cuav.net) for images
+Thanks to
+[PX4](https://docs.px4.io/en/flight_controller/pixhawk4.html) for
+images used under the [CC-BY 4.0 license](https://creativecommons.org/licenses/by/4.0/)
