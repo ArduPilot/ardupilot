@@ -119,6 +119,12 @@ void Copter::Log_Write_Control_Tuning()
         terr_alt = DataFlash.quiet_nan();
     }
 #endif
+    float des_alt_m = 0.0f;
+    int16_t target_climb_rate_cms = 0;
+    if (!flightmode->has_manual_throttle()) {
+        des_alt_m = pos_control->get_alt_target() / 100.0f;
+        target_climb_rate_cms = pos_control->get_vel_target_z();
+    }
 
     float _target_rangefinder_alt;
     if (target_rangefinder_alt_used) {
@@ -133,13 +139,13 @@ void Copter::Log_Write_Control_Tuning()
         angle_boost         : attitude_control->angle_boost(),
         throttle_out        : motors->get_throttle(),
         throttle_hover      : motors->get_throttle_hover(),
-        desired_alt         : pos_control->get_alt_target() / 100.0f,
+        desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : _target_rangefinder_alt,
         rangefinder_alt     : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
-        target_climb_rate   : (int16_t)pos_control->get_vel_target_z(),
+        target_climb_rate   : target_climb_rate_cms,
         climb_rate          : climb_rate
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
