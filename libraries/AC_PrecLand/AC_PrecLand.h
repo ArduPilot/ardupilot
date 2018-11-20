@@ -87,6 +87,9 @@ public:
     // returns true when the landing target has been detected
     bool target_acquired();
 
+    // returns target ID
+    uint8_t target_num() const { return _target_num; }
+
     // process a LANDING_TARGET mavlink message
     void handle_msg(mavlink_message_t* msg);
 
@@ -127,6 +130,7 @@ private:
     AP_Float                    _accel_noise;       // accelometer process noise
     AP_Vector3f                 _cam_offset;        // Position of the camera relative to the CG
 
+    uint8_t                     _target_num;        // target ID
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently
     uint32_t                    _last_backend_los_meas_ms;  // system time target was last seen

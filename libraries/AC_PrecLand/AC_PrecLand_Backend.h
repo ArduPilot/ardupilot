@@ -35,6 +35,9 @@ public:
     // returns distance to target in meters (0 means distance is not known)
     virtual float distance_to_target() { return 0.0f; };
 
+    // returns target ID
+    virtual uint8_t target_num() { return 0; };
+
     // parses a mavlink message from the companion computer
     virtual void handle_msg(mavlink_message_t* msg) {};
 
