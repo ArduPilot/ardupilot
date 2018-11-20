@@ -385,7 +385,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "bin",
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
-                for extension in [".px4", ".apj", ".abin", "_with_bl.hex", ".hex"]:
+                for extension in [".apj", ".abin", "_with_bl.hex", ".hex"]:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
                         files_to_copy.append(filepath)
@@ -402,86 +402,6 @@ is bob we will attempt to checkout bob-AVR'''
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
 
-        # PX4-building
-        board = "px4"
-        for frame in frames:
-            self.progress("Building frame %s for board %s" % (frame, board))
-            if frame is None:
-                framesuffix = ""
-            else:
-                framesuffix = "-%s" % frame
-
-            if not self.checkout(vehicle, tag, "PX4", frame):
-                msg = ("Failed checkout of %s %s %s %s" %
-                       (vehicle, "PX4", tag, frame))
-                self.progress(msg)
-                self.error_strings.append(msg)
-                self.checkout(vehicle, "latest")
-                continue
-
-            try:
-                deadwood = "../Build.%s" % vehicle
-                if os.path.exists(deadwood):
-                    self.progress("#### Removing (%s)" % deadwood)
-                    shutil.rmtree(os.path.join(deadwood))
-            except Exception as e:
-                self.progress("FIXME: narrow exception (%s)" % repr(e))
-
-            self.progress("Building %s %s PX4%s binaries" %
-                          (vehicle, tag, framesuffix))
-            ddir = os.path.join(self.binaries,
-                                vehicle_binaries_subdir,
-                                self.hdate_ym,
-                                self.hdate_ymdhm,
-                                "".join(["PX4", framesuffix]))
-            if self.skip_build(tag, ddir):
-                continue
-
-            for v in ["v1", "v2", "v3", "v4", "v4pro"]:
-                px4_v = "%s-%s" % (board, v)
-
-                if self.skip_board_waf(px4_v):
-                    continue
-
-                if os.path.exists(self.buildroot):
-                    shutil.rmtree(self.buildroot)
-
-                self.progress("Configuring for %s in %s" %
-                              (px4_v, self.buildroot))
-                try:
-                    self.run_waf(["configure", "--board", px4_v,
-                                  "--out", self.buildroot, "clean"])
-                except subprocess.CalledProcessError as e:
-                    self.progress("waf configure failed")
-                    continue
-                try:
-                    self.run_waf([
-                        "build",
-                        "--targets",
-                        os.path.join("bin",
-                                     "".join([binaryname, framesuffix]))])
-                except subprocess.CalledProcessError as e:
-                    msg = ("Failed build of %s %s%s %s for %s" %
-                           (vehicle, board, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-
-                oldfile = os.path.join(self.buildroot, px4_v, "bin",
-                                       "%s%s.px4" % (binaryname, framesuffix))
-                newfile = "%s-%s.px4" % (px4_binaryname, v)
-                self.progress("Copying (%s) to (%s)" % (oldfile, newfile,))
-                try:
-                    shutil.copyfile(oldfile, newfile)
-                except Exception as e:
-                    self.progress("FIXME: narrow exception (%s)" % repr(e))
-                    msg = ("Failed build copy of %s PX4%s %s for %s" %
-                           (vehicle, framesuffix, tag, v))
-                    self.progress(msg)
-                    self.error_strings.append(msg)
-                    continue
-                # FIXME: why the two stage copy?!
-                self.copyit(newfile, ddir, tag, vehicle)
         self.checkout(vehicle, "latest")
 
     def common_boards(self):
