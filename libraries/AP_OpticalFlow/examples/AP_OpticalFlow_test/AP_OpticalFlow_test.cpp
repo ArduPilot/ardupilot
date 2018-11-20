@@ -33,7 +33,7 @@ public:
 };
 
 static DummyVehicle vehicle;
-static OpticalFlow optflow{vehicle.ahrs};
+static OpticalFlow optflow;
 
 void setup()
 {
@@ -42,7 +42,7 @@ void setup()
     hal.scheduler->delay(1000);
 
     // flowSensor initialization
-    optflow.init();
+    optflow.init(-1);
 
     if (!optflow.healthy()) {
         hal.console->printf("Failed to initialise PX4Flow ");

@@ -25,29 +25,29 @@ public:
     AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    virtual void init(const AP_SerialManager& serial_manager) override;
 
     // update mount position - should be called periodically
-    virtual void update();
+    virtual void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const;
+    virtual bool has_pan_control() const override;
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode);
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
 
-    // status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    virtual void status_msg(mavlink_channel_t chan);
+    // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+    virtual void send_mount_status(mavlink_channel_t chan) override;
 
     // handle a GIMBAL_REPORT message
-    virtual void handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg);
-    virtual void handle_gimbal_torque_report(mavlink_channel_t chan, mavlink_message_t *msg);
-    virtual void handle_param_value(mavlink_message_t *msg);
+    void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg) override;
+    void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t *msg);
+    void handle_param_value(const mavlink_message_t *msg) override;
 
     // send a GIMBAL_REPORT message to the GCS
-    virtual void send_gimbal_report(mavlink_channel_t chan);
+    void send_gimbal_report(mavlink_channel_t chan) override;
 
-    virtual void update_fast();
+    virtual void update_fast() override;
 
 private:
     // internal variables

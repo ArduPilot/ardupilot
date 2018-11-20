@@ -60,7 +60,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(compass_cal_update,     50,    50),
     SCHED_TASK(accel_cal_update,       10,    50),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,    50,    50),
+    SCHED_TASK_CLASS(OpticalFlow, &plane.optflow, update,    50,    50),
 #endif
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
@@ -100,6 +100,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
+#endif
+#if LANDING_GEAR_ENABLED == ENABLED
+    SCHED_TASK(landing_gear_update, 5, 50),
 #endif
 };
 
@@ -244,6 +247,11 @@ void Plane::afs_fs_check(void)
     afs.check(failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
 }
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 void Plane::one_second_loop()
 {
     // send a heartbeat
@@ -258,6 +266,10 @@ void Plane::one_second_loop()
         setup_failsafe_mixing();
     }
 #endif // CONFIG_HAL_BOARD
+
+#if HAL_WITH_IO_MCU
+    iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
+#endif
 
     // make it possible to change orientation at runtime
     ahrs.set_orientation();
@@ -847,7 +859,7 @@ void Plane::update_flight_stage(void)
                 if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
-                } else if (landing.get_abort_throttle_enable() && channel_throttle->get_control_in() >= 90 &&
+                } else if (landing.get_abort_throttle_enable() && get_throttle_input() >= 90 &&
                            landing.request_go_around()) {
                     gcs().send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
@@ -877,34 +889,6 @@ void Plane::update_flight_stage(void)
 }
 
 
-
-
-#if OPTFLOW == ENABLED
-// called at 50hz
-void Plane::update_optical_flow(void)
-{
-    static uint32_t last_of_update = 0;
-
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
-    // read from sensor
-    optflow.update();
-
-    // write to log and send to EKF if new data has arrived
-    if (optflow.last_update() != last_of_update) {
-        last_of_update = optflow.last_update();
-        uint8_t flowQuality = optflow.quality();
-        Vector2f flowRate = optflow.flowRate();
-        Vector2f bodyRate = optflow.bodyRate();
-        const Vector3f &posOffset = optflow.get_pos_offset();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
-        Log_Write_Optflow();
-    }
-}
-#endif
 
 
 /*

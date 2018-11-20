@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
@@ -228,7 +230,10 @@ private:
 
     // transition deceleration, m/s/s
     AP_Float transition_decel;
-    
+
+    // Quadplane trim, degrees
+    AP_Float ahrs_trim_pitch;
+
     AP_Int16 rc_speed;
 
     // min and max PWM for throttle
@@ -454,6 +459,7 @@ private:
         OPTION_ALLOW_FW_TAKEOFF=(1<<1),
         OPTION_ALLOW_FW_LAND=(1<<2),
         OPTION_RESPECT_TAKEOFF_FRAME=(1<<3),
+        OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
     };
 
     /*

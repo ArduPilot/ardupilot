@@ -10,7 +10,7 @@ public:
     Util(SITL_State *_sitlState) :
         sitlState(_sitlState) {}
     
-    bool run_debug_shell(AP_HAL::BetterStream *stream) {
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override {
         return false;
     }
 

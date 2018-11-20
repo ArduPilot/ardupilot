@@ -26,7 +26,7 @@ public:
     AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 private:
 

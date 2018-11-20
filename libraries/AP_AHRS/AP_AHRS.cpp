@@ -237,13 +237,13 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     // Generate estimate of ground speed vector using air data system
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
-    float airspeed;
+    float airspeed = 0;
     const bool gotAirspeed = airspeed_estimate_true(&airspeed);
     const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
         const Vector3f wind = wind_estimate();
         const Vector2f wind2d(wind.x, wind.y);
-        const Vector2f airspeed_vector(cosf(yaw) * airspeed, sinf(yaw) * airspeed);
+        const Vector2f airspeed_vector(_cos_yaw * airspeed, _sin_yaw * airspeed);
         gndVelADS = airspeed_vector - wind2d;
     }
 
@@ -281,6 +281,20 @@ Vector2f AP_AHRS::groundspeed_vector(void)
     if (!gotAirspeed && gotGPS) {
         return gndVelGPS;
     }
+
+    if (airspeed > 0) {
+        // we have a rough airspeed, and we have a yaw. For
+        // dead-reckoning purposes we can create a estimated
+        // groundspeed vector
+        Vector2f ret(cosf(yaw), sinf(yaw));
+        ret *= airspeed;
+        // adjust for estimated wind
+        Vector3f wind = wind_estimate();
+        ret.x += wind.x;
+        ret.y += wind.y;
+        return ret;
+    }
+
     return Vector2f(0.0f, 0.0f);
 }
 
@@ -359,15 +373,15 @@ void AP_AHRS::update_cd_values(void)
 }
 
 /*
-  create a rotated view of AP_AHRS
+  create a rotated view of AP_AHRS with optional pitch trim
  */
-AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation)
+AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
 {
     if (_view != nullptr) {
         // can only have one
         return nullptr;
     }
-    _view = new AP_AHRS_View(*this, rotation);
+    _view = new AP_AHRS_View(*this, rotation, pitch_trim_deg);
     return _view;
 }
 

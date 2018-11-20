@@ -191,7 +191,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     const float delta = sq(b) - (4.0f * a * c);
 
     // check for invalid data
-    if (fabsf(a) < FLT_EPSILON) {
+    if (::is_zero(a)) {
         return false;
     }
     if (isnan(a) || isnan(b) || isnan(c) || isnan(delta)) {
@@ -203,7 +203,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
         return false;
     }
 
-    const float delta_sqrt = safe_sqrt(delta);
+    const float delta_sqrt = sqrtf(delta);
     const float t1 = (-b + delta_sqrt) / (2.0f * a);
     const float t2 = (-b - delta_sqrt) / (2.0f * a);
 

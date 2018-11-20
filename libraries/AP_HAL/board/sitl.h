@@ -19,6 +19,7 @@
 #define HAL_GPIO_LED_OFF          1
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
+#define HAL_HAVE_SERVO_VOLTAGE 1
 #define HAL_HAVE_SAFETY_SWITCH 0
 
 // allow for static semaphores

@@ -17,7 +17,10 @@ float Plane::get_speed_scaler(void)
         } else {
             speed_scaler = 2.0;
         }
-        speed_scaler = constrain_float(speed_scaler, 0.5f, 2.0f);
+        // ensure we have scaling over the full configured airspeed
+        float scale_min = MIN(0.5, (0.5 * aparm.airspeed_min) / g.scaling_speed);
+        float scale_max = MAX(2.0, (1.5 * aparm.airspeed_max) / g.scaling_speed);
+        speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
 
         if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
             // when in VTOL modes limit surface movement at low speed to prevent instability
@@ -408,7 +411,7 @@ void Plane::stabilize()
     /*
       see if we should zero the attitude controller integrators. 
      */
-    if (channel_throttle->get_control_in() == 0 &&
+    if (get_throttle_input() == 0 &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
         gps.ground_speed() < 3) {
@@ -504,7 +507,7 @@ void Plane::calc_nav_yaw_course(void)
 void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
-        channel_throttle->get_control_in() == 0 &&
+        get_throttle_input() == 0 &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
         flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
         // manual rudder control while still
@@ -578,80 +581,6 @@ void Plane::calc_nav_roll()
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
-}
-
-
-bool Plane::allow_reverse_thrust(void)
-{
-    // check if we should allow reverse thrust
-    bool allow = false;
-
-    if (g.use_reverse_thrust == USE_REVERSE_THRUST_NEVER) {
-        return false;
-    }
-
-    switch (control_mode) {
-    case AUTO:
-        {
-        uint16_t nav_cmd = mission.get_current_nav_cmd().id;
-
-        // never allow reverse thrust during takeoff
-        if (nav_cmd == MAV_CMD_NAV_TAKEOFF) {
-            return false;
-        }
-
-        // always allow regardless of mission item
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_ALWAYS);
-
-        // landing
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LAND_APPROACH) &&
-                (nav_cmd == MAV_CMD_NAV_LAND);
-
-        // LOITER_TO_ALT
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_TO_ALT) &&
-                (nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT);
-
-        // any Loiter (including LOITER_TO_ALT)
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LOITER_ALL) &&
-                    (nav_cmd == MAV_CMD_NAV_LOITER_TIME ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_TO_ALT ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_TURNS ||
-                     nav_cmd == MAV_CMD_NAV_LOITER_UNLIM);
-
-        // waypoints
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
-                    (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
-                     nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
-        }
-        break;
-
-    case LOITER:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_LOITER);
-        break;
-    case RTL:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_RTL);
-        break;
-    case CIRCLE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CIRCLE);
-        break;
-    case CRUISE:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_CRUISE);
-        break;
-    case FLY_BY_WIRE_B:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
-        break;
-    case AVOID_ADSB:
-    case GUIDED:
-        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
-        break;
-    default:
-        // all other control_modes are auto_throttle_mode=false.
-        // If we are not controlling throttle, don't limit it.
-        allow = true;
-        break;
-    }
-
-    return allow;
 }
 
 /*

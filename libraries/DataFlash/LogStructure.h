@@ -337,6 +337,16 @@ struct PACKED log_BARO {
     float   ground_temp;
 };
 
+struct PACKED log_Optflow {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t surface_quality;
+    float flow_x;
+    float flow_y;
+    float body_x;
+    float body_y;
+};
+
 struct PACKED log_AHRS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -722,8 +732,10 @@ struct PACKED log_RFND {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint16_t dist1;
+    uint8_t status1;
     uint8_t orient1;
     uint16_t dist2;
+    uint8_t status2;
     uint8_t orient2;
 };
 
@@ -1265,7 +1277,7 @@ Format characters in the format string for binary log messages
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QCBCB", "TimeUS,Dist1,Orient1,Dist2,Orient2", "sm-m-", "FB-B-" }, \
+      "RFND", "QCBBCBB", "TimeUS,Dist1,Stat1,Orient1,Dist2,Stat2,Orient2", "sm--m--", "FB--B--" }, \
     { LOG_DF_MAV_STATS, sizeof(log_DF_MAV_Stats), \
       "DMS", "IIIIIBBBBBBBBBB",         "TimeMS,N,Dp,RT,RS,Er,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s--------------", "C--------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
@@ -1434,7 +1446,9 @@ Format characters in the format string for binary log messages
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }
+      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
+    { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }
 
 
 // #if SBP_HW_LOGGING
@@ -1600,6 +1614,7 @@ enum LogMessages : uint8_t {
     LOG_ISBD_MSG,
     LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
+    LOG_OPTFLOW_MSG,
     _LOG_LAST_MSG_
 };
 

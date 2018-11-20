@@ -58,7 +58,7 @@ public:
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state
     /// accordingly.
-    bool        read();
+    bool        read() override;
 
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 

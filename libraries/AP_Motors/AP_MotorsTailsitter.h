@@ -15,23 +15,23 @@ public:
     AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
-    void init(motor_frame_class frame_class, motor_frame_type frame_type);
+    void init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) {}
-    void set_update_rate( uint16_t speed_hz ) {}
+    void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override {}
+    void set_update_rate( uint16_t speed_hz ) override {}
 
     virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override {}
 
     // output_to_motors - sends output to named servos
-    void output_to_motors();
+    void output_to_motors() override;
 
     // return 0 motor mask
     uint16_t get_motor_mask() override { return 0; }
 
 protected:
     // calculate motor outputs
-    void output_armed_stabilizing();
+    void output_armed_stabilizing() override;
 
     // calculated outputs
     float _aileron;  // -1..1

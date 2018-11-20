@@ -116,6 +116,9 @@ public:
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
 
+    // handle tacking request (from auxiliary switch) in sailboats
+    virtual void handle_tack_request();
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -222,6 +225,9 @@ public:
     // acro mode requires a velocity estimate for non skid-steer rovers
     bool requires_position() const override { return false; }
     bool requires_velocity() const override;
+
+    // sailboats in acro mode support user manually initiating tacking from transmitter
+    void handle_tack_request() override;
 };
 
 
@@ -237,7 +243,7 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled);
+    void calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_enabled) override;
 
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
@@ -246,7 +252,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN);
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
     bool reached_destination() override;
 
     // heading and speed control
@@ -298,7 +304,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired location, heading and speed
-    void set_desired_location(const struct Location& destination);
+    void set_desired_location(const struct Location& destination, float next_leg_bearing_cd = MODE_NEXT_HEADING_UNKNOWN) override;
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed) override;
 
     // set desired heading-delta, turn-rate and speed

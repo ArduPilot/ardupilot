@@ -130,21 +130,23 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: What to do on a failsafe event
     // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
     // @User: Standard
-    GSCALAR(fs_action,    "FS_ACTION",     2),
+    GSCALAR(fs_action,    "FS_ACTION",     Failsafe_Action_Hold),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
-    // @Description: How long a failsafe event need to happen for before we trigger the failsafe action
+    // @Description: The time in seconds that a failsafe condition must persist before the failsafe action is triggered
     // @Units: s
+    // @Range: 1 100
+    // @Increment: 0.5
     // @User: Standard
-    GSCALAR(fs_timeout,    "FS_TIMEOUT",     5),
+    GSCALAR(fs_timeout,    "FS_TIMEOUT",     1.5),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel to a low value. This can be used to detect the RC transmitter going out of range. Failsafe will be triggered when the throttle channel goes below the FS_THR_VALUE for FS_TIMEOUT seconds.
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled Continue with Mission in Auto
     // @User: Standard
-    GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     1),
+    GSCALAR(fs_throttle_enabled,    "FS_THR_ENABLE",     FS_THR_ENABLED),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
@@ -157,9 +159,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_GCS_ENABLE
     // @DisplayName: GCS failsafe enable
     // @Description: Enable ground control station telemetry failsafe. When enabled the Rover will execute the FS_ACTION when it fails to receive MAVLink heartbeat packets for FS_TIMEOUT seconds.
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:Enabled Continue with Mission in Auto
     // @User: Standard
-    GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   0),
+    GSCALAR(fs_gcs_enabled, "FS_GCS_ENABLE",   FS_GCS_DISABLED),
 
     // @Param: FS_CRASH_CHECK
     // @DisplayName: Crash check action
@@ -647,6 +649,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SAIL_HEEL_MAX", 35, ParametersG2, sail_heel_angle_max, 15),
+
+    // @Param: SAIL_NO_GO_ANGLE
+    // @DisplayName: Sailing no go zone angle
+    // @Description: The typical closest angle to the wind the vehicle will sail at. the vehicle will sail at this angle when going upwind
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("SAIL_NO_GO_ANGLE", 36, ParametersG2, sail_no_go, 45),
+
+    // @Group: ARSPD
+    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+    AP_SUBGROUPINFO(airspeed, "ARSPD", 37, ParametersG2, AP_Airspeed),
+
     AP_GROUPEND
 };
 
@@ -679,7 +695,8 @@ ParametersG2::ParametersG2(void)
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
     rally(rover.ahrs),
-    windvane()
+    windvane(),
+    airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

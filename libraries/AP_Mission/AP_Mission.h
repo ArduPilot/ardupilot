@@ -18,7 +18,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <StorageManager/StorageManager.h>
 
 // definitions
@@ -281,8 +280,7 @@ public:
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
     // constructor
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
-        _ahrs(ahrs),
+    AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
@@ -499,6 +497,9 @@ private:
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
 
+    bool verify_command(const Mission_Command& cmd);
+    bool start_command(const Mission_Command& cmd);
+
     /// advance_current_nav_cmd - moves current nav command forward
     //      starting_index is used to set the index from which searching will begin, leave as 0 to search from the current navigation target
     ///     do command will also be loaded
@@ -543,9 +544,6 @@ private:
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
-    // references to external libraries
-    const AP_AHRS&   _ahrs;      // used only for home position
-
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
     AP_Int8                 _restart;   // controls mission starting point when entering Auto mode (either restart from beginning of mission or resume from last command run)
@@ -575,6 +573,11 @@ private:
     // multi-thread support. This is static so it can be used from
     // const functions
     static HAL_Semaphore_Recursive _rsem;
+
+    // mission items common to all vehicles:
+    bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
+    bool start_command_camera(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP {

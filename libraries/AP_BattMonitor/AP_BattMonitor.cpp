@@ -91,9 +91,11 @@ AP_BattMonitor::init()
 
     convert_params();
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    // force monitor for bebop
-    _params[0]._type.set(AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP);
+#ifdef HAL_BATT_MONITOR_DEFAULT
+    if (_params[0]._type == 0) {
+        // we can't use set_default() as the type is used as a flag for parameter conversion
+        _params[0]._type.set((AP_BattMonitor_Params::BattMonitor_Type)HAL_BATT_MONITOR_DEFAULT);
+    }
 #endif
 
     // create each instance

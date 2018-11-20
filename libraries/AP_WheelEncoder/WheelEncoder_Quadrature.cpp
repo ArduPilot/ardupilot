@@ -48,6 +48,7 @@ void AP_WheelEncoder_Quadrature::update_pin(uint8_t &pin,
 
     // install interrupt handler on rising or falling edge of gpio for pin a
     if (new_pin != (uint8_t)-1) {
+        hal.gpio->pinMode(pin, HAL_GPIO_INPUT);
         if (!hal.gpio->attach_interrupt(
                 pin,
                 FUNCTOR_BIND_MEMBER(&AP_WheelEncoder_Quadrature::irq_handler,

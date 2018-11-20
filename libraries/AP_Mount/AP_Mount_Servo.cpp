@@ -112,8 +112,8 @@ void AP_Mount_Servo::check_servo_map()
     _flags.pan_control = SRV_Channels::function_assigned(_pan_idx);
 }
 
-// status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Servo::status_msg(mavlink_channel_t chan)
+// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+void AP_Mount_Servo::send_mount_status(mavlink_channel_t chan)
 {
     mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100);
 }
@@ -123,12 +123,13 @@ void AP_Mount_Servo::status_msg(mavlink_channel_t chan)
 //  output: _angle_bf_output_deg (body frame angles in degrees)
 void AP_Mount_Servo::stabilize()
 {
+    AP_AHRS &ahrs = AP::ahrs();
     // only do the full 3D frame transform if we are doing pan control
     if (_state._stab_pan) {
         Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
         Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
         Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
-        m = _frontend._ahrs.get_rotation_body_to_ned();
+        m = ahrs.get_rotation_body_to_ned();
         m.transpose();
         cam.from_euler(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z);
         gimbal_target = m * cam;
@@ -143,24 +144,24 @@ void AP_Mount_Servo::stabilize()
         _angle_bf_output_deg.y = degrees(_angle_ef_target_rad.y);
         _angle_bf_output_deg.z = degrees(_angle_ef_target_rad.z);
         if (_state._stab_roll) {
-            _angle_bf_output_deg.x -= degrees(_frontend._ahrs.roll);
+            _angle_bf_output_deg.x -= degrees(ahrs.roll);
         }
         if (_state._stab_tilt) {
-            _angle_bf_output_deg.y -= degrees(_frontend._ahrs.pitch);
+            _angle_bf_output_deg.y -= degrees(ahrs.pitch);
         }
 
         // lead filter
-        const Vector3f &gyro = _frontend._ahrs.get_gyro();
+        const Vector3f &gyro = ahrs.get_gyro();
 
-        if (_state._stab_roll && !is_zero(_state._roll_stb_lead) && fabsf(_frontend._ahrs.pitch) < M_PI/3.0f) {
+        if (_state._stab_roll && !is_zero(_state._roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
             // Compute rate of change of euler roll angle
-            float roll_rate = gyro.x + (_frontend._ahrs.sin_pitch() / _frontend._ahrs.cos_pitch()) * (gyro.y * _frontend._ahrs.sin_roll() + gyro.z * _frontend._ahrs.cos_roll());
+            float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
             _angle_bf_output_deg.x -= degrees(roll_rate) * _state._roll_stb_lead;
         }
 
         if (_state._stab_tilt && !is_zero(_state._pitch_stb_lead)) {
             // Compute rate of change of euler pitch angle
-            float pitch_rate = _frontend._ahrs.cos_pitch() * gyro.y - _frontend._ahrs.sin_roll() * gyro.z;
+            float pitch_rate = ahrs.cos_pitch() * gyro.y - ahrs.sin_roll() * gyro.z;
             _angle_bf_output_deg.y -= degrees(pitch_rate) * _state._pitch_stb_lead;
         }
     }

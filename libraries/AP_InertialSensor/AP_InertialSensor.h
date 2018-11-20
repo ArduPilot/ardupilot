@@ -562,11 +562,11 @@ private:
     AccelCalibrator *_accel_calibrator;
 
     //save accelerometer bias and scale factors
-    void _acal_save_calibrations();
-    void _acal_event_failure();
+    void _acal_save_calibrations() override;
+    void _acal_event_failure() override;
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
-    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) override { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
 
     float _trim_pitch;
     float _trim_roll;

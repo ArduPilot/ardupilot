@@ -97,6 +97,9 @@ void DataFlash_Backend::push_log_blocks() {
 // for other messages to go out to the log
 bool DataFlash_Backend::WriteBlockCheckStartupMessages()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    return true;
+#endif
     if (_startup_messagewriter->fmt_done()) {
         return true;
     }

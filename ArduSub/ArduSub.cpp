@@ -28,7 +28,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(fifty_hz_loop,         50,     75),
     SCHED_TASK(update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    SCHED_TASK_CLASS(OpticalFlow,          &sub.optflow,             update,         200, 160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
     SCHED_TASK(read_rangefinder,      20,    100),

@@ -47,7 +47,6 @@ LIBRARIES += AR_AttitudeControl
 LIBRARIES += AC_PID
 LIBRARIES += AC_Fence
 LIBRARIES += AP_SmartRTL
-LIBRARIES += AC_Avoidance
 LIBRARIES += AC_AttitudeControl
 LIBRARIES += AP_Devo_Telem
 LIBRARIES += AP_Follow

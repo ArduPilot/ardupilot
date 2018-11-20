@@ -12,6 +12,7 @@ from pymavlink import mavutil
 from pysim import util
 
 from common import AutoTest
+from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 
@@ -524,16 +525,10 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def wp_load(self, filename):
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
-
     def fly_mission(self, filename):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        self.wp_load(filename)
+        self.load_mission(filename)
         self.mavproxy.send('switch 1\n')  # auto mode
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 7, max_dist=60)
@@ -586,7 +581,7 @@ class AutoTestPlane(AutoTest):
             self.wait_servo_channel_value(servo_ch, servo_ch_min)
 
             self.progress("Flying mission %s" % filename)
-            self.wp_load(filename)
+            self.load_mission(filename)
             self.mavproxy.send('wp set 1\n')
             self.mavproxy.send('switch 1\n')  # auto mode
             self.wait_mode('AUTO')
@@ -663,6 +658,26 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+    def test_gripper_mission(self):
+        self.context_push()
+        ex = None
+        try:
+            self.load_mission("plane-gripper-mission.txt")
+            self.mavproxy.send("wp set 1\n")
+            self.mavproxy.send('switch 1\n')  # auto mode
+            self.wait_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.mavproxy.expect("Gripper Grabbed")
+            self.mavproxy.expect("Gripper Released")
+            self.mavproxy.expect("Auto disarmed")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest ArduPlane in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -734,9 +749,13 @@ class AutoTestPlane(AutoTest):
                           lambda: self.fly_mission(
                               os.path.join(testdir, "ap1.txt")))
 
+            self.run_test("Test Gripper mission items",
+                          self.test_gripper_mission)
+
             self.run_test("Log download",
                           lambda: self.log_download(
-                              self.buildlogs_path("ArduPlane-log.bin")))
+                              self.buildlogs_path("ArduPlane-log.bin"),
+                              upload_logs=True))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")

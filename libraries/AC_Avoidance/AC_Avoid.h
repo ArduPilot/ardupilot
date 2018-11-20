@@ -34,6 +34,11 @@ public:
     AC_Avoid(const AC_Avoid &other) = delete;
     AC_Avoid &operator=(const AC_Avoid&) = delete;
 
+    // get singleton instance
+    static AC_Avoid *get_singleton() {
+        return _singleton;
+    }
+
     /*
      * Adjusts the desired velocity so that the vehicle can stop
      * before the fence/object.
@@ -140,4 +145,10 @@ private:
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
+
+    static AC_Avoid *_singleton;
+};
+
+namespace AP {
+    AC_Avoid *ac_avoid();
 };

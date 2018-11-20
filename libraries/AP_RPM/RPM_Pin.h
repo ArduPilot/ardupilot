@@ -27,7 +27,7 @@ public:
     AP_RPM_Pin(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 private:
 

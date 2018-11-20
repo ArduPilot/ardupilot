@@ -39,6 +39,8 @@ AP_BLHeli *SRV_Channels::blheli_ptr;
 #endif
 
 uint16_t SRV_Channels::disabled_mask;
+uint16_t SRV_Channels::digital_mask;
+uint16_t SRV_Channels::reversible_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;

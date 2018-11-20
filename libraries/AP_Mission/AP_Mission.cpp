@@ -4,6 +4,7 @@
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -235,7 +236,7 @@ void AP_Mission::update()
         }
     }else{
         // run the active nav command
-        if (_cmd_verify_fn(_nav_cmd)) {
+        if (verify_command(_nav_cmd)) {
             // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
             // immediately advance to the next mission command
@@ -251,11 +252,49 @@ void AP_Mission::update()
     if (!_flags.do_cmd_loaded) {
         advance_current_do_cmd();
     }else{
-        // run the active do command
-        if (_cmd_verify_fn(_do_cmd)) {
-            // market _nav_cmd as complete (it will be started on the next iteration)
+        // check the active do command
+        if (verify_command(_do_cmd)) {
+            // mark _do_cmd as complete
             _flags.do_cmd_loaded = false;
         }
+    }
+}
+
+bool AP_Mission::verify_command(const Mission_Command& cmd)
+{
+    switch (cmd.id) {
+        // do-commands always return true for verify:
+    case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        return true;
+    default:
+        return _cmd_verify_fn(cmd);
+    }
+}
+
+bool AP_Mission::start_command(const Mission_Command& cmd)
+{
+    switch (cmd.id) {
+    case MAV_CMD_DO_GRIPPER:
+        return start_command_do_gripper(cmd);
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+        return start_command_do_servorelayevents(cmd);
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        return start_command_camera(cmd);
+    default:
+        return _cmd_start_fn(cmd);
     }
 }
 
@@ -442,7 +481,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.index = 0;
         cmd.id = MAV_CMD_NAV_WAYPOINT;
         cmd.p1 = 0;
-        cmd.content.location = _ahrs.get_home();
+        cmd.content.location = AP::ahrs().get_home();
     }else{
         // Find out proper location in memory by using the start_byte position + the index
         // we can load a command, we don't process it yet
@@ -508,7 +547,7 @@ void AP_Mission::write_home_to_storage()
 {
     Mission_Command home_cmd = {};
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
-    home_cmd.content.location = _ahrs.get_home();
+    home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
 }
 
@@ -1411,7 +1450,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
-            if (_cmd_start_fn(_nav_cmd)) {
+            if (start_command(_nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
             }
         }else{
@@ -1419,7 +1458,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             if (!_flags.do_cmd_loaded) {
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
-                _cmd_start_fn(_do_cmd);
+                start_command(_do_cmd);
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
@@ -1473,7 +1512,7 @@ void AP_Mission::advance_current_do_cmd()
         // set current do command and start it
         _do_cmd = cmd;
         _flags.do_cmd_loaded = true;
-        _cmd_start_fn(_do_cmd);
+        start_command(_do_cmd);
     }else{
         // set flag to stop unnecessarily searching for do commands
         _flags.do_cmd_all_done = true;
@@ -1677,7 +1716,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
 {
     struct Location current_loc;
 
-    if (!_ahrs.get_position(current_loc)) {
+    if (!AP::ahrs().get_position(current_loc)) {
         return 0;
     }
 
