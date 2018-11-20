@@ -232,6 +232,16 @@ The pinout below for the SBUSo port is labelled so that GND is closest
 to the cube. The 5V pin on the SBUS output port is connected to the
 servo rail.
 
+When SBUS output is disabled (by setting BRD_SBUS_OUT to 0) you can
+use the port for analog RSSI input from receivers. To enable for RSSI
+input you need to set:
+
+ - BRD_SBUS_OUT 0
+ - RSSI_TYPE 1
+ - RSSI_PIN 103
+
+You cannot have both SBUS output and analog RSSI input at the same time.
+
    <table border="1" class="docutils">
    <tbody>
    <tr>
@@ -546,6 +556,11 @@ The CubeBlack has 7 analog inputs
  - ADC Pin14 -> ADC 3.3V Port pin2
  - ADC Pin15 -> ADC 6.6V port
  - ADC Pin103 -> RSSI voltage monitoring
+
+## IMU Heater
+
+The IMU heater in the CubeBlack can be controlled with the
+BRD_IMU_TARGTEMP parameter, which is in degrees C.
 
 ## Loading Firmware
 
