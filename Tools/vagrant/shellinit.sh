@@ -15,5 +15,5 @@ cd $APMROOT/ArduCopter
 echo "Ardupilot environment ready.  Run 'sim_vehicle.py' to start simulating an arducopter instance."
 echo "To build for fmuv2:"
 echo "  cd /vagrant"
-echo "  ./waf configure --board=px4-v2"
+echo "  ./waf configure --board=Pixhawk1"
 echo "  ./waf build --target=bin/arducopter"
