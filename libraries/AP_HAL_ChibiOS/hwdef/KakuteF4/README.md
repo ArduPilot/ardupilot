@@ -13,9 +13,16 @@ The [KakuteF4 AIO](http://www.holybro.com/product/47) is a flight controller pro
 
 ## Pinout
 
-![KakuteF4 Board](KakuteF4.jpg "KakuteF4")
+![KakuteF4 Top](kakutef4_top.jpg "KakuteF4Top")
+![KakuteF4 Bot](kakutef4_bot.jpg "KakuteF4Bot")
 
 ## UART Mapping
+
+The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
+receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
+
+The pin labelled Rx on each corner of the board is a common pin for
+ESC telemetry input.
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART6 (Telem1)
