@@ -264,7 +264,8 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
             _last_rate_ms = dt_ms;
         }
         if (_rate_ms == 0) {
-            _rate_ms = gps.get_rate_ms(state.instance);
+            // only allow 5Hz to 20Hz in user config
+            _rate_ms = constrain_int16(gps.get_rate_ms(state.instance), 50, 200);
         }
 
         // round to calculated message rate
