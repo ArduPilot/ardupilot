@@ -212,8 +212,8 @@ void Plane::dspoiler_update(void)
         dspoiler2_right = constrain_float(elevon_right - rudder, -4500, 4500);
     } else {
         // apply rudder to left wing
-        dspoiler1_left = constrain_float(elevon_left + rudder, -4500, 4500);
-        dspoiler2_left = constrain_float(elevon_left - rudder, -4500, 4500);
+        dspoiler1_left = constrain_float(elevon_left - rudder, -4500, 4500);
+        dspoiler2_left = constrain_float(elevon_left + rudder, -4500, 4500);
     }
 
     const int16_t weight1 = g2.crow_flap_weight1.get();
