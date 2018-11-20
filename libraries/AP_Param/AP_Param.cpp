@@ -1942,7 +1942,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     }
     num_param_overrides = 0;
 
-    param_overrides = new param_override[num_defaults];
+    param_overrides = (struct param_override *)malloc(sizeof(struct param_override)*num_defaults);
     if (param_overrides == nullptr) {
         AP_HAL::panic("AP_Param: Failed to allocate overrides");
         return false;
@@ -2037,7 +2037,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         return;
     }
 
-    param_overrides = new param_override[num_defaults];
+    param_overrides = (struct param_override *)malloc(sizeof(struct param_override)*num_defaults);
     if (param_overrides == nullptr) {
         AP_HAL::panic("AP_Param: Failed to allocate overrides");
         return;
