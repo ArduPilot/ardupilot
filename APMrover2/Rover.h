@@ -391,7 +391,6 @@ private:
     void update_compass(void);
     void update_logging1(void);
     void update_logging2(void);
-    void update_aux(void);
     void one_second_loop(void);
     void update_GPS(void);
     void update_current_mode(void);
@@ -474,7 +473,6 @@ private:
     // radio.cpp
     void set_control_channels(void);
     void init_rc_in();
-    void init_rc_out();
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);

@@ -258,14 +258,6 @@ void Rover::update_logging2(void)
 
 
 /*
-  update aux servo mappings
- */
-void Rover::update_aux(void)
-{
-    SRV_Channels::enable_aux_servos();
-}
-
-/*
   once a second events
  */
 void Rover::one_second_loop(void)
@@ -279,7 +271,7 @@ void Rover::one_second_loop(void)
     set_control_channels();
 
     // cope with changes to aux functions
-    update_aux();
+    SRV_Channels::enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);

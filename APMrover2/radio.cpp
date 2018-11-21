@@ -36,12 +36,6 @@ void Rover::init_rc_in()
     channel_lateral->set_default_dead_zone(30);
 }
 
-void Rover::init_rc_out()
-{
-    // set auxiliary ranges
-    update_aux();
-}
-
 /*
   check for driver input on rudder/steering stick for arming/disarming
 */
