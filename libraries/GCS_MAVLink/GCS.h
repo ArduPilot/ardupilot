@@ -207,6 +207,18 @@ public:
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
 
+    // set a channel as private. Private channels get sent heartbeats, but
+    // don't get broadcast packets or forwarded packets
+    static void set_channel_private(mavlink_channel_t chan);
+
+    // return true if channel is private
+    static bool is_private(mavlink_channel_t _chan) {
+        return (mavlink_private & (1U<<(unsigned)_chan)) != 0;
+    }
+    
+    // return true if channel is private
+    bool is_private(void) const { return is_private(chan); }
+
     // send queued parameters if needed
     void send_queued_parameters(void);
 
@@ -462,6 +474,9 @@ private:
     
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
+
+    // bitmask of what mavlink channels are private
+    static uint8_t mavlink_private;
 
     // bitmask of what mavlink channels are streaming
     static uint8_t chan_is_streaming;
