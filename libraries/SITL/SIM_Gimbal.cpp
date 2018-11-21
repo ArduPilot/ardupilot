@@ -206,6 +206,9 @@ void Gimbal::send_report(void)
                                           &msg, &status) == MAVLINK_FRAMING_OK) {
                 switch (msg.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT: {
+                    mavlink_heartbeat_t pkt;
+                    mavlink_msg_heartbeat_decode(&msg, &pkt);
+                    printf("Gimbal: got HB type=%u autopilot=%u base_mode=0x%x\n", pkt.type, pkt.autopilot, pkt.base_mode);
                     if (!seen_heartbeat) {
                         seen_heartbeat = true;
                         vehicle_component_id = msg.compid;
@@ -215,6 +218,10 @@ void Gimbal::send_report(void)
                     break;
                 }
                 case MAVLINK_MSG_ID_GIMBAL_CONTROL: {
+                    static uint32_t counter;
+                    if (counter++ % 100 == 0) {
+                        printf("GIMBAL_CONTROL %u\n", counter);
+                    }
                     mavlink_gimbal_control_t pkt;
                     mavlink_msg_gimbal_control_decode(&msg, &pkt);
                     demanded_angular_rate = Vector3f(pkt.demanded_rate_x,
@@ -225,6 +232,34 @@ void Gimbal::send_report(void)
                     seen_gimbal_control = true;
                     break;
                 }
+                case MAVLINK_MSG_ID_PARAM_SET: {
+                    mavlink_param_set_t pkt;
+                    mavlink_msg_param_set_decode(&msg, &pkt);
+                    printf("Gimbal got PARAM_SET %.16s %f\n", pkt.param_id, pkt.param_value);
+
+                    mavlink_param_value_t param_value;
+                    memcpy(param_value.param_id, pkt.param_id, sizeof(pkt.param_id));
+                    param_value.param_value = pkt.param_value;
+                    param_value.param_count = 0;
+                    param_value.param_index = 0;
+                    mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
+                    uint8_t saved_seq = chan0_status->current_tx_seq;
+                    chan0_status->current_tx_seq = mavlink.seq;
+                    uint16_t len = mavlink_msg_param_value_encode(vehicle_system_id,
+                                                                  vehicle_component_id,
+                                                                  &msg, &param_value);
+                    chan0_status->current_tx_seq = saved_seq;
+
+                    uint8_t msgbuf[len];
+                    len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+                    if (len > 0) {
+                        mav_socket.send(msgbuf, len);
+                    }
+                    break;
+                }
+                default:
+                    printf("Gimbal got unexpected msg %u\n", msg.msgid);
+                    break;
                 }
             }
         }
