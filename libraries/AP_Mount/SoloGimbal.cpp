@@ -51,6 +51,8 @@ void SoloGimbal::receive_feedback(mavlink_channel_t chan, const mavlink_message_
 
     if (report_msg.target_system != 1) {
         _state = GIMBAL_STATE_NOT_PRESENT;
+    } else {
+        GCS_MAVLINK::set_channel_private(chan);
     }
 
     switch(_state) {
@@ -111,8 +113,10 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
                 if (_ang_vel_dem_radsLen > radians(400)) {
                     _ang_vel_dem_rads *= radians(400)/_ang_vel_dem_radsLen;
                 }
-                mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
-                                                _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
+                if (HAVE_PAYLOAD_SPACE(chan, GIMBAL_CONTROL)) {
+                    mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
+                                                    _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
+                }
                 break;
             }
             case GIMBAL_MODE_STABILIZE: {
@@ -124,8 +128,10 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
                 if (ang_vel_dem_norm > radians(400)) {
                     _ang_vel_dem_rads *= radians(400)/ang_vel_dem_norm;
                 }
-                mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
-                                                _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
+                if (HAVE_PAYLOAD_SPACE(chan, GIMBAL_CONTROL)) {
+                    mavlink_msg_gimbal_control_send(chan, mavlink_system.sysid, _compid,
+                                                    _ang_vel_dem_rads.x, _ang_vel_dem_rads.y, _ang_vel_dem_rads.z);
+                }
                 break;
             }
             default:
