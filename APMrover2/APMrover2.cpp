@@ -60,9 +60,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_mission,         50,    200),
     SCHED_TASK(update_logging1,        10,    200),
     SCHED_TASK(update_logging2,        10,    200),
-    SCHED_TASK(gcs_retry_deferred,     50,    500),
-    SCHED_TASK(gcs_update,             50,    500),
-    SCHED_TASK(gcs_data_stream_send,   50,   1000),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       retry_deferred,         50,  500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update,                 50,  500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       data_stream_send,       50, 1000),
     SCHED_TASK(read_mode_switch,        7,    200),
     SCHED_TASK(read_aux_all,           10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
@@ -159,7 +159,7 @@ void Rover::ahrs_update()
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
-    gcs_update();
+    gcs().update();
 #endif
 
     // AHRS may use movement to calculate heading
