@@ -554,8 +554,6 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
-    void read_mode_switch();
-    void read_aux_all();
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,
