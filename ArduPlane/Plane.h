@@ -1060,8 +1060,6 @@ private:
     void update_soaring();
 #endif
 
-    void read_aux_all();
-
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
