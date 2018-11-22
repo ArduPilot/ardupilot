@@ -347,7 +347,6 @@ void Plane::airspeed_ratio_update(void)
     }
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
-    gcs_send_airspeed_calibration(vg);
 }
 
 

@@ -798,8 +798,6 @@ private:
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
-    void gcs_send_airspeed_calibration(const Vector3f &vg);
-
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
     void Log_Write_Performance();
