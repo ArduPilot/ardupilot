@@ -136,10 +136,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK(landinggear_update,    10,     75),
     SCHED_TASK(lost_vehicle_check,    10,     50),
-    SCHED_TASK(gcs_update,           400,    180),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&copter._gcs,           update,                400,  180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&copter._gcs,           retry_deferred,         50,  550),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&copter._gcs,           data_stream_send,       50, 550),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75),
 #endif
@@ -564,7 +564,7 @@ void Copter::read_AHRS(void)
     //-----------------------------------------------
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before ahrs update
-    gcs_update();
+    gcs().update();
 #endif
 
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
