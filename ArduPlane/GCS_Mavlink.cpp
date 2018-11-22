@@ -1416,14 +1416,6 @@ void Plane::mavlink_delay_cb()
     logger.EnableWrites(true);
 }
 
-/*
-  send airspeed calibration data
- */
-void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
-{
-    gcs().send_airspeed_calibration(vg);
-}
-
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
 {
     plane.auto_state.next_wp_crosstrack = false;
