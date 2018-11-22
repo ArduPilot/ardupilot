@@ -324,7 +324,7 @@ public:
     bool duplicate_options_exist();
 
     void init_aux_all();
-    virtual void read_aux_all();
+    void read_aux_all();
 
     // mode switch handling
     void reset_mode_switch();
