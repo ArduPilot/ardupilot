@@ -609,7 +609,7 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
-        cmd.append("/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe")
+        cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
 
