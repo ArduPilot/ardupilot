@@ -40,7 +40,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(stabilize,             400,    100),
     SCHED_TASK(set_servos,            400,    100),
     SCHED_TASK(read_control_switch,     7,    100),
-    SCHED_TASK(gcs_retry_deferred,     50,    500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&plane._gcs,       retry_deferred,         50,  500),
     SCHED_TASK(update_GPS_50Hz,        50,    300),
     SCHED_TASK(update_GPS_10Hz,        10,    400),
     SCHED_TASK(navigate,               10,    150),
@@ -49,8 +49,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
     SCHED_TASK(afs_fs_check,           10,    100),
-    SCHED_TASK(gcs_update,             50,    500),
-    SCHED_TASK(gcs_data_stream_send,   50,    500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&plane._gcs,       update,                 50,  500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&plane._gcs,       data_stream_send,       50,  500),
     SCHED_TASK(update_events,          50,    150),
     SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
     SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate, 50, 150),
@@ -147,7 +147,7 @@ void Plane::ahrs_update()
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
         // update hil before AHRS update
-        gcs_update();
+        gcs().update();
     }
 #endif
 
