@@ -1,5 +1,12 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.2-rc4 22-Nov-2018
+Changes from 3.6.2-rc3
+1) Bug fixes and minor changes:
+    a) Benewake TFmini short range scaling fix
+    b) Fix alt drop after quick switch from RTL to stabilize to RTL
+    c) Winch removed from build by default
+------------------------------------------------------------------
 Copter 3.6.2-rc3 19-Nov-2018
 Changes from 3.6.2-rc2
 1) Bug fixes:
