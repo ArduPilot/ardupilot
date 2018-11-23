@@ -39,8 +39,8 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK(update_compass,         10,   1500),
     SCHED_TASK_CLASS(AP_BattMonitor,    &tracker.battery,   read,           10, 1500),
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10,   1500),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&tracker._gcs,       update,                 50, 1700),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&tracker._gcs,       data_stream_send,       50, 3000),
+    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700),
+    SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000),
     SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900),
     SCHED_TASK(ten_hz_logging_loop,    10,    300),
 #if LOGGING_ENABLED == ENABLED
@@ -48,7 +48,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50),
     SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&tracker._gcs,       retry_deferred,         50, 1000),
     SCHED_TASK(one_second_loop,         1,   3900),
     SCHED_TASK(compass_cal_update,     50,    100),
     SCHED_TASK(accel_cal_update,       10,    100)
