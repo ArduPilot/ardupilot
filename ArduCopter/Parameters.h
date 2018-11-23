@@ -375,7 +375,7 @@ public:
         k_param_enbl_crs_lock, // activate enabled course locked func add a2sAndres
 
         // the k_param_* space is 9-bits in size
-        // 511: reserved        
+        // 511: reserved
     };
 
     AP_Int16        format_version;
