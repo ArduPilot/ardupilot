@@ -106,7 +106,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
 };
 
-constexpr int8_t Plane::_failsafe_priorities[5];
+constexpr int8_t Plane::_failsafe_priorities[6];
 
 void Plane::setup() 
 {
