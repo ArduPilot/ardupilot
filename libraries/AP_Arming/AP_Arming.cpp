@@ -23,6 +23,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_RangeFinder/RangeFinder.h>
 
 #if HAL_WITH_UAVCAN
   #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
@@ -648,6 +649,20 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
     }
+
+    for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        const RangeFinder *rangefinder = RangeFinder::get_singleton();
+        if (rangefinder == nullptr) {
+            // no rangefinder available
+            return true;
+        }
+        uint8_t failed_rangefinder;
+        if (!rangefinder->pre_arm_check(failed_rangefinder)) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Rangefinder %d failed", failed_rangefinder + 1);
+            return false;
+        }
+    }
+
     return true;
 }
 
