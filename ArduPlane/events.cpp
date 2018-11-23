@@ -168,8 +168,3 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             break;
     }
 }
-
-void Plane::update_events(void)
-{
-    ServoRelayEvents.update_events();
-}
