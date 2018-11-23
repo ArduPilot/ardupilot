@@ -76,8 +76,6 @@ void OreoLED_I2C::update()
         return;    // slow rate from 50hz to 10hz
     }
 
-    sync_counter();                         // syncronizes LEDs every 10 seconds
-
     if (mode_firmware_update()) {
         return;    // don't go any further if the Pixhawk is in firmware update
     }
@@ -118,18 +116,6 @@ bool OreoLED_I2C::slow_counter()
     } else {
         _slow_count = 0;
         return false;
-    }
-}
-
-
-// Calls resyncing the LEDs every 10 seconds
-// Always returns false, no action needed.
-void OreoLED_I2C::sync_counter()
-{
-    _sync_count++;
-    if (_sync_count > 100) {
-        _sync_count = 0;
-        send_sync();
     }
 }
 
@@ -389,21 +375,6 @@ void OreoLED_I2C::set_macro(uint8_t instance, oreoled_macro macro)
     }
 }
 
-// send_sync - force a syncronisation of the all LED's
-void OreoLED_I2C::send_sync()
-{
-    WITH_SEMAPHORE(_sem);
-
-    // store desired macro for all LEDs
-    for (uint8_t i=0; i<OREOLED_NUM_LEDS; i++) {
-        _state_desired[i].send_sync();
-        if (!(_state_desired[i] == _state_sent[i])) {
-            _send_required = true;
-        }
-    }
-}
-
-
 // Clear the desired state
 void OreoLED_I2C::clear_state(void)
 {
@@ -457,11 +428,6 @@ void OreoLED_I2C::boot_leds(void)
 // update_timer - called by scheduler and updates PX4 driver with commands
 void OreoLED_I2C::update_timer(void)
 {
-    // exit immediately if send not required, or state is being updated
-    if (!_send_required) {
-        return;
-    }
-
     WITH_SEMAPHORE(_sem);
 
     uint32_t now = AP_HAL::millis();
@@ -472,6 +438,21 @@ void OreoLED_I2C::update_timer(void)
         _boot_count++;
         _last_boot_ms = now;
         boot_leds();
+    }
+
+    // send a sync every 4.1s. The PX4 driver uses 4ms, but using
+    // exactly 4ms does not work. It seems that the oreoled firmware
+    // relies on the inaccuracy of the NuttX scheduling for this to
+    // work, and exactly 4ms from ChibiOS causes syncronisation to
+    // fail
+    if (now - _last_sync_ms > 4100) {
+        _last_sync_ms = now;
+        send_sync();
+    }
+
+    // exit immediately if send not required, or state is being updated
+    if (!_send_required) {
+        return;
     }
 
     // for each LED
@@ -535,18 +516,6 @@ void OreoLED_I2C::update_timer(void)
                 break;
             }
 
-            case OREOLED_MODE_SYNC: {
-                /* set I2C address to zero */
-                _dev->set_address(0);
-
-                /* prepare command : 0x01 = general hardware call, 0x00 = I2C address of master (but we don't act as a slave so set to zero)*/
-                uint8_t msg[] = {0x01, 0x00};
-
-                /* send I2C command */
-                _dev->transfer(msg, sizeof(msg), nullptr, 0);
-                break;
-            }
-
             default:
                 break;
             };
@@ -558,6 +527,21 @@ void OreoLED_I2C::update_timer(void)
     // flag updates sent
     _send_required = false;
 }
+
+void OreoLED_I2C::send_sync(void)
+{
+    /* set I2C address to zero */
+    _dev->set_address(0);
+
+    /* prepare command : 0x01 = general hardware call, 0x00 = I2C address of master (but we don't act as a slave so set to zero)*/
+    uint8_t msg[] = {0x01, 0x00};
+
+    /* send I2C command */
+    _dev->set_retries(0);
+    _dev->transfer(msg, sizeof(msg), nullptr, 0);
+    _dev->set_retries(2);
+}
+
 
 
 // Handle an LED_CONTROL mavlink message
@@ -635,12 +619,6 @@ void OreoLED_I2C::handle_led_control(mavlink_message_t *msg)
             set_rgb(packet.instance, pattern, packet.custom_bytes[CUSTOM_HEADER_LENGTH + 1], packet.custom_bytes[CUSTOM_HEADER_LENGTH + 2],
                     packet.custom_bytes[CUSTOM_HEADER_LENGTH + 3], packet.custom_bytes[CUSTOM_HEADER_LENGTH + 4], packet.custom_bytes[CUSTOM_HEADER_LENGTH + 5],
                     packet.custom_bytes[CUSTOM_HEADER_LENGTH + 6], period, phase_offset);
-        } else if (memcmp(packet.custom_bytes, "SYNC", CUSTOM_HEADER_LENGTH) == 0) { // check for the SYNC sub-command
-            // check to make sure the total length matches the length of the SYN0 command + data values
-            if (packet.custom_len != CUSTOM_HEADER_LENGTH + 0) {
-                return;
-            }
-            send_sync();
         } else { // unrecognized command
             return;
         }
@@ -670,12 +648,6 @@ void OreoLED_I2C::oreo_state::clear_state()
     period = 0;
     repeat = 0;
     phase_offset = 0;
-}
-
-void OreoLED_I2C::oreo_state::send_sync()
-{
-    clear_state();
-    mode = OREOLED_MODE_SYNC;
 }
 
 void OreoLED_I2C::oreo_state::set_macro(oreoled_macro new_macro)
