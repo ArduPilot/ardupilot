@@ -56,7 +56,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void Copter::ModeAuto::run()
 {
-	// call the correct auto controller
+    // call the correct auto controller
     switch (_mode) {
 
     case Auto_TakeOff:
@@ -772,98 +772,71 @@ void Copter::ModeAuto::wp_run()
         return;
     }
     float target_yaw_rate = 0;
-
-    //Enable course locked add a2sandres
-    if (g.enbl_crs_lock == 1) {
-        if (!copter.failsafe.radio) {
-            // get pilot's desired yaw rate
-            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-            if (!is_zero(target_yaw_rate)) {
-                auto_yaw.set_mode(AUTO_YAW_LOOK_AT_NEXT_WP);
-            }
+    
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
-    else {
-        if (!copter.failsafe.radio) {
-            // get pilot's desired yaw rate
-            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-            if (!is_zero(target_yaw_rate)) {
-                auto_yaw.set_mode(AUTO_YAW_HOLD);
-            }
-        }
-    }
-
-   // set motors to full range
+    
+    // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller 
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());  
-      
-     // mode semi auto
-    if (g.auto_man_alt == 1) {
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    
+    // Auto Manual Altitude Control
+    if (g2.auto_man_alt == 1) {
         
-        // get pilot desired climb rate alt control Alt_Hold add a2sAndres
+        // get pilot desired climb rate alt control Alt_Hold
         float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
         target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
-        // get pilot desired lean angles Althold add a2sAndres
+        // get pilot desired lean angles Althold 
         float target_roll, target_pitch;
         get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
 
-        //added control to resume flight add a2sAndres
-        if (target_roll != 0 || target_pitch != 0) {
-            //Change of mode to be able to restart the automatic mode
+        // added control to resume the return plan, this may be due to loss of information, once a height change of more or less than 5 meters has been reached,
+        // whereby the aircraft stops its advance forward. To resume the flight plan, enter the pitch or roll 
+        if (target_roll != 0.0f || target_pitch != 0.0f) {
             //Restart the automatic mode
             copter.mode_auto.init(true);
             //Re initialise wpnav targets after stopping when giving control of alt
             wp_nav->shift_wp_origin_to_current_pos();
         }
-        
+       
         // call attitude controller
-        // attitude Alt_Hold add a2sAndres
+        // attitude Alt_Hold
         pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
         pos_control->set_accel_z(g.pilot_accel_z);
         pos_control->set_alt_target_to_current_alt();
-        // change (inertial_nav.get_velocity_z ()) by (target_climb_rate) to add more control to the alt add a2sAndres
+        // change (inertial_nav.get_velocity_z ()) by (target_climb_rate) to add more control to the alt
         pos_control->set_desired_velocity_z(target_climb_rate);
-
-        // call position controller Alt_Hold add a2sAndres
-        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
-        target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-
-        // adjust climb rate using rangefinder Alt_Hold add a2sAndres
+        
+        // adjust climb rate using rangefinder Alt_Hold
         if (copter.rangefinder_alt_ok()) {
             // if rangefinder is ok, use surface tracking
             target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
         }
 
-        // update altitude target and call position controller Alt_Hold add a2sAndres
+        // update altitude target and call position controller Alt_Hold
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
     }
-        
+    
     // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();    
-   
-
+    pos_control->update_z_controller();
+    
     // call attitude controller
-    //Enable course locked add a2sandres
-    if (g.enbl_crs_lock == 1) {
-        if (auto_yaw.mode() == AUTO_YAW_LOOK_AT_NEXT_WP) {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
-        }
-        else {
-            // roll, pitch from waypoint controller, yaw heading from auto_heading()
-            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f, true);
-        }
-    }
-    else {
-        if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-        }
-        else {
-            // roll, pitch from waypoint controller, yaw heading from auto_heading()
-            attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
-        }
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
 }
 
@@ -1137,11 +1110,6 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
     }
-
-    if(target_loc.alt!=current_loc.alt){
-        target_loc.alt = current_loc.alt;
-    }
-    
     
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1149,9 +1117,8 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;
 
     // Set wp navigation target
-    wp_start(target_loc);   
+    wp_start(target_loc);
     
-
     // if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
     if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
@@ -1357,7 +1324,6 @@ void Copter::ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
         cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
         cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
         cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
-
 }
 #endif  // NAV_GUIDED
 
