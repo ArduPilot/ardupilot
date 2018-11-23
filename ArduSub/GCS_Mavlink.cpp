@@ -1144,9 +1144,8 @@ void Sub::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs().update();
-        gcs().data_stream_send();
-        gcs().retry_deferred();
+        gcs().update_receive();
+        gcs().update_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
