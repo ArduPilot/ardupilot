@@ -110,7 +110,6 @@ private:
 
     // functions to set LEDs to specific patterns.  These functions return true if no further updates should be made to LEDs this iteration
     bool slow_counter(void);
-    void sync_counter(void);
     bool mode_firmware_update(void);
     bool mode_init(void);
     bool mode_failsafe_radio(void);
@@ -128,7 +127,6 @@ private:
         OREOLED_MODE_MACRO,
         OREOLED_MODE_RGB,
         OREOLED_MODE_RGB_EXTENDED,
-        OREOLED_MODE_SYNC
     };
 
     // Oreo LED modes
@@ -156,8 +154,6 @@ private:
         oreo_state();
 
         void clear_state();
-
-        void send_sync();
 
         void set_macro(oreoled_macro new_macro);
 
@@ -195,8 +191,8 @@ private:
     uint8_t _rear_color_b = 255;                    // the rear LED blue value
 
     uint8_t _slow_count;
-    uint8_t _sync_count = 80;
     uint8_t _boot_count;
     uint32_t _last_boot_ms;
+    uint32_t _last_sync_ms;
 };
 
