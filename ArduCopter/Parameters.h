@@ -370,10 +370,6 @@ public:
 
         // 254,255: reserved
 
-        // Semi auto mode param
-        k_param_auto_man_alt = 256, // activate semi auto mode add a2sAndres
-        k_param_enbl_crs_lock, // activate enabled course locked func add a2sAndres
-
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -436,9 +432,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-    AP_Int32        auto_man_alt;
-    AP_Int8         enbl_crs_lock;
-
+    
     // Misc
     //
     AP_Int32        log_bitmask;
@@ -601,6 +595,9 @@ public:
     // follow
     AP_Follow follow;
 #endif
+    
+    // Auto Manual Alt param
+    AP_Int8 auto_man_alt;  // activate Auto Manual Alt param
 };
 
 extern const AP_Param::Info        var_info[];
