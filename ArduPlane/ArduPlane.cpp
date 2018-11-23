@@ -51,7 +51,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    100),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&plane._gcs,       update,                 50,  500),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&plane._gcs,       data_stream_send,       50,  500),
-    SCHED_TASK(update_events,          50,    150),
+    SCHED_TASK_CLASS(AP_ServoRelayEvents, &plane.ServoRelayEvents, update_events,          50,  150),
     SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
     SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate, 50, 150),
     SCHED_TASK(update_notify,          50,    300),
