@@ -362,7 +362,7 @@ class AutoTestPlane(AutoTest):
                 type_mask = 0b10000001 ^ 0xFF # FIXME
                 # attitude in radians:
                 q = quaternion.Quaternion([math.radians(target_roll_degrees),
-                                           0 ,
+                                           0,
                                            0])
                 roll_rate_radians = 0.5
                 pitch_rate_radians = 0
@@ -594,14 +594,13 @@ class AutoTestPlane(AutoTest):
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
                 time_delta = (self.get_sim_time_cached() -
                               last_mission_current_msg)
-                if (time_delta >1 or
-                    m.seq != last_seq):
+                if (time_delta > 1 or m.seq != last_seq):
                     dist = None
                     x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
                     if x is not None:
                         dist = x.wp_dist
                     self.progress("MISSION_CURRENT.seq=%u (dist=%s)" %
-                                  (m.seq,str(dist)))
+                                  (m.seq, str(dist)))
                     last_mission_current_msg = self.get_sim_time_cached()
                     last_seq = m.seq
             # flaps should undeploy at the end
@@ -767,6 +766,6 @@ class AutoTestPlane(AutoTest):
             self.progress("FAILED: %s" % self.fail_list)
             return False
 
-        self.progress("Max set_rc_timeout=%s" % self.max_set_rc_timeout);
+        self.progress("Max set_rc_timeout=%s" % self.max_set_rc_timeout)
 
         return True

@@ -439,9 +439,10 @@ class AutoTestRover(AutoTest):
         if delta < distance_without_brakes * 0.05:  # 5% isn't asking for much
             raise NotAchievedException("""
 Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
-""" % (distance_with_brakes,
-                   distance_without_brakes,
-                   delta))
+""" %
+                                       (distance_with_brakes,
+                                        distance_without_brakes,
+                                        delta))
 
         self.progress(
             "Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" %
@@ -488,7 +489,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         home_distance = None
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            # m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             pos = self.mav.location()
             home_distance = self.get_distance(HOME, pos)
             if home_distance > distance:
@@ -506,7 +507,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_parameter("PRX_TYPE", 10)
             self.set_parameter("RC10_OPTION", 40) # proximity-enable
             self.reboot_sitl()
-            start = self.mav.location()
+            # start = self.mav.location()
             self.wait_ready_to_arm()
             self.arm_vehicle()
             # first make sure we can breach the fence:
@@ -560,7 +561,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         fnoo = [(1, 'ACRO'),
                 (3, 'STEERING'),
                 (4, 'HOLD'),
-        ]
+                ]
         for (num, expected) in fnoo:
             self.mavproxy.send('mode manual\n')
             self.wait_mode("MANUAL")
@@ -638,7 +639,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_rc_overrides(self):
-        self.context_push();
+        self.context_push()
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46)
@@ -721,7 +722,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Exception caught")
             ex = e
 
-        self.context_pop();
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
@@ -752,7 +753,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     expected_distance = 2
                 elif mc.seq == 4:
                     expected_distance = 5
-                elif mc.seq ==5:
+                elif mc.seq == 5:
                     break
                 else:
                     continue
@@ -820,7 +821,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                           self.drive_square)
 
             self.run_test("Drive Mission %s" % "rover1.txt",
-                          lambda : self.drive_mission("rover1.txt"))
+                          lambda: self.drive_mission("rover1.txt"))
 
             # disabled due to frequent failures in travis. This test needs re-writing
             # self.run_test("Drive Brake", self.drive_brake)
@@ -855,7 +856,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.run_test("Download logs", lambda:
                           self.log_download(
                               self.buildlogs_path("APMrover2-log.bin"),
-                              upload_logs=len(self.fail_list)>0))
+                              upload_logs=len(self.fail_list) > 0))
     #        if not drive_left_circuit(self):
     #            self.progress("Failed left circuit")
     #            failed = True
