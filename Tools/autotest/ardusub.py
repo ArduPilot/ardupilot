@@ -186,12 +186,12 @@ class AutoTestSub(AutoTest):
                           lambda: self.dive_mission("sub_mission.txt"))
 
             self.run_test("Test gripper mission items",
-                          self.test_gripper_mission);
+                          self.test_gripper_mission)
 
             self.run_test("Log download",
                           lambda: self.log_download(
                               self.buildlogs_path("ArduSub-log.bin"),
-                              upload_logs=len(self.fail_list)>0))
+                              upload_logs=len(self.fail_list) > 0))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
