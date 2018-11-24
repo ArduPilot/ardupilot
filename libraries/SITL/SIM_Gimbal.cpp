@@ -222,6 +222,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
     param_value.param_value = p->value;
     param_value.param_count = 0;
     param_value.param_index = 0;
+    param_value.param_type = MAV_PARAM_TYPE_REAL32;
 
     mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
     uint8_t saved_seq = chan0_status->current_tx_seq;
