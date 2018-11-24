@@ -88,3 +88,64 @@ bool AP_Baro_Backend::pressure_ok(float press)
     }
     return ret;
 }
+
+
+///////////////////
+
+bool AP_Baro_Backend::temperature_ok(float temp)
+{
+    
+    if (isinf(temp) || isnan(temp)) {
+        return false;
+    }
+
+    const float range = (float)_frontend.get_filter_range();
+    if (range <= 0) {
+        return true;
+    }
+
+    bool ret = true;
+    if (is_zero(_mean_temperature)) {
+        _mean_temperature = temp;
+    } else {
+        const float d = fabsf(_mean_temperature - temp) / (_mean_temperature + temp);
+        float koeff = FILTER_KOEF;
+
+        if (d * 200.0f > range) {
+            ret = false;
+            koeff /= (d * 10.0f);
+            _error_count++; //?
+        }
+        _mean_temperature = _mean_temperature * (1 - koeff) + temp * koeff;
+    }
+    return ret;
+}
+
+bool AP_Baro_Backend::humidity_ok(float hum)
+{
+    
+    if (isinf(hum) || isnan(hum)) {
+        return false;
+    }
+
+    const float range = (float)_frontend.get_filter_range();
+    if (range <= 0) {
+        return true;
+    }
+
+    bool ret = true;
+    if (is_zero(_mean_humidity)) {
+        _mean_humidity = hum;
+    } else {
+        const float d = fabsf(_mean_humidity - hum) / (_mean_humidity + hum);
+        float koeff = FILTER_KOEF;
+
+        if (d * 200.0f > range) {
+            ret = false;
+            koeff /= (d * 10.0f);
+            _error_count++; //?
+        }
+        _mean_humidity = _mean_humidity * (1 - koeff) + hum * koeff;
+    }
+    return ret;
+}
