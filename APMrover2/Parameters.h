@@ -384,6 +384,9 @@ public:
 
     // Airspeed
     AP_Airspeed airspeed;
+
+    // mission behave
+    AP_Int8 mis_done_behave;
 };
 
 extern const AP_Param::Info var_info[];

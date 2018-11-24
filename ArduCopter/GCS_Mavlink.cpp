@@ -7,10 +7,6 @@ void Copter::gcs_send_heartbeat(void)
     gcs().send_message(MSG_HEARTBEAT);
 }
 
-void Copter::gcs_send_deferred(void)
-{
-    gcs().retry_deferred();
-}
 
 /*
  *  !!NOTE!!
@@ -1437,9 +1433,9 @@ void Copter::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
-        gcs_send_deferred();
+        gcs().update();
+        gcs().data_stream_send();
+        gcs().retry_deferred();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1448,22 +1444,6 @@ void Copter::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Copter::gcs_data_stream_send(void)
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Copter::gcs_update(void)
-{
-    gcs().update();
 }
 
 /*

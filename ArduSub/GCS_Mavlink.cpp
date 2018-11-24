@@ -10,11 +10,6 @@ void Sub::gcs_send_heartbeat()
     gcs().send_message(MSG_HEARTBEAT);
 }
 
-void Sub::gcs_send_deferred()
-{
-    gcs().retry_deferred();
-}
-
 /*
  *  !!NOTE!!
  *
@@ -1145,9 +1140,9 @@ void Sub::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
-        gcs_send_deferred();
+        gcs().update();
+        gcs().data_stream_send();
+        gcs().retry_deferred();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1156,22 +1151,6 @@ void Sub::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Sub::gcs_data_stream_send()
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Sub::gcs_update()
-{
-    gcs().update();
 }
 
 AP_Mission *GCS_MAVLINK_Sub::get_mission()

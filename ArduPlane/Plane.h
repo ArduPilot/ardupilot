@@ -810,10 +810,7 @@ private:
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
-    void gcs_retry_deferred(void);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -1062,8 +1059,6 @@ private:
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
 #endif
-
-    void read_aux_all();
 
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;

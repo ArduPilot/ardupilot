@@ -52,6 +52,7 @@ public:
         OPTION_RXINV=(1U<<0),  // invert RX line
         OPTION_TXINV=(1U<<1),  // invert TX line
         OPTION_HDPLEX=(1U<<2), // half-duplex (one-wire) mode
+        OPTION_SWAP=(1U<<3), // swap RX and TX pins
     };
 
     enum flow_control {

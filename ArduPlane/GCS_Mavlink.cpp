@@ -1467,8 +1467,8 @@ void Plane::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
+        gcs().update();
+        gcs().data_stream_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1480,35 +1480,11 @@ void Plane::mavlink_delay_cb()
 }
 
 /*
- *  send data streams in the given rate range on both links
- */
-void Plane::gcs_data_stream_send(void)
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Plane::gcs_update(void)
-{
-    gcs().update();
-}
-
-/*
   send airspeed calibration data
  */
 void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
 {
     gcs().send_airspeed_calibration(vg);
-}
-
-/**
-   retry any deferred messages
- */
-void Plane::gcs_retry_deferred(void)
-{
-    gcs().retry_deferred();
 }
 
 /*

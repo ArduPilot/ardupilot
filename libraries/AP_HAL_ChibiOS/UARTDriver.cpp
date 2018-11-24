@@ -1117,6 +1117,13 @@ bool UARTDriver::set_options(uint8_t options)
     } else {
         cr2 &= ~USART_CR2_TXINV;
     }
+    // F7 can also support swapping RX and TX pins
+    if (options & OPTION_SWAP) {
+        cr2 |= USART_CR2_SWAP;
+        _cr2_options |= USART_CR2_SWAP;
+    } else {
+        cr2 &= ~USART_CR2_SWAP;
+    }
 #else // STM32F4
     // F4 can do inversion by GPIO if enabled in hwdef.dat, using
     // TXINV and RXINV options
@@ -1133,6 +1140,9 @@ bool UARTDriver::set_options(uint8_t options)
         } else {
             ret = false;
         }
+    }
+    if (options & OPTION_SWAP) {
+        ret = false;
     }
 #endif // STM32xx
 

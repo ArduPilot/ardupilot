@@ -11,7 +11,6 @@ import traceback
 import pexpect
 from pymavlink import mavutil
 from pymavlink import mavextra
-from pymavlink import quaternion
 
 from pysim import util, rotmat
 
@@ -141,7 +140,7 @@ class AutoTestCopter(AutoTest):
                      0, # param5
                      0, # param6
                      alt_min # param7
-        )
+                     )
         self.progress("Ran command")
         self.wait_for_alt(alt_min)
 
@@ -223,7 +222,7 @@ class AutoTestCopter(AutoTest):
             if delta > maxdistchange:
                 raise NotAchievedException(
                     "Loiter shifted %u meters (> limit of %u)" %
-                              (delta, maxdistchange))
+                    (delta, maxdistchange))
         self.progress("Loiter OK for %u seconds" % holdtime)
 
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
@@ -1397,8 +1396,7 @@ class AutoTestCopter(AutoTest):
                 if now - tstart > 120:
                     raise AutoTestTimeoutException("Did not disarm as expected")
                 m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True)
-                if ((now - last_mission_current_msg) > 1 or
-                    m.seq != last_seq):
+                if ((now - last_mission_current_msg) > 1 or m.seq != last_seq):
                     dist = None
                     x = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
                     if x is not None:
@@ -1539,12 +1537,14 @@ class AutoTestCopter(AutoTest):
         command = mavutil.mavlink.MAV_CMD_NAV_DELAY
         # retrieve mission item and check it:
         tried_set = False
+        hours = None
+        mins = None
+        secs = None
         while True:
             self.progress("Requesting item")
             self.mav.mav.mission_request_send(1,
                                               1,
-                                              seq
-            )
+                                              seq)
             st = self.mav.recv_match(type='MISSION_ITEM',
                                      blocking=True,
                                      timeout=1)
@@ -1552,13 +1552,15 @@ class AutoTestCopter(AutoTest):
                 continue
 
             print("Item: %s" % str(st))
-            if (tried_set and
-                st.seq == seq and
-                st.command == command and
-                st.param2 == hours and
-                st.param3 == mins and
-                st.param4 == secs):
+            have_match = (tried_set and
+                          st.seq == seq and
+                          st.command == command and
+                          st.param2 == hours and
+                          st.param3 == mins and
+                          st.param4 == secs)
+            if have_match:
                 return
+
             self.progress("Mission mismatch")
 
             m = None
@@ -1675,6 +1677,7 @@ class AutoTestCopter(AutoTest):
 
     def fly_nav_takeoff_delay_abstime(self):
         """make sure taking off at a specific time works"""
+        global num_wp
         num_wp = self.load_mission("copter_nav_delay_takeoff.txt")
 
         self.progress("Starting mission")
@@ -1688,9 +1691,9 @@ class AutoTestCopter(AutoTest):
         delay_item_seq = 2
         self.reset_delay_item_seventyseven(delay_item_seq)
         delay_for_seconds = 77
-        reset_at = self.get_sim_time_cached();
+        reset_at = self.get_sim_time_cached()
 
-        self.context_push();
+        self.context_push()
 
         ex = None
         try:
@@ -2132,8 +2135,8 @@ class AutoTestCopter(AutoTest):
             self.mav.mav.mount_control_send(
                 1, # target system
                 1, # target component
-                20 *100, # pitch
-                20 *100, # roll (centidegrees)
+                20 * 100, # pitch
+                20 * 100, # roll (centidegrees)
                 0,  # yaw
                 0   # save position
             )
@@ -2317,6 +2320,9 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
 
         self.reboot_sitl() # to handle MNT_TYPE changing
+
+        if ex is not None:
+            raise ex
 
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
@@ -2612,7 +2618,7 @@ class AutoTestCopter(AutoTest):
             self.run_test("Test gripper", self.test_gripper)
 
             self.run_test("Test gripper mission items",
-                          self.test_gripper_mission);
+                          self.test_gripper_mission)
 
             '''vision position'''  # expects vehicle to be disarmed
             self.run_test("Fly Vision Position", self.fly_vision_position)
@@ -2624,7 +2630,7 @@ class AutoTestCopter(AutoTest):
             self.run_test("log download",
                           lambda: self.log_download(
                               self.buildlogs_path("ArduCopter-log.bin"),
-                              upload_logs=len(self.fail_list)>0))
+                              upload_logs=len(self.fail_list) > 0))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
@@ -2671,7 +2677,7 @@ class AutoTestCopter(AutoTest):
             self.run_test("log download",
                           lambda: self.log_download(
                               self.buildlogs_path("Helicopter-log.bin"),
-                              upload_logs=len(self.fail_list)>0))
+                              upload_logs=len(self.fail_list) > 0))
 
         except pexpect.TIMEOUT:
             self.fail_list.append("Failed with timeout")

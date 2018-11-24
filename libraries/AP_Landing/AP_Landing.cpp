@@ -142,6 +142,15 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
     
+    // @Param: TD_ALT
+    // @DisplayName: Touch down altitude
+    // @Description: Altitude to trigger touchdown condition if weight on wheels sensor is not available. Disabled when 0. Recommend using an RTK GPS or rangefinder for accurate altitude
+    // @Units: m
+    // @Range: 0 5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("TD_ALT", 16, AP_Landing, touchdown_altitude, 0.0f),
+    
     AP_GROUPEND
 };
 
@@ -168,7 +177,6 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_SpdHgtControl *_
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
-
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
@@ -219,7 +227,6 @@ bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc,
     Log();
     return success;
 }
-
 
 bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
     const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed)

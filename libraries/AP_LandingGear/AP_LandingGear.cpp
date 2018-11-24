@@ -198,7 +198,11 @@ void AP_LandingGear::update(float height_above_ground_m)
     
     if (_pin_deployed == -1) {
         last_gear_event_ms = 0;
-        gear_state_current = (_deployed == true ? LG_DEPLOYED : LG_RETRACTED);
+        
+        // If there was no pilot input and state is still unknown - leave it as it is
+        if (gear_state_current != LG_UNKNOWN) {
+            gear_state_current = (_deployed == true ? LG_DEPLOYED : LG_RETRACTED);
+        }
     } else {
         LG_LandingGear_State gear_state_new;
         
@@ -249,4 +253,15 @@ void AP_LandingGear::log_wow_state(LG_WOW_State state)
     DataFlash_Class::instance()->Log_Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
                                            AP_HAL::micros64(),
                                            (int8_t)gear_state_current, (int8_t)state);
+}
+
+bool AP_LandingGear::check_before_land(void)
+{
+    // If the landing gear state is not known (most probably as it is not used)
+    if (get_state() == LG_UNKNOWN) {
+        return true;
+    }
+    
+    // If the landing gear was not used - return true, otherwise - check for deployed
+    return (get_state() == LG_DEPLOYED);
 }
