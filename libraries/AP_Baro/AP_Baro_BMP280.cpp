@@ -164,6 +164,7 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     WITH_SEMAPHORE(_sem);
     
     _temperature = temp;
+    _has_sample = true;
 }
 
 // calculate pressure
