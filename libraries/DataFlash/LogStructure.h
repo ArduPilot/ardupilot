@@ -625,8 +625,8 @@ struct PACKED log_Cmd {
     float param2;
     float param3;
     float param4;
-    float latitude;
-    float longitude;
+    int32_t latitude;
+    int32_t longitude;
     float altitude;
     uint8_t frame;
 };
@@ -1225,7 +1225,7 @@ Format characters in the format string for binary log messages
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHB","TimeUS,Vcc,VServo,Flags,Safety", "svv--", "F00--" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "QHHHfffffffB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
+      "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------" }, \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
