@@ -481,7 +481,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
                 }
             } else {
                 // simulate simple battery setup
-                float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+                float throttle;
+                if (_vehicle == APMrover2) {
+                    throttle = motors_on ? (input.servos[2] - 1500) / 500.0f : 0;
+                } else {
+                    throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
+                }
                 // lose 0.7V at full throttle
                 voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
 
