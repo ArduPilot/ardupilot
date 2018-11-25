@@ -409,13 +409,27 @@ void DataFlash_Class::Log_Write_Vibration()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write a mission command. Total length : 36 bytes
 bool DataFlash_Backend::Log_Write_Mission_Cmd(const AP_Mission &mission,
                                               const AP_Mission::Mission_Command &cmd)
 {
-    mavlink_mission_item_t mav_cmd = {};
-    AP_Mission::mission_cmd_to_mavlink(cmd,mav_cmd);
-    return Log_Write_MavCmd(mission.num_commands(),mav_cmd);
+    mavlink_mission_item_int_t mav_cmd = {};
+    AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
+    struct log_Cmd pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+        time_us         : AP_HAL::micros64(),
+        command_total   : mission.num_commands(),
+        sequence        : mav_cmd.seq,
+        command         : mav_cmd.command,
+        param1          : mav_cmd.param1,
+        param2          : mav_cmd.param2,
+        param3          : mav_cmd.param3,
+        param4          : mav_cmd.param4,
+        latitude        : mav_cmd.x,
+        longitude       : mav_cmd.y,
+        altitude        : mav_cmd.z,
+        frame           : mav_cmd.frame
+    };
+    return WriteBlock(&pkt, sizeof(pkt));
 }
 
 void DataFlash_Backend::Log_Write_EntireMission(const AP_Mission &mission)
@@ -1275,27 +1289,6 @@ void DataFlash_Class::Log_Write_EKF3(AP_AHRS_NavEKF &ahrs)
     }
 }
 #endif
-
-// Write a command processing packet
-bool DataFlash_Backend::Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd)
-{
-    struct log_Cmd pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
-        time_us         : AP_HAL::micros64(),
-        command_total   : (uint16_t)cmd_total,
-        sequence        : (uint16_t)mav_cmd.seq,
-        command         : (uint16_t)mav_cmd.command,
-        param1          : (float)mav_cmd.param1,
-        param2          : (float)mav_cmd.param2,
-        param3          : (float)mav_cmd.param3,
-        param4          : (float)mav_cmd.param4,
-        latitude        : (float)mav_cmd.x,
-        longitude       : (float)mav_cmd.y,
-        altitude        : (float)mav_cmd.z,
-        frame           : (uint8_t)mav_cmd.frame
-    };
-    return WriteBlock(&pkt, sizeof(pkt));
-}
 
 void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 {

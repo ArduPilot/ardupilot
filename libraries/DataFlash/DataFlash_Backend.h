@@ -89,7 +89,6 @@ public:
 
     void Log_Write_EntireMission(const AP_Mission &mission);
     bool Log_Write_Format(const struct LogStructure *structure);
-    bool Log_Write_MavCmd(uint16_t cmd_total, const mavlink_mission_item_t& mav_cmd);
     bool Log_Write_Message(const char *message);
     bool Log_Write_MessageF(const char *fmt, ...);
     bool Log_Write_Mission_Cmd(const AP_Mission &mission,
