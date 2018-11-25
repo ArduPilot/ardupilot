@@ -44,6 +44,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: MASK
     // @DisplayName: Channel Bitmask
     // @Description: Enable of BLHeli pass-thru servo protocol support to specific channels. This mask is in addition to motors enabled using SERVO_BLH_AUTO (if any)
+    // @Values: 0:None,1:Channel1,2:Channel2,4:Channel3,8:Channel4,16:Channel5,32:Channel6,64:Channel7,128:Channel8,256:Channel9,512:Channel10,1024:Channel11,2048:Channel12,4096:Channel13,8192:Channel14,16384:Channel15,32768:Channel16
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
@@ -111,6 +112,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Param: REMASK
     // @DisplayName: Channel Reversible Bitmask
     // @Description: Mask of channels which are reversible. This is used for ESCs which have been configured in '3D' mode, allowing for the motor to spin in either direction
+    // @Values: 0:None,1:Channel1,2:Channel2,4:Channel3,8:Channel4,16:Channel5,32:Channel6,64:Channel7,128:Channel8,256:Channel9,512:Channel10,1024:Channel11,2048:Channel12,4096:Channel13,8192:Channel14,16384:Channel15,32768:Channel16
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
     // @User: Advanced
     AP_GROUPINFO("REMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
