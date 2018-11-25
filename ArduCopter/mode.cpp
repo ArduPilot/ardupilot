@@ -97,9 +97,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_FLIP_ENABLED == ENABLED
         case FLIP:
             ret = &mode_flip;
             break;
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
