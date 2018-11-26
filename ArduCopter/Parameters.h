@@ -432,7 +432,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-    
+
     // Misc
     //
     AP_Int32        log_bitmask;
@@ -595,7 +595,7 @@ public:
     // follow
     AP_Follow follow;
 #endif
-    
+
     // Auto Manual Alt param
     AP_Int8 auto_man_alt;  // activate semi auto mode add a2sAndres
 };
