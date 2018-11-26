@@ -781,8 +781,8 @@ void Copter::ModeAuto::wp_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
-    
-   // set motors to full range
+	
+	// set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller 
@@ -860,7 +860,7 @@ void Copter::ModeAuto::spline_run()
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-           auto_yaw.set_mode(AUTO_YAW_HOLD);            
+			auto_yaw.set_mode(AUTO_YAW_HOLD);            
         }
     }
 
@@ -874,9 +874,8 @@ void Copter::ModeAuto::spline_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    //if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+		// roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
@@ -1110,17 +1109,17 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             // default to current altitude as alt-above-home
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
-    }
-    
-    // this will be used to remember the time in millis after we reach or pass the WP.
+	}
+	
+	// this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
-
-    // Set wp navigation target
-    wp_start(target_loc);
-    
-    // if no delay as well as not final waypoint set the waypoint as "fast"
+	
+	// Set wp navigation target
+	wp_start(target_loc);
+	
+	// if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
     if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         copter.wp_nav->set_fast_waypoint(true);
@@ -1323,8 +1322,8 @@ void Copter::ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
     copter.mode_guided.limit_set(
         cmd.p1 * 1000, // convert seconds to ms
         cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
+		cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
+		cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
 }
 #endif  // NAV_GUIDED
 
