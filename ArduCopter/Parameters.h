@@ -369,7 +369,7 @@ public:
         k_param_DataFlash = 253, // 253 - Logging Group
 
         // 254,255: reserved
-
+        
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -432,7 +432,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
-    
+
     // Misc
     //
     AP_Int32        log_bitmask;
@@ -595,9 +595,9 @@ public:
     // follow
     AP_Follow follow;
 #endif
-    
+
     // Auto Manual Alt param
-    AP_Int8 auto_man_alt;  // activate Auto Manual Alt param
+    AP_Int8 auto_man_alt;  // activate semi auto mode add a2sAndres
 };
 
 extern const AP_Param::Info        var_info[];

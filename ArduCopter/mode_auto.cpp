@@ -56,7 +56,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void Copter::ModeAuto::run()
 {
-    // call the correct auto controller
+	// call the correct auto controller
     switch (_mode) {
 
     case Auto_TakeOff:
@@ -771,8 +771,7 @@ void Copter::ModeAuto::wp_run()
         set_throttle_takeoff();
         return;
     }
-    float target_yaw_rate = 0;
-    
+   
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -783,7 +782,7 @@ void Copter::ModeAuto::wp_run()
         }
     }
     
-    // set motors to full range
+   // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     // run waypoint controller 
@@ -829,14 +828,15 @@ void Copter::ModeAuto::wp_run()
     
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
-    
+
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else {
+    }
+    else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
 }
 
@@ -860,7 +860,7 @@ void Copter::ModeAuto::spline_run()
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);            
+           auto_yaw.set_mode(AUTO_YAW_HOLD);            
         }
     }
 
@@ -874,7 +874,8 @@ void Copter::ModeAuto::spline_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+    //if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
