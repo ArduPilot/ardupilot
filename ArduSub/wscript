@@ -19,7 +19,8 @@ def build(bld):
             'AP_RCMapper',
             'AP_Beacon',
             'AP_TemperatureSensor',
-            'AP_Arming'
+            'AP_Arming',
+            'AP_KDECAN',
         ],
     )
 
