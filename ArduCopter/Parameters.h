@@ -367,9 +367,8 @@ public:
         k_param_autotune_min_d, // 251
         k_param_arming, // 252  - AP_Arming
         k_param_DataFlash = 253, // 253 - Logging Group
-
-        // 254,255: reserved
         
+        // 254,255: reserved
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
