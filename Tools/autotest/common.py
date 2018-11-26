@@ -306,7 +306,7 @@ class AutoTest(ABC):
     # SIM UTILITIES
     #################################################
     def get_sim_time(self):
-        """Get SITL time."""
+        """Get SITL time in seconds."""
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         return m.time_boot_ms * 1.0e-3
 
@@ -316,6 +316,15 @@ class AutoTest(ABC):
         if x is None:
             return self.get_sim_time()
         return x.time_boot_ms * 1.0e-3
+
+    def delay_sim_time(self, delay):
+        '''delay for delay seconds in simulation time'''
+        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        start = m.time_boot_ms
+        while True:
+            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+            if m.time_boot_ms - start > delay * 1000:
+                return
 
     def sim_location(self):
         """Return current simulator location."""
@@ -537,10 +546,11 @@ class AutoTest(ABC):
                 time_ratio = None
             else:
                 time_ratio = wclock_delta / sim_time_delta
-            self.progress("set_rc (wc=%s st=%s r=%s): want=%u got=%u" %
+            self.progress("set_rc (wc=%s st=%s r=%s): ch=%u want=%u got=%u" %
                           (wclock_delta,
                            sim_time_delta,
                            time_ratio,
+                           chan,
                            pwm,
                            chan_pwm))
             if chan_pwm == pwm:
@@ -700,7 +710,7 @@ class AutoTest(ABC):
         self.progress("Arm motors with switch %d" % switch_chan)
         self.set_rc(switch_chan, 2000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
@@ -1436,6 +1446,8 @@ class AutoTest(ABC):
             arming_switch = 7
             self.set_parameter("RC%d_OPTION" % arming_switch, 41)
             self.set_rc(arming_switch, 1000)
+            # delay so a transition is seen by the RC switch code:
+            self.delay_sim_time(0.5)
             if not self.arm_motors_with_switch(arming_switch):
                 raise NotAchievedException("Failed to arm with switch")
             if not self.disarm_motors_with_switch(arming_switch):
