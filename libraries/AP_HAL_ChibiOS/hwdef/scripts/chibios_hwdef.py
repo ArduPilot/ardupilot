@@ -59,8 +59,8 @@ bylabel = {}
 # list of SPI devices
 spidev = []
 
-# list of ROMFS files
-romfs = []
+# dictionary of ROMFS files
+romfs = {}
 
 # SPI bus list
 spi_list = []
@@ -1157,11 +1157,14 @@ def add_bootloader():
     '''added bootloader to ROMFS'''
     bp = bootloader_path()
     if bp is not None:
-        romfs.append( ("bootloader.bin", bp) )
+        romfs["bootloader.bin"] = bp
 
 def write_ROMFS(outdir):
     '''create ROMFS embedded header'''
-    env_vars['ROMFS_FILES'] = romfs
+    romfs_list = []
+    for k in romfs.keys():
+        romfs_list.append((k, romfs[k]))
+    env_vars['ROMFS_FILES'] = romfs_list
 
 def write_prototype_file():
     '''write the prototype file for apj generation'''
@@ -1394,7 +1397,7 @@ def write_env_py(filename):
 
 def romfs_add(romfs_filename, filename):
     '''add a file to ROMFS'''
-    romfs.append((romfs_filename, filename))
+    romfs[romfs_filename] = filename
 
 def romfs_wildcard(pattern):
     '''add a set of files to ROMFS by wildcard'''
@@ -1402,7 +1405,7 @@ def romfs_wildcard(pattern):
     (pattern_dir, pattern) = os.path.split(pattern)
     for f in os.listdir(os.path.join(base_path, pattern_dir)):
         if fnmatch.fnmatch(f, pattern):
-            romfs.append((f, os.path.join(pattern_dir, f)))
+            romfs[f] = os.path.join(pattern_dir, f)
     
 def process_line(line):
     '''process one line of pin definition file'''
