@@ -55,7 +55,7 @@ void AP_Baro_Backend::_copy_to_frontend(uint8_t instance, float pressure, float 
 
 static constexpr float FILTER_KOEF = 0.1f;
 
-/* Check that the baro value is valid by using a mean filter. If the
+/* Check that the baro, temperature and humidity value is valid by using a mean filter. If the
  * value is further than filtrer_range from mean value, it is
  * rejected. 
 */
@@ -89,9 +89,6 @@ bool AP_Baro_Backend::pressure_ok(float press)
     return ret;
 }
 
-
-///////////////////
-
 bool AP_Baro_Backend::temperature_ok(float temp)
 {
     
@@ -114,7 +111,7 @@ bool AP_Baro_Backend::temperature_ok(float temp)
         if (d * 200.0f > range) {
             ret = false;
             koeff /= (d * 10.0f);
-            _error_count++; //?
+            _error_count++;
         }
         _mean_temperature = _mean_temperature * (1 - koeff) + temp * koeff;
     }
@@ -143,7 +140,7 @@ bool AP_Baro_Backend::humidity_ok(float hum)
         if (d * 200.0f > range) {
             ret = false;
             koeff /= (d * 10.0f);
-            _error_count++; //?
+            _error_count++;
         }
         _mean_humidity = _mean_humidity * (1 - koeff) + hum * koeff;
     }
