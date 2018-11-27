@@ -159,3 +159,8 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 #else
 #define SITL_printf(fmt, args ...)
 #endif
+
+// fail nuttx builds
+#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+  #error NuttX builds have been deprecated in favour of ChibiOS.  Please use alternative build targets including fmuv2, fmuv3, fmuv4, fmuv5.
+#endif
