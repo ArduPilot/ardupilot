@@ -8,10 +8,6 @@
 // stabilize_init - initialise stabilize controller
 bool Copter::ModeStabilize_Heli::init(bool ignore_checks)
 {
-    // set target altitude to zero for reporting
-    // To-Do: make pos controller aware when it's active/inactive so it can always report the altitude error?
-    pos_control->set_alt_target(0);
-
     // set stab collective true to use stabilize scaled collective pitch range
     copter.input_manager.set_use_stab_col(true);
 

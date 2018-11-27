@@ -663,6 +663,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed, "ARSPD", 37, ParametersG2, AP_Airspeed),
 
+    // @Param: MIS_DONE_BEHAVE
+    // @DisplayName: Mission done behave
+    // @Description: Mode to become after mission done
+    // @Values: 0:Hold,1:Loiter
+    // @User: Standard
+    AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
+
     AP_GROUPEND
 };
 

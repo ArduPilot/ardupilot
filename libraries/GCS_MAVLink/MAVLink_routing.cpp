@@ -143,7 +143,9 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                                  (broadcast_component || 
                                   target_component == routes[i].compid ||
                                   !match_system))) {
-            if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
+            if (in_channel != routes[i].channel &&
+                !sent_to_chan[routes[i].channel] &&
+                !GCS_MAVLINK::is_private(routes[i].channel)) {
                 if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg->len) +
                     GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
 #if ROUTING_DEBUG

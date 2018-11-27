@@ -810,10 +810,7 @@ private:
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
-    void gcs_retry_deferred(void);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -891,7 +888,6 @@ private:
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
     void set_fence_point_with_index(const Vector2l &point, unsigned i);
@@ -1063,8 +1059,6 @@ private:
     void update_soaring();
 #endif
 
-    void read_aux_all();
-
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
@@ -1079,12 +1073,14 @@ private:
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
         Failsafe_Action_Land      = 2,
-        Failsafe_Action_Terminate = 3
+        Failsafe_Action_Terminate = 3,
+        Failsafe_Action_QLand     = 4,
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
+                                                      Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,

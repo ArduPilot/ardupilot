@@ -12,7 +12,7 @@ class AP_IOMCU_FW {
 public:
     void process_io_packet();
 
-    struct IOPacket rx_io_packet, tx_io_packet, rx_io_last;
+    struct IOPacket rx_io_packet, tx_io_packet;
 
     void init();
     void update();

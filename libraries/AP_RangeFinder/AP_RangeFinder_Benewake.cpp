@@ -121,10 +121,6 @@ bool AP_RangeFinder_Benewake::get_reading(uint16_t &reading_cm)
                         // this reading is out of range
                         count_out_of_range++;
                     } else if (model_type == BENEWAKE_TFmini) {
-                        // TFmini has short distance mode (mm)
-                        if (linebuf[6] == 0x02) {
-                            dist *= 0.1f;
-                        }
                         // no signal byte from TFmini so add distance to sum
                         sum_cm += dist;
                         count++;

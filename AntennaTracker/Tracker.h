@@ -225,9 +225,6 @@ private:
     // GCS_Mavlink.cpp
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
-    void gcs_retry_deferred(void);
 
     // Log.cpp
     void Log_Write_Attitude();
