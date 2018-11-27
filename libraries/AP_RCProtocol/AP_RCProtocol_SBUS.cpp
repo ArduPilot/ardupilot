@@ -226,13 +226,14 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 // support byte input
 void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
-    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us > 2000U);
-    if (have_frame_gap &&
-        byte_input.ofs == sizeof(byte_input.buf)) {
-        byte_input.ofs = 0;
-    }
+    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
     byte_input.last_byte_us = timestamp_us;
 
+    if (have_frame_gap) {
+        // if we have a frame gap then this must be the start of a new
+        // frame
+        byte_input.ofs = 0;
+    }
     if (b != 0x0F && byte_input.ofs == 0) {
         // definately not SBUS, missing header byte
         return;
