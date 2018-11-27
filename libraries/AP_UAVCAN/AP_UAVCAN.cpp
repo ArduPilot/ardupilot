@@ -186,20 +186,19 @@ void AP_UAVCAN::init(uint8_t driver_index)
 
     if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
         uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
-
-        _node->setHardwareVersion(hw_version);
-
-        int start_res = _node->start();
-        if (start_res < 0) {
-            debug_uavcan(1, "UAVCAN: node start problem, error %d\n\r", start_res);
-            return;
-        }
-
-        //Start Servers
-#ifdef HAS_UAVCAN_SERVERS
-        _servers.init(*_node);
-#endif
     }
+    _node->setHardwareVersion(hw_version);
+
+    int start_res = _node->start();
+    if (start_res < 0) {
+        debug_uavcan(1, "UAVCAN: node start problem, error %d\n\r", start_res);
+        return;
+    }
+
+    //Start Servers
+#ifdef HAS_UAVCAN_SERVERS
+    _servers.init(*_node);
+#endif
     // Roundup all subscribers from supported drivers
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);
