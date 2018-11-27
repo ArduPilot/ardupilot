@@ -26,7 +26,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Copter::Copter(void)
     : DataFlash(g.log_bitmask),
     flight_modes(&g.flight_mode1),
-    control_mode(INITIALISING),
     scaleLongDown(1),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
@@ -34,7 +33,7 @@ Copter::Copter(void)
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
     param_loader(var_info),
-    flightmode(&mode_stabilize)
+    flightmode(&mode_initialising)
 {
     // init sensor error logging flags
     sensor_health.baro = true;

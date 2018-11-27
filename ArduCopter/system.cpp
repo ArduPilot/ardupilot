@@ -262,7 +262,7 @@ void Copter::init_ardupilot()
     serial_manager.set_blocking_writes_all(false);
 
     //Setting the mode to default initial_mode
-    set_mode((control_mode_t)g.initial_mode.get(), MODE_REASON_UNKNOWN);
+    set_mode((control_mode_t)g.initial_mode.get(), MODE_REASON_INITIALISING);
 
     // enable CPU failsafe
     failsafe_enable();
