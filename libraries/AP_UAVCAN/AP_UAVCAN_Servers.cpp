@@ -92,6 +92,7 @@ class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::ISto
 
     enum { FilePermissions = 438 };     ///< 0o666
 
+    enum { MaxNumOpens = 100 };
     /**
      * This type is used for the path
      */
@@ -99,6 +100,7 @@ class AP_UAVCAN_FileStorageBackend : public uavcan::dynamic_node_id_server::ISto
 
     PathString base_path;
 
+    static uint8_t num_opens;
 protected:
     virtual String get(const String& key) const
     {
@@ -106,6 +108,12 @@ protected:
         PathString path = base_path.c_str();
         path += key;
         String value;
+        //This is to deter frequent inflight opening and closing of files during an event
+        //where the device is misbehaving
+        if (num_opens >= MaxNumOpens) {
+            return value;
+        }
+        num_opens++;
         int fd = open(path.c_str(), O_RDONLY);
         if (fd >= 0)
         {
@@ -146,6 +154,12 @@ protected:
         using namespace std;
         PathString path = base_path.c_str();
         path += key;
+        //This is to deter frequent inflight opening and closing of files during an event
+        //where the device is misbehaving
+        if (num_opens >= MaxNumOpens) {
+            return;
+        }
+        num_opens++;
 #if HAL_OS_POSIX_IO
         int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FilePermissions);
 #else
@@ -215,6 +229,7 @@ public:
     }
 
 };
+uint8_t AP_UAVCAN_FileStorageBackend::num_opens = 0;
 
 bool AP_UAVCAN_Servers::init(uavcan::Node<0> &node)
 {
