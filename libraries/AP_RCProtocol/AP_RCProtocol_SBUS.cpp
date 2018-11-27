@@ -174,9 +174,9 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         chancount = 18;
 
         /* channel 17 (index 16) */
-        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0)) * 1000 + 998;
+        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0))?1998:998;
         /* channel 18 (index 17) */
-        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1)) * 1000 + 998;
+        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1))?1998:998;
     }
 
     /* note the number of channels decoded */
