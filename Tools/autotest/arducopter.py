@@ -3172,11 +3172,78 @@ class AutoTestHeli(AutoTestCopter):
 
         self.progress("AVC mission completed: passed!")
 
+    def fly_heli_poshold_takeoff(self):
+        """ensure vehicle stays put until it is ready to fly"""
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_parameter("PILOT_TKOFF_ALT", 700)
+            self.mavproxy.send('mode POSHOLD\n')
+            self.wait_mode('POSHOLD')
+            self.set_rc(3, 1000)
+            self.set_rc(8, 1000)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(8, 2000)
+            self.progress("wait for rotor runup to complete")
+            self.wait_servo_channel_value(8, 1900, timeout=10)
+            self.wait_seconds(20)
+            # check we are still on the ground...
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            if abs(m.relative_alt) > 100:
+                raise NotAchievedException("Took off prematurely")
+            self.progress("Pushing throttle past half-way")
+            self.set_rc(3, 1600)
+            self.wait_seconds(0.5)
+            self.progress("Bringing back to hover throttle")
+            self.set_rc(3, 1500)
+
+            # make sure we haven't already reached alt:
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            if abs(m.relative_alt) > 500:
+                raise NotAchievedException("Took off too fast")
+
+            self.progress("Monitoring takeoff-to-alt")
+            self.wait_altitude(6.9, 8, relative=True)
+
+            self.progress("Making sure we stop at our takeoff altitude")
+            tstart = self.get_sim_time()
+            while self.get_sim_time() - tstart < 5:
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                delta = abs(7000 - m.relative_alt)
+                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
+                                                   delta/1000))
+                if delta > 1000:
+                    raise NotAchievedException("Failed to maintain takeoff alt")
+            self.progress("takeoff OK")
+        except Exception as e:
+            ex = e
+
+        self.mavproxy.send('mode LAND\n')
+        self.wait_mode('LAND')
+        self.mav.motors_disarmed_wait()
+        self.set_rc(8, 1000)
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
+    def set_rc_default(self):
+        super(AutoTestCopter, self).set_rc_default()
+        self.progress("Lowering rotor speed")
+        self.set_rc(8, 1000)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
         ret.extend([
             ("AVCMission", "Fly AVC mission", self.fly_avc_test),
+
+            ("PosHoldTakeOff",
+             "Fly POSHOLD takeoff",
+             self.fly_heli_poshold_takeoff),
 
             ("LogDownLoad",
              "Log download",
