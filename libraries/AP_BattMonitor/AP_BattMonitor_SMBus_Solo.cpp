@@ -1,7 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Notify/AP_Notify.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
@@ -80,16 +79,14 @@ void AP_BattMonitor_SMBus_Solo::timer()
         bool pressed = (buff[1] >> 3) & 0x01;
 
         if (_button_press_count >= BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE) {
-            // battery will power off
-            AP_Notify::flags.powering_off = true;
+            // vehicle will power off, set state flag
+            _state.is_powering_off = true;
         } else if (pressed) {
             // battery will power off if the button is held
             _button_press_count++;
-
         } else {
             // button released, reset counters
             _button_press_count = 0;
-            AP_Notify::flags.powering_off = false;
         }
     }
 
