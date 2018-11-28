@@ -562,10 +562,10 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("SERVO%u_MAX" % servo_ch, servo_ch_max)
             self.set_parameter("SERVO%u_TRIM" % servo_ch, servo_ch_trim)
 
-            # check flaps are not deployed:
+            self.progress("check flaps are not deployed")
             self.set_rc(flaps_ch, flaps_ch_min)
             self.wait_servo_channel_value(servo_ch, servo_ch_min)
-            # deploy the flaps:
+            self.progress("deploy the flaps")
             self.set_rc(flaps_ch, flaps_ch_max)
             tstart = self.get_sim_time()
             self.wait_servo_channel_value(servo_ch, servo_ch_max)
@@ -576,7 +576,7 @@ class AutoTestPlane(AutoTest):
             if delta_time < delta_time_min or delta_time > delta_time_max:
                 raise NotAchievedException((
                     "Flaps Slew not working (%f seconds)" % (delta_time,)))
-            # undeploy flaps:
+            self.progress("undeploy flaps")
             self.set_rc(flaps_ch, flaps_ch_min)
             self.wait_servo_channel_value(servo_ch, servo_ch_min)
 

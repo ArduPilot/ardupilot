@@ -1163,6 +1163,8 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
                                     blocking=True,
                                     timeout=remaining)
+            if m is None:
+                continue
             m_value = getattr(m, channel_field, None)
             self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
                           (channel_field, m_value, value))
