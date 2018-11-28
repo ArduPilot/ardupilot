@@ -50,6 +50,10 @@ uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
+// private channels are ones used for point-to-point protocols, and
+// don't get broadcasts or fwded packets
+uint8_t GCS_MAVLINK::mavlink_private = 0;
+
 GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
@@ -900,7 +904,10 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     // we exclude radio packets because we historically used this to
     // make it possible to use the CLI over the radio
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-        mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+        const uint8_t mask = (1U<<(chan-MAVLINK_COMM_0));
+        if (!(mask & mavlink_private)) {
+            mavlink_active |= mask;
+        }
     }
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
@@ -985,7 +992,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
 
     // send a timesync message every 10 seconds; this is for data
     // collection purposes
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms) {
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private()) {
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;
@@ -998,6 +1005,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         // stop waypoint receiving if timeout
         if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
             waypoint_receiving = false;
+            gcs().send_text(MAV_SEVERITY_WARNING, "Mission upload timeout");
         } else if (tnow - waypoint_timelast_request > wp_recv_time) {
             waypoint_timelast_request = tnow;
             send_message(MSG_NEXT_WAYPOINT);

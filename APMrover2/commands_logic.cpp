@@ -104,7 +104,14 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 // exit_mission - callback function called from ap-mission when the mission has completed
 void Rover::exit_mission()
 {
+    // play a tone
+    AP_Notify::events.mission_complete = 1;
+    // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
+
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && set_mode(mode_loiter, MODE_REASON_MISSION_END)) {
+        return;
+    }
     set_mode(mode_hold, MODE_REASON_MISSION_END);
 }
 

@@ -23,6 +23,7 @@
 #include "PCA9685LED_I2C.h"
 #include "NCP5623.h"
 #include "OreoLED_PX4.h"
+#include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
@@ -136,14 +137,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
+#if !HAL_MINIMIZE_FEATURES
     // @Param: OREO_THEME
     // @DisplayName: OreoLED Theme
     // @Description: Enable/Disable Solo Oreo LED driver, 0 to disable, 1 for Aircraft theme, 2 for Rover theme
     // @Values: 0:Disabled,1:Aircraft,2:Rover
     // @User: Advanced
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
+#endif
 
 #if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_PIN
@@ -261,7 +262,11 @@ void AP_Notify::add_backends(void)
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_PX4(_oreo_theme));
                 }
-#endif // (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
+#elif !HAL_MINIMIZE_FEATURES
+                if (_oreo_theme) {
+                    ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
+                }
+#endif
                 break;
             case Notify_LED_UAVCAN:
 #if HAL_WITH_UAVCAN

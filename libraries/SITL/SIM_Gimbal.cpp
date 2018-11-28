@@ -174,12 +174,79 @@ void Gimbal::update(void)
     send_report();
 }
 
+static struct gimbal_param {
+    const char *name;
+    float value;
+} gimbal_params[] = {
+    {"GMB_OFF_ACC_X", 0},
+    {"GMB_OFF_ACC_Y", 0},
+    {"GMB_OFF_ACC_Z", 0},
+    {"GMB_GN_ACC_X", 0},
+    {"GMB_GN_ACC_Y", 0},
+    {"GMB_GN_ACC_Z", 0},
+    {"GMB_OFF_GYRO_X", 0},
+    {"GMB_OFF_GYRO_Y", 0},
+    {"GMB_OFF_GYRO_Z", 0},
+    {"GMB_OFF_JNT_X", 0},
+    {"GMB_OFF_JNT_Y", 0},
+    {"GMB_OFF_JNT_Z", 0},
+    {"GMB_K_RATE", 0},
+    {"GMB_POS_HOLD", 0},
+    {"GMB_MAX_TORQUE", 0},
+    {"GMB_SND_TORQUE", 0},
+    {"GMB_SYSID", 0},
+    {"GMB_FLASH", 0},
+};
+
+/*
+  find a parameter structure
+ */
+struct gimbal_param *Gimbal::param_find(const char *name)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(gimbal_params); i++) {
+        if (strncmp(name, gimbal_params[i].name, 16) == 0) {
+            return &gimbal_params[i];
+        }
+    }
+    return nullptr;
+}
+    
+/*
+  send a parameter to flight board
+ */
+void Gimbal::param_send(const struct gimbal_param *p)
+{
+    mavlink_message_t msg;
+    mavlink_param_value_t param_value;
+    strncpy(param_value.param_id, p->name, sizeof(param_value.param_id));
+    param_value.param_value = p->value;
+    param_value.param_count = 0;
+    param_value.param_index = 0;
+    param_value.param_type = MAV_PARAM_TYPE_REAL32;
+
+    mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
+    uint8_t saved_seq = chan0_status->current_tx_seq;
+    chan0_status->current_tx_seq = mavlink.seq;
+    uint16_t len = mavlink_msg_param_value_encode(vehicle_system_id,
+                                                  vehicle_component_id,
+                                                  &msg, &param_value);
+    chan0_status->current_tx_seq = saved_seq;
+
+    uint8_t msgbuf[len];
+    len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+    if (len > 0) {
+        mav_socket.send(msgbuf, len);
+    }
+}
+
+    
 /*
   send a report to the vehicle control code over MAVLink
 */
 void Gimbal::send_report(void)
 {
-    if (AP_HAL::millis() < 10000) {
+    uint32_t now = AP_HAL::millis();
+    if (now < 10000) {
         // don't send gimbal reports until 10s after startup. This
         // avoids a windows threading issue with non-blocking sockets
         // and the initial wait on uartA
@@ -191,6 +258,14 @@ void Gimbal::send_report(void)
     }
     if (!mavlink.connected) {
         return;
+    }
+
+    if (param_send_last_ms && now - param_send_last_ms > 100) {
+        param_send(&gimbal_params[param_send_idx]);
+        if (++param_send_idx == ARRAY_SIZE(gimbal_params)) {
+            printf("Finished sending parameters\n");
+            param_send_last_ms = 0;
+        }
     }
 
     // check for incoming MAVLink messages
@@ -206,6 +281,9 @@ void Gimbal::send_report(void)
                                           &msg, &status) == MAVLINK_FRAMING_OK) {
                 switch (msg.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT: {
+                    mavlink_heartbeat_t pkt;
+                    mavlink_msg_heartbeat_decode(&msg, &pkt);
+                    printf("Gimbal: got HB type=%u autopilot=%u base_mode=0x%x\n", pkt.type, pkt.autopilot, pkt.base_mode);
                     if (!seen_heartbeat) {
                         seen_heartbeat = true;
                         vehicle_component_id = msg.compid;
@@ -215,6 +293,10 @@ void Gimbal::send_report(void)
                     break;
                 }
                 case MAVLINK_MSG_ID_GIMBAL_CONTROL: {
+                    static uint32_t counter;
+                    if (counter++ % 100 == 0) {
+                        printf("GIMBAL_CONTROL %u\n", counter);
+                    }
                     mavlink_gimbal_control_t pkt;
                     mavlink_msg_gimbal_control_decode(&msg, &pkt);
                     demanded_angular_rate = Vector3f(pkt.demanded_rate_x,
@@ -225,6 +307,33 @@ void Gimbal::send_report(void)
                     seen_gimbal_control = true;
                     break;
                 }
+                case MAVLINK_MSG_ID_PARAM_SET: {
+                    mavlink_param_set_t pkt;
+                    mavlink_msg_param_set_decode(&msg, &pkt);
+                    printf("Gimbal got PARAM_SET %.16s %f\n", pkt.param_id, pkt.param_value);
+
+                    struct gimbal_param *p = param_find(pkt.param_id);
+                    if (p) {
+                        p->value = pkt.param_value;
+                        param_send(p);
+                    }
+
+                    break;
+                }
+                case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
+                    mavlink_param_request_list_t pkt;
+                    mavlink_msg_param_request_list_decode(&msg, &pkt);
+                    if (pkt.target_system == 0 && pkt.target_component == MAV_COMP_ID_GIMBAL) {
+                        // start param send
+                        param_send_idx = 0;
+                        param_send_last_ms = AP_HAL::millis();
+                    }
+                    printf("Gimbal sending %u parameters\n", (unsigned)ARRAY_SIZE(gimbal_params));
+                    break;
+                }
+                default:
+                    printf("Gimbal got unexpected msg %u\n", msg.msgid);
+                    break;
                 }
             }
         }
@@ -233,7 +342,6 @@ void Gimbal::send_report(void)
     if (!seen_heartbeat) {
         return;
     }
-    uint32_t now = AP_HAL::millis();
     mavlink_message_t msg;
     uint16_t len;
 

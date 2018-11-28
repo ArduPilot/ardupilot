@@ -1087,7 +1087,7 @@ void Copter::load_parameters(void)
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
-    
+
 }
 
 // handle conversion of PID gains from Copter-3.3 to Copter-3.4
@@ -1193,6 +1193,21 @@ void Copter::convert_pid_parameters(void)
     for (uint8_t i=0; i<table_size; i++) {
         AP_Param::convert_old_parameter(&loiter_conversion_info[i], 1.0f);
     }
+
+    // TradHeli default parameters
+#if FRAME_CONFIG == HELI_FRAME
+    AP_Param::set_default_by_name("LOIT_ACC_MAX", 500.0f);
+    AP_Param::set_default_by_name("LOIT_BRK_ACCEL", 125.0f);
+    AP_Param::set_default_by_name("LOIT_BRK_DELAY", 1.0f);
+    AP_Param::set_default_by_name("LOIT_BRK_JERK", 250.0f);
+    AP_Param::set_default_by_name("LOIT_SPEED", 3000.0f);
+    AP_Param::set_default_by_name("PHLD_BRAKE_ANGLE", 800.0f);
+    AP_Param::set_default_by_name("PHLD_BRAKE_RATE", 4.0f);
+    AP_Param::set_default_by_name("PSC_ACCZ_P", 0.28f);
+    AP_Param::set_default_by_name("PSC_VELXY_D", 0.0f);
+    AP_Param::set_default_by_name("PSC_VELXY_I", 0.5f);
+    AP_Param::set_default_by_name("PSC_VELXY_P", 1.0f);
+#endif
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
                                       Parameters::k_param_rc_3_old,  Parameters::k_param_rc_4_old,

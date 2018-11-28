@@ -302,12 +302,11 @@ class AutoTest(ABC):
             count += 1
         self.progress("Drained %u messages from mav" % count)
 
-
     #################################################
     # SIM UTILITIES
     #################################################
     def get_sim_time(self):
-        """Get SITL time."""
+        """Get SITL time in seconds."""
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
         return m.time_boot_ms * 1.0e-3
 
@@ -317,6 +316,15 @@ class AutoTest(ABC):
         if x is None:
             return self.get_sim_time()
         return x.time_boot_ms * 1.0e-3
+
+    def delay_sim_time(self, delay):
+        '''delay for delay seconds in simulation time'''
+        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+        start = m.time_boot_ms
+        while True:
+            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True)
+            if m.time_boot_ms - start > delay * 1000:
+                return
 
     def sim_location(self):
         """Return current simulator location."""
@@ -366,11 +374,13 @@ class AutoTest(ABC):
         self.mav.wait_heartbeat()
         if upload_logs and not os.getenv("AUTOTEST_NO_UPLOAD"):
             # optionally upload logs to server so we can see travis failure logs
-            import subprocess, glob, datetime
-            logdir=os.path.dirname(filename)
-            datedir=datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+            import datetime
+            import glob
+            import subprocess
+            logdir = os.path.dirname(filename)
+            datedir = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
             flist = glob.glob("logs/*.BIN")
-            for e in ['BIN','bin','tlog']:
+            for e in ['BIN', 'bin', 'tlog']:
                 flist += glob.glob(os.path.join(logdir, '*.%s' % e))
             print("Uploading %u logs to http://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
             cmd = ['rsync', '-avz'] + flist + ['cilogs@autotest.ardupilot.org::CI-Logs/%s/' % datedir]
@@ -402,7 +412,7 @@ class AutoTest(ABC):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
         f1 = open(file1)
         f2 = open(file2)
-        for l1,l2 in itertools.izip(f1,f2):
+        for l1, l2 in itertools.izip(f1, f2):
             if l1 == l2:
                 # e.g. the first "QGC WPL 110" line
                 continue
@@ -413,9 +423,9 @@ class AutoTest(ABC):
             l2 = l2.rstrip()
             fields1 = re.split("\s+", l1)
             fields2 = re.split("\s+", l2)
-            line = int(fields1[0])
+            # line = int(fields1[0])
             t = int(fields1[3]) # mission item type
-            for (count, (i1,i2)) in enumerate(itertools.izip(fields1, fields2)):
+            for (count, (i1, i2)) in enumerate(itertools.izip(fields1, fields2)):
                 if count == 2: # frame
                     if t in [mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
                              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
@@ -445,15 +455,16 @@ class AutoTest(ABC):
                             i2 = 1
                 if 0 <= count <= 3 or 11 <= count <= 11:
                     if int(i1) != int(i2):
-                        raise ValueError("Files have different content: (%s vs %s) (%s vs %s) (%d vs %d) (count=%u)" % (file1, file2, l1, l2, int(i1), int(i2), count))  # NOCI
+                        raise ValueError("Files have different content: (%s vs %s) (%s vs %s) (%d vs %d) (count=%u)" %
+                                         (file1, file2, l1, l2, int(i1), int(i2), count))  # NOCI
                     continue
                 if 4 <= count <= 10:
                     delta = abs(float(i1) - float(i2))
                     max_allowed_delta = 0.000009
                     if delta > max_allowed_delta:
-#                        print("Files have different (float) content: (%s) and (%s) (%s vs %s) (%f vs %f) (%.10f) (count=%u)" % (file1, file2, l1, l2, float(i1), float(i2), delta, count))
-#                        sys.exit(0)
-                        raise ValueError("Files have different (float) content: (%s) and (%s) (%s vs %s) (%f vs %f) (%.10f) (count=%u)" % (file1, file2, l1, l2, float(i1), float(i2), delta, count)) # NOCI
+                        raise ValueError("Files have different (float) content: (%s) and " +
+                                         "(%s) (%s vs %s) (%f vs %f) (%.10f) (count=%u)" %
+                                         (file1, file2, l1, l2, float(i1), float(i2), delta, count)) # NOCI
                     continue
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
@@ -535,10 +546,11 @@ class AutoTest(ABC):
                 time_ratio = None
             else:
                 time_ratio = wclock_delta / sim_time_delta
-            self.progress("set_rc (wc=%s st=%s r=%s): want=%u got=%u" %
+            self.progress("set_rc (wc=%s st=%s r=%s): ch=%u want=%u got=%u" %
                           (wclock_delta,
                            sim_time_delta,
                            time_ratio,
+                           chan,
                            pwm,
                            chan_pwm))
             if chan_pwm == pwm:
@@ -546,8 +558,7 @@ class AutoTest(ABC):
                 if delta > self.max_set_rc_timeout:
                     self.max_set_rc_timeout = delta
                 return True
-        raise SetRCTimeout((
-                "Failed to send RC commands to channel %s" % str(chan)))
+        raise SetRCTimeout("Failed to send RC commands to channel %s" % str(chan))
 
     def set_throttle_zero(self):
         """Set throttle to zero."""
@@ -699,7 +710,7 @@ class AutoTest(ABC):
         self.progress("Arm motors with switch %d" % switch_chan)
         self.set_rc(switch_chan, 2000)
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while self.get_sim_time() - tstart < timeout:
             self.mav.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
@@ -768,7 +779,7 @@ class AutoTest(ABC):
                     self.fetch_parameters()
                 return
         raise ValueError("Param fetch returned incorrect value (%s) vs (%s)"
-                          % (returned_value, value))
+                         % (returned_value, value))
 
     def get_parameter(self, name, retry=1, timeout=60):
         """Get parameters from vehicle."""
@@ -1068,7 +1079,7 @@ class AutoTest(ABC):
             if self.get_sim_time_cached() - last_print > 1:
                 self.progress("Wait groundspeed %.1f, target:%.1f" %
                               (m.groundspeed, gs_min))
-                last_print = self.get_sim_time_cached();
+                last_print = self.get_sim_time_cached()
             if m.groundspeed >= gs_min and m.groundspeed <= gs_max:
                 return True
         raise WaitGroundSpeedTimeout("Failed to attain groundspeed range")
@@ -1113,8 +1124,8 @@ class AutoTest(ABC):
                 break
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             if now - last_print_time > 1:
-                self.progress("Heading %u (want %f +- %f)" % (
-                        m.heading, heading, accuracy))
+                self.progress("Heading %u (want %f +- %f)" %
+                              (m.heading, heading, accuracy))
                 last_print_time = now
             if math.fabs(m.heading - heading) <= accuracy:
                 self.progress("Attained heading %u" % heading)
@@ -1137,9 +1148,8 @@ class AutoTest(ABC):
                 self.progress("Attained distance %.2f meters OK" % delta)
                 return True
             if delta > (distance + accuracy):
-                raise WaitDistanceTimeout(
-                        "Failed distance - overshoot delta=%f dist=%f"
-                        % (delta, distance))
+                raise WaitDistanceTimeout("Failed distance - overshoot delta=%f dist=%f"
+                                          % (delta, distance))
         raise WaitDistanceTimeout("Failed to attain distance %u" % distance)
 
     def wait_servo_channel_value(self, channel, value, timeout=2):
@@ -1195,7 +1205,7 @@ class AutoTest(ABC):
             seq = self.mav.waypoint_current()
             self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
             if seq == wpnum:
-                break;
+                break
 
     def wait_waypoint(self,
                       wpnum_start,
@@ -1249,9 +1259,8 @@ class AutoTest(ABC):
                 self.progress("Reached final waypoint %u" % seq)
                 return True
             if seq > current_wp+1:
-                raise WaitWaypointTimeout((
-                        "Skipped waypoint! Got wp %u expected %u"
-                        % (seq, current_wp+1)))
+                raise WaitWaypointTimeout(("Skipped waypoint! Got wp %u expected %u"
+                                           % (seq, current_wp+1)))
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
@@ -1437,6 +1446,8 @@ class AutoTest(ABC):
             arming_switch = 7
             self.set_parameter("RC%d_OPTION" % arming_switch, 41)
             self.set_rc(arming_switch, 1000)
+            # delay so a transition is seen by the RC switch code:
+            self.delay_sim_time(0.5)
             if not self.arm_motors_with_switch(arming_switch):
                 raise NotAchievedException("Failed to arm with switch")
             if not self.disarm_motors_with_switch(arming_switch):
@@ -1525,8 +1536,7 @@ class AutoTest(ABC):
                                   (channel_field, m_value, interlock_value))
                     if m_value != interlock_value:
                         self.set_rc(8, 1000)
-                        raise NotAchievedException(
-                                "Motor interlock was changed while disarmed")
+                        raise NotAchievedException("Motor interlock was changed while disarmed")
 
             self.set_rc(8, 1000)
         self.progress("ALL PASS")

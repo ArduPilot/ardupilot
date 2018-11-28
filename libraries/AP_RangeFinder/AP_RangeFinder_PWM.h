@@ -43,7 +43,6 @@ protected:
 private:
 
     int8_t last_pin; // last pin used for reading pwm (used to recognise change in pin assignment)
-    uint32_t last_reading_ms;      // system time of last read (used for health reporting)
 
     // the following three members are updated by the interrupt handler
     uint32_t irq_value_us;         // some of calculated pwm values (irq copy)

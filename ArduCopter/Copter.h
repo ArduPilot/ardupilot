@@ -633,7 +633,6 @@ private:
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
-    void read_aux_all(void);
     void fourhundred_hz_logging();
     void ten_hz_logging_loop();
     void twentyfive_hz_logging();
@@ -728,13 +727,10 @@ private:
 
     // GCS_Mavlink.cpp
     void gcs_send_heartbeat(void);
-    void gcs_send_deferred(void);
     void send_fence_status(mavlink_channel_t chan);
     void send_extended_status1(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
 
     // heli.cpp
     void heli_init();
@@ -928,7 +924,9 @@ private:
 #if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;
 #endif
+#if MODE_FLIP_ENABLED == ENABLED
     ModeFlip mode_flip;
+#endif
 #if MODE_FOLLOW_ENABLED == ENABLED
     ModeFollow mode_follow;
 #endif

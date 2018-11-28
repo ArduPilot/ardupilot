@@ -437,6 +437,11 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
 
+    enum Mis_Done_Behave {
+        MIS_DONE_BEHAVE_HOLD      = 0,
+        MIS_DONE_BEHAVE_LOITER    = 1
+    };
+
     // commands.cpp
     void update_home_from_EKF();
     bool set_home_to_current_location(bool lock);
@@ -476,9 +481,6 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
-    void gcs_retry_deferred(void);
 
     // Log.cpp
     void Log_Write_Arm_Disarm();
@@ -557,8 +559,6 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
-    void read_mode_switch();
-    void read_aux_all();
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,

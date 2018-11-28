@@ -296,6 +296,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// flip - fly vehicle in flip in pitch and roll direction mode
+#ifndef MODE_FLIP_ENABLED
+# define MODE_FLIP_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
 # define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
