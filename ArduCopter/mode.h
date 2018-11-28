@@ -111,9 +111,6 @@ protected:
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
 
-    // takeoff support
-    bool takeoff_triggered(float target_climb_rate) const;
-
     // helper functions
     void zero_throttle_and_relax_ac(bool spool_up = false);
     void zero_throttle_and_hold_attitude();
