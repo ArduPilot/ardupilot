@@ -97,6 +97,7 @@ void AP_OpticalFlow_CXOF::update(void)
     }
 
     // record gyro values as long as they are being used
+    // the sanity check of dt below ensures old gyro values are not used
     if (gyro_sum_count < 1000) {
         const Vector3f& gyro = AP::ahrs_navekf().get_gyro();
         gyro_sum.x += gyro.x;
@@ -171,7 +172,8 @@ void AP_OpticalFlow_CXOF::update(void)
     float dt = (this_frame_us - last_frame_us) * 1.0e-6;
     last_frame_us = this_frame_us;
 
-    if ((dt > 0.0f) && (dt < CXOF_TIMEOUT_SEC)) {
+    // sanity check dt
+    if (is_positive(dt) && (dt < CXOF_TIMEOUT_SEC)) {
         // calculate flow values
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
