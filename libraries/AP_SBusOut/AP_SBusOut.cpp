@@ -81,6 +81,7 @@ void AP_SBusOut::sbus_format_frame(uint16_t *channels, uint8_t num_channels, uin
     uint8_t index = 1;
     uint8_t offset = 0;
 
+    memset(buffer, 0, SBUS_BSIZE);
     buffer[0] = 0x0f;
 
     /* construct sbus frame representing channels 1 through 16 (max) */
