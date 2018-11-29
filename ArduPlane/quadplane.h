@@ -221,7 +221,6 @@ private:
     void run_z_controller(void);
 
     void setup_defaults(void);
-    void setup_defaults_table(const struct defaults_struct *defaults, uint8_t count);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
     float stopping_distance(void);
