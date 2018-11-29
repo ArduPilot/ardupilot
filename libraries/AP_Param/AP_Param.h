@@ -174,6 +174,12 @@ public:
         const char *new_name;
     };
 
+    // param default table element
+    struct defaults_table_struct {
+        const char *name;   // parameter name
+        float value;        // parameter value
+    };
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -256,7 +262,13 @@ public:
     /// @param  value           The default value
     /// @return                 true if the variable is found
     static bool set_default_by_name(const char *name, float value);
-    
+
+    /// set parameter defaults from a defaults_table_struct
+    ///
+    /// @param table            pointer to array of defaults_table_struct structures
+    /// @param count            number of elements in table array
+    static void set_defaults_from_table(const struct defaults_table_struct *table, uint8_t count);
+
     /// set a value by name
     ///
     /// @param  name            The full name of the variable to be found.
