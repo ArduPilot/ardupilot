@@ -2198,6 +2198,22 @@ bool AP_Param::set_default_by_name(const char *name, float value)
 }
 
 /*
+  set parameter defaults from a defaults_struct table
+  sends GCS message and panics (in SITL only) if parameter is not found
+ */
+void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table, uint8_t count)
+{
+    for (uint8_t i=0; i<count; i++) {
+        if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "set param default failure for %s", table[i].name);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            AP_HAL::panic("set param default failure for %s", table[i].name);
+#endif
+        }
+    }
+}
+
+/*
   set a value by name
  */
 bool AP_Param::set_by_name(const char *name, float value)
