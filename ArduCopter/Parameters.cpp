@@ -1196,17 +1196,20 @@ void Copter::convert_pid_parameters(void)
 
     // TradHeli default parameters
 #if FRAME_CONFIG == HELI_FRAME
-    AP_Param::set_default_by_name("LOIT_ACC_MAX", 500.0f);
-    AP_Param::set_default_by_name("LOIT_BRK_ACCEL", 125.0f);
-    AP_Param::set_default_by_name("LOIT_BRK_DELAY", 1.0f);
-    AP_Param::set_default_by_name("LOIT_BRK_JERK", 250.0f);
-    AP_Param::set_default_by_name("LOIT_SPEED", 3000.0f);
-    AP_Param::set_default_by_name("PHLD_BRAKE_ANGLE", 800.0f);
-    AP_Param::set_default_by_name("PHLD_BRAKE_RATE", 4.0f);
-    AP_Param::set_default_by_name("PSC_ACCZ_P", 0.28f);
-    AP_Param::set_default_by_name("PSC_VELXY_D", 0.0f);
-    AP_Param::set_default_by_name("PSC_VELXY_I", 0.5f);
-    AP_Param::set_default_by_name("PSC_VELXY_P", 1.0f);
+    const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
+        { "LOIT_ACC_MAX", 500.0f },
+        { "LOIT_BRK_ACCEL", 125.0f },
+        { "LOIT_BRK_DELAY", 1.0f },
+        { "LOIT_BRK_JERK", 250.0f },
+        { "LOIT_SPEED", 3000.0f },
+        { "PHLD_BRAKE_ANGLE", 800.0f },
+        { "PHLD_BRAKE_RATE", 4.0f },
+        { "PSC_ACCZ_P", 0.28f },
+        { "PSC_VELXY_D", 0.0f },
+        { "PSC_VELXY_I", 0.5f },
+        { "PSC_VELXY_P", 1.0f },
+    };
+    AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
 #endif
 
     const uint8_t old_rc_keys[14] = { Parameters::k_param_rc_1_old,  Parameters::k_param_rc_2_old,
