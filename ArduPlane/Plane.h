@@ -23,7 +23,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Header includes
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 #include <cmath>
 #include <stdarg.h>
@@ -82,6 +82,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_LTM/AP_LTM.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -411,6 +412,12 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
+
+#if LTM_ENABLED == ENABLED
+	// LTM telemetry support
+    AP_LTM ltm{ahrs, battery};
+#endif
+
 #if DEVO_TELEM_ENABLED == ENABLED
     // DEVO-M telemetry support
     AP_DEVO_Telem devo_telemetry {ahrs};

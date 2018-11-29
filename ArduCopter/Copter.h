@@ -117,6 +117,9 @@
 #if FRSKY_TELEM_ENABLED == ENABLED
  # include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #endif
+#if LTM_ENABLED == ENABLED
+ # include <AP_LTM/AP_LTM.h>
+#endif
 #if ADSB_ENABLED == ENABLED
  # include <AP_ADSB/AP_ADSB.h>
 #endif
@@ -413,8 +416,14 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
+
 #if DEVO_TELEM_ENABLED == ENABLED
     AP_DEVO_Telem devo_telemetry{ahrs};
+#endif
+
+#if LTM_ENABLED == ENABLED
+	// LTM telemetry support
+    AP_LTM ltm{ahrs, battery};
 #endif
 
 #if OSD_ENABLED == ENABLED

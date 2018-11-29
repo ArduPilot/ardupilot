@@ -32,9 +32,10 @@ def build(bld):
             'AP_Follow',
             'AP_Devo_Telem',
             'AP_OSD',
+			'AP_LTM',
         ],
     )
-
+//
     bld.ap_program(
         program_name='arducopter',
         program_groups=['bin', 'copter'],

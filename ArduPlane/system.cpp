@@ -1,12 +1,12 @@
 #include "Plane.h"
-
+//
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
 *        We will determine later if we are actually on the ground and process a
 *        ground start in that case.
 *
 *****************************************************************************/
-
+//
 static void mavlink_delay_cb_static()
 {
     plane.mavlink_delay_cb();
@@ -119,6 +119,13 @@ void Plane::init_ardupilot()
     // setup frsky, and pass a number of parameters to the library
     frsky_telemetry.init(serial_manager, MAV_TYPE_FIXED_WING);
 #endif
+
+#if LTM_ENABLED == ENABLED
+	// setup ltm, and pass a number of parameters to the library
+	ltm.init(serial_manager, 
+			   MAV_TYPE_FIXED_WING);
+#endif
+
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init(serial_manager);
 #endif

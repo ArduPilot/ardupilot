@@ -80,6 +80,11 @@ void Rover::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.init(serial_manager, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
 #endif
+
+#if LTM_ENABLED == ENABLED
+	ltm.init(serial_manager, (is_boat() ? MAV_TYPE_SURFACE_BOAT : MAV_TYPE_GROUND_ROVER));
+#endif
+
 #if DEVO_TELEM_ENABLED == ENABLED
     devo_telemetry.init(serial_manager);
 #endif

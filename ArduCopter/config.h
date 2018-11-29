@@ -707,6 +707,10 @@
   #  define FRSKY_TELEM_ENABLED          ENABLED
 #endif
 
+#ifndef LTM_ENABLED
+  #  define LTM_ENABLED    ENABLED
+#endif
+
 #ifndef ADVANCED_FAILSAFE
 # define ADVANCED_FAILSAFE DISABLED
 #endif
