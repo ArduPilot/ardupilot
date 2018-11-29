@@ -39,6 +39,7 @@
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <AP_LTM/AP_LTM.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
@@ -299,6 +300,12 @@ private:
     // FrSky telemetry support
     AP_Frsky_Telem frsky_telemetry{ahrs, battery, rangefinder};
 #endif
+
+#if LTM_ENABLED == ENABLED
+	// LTM telemetry support
+    AP_LTM ltm{ahrs, battery};
+#endif
+
 #if DEVO_TELEM_ENABLED == ENABLED
     AP_DEVO_Telem devo_telemetry{ahrs};
 #endif

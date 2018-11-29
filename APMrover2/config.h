@@ -58,6 +58,10 @@
   #define FRSKY_TELEM_ENABLED ENABLED
 #endif
 
+#ifndef LTM_ENABLED
+  #  define LTM_ENABLED    ENABLED
+#endif
+
 
 #ifndef CH7_OPTION
   #define CH7_OPTION CH7_SAVE_WP
