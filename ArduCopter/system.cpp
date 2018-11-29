@@ -98,6 +98,12 @@ void Copter::init_ardupilot()
                          &ap.value);
     frsky_telemetry.set_frame_string(get_frame_string());
 #endif
+//
+#if LTM_ENABLED == ENABLED
+	// setup ltm, and pass a number of parameters to the library
+	ltm.init(serial_manager, 
+			   get_frame_mav_type());
+#endif
 
 #if DEVO_TELEM_ENABLED == ENABLED
     // setup devo
