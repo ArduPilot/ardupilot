@@ -106,7 +106,7 @@ public:
         SerialProtocol_Sbus1 = 15,
         SerialProtocol_ESCTelemetry = 16,
         SerialProtocol_Devo_Telem = 17,
-		SerialProtocol_LTM = 18,
+		SerialProtocol_LTM = 19,
     };
 
     // get singleton instance
