@@ -90,16 +90,17 @@ void AP_MotorsTailsitter::output_to_motors()
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, get_pwm_output_min());
             break;
         case GROUND_IDLE:
-            throttle_pwm = calc_spin_up_to_pwm();
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, calc_spin_up_to_pwm());
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, calc_spin_up_to_pwm());
+            throttle_pwm = output_to_pwm(actuator_spin_up());
+            set_actuator_with_slew(_actuator[1], actuator_spin_up());
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(actuator_spin_up()));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(actuator_spin_up()));
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:
         case SPOOL_DOWN:
-            throttle_pwm = calc_thrust_to_pwm(_throttle);
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, calc_thrust_to_pwm(_thrust_left));
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, calc_thrust_to_pwm(_thrust_right));
+            throttle_pwm = output_to_pwm(thrust_to_actuator(_throttle));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(thrust_to_actuator(_thrust_left)));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(thrust_to_actuator(_thrust_right)));
             break;
     }
 
