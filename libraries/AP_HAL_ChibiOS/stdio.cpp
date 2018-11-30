@@ -246,8 +246,7 @@ _atob (uint32_t *vp, char *p, int base)
  *  atob(vp,p,base) 
  *      converts p to binary result in vp, rtn 1 on success
  */
-int16_t
-atob(uint32_t *vp, char *p, int base)
+static int16_t atob(uint32_t *vp, char *p, int base)
 {
   uint32_t  v;
 
