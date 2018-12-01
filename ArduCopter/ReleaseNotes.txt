@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.3-rc1 01-Dec-2018
+Changes from 3.6.2
+1) Bug fixes and minor enhancements
+    a) Pixhawk4 RC input fix
+    b) TradHeli parameter default fixes for Loiter and PosHold
+    c) Onboard OSD fix for MatekSys 405
+    d) Solo power off button delay time increased
+------------------------------------------------------------------
 Copter 3.6.2 24-Nov-2018 / 3.6.2-rc4 22-Nov-2018
 Changes from 3.6.2-rc3
 1) Bug fixes and minor changes:
