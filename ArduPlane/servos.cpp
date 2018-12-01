@@ -35,6 +35,8 @@ void Plane::throttle_slew_limit(void)
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
         SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleLeft, slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleRight, slewrate, G_Dt);
     }
 }
 
