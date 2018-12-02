@@ -29,6 +29,7 @@
 #include <SITL/SIM_Calibration.h>
 #include <SITL/SIM_XPlane.h>
 #include <SITL/SIM_Submarine.h>
+#include <SITL/SIM_Morse.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -112,6 +113,7 @@ static const struct {
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
+    { "morse",              Morse::create },
 };
 
 void SITL_State::_set_signal_handlers(void) const
