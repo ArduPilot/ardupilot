@@ -49,6 +49,9 @@ void Rover::Log_Write_Attitude()
     if (g2.motors.has_sail()) {
         DataFlash.Log_Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl.Log_Write_SIMSTATE(&DataFlash);
+#endif
 }
 
 // Write a range finder depth message
