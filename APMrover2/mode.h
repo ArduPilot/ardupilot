@@ -361,12 +361,16 @@ public:
     void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
     void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
 
+    // vehicle start loiter
+    bool start_loiter();
+
 protected:
 
     enum GuidedMode {
         Guided_WP,
         Guided_HeadingAndSpeed,
-        Guided_TurnRateAndSpeed
+        Guided_TurnRateAndSpeed,
+        Guided_Loiter
     };
 
     bool _enter() override;
