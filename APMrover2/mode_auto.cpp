@@ -10,7 +10,7 @@ ModeAuto::ModeAuto(ModeRTL& mode_rtl) :
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (mission.num_commands() == 0) {
+    if (mission.num_commands() <= 1) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
         return false;
     }
