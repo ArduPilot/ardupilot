@@ -159,28 +159,40 @@ bool Morse::parse_sensors(const char *json)
  */
 bool Morse::connect_sockets(void)
 {
-    if (!sensors_sock_connected) {
-        if (!sensors_sock.connect(morse_ip, morse_sensors_port)) {
+    if (!sensors_sock) {
+        sensors_sock = new SocketAPM(false);
+        if (!sensors_sock) {
+            AP_HAL::panic("Out of memory for sensors socket");
+        }
+        if (!sensors_sock->connect(morse_ip, morse_sensors_port)) {
             if (connect_counter++ == 1000) {
                 printf("Waiting to connect to sensors control on %s:%u\n",
                        morse_ip, morse_sensors_port);
                 connect_counter = 0;
             }
+            delete sensors_sock;
+            sensors_sock = nullptr;
             return false;
         }
+        sensors_sock->reuseaddress();
         printf("Sensors connected\n");
-        sensors_sock_connected = true;
     }
-    if (!control_sock_connected) {
-        if (!control_sock.connect(morse_ip, morse_control_port)) {
+    if (!control_sock) {
+        control_sock = new SocketAPM(false);
+        if (!control_sock) {
+            AP_HAL::panic("Out of memory for control socket");
+        }
+        if (!control_sock->connect(morse_ip, morse_control_port)) {
             if (connect_counter++ == 1000) {
                 printf("Waiting to connect to control control on %s:%u\n",
                        morse_ip, morse_control_port);
                 connect_counter = 0;
             }
+            delete control_sock;
+            control_sock = nullptr;
             return false;
         }
-        control_sock_connected = true;
+        control_sock->reuseaddress();
         printf("Control connected\n");
     }
     return true;
@@ -191,10 +203,19 @@ bool Morse::connect_sockets(void)
 */
 bool Morse::sensors_receive(void)
 {
-    ssize_t ret = sensors_sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
+    ssize_t ret = sensors_sock->recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
     if (ret <= 0) {
+        no_data_counter++;
+        if (no_data_counter == 1000) {
+            no_data_counter = 0;
+            delete sensors_sock;
+            delete control_sock;
+            sensors_sock = nullptr;
+            control_sock = nullptr;
+        }
         return false;
     }
+    no_data_counter = 0;
 
     // convert '\n' into nul
     while (uint8_t *p = (uint8_t *)memchr(&sensor_buffer[sensor_buffer_len], '\n', ret)) {
@@ -238,7 +259,7 @@ void Morse::output_rover(const struct sitl_input &input)
              speed_ms, -steering_rps);
     buf[sizeof(buf)-1] = 0;
 
-    control_sock.send(buf, strlen(buf));
+    control_sock->send(buf, strlen(buf));
 }
 
 /*
@@ -268,7 +289,7 @@ void Morse::output_quad(const struct sitl_input &input)
              m_back, m_right, m_front, m_left);
     buf[sizeof(buf)-1] = 0;
 
-    control_sock.send(buf, strlen(buf));
+    control_sock->send(buf, strlen(buf));
 }
 
 

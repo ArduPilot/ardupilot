@@ -63,11 +63,10 @@ private:
     uint8_t sensor_buffer[2048];
     uint32_t sensor_buffer_len;
 
-    SocketAPM sensors_sock{false};
-    SocketAPM control_sock{false};
+    SocketAPM *sensors_sock;
+    SocketAPM *control_sock;
 
-    bool sensors_sock_connected;
-    bool control_sock_connected;
+    uint32_t no_data_counter;
     uint32_t connect_counter;
 
     double initial_time_s;
