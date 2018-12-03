@@ -1,29 +1,28 @@
 '''
-This is an example builder script that sets up a rover in Morse to
+This is an example builder script that sets up a quadcopter in Morse to
 be driven by ArduPilot.
 
-The rover has the basic set of sensors that ArduPilot needs
+The quadcopter has the basic set of sensors that ArduPilot needs
 
 To start the simulation use this:
 
-  morse run rover.py
+  morse run quadcopter.py
 
 Then connect with ArduPilot like this:
 
   sim_vehicle.py --model morse --console --map
 
-This model assumes you will setup a skid-steering rover with left throttle on
-channel 1 and right throttle on channel 2, which means you need to set:
+This model assumes an X frame quadcopter, so you will need:
 
-  SERVO1_FUNCTION 73
-  SERVO3_FUNCTION 74
+  FRAME_CLASS 1
+  FRAME_TYPE 1
 '''
 from morse.builder import *
 
 # use the ATRV rover
-vehicle = ATRV()
+vehicle = Quadrotor()
 vehicle.properties(Object = True, Graspable = False, Label = "Vehicle")
-vehicle.translate(x=0.0, z=0.0)
+vehicle.translate(x=0.0, z=1.0)
 
 # add a camera
 camera = SemanticCamera(name="Camera")
@@ -55,14 +54,11 @@ all_sensors.add_stream('socket')
 
 vehicle.append(all_sensors)
 
-# make the vehicle controllable with speed and angular velocity
-# this will be available on port 60001 by default
-# an example command is:
-# {"v":2, "w":1}
-# which is 2m/s fwd, and rotating left at 1 radian/second
-motion = MotionVW()
-vehicle.append(motion)
-motion.add_stream('socket')
+# make the vehicle controllable via force and torque
+# this will be available on port 4000 by default
+engines = QuadrotorDynamicControl()
+vehicle.append(engines)
+engines.add_stream('socket')
 
 # this would allow us to control the vehicle with a keyboard
 # we don't enable it as it causes issues with sensor consistency
