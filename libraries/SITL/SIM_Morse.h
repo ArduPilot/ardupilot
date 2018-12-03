@@ -44,13 +44,19 @@ private:
     // assume sensors are streamed on port 60000
     uint16_t morse_sensors_port = 60000;
 
-    // assume we control vehicle on port 4000
-    uint16_t morse_motion_port = 4000;
+    // assume we control vehicle on port 60001
+    uint16_t morse_control_port = 60001;
+
+    enum {
+        OUTPUT_ROVER,
+        OUTPUT_QUAD
+    } output_type;
 
     bool connect_sockets(void);
     bool parse_sensors(const char *json);
     bool sensors_receive(void);
-    void rover_output(const struct sitl_input &input);
+    void output_rover(const struct sitl_input &input);
+    void output_quad(const struct sitl_input &input);
     void report_FPS();
 
     // buffer for parsing pose data in JSON format
@@ -58,10 +64,10 @@ private:
     uint32_t sensor_buffer_len;
 
     SocketAPM sensors_sock{false};
-    SocketAPM motion_sock{false};
+    SocketAPM control_sock{false};
 
     bool sensors_sock_connected;
-    bool motion_sock_connected;
+    bool control_sock_connected;
     uint32_t connect_counter;
 
     double initial_time_s;
@@ -75,9 +81,6 @@ private:
     uint64_t last_socket_frame_counter;
     uint64_t frame_counter;
     double last_frame_count_s;
-
-    float last_steering_rps;
-    float last_speed_ms;
 
     struct {
         double timestamp;
