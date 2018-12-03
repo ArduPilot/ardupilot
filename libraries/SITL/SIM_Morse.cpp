@@ -86,6 +86,16 @@ Morse::Morse(const char *home_str, const char *frame_str) :
     if (colon) {
         morse_ip = colon+1;
     }
+
+    if (strstr(frame_str, "-rover")) {
+        output_type = OUTPUT_ROVER;
+    } else if (strstr(frame_str, "-quad")) {
+        output_type = OUTPUT_QUAD;
+    } else {
+        // default to rover
+        output_type = OUTPUT_ROVER;
+    }
+
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
         AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
         if (sim_defaults[i].save) {
@@ -96,6 +106,7 @@ Morse::Morse(const char *home_str, const char *frame_str) :
             }
         }
     }
+    printf("Started Morse backend\n");
 }
 
 /*
@@ -157,18 +168,20 @@ bool Morse::connect_sockets(void)
             }
             return false;
         }
+        printf("Sensors connected\n");
         sensors_sock_connected = true;
     }
-    if (!motion_sock_connected) {
-        if (!motion_sock.connect(morse_ip, morse_motion_port)) {
+    if (!control_sock_connected) {
+        if (!control_sock.connect(morse_ip, morse_control_port)) {
             if (connect_counter++ == 1000) {
-                printf("Waiting to connect to motion control on %s:%u\n",
-                       morse_ip, morse_motion_port);
+                printf("Waiting to connect to control control on %s:%u\n",
+                       morse_ip, morse_control_port);
                 connect_counter = 0;
             }
             return false;
         }
-        motion_sock_connected = true;
+        control_sock_connected = true;
+        printf("Control connected\n");
     }
     return true;
 }
@@ -207,9 +220,9 @@ bool Morse::sensors_receive(void)
 }
 
 /*
-  output motion command assuming skid-steering rover
+  output control command assuming skid-steering rover
  */
-void Morse::rover_output(const struct sitl_input &input)
+void Morse::output_rover(const struct sitl_input &input)
 {
     float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
     float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
@@ -219,19 +232,43 @@ void Morse::rover_output(const struct sitl_input &input)
     const float steering_rps = (motor1 - motor2) * radians(steer_rate_max_dps);
     const float speed_ms = 0.5*(motor1 + motor2) * max_speed;
 
-    if (is_equal(steering_rps, last_steering_rps) &&
-        is_equal(speed_ms, last_speed_ms)) {
-        return;
-    }
-    last_steering_rps = steering_rps;
-    last_speed_ms = speed_ms;
-
+    // construct a JSON packet for v and w
     char buf[60];
-    snprintf(buf, sizeof(buf)-1, "id1 vehicle.motion set_speed [%.3f,%.3f]\n",
+    snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"w\": %.2f}\n",
              speed_ms, -steering_rps);
     buf[sizeof(buf)-1] = 0;
 
-    motion_sock.send(buf, strlen(buf));
+    control_sock.send(buf, strlen(buf));
+}
+
+/*
+  output control command assuming a 4 channel quad
+ */
+void Morse::output_quad(const struct sitl_input &input)
+{
+    const float max_thrust = 1500;
+    float motors[4];
+    for (uint8_t i=0; i<4; i++) {
+        motors[i] = constrain_float(((input.servos[i]-1000)/1000.0f) * max_thrust, 0, max_thrust);
+    }
+    const float &m_right = motors[0];
+    const float &m_left  = motors[1];
+    const float &m_front = motors[2];
+    const float &m_back  = motors[3];
+
+    // quad format in Morse is:
+    // m1: back
+    // m2: right
+    // m3: front
+    // m4: left
+
+    // construct a JSON packet for motors
+    char buf[60];
+    snprintf(buf, sizeof(buf)-1, "{\"engines\": [%.3f, %.3f, %.3f, %.3f]}\n",
+             m_back, m_right, m_front, m_left);
+    buf[sizeof(buf)-1] = 0;
+
+    control_sock.send(buf, strlen(buf));
 }
 
 
@@ -339,8 +376,14 @@ void Morse::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 
-    // assume rover for now
-    rover_output(input);
+    switch (output_type) {
+    case OUTPUT_ROVER:
+        output_rover(input);
+        break;
+    case OUTPUT_QUAD:
+        output_quad(input);
+        break;
+    }
 
     report_FPS();
 }
