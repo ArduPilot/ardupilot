@@ -108,7 +108,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
