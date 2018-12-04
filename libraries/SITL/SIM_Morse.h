@@ -60,7 +60,7 @@ private:
     void report_FPS();
 
     // buffer for parsing pose data in JSON format
-    uint8_t sensor_buffer[2048];
+    uint8_t sensor_buffer[4096];
     uint32_t sensor_buffer_len;
 
     SocketAPM *sensors_sock;
@@ -81,42 +81,56 @@ private:
     uint64_t frame_counter;
     double last_frame_count_s;
 
+    enum data_type {
+        DATA_FLOAT,
+        DATA_DOUBLE,
+        DATA_VECTOR3F,
+        DATA_VECTOR3F_ARRAY,
+        DATA_FLOAT_ARRAY,
+    };
+
     struct {
         double timestamp;
         struct {
-            double angular_velocity[3];
-            double linear_acceleration[3];
-            double magnetic_field[3];
+            Vector3f angular_velocity;
+            Vector3f linear_acceleration;
+            Vector3f magnetic_field;
         } imu;
         struct {
-            double x, y, z;
+            float x, y, z;
         } gps;
         struct {
-            double roll, pitch, yaw;
+            float roll, pitch, yaw;
         } pose;
         struct {
-            double world_linear_velocity[3];
+            Vector3f world_linear_velocity;
         } velocity;
+        struct {
+            struct vector3f_array points;
+            struct float_array ranges;
+        } scanner;
     } state, last_state;
 
     // table to aid parsing of JSON sensor data
     struct keytable {
         const char *section;
         const char *key;
-        double *ptr;
-        bool is_vector3;
-    } keytable[11] = {
-        { "", "timestamp", &state.timestamp },
-        { "vehicle.imu", "angular_velocity",    &state.imu.angular_velocity[0], true },
-        { "vehicle.imu", "linear_acceleration", &state.imu.linear_acceleration[0], true },
-        { "vehicle.imu", "magnetic_field",      &state.imu.magnetic_field[0], true },
-        { "vehicle.gps", "x", &state.gps.x },
-        { "vehicle.gps", "y", &state.gps.y },
-        { "vehicle.gps", "z", &state.gps.z },
-        { "vehicle.pose", "roll",  &state.pose.roll },
-        { "vehicle.pose", "pitch", &state.pose.pitch },
-        { "vehicle.pose", "yaw",   &state.pose.yaw },
-        { "vehicle.velocity", "world_linear_velocity", &state.velocity.world_linear_velocity[0], true },
+        void *ptr;
+        enum data_type type;
+    } keytable[13] = {
+        { "", "timestamp", &state.timestamp, DATA_DOUBLE },
+        { "vehicle.imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
+        { "vehicle.imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
+        { "vehicle.imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
+        { "vehicle.gps", "x", &state.gps.x, DATA_FLOAT },
+        { "vehicle.gps", "y", &state.gps.y, DATA_FLOAT },
+        { "vehicle.gps", "z", &state.gps.z, DATA_FLOAT },
+        { "vehicle.pose", "roll",  &state.pose.roll, DATA_FLOAT },
+        { "vehicle.pose", "pitch", &state.pose.pitch, DATA_FLOAT },
+        { "vehicle.pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
+        { "vehicle.velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
+        { "vehicle.scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
+        { "vehicle.scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
     };
 };
 

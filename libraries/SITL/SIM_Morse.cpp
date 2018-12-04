@@ -137,17 +137,93 @@ bool Morse::parse_sensors(const char *json)
             return false;
         }
 
-        p += strlen(key.key)+2;
-        if (key.is_vector3) {
-            p += 2;
-            if (sscanf(p, "%lf, %lf, %lf", &key.ptr[0], &key.ptr[1], &key.ptr[2]) != 3) {
-                printf("Failed to parse vector3 for %s/%s\n", key.section, key.key);
+        p += strlen(key.key)+3;
+        switch (key.type) {
+        case DATA_FLOAT:
+            *((float *)key.ptr) = atof(p);
+            break;
+
+        case DATA_DOUBLE:
+            *((double *)key.ptr) = atof(p);
+            break;
+
+        case DATA_VECTOR3F: {
+            Vector3f *v = (Vector3f *)key.ptr;
+            if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
+                printf("Failed to parse Vector3f for %s/%s\n", key.section, key.key);
                 return false;
             }
-            //printf("%s.%s [%f, %f, %f]\n", key.section, key.key, key.ptr[0], key.ptr[1], key.ptr[2]);
-        } else {
-            key.ptr[0] = atof(p);
-            //printf("%s.%s %f\n", key.section, key.key, *key.ptr);
+            break;
+        }
+
+        case DATA_VECTOR3F_ARRAY: {
+            // example: [[0.0, 0.0, 0.0], [-8.97607135772705, -8.976069450378418, -8.642673492431641e-07]]
+            if (*p++ != '[') {
+                return false;
+            }
+            uint16_t n = 0;
+            struct vector3f_array *v = (struct vector3f_array *)key.ptr;
+            while (true) {
+                if (n >= v->length) {
+                    Vector3f *d = (Vector3f *)realloc(v->data, sizeof(Vector3f)*(n+1));
+                    if (d == nullptr) {
+                        return false;
+                    }
+                    v->data = d;
+                    v->length = n+1;
+                }
+                if (sscanf(p, "[%f, %f, %f]", &v->data[n].x, &v->data[n].y, &v->data[n].z) != 3) {
+                    printf("Failed to parse Vector3f for %s/%s[%u]\n", key.section, key.key, n);
+                    return false;
+                }
+                n++;
+                p = strchr(p,']');
+                if (!p) {
+                    return false;
+                }
+                p++;
+                if (p[0] != ',') {
+                    break;
+                }
+                if (p[1] != ' ') {
+                    return false;
+                }
+                p += 2;
+            }
+            if (p[0] != ']') {
+                return false;
+            }
+            v->length = n;
+            break;
+        }
+
+        case DATA_FLOAT_ARRAY: {
+            // example: [18.0, 12.694079399108887]
+            if (*p++ != '[') {
+                return false;
+            }
+            uint16_t n = 0;
+            struct float_array *v = (struct float_array *)key.ptr;
+            while (true) {
+                if (n >= v->length) {
+                    float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
+                    if (d == nullptr) {
+                        return false;
+                    }
+                    v->data = d;
+                    v->length = n+1;
+                }
+                v->data[n] = atof(p);
+                n++;
+                p = strchr(p,',');
+                if (!p) {
+                    break;
+                }
+                p++;
+            }
+            v->length = n;
+            break;
+        }
         }
     }
     socket_frame_counter++;
