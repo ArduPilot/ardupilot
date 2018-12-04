@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.3-rc1 01-Dec-2018
+Copter 3.6.3 04-Dec-2018 / 3.6.3-rc1 01-Dec-2018
 Changes from 3.6.2
 1) Bug fixes and minor enhancements
     a) Pixhawk4 RC input fix
