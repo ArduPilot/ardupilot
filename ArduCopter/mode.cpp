@@ -161,6 +161,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_TERRAINHOLD_ENABLED == ENABLED
+        case TERRAIN_HOLD:
+            ret = &mode_terrainhold;
+            break;
+#endif
+
         default:
             break;
     }

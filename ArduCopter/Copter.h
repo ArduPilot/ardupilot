@@ -989,6 +989,9 @@ private:
 #if MODE_ZIGZAG_ENABLED == ENABLED
     ModeZigZag mode_zigzag;
 #endif
+#if MODE_TERRAINHOLD_ENABLED == ENABLED
+    ModeTerrainHold mode_terrainhold;
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
