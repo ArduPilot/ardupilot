@@ -434,9 +434,11 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     switch (id) {
 
     case MSG_EXTENDED_STATUS1:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        if (PAYLOAD_SIZE(chan, SYS_STATUS) +
+            PAYLOAD_SIZE(chan, POWER_STATUS) > comm_get_txspace(chan)) {
+            return false;
+        }
         plane.send_sys_status(chan);
-        CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         send_power_status();
         break;
 
