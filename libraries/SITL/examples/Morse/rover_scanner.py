@@ -50,17 +50,16 @@ velocity = Velocity()
 vehicle.append(velocity)
 
 # add a 360 degree laser scanner, sitting 1m above the rover
+# this is setup to be similar to the RPLidarA2
 scan = Hokuyo()
 scan.translate(x=0.0, z=1.0)
 vehicle.append(scan)
 scan.properties(Visible_arc = True)
 scan.properties(laser_range = 18.0)
-scan.properties(resolution = 45.0)
+scan.properties(resolution = 5.0)
 scan.properties(scan_window = 360.0)
 scan.create_laser_arc()
 
-# this creates sensor output like this:
-# "vehicle.scan": {"timestamp": 1543891359.949892, "point_list": [[0.0, 0.0, 0.0], [-8.97607135772705, -8.976069450378418, -8.642673492431641e-07], [9.677023626863956e-10, -15.284374237060547, 5.738123718401766e-07], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], "range_list": [18.0, 12.694079399108887, 15.284374237060547, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0]}
 
 # create a compound sensor of all of the individual sensors and stream it
 all_sensors = CompoundSensor([imu, gps, velocity, pose, scan])
@@ -84,7 +83,7 @@ motion.add_stream('socket')
 #vehicle.append(keyboard)
 
 # Environment
-env = Environment('land-1/trees', fastmode=True)
+env = Environment('land-1/trees', fastmode=False)
 env.set_camera_location([10.0, -10.0, 10.0])
 env.set_camera_rotation([1.0470, 0, 0.7854])
 env.select_display_camera(camera)
