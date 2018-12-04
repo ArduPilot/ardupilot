@@ -84,7 +84,7 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-NOINLINE void Sub::send_extended_status1(mavlink_channel_t chan)
+NOINLINE void Sub::send_sys_status(mavlink_channel_t chan)
 {
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
@@ -404,7 +404,7 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         // to avoid unnecessary errors being reported to user
         if (sub.ap.initialised) {
             CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            sub.send_extended_status1(chan);
+            sub.send_sys_status(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
