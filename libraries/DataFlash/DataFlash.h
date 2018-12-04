@@ -211,7 +211,7 @@ public:
     const struct UnitStructure *unit(uint16_t num) const;
     const struct MultiplierStructure *multiplier(uint16_t num) const;
 
-    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // methods for mavlink SYS_STATUS message (send_sys_status)
     // these methods cover only the first logging backend used -
     // typically DataFlash_File.
     bool logging_present() const;
