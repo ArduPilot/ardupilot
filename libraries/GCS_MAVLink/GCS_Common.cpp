@@ -2507,6 +2507,11 @@ void GCS_MAVLINK::zero_rc_outputs()
  */
 MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
+    if (hal.util->get_soft_armed()) {
+        // refuse reboot when armed
+        return MAV_RESULT_FAILED;
+    }
+
     if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
         // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
         return MAV_RESULT_UNSUPPORTED;
