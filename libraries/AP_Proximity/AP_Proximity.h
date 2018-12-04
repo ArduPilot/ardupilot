@@ -136,7 +136,7 @@ public:
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
 
-    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // methods for mavlink SYS_STATUS message (send_sys_status)
     // these methods cover only the primary instance
     bool sensor_present() const;
     bool sensor_enabled() const;
