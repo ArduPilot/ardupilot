@@ -125,8 +125,8 @@ bool Morse::parse_sensors(const char *json)
         /* look for section header */
         const char *p = strstr(json, key.section);
         if (!p) {
-            printf("Failed to find section %s\n", key.section);
-            return false;
+            // we don't have this sensor
+            continue;
         }
         p += strlen(key.section)+1;
 
