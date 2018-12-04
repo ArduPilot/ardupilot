@@ -126,7 +126,7 @@ NOINLINE void Copter::send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-NOINLINE void Copter::send_extended_status1(mavlink_channel_t chan)
+NOINLINE void Copter::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -278,7 +278,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         // to avoid unnecessary errors being reported to user
         if (copter.ap.initialised) {
             CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            copter.send_extended_status1(chan);
+            copter.send_sys_status(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
