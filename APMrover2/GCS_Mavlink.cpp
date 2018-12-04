@@ -75,7 +75,7 @@ MAV_STATE GCS_MAVLINK_Rover::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Rover::send_extended_status1(mavlink_channel_t chan)
+void Rover::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -320,7 +320,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         // to avoid unnecessary errors being reported to user
         if (initialised) {
             CHECK_PAYLOAD_SIZE(SYS_STATUS);
-            rover.send_extended_status1(chan);
+            rover.send_sys_status(chan);
             CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
