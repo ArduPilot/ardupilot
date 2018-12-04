@@ -152,7 +152,7 @@ void Plane::send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-void Plane::send_extended_status1(mavlink_channel_t chan)
+void Plane::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -435,7 +435,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        plane.send_extended_status1(chan);
+        plane.send_sys_status(chan);
         CHECK_PAYLOAD_SIZE2(POWER_STATUS);
         send_power_status();
         break;
