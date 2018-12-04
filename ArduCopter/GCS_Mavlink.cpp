@@ -277,9 +277,11 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         // send extended status only once vehicle has been initialised
         // to avoid unnecessary errors being reported to user
         if (copter.ap.initialised) {
-            CHECK_PAYLOAD_SIZE(SYS_STATUS);
+            if (PAYLOAD_SIZE(chan, SYS_STATUS) +
+                PAYLOAD_SIZE(chan, POWER_STATUS) > comm_get_txspace(chan)) {
+                return false;
+            }
             copter.send_sys_status(chan);
-            CHECK_PAYLOAD_SIZE(POWER_STATUS);
             send_power_status();
         }
         break;
