@@ -3234,12 +3234,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_raw_imu();
         break;
 
-    case MSG_RAW_IMU2:
+    case MSG_SCALED_PRESSURE:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure();
         break;
 
-    case MSG_RAW_IMU3:
+    case MSG_SENSOR_OFFSETS:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets();
         break;
