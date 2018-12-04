@@ -449,6 +449,10 @@ void Morse::update(const struct sitl_input &input)
     accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
     accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
+    // fill in laser scanner results, if available
+    scanner.points = state.scanner.points;
+    scanner.ranges = state.scanner.ranges;
+
     // offset based on first position to account for offset in morse world
     if (position_offset.is_zero()) {
         position_offset = position;

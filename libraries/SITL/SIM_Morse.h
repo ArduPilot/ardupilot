@@ -60,7 +60,7 @@ private:
     void report_FPS();
 
     // buffer for parsing pose data in JSON format
-    uint8_t sensor_buffer[4096];
+    uint8_t sensor_buffer[50000];
     uint32_t sensor_buffer_len;
 
     SocketAPM *sensors_sock;

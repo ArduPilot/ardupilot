@@ -142,6 +142,12 @@ protected:
     float rcin[8];
     float range = -1.0f;                 // rangefinder detection in m
 
+    struct {
+        // data from simulated laser scanner, if available
+        struct vector3f_array points;
+        struct float_array ranges;
+    } scanner;
+    
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
     float turbulence_horizontal_speed = 0.0f;  // m/s
