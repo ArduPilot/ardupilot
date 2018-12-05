@@ -773,6 +773,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         copy_location = true;
         break;
 
+    case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
+        copy_location = true;
+        break;
+
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
         copy_location = true;
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
@@ -1226,6 +1230,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
+        copy_location = true;
+        break;
+
+    case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
         copy_location = true;
         break;
 
@@ -1724,7 +1732,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
     float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
-    for (uint16_t i = 0; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -1761,6 +1769,45 @@ bool AP_Mission::jump_to_landing_sequence(void)
     }
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    return false;
+}
+
+// jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+bool AP_Mission::jump_to_abort_landing_sequence(void)
+{
+    struct Location current_loc;
+
+    uint16_t abort_index = 0;
+    if (AP::ahrs().get_position(current_loc)) {
+        float min_distance = FLT_MAX;
+
+        for (uint16_t i = 1; i < num_commands(); i++) {
+            Mission_Command tmp;
+            if (!read_cmd_from_storage(i, tmp)) {
+                continue;
+            }
+            if (tmp.id == MAV_CMD_DO_GO_AROUND) {
+                float tmp_distance = get_distance(tmp.content.location, current_loc);
+                if (tmp_distance < min_distance) {
+                    min_distance = tmp_distance;
+                    abort_index = i;
+                }
+            }
+        }
+    }
+
+    if (abort_index != 0 && set_current_cmd(abort_index)) {
+
+        //if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Landing abort sequence start");
+        return true;
+    }
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
 
