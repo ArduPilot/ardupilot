@@ -423,6 +423,9 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
     location_sanitize(current_loc, loc);
     set_next_WP(loc);
 
+    // only set the direction if the quadplane landing radius override is not 0
+    // if it's 0 update_loiter will manage the direction for us when we hand it
+    // 0 later in the controller
     if (is_negative(quadplane.fw_land_approach_radius)) {
         loiter.direction = -1;
     } else if (is_positive(quadplane.fw_land_approach_radius)) {
@@ -980,22 +983,49 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
     switch (vtol_approach_s.approach_stage) {
         case LOITER_TO_ALT:
             {
-                update_loiter(quadplane.fw_land_approach_radius);
+                update_loiter(fabsf(quadplane.fw_land_approach_radius));
 
                 if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
                     Vector3f wind = ahrs.wind_estimate();
                     vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                     gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
-                    vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+                    vtol_approach_s.approach_stage = ENSURE_RADIUS;
                 }
                 break;
             }
+        case ENSURE_RADIUS:
+            {
+                float radius;
+                if (is_zero(quadplane.fw_land_approach_radius)) {
+                    radius = aparm.loiter_radius;
+                } else {
+                    radius = quadplane.fw_land_approach_radius;
+                }
+                const int8_t direction = is_negative(radius) ? -1 : 1;
+                radius = fabsf(radius);
+
+                // validate that the vehicle is at least the expected distance away from the loiter point
+                // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
+                if (((fabsf(get_distance(cmd.content.location, current_loc) - radius) > 5.0f) &&
+                      (get_distance(cmd.content.location, current_loc) < radius)) ||
+                    (loiter.sum_cd < 2)) {
+                    nav_controller->update_loiter(cmd.content.location, radius, direction);
+                    break;
+                }
+                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+                FALLTHROUGH;
+            }
         case WAIT_FOR_BREAKOUT:
             {
-                const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + 270));
-                const float radius =  is_zero(quadplane.fw_land_approach_radius) ? aparm.loiter_radius : quadplane.fw_land_approach_radius;
+                float radius = quadplane.fw_land_approach_radius;
+                if (is_zero(radius)) {
+                    radius = aparm.loiter_radius;
+                }
+                const int8_t direction = is_negative(radius) ? -1 : 1;
 
-                nav_controller->update_loiter(cmd.content.location, radius, cmd.content.location.flags.loiter_ccw ? -1 : 1);
+                nav_controller->update_loiter(cmd.content.location, radius, direction);
+
+                const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90)));
 
                 // breakout when within 5 degrees of the opposite direction
                 if (fabsf(ahrs.yaw - breakout_direction_rad) < radians(5.0f)) {
