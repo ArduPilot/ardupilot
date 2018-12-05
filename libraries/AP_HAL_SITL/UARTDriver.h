@@ -112,6 +112,7 @@ private:
     SITL_State *_sitlState;
     uint64_t _receive_timestamp;
     bool _is_udp;
+    bool _packetise;
 };
 
 #endif
