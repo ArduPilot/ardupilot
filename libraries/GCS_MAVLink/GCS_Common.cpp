@@ -1659,16 +1659,24 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
 
-    if (ins.get_gyro_count() <= instance ||
-        ins.get_accel_count() <= instance) {
-        return;
+    bool have_data = false;
+    Vector3f accel{};
+    if (ins.get_accel_count() > instance) {
+        accel = ins.get_accel(instance);
+        have_data = true;
     }
-
-    const Vector3f &accel = ins.get_accel(instance);
-    const Vector3f &gyro = ins.get_gyro(instance);
+    Vector3f gyro{};
+    if (ins.get_accel_count() > instance) {
+        gyro = ins.get_gyro(instance);
+        have_data = true;
+    }
     Vector3f mag{};
     if (compass.get_count() > instance) {
         mag = compass.get_field(instance);
+        have_data = true;
+    }
+    if (!have_data) {
+        return;
     }
     send_fn(
         chan,
