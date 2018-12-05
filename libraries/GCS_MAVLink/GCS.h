@@ -48,7 +48,10 @@ enum ap_message : uint8_t {
     MSG_VFR_HUD,
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN,
-    MSG_RAW_IMU1,
+    MSG_RAW_IMU,
+    MSG_SCALED_IMU,
+    MSG_SCALED_IMU2,
+    MSG_SCALED_IMU3,
     MSG_SCALED_PRESSURE,
     MSG_SENSOR_OFFSETS,
     MSG_GPS_RAW,
@@ -206,6 +209,7 @@ public:
     void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
+    void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag));
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
