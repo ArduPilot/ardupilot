@@ -92,42 +92,6 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFT120MSL64O2a.O4c.O1f#.O3e.O1b.O5d.O2a.O1c.O4b.O3e.O5g.O1a.O2c#.O5d.O3b.O1a#.O4g#.O1d.O3c#.O2b.O5a.O1f.O3g#.e.p8O0a<a>a<a>a<a>a<a>a<a>a<a", false }
 };
 
-
-// all strings to paste in http://firmware.ardupilot.org/Tools/ToneTester/
-
-/*
-MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A# P2
-MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A# P2
-MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B# P2
-MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B# P2
-MFT240MSL64<A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B# P2
-MFT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B# P2
-MFT240MSL64<G#>G#<G#>G#<G#>G#<G#>G#P8A#<A#>A#<A#>A#<A#>A#<A#>P8B#<B#>B#<B#>B#<B#>B#<B# P2
-MFT240MSL64<<G#<G#>G#<G#>G#<G#>G#<G#P8>A#<A#>A#<A#>A#<A#>A#<A#>P8<B#>B#<B#>B#<B#>B#<B#>B# P2
-MBNT240MSL64>A#A#A#A#P8A#A#A#A#P8A#A#A#A#A#A#L8A#A# P2
-MNT240MSL64O3ggggp16>ggggp32>ggggp64<ggggp64>ggggp64>g<g<g<g>g>g>g<g<g<g>g>g P2
-MFT240MSL64G<G>G<G>G<G>G<G>>C<C>C<C>C<C>C<C>C<C>C<C P2
-MBT240MSL64<<A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<G P2
-MBT240MSL64>A#<A#>A#<A#>A#<A#>A#<A# P2
-MBNT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#L16A#>A#<A#>A# P2
-MBNT240MSL64<C>C<C>C<C>C<C>C P2
-MFT240MSO2L64O0c>c<c>cp2<c>c<c>cp4<c>c<c>cp8<c>c<c>cp16<c>c<c>cp32<c>c<c>c<c>c<c>c P2
-MFT240MSL64<<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
-MFT240MSL64<C#>C#<C#>C#<C#>C#<C#>C#P8<D#>D#<D#>D#<D#>D#<D#>D# P2
-MFT240MSL64<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>Bp4<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>B P2
-MFT100MSL64<<<BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBB P2
-MBT240L63>A#A#A#A# AAAA A-A-A-A P2
-MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c P2
-MFT120MSO2L128p16gggg>f#f#f#f#>ffff<eeee<d#d#d#d#<dddd>c#c#c#c# P2
-MFT120MSL64O2a.O4c.O1f#.O3e.O1b.O5d.O2a.O1c.O4b.O3e.O5g.O1a.O2c#.O5d.O3b.O1a#.O4g#.O1d.O3c#.O2b.O5a.O1f.O3g#.e.p8O0a<a>a<a>a<a>a<a>a<a>a<a P2
-*/
-
 bool AP_ToneAlarm::init()
 {
     if (pNotify->buzzer_enabled() == false) {
