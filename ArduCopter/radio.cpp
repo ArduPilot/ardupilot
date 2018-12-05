@@ -32,7 +32,7 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
-    //set auxiliary servo ranges
+    // set auxiliary servo ranges
     rc().channel(CH_5)->set_range(1000);
     rc().channel(CH_6)->set_range(1000);
     rc().channel(CH_7)->set_range(1000);
@@ -99,7 +99,7 @@ void Copter::read_radio()
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
         if (!ap.rc_receiver_present) {
-            // RC receiver must be attached if we've just go input and
+            // RC receiver must be attached if we've just got input and
             // there are no overrides
             ap.rc_receiver_present = !RC_Channels::has_active_overrides();
         }
