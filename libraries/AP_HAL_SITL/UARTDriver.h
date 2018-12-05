@@ -18,6 +18,7 @@ public:
         _sitlState = sitlState;
 
         _fd = -1;
+        _mc_fd = -1;
         _listen_fd = -1;
     }
 
@@ -57,6 +58,9 @@ public:
     // file descriptor, exposed so SITL_State::loop_hook() can use it
     int _fd;
 
+    // file descriptor for reading multicast packets
+    int _mc_fd;
+
     bool _unbuffered_writes;
 
     enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
@@ -93,6 +97,10 @@ private:
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
+    // default multicast IP and port
+    const char *mcast_ip_default = "239.255.145.50";
+    const uint16_t mcast_port_default = 14550;
+
     const char *_uart_path;
     uint32_t _uart_baudrate;
 
@@ -104,6 +112,7 @@ private:
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
     void _udp_start_client(const char *address, uint16_t port);
+    void _udp_start_multicast(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
@@ -113,6 +122,7 @@ private:
     uint64_t _receive_timestamp;
     bool _is_udp;
     bool _packetise;
+    uint16_t _mc_myport;
 };
 
 #endif
