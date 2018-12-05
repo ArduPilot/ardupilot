@@ -31,66 +31,102 @@ extern const AP_HAL::HAL& hal;
 
 const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
-    { "MFT200L4<<<B#A#2", false },
+    { "MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A#", false },
 #define AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK 1
-    { "MFT100L4>B#A#2P8B#A#2", false },
+    { "MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A#", false },
 #define AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK 2
-    { "MFT200L4<B#", false },
+    { "MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B#", false },
 #define AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK 3
-    { "MFT100L4>B#", false },
+    { "MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B#", false },
 #define AP_NOTIFY_TONE_QUIET_POS_FEEDBACK 4
-    { "MFT200L4<A#B#", false },
+    { "MFT240MSL64<A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B#", false },
 #define AP_NOTIFY_TONE_LOUD_POS_FEEDBACK 5
-    { "MFT100L4>A#B#", false },
+    { "MFT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B#", false },
 #define AP_NOTIFY_TONE_LOUD_READY_OR_FINISHED 6
-    { "MFT100L4>G#6A#6B#4", false },
+    { "MFT240MSL64<G#>G#<G#>G#<G#>G#<G#>G#P8A#<A#>A#<A#>A#<A#>A#<A#>P8B#<B#>B#<B#>B#<B#>B#<B#", false },
 #define AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED 7
-    { "MFT200L4<G#6A#6B#4", false },
+    { "MFT240MSL64<<G#<G#>G#<G#>G#<G#>G#<G#P8>A#<A#>A#<A#>A#<A#>A#<A#>P8<B#>B#<B#>B#<B#>B#<B#>B#", false },
 #define AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED 8
-    { "MFT100L4>A#A#A#A#", false },
+    { "MBNT240MSL64>A#A#A#A#P8A#A#A#A#P8A#A#A#A#A#A#L8A#A#", false },
 #define AP_NOTIFY_TONE_QUIET_ARMING_WARNING 9
-    { "MNT75L1O2G", false },
+    { "MNT240MSL64O3ggggp16>ggggp32>ggggp64<ggggp64>ggggp64>g<g<g<g>g>g>g<g<g<g>g>g", false },
 #define AP_NOTIFY_TONE_LOUD_WP_COMPLETE 10
-    { "MFT200L8G>C3", false },
+    { "MFT240MSL64G<G>G<G>G<G>G<G>>C<C>C<C>C<C>C<C>C<C>C<C", false },
 #define AP_NOTIFY_TONE_LOUD_LAND_WARNING_CTS 11
-    { "MBT200L2A-G-A-G-A-G-", true },
+    { "MBT240MSL64<<A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<G", true },
 #define AP_NOTIFY_TONE_LOUD_VEHICLE_LOST_CTS 12
-    { "MBT200>A#1", true },
+    { "MBT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#", true },
 #define AP_NOTIFY_TONE_LOUD_BATTERY_ALERT_CTS 13
-    { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
+    { "MBNT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#L16A#>A#<A#>A#", true },
 #define AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
-    { "MBNT255<C16P2", true },
+    { "MBNT240MSL64<C>C<C>C<C>C<C>CP2", true },
 #define AP_NOTIFY_TONE_WAITING_FOR_THROW 15
-    { "MBNT90L4O2A#O3DFN0N0N0", true},
+    { "MFT240MSO2L64O0c>c<c>cp2<c>c<c>cp4<c>c<c>cp8<c>c<c>cp16<c>c<c>cp32<c>c<c>c<c>c<c>c", true},
 #define AP_NOTIFY_TONE_LOUD_1 16
-    { "MFT100L8>B", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_2 17
-    { "MFT100L8>BB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_3 18
-    { "MFT100L8>BBB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_4 19
-    { "MFT100L8>BBBB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_5 20
-    { "MFT100L8>BBBBB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_6 21
-    { "MFT100L8>BBBBBB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_LOUD_7 22
-    { "MFT100L8>BBBBBBB", false},
+    { "MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_TUNING_START 23
-    { "MFT100L20>C#D#", false},
+    { "MFT240MSL64<C#>C#<C#>C#<C#>C#<C#>C#P8<D#>D#<D#>D#<D#>D#<D#>D#", false},
 #define AP_NOTIFY_TONE_TUNING_SAVE 24
-    { "MFT100L10DBDB>", false},
+    { "MFT240MSL64<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>Bp4<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>B", false},
 #define AP_NOTIFY_TONE_TUNING_ERROR 25
-    { "MFT100L10>BBBBBBBB", false},
+    { "MFT100MSL64<<<BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBB", false},
 #define AP_NOTIFY_TONE_LEAK_DETECTED 26
-    { "MBT255L8>A+AA-", true},
+    { "MBT240L63>A#A#A#A# AAAA A-A-A-A", true},
 #define AP_NOTIFY_TONE_QUIET_SHUTDOWN 27
     { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
 #define AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
-    { "MFT200L4<B#4A#6G#6", false },
+    { "MFT120MSO2L128p16gggg>f#f#f#f#>ffff<eeee<d#d#d#d#<dddd>c#c#c#c#", false },
 #define AP_NOTIFY_TONE_STARTUP 29
-    { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+    { "MFT120MSL64O2a.O4c.O1f#.O3e.O1b.O5d.O2a.O1c.O4b.O3e.O5g.O1a.O2c#.O5d.O3b.O1a#.O4g#.O1d.O3c#.O2b.O5a.O1f.O3g#.e.p8O0a<a>a<a>a<a>a<a>a<a>a<a", false }
 };
+
+
+// all strings to paste in http://firmware.ardupilot.org/Tools/ToneTester/
+
+/*
+MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A# P2
+MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B#>P8A#<A#>A#<A#>A#<A#>A#<A#P4B#>B#<B#>B#<B#>B#<B#>B#<P8A#>A#<A#>A#<A#>A#<A#>A# P2
+MFT240MSL64<B#<B#>B#<B#>B#<B#>B#<B# P2
+MFT240MSL64>B#<B#>B#<B#>B#<B#>B#<B# P2
+MFT240MSL64<A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B# P2
+MFT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#P8B#>B#<B#>B#<B#>B#<B#>B# P2
+MFT240MSL64<G#>G#<G#>G#<G#>G#<G#>G#P8A#<A#>A#<A#>A#<A#>A#<A#>P8B#<B#>B#<B#>B#<B#>B#<B# P2
+MFT240MSL64<<G#<G#>G#<G#>G#<G#>G#<G#P8>A#<A#>A#<A#>A#<A#>A#<A#>P8<B#>B#<B#>B#<B#>B#<B#>B# P2
+MBNT240MSL64>A#A#A#A#P8A#A#A#A#P8A#A#A#A#A#A#L8A#A# P2
+MNT240MSL64O3ggggp16>ggggp32>ggggp64<ggggp64>ggggp64>g<g<g<g>g>g>g<g<g<g>g>g P2
+MFT240MSL64G<G>G<G>G<G>G<G>>C<C>C<C>C<C>C<C>C<C>C<C P2
+MBT240MSL64<<A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<GP16A>A<A>A<A>A<A>AP32G<G>G<G>G<G>G<G P2
+MBT240MSL64>A#<A#>A#<A#>A#<A#>A#<A# P2
+MBNT240MSL64>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#>A#<A#L16A#>A#<A#>A# P2
+MBNT240MSL64<C>C<C>C<C>C<C>C P2
+MFT240MSO2L64O0c>c<c>cp2<c>c<c>cp4<c>c<c>cp8<c>c<c>cp16<c>c<c>cp32<c>c<c>c<c>c<c>c P2
+MFT240MSL64<<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>Bp8<B>B<B>B<B>B<B>B P2
+MFT240MSL64<C#>C#<C#>C#<C#>C#<C#>C#P8<D#>D#<D#>D#<D#>D#<D#>D# P2
+MFT240MSL64<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>Bp4<D>D<D>D<D>D<D>Dp8<B>B<B>B<B>B<B>B P2
+MFT100MSL64<<<BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBBp8BBBBBBBBp16BBBBBBBB P2
+MBT240L63>A#A#A#A# AAAA A-A-A-A P2
+MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c P2
+MFT120MSO2L128p16gggg>f#f#f#f#>ffff<eeee<d#d#d#d#<dddd>c#c#c#c# P2
+MFT120MSL64O2a.O4c.O1f#.O3e.O1b.O5d.O2a.O1c.O4b.O3e.O5g.O1a.O2c#.O5d.O3b.O1a#.O4g#.O1d.O3c#.O2b.O5a.O1f.O3g#.e.p8O0a<a>a<a>a<a>a<a>a<a>a<a P2
+*/
 
 bool AP_ToneAlarm::init()
 {
