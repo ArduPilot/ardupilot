@@ -39,6 +39,7 @@
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#include <AP_HAL/utility/packetise.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -399,6 +400,7 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
     }
 
     _is_udp = true;
+    _packetise = true;
     _connected = true;
 }
 
@@ -529,23 +531,39 @@ void UARTDriver::_timer_tick(void)
         _check_reconnect();
         return;
     }
-    uint32_t navail;
     ssize_t nwritten;
 
-    const uint8_t *readptr = _writebuffer.readptr(navail);
-    if (readptr && navail > 0) {
-        if (!_use_send_recv) {
-            nwritten = ::write(_fd, readptr, navail);
-            if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-                close(_fd);
-                _fd = -1;
-                _connected = false;
-            }
-        } else {
-            nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
+    if (_packetise) {
+        uint16_t n = _writebuffer.available();
+        if (n > 0) {
+            n = mavlink_packetise(_writebuffer, n);
         }
-        if (nwritten > 0) {
-            _writebuffer.advance(nwritten);
+        if (n > 0) {
+            // keep as a single UDP packet
+            uint8_t tmpbuf[n];
+            _writebuffer.peekbytes(tmpbuf, n);
+            ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
+            if (ret > 0) {
+                _writebuffer.advance(ret);
+            }
+        }
+    } else {
+        uint32_t navail;
+        const uint8_t *readptr = _writebuffer.readptr(navail);
+        if (readptr && navail > 0) {
+            if (!_use_send_recv) {
+                nwritten = ::write(_fd, readptr, navail);
+                if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+                    close(_fd);
+                    _fd = -1;
+                    _connected = false;
+                }
+            } else {
+                nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
+            }
+            if (nwritten > 0) {
+                _writebuffer.advance(nwritten);
+            }
         }
     }
 
