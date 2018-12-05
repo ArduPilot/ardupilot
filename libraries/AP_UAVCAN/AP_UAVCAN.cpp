@@ -19,7 +19,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_WITH_UAVCAN
-
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -180,6 +179,14 @@ void AP_UAVCAN::init(uint8_t driver_index)
 
     hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
     hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+
+    const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+    uint8_t uid_len = uid_buf_len;
+    uint8_t unique_id[uid_buf_len];
+
+    if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+        uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+    }
     _node->setHardwareVersion(hw_version);
 
     int start_res = _node->start();
@@ -188,6 +195,10 @@ void AP_UAVCAN::init(uint8_t driver_index)
         return;
     }
 
+    //Start Servers
+#ifdef HAS_UAVCAN_SERVERS
+    _servers.init(*_node);
+#endif
     // Roundup all subscribers from supported drivers
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);

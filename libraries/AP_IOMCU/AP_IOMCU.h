@@ -90,6 +90,9 @@ public:
     // set to oneshot mode
     void set_oneshot_mode(void);
 
+    // set to brushed mode
+    void set_brushed_mode(void);
+    
     // check if IO is healthy
     bool healthy(void);
 

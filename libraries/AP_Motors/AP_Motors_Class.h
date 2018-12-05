@@ -52,6 +52,7 @@ public:
         MOTOR_FRAME_TYPE_H = 3,
         MOTOR_FRAME_TYPE_VTAIL = 4,
         MOTOR_FRAME_TYPE_ATAIL = 5,
+        MOTOR_FRAME_TYPE_PLUSREV = 6, // plus with reversed motor direction
         MOTOR_FRAME_TYPE_Y6B = 10,
         MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
     };

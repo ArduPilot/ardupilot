@@ -369,6 +369,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: True
     AP_GROUPINFO("TRIM_PITCH", 4, QuadPlane, ahrs_trim_pitch, 0),
 
+    // @Param: TAILSIT_RLL_MX
+    // @DisplayName: Maximum Roll angle
+    // @Description: Maximum Allowed roll angle for tailsitters. If this is zero then Q_ANGLE_MAX is used.
+    // @Units: deg
+    // @Range: 0 80
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_RLL_MX", 5, QuadPlane, tailsitter.max_roll_angle, 0),
+
     AP_GROUPEND
 };
 
@@ -1277,8 +1285,10 @@ void QuadPlane::update_transition(void)
         }
     }
     
-    // if rotors are fully forward then we are not transitioning
-    if (tiltrotor_fully_fwd()) {
+    // if rotors are fully forward then we are not transitioning,
+    // unless we are waiting for airspeed to increase (in which case
+    // the tilt will decrease rapidly)
+    if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_DONE;
     }
     
@@ -1324,6 +1334,13 @@ void QuadPlane::update_transition(void)
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
         }
         hold_hover(climb_rate_cms);
+
+        // set desired yaw to current yaw in both desired angle and
+        // rate request. This reduces wing twist in transition due to
+        // multicopter yaw demands
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
+
         last_throttle = motors->get_throttle();
 
         // reset integrators while we are below target airspeed as we
@@ -1361,6 +1378,13 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
         hold_stabilize(throttle_scaled);
+
+        // set desired yaw to current yaw in both desired angle and
+        // rate request while waiting for transition to
+        // complete. Navigation should be controlled by fixed wing
+        // control surfaces at this stage
+        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         break;
     }
 
@@ -1421,7 +1445,13 @@ void QuadPlane::update(void)
         /*
           make sure we don't have any residual control from previous flight stages
          */
-        attitude_control->relax_attitude_controllers();
+        if (is_tailsitter()) {
+            // tailsitters only relax I terms, to make ground testing easier
+            attitude_control->reset_rate_controller_I_terms();
+        } else {
+            // otherwise full relax
+            attitude_control->relax_attitude_controllers();
+        }
         pos_control->relax_alt_hold_controllers(0);
     }
     

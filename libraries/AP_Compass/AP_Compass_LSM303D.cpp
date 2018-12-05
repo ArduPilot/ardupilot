@@ -273,8 +273,9 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
     _dev->set_device_type(DEVTYPE_LSM303D);
     set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    // read at 100Hz
-    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
+    // read at 91Hz. We don't run at 100Hz as fetching data too fast can cause some very
+    // odd periodic changes in the output data
+    _dev->register_periodic_callback(11000, FUNCTOR_BIND_MEMBER(&AP_Compass_LSM303D::_update, void));
 
     return true;
 }

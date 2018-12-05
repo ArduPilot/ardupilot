@@ -682,6 +682,11 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         iomcu.set_freq(io_fast_channel_mask, 1);
         return iomcu.set_oneshot_mode();
     }
+    if (mode == MODE_PWM_BRUSHED &&
+        (mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
+        return iomcu.set_brushed_mode();
+    }
 #endif
 }
 

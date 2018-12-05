@@ -22,6 +22,7 @@
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_RTC/JitterCorrection.h>
 
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -39,15 +40,15 @@ enum ap_message : uint8_t {
     MSG_ATTITUDE,
     MSG_LOCATION,
     MSG_EXTENDED_STATUS1,
-    MSG_EXTENDED_STATUS2,
+    MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_CURRENT_WAYPOINT,
     MSG_VFR_HUD,
     MSG_SERVO_OUTPUT_RAW,
     MSG_RADIO_IN,
     MSG_RAW_IMU1,
-    MSG_RAW_IMU2,
-    MSG_RAW_IMU3,
+    MSG_SCALED_PRESSURE,
+    MSG_SENSOR_OFFSETS,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
     MSG_GPS2_RAW,
@@ -571,14 +572,8 @@ private:
         bool active;
     } alternative;
 
-    // state associated with offboard transport lag correction
-    struct {
-        bool initialised;
-        int64_t link_offset_usec;
-        uint32_t min_sample_counter;
-        int64_t min_sample_us;
-    } lag_correction;
-
+    JitterCorrection lag_correction;
+    
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
     struct Location global_position_current_loc;

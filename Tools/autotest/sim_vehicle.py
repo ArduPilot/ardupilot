@@ -538,7 +538,10 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     cmd = []
     if opts.valgrind:
         cmd_name += " (valgrind)"
-        cmd.append("valgrind")
+        # adding this option allows valgrind to cope with the overload
+        # of operator new
+        valgrind_opts = "--soname-synonyms=somalloc=nouserintercepts"
+        cmd.append("valgrind " + valgrind_opts)
     if opts.callgrind:
         cmd_name += " (callgrind)"
         cmd.append("valgrind --tool=callgrind")

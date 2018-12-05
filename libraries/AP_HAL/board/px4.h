@@ -3,8 +3,14 @@
 #define HAL_BOARD_NAME "PX4"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 #define HAL_OS_POSIX_IO 1
-#define HAL_BOARD_LOG_DIRECTORY "/fs/microsd/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/fs/microsd/APM/TERRAIN"
+
+// put all storage of files under /fs/microsd/APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/fs/microsd/APM"
+#endif
+
+#define HAL_BOARD_LOG_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/LOGS"
+#define HAL_BOARD_TERRAIN_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/TERRAIN"
 #define HAL_PARAM_DEFAULTS_PATH "/etc/defaults.parm"
 #define HAL_INS_DEFAULT HAL_INS_PX4
 #define HAL_BARO_DEFAULT HAL_BARO_PX4
@@ -153,4 +159,3 @@
 #include <AP_HAL_PX4/Semaphores.h>
 #define HAL_Semaphore PX4::Semaphore
 #define HAL_Semaphore_Recursive PX4::Semaphore_Recursive
-

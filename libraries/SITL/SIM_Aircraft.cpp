@@ -394,6 +394,10 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
+    // copy laser scanner results
+    fdm.scanner.points = scanner.points;
+    fdm.scanner.ranges = scanner.ranges;
+
     if (smoothing.enabled) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;

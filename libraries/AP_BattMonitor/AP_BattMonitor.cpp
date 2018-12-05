@@ -3,6 +3,7 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_Sum.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -132,6 +133,9 @@ AP_BattMonitor::init()
 #ifdef HAVE_AP_BLHELI_SUPPORT
                 drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
 #endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_Sum:
+                drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
