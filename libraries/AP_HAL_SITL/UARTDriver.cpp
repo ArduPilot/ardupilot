@@ -103,6 +103,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
             }
+        } else if (strcmp(devtype, "udpclient") == 0) {
+            const char *ip = args1;
+            uint16_t port = args2?atoi(args2):14550;
+            ::printf("UDP connection %s:%u\n", ip, port);
+            _udp_start_client(ip, port);
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
@@ -344,6 +349,61 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 
 
 /*
+  start a UDP client connection for the serial port.
+ */
+void UARTDriver::_udp_start_client(const char *address, uint16_t port)
+{
+    struct sockaddr_in sockaddr;
+    int ret;
+
+    if (_connected) {
+        return;
+    }
+
+    _use_send_recv = true;
+    
+    if (_fd != -1) {
+        close(_fd);
+    }
+
+    memset(&sockaddr,0,sizeof(sockaddr));
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(port);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = inet_addr(address);
+
+    _fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+
+    // try to setup for broadcast, this may fail if insufficient privileges
+    int one = 1;
+    setsockopt(_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+
+    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "udp connect failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    _is_udp = true;
+    _connected = true;
+}
+
+
+/*
   start a UART connection for the serial port
  */
 void UARTDriver::_uart_start_connection(void)
@@ -507,7 +567,7 @@ void UARTDriver::_timer_tick(void)
     } else {
         if (_select_check(_fd)) {
             nread = recv(_fd, buf, space, MSG_DONTWAIT);
-            if (nread <= 0) {
+            if (nread <= 0 && !_is_udp) {
                 // the socket has reached EOF
                 close(_fd);
                 _connected = false;

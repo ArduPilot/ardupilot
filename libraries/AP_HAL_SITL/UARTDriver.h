@@ -103,6 +103,7 @@ private:
     void _uart_start_connection(void);
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
+    void _udp_start_client(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
@@ -110,6 +111,7 @@ private:
 
     SITL_State *_sitlState;
     uint64_t _receive_timestamp;
+    bool _is_udp;
 };
 
 #endif
