@@ -867,7 +867,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
         { MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,      MSG_SERVO_OUTPUT_RAW},
         { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RADIO_IN},
-        { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU1},
+        { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU},
+        { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
+        { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
+        { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
         { MAVLINK_MSG_ID_SENSOR_OFFSETS,        MSG_SENSOR_OFFSETS},
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
@@ -1649,63 +1652,38 @@ void GCS_MAVLINK::send_raw_imu()
         mag.x,
         mag.y,
         mag.z);
-
-    if (ins.get_gyro_count() <= 1 &&
-        ins.get_accel_count() <= 1 &&
-        compass.get_count() <= 1) {
-        return;
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU2)) {
-        return;
-    }
-    const Vector3f &accel2 = ins.get_accel(1);
-    const Vector3f &gyro2 = ins.get_gyro(1);
-    if (compass.get_count() >= 2) {
-        mag = compass.get_field(1);
-    } else {
-        mag.zero();
-    }
-    mavlink_msg_scaled_imu2_send(
-        chan,
-        AP_HAL::millis(),
-        accel2.x * 1000.0f / GRAVITY_MSS,
-        accel2.y * 1000.0f / GRAVITY_MSS,
-        accel2.z * 1000.0f / GRAVITY_MSS,
-        gyro2.x * 1000.0f,
-        gyro2.y * 1000.0f,
-        gyro2.z * 1000.0f,
-        mag.x,
-        mag.y,
-        mag.z);        
-
-    if (ins.get_gyro_count() <= 2 &&
-        ins.get_accel_count() <= 2 &&
-        compass.get_count() <= 2) {
-        return;
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_IMU3)) {
-        return;
-    }
-    const Vector3f &accel3 = ins.get_accel(2);
-    const Vector3f &gyro3 = ins.get_gyro(2);
-    if (compass.get_count() >= 3) {
-        mag = compass.get_field(2);
-    } else {
-        mag.zero();
-    }
-    mavlink_msg_scaled_imu3_send(
-        chan,
-        AP_HAL::millis(),
-        accel3.x * 1000.0f / GRAVITY_MSS,
-        accel3.y * 1000.0f / GRAVITY_MSS,
-        accel3.z * 1000.0f / GRAVITY_MSS,
-        gyro3.x * 1000.0f,
-        gyro3.y * 1000.0f,
-        gyro3.z * 1000.0f,
-        mag.x,
-        mag.y,
-        mag.z);        
 }
+
+void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag))
+{
+    const AP_InertialSensor &ins = AP::ins();
+    const Compass &compass = AP::compass();
+
+    if (ins.get_gyro_count() <= instance ||
+        ins.get_accel_count() <= instance) {
+        return;
+    }
+
+    const Vector3f &accel = ins.get_accel(instance);
+    const Vector3f &gyro = ins.get_gyro(instance);
+    Vector3f mag{};
+    if (compass.get_count() > instance) {
+        mag = compass.get_field(instance);
+    }
+    send_fn(
+        chan,
+        AP_HAL::millis(),
+        accel.x * 1000.0f / GRAVITY_MSS,
+        accel.y * 1000.0f / GRAVITY_MSS,
+        accel.z * 1000.0f / GRAVITY_MSS,
+        gyro.x * 1000.0f,
+        gyro.y * 1000.0f,
+        gyro.z * 1000.0f,
+        mag.x,
+        mag.y,
+        mag.z);
+}
+
 
 // sub overrides this to send on-board temperature
 void GCS_MAVLINK::send_scaled_pressure3()
@@ -3771,9 +3749,24 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_radio_in();
         break;
 
-    case MSG_RAW_IMU1:
+    case MSG_RAW_IMU:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu();
+        break;
+
+    case MSG_SCALED_IMU:
+        CHECK_PAYLOAD_SIZE(SCALED_IMU);
+        send_scaled_imu(0, mavlink_msg_scaled_imu_send);
+        break;
+
+    case MSG_SCALED_IMU2:
+        CHECK_PAYLOAD_SIZE(SCALED_IMU2);
+        send_scaled_imu(1, mavlink_msg_scaled_imu2_send);
+        break;
+
+    case MSG_SCALED_IMU3:
+        CHECK_PAYLOAD_SIZE(SCALED_IMU3);
+        send_scaled_imu(2, mavlink_msg_scaled_imu3_send);
         break;
 
     case MSG_SCALED_PRESSURE:
