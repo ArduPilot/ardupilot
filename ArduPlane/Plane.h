@@ -358,6 +358,7 @@ private:
 
     enum Landing_ApproachStage {
         LOITER_TO_ALT,
+        ENSURE_RADIUS,
         WAIT_FOR_BREAKOUT,
         APPROACH_LINE,
         VTOL_LANDING,
