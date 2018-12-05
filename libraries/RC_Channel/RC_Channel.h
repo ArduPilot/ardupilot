@@ -40,7 +40,7 @@ public:
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
     uint16_t    get_dead_zone(void) const { return dead_zone; }
-    
+
     // get the center stick position expressed as a control_in value
     int16_t     get_control_mid() const;
 
@@ -85,7 +85,7 @@ public:
 
     // get control input with zero deadzone
     int16_t     get_control_in_zero_dz(void) const;
-    
+
     int16_t    get_radio_min() const {return radio_min.get();}
     void       set_radio_min(int16_t val) { radio_min = val;}
 
@@ -206,7 +206,6 @@ protected:
         // no action by default (e.g. Tracker, Sub, who do their own thing)
     };
 
-
 private:
 
     // pwm is stored here
@@ -214,7 +213,7 @@ private:
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
-    
+
     AP_Int16    radio_min;
     AP_Int16    radio_trim;
     AP_Int16    radio_max;
@@ -272,7 +271,6 @@ private:
 
     void reset_mode_switch();
     void read_mode_switch();
-
 };
 
 
@@ -311,11 +309,11 @@ public:
     virtual RC_Channel *channel(uint8_t chan) = 0;
 
     uint8_t get_radio_in(uint16_t *chans, const uint8_t num_channels); // reads a block of chanel radio_in values starting from channel 0
-                                                                              // returns the number of valid channels
+                                                                       // returns the number of valid channels
 
     static uint8_t get_valid_channel_count(void);                      // returns the number of valid channels in the last read
     static int16_t get_receiver_rssi(void);                            // returns [0, 255] for receiver RSSI (0 is no link) if present, otherwise -1
-    bool read_input(void);                                      // returns true if new input has been read in
+    bool read_input(void);                                             // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
     static bool receiver_bind(const int dsmMode);                      // puts the reciever in bind mode if present, returns true if success
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
