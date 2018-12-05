@@ -79,7 +79,7 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
 
 void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *chan, float min, float max) const
 {
-    if (chan == nullptr) {
+    if ((chan == nullptr) || (chan->get_radio_in() == 0)) {
         return;
     }
     out += chan->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
@@ -110,13 +110,13 @@ void AP_Mount_Backend::update_targets_from_rc()
                        _state._pan_angle_max);
     } else {
         // allow pilot rate input to come directly from an RC_Channel
-        if (roll_ch) {
+        if ((roll_ch != nullptr) && (roll_ch->get_radio_in() != 0)) {
             _angle_ef_target_rad.x = angle_input_rad(roll_ch, _state._roll_angle_min, _state._roll_angle_max);
         }
-        if (tilt_ch) {
+        if ((tilt_ch != nullptr) && (tilt_ch->get_radio_in() != 0)) {
             _angle_ef_target_rad.y = angle_input_rad(tilt_ch, _state._tilt_angle_min, _state._tilt_angle_max);
         }
-        if (pan_ch) {
+        if ((pan_ch != nullptr) && (pan_ch->get_radio_in() != 0)) {
             _angle_ef_target_rad.z = angle_input_rad(pan_ch, _state._pan_angle_min, _state._pan_angle_max);
         }
     }
@@ -125,7 +125,8 @@ void AP_Mount_Backend::update_targets_from_rc()
 // returns the angle (degrees*100) that the RC_Channel input is receiving
 int32_t AP_Mount_Backend::angle_input(const RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 {
-    return (rc->get_reverse() ? -1 : 1) * (rc->get_radio_in() - rc->get_radio_min()) 
+    int16_t radio_in = constrain_int16(rc->get_radio_in(),  rc->get_radio_min(),  rc->get_radio_max());
+    return (rc->get_reverse() ? -1 : 1) * (radio_in - rc->get_radio_min())
       * (int32_t)(angle_max - angle_min) / (rc->get_radio_max() - rc->get_radio_min()) + (rc->get_reverse() ? angle_max : angle_min);
 }
 
