@@ -2,8 +2,11 @@
   support for sending UDP packets on MAVLink packet boundaries.
  */
 
-#include <stdint.h>
+#include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
+#include "packetise.h"
 
 /*
   return the number of bytes to send for a packetised connection
@@ -33,7 +36,9 @@ uint16_t mavlink_packetise(ByteBuffer &writebuf, uint16_t n)
         return n;
     }
 
+    // cope with both MAVLink1 and MAVLink2 packets
     uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
+
     // this looks like a MAVLink packet - try to write on
     // packet boundaries when possible
     if (n < min_length) {
@@ -41,12 +46,10 @@ uint16_t mavlink_packetise(ByteBuffer &writebuf, uint16_t n)
         return 0;
     }
 
-    // the length of the packet is the 2nd byte, and mavlink
-    // packets have a 6 byte header plus 2 byte checksum,
-    // giving len+8 bytes
+    // the length of the packet is the 2nd byte
     int16_t len = writebuf.peek(1);
     if (b == MAVLINK_STX) {
-        // check for signed packet with extra 13 bytes
+        // This is Mavlink2. Check for signed packet with extra 13 bytes
         int16_t incompat_flags = writebuf.peek(2);
         if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
             min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
@@ -64,3 +67,4 @@ uint16_t mavlink_packetise(ByteBuffer &writebuf, uint16_t n)
     }
     return n;
 }
+#endif // HAL_BOOTLOADER_BUILD
