@@ -1125,6 +1125,15 @@ class AutoTestCopter(AutoTest):
 
     # fly_avc_test - fly AVC mission
     def fly_avc_test(self):
+        # Arm
+        self.mavproxy.send('switch 6\n')  # stabilize mode
+        self.wait_mode('STABILIZE')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+
         # upload mission from file
         self.progress("# Load copter_AVC2013_mission")
         # load the waypoint count
@@ -1153,6 +1162,9 @@ class AutoTestCopter(AutoTest):
         # wait for disarm
         self.mav.motors_disarmed_wait()
         self.progress("MOTORS DISARMED OK")
+
+        self.progress("Lowering rotor speed")
+        self.set_rc(8, 1000)
 
         self.progress("AVC mission completed: passed!")
 
@@ -2661,17 +2673,10 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('switch 6\n')  # stabilize mode
             self.wait_mode('STABILIZE')
             self.wait_ready_to_arm()
+
             self.run_test("Arm features", self.test_arm_feature)
 
-            # Arm
-            self.run_test("Arm motors", self.arm_vehicle)
-            self.progress("Raising rotor speed")
-            self.set_rc(8, 2000)
-
             self.run_test("Fly AVC mission", self.fly_avc_test)
-
-            self.progress("Lowering rotor speed")
-            self.set_rc(8, 1000)
 
             # mission ends with disarm so should be ok to download logs now
             self.run_test("log download",
