@@ -503,7 +503,7 @@ private:
     uint8_t sending_bucket_id = no_bucket_to_send;
     Bitmask bucket_message_ids_to_send{MSG_LAST};
 
-    ap_message next_deferred_message_to_send();
+    ap_message next_deferred_bucket_message_to_send();
     void find_next_bucket_to_send();
     void remove_message_from_bucket(int8_t bucket, ap_message id);
 
