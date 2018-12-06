@@ -31,35 +31,35 @@ extern const AP_HAL::HAL& hal;
 
 const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK 0
-    { "MFT200L4<<<B#A#2", false },
+    { "MFT250L4<<<B#A#2", false },
 #define AP_NOTIFY_TONE_LOUD_NEG_FEEDBACK 1
     { "MFT100L4>B#A#2P8B#A#2", false },
 #define AP_NOTIFY_TONE_QUIET_NEU_FEEDBACK 2
-    { "MFT200L4<B#", false },
+    { "MFMST240O5L16CL13CL10CL8CL7CL6CL5CMLL4<GC", false },
 #define AP_NOTIFY_TONE_LOUD_NEU_FEEDBACK 3
-    { "MFT100L4>B#", false },
+    { "MFMST240O5L16CL13CL10CL8CL7CL6CL5CMLL4<GC", false },
 #define AP_NOTIFY_TONE_QUIET_POS_FEEDBACK 4
     { "MFT200L4<A#B#", false },
 #define AP_NOTIFY_TONE_LOUD_POS_FEEDBACK 5
-    { "MFT100L4>A#B#", false },
+    { "MFT200L4>A#B#", false },
 #define AP_NOTIFY_TONE_LOUD_READY_OR_FINISHED 6
-    { "MFT100L4>G#6A#6B#4", false },
+    { "MFT160L4>G#6A#6B#4", false },
 #define AP_NOTIFY_TONE_QUIET_READY_OR_FINISHED 7
-    { "MFT200L4<G#6A#6B#4", false },
+    { "MFT240O4MLL6abO5a", false },
 #define AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED 8
     { "MFT100L4>A#A#A#A#", false },
 #define AP_NOTIFY_TONE_QUIET_ARMING_WARNING 9
-    { "MNT75L1O2G", false },
+    { "MFMLT240L4O4CG>MSL5CL6CL7CL8CL9CL10CL11CL12CL13CL14CL15CL16CL32C", false },
 #define AP_NOTIFY_TONE_LOUD_WP_COMPLETE 10
     { "MFT200L8G>C3", false },
 #define AP_NOTIFY_TONE_LOUD_LAND_WARNING_CTS 11
-    { "MBT200L2A-G-A-G-A-G-", true },
+    { "MBT200L4A-G-A-G-A-G-", true },
 #define AP_NOTIFY_TONE_LOUD_VEHICLE_LOST_CTS 12
     { "MBT200>A#1", true },
 #define AP_NOTIFY_TONE_LOUD_BATTERY_ALERT_CTS 13
-    { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8", true },
+    { "MBNT255>A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8A#8N0N0N0N0", true },
 #define AP_NOTIFY_TONE_QUIET_COMPASS_CALIBRATING_CTS 14
-    { "MBNT255<C16P2", true },
+    { "MBNT255<D16P2", true },
 #define AP_NOTIFY_TONE_WAITING_FOR_THROW 15
     { "MBNT90L4O2A#O3DFN0N0N0", true},
 #define AP_NOTIFY_TONE_LOUD_1 16
@@ -87,9 +87,9 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_QUIET_SHUTDOWN 27
     { "MFMST200L32O3ceP32cdP32ceP32c<c>c<cccP8L32>c>c<P32<c<c", false },
 #define AP_NOTIFY_TONE_QUIET_NOT_READY_OR_NOT_FINISHED 28
-    { "MFT200L4<B#4A#6G#6", false },
+    { "MFT240 O5MLL6cO4ba", false },
 #define AP_NOTIFY_TONE_STARTUP 29
-    { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+    { "MFT240O5MSL7cN0cN0cL3N0MLL4eMSL8aaa", false },
 };
 
 bool AP_ToneAlarm::init()
