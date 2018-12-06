@@ -1196,7 +1196,7 @@ void Copter::convert_pid_parameters(void)
 
     // TradHeli default parameters
 #if FRAME_CONFIG == HELI_FRAME
-    const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
+    static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
         { "LOIT_ACC_MAX", 500.0f },
         { "LOIT_BRK_ACCEL", 125.0f },
         { "LOIT_BRK_DELAY", 1.0f },
