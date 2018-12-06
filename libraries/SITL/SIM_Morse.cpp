@@ -29,6 +29,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <DataFlash/DataFlash.h>
 #include "pthread.h"
+#include <AP_HAL/utility/replace.h>
 
 extern const AP_HAL::HAL& hal;
 
