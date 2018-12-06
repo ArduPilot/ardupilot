@@ -3844,11 +3844,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 uint16_t GCS_MAVLINK::get_interval_for_stream(GCS_MAVLINK::streams id) const
 {
-    const float frate = streamRates[id].get();
-    if ((uint8_t)frate == 0) {
+    const int16_t frate = streamRates[id].get();
+    if (frate == 0) {
         return 0;
     }
-    const uint32_t ret = 1000/(uint8_t)frate;
+    const uint32_t ret = 1000/frate;
     if (ret > 60000) {
         return 60000;
     }
