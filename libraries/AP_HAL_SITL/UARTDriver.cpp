@@ -39,6 +39,7 @@
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#include <AP_HAL/utility/packetise.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,6 +74,10 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              tcp:5760:wait    // tcp listen on port 5760
              tcp:0:wait       // tcp listen on use base_port + 0
              tcpclient:192.168.2.15:5762
+             udpclient:127.0.0.1
+             udpclient:127.0.0.1:14550
+             mcast:
+             mcast:239.255.145.50:14550
              uart:/dev/ttyUSB0:57600
              sim:ParticleSensor_SDS021:
          */
@@ -102,6 +107,22 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (!_connected) {
                 _connected = true;
                 _fd = _sitlState->sim_fd(args1, args2);
+            }
+        } else if (strcmp(devtype, "udpclient") == 0) {
+            // udp client connection
+            const char *ip = args1;
+            uint16_t port = args2?atoi(args2):14550;
+            if (!_connected) {
+                ::printf("UDP connection %s:%u\n", ip, port);
+                _udp_start_client(ip, port);
+            }
+        } else if (strcmp(devtype, "mcast") == 0) {
+            // udp multicast connection
+            const char *ip = args1 && *args1?args1:mcast_ip_default;
+            uint16_t port = args2?atoi(args2):mcast_port_default;
+            if (!_connected) {
+                ::printf("UDP multicast connection %s:%u\n", ip, port);
+                _udp_start_multicast(ip, port);
             }
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
@@ -344,6 +365,127 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 
 
 /*
+  start a UDP client connection for the serial port.
+ */
+void UARTDriver::_udp_start_client(const char *address, uint16_t port)
+{
+    struct sockaddr_in sockaddr;
+    int ret;
+
+    if (_connected) {
+        return;
+    }
+
+    _use_send_recv = true;
+    
+    if (_fd != -1) {
+        close(_fd);
+    }
+
+    memset(&sockaddr,0,sizeof(sockaddr));
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(port);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = inet_addr(address);
+
+    _fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+
+    // try to setup for broadcast, this may fail if insufficient privileges
+    int one = 1;
+    setsockopt(_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+
+    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "udp connect failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    _is_udp = true;
+    _packetise = true;
+    _connected = true;
+}
+
+/*
+  start a UDP multicast connection
+ */
+void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
+{
+    if (_connected) {
+        return;
+    }
+
+    // establish the listening port
+    struct sockaddr_in sockaddr;
+    int ret;
+
+    memset(&sockaddr,0,sizeof(sockaddr));
+
+#ifdef HAVE_SOCK_SIN_LEN
+    sockaddr.sin_len = sizeof(sockaddr);
+#endif
+    sockaddr.sin_port = htons(port);
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = inet_addr(address);
+
+    _mc_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (_mc_fd == -1) {
+        fprintf(stderr, "socket failed - %s\n", strerror(errno));
+        exit(1);
+    }
+    ret = fcntl(_mc_fd, F_SETFD, FD_CLOEXEC);
+    if (ret == -1) {
+        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+        exit(1);
+    }
+    int one = 1;
+    if (setsockopt(_mc_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
+        fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    // close on exec, to allow reboot
+    fcntl(_mc_fd, F_SETFD, FD_CLOEXEC);
+
+    ret = bind(_mc_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1) {
+        fprintf(stderr, "multicast bind failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    struct ip_mreq mreq {};
+    mreq.imr_multiaddr.s_addr = inet_addr(address);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    ret = setsockopt(_mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    if (ret == -1) {
+        fprintf(stderr, "multicast membership add failed on port %u - %s\n",
+                (unsigned)ntohs(sockaddr.sin_port),
+                strerror(errno));
+        exit(1);
+    }
+
+    // now start the outgoing connection as an ordinary UDP connection
+    _udp_start_client(address, port);
+}
+
+
+/*
   start a UART connection for the serial port
  */
 void UARTDriver::_uart_start_connection(void)
@@ -469,23 +611,39 @@ void UARTDriver::_timer_tick(void)
         _check_reconnect();
         return;
     }
-    uint32_t navail;
     ssize_t nwritten;
 
-    const uint8_t *readptr = _writebuffer.readptr(navail);
-    if (readptr && navail > 0) {
-        if (!_use_send_recv) {
-            nwritten = ::write(_fd, readptr, navail);
-            if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-                close(_fd);
-                _fd = -1;
-                _connected = false;
-            }
-        } else {
-            nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
+    if (_packetise) {
+        uint16_t n = _writebuffer.available();
+        if (n > 0) {
+            n = mavlink_packetise(_writebuffer, n);
         }
-        if (nwritten > 0) {
-            _writebuffer.advance(nwritten);
+        if (n > 0) {
+            // keep as a single UDP packet
+            uint8_t tmpbuf[n];
+            _writebuffer.peekbytes(tmpbuf, n);
+            ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
+            if (ret > 0) {
+                _writebuffer.advance(ret);
+            }
+        }
+    } else {
+        uint32_t navail;
+        const uint8_t *readptr = _writebuffer.readptr(navail);
+        if (readptr && navail > 0) {
+            if (!_use_send_recv) {
+                nwritten = ::write(_fd, readptr, navail);
+                if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+                    close(_fd);
+                    _fd = -1;
+                    _connected = false;
+                }
+            } else {
+                nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);
+            }
+            if (nwritten > 0) {
+                _writebuffer.advance(nwritten);
+            }
         }
     }
 
@@ -496,7 +654,33 @@ void UARTDriver::_timer_tick(void)
     
     char buf[space];
     ssize_t nread = 0;
-    if (!_use_send_recv) {
+    if (_mc_fd >= 0) {
+        if (_select_check(_mc_fd)) {
+            struct sockaddr_in from;
+            socklen_t fromlen = sizeof(from);
+            nread = recvfrom(_mc_fd, buf, space, MSG_DONTWAIT, (struct sockaddr *)&from, &fromlen);
+            uint16_t port = ntohs(from.sin_port);
+            if (_mc_myport == 0) {
+                // get our own address, so we can recognise packets from ourself
+                struct sockaddr_in myaddr;
+                socklen_t myaddrlen;
+                if (getsockname(_fd, (struct sockaddr *)&myaddr, &myaddrlen) == 0) {
+                    _mc_myport = ntohs(myaddr.sin_port);
+                }
+            }
+            if (_mc_myport == port) {
+                // assume this is a packet from ourselves. This is not
+                // entirely accurate, as it could be a packet from
+                // another machine that has assigned the same port,
+                // unfortunately we don't have a better way to detect
+                // packets from ourselves
+                nread = 0;
+            }
+        }
+    } else if (!_use_send_recv) {
+        if (!_select_check(_fd)) {
+            return;
+        }
         int fd = _console?0:_fd;
         nread = ::read(fd, buf, space);
         if (nread == -1 && errno != EAGAIN && _uart_path) {
@@ -504,19 +688,16 @@ void UARTDriver::_timer_tick(void)
             _fd = -1;
             _connected = false;
         }
-    } else {
-        if (_select_check(_fd)) {
-            nread = recv(_fd, buf, space, MSG_DONTWAIT);
-            if (nread <= 0) {
-                // the socket has reached EOF
-                close(_fd);
-                _connected = false;
-                fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
-                fflush(stdout);
-                return;
-            }
-        } else {
-            nread = 0;
+    } else if (_select_check(_fd)) {
+        nread = recv(_fd, buf, space, MSG_DONTWAIT);
+        if (nread <= 0 && !_is_udp) {
+            // the socket has reached EOF
+            close(_fd);
+            _fd = -1;
+            _connected = false;
+            fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
+            fflush(stdout);
+            return;
         }
     }
     if (nread > 0) {

@@ -380,15 +380,10 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     AP_GROUPEND
 };
 
-struct defaults_struct {
-    const char *name;
-    float value;
-};
-
 /*
   defaults for all quadplanes
  */
-static const struct defaults_struct defaults_table[] = {
+static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RAT_RLL_P",    0.25 },
     { "Q_A_RAT_RLL_I",    0.25 },
     { "Q_A_RAT_RLL_FILT", 10.0 },
@@ -406,7 +401,7 @@ static const struct defaults_struct defaults_table[] = {
 /*
   extra defaults for tailsitters
  */
-static const struct defaults_struct defaults_table_tailsitter[] = {
+static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] = {
     { "KFF_RDDRMIX",       0.02 },
     { "Q_A_RAT_PIT_FF",    0.2 },
     { "Q_A_RAT_YAW_FF",    0.2 },
@@ -641,30 +636,16 @@ failed:
 }
 
 /*
-  setup default parameters from a defaults_struct table
- */
-void QuadPlane::setup_defaults_table(const struct defaults_struct *table, uint8_t count)
-{
-    for (uint8_t i=0; i<count; i++) {
-        if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane setup failure for %s",
-                                             table[i].name);
-            AP_HAL::panic("quadplane bad default %s", table[i].name);
-        }
-    }
-}
-
-/*
   setup default parameters from defaults_table
  */
 void QuadPlane::setup_defaults(void)
 {
-    setup_defaults_table(defaults_table, ARRAY_SIZE(defaults_table));
+    AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
 
     enum AP_Motors::motor_frame_class motor_class;
     motor_class = (enum AP_Motors::motor_frame_class)frame_class.get();
     if (motor_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
-        setup_defaults_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
+        AP_Param::set_defaults_from_table(defaults_table_tailsitter, ARRAY_SIZE(defaults_table_tailsitter));
     }
     
     // reset ESC calibration
