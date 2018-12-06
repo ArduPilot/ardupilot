@@ -1003,8 +1003,7 @@ void GCS_MAVLINK::find_next_bucket_to_send()
         } else {
             ms_before_send_this_bucket = interval - ms_since_last_sent;
         }
-        if (sending_bucket_id == no_bucket_to_send ||
-            ms_before_send_this_bucket < ms_before_send_next_bucket_to_send) {
+        if (ms_before_send_this_bucket < ms_before_send_next_bucket_to_send) {
             sending_bucket_id = i;
             ms_before_send_next_bucket_to_send = ms_before_send_this_bucket;
         }
