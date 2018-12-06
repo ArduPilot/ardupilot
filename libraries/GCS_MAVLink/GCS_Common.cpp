@@ -1332,7 +1332,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
         return false;
     }
 
-    if (closest_bucket_interval_delta > 5 &&
+    if (closest_bucket_interval_delta != 0 &&
         empty_bucket_id != -1) {
         // allocate a bucket for this interval
         deferred_message_bucket[empty_bucket_id].interval_ms = interval_ms;
