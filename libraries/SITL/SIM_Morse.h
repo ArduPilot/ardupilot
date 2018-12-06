@@ -48,8 +48,9 @@ private:
     uint16_t morse_control_port = 60001;
 
     enum {
-        OUTPUT_ROVER,
-        OUTPUT_QUAD
+        OUTPUT_ROVER=1,
+        OUTPUT_QUAD=2,
+        OUTPUT_PWM=3
     } output_type;
 
     bool connect_sockets(void);
@@ -57,6 +58,7 @@ private:
     bool sensors_receive(void);
     void output_rover(const struct sitl_input &input);
     void output_quad(const struct sitl_input &input);
+    void output_pwm(const struct sitl_input &input);
     void report_FPS();
 
     // buffer for parsing pose data in JSON format
