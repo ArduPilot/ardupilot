@@ -119,18 +119,18 @@ private:
         enum data_type type;
     } keytable[13] = {
         { "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { "vehicle.imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
-        { "vehicle.imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
-        { "vehicle.imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
-        { "vehicle.gps", "x", &state.gps.x, DATA_FLOAT },
-        { "vehicle.gps", "y", &state.gps.y, DATA_FLOAT },
-        { "vehicle.gps", "z", &state.gps.z, DATA_FLOAT },
-        { "vehicle.pose", "roll",  &state.pose.roll, DATA_FLOAT },
-        { "vehicle.pose", "pitch", &state.pose.pitch, DATA_FLOAT },
-        { "vehicle.pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
-        { "vehicle.velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
-        { "vehicle.scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
-        { "vehicle.scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
+        { ".imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
+        { ".imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
+        { ".imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
+        { ".gps", "x", &state.gps.x, DATA_FLOAT },
+        { ".gps", "y", &state.gps.y, DATA_FLOAT },
+        { ".gps", "z", &state.gps.z, DATA_FLOAT },
+        { ".pose", "roll",  &state.pose.roll, DATA_FLOAT },
+        { ".pose", "pitch", &state.pose.pitch, DATA_FLOAT },
+        { ".pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
+        { ".velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
+        { ".scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
+        { ".scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
     };
 };
 
