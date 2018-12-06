@@ -965,7 +965,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         interval_ms *= 4;
     }
     if (waypoint_receiving) {
-        // we are sending , penalize streams:
+        // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
 
