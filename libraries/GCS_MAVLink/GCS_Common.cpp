@@ -1178,9 +1178,10 @@ void GCS_MAVLINK::update_send()
             }
         }
 
-        // check for any messages that the code has explicity sent
-        ap_message next = (ap_message)pushed_ap_message_ids.first_set();
-        if (next != no_message_to_send) {
+        // check for any messages that the code has explicitly sent
+        const int16_t fs = pushed_ap_message_ids.first_set();
+        if (fs != -1) {
+            ap_message next = (ap_message)fs;
             if (!do_try_send_message(next)) {
                 break;
             }
@@ -1196,7 +1197,7 @@ void GCS_MAVLINK::update_send()
             continue;
         }
 
-        next = next_deferred_bucket_message_to_send();
+        ap_message next = next_deferred_bucket_message_to_send();
         if (next != no_message_to_send) {
             if (!do_try_send_message(next)) {
                 break;
