@@ -32,7 +32,7 @@ class EDNEmit(Emit):
     def start_libraries(self):
         pass
 
-    def emit(self, g, f):
+    def emit(self, g):
         for param in g.params:
             output_dict = dict()
             # lowercase all keywords
