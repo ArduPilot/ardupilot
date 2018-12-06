@@ -30,15 +30,15 @@ float Plane::get_speed_scaler(void)
                 speed_scaler = MIN(speed_scaler, new_scaler);
             }
         }
-    } else {
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > 0) {
-            speed_scaler = 0.5f + ((float)THROTTLE_CRUISE / SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 2.0f);                 // First order taylor expansion of square root
-            // Should maybe be to the 2/7 power, but we aren't going to implement that...
-        }else{
-            speed_scaler = 1.67f;
-        }
+    } else if (hal.util->get_soft_armed()) {
+        // scale assumed surface movement using throttle output
+        float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
+        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
+    } else {
+        // no speed estimate and not armed, use a unit scaling
+        speed_scaler = 1;
     }
     return speed_scaler;
 }
