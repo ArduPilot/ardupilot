@@ -128,6 +128,19 @@ def ap_common_checks(cfg):
 
     cfg.check(header_name='byteswap.h', mandatory=False)
 
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <string.h>
+        int main() {
+        const char *s = "abc";
+          return memrchr((const void *)s, 0, 3) != NULL;
+        }''',
+        define_name="HAVE_MEMRCHR",
+        msg="Checking for HAVE_MEMRCHR",
+        mandatory=False,
+    )
+    
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
