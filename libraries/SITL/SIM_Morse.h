@@ -76,8 +76,6 @@ private:
     double extrapolated_s;
     double average_frame_time_s;
 
-    Vector3f position_offset;
-
     uint64_t socket_frame_counter;
     uint64_t last_socket_frame_counter;
     uint64_t frame_counter;
