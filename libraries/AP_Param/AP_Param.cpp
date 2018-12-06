@@ -31,6 +31,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
@@ -2205,10 +2206,10 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
 {
     for (uint8_t i=0; i<count; i++) {
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "set param default failure for %s", table[i].name);
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            AP_HAL::panic("set param default failure for %s", table[i].name);
-#endif
+            char *buf = nullptr;
+            if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
+                AP_BoardConfig::sensor_config_error(buf);
+            }
         }
     }
 }
