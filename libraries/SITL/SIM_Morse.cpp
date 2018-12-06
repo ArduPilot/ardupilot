@@ -431,7 +431,6 @@ void Morse::update(const struct sitl_input &input)
         // cope with restarting while connected
         initial_time_s = time_now_us * 1.0e-6f;
         last_time_s = state.timestamp;
-        position_offset.zero();
         return;
     }
 
@@ -489,12 +488,6 @@ void Morse::update(const struct sitl_input &input)
     // fill in laser scanner results, if available
     scanner.points = state.scanner.points;
     scanner.ranges = state.scanner.ranges;
-
-    // offset based on first position to account for offset in morse world
-    if (position_offset.is_zero()) {
-        position_offset = position;
-    }
-    position -= position_offset;
 
     update_position();
     time_advance();
