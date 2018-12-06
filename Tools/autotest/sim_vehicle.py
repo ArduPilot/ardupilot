@@ -538,13 +538,14 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     cmd = []
     if opts.valgrind:
         cmd_name += " (valgrind)"
+        cmd.append("valgrind")
         # adding this option allows valgrind to cope with the overload
         # of operator new
-        valgrind_opts = "--soname-synonyms=somalloc=nouserintercepts"
-        cmd.append("valgrind " + valgrind_opts)
+        cmd.append("--soname-synonyms=somalloc=nouserintercepts")
     if opts.callgrind:
         cmd_name += " (callgrind)"
-        cmd.append("valgrind --tool=callgrind")
+        cmd.append("valgrind")
+        cmd.append("--tool=callgrind")
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
