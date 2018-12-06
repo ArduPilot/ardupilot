@@ -688,7 +688,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
         stream_slowdown--;
     }
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     if (stream_slowdown > max_slowdown) {
         max_slowdown = stream_slowdown;
     }
@@ -979,7 +979,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
 // typical runtime on fmuv3: 5 microseconds for 3 buckets
 void GCS_MAVLINK::find_next_bucket_to_send()
 {
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_us = AP_HAL::micros();
 #endif
@@ -1015,7 +1015,7 @@ void GCS_MAVLINK::find_next_bucket_to_send()
         bucket_message_ids_to_send.clearall();
     }
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     uint32_t delta_us = AP_HAL::micros() - start_us;
     hal.scheduler->restore_interrupts(data);
     if (delta_us > try_send_message_stats.fnbts_maxtime) {
@@ -1058,19 +1058,19 @@ bool GCS_MAVLINK::do_try_send_message(const ap_message id)
     if (in_delay_callback && !should_send_message_in_delay_callback(id)) {
         return true;
     }
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_send_message_us = AP_HAL::micros();
 #endif
     if (!try_send_message(id)) {
         // didn't fit in buffer...
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
         try_send_message_stats.no_space_for_message++;
         hal.scheduler->restore_interrupts(data);
 #endif
         return false;
     }
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     const uint32_t delta_us = AP_HAL::micros() - start_send_message_us;
     hal.scheduler->restore_interrupts(data);
     if (delta_us > try_send_message_stats.longest_time_us) {
@@ -1142,7 +1142,7 @@ void GCS_MAVLINK::update_send()
         deferred_messages_initialised = true;
     }
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     uint32_t retry_deferred_body_start = 0;
 #endif
 
@@ -1153,7 +1153,7 @@ void GCS_MAVLINK::update_send()
             break;
         }
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
         retry_deferred_body_start = AP_HAL::micros();
 #endif
 
@@ -1166,7 +1166,7 @@ void GCS_MAVLINK::update_send()
                 }
                 deferred_message[next].last_sent_ms += deferred_message[next].interval_ms;
                 next_deferred_message_to_send_cache = -1; // deferred_message_to_send will recalculate
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
                 const uint32_t delta = stop - retry_deferred_body_start;
                 if (delta > try_send_message_stats.max_retry_deferred_body_us) {
@@ -1185,7 +1185,7 @@ void GCS_MAVLINK::update_send()
                 break;
             }
             pushed_ap_message_ids.clear(next);
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
             const uint32_t stop = AP_HAL::micros();
             const uint32_t delta = stop - retry_deferred_body_start;
             if (delta > try_send_message_stats.max_retry_deferred_body_us) {
@@ -1208,7 +1208,7 @@ void GCS_MAVLINK::update_send()
                     deferred_message_bucket[sending_bucket_id].interval_ms;
                 find_next_bucket_to_send();
             }
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
                 const uint32_t delta = stop - retry_deferred_body_start;
                 if (delta > try_send_message_stats.max_retry_deferred_body_us) {
@@ -1220,7 +1220,7 @@ void GCS_MAVLINK::update_send()
         }
         break;
     }
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     const uint32_t stop = AP_HAL::micros();
     const uint32_t delta = stop - retry_deferred_body_start;
     if (delta > try_send_message_stats.max_retry_deferred_body_us) {
@@ -1466,7 +1466,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
 
     const uint16_t now16_ms{AP_HAL::millis16()};
 
