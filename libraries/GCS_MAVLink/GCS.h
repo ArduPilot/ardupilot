@@ -24,7 +24,7 @@
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
 
-#define DEBUG_SEND_MESSAGE_TIMINGS 0
+#define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN)
@@ -657,7 +657,7 @@ private:
 
     void zero_rc_outputs();
 
-#if DEBUG_SEND_MESSAGE_TIMINGS
+#if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
         uint32_t longest_time_us;
         ap_message longest_id;
