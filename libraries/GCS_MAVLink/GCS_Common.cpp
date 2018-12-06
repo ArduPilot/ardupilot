@@ -1045,6 +1045,7 @@ ap_message GCS_MAVLINK::next_deferred_message_to_send()
         AP_HAL::panic("next_deferred_message_to_send called on empty bucket");
 #endif
         find_next_bucket_to_send();
+        return no_message_to_send;
     }
     return (ap_message)next;
 }
