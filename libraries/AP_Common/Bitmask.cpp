@@ -18,10 +18,7 @@ Bitmask &Bitmask::operator=(const Bitmask&other)
         }
         numbits = other.numbits;
     }
-    if (other.numwords > 20) {
-        abort();
-    }
-    memcpy(bits, other.bits, 4*other.numwords);
+    memcpy(bits, other.bits, sizeof(bits[0])*other.numwords);
 
     return *this;
 }
