@@ -1050,9 +1050,9 @@ ap_message GCS_MAVLINK::next_deferred_message_to_send()
     return (ap_message)next;
 }
 
-// call try_send_message if appropriate.  Incorporates code to record
-// how long it takes to send a message.
-// try_send_message is expected to be overridden, not this function.
+// call try_send_message if appropriate.  Incorporates debug code to
+// record how long it takes to send a message.  try_send_message is
+// expected to be overridden, not this function.
 bool GCS_MAVLINK::do_try_send_message(const ap_message id)
 {
     const bool in_delay_callback = hal.scheduler->in_delay_callback();
