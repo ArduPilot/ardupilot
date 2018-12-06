@@ -472,8 +472,10 @@ private:
 
     // outbound ("deferred message") queue.
 
-    // "special" messages such as heartbeat, next_param etc are
-    // stored separately to stream-rated messages like AHRS2 etc:
+    // "special" messages such as heartbeat, next_param etc are stored
+    // separately to stream-rated messages like AHRS2 etc.  If these
+    // were to be stored in buckets then they would be slowed down
+    // based on stream_slowdown, which we have not traditionally done.
     struct deferred_message_t {
         const ap_message id;
         uint16_t interval_ms;
