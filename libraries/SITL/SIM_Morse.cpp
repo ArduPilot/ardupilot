@@ -83,15 +83,33 @@ static const struct {
 Morse::Morse(const char *home_str, const char *frame_str) :
     Aircraft(home_str, frame_str)
 {
-    const char *colon = strchr(frame_str, ':');
-    if (colon) {
-        morse_ip = colon+1;
+    char *saveptr = nullptr;
+    char *s = strdup(frame_str);
+    char *frame_option = strtok_r(s, ":", &saveptr);
+    char *args1 = strtok_r(nullptr, ":", &saveptr);
+    char *args2 = strtok_r(nullptr, ":", &saveptr);
+    char *args3 = strtok_r(nullptr, ":", &saveptr);
+    /*
+      allow setting of IP, sensors port and control port
+      format morse:IPADDRESS:SENSORS_PORT:CONTROL_PORT
+     */
+    if (args1) {
+        morse_ip = args1;
+    }
+    if (args2) {
+        morse_sensors_port = atoi(args2);
+        morse_control_port = morse_sensors_port+1;
+    }
+    if (args3) {
+        morse_control_port = atoi(args3);
     }
 
-    if (strstr(frame_str, "-rover")) {
+    if (strstr(frame_option, "-rover")) {
         output_type = OUTPUT_ROVER;
-    } else if (strstr(frame_str, "-quad")) {
+    } else if (strstr(frame_option, "-quad")) {
         output_type = OUTPUT_QUAD;
+    } else if (strstr(frame_option, "-pwm")) {
+        output_type = OUTPUT_PWM;
     } else {
         // default to rover
         output_type = OUTPUT_ROVER;
@@ -107,7 +125,9 @@ Morse::Morse(const char *home_str, const char *frame_str) :
             }
         }
     }
-    printf("Started Morse backend\n");
+    printf("Started Morse with %s:%u:%u type %u\n",
+           morse_ip, morse_sensors_port, morse_control_port,
+           (unsigned)output_type);
 }
 
 /*
@@ -369,6 +389,22 @@ void Morse::output_quad(const struct sitl_input &input)
     control_sock->send(buf, strlen(buf));
 }
 
+/*
+  output all 16 channels as PWM values. This allows for general
+  control of a robot
+ */
+void Morse::output_pwm(const struct sitl_input &input)
+{
+    char buf[200];
+    snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u]}\n",
+             input.servos[0], input.servos[1], input.servos[2], input.servos[3],
+             input.servos[4], input.servos[5], input.servos[6], input.servos[7],
+             input.servos[8], input.servos[9], input.servos[10], input.servos[11],
+             input.servos[12], input.servos[13], input.servos[14], input.servos[15]);
+    buf[sizeof(buf)-1] = 0;
+    control_sock->send(buf, strlen(buf));
+}
+
 
 /*
   update the Morse simulation by one time step
@@ -484,6 +520,9 @@ void Morse::update(const struct sitl_input &input)
         break;
     case OUTPUT_QUAD:
         output_quad(input);
+        break;
+    case OUTPUT_PWM:
+        output_pwm(input);
         break;
     }
 
