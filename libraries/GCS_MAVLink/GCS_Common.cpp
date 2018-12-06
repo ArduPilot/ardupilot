@@ -1024,7 +1024,7 @@ void GCS_MAVLINK::find_next_bucket_to_send()
 #endif
 }
 
-ap_message GCS_MAVLINK::next_deferred_message_to_send()
+ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
 {
     if (sending_bucket_id == no_bucket_to_send) {
         // could happen if all streamrates are zero?
@@ -1042,7 +1042,7 @@ ap_message GCS_MAVLINK::next_deferred_message_to_send()
     if (next == -1) {
         // should not happen
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("next_deferred_message_to_send called on empty bucket");
+        AP_HAL::panic("next_deferred_bucket_message_to_send called on empty bucket");
 #endif
         find_next_bucket_to_send();
         return no_message_to_send;
@@ -1197,7 +1197,7 @@ void GCS_MAVLINK::update_send()
             continue;
         }
 
-        next = next_deferred_message_to_send();
+        next = next_deferred_bucket_message_to_send();
         if (next != no_message_to_send) {
             if (!do_try_send_message(next)) {
                 break;
