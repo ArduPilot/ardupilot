@@ -335,5 +335,11 @@ if opts.emit_params:
     do_emit(HtmlEmit())
     do_emit(RSTEmit())
     do_emit(MDEmit())
+    try:
+        from ednemit import EDNEmit
+        do_emit(EDNEmit())
+    except ImportError:
+        if opts.verbose:
+            print("Unable to emit EDN, install edn_format and pytz if edn is desired")
 
 sys.exit(error_count)
