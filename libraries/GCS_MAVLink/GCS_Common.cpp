@@ -1343,9 +1343,6 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
         deferred_message_bucket[empty_bucket_id].last_sent_ms = AP_HAL::millis16();
         closest_bucket = empty_bucket_id;
         closest_bucket_interval_delta = 0;
-    } else if (deferred_message_bucket[closest_bucket].ap_message_ids.count() == 0) {
-        deferred_message_bucket[closest_bucket].interval_ms = interval_ms;
-        deferred_message_bucket[closest_bucket].last_sent_ms = AP_HAL::millis16();
     }
 
     deferred_message_bucket[closest_bucket].ap_message_ids.set(id);
