@@ -497,7 +497,7 @@ private:
         uint16_t interval_ms;
         uint16_t last_sent_ms; // from AP_HAL::millis16()
     };
-    deferred_message_bucket_t deferred_message_bucket[5];
+    deferred_message_bucket_t deferred_message_bucket[10];
     static const uint8_t no_bucket_to_send = -1;
     static const ap_message no_message_to_send = (ap_message)-1;
     uint8_t sending_bucket_id = no_bucket_to_send;
