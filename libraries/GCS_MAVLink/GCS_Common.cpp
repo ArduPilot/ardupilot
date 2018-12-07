@@ -1242,6 +1242,10 @@ void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
             find_next_bucket_to_send();
         }
     }
+
+    if (bucket == sending_bucket_id) {
+        bucket_message_ids_to_send.clear(id);
+    }
 }
 
 bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_ms)
@@ -1283,9 +1287,8 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
                 empty_bucket_id = i;
             }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            if (bucket.ap_message_ids.first_set() != -1) {
-                ::fprintf(stderr, "Bucket %u has zero interval but with ids set", i);
-                abort();
+            if (bucket.ap_message_ids.count() != 0) {
+                AP_HAL::panic("Bucket %u has zero interval but with ids set", i);
             }
 #endif
             continue;
