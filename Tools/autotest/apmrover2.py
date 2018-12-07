@@ -775,6 +775,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_initial_mode(self):
+        self.context_push()
+        ex = None
+        try:
+            self.mavproxy.send('switch 3\n')  # rtl mode
+            self.wait_mode('RTL')
+            self.mavproxy.send('switch 6\n')  # Manual mode
+            self.wait_mode('MANUAL')
+            self.set_parameter("INITIAL_MODE", 6) # follow
+            self.set_parameter("FOLL_ENABLE", 1)
+            self.reboot_sitl()
+            self.wait_mode(6)
+            self.progress("Make sure we stay in this mode")
+            self.delay_sim_time(5)
+            self.wait_mode(6)
+            # now change modes with a switch:
+            self.mavproxy.send('switch 3\n')  # rtl mode
+            self.wait_mode('RTL')
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -852,6 +878,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.run_test("Test Camera Mission Items",
                           self.test_camera_mission_items)
+
+            self.run_test("Test INITIAL_MODE", self.test_initial_mode)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
