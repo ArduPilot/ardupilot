@@ -151,6 +151,7 @@ public:
     friend class ParametersG2;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class QAutoTune;
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
