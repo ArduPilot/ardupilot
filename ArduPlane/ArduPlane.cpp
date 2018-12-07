@@ -647,7 +647,8 @@ void Plane::update_flight_mode(void)
     case QHOVER:
     case QLOITER:
     case QLAND:
-    case QRTL: {
+    case QRTL:
+    case QAUTOTUNE: {
         // set nav_roll and nav_pitch using sticks
         int16_t roll_limit = MIN(roll_limit_cd, quadplane.aparm.angle_max);
         float pitch_input = channel_pitch->norm_input();
@@ -772,6 +773,7 @@ void Plane::update_navigation()
     case QLOITER:
     case QLAND:
     case QRTL:
+    case QAUTOTUNE:
         // nothing to do
         break;
     }
