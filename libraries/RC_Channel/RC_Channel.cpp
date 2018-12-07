@@ -407,7 +407,10 @@ void RC_Channel::read_mode_switch()
     }
 
     // set flight mode and simple mode setting
-    mode_switch_changed(position);
+    if (!_ignore_next_mode_switch_mode_change) {
+        mode_switch_changed(position);
+    }
+    _ignore_next_mode_switch_mode_change = false;
 
     // set the last switch position.  This marks the
     // transition as complete, even if the mode switch actually

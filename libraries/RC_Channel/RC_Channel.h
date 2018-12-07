@@ -271,6 +271,10 @@ private:
 
     void reset_mode_switch();
     void read_mode_switch();
+    void ignore_next_mode_switch_mode_change() {
+        _ignore_next_mode_switch_mode_change = true;
+    }
+    bool _ignore_next_mode_switch_mode_change;
 };
 
 
@@ -328,6 +332,7 @@ public:
     // mode switch handling
     void reset_mode_switch();
     virtual void read_mode_switch();
+    void ignore_next_mode_switch_mode_change();
 
     // has_valid_input should be pure-virtual when Plane is converted
     virtual bool has_valid_input() const { return false; };

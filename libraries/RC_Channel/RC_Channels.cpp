@@ -202,6 +202,14 @@ void RC_Channels::read_mode_switch()
     c->read_mode_switch();
 }
 
+void RC_Channels::ignore_next_mode_switch_mode_change()
+{
+    RC_Channel *c = flight_mode_channel();
+    if (c == nullptr) {
+        return;
+    }
+    c->ignore_next_mode_switch_mode_change();
+}
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
