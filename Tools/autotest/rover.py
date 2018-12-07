@@ -1192,6 +1192,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
 
+    def InitialMode(self):
+        '''test INITIAL_MODE parameter works'''
+        # from mavproxy_rc.py
+        self.wait_ready_to_arm()
+        mapping = [0, 1165, 1295, 1425, 1555, 1685, 1815]
+        mode_ch = 8
+        throttle_ch = 3
+        self.set_parameter('MODE5', 3)
+        self.set_rc(mode_ch, mapping[5])
+        self.wait_mode('STEERING')
+        self.set_rc(mode_ch, mapping[6])
+        self.wait_mode('MANUAL')
+        self.set_parameter("INITIAL_MODE", 1) # acro
+        # stop the vehicle polling the mode switch at boot:
+        self.set_parameter('FS_ACTION', 0)  # do nothing when radio fails
+        self.set_rc(throttle_ch, 900)  # RC fail
+        self.reboot_sitl()
+        self.wait_mode(1)
+        self.progress("Make sure we stay in this mode")
+        self.delay_sim_time(5)
+        self.wait_mode(1)
+        # now change modes with a switch:
+        self.set_rc(throttle_ch, 1100)
+        self.delay_sim_time(3)
+        self.set_rc(mode_ch, mapping[5])
+        self.wait_mode('STEERING')
+
     def MAVProxy_DO_SET_MODE(self):
         '''Set mode using MAVProxy commandline DO_SET_MODE'''
         mavproxy = self.start_mavproxy()
@@ -6316,6 +6343,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.AutoDock,
             self.PrivateChannel,
             self.GCSFailsafe,
+            self.InitialMode,
         ])
         return ret
 
