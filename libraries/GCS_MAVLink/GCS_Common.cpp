@@ -990,7 +990,7 @@ void GCS_MAVLINK::find_next_bucket_to_send()
     sending_bucket_id = no_bucket_to_send;
     uint16_t ms_before_send_next_bucket_to_send = UINT16_MAX;
     for (uint8_t i=0; i<ARRAY_SIZE(deferred_message_bucket); i++) {
-        if (deferred_message_bucket[i].ap_message_ids.first_set() == -1) {
+        if (deferred_message_bucket[i].ap_message_ids.count() == 0) {
             // no entries
             continue;
         }
@@ -1203,7 +1203,7 @@ void GCS_MAVLINK::update_send()
                 break;
             }
             bucket_message_ids_to_send.clear(next);
-            if (bucket_message_ids_to_send.first_set() == -1) {
+            if (bucket_message_ids_to_send.count() == 0) {
                 // we sent everything in the bucket.  Reschedule it.
                 deferred_message_bucket[sending_bucket_id].last_sent_ms +=
                     deferred_message_bucket[sending_bucket_id].interval_ms;
@@ -1234,7 +1234,7 @@ void GCS_MAVLINK::update_send()
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
 {
     deferred_message_bucket[bucket].ap_message_ids.clear(id);
-    if (deferred_message_bucket[bucket].ap_message_ids.first_set() == -1) {
+    if (deferred_message_bucket[bucket].ap_message_ids.count() == 0) {
         // bucket empty.  Free it:
         deferred_message_bucket[bucket].interval_ms = 0;
         deferred_message_bucket[bucket].last_sent_ms = 0;
