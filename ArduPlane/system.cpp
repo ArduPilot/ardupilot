@@ -278,6 +278,13 @@ enum FlightMode Plane::get_previous_mode() {
 
 void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 {
+#if !QAUTOTUNE_ENABLED
+    if (mode == QAUTOTUNE) {
+        gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
+        mode = QHOVER;
+    }
+#endif
+
     if(control_mode == mode) {
         // don't switch modes if we are already in the correct mode.
         return;
@@ -481,6 +488,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     case QLOITER:
     case QLAND:
     case QRTL:
+    case QAUTOTUNE:
         throttle_allows_nudging = true;
         auto_navigation_mode = false;
         if (!quadplane.init_mode()) {
@@ -510,7 +518,8 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 void Plane::exit_mode(enum FlightMode mode)
 {
     // stop mission when we leave auto
-    if (mode == AUTO) {
+    switch (mode) {
+    case AUTO:
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
             mission.stop();
 
@@ -521,6 +530,14 @@ void Plane::exit_mode(enum FlightMode mode)
             }
         }
         auto_state.started_flying_in_auto_ms = 0;
+        break;
+#if QAUTOTUNE_ENABLED
+    case QAUTOTUNE:
+        quadplane.qautotune.stop();
+        break;
+#endif
+    default:
+        break;
     }
 }
 
@@ -703,6 +720,9 @@ void Plane::notify_flight_mode(enum FlightMode mode)
     case QRTL:
         notify.set_flight_mode_str("QRTL");
         break;
+    case QAUTOTUNE:
+        notify.set_flight_mode_str("QAUTOTUNE");
+        break;
     default:
         notify.set_flight_mode_str("----");
         break;
@@ -781,5 +801,10 @@ bool Plane::disarm_motors(void)
     // reload target airspeed which could have been modified by a mission
     plane.aparm.airspeed_cruise_cm.load();
     
+#if QAUTOTUNE_ENABLED
+    //save qautotune gains if enabled and success
+    quadplane.qautotune.save_tuning_gains();
+#endif
+
     return true;
 }

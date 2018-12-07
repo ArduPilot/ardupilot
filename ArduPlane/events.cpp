@@ -28,6 +28,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QSTABILIZE:
     case QLOITER:
     case QHOVER:
+    case QAUTOTUNE:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = true;
         set_mode(QLAND, reason);
@@ -90,6 +91,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QAUTOTUNE:
         set_mode(QLAND, reason);
         break;
         

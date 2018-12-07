@@ -65,7 +65,8 @@ enum FlightMode {
     QHOVER        = 18,
     QLOITER       = 19,
     QLAND         = 20,
-    QRTL          = 21
+    QRTL          = 21,
+    QAUTOTUNE	  = 22
 };
 
 enum mode_reason_t {
