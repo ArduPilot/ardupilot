@@ -110,8 +110,9 @@ SPIDesc SPIDeviceManager::_device[] = {
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 SPIDesc SPIDeviceManager::_device[] = {
-    SPIDesc("mpu9250", 0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL, 1*MHZ, 11*MHZ),
-    SPIDesc("ublox",   0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL, 5*MHZ, 5*MHZ),
+    SPIDesc("mpu9250",    0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL, 1*MHZ, 11*MHZ),
+    SPIDesc("ublox",      0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL, 5*MHZ,  5*MHZ),
+    SPIDesc("pixartflow", 0, 2, SPI_MODE_0, 8, SPI_CS_KERNEL, 2*MHZ,  2*MHZ),
 };
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK
 SPIDesc SPIDeviceManager::_device[] = {
@@ -224,6 +225,7 @@ void SPIBus::open(uint16_t subdev)
 SPIDevice::SPIDevice(SPIBus &bus, SPIDesc &device_desc)
     : _bus(bus)
     , _desc(device_desc)
+    , _caller_ctrl_cs(false)
 {
     set_device_bus(_bus.bus);
     set_device_address(_desc.subdev);
@@ -387,7 +389,8 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
 
 void SPIDevice::_cs_assert()
 {
-    if (_desc.cs_pin == SPI_CS_KERNEL) {
+    if (_desc.cs_pin == SPI_CS_KERNEL
+        || _caller_ctrl_cs) {
         return;
     }
 
@@ -396,11 +399,24 @@ void SPIDevice::_cs_assert()
 
 void SPIDevice::_cs_release()
 {
-    if (_desc.cs_pin == SPI_CS_KERNEL) {
+    if (_desc.cs_pin == SPI_CS_KERNEL
+        || _caller_ctrl_cs) {
         return;
     }
 
     _cs->write(1);
+}
+
+bool SPIDevice::set_chip_select(bool set)
+{
+    if (_desc.cs_pin == SPI_CS_KERNEL) {
+        return false;
+    }
+
+    _caller_ctrl_cs = set;
+    _cs->write(_caller_ctrl_cs ? 0 : 1);
+
+    return true;
 }
 
 AP_HAL::Semaphore *SPIDevice::get_semaphore()

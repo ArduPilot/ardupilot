@@ -57,11 +57,15 @@ public:
     bool adjust_periodic_callback(
         AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    /* See AP_HAL::Device::set_chip_select() */
+    bool set_chip_select(bool set) override;
+
 protected:
     SPIBus &_bus;
     SPIDesc &_desc;
     AP_HAL::DigitalSource *_cs;
     uint32_t _speed;
+    bool _caller_ctrl_cs;
 
     /*
      * Select device if using userspace CS
