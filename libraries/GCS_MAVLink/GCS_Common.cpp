@@ -2514,6 +2514,11 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
         return;
     }
 
+    if (!HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
+        // drop this timesync request entirely
+        return;
+    }
+
     // create new timesync struct with tc1 field as system time in
     // nanoseconds.  The client timestamp is as close as possible to
     // the time we received the TIMESYNC message.
