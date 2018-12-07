@@ -146,14 +146,16 @@ void Rover::init_ardupilot()
 
     startup_ground();
 
+    // initialise rc channels
+    rc().init();
+
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
+    } else {
+        rc().ignore_next_mode_switch_mode_change();
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
-
-    // initialise rc channels
-    rc().init();
 
     // disable safety if requested
     BoardConfig.init_safety();
