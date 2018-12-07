@@ -53,6 +53,8 @@ enum ap_message : uint8_t {
     MSG_SCALED_IMU2,
     MSG_SCALED_IMU3,
     MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
     MSG_SENSOR_OFFSETS,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -186,8 +188,11 @@ public:
     void send_system_time();
     void send_radio_in();
     void send_raw_imu();
-    virtual void send_scaled_pressure3(); // allow sub to override this
+
+    void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature));
     void send_scaled_pressure();
+    void send_scaled_pressure2();
+    virtual void send_scaled_pressure3(); // allow sub to override this
     void send_sensor_offsets();
     virtual void send_simstate() const;
     void send_ahrs();

@@ -872,6 +872,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
         { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
+        { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
+        { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
         { MAVLINK_MSG_ID_SENSOR_OFFSETS,        MSG_SENSOR_OFFSETS},
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
         { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
@@ -1695,58 +1697,41 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
 }
 
 
-// sub overrides this to send on-board temperature
-void GCS_MAVLINK::send_scaled_pressure3()
+void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature))
 {
     const AP_Baro &barometer = AP::baro();
 
-    if (barometer.num_instances() < 3) {
-        return;
-    }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
+    if (instance >= barometer.num_instances()) {
         return;
     }
 
-    const float pressure = barometer.get_pressure(2);
-    mavlink_msg_scaled_pressure3_send(
-        chan,
-        AP_HAL::millis(),
-        pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
-        barometer.get_temperature(2)*100); // 0.01 degrees C
-}
-
-void GCS_MAVLINK::send_scaled_pressure()
-{
-    uint32_t now = AP_HAL::millis();
-    const AP_Baro &barometer = AP::baro();
-    float pressure = barometer.get_pressure(0);
     float diff_pressure = 0; // pascal
-
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr) {
         diff_pressure = airspeed->get_differential_pressure();
     }
 
-    mavlink_msg_scaled_pressure_send(
+    send_fn(
         chan,
-        now,
-        pressure*0.01f, // hectopascal
+        AP_HAL::millis(),
+        barometer.get_pressure(instance) * 0.01f, // hectopascal
         diff_pressure*0.01f, // hectopascal
-        barometer.get_temperature(0)*100); // 0.01 degrees C
+        barometer.get_temperature(instance)*100); // 0.01 degrees C
+}
 
-    if (barometer.num_instances() > 1 &&
-        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE2)) {
-        pressure = barometer.get_pressure(1);
-        mavlink_msg_scaled_pressure2_send(
-            chan,
-            now,
-            pressure*0.01f, // hectopascal
-            (pressure - barometer.get_ground_pressure(1))*0.01f, // hectopascal
-            barometer.get_temperature(1)*100); // 0.01 degrees C        
-    }
+void GCS_MAVLINK::send_scaled_pressure()
+{
+    send_scaled_pressure_instance(0, mavlink_msg_scaled_pressure_send);
+}
 
-    send_scaled_pressure3();
+void GCS_MAVLINK::send_scaled_pressure2()
+{
+    send_scaled_pressure_instance(1, mavlink_msg_scaled_pressure2_send);
+}
+
+void GCS_MAVLINK::send_scaled_pressure3()
+{
+    send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
 }
 
 void GCS_MAVLINK::send_sensor_offsets()
@@ -3788,6 +3773,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SCALED_PRESSURE:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure();
+        break;
+
+    case MSG_SCALED_PRESSURE2:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE2);
+        send_scaled_pressure2();
+        break;
+
+    case MSG_SCALED_PRESSURE3:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
+        send_scaled_pressure3();
         break;
 
     case MSG_SENSOR_OFFSETS:
