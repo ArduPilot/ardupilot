@@ -13,25 +13,14 @@
  * TODO: ensure AC_AVOID_ENABLED is true because we rely on it velocity limiting functions
  */
 
-#if 1
-#define Debug(fmt, args ...)  do {                                      \
-        gcs().send_text(MAV_SEVERITY_WARNING, fmt, ## args);            \
-    } while(0)
-#elif 0
-#define Debug(fmt, args ...)  do {                                      \
-    ::fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);
-#else
-#define Debug(fmt, args ...)
-#endif
-
 // initialise follow mode
 bool Copter::ModeFollow::init(const bool ignore_checks)
 {
-    // re-use guided mode
-    gcs().send_text(MAV_SEVERITY_WARNING, "Follow-mode init");
     if (!g2.follow.enabled()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
+    // re-use guided mode
     return Copter::ModeGuided::init(ignore_checks);
 }
 
@@ -56,14 +45,6 @@ void Copter::ModeFollow::run()
     Vector3f dist_vec_offs;  // vector to lead vehicle + offset
     Vector3f vel_of_target;  // velocity of lead vehicle
     if (g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
-        // debug
-        static uint16_t counter = 0;
-        counter++;
-        if (counter >= 400) {
-            counter = 0;
-            Debug("dist to veh: %f %f %f", (double)dist_vec.x, (double)dist_vec.y, (double)dist_vec.z);
-        }
-
         // convert dist_vec_offs to cm in NEU
         const Vector3f dist_vec_offs_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
 
