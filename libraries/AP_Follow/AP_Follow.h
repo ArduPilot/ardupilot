@@ -108,7 +108,5 @@ private:
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
-    uint32_t _last_location_sent_to_gcs; // last time GCS was told position
-
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
 };
