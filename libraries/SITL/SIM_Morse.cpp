@@ -262,7 +262,8 @@ bool Morse::connect_sockets(void)
             AP_HAL::panic("Out of memory for sensors socket");
         }
         if (!sensors_sock->connect(morse_ip, morse_sensors_port)) {
-            if (connect_counter++ == 1000) {
+            usleep(100000);
+            if (connect_counter++ == 20) {
                 printf("Waiting to connect to sensors control on %s:%u\n",
                        morse_ip, morse_sensors_port);
                 connect_counter = 0;
@@ -280,7 +281,8 @@ bool Morse::connect_sockets(void)
             AP_HAL::panic("Out of memory for control socket");
         }
         if (!control_sock->connect(morse_ip, morse_control_port)) {
-            if (connect_counter++ == 1000) {
+            usleep(100000);
+            if (connect_counter++ == 20) {
                 printf("Waiting to connect to control control on %s:%u\n",
                        morse_ip, morse_control_port);
                 connect_counter = 0;
