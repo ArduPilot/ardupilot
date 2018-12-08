@@ -1,3 +1,23 @@
+Release 3.9.4beta1, 9th December 2018
+-------------------------------------
+
+This is the first beta for the 3.9.4 firmware. This is a minor update
+to 3.9.3.
+
+ - fixed a critical bug in SBUS handling on the Pixhawk4
+
+ - fixed bugs in benewake rangefinder driver
+
+ - added support for garmin LidarLite-V3HP
+
+ - improved error handling for TeraRanger Lidar
+
+ - fixed a bug in DSM handling for more than 7 channels on some boards
+
+ - fixed default voltage and current scaling for Pixhawk4 and PH4-mini
+
+Happy flying!
+
 Release 3.9.3, 10th November 2018
 ---------------------------------
 
