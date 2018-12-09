@@ -1,8 +1,7 @@
-Release 3.9.4beta1, 9th December 2018
--------------------------------------
+Release 3.9.4, 10th December 2018
+---------------------------------
 
-This is the first beta for the 3.9.4 firmware. This is a minor update
-to 3.9.3.
+This is a minor update over the 3.9.3 release. Changes are:
 
  - fixed a critical bug in SBUS handling on the Pixhawk4
 
