@@ -23,7 +23,7 @@
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size);
 
     /* Do not allow copies */
     lua_scripts(const lua_scripts &other) = delete;
@@ -67,4 +67,7 @@ private:
 
     const AP_Int32 & _vm_steps;
 
+    static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
+
+    static void *_heap;
 };
