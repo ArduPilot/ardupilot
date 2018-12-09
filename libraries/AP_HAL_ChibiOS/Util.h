@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
+#include <ch.h>
 
 class ChibiOS::Util : public AP_HAL::Util {
 public:
@@ -32,6 +33,12 @@ public:
     // Special Allocation Routines
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
+
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size);
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size);
+#endif // ENABLE_HEAP
 
     /*
       return state of safety switch, if applicable
@@ -93,4 +100,9 @@ private:
 #ifndef HAL_NO_FLASH_SUPPORT
     bool flash_bootloader() override;
 #endif
+
+#ifdef ENABLE_HEAP
+    static memory_heap_t scripting_heap;
+#endif // ENABLE_HEAP
+
 };
