@@ -108,6 +108,12 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
+#ifdef ENABLE_HEAP
+    // heap functions, note that a heap once alloc'd cannot be dealloc'd
+    virtual void *allocate_heap_memory(size_t size) = 0;
+    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+#endif // ENABLE_HEAP
+
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
