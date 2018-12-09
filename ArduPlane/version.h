@@ -9,11 +9,12 @@
 #define THISFIRMWARE "ArduPlane V3.9.4"
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 3,9,4,FIRMWARE_VERSION_TYPE_BETA
+#define FIRMWARE_VERSION 3,9,4,FIRMWARE_VERSION_TYPE_OFFICIAL
 
 #define FW_MAJOR 3
 #define FW_MINOR 9
 #define FW_PATCH 4
-#define FW_TYPE FIRMWARE_VERSION_TYPE_BETA
+#define FW_TYPE FIRMWARE_VERSION_TYPE_OFFICIAL
+
 
 
