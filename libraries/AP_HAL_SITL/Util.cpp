@@ -63,3 +63,60 @@ bool HALSITL::Util::get_system_id(char buf[40])
     uint8_t len = 40;
     return get_system_id_unformatted((uint8_t *)buf, len);
 }
+
+#ifdef ENABLE_HEAP
+void *HALSITL::Util::allocate_heap_memory(size_t size)
+{
+    struct heap *new_heap = (struct heap*)malloc(sizeof(struct heap));
+    if (new_heap != nullptr) {
+        new_heap->scripting_max_heap_size = size;
+        new_heap->current_heap_usage = 0;
+    }
+    return (void *)new_heap;
+}
+
+void *HALSITL::Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+{
+    if (heap == nullptr) {
+        return nullptr;
+    }
+
+    struct heap *heapp = (struct heap*)heap;
+
+    // extract appropriate headers
+    size_t old_size = 0;
+    heap_allocation_header *old_header = nullptr;
+    if (ptr != nullptr) {
+        old_header = ((heap_allocation_header *)ptr) - 1;
+        old_size = old_header->allocation_size;
+    }
+
+    heapp->current_heap_usage -= old_size;
+    if (new_size == 0) {
+       free(old_header);
+       return nullptr;
+    }
+
+    if ((heapp->current_heap_usage + new_size - old_size) > heapp->scripting_max_heap_size) {
+        // fail the allocation as we don't have the memory. Note that we don't simulate fragmentation
+        return nullptr;
+    }
+
+    heap_allocation_header *new_header = (heap_allocation_header *)malloc(new_size + sizeof(heap_allocation_header));
+    if (new_header == nullptr) {
+        // total failure to allocate, this is very surprising in SITL
+        return nullptr;
+    }
+    heapp->current_heap_usage += new_size;
+    new_header->allocation_size = new_size;
+    void *new_mem = new_header + 1;
+
+    if (ptr == nullptr) {
+        return new_mem;
+    }
+    memcpy(new_mem, ptr, old_size > new_size ? new_size : old_size);
+    free(old_header);
+    return new_mem;
+}
+
+#endif // ENABLE_HEAP
