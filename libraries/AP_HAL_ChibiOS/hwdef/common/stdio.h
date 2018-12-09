@@ -42,7 +42,6 @@ int vsscanf (const char *buf, const char *s, va_list ap);
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *ptr);
-void *realloc(void *ptr, size_t size);
 
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 
