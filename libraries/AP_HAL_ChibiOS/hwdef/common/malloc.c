@@ -216,21 +216,4 @@ size_t mem_available(void)
     return totalp;
 }
 
-void *realloc(void *addr, size_t size)
-{
-    if (size == 0) {
-       free(addr);
-       return NULL;
-    }
-    if (addr == NULL) {
-        return malloc(size);
-    }
-    void *new_mem = malloc(size);
-    if (new_mem != NULL) {
-        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
-        free(addr);
-    }
-    return new_mem;
-}
-
 #endif // CH_CFG_USE_HEAP
