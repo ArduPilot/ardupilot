@@ -66,8 +66,6 @@ void Plane::init_ardupilot()
     }
 #endif
 
-    gcs().set_dataflash(&DataFlash);
-
     mavlink_system.sysid = g.sysid_this_mav;
 
     // initialise serial ports
