@@ -53,7 +53,7 @@ void ModeAuto::update()
             if (!_reached_destination || (rover.is_boat() && !near_wp)) {
                 // continue driving towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
                 // we have reached the destination so stop
                 stop_vehicle();
@@ -66,7 +66,7 @@ void ModeAuto::update()
             if (!_reached_heading) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(_desired_speed, true, false);
+                calc_throttle(_desired_speed, true, true);
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
