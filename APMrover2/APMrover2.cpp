@@ -221,11 +221,14 @@ void Rover::update_logging1(void)
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
         DataFlash.Log_Write_Beacon(g2.beacon);
-        Log_Write_Proximity();
     }
 
     if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
+    }
+
+    if (should_log(MASK_LOG_RANGEFINDER)) {
+        DataFlash.Log_Write_Proximity(g2.proximity);
     }
 }
 
