@@ -77,6 +77,20 @@
 // subsystem specific error codes -- crash checker
 #define ERROR_CODE_CRASH_CHECK_CRASH 1
 
+// radio failsafe enum (FS_THR_ENABLE parameter)
+enum fs_thr_enable {
+    FS_THR_DISABLED = 0,
+    FS_THR_ENABLED,
+    FS_THR_ENABLED_CONTINUE_MISSION,
+};
+
+// gcs failsafe enum (FS_GCS_ENABLE parameter)
+enum fs_gcs_enable {
+    FS_GCS_DISABLED = 0,
+    FS_GCS_ENABLED,
+    FS_GCS_ENABLED_CONTINUE_MISSION,
+};
+
 enum fs_crash_action {
   FS_CRASH_DISABLE = 0,
   FS_CRASH_HOLD = 1,

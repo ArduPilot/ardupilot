@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#define SITL_SCHEDULER_MAX_TIMER_PROCS 4
+#define SITL_SCHEDULER_MAX_TIMER_PROCS 8
 
 /* Scheduler implementation: */
 class HALSITL::Scheduler : public AP_HAL::Scheduler {
@@ -18,19 +18,19 @@ public:
 
     /* AP_HAL::Scheduler methods */
 
-    void init();
-    void delay(uint16_t ms);
-    void delay_microseconds(uint16_t us);
+    void init() override;
+    void delay(uint16_t ms) override;
+    void delay_microseconds(uint16_t us) override;
 
-    void register_timer_process(AP_HAL::MemberProc);
-    void register_io_process(AP_HAL::MemberProc);
+    void register_timer_process(AP_HAL::MemberProc) override;
+    void register_io_process(AP_HAL::MemberProc) override;
 
-    void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us);
+    void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
 
     bool in_main_thread() const override;
-    void system_initialized();
+    void system_initialized() override;
 
-    void reboot(bool hold_in_bootloader);
+    void reboot(bool hold_in_bootloader) override;
 
     bool interrupts_are_blocked(void) {
         return _nested_atomic_ctr != 0;
@@ -72,7 +72,7 @@ private:
     static bool _in_timer_proc;
     static bool _in_io_proc;
 
-    void stop_clock(uint64_t time_usec);
+    void stop_clock(uint64_t time_usec) override;
 
     static void *thread_create_trampoline(void *ctx);
     static void check_thread_stacks(void);

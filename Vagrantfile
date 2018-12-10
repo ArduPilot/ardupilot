@@ -42,7 +42,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # removing this line causes "A box must be specified." error
   # and this is the default box that will be booted if no name is specified
-  config.vm.box = "ubuntu/artful32"
+  config.vm.box = "ubuntu/bionic64"
 
   # LTS, EOL April, 2019:
   config.vm.define "trusty32", autostart: false do |trusty32|
@@ -88,6 +88,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 17.10, EOL July 2018
+  # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
   config.vm.define "artful32", primary: true do |artful32|
     config.vm.box = "ubuntu/artful32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"

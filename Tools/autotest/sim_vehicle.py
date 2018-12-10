@@ -539,9 +539,13 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
     if opts.valgrind:
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
+        # adding this option allows valgrind to cope with the overload
+        # of operator new
+        cmd.append("--soname-synonyms=somalloc=nouserintercepts")
     if opts.callgrind:
         cmd_name += " (callgrind)"
-        cmd.append("valgrind --tool=callgrind")
+        cmd.append("valgrind")
+        cmd.append("--tool=callgrind")
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
@@ -609,7 +613,7 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
-        cmd.append("/cygdrive/c/Program Files (x86)/MAVProxy/mavproxy.exe")
+        cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
 

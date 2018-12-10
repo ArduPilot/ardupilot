@@ -52,6 +52,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
+    rc_frame_count++;
     if (!in_failsafe) {
         rc_input_count++;
     }

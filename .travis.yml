@@ -69,4 +69,4 @@ matrix:
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
     - if: type != cron
       compiler: "clang"
-      env: CI_BUILD_TARGET="sitltest-rover"
+      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""

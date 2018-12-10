@@ -70,6 +70,7 @@ private:
     
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
+    AP_Int32 channel_reversible_mask;
     AP_Int8 channel_auto;
     AP_Int8 run_test;
     AP_Int16 timeout_sec;

@@ -253,3 +253,10 @@ bool Util::get_system_id(char buf[40])
     buf[39] = 0;
     return true;
 }
+
+bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
+{
+    len = MIN(12, len);
+    memcpy(buf, (const void *)UDID_START, len);
+    return true;
+}

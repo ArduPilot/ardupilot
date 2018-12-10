@@ -132,6 +132,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Path: ./SIM_Gripper_EPM.cpp
     AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SITL, Gripper_EPM),
 
+    // weight on wheels pin
+    AP_GROUPINFO("WOW_PIN",     25, SITL,  wow_pin, -1),
+
     AP_GROUPEND
 };
     

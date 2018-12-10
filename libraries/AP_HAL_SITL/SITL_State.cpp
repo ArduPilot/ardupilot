@@ -252,8 +252,8 @@ void SITL_State::_output_to_flightgear(void)
 
     fdm.version = 0x18;
     fdm.padding = 0;
-    fdm.longitude = radians(sfdm.longitude);
-    fdm.latitude = radians(sfdm.latitude);
+    fdm.longitude = DEG_TO_RAD_DOUBLE*sfdm.longitude;
+    fdm.latitude = DEG_TO_RAD_DOUBLE*sfdm.latitude;
     fdm.altitude = sfdm.altitude;
     fdm.agl = sfdm.altitude;
     fdm.phi   = radians(sfdm.rollDeg);
@@ -507,6 +507,11 @@ void SITL_State::init(int argc, char * const argv[])
 void SITL_State::set_height_agl(void)
 {
     static float home_alt = -1;
+
+    if (!_sitl) {
+        // in example program
+        return;
+    }
 
     if (is_equal(home_alt, -1.0f) && _sitl->state.altitude > 0) {
         // remember home altitude as first non-zero altitude

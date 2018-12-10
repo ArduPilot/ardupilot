@@ -107,6 +107,13 @@ static const struct sbus_bit_pick sbus_decoder[SBUS_INPUT_CHANNELS][3] = {
 };
 
 
+// constructor
+AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted) :
+    AP_RCProtocol_Backend(_frontend),
+    inverted(_inverted)
+{}
+
+// decode a full SBUS frame
 bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
                                      bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values)
 {
@@ -167,9 +174,9 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         chancount = 18;
 
         /* channel 17 (index 16) */
-        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0)) * 1000 + 998;
+        values[16] = (frame[SBUS_FLAGS_BYTE] & (1 << 0))?1998:998;
         /* channel 18 (index 17) */
-        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1)) * 1000 + 998;
+        values[17] = (frame[SBUS_FLAGS_BYTE] & (1 << 1))?1998:998;
     }
 
     /* note the number of channels decoded */
@@ -203,80 +210,60 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
  */
 void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
-    // convert to bit widths, allowing for up to 4usec error, assuming 100000 bps
-    uint16_t bits_s0 = (width_s0+4) / 10;
-    uint16_t bits_s1 = (width_s1+4) / 10;
-    uint16_t nlow;
+    uint32_t w0 = width_s0;
+    uint32_t w1 = width_s1;
+    if (inverted) {
+        w0 = saved_width;
+        w1 = width_s0;
+        saved_width = width_s1;
+    }
+    uint8_t b;
+    if (ss.process_pulse(w0, w1, b)) {
+        _process_byte(ss.get_byte_timestamp_us(), b);
+    }
+}
 
-    uint8_t byte_ofs = sbus_state.bit_ofs/12;
-    uint8_t bit_ofs = sbus_state.bit_ofs%12;
+// support byte input
+void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
+{
+    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+    byte_input.last_byte_us = timestamp_us;
 
-    if (bits_s0 == 0 || bits_s1 == 0) {
-        // invalid data
-        goto reset;
+    if (have_frame_gap) {
+        // if we have a frame gap then this must be the start of a new
+        // frame
+        byte_input.ofs = 0;
+    }
+    if (b != 0x0F && byte_input.ofs == 0) {
+        // definately not SBUS, missing header byte
+        return;
+    }
+    if (byte_input.ofs == 0 && !have_frame_gap) {
+        // must have a frame gap before the start of a new SBUS frame
+        return;
     }
 
-    if (bits_s0+bit_ofs > 10) {
-        // invalid data as last two bits must be stop bits
-        goto reset;
-    }
+    byte_input.buf[byte_input.ofs++] = b;
 
-    if (byte_ofs >= ARRAY_SIZE(sbus_state.bytes)) {
-        goto reset;
-    }
-    // pull in the high bits
-    sbus_state.bytes[byte_ofs] |= ((1U<<bits_s0)-1) << bit_ofs;
-    sbus_state.bit_ofs += bits_s0;
-    bit_ofs += bits_s0;
-
-    // pull in the low bits
-    nlow = bits_s1;
-    if (nlow + bit_ofs > 12) {
-        nlow = 12 - bit_ofs;
-    }
-    bits_s1 -= nlow;
-    sbus_state.bit_ofs += nlow;
-
-    if (sbus_state.bit_ofs == 25*12 && bits_s1 > 12) {
-        // we have a full frame
-        uint8_t bytes[25];
-        uint8_t i;
-        for (i=0; i<25; i++) {
-            // get inverted data
-            uint16_t v = ~sbus_state.bytes[i];
-            // check start bit
-            if ((v & 1) != 0) {
-                goto reset;
-            }
-            // check stop bits
-            if ((v & 0xC00) != 0xC00) {
-                goto reset;
-            }
-            // check parity
-            uint8_t parity = 0, j;
-            for (j=1; j<=8; j++) {
-                parity ^= (v & (1U<<j))?1:0;
-            }
-            if (parity != (v&0x200)>>9) {
-                goto reset;
-            }
-            bytes[i] = ((v>>1) & 0xFF);
-        }
-        uint16_t values[MAX_RCIN_CHANNELS];
+    if (byte_input.ofs == sizeof(byte_input.buf)) {
+        uint16_t values[SBUS_INPUT_CHANNELS];
         uint16_t num_values=0;
-        bool sbus_failsafe=false, sbus_frame_drop=false;
-        if (sbus_decode(bytes, values, &num_values,
-                        &sbus_failsafe, &sbus_frame_drop,
-                        MAX_RCIN_CHANNELS) &&
+        bool sbus_failsafe = false;
+        bool sbus_frame_drop = false;
+        if (sbus_decode(byte_input.buf, values, &num_values,
+                        &sbus_failsafe, &sbus_frame_drop, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
             add_input(num_values, values, sbus_failsafe);
         }
-        goto reset;
-    } else if (bits_s1 > 12) {
-        // break
-        goto reset;
+        byte_input.ofs = 0;
     }
-    return;
-reset:
-    memset(&sbus_state, 0, sizeof(sbus_state));
+}
+
+// support byte input
+void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
+{
+    if (baudrate != 100000) {
+        return;
+    }
+    _process_byte(AP_HAL::micros(), b);
 }

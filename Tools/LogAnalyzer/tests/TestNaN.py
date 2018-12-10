@@ -15,9 +15,14 @@ class TestNaN(Test):
         def FAIL():
             self.result.status = TestResult.StatusType.FAIL
 
+        nans_ok = {
+            "CTUN": [ "DSAlt" ],
+        }
 
         for channel in logdata.channels.keys():
             for field in logdata.channels[channel].keys():
+                if channel in nans_ok and field in nans_ok[channel]:
+                    continue
                 try:
                     for tupe in logdata.channels[channel][field].listData:
                         (ts, val) = tupe

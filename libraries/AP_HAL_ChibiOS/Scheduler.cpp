@@ -36,6 +36,11 @@
 #include "shared_dma.h"
 #include "sdcard.h"
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
@@ -225,6 +230,12 @@ void Scheduler::reboot(bool hold_in_bootloader)
     // disarm motors to ensure they are off during a bootloader upload
     hal.rcout->force_safety_on();
 
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.shutdown();
+    }
+#endif
+
 #ifndef NO_DATAFLASH
     //stop logging
     DataFlash_Class::instance()->StopLogging();
@@ -268,7 +279,7 @@ void Scheduler::_run_timers()
         _failsafe();
     }
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
     // process analog input
     ((AnalogIn *)hal.analogin)->_timer_tick();
 #endif

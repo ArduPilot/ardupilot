@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys, os
 
 import waflib
+from waflib import Utils
 from waflib.Configure import conf
 
 _board_classes = {}
@@ -89,6 +90,7 @@ class Board:
             '-Wno-trigraphs',
             '-Werror=return-type',
             '-Werror=unused-result',
+            '-Werror=narrowing',
         ]
 
         if cfg.options.enable_scripting:
@@ -97,10 +99,23 @@ class Board:
                 LUA_32BITS = 1,
                 )
 
+            env.ROMFS_FILES += [
+                ('sandbox.lua', 'libraries/AP_Scripting/scripts/sandbox.lua'),
+                ]
+
             env.AP_LIBRARIES += [
                 'AP_Scripting',
                 'AP_Scripting/lua/src',
                 ]
+
+            env.CXXFLAGS += [
+                '-DHAL_HAVE_AP_ROMFS_EMBEDDED_H'
+                ]
+
+        if cfg.options.scripting_checks:
+            env.DEFINES.update(
+                AP_SCRIPTING_CHECKS = 1,
+                )
 
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
@@ -110,7 +125,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
             ]
 
         if cfg.env.DEBUG:
@@ -146,10 +160,12 @@ class Board:
             '-Werror=array-bounds',
             '-Werror=uninitialized',
             '-Werror=init-self',
+            '-Werror=narrowing',
             '-Werror=return-type',
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Werror=unused-result',
+            '-Werror=return-type',
             '-Wfatal-errors',
             '-Wno-trigraphs',
         ]
@@ -162,7 +178,6 @@ class Board:
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
-                '-Wno-c++11-narrowing'
             ]
         else:
             env.CXXFLAGS += [
@@ -193,7 +208,7 @@ class Board:
             env.CXXFLAGS += [
                 '-Wno-error=cast-align',
             ]
-            
+
             env.DEFINES.update(
                 UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
                 UAVCAN_NO_ASSERTIONS = 1,
@@ -224,9 +239,17 @@ class Board:
     def embed_ROMFS_files(self, ctx):
         '''embed some files using AP_ROMFS'''
         import embed
+        if ctx.env.USE_NUTTX_IOFW:
+            # use fmuv2_IO_NuttX.bin instead of fmuv2_IO.bin
+            for i in range(len(ctx.env.ROMFS_FILES)):
+                (name,filename) = ctx.env.ROMFS_FILES[i]
+                if name == 'io_firmware.bin':
+                    filename = 'Tools/IO_Firmware/fmuv2_IO_NuttX.bin'
+                    print("Using IO firmware %s" % filename)
+                    ctx.env.ROMFS_FILES[i] = (name,filename);
         header = ctx.bldnode.make_node('ap_romfs_embedded.h').abspath()
         if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES):
-            bld.fatal("Failed to created ap_romfs_embedded.h")
+            ctx.fatal("Failed to created ap_romfs_embedded.h")
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
@@ -242,13 +265,8 @@ def add_dynamic_boards():
 
 def get_boards_names():
     add_dynamic_boards()
-    ret = sorted(list(_board_classes.keys()))
-    # some board types should not be selected
-    hidden = ['chibios']
-    for h in hidden:
-        if h in ret:
-            ret.remove(h)
-    return ret        
+
+    return sorted(list(_board_classes.keys()), key=str.lower)
 
 @conf
 def get_board(ctx):
@@ -270,6 +288,7 @@ class sitl(Board):
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
 
         env.CXXFLAGS += [
@@ -302,20 +321,22 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
-        if sys.platform == 'cygwin':
+        if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [
                 'winmm',
             ]
-            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
+        if Utils.unversioned_sys_platform() == 'cygwin':
+            env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
-            
+
 class chibios(Board):
+    abstract = True
     toolchain = 'arm-none-eabi'
 
     def configure_env(self, cfg, env):
@@ -387,7 +408,7 @@ class chibios(Board):
             '-fno-threadsafe-statics',
         ]
 
-        if sys.platform == 'cygwin':
+        if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
 
         bldnode = cfg.bldnode.make_node(self.name)
@@ -433,7 +454,7 @@ class chibios(Board):
             env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
-            
+
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
@@ -465,8 +486,6 @@ class chibios(Board):
 class linux(Board):
     def configure_env(self, cfg, env):
         super(linux, self).configure_env(cfg, env)
-
-        cfg.find_toolchain_program('pkg-config', var='PKGCONFIG')
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_LINUX',
@@ -688,7 +707,7 @@ class rst_zynq(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ',
         )
-        
+
 class px4(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
@@ -720,8 +739,8 @@ class px4(Board):
 
         self.ROMFS_EXCLUDE = []
 
-        # use ardupilot version of px_uploader.py
-        os.environ['UPLOADER'] = os.path.realpath(os.path.join(os.path.dirname(__file__), 'px_uploader.py'))
+        # use ardupilot version of uploader.py
+        os.environ['UPLOADER'] = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'scripts', 'uploader.py'))
 
     def configure(self, cfg):
         if not self.bootloader_name:
@@ -853,7 +872,7 @@ class px4_v4pro(px4):
         self.px4io_name = 'px4io-v2'
         self.romfs_exclude(['oreoled.bin'])
         self.with_uavcan = True		
-		
+
 class aerofc_v1(px4):
     name = 'aerofc-v1'
     def __init__(self):

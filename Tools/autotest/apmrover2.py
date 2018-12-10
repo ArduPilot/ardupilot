@@ -118,7 +118,7 @@ class AutoTestRover(AutoTest):
     # def test_mission(self, filename):
     #     """Test a mission from a file."""
     #     self.progress("Test mission %s" % filename)
-    #     num_wp = self.load_mission_from_file(filename)
+    #     num_wp = self.load_mission(filename)
     #     self.mavproxy.send('wp set 1\n')
     #     self.mav.wait_heartbeat()
     #     self.mavproxy.send('switch 4\n')  # auto mode
@@ -359,19 +359,13 @@ class AutoTestRover(AutoTest):
     def drive_mission(self, filename):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
+        self.load_mission(filename)
         self.mavproxy.send('switch 4\n')  # auto mode
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
         self.wait_mode('HOLD', timeout=300)
         self.progress("Mission OK")
-
-    def drive_mission_rover1(self):
-        self.drive_mission(os.path.join(testdir, "rover1.txt"))
 
     def do_get_banner(self):
         self.mavproxy.send("long DO_SEND_BANNER 1\n")
@@ -445,20 +439,18 @@ class AutoTestRover(AutoTest):
         if delta < distance_without_brakes * 0.05:  # 5% isn't asking for much
             raise NotAchievedException("""
 Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
-""" % (distance_with_brakes,
-                   distance_without_brakes,
-                   delta))
+""" %
+                                       (distance_with_brakes,
+                                        distance_without_brakes,
+                                        delta))
 
         self.progress(
             "Brakes work (with=%0.2fm without=%0.2fm delta=%0.2fm)" %
             (distance_with_brakes, distance_without_brakes, delta))
 
     def drive_rtl_mission(self):
-        mission_filepath = os.path.join(testdir,
-                                        "ArduRover-Missions",
-                                        "rtl.txt")
-        self.mavproxy.send('wp load %s\n' % mission_filepath)
-        self.mavproxy.expect('Flight plan received')
+        mission_filepath = os.path.join("ArduRover-Missions", "rtl.txt")
+        self.load_mission(mission_filepath)
         self.mavproxy.send('switch 4\n')  # auto mode
         self.set_rc(3, 1500)
         self.wait_mode('AUTO')
@@ -493,6 +485,57 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_mode('MANUAL')
         self.progress("RTL Mission OK")
 
+    def wait_distance_home_gt(self, distance, timeout=60):
+        home_distance = None
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < timeout:
+            # m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            pos = self.mav.location()
+            home_distance = self.get_distance(HOME, pos)
+            if home_distance > distance:
+                return
+        raise NotAchievedException("Failed to get %fm from home (now=%f)" %
+                                   (distance, home_distance))
+
+    def drive_fence_ac_avoidance(self):
+        self.context_push()
+        ex = None
+        try:
+            self.mavproxy.send("fence load Tools/autotest/rover-fence-ac-avoid.txt\n")
+            self.mavproxy.expect("Loaded 6 geo-fence")
+            self.set_parameter("FENCE_ENABLE", 0)
+            self.set_parameter("PRX_TYPE", 10)
+            self.set_parameter("RC10_OPTION", 40) # proximity-enable
+            self.reboot_sitl()
+            # start = self.mav.location()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            # first make sure we can breach the fence:
+            self.set_rc(10, 1000)
+            self.mavproxy.send("mode acro\n")
+            self.wait_mode("ACRO")
+            self.set_rc(3, 1550)
+            self.wait_distance_home_gt(25)
+            self.mavproxy.send("mode RTL\n")
+            self.wait_mode("RTL")
+            self.mavproxy.expect("APM: Reached destination")
+            # now enable avoidance and make sure we can't:
+            self.set_rc(10, 2000)
+            self.mavproxy.send("mode acro\n")
+            self.wait_mode("ACRO")
+            self.wait_groundspeed(0, 0.7, timeout=60)
+            # watch for speed zero
+            self.wait_groundspeed(0, 0.2, timeout=120)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" % str(e))
+            ex = e
+        self.context_pop()
+        self.mavproxy.send("fence clear\n")
+        self.reboot_sitl()
+        if ex:
+            raise ex
+
     def test_servorelayevents(self):
         self.mavproxy.send("relay set 0 0\n")
         off = self.get_parameter("SIM_PIN_MASK")
@@ -518,7 +561,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         fnoo = [(1, 'ACRO'),
                 (3, 'STEERING'),
                 (4, 'HOLD'),
-        ]
+                ]
         for (num, expected) in fnoo:
             self.mavproxy.send('mode manual\n')
             self.wait_mode("MANUAL")
@@ -596,7 +639,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_rc_overrides(self):
-        self.context_push();
+        self.context_push()
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46)
@@ -679,9 +722,56 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Exception caught")
             ex = e
 
-        self.context_pop();
+        self.context_pop()
         self.reboot_sitl()
 
+        if ex is not None:
+            raise ex
+
+    def test_camera_mission_items(self):
+        self.context_push()
+        ex = None
+        try:
+            self.load_mission("rover-camera-mission.txt")
+            self.wait_ready_to_arm()
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            prev_cf = None
+            while True:
+                cf = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True)
+                if prev_cf is None:
+                    prev_cf = cf
+                    continue
+                dist_travelled = self.get_distance_int(prev_cf, cf)
+                prev_cf = cf
+                mc = self.mav.messages.get("MISSION_CURRENT", None)
+                if mc is None:
+                    continue
+                elif mc.seq == 2:
+                    expected_distance = 2
+                elif mc.seq == 4:
+                    expected_distance = 5
+                elif mc.seq == 5:
+                    break
+                else:
+                    continue
+                self.progress("Expected distance %f got %f" %
+                              (expected_distance, dist_travelled))
+                error = abs(expected_distance - dist_travelled)
+                # Rover moves at ~5m/s; we appear to do something at
+                # 5Hz, so we do see over a meter of error!
+                max_error = 1.5
+                if error > max_error:
+                    raise NotAchievedException("Camera distance error: %f (%f)" %
+                                               (error, max_error))
+
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
         if ex is not None:
             raise ex
 
@@ -731,7 +821,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                           self.drive_square)
 
             self.run_test("Drive Mission %s" % "rover1.txt",
-                          self.drive_mission_rover1)
+                          lambda: self.drive_mission("rover1.txt"))
 
             # disabled due to frequent failures in travis. This test needs re-writing
             # self.run_test("Drive Brake", self.drive_brake)
@@ -757,9 +847,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.run_test("Test Sprayer", self.test_sprayer)
 
+            self.run_test("Test AC Avoidance switch",
+                          self.drive_fence_ac_avoidance)
+
+            self.run_test("Test Camera Mission Items",
+                          self.test_camera_mission_items)
+
             self.run_test("Download logs", lambda:
                           self.log_download(
-                              self.buildlogs_path("APMrover2-log.bin")))
+                              self.buildlogs_path("APMrover2-log.bin"),
+                              upload_logs=len(self.fail_list) > 0))
     #        if not drive_left_circuit(self):
     #            self.progress("Failed left circuit")
     #            failed = True

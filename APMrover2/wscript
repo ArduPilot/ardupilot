@@ -21,7 +21,6 @@ def build(bld):
             'AP_WheelEncoder',
             'AP_SmartRTL',
             'AC_Fence',
-            'AC_Avoidance',
             'AC_AttitudeControl',
             'AP_Devo_Telem',
             'AP_Follow',

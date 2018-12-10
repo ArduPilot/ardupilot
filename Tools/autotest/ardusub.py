@@ -10,6 +10,7 @@ from pymavlink import mavutil
 from pysim import util
 
 from common import AutoTest
+from common import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -113,10 +114,7 @@ class AutoTestSub(AutoTest):
 
     def dive_mission(self, filename):
         self.progress("Executing mission %s" % filename)
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Saved [0-9]+ waypoints')
+        self.load_mission(filename)
         self.set_rc_default()
 
         self.arm_vehicle()
@@ -129,6 +127,31 @@ class AutoTestSub(AutoTest):
         self.disarm_vehicle()
 
         self.progress("Mission OK")
+
+    def test_gripper_mission(self):
+        self.context_push()
+        ex = None
+        try:
+            try:
+                self.get_parameter("GRIP_ENABLE", timeout=5)
+            except NotAchievedException as e:
+                self.progress("Skipping; Gripper not enabled in config?")
+                return
+
+            self.load_mission("sub-gripper-mission.txt")
+            self.mavproxy.send('mode loiter\n')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.mavproxy.send('mode auto\n')
+            self.wait_mode('AUTO')
+            self.mavproxy.expect("Gripper Grabbed")
+            self.mavproxy.expect("Gripper Released")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
 
     def autotest(self):
         """Autotest ArduSub in SITL."""
@@ -160,12 +183,15 @@ class AutoTestSub(AutoTest):
             self.run_test("Dive manual", self.dive_manual)
 
             self.run_test("Dive mission",
-                          lambda: self.dive_mission(
-                              os.path.join(testdir, "sub_mission.txt")))
+                          lambda: self.dive_mission("sub_mission.txt"))
+
+            self.run_test("Test gripper mission items",
+                          self.test_gripper_mission)
 
             self.run_test("Log download",
                           lambda: self.log_download(
-                              self.buildlogs_path("ArduSub-log.bin")))
+                              self.buildlogs_path("ArduSub-log.bin"),
+                              upload_logs=len(self.fail_list) > 0))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")

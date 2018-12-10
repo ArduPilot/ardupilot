@@ -24,8 +24,9 @@ class AP_RCProtocol_Backend {
 
 public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
+    virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
-    virtual void process_byte(uint8_t byte) {}
+    virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
     bool new_input();
     uint8_t num_channels();
@@ -39,13 +40,25 @@ public:
         PARSE_TYPE_SIGREAD,
         PARSE_TYPE_SERIAL
     };
+
+    // get number of frames, ignoring failsafe
+    uint32_t get_rc_frame_count(void) const {
+        return rc_frame_count;
+    }
+
+    // get number of frames, honoring failsafe
+    uint32_t get_rc_input_count(void) const {
+        return rc_input_count;
+    }
+    
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
 
 private:
     AP_RCProtocol &frontend;
-    unsigned int rc_input_count;
-    unsigned int last_rc_input_count;
+    uint32_t rc_input_count;
+    uint32_t last_rc_input_count;
+    uint32_t rc_frame_count;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;

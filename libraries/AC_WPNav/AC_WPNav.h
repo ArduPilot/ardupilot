@@ -142,6 +142,11 @@ public:
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     bool reached_wp_destination() const { return _flags.reached_destination; }
 
+    // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
+    bool reached_wp_destination_xy() const {
+        return get_wp_distance_to_destination() < _wp_radius_cm;
+    }
+
     /// set_fast_waypoint - set to true to ignore the waypoint radius and consider the waypoint 'reached' the moment the intermediate point reaches it
     void set_fast_waypoint(bool fast) { _flags.fast_waypoint = fast; }
 

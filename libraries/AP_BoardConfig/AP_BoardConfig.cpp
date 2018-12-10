@@ -100,6 +100,10 @@
 #define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
+#ifndef BOARD_CONFIG_BOARD_VOLTAGE_MIN
+#define BOARD_CONFIG_BOARD_VOLTAGE_MIN 4.3f
+#endif
+
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::instance;
 
@@ -107,8 +111,8 @@ AP_BoardConfig *AP_BoardConfig::instance;
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: PWM_COUNT
     // @DisplayName: Auxiliary pin config
-    // @Description: Control assigning of FMU pins to PWM output, timer capture and GPIO. All unassigned pins can be used for GPIO
-    // @Values: 0:No PWMs,2:Two PWMs,4:Four PWMs,6:Six PWMs,7:Three PWMs and One Capture
+    // @Description: Controls number of FMU outputs which are setup for PWM. All unassigned pins can be used for GPIO
+    // @Values: 0:No PWMs,1:One PWMs,2:Two PWMs,3:Three PWMs,4:Four PWMs,5:Five PWMs,6:Six PWMs,7:Seven PWMs,8:Eight PWMs
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
@@ -225,6 +229,29 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Group: RTC
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+
+#if HAL_HAVE_BOARD_VOLTAGE
+    // @Param: VBUS_MIN
+    // @DisplayName: Autopilot board voltage requirement
+    // @Description: Minimum voltage on the autopilot power rail to allow the aircraft to arm. 0 to disable the check.
+    // @Units: V
+    // @Range: 4.0 5.5
+    // Increment 0.1
+    // @User: Advanced
+    AP_GROUPINFO("VBUS_MIN",    15,     AP_BoardConfig,  _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN),
+
+#endif
+
+#if HAL_HAVE_SERVO_VOLTAGE
+    // @Param: VSERVO_MIN
+    // @DisplayName: Servo voltage requirement
+    // @Description: Minimum voltage on the servo rail to allow the aircraft to arm. 0 to disable the check.
+    // @Units: V
+    // @Range: 3.3 12.0
+    // Increment 0.1
+    // @User: Advanced
+    AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),
+#endif
 
     AP_GROUPEND
 };

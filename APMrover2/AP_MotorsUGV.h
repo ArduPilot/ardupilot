@@ -23,7 +23,8 @@ public:
         MOTOR_TEST_STEERING = 2,
         MOTOR_TEST_THROTTLE_LEFT = 3,
         MOTOR_TEST_THROTTLE_RIGHT = 4,
-        MOTOR_TEST_MAINSAIL = 5
+        MOTOR_TEST_MAINSAIL = 5,
+        MOTOR_TEST_LAST
     };
 
     // supported custom motor configurations

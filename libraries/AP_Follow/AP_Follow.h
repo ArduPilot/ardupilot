@@ -102,7 +102,6 @@ private:
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
-    uint8_t _sysid_to_follow = 0;   // mavlink system id of vehicle to follow
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
@@ -110,4 +109,6 @@ private:
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     uint32_t _last_location_sent_to_gcs; // last time GCS was told position
+
+    bool _automatic_sysid;          // did we lock onto a sysid automatically?
 };

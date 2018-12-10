@@ -29,14 +29,14 @@
 
 class ChibiOS::RCOutput : public AP_HAL::RCOutput {
 public:
-    void     init();
-    void     set_freq(uint32_t chmask, uint16_t freq_hz);
-    uint16_t get_freq(uint8_t ch);
-    void     enable_ch(uint8_t ch);
-    void     disable_ch(uint8_t ch);
-    void     write(uint8_t ch, uint16_t period_us);
-    uint16_t read(uint8_t ch);
-    void     read(uint16_t* period_us, uint8_t len);
+    void     init() override;
+    void     set_freq(uint32_t chmask, uint16_t freq_hz) override;
+    uint16_t get_freq(uint8_t ch) override;
+    void     enable_ch(uint8_t ch) override;
+    void     disable_ch(uint8_t ch) override;
+    void     write(uint8_t ch, uint16_t period_us) override;
+    uint16_t read(uint8_t ch) override;
+    void     read(uint16_t* period_us, uint8_t len) override;
     uint16_t read_last_sent(uint8_t ch) override;
     void     read_last_sent(uint16_t* period_us, uint8_t len) override;
     void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override {
@@ -129,7 +129,7 @@ public:
       enable telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    void set_telem_request_mask(uint16_t mask) { telem_request_mask = (mask >> chan_offset); }
+    void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
     /*
       get safety switch state, used by Util.cpp
@@ -140,6 +140,20 @@ public:
       set PWM to send to a set of channels if the FMU firmware dies
      */
     void set_failsafe_pwm(uint32_t chmask, uint16_t period_us) override;
+
+    /*
+      set safety mask for IOMCU
+     */
+    void set_safety_mask(uint16_t mask) { safety_mask = mask; }
+
+    /*
+     * mark the channels in chanmask as reversible. This is needed for some ESC types (such as DShot)
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
+     * any existing mask.
+     */
+    void set_reversible_mask(uint16_t chanmask) override {
+        reversible_mask |= chanmask;
+    }
     
 private:
     struct pwm_group {
@@ -247,6 +261,7 @@ private:
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
     uint16_t io_fast_channel_mask;
+    uint16_t reversible_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;

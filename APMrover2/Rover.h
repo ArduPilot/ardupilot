@@ -196,13 +196,13 @@ private:
     AP_Navigation *nav_controller;
 
     // Mission library
-    AP_Mission mission{ahrs,
+    AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
             FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow;
 #endif
 
     // RSSI
@@ -241,7 +241,7 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps solution for altitude rather than gps only.
-    AP_Mount camera_mount{ahrs, current_loc};
+    AP_Mount camera_mount{current_loc};
 #endif
 
     // true if initialisation has completed
@@ -256,15 +256,13 @@ private:
     // This is set to -1 when we need to re-read the switch
     uint8_t oldSwitchPosition;
 
-    // Failsafe
-    // A tracking variable for type of failsafe active
-    // Used for failsafe based on loss of RC signal or GCS signal. See
-    // FAILSAFE_EVENT_*
+    // structure for holding failsafe state
     struct {
-        uint8_t bits;
-        uint32_t start_time;
-        uint8_t triggered;
-        uint32_t last_valid_rc_ms;
+        uint8_t bits;               // bit flags of failsafes that have started (but not necessarily triggered an action)
+        uint32_t start_time;        // start time of the earliest failsafe
+        uint8_t triggered;          // bit flags of failsafes that have triggered an action
+        uint32_t last_valid_rc_ms;  // system time of most recent RC input from pilot
+        uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
     } failsafe;
 
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
@@ -272,9 +270,6 @@ private:
 
     // true if we have a position estimate from AHRS
     bool have_position;
-
-    // the time when the last HEARTBEAT message arrived from a GCS
-    uint32_t last_heartbeat_ms;
 
     // obstacle detection information
     struct {
@@ -387,6 +382,18 @@ private:
         LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
     } cruise_learn;
 
+    // sailboat variables
+    enum Sailboat_Tack {
+        TACK_PORT,
+        TACK_STARBOARD
+    };
+    struct {
+        bool tacking;                   // true when sailboat is in the process of tacking to a new heading
+        float tack_heading_rad;         // target heading in radians while tacking in either acro or autonomous modes
+        uint32_t auto_tack_request_ms;  // system time user requested tack in autonomous modes
+        uint32_t auto_tack_start_ms;    // system time when tack was started in autonomous mode
+    } sailboat;
+
 private:
 
     // APMrover2.cpp
@@ -428,11 +435,12 @@ private:
     bool verify_within_distance();
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
-#if CAMERA == ENABLED
-    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
-#endif
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+
+    enum Mis_Done_Behave {
+        MIS_DONE_BEHAVE_HOLD      = 0,
+        MIS_DONE_BEHAVE_LOITER    = 1
+    };
 
     // commands.cpp
     void update_home_from_EKF();
@@ -473,10 +481,6 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
-    void send_wind(mavlink_channel_t chan);
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
-    void gcs_retry_deferred(void);
 
     // Log.cpp
     void Log_Write_Arm_Disarm();
@@ -506,12 +510,19 @@ private:
     void init_rc_out();
     void rudder_arm_disarm_check();
     void read_radio();
-    void control_failsafe(uint16_t pwm);
+    void radio_failsafe_check(uint16_t pwm);
     bool trim_radio();
 
     // sailboat.cpp
     void sailboat_update_mainsail(float desired_speed);
     float sailboat_get_VMG() const;
+    void sailboat_handle_tack_request_acro();
+    float sailboat_get_tack_heading_rad() const;
+    void sailboat_handle_tack_request_auto();
+    void sailboat_clear_tack();
+    bool sailboat_tacking() const;
+    bool sailboat_use_indirect_route(float desired_heading_cd) const;
+    float sailboat_calc_heading(float desired_heading_cd);
 
     // sensors.cpp
     void init_compass(void);
@@ -525,6 +536,7 @@ private:
     void accel_cal_update(void);
     void read_rangefinders(void);
     void init_proximity();
+    void read_airspeed();
     void update_sensor_status_flags(void);
 
     // Steering.cpp
@@ -547,8 +559,6 @@ private:
     bool arm_motors(AP_Arming::ArmingMethod method);
     bool disarm_motors(void);
     bool is_boat() const;
-    void read_mode_switch();
-    void read_aux_all();
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,

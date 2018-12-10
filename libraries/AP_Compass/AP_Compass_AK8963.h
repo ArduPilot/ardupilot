@@ -122,8 +122,8 @@ public:
     
     AP_HAL::Semaphore  *get_semaphore() override;
 
-    bool configure();
-    bool start_measurements();
+    bool configure() override;
+    bool start_measurements() override;
 
     // set device type within a device class
     void set_device_type(uint8_t devtype) override;

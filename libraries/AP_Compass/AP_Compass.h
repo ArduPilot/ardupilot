@@ -46,6 +46,8 @@
 #define COMPASS_MAX_INSTANCES 3
 #define COMPASS_MAX_BACKEND   3
 
+class CompassLearn;
+
 class Compass
 {
 friend class AP_Compass_Backend;
@@ -187,7 +189,7 @@ public:
     }
 
     // learn offsets accessor
-    bool learn_offsets_enabled() const { return _learn; }
+    bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
@@ -376,6 +378,7 @@ private:
         DRIVER_QMC5883  =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
+        DRIVER_IST8308  = 15,
     };
 
     bool _driver_enabled(enum DriverType driver_type);
@@ -476,6 +479,9 @@ private:
     AP_Int32 _driver_type_mask;
     
     AP_Int8 _filter_range;
+
+    CompassLearn *learn;
+    bool learn_allocated;
 };
 
 namespace AP {

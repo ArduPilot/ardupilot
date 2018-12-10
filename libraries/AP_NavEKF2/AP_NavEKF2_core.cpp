@@ -6,6 +6,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -113,10 +114,8 @@ void NavEKF2_core::InitialiseVariables()
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
-    lastHealthyMagTime_ms = imuSampleTime_ms;
     prevTasStep_ms = imuSampleTime_ms;
     prevBetaStep_ms = imuSampleTime_ms;
-    lastMagUpdate_us = 0;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
     lastPosPassTime_ms = 0;
@@ -136,7 +135,6 @@ void NavEKF2_core::InitialiseVariables()
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
     timeTasReceived_ms = 0;
-    magYawResetTimer_ms = imuSampleTime_ms;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
@@ -147,13 +145,8 @@ void NavEKF2_core::InitialiseVariables()
     // initialise other variables
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
-    magTimeout = false;
-    allMagSensorsFailed = false;
     tasTimeout = true;
-    badMagYaw = false;
     badIMUdata = false;
-    finalInflightYawInit = false;
-    finalInflightMagInit = false;
     dtIMUavg = 0.0025f;
     dtEkfAvg = EKF_TARGET_DT;
     dt = 0;
@@ -188,7 +181,6 @@ void NavEKF2_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
-    inhibitMagStates = true;
     gndOffsetValid =  false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
@@ -203,7 +195,6 @@ void NavEKF2_core::InitialiseVariables()
     lastYawReset_ms = 0;
     tiltErrFilt = 1.0f;
     tiltAlignComplete = false;
-    yawAlignComplete = false;
     stateIndexLim = 23;
     baroStoreIndex = 0;
     rangeStoreIndex = 0;
@@ -244,24 +235,15 @@ void NavEKF2_core::InitialiseVariables()
     velResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
-    if (_ahrs->get_compass()) {
-        magSelectIndex = _ahrs->get_compass()->get_primary();
-    }
+
     imuDataDownSampledNew.delAng.zero();
     imuDataDownSampledNew.delVel.zero();
     imuDataDownSampledNew.delAngDT = 0.0f;
     imuDataDownSampledNew.delVelDT = 0.0f;
     runUpdates = false;
     framesSincePredict = 0;
-    lastMagOffsetsValid = false;
-    magStateResetRequest = false;
-    magStateInitComplete = false;
-    magYawResetRequest = false;
     gpsYawResetRequest = false;
-    posDownAtLastMagReset = stateStruct.position.z;
-    yawInnovAtLastMagReset = 0.0f;
     quatAtLastMagReset = stateStruct.quat;
-    magFieldLearned = false;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
     gpsInhibit = false;
@@ -277,8 +259,8 @@ void NavEKF2_core::InitialiseVariables()
     memset(&velPosObs, 0, sizeof(velPosObs));
 
     // range beacon fusion variables
-    memset(&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
-    memset(&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
+    memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
+    memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
     rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
@@ -316,8 +298,8 @@ void NavEKF2_core::InitialiseVariables()
     last_gps_idx = 0;
 
     // external nav data fusion
-    memset(&extNavDataNew, 0, sizeof(extNavDataNew));
-    memset(&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
+    memset((void *)&extNavDataNew, 0, sizeof(extNavDataNew));
+    memset((void *)&extNavDataDelayed, 0, sizeof(extNavDataDelayed));
     extNavDataToFuse = false;
     extNavMeasTime_ms = 0;
     extNavLastPosResetTime_ms = 0;
@@ -328,13 +310,49 @@ void NavEKF2_core::InitialiseVariables()
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
-    storedMag.reset();
     storedBaro.reset();
     storedTAS.reset();
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
     storedExtNav.reset();
+
+    // now init mag variables
+    yawAlignComplete = false;
+
+    InitialiseVariablesMag();
+}
+
+
+/*
+  separate out the mag reset so it can be used when compass learning completes
+ */
+void NavEKF2_core::InitialiseVariablesMag()
+{
+    lastHealthyMagTime_ms = imuSampleTime_ms;
+    lastMagUpdate_us = 0;
+    magYawResetTimer_ms = imuSampleTime_ms;
+    magTimeout = false;
+    allMagSensorsFailed = false;
+    badMagYaw = false;
+    finalInflightYawInit = false;
+    finalInflightMagInit = false;
+
+    inhibitMagStates = true;
+
+    if (_ahrs->get_compass()) {
+        magSelectIndex = _ahrs->get_compass()->get_primary();
+    }
+    lastMagOffsetsValid = false;
+    magStateResetRequest = false;
+    magStateInitComplete = false;
+    magYawResetRequest = false;
+
+    posDownAtLastMagReset = stateStruct.position.z;
+    yawInnovAtLastMagReset = 0.0f;
+    magFieldLearned = false;
+
+    storedMag.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
@@ -549,6 +567,28 @@ void NavEKF2_core::UpdateFilter(bool predict)
 #if EK2_DISABLE_INTERRUPTS
     irqrestore(istate);
 #endif
+
+    /*
+      this is a check to cope with a vehicle sitting idle on the
+      ground and getting over-confident of the state. The symptoms
+      would be "gyros still settling" when the user tries to arm. In
+      that state the EKF can't recover, so we do a hard reset and let
+      it try again.
+     */
+    if (filterStatus.value != 0) {
+        last_filter_ok_ms = AP_HAL::millis();
+    }
+    if (filterStatus.value == 0 &&
+        last_filter_ok_ms != 0 &&
+        AP_HAL::millis() - last_filter_ok_ms > 5000 &&
+        !hal.util->get_soft_armed()) {
+        // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u forced reset",(unsigned)imu_index);
+        last_filter_ok_ms = 0;
+        statesInitialised = false;
+        InitialiseFilterBootstrap();
+    }
+    
 }
 
 void NavEKF2_core::correctDeltaAngle(Vector3f &delAng, float delAngDT)

@@ -17,11 +17,11 @@
 #include <AP_Notify/AP_Notify.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
 #define AP_ARMING_COMPASS_MAGFIELD_MAX  875     // 1.65 * 530 milligauss
-#define AP_ARMING_BOARD_VOLTAGE_MIN     4.3f
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
@@ -78,6 +78,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
                                                                                            AP_PARAM_FRAME_HELI),
     AP_GROUPEND
 };
+
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 AP_Arming::AP_Arming()
 {
@@ -508,20 +513,41 @@ bool AP_Arming::servo_checks(bool report) const
         }
     }
 
+#if HAL_WITH_IO_MCU
+    if (!iomcu.healthy()) {
+        check_failed(ARMING_CHECK_NONE, report, "IOMCU is unhealthy");
+        check_passed = false;
+    }
+#endif
+    
     return check_passed;
 }
 
 bool AP_Arming::board_voltage_checks(bool report)
 {
-#if HAL_HAVE_BOARD_VOLTAGE
     // check board voltage
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
-        if(((hal.analogin->board_voltage() < AP_ARMING_BOARD_VOLTAGE_MIN) || (hal.analogin->board_voltage() > AP_ARMING_BOARD_VOLTAGE_MAX))) {
-            check_failed(ARMING_CHECK_VOLTAGE, report, "Check board voltage");
+#if HAL_HAVE_BOARD_VOLTAGE
+        const float bus_voltage =  hal.analogin->board_voltage();
+        const float vbus_min = AP_BoardConfig::get_minimum_board_voltage();
+        if(((bus_voltage < vbus_min) || (bus_voltage > AP_ARMING_BOARD_VOLTAGE_MAX))) {
+            check_failed(ARMING_CHECK_VOLTAGE, report, "Board (%1.1fv) out of range %1.1f-%1.1fv", (double)bus_voltage, (double)vbus_min, (double)AP_ARMING_BOARD_VOLTAGE_MAX);
             return false;
         }
+#endif // HAL_HAVE_BOARD_VOLTAGE
+
+#if HAL_HAVE_SERVO_VOLTAGE
+       const float vservo_min = AP_BoardConfig::get_minimum_servo_voltage();
+        if (is_positive(vservo_min)) {
+            const float servo_voltage =  hal.analogin->servorail_voltage();
+            if (servo_voltage < vservo_min) {
+                check_failed(ARMING_CHECK_VOLTAGE, report, "Servo voltage to low (%1.2fv < %1.2fv)", (double)servo_voltage, (double)vservo_min);
+                return false;
+            }
+        }
+#endif // HAL_HAVE_SERVO_VOLTAGE
     }
-#endif
+
     return true;
 }
 

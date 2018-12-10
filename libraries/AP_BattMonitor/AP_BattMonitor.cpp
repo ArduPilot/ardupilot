@@ -3,6 +3,7 @@
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_Sum.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -91,9 +92,11 @@ AP_BattMonitor::init()
 
     convert_params();
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-    // force monitor for bebop
-    _params[0]._type.set(AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP);
+#ifdef HAL_BATT_MONITOR_DEFAULT
+    if (_params[0]._type == 0) {
+        // we can't use set_default() as the type is used as a flag for parameter conversion
+        _params[0]._type.set((AP_BattMonitor_Params::BattMonitor_Type)HAL_BATT_MONITOR_DEFAULT);
+    }
 #endif
 
     // create each instance
@@ -105,37 +108,34 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY:
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance],
                                                                   hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_INTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                           100000, true, 20));
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_MAXELL:
                 drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance],
                                                                     hal.i2c_mgr->get_device(AP_BATTMONITOR_SMBUS_BUS_EXTERNAL, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                             100000, true, 20));
-                _num_instances++;
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
-                _num_instances++;
 #endif
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_UAVCAN_BatteryInfo:
 #if HAL_WITH_UAVCAN
                 drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
-                _num_instances++;
 #endif
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_BLHeliESC:
 #ifdef HAVE_AP_BLHELI_SUPPORT
                 drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
-                _num_instances++;
 #endif
+                break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_Sum:
+                drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
@@ -145,6 +145,11 @@ AP_BattMonitor::init()
         // call init function for each backend
         if (drivers[instance] != nullptr) {
             drivers[instance]->init();
+            // _num_instances is actually the index for looping over instances
+            // the user may have BATT_MONITOR=0 and BATT2_MONITOR=7, in which case
+            // there will be a gap, but as we always check for drivers[instances] being nullptr
+            // this is safe
+            _num_instances = instance + 1;
         }
     }
 }

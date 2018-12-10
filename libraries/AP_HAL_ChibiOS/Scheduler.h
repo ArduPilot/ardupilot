@@ -76,7 +76,7 @@ public:
     /* AP_HAL::Scheduler methods */
 
 
-    void     init();
+    void     init() override;
     void     delay(uint16_t ms) override;
     void     delay_microseconds(uint16_t us) override;
     void     delay_microseconds_boost(uint16_t us) override;
@@ -87,7 +87,7 @@ public:
     void     reboot(bool hold_in_bootloader) override;
 
     bool     in_main_thread() const override;
-    void     system_initialized();
+    void     system_initialized() override;
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);

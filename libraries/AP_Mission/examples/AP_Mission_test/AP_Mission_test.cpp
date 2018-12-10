@@ -5,6 +5,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS_DCM.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -44,7 +50,7 @@ private:
     void run_replace_cmd_test();
     void run_max_cmd_test();
 
-    AP_Mission mission{ahrs,
+    AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&MissionTest::start_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::verify_cmd, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&MissionTest::mission_complete, void)};

@@ -241,6 +241,14 @@ void Rover::init_proximity(void)
     g2.proximity.set_rangefinder(&rangefinder);
 }
 
+/*
+  ask airspeed sensor for a new value, duplicated from plane
+ */
+void Rover::read_airspeed(void)
+{
+    g2.airspeed.update(should_log(MASK_LOG_IMU));
+}
+
 // update error mask of sensors and subsystems. The mask
 // uses the MAV_SYS_STATUS_* values from mavlink. If a bit is set
 // then it indicates that the sensor or subsystem is present but

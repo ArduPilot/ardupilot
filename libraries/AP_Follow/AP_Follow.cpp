@@ -127,7 +127,6 @@ AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    _sysid_to_follow = _sysid;
 }
 
 // get target's estimated location
@@ -238,11 +237,11 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     }
 
     // skip message if not from our target
-    if ((_sysid_to_follow != 0) && (msg.sysid != _sysid_to_follow)) {
-        if (_sysid == 0) {
+    if (_sysid != 0 && msg.sysid != _sysid) {
+        if (_automatic_sysid) {
             // maybe timeout who we were following...
             if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-                _sysid_to_follow = 0;
+                _sysid.set(0);
             }
         }
         return;
@@ -290,13 +289,14 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _last_heading_update_ms = now;
         }
         // initialise _sysid if zero to sender's id
-        if (_sysid_to_follow == 0) {
-            _sysid_to_follow = msg.sysid;
+        if (_sysid == 0) {
+            _sysid.set(msg.sysid);
+            _automatic_sysid = true;
         }
         if ((now - _last_location_sent_to_gcs) > AP_GCS_INTERVAL_MS) {
             _last_location_sent_to_gcs = now;
             gcs().send_text(MAV_SEVERITY_INFO, "Foll: %u %ld %ld %4.2f\n",
-                            (unsigned)_sysid_to_follow,
+                            (unsigned)_sysid.get(),
                             (long)_target_location.lat,
                             (long)_target_location.lng,
                             (double)(_target_location.alt * 0.01f));    // cm to m

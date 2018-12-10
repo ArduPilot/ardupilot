@@ -65,19 +65,7 @@ void Plane::accel_cal_update() {
  */
 void Plane::read_airspeed(void)
 {
-    if (airspeed.enabled()) {
-        airspeed.read();
-        if (should_log(MASK_LOG_IMU)) {
-            DataFlash.Log_Write_Airspeed(airspeed);
-        }
-
-        // supply a new temperature to the barometer from the digital
-        // airspeed sensor if we can
-        float temperature;
-        if (airspeed.get_temperature(temperature)) {
-            barometer.set_external_temperature(temperature);
-        }
-    }
+    airspeed.update(should_log(MASK_LOG_IMU));
 
     // we calculate airspeed errors (and thus target_airspeed_cm) even
     // when airspeed is disabled as TECS may be using synthetic
@@ -133,7 +121,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
 
-    if (aparm.throttle_min < 0) {
+    if (have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
     if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
@@ -295,7 +283,7 @@ void Plane::update_sensor_status_flags(void)
         }
     }
 
-    if (aparm.throttle_min < 0 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
+    if (have_reverse_thrust() && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < 0) {
         control_sensors_enabled |= MAV_SYS_STATUS_REVERSE_MOTOR;
         control_sensors_health |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }

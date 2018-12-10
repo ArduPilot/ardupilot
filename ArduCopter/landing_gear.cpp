@@ -28,4 +28,28 @@ void Copter::landinggear_update()
     }
 
     last_deploy_status = landinggear.deployed();
+
+    // support height based triggering using rangefinder or altitude above home
+    float height = current_loc.alt * 0.01;
+
+    // use rangefinder if available
+    switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
+    case RangeFinder::RangeFinder_NotConnected:
+    case RangeFinder::RangeFinder_NoData:
+        // use altitude above home for non-functioning rangefinder
+        break;
+
+    case RangeFinder::RangeFinder_OutOfRangeLow:
+        // altitude is close to zero (gear should deploy)
+        height = 0.0f;
+        break;
+
+    case RangeFinder::RangeFinder_OutOfRangeHigh:
+    case RangeFinder::RangeFinder_Good:
+        // use last good reading
+        height = rangefinder_state.alt_cm_filt.get() * 0.01;
+        break;
+    }
+
+    landinggear.update(height);
 }

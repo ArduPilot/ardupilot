@@ -28,15 +28,15 @@ FLASH_RESERVE_START_KB 16
 # space to reserve for storage at end of flash
 FLASH_RESERVE_END_KB 0
 
-# serial port for stdout
-STDOUT_SERIAL SD7
-STDOUT_BAUDRATE 57600
+# serial port for stdout disabled, uses USB instead
+# STDOUT_SERIAL SD7
+# STDOUT_BAUDRATE 57600
 
 # order of I2C buses
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1
+UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
 
 # UART4 is GPS
 PA0 UART4_TX UART4
@@ -99,8 +99,6 @@ PB9 I2C1_SDA I2C1
 PB10 I2C2_SCL I2C2
 PB11 I2C2_SDA I2C2
 
-PB12 FRSKY_INV OUTPUT
-
 # SPI2 is external SPI (radio NRF)
 PB13 SPI2_SCK SPI2
 PB14 SPI2_MISO SPI2
@@ -145,6 +143,11 @@ PD11 ACCEL_MAG_CS CS
 # UART8 is FrSky
 PE0 UART8_RX UART8
 PE1 UART8_TX UART8
+
+# allow this uart to be inverted for transmit under user control
+# the polarity is the value to use on the GPIO to change the polarity
+# to the opposite of the default
+PB12 UART8_TXINV OUTPUT HIGH GPIO(78) POL(0)
 
 # SPI4 is M_SPI (main sensors)
 PE2 SPI4_SCK SPI4

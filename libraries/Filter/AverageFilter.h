@@ -33,7 +33,7 @@ public:
     };
 
     // apply - Add a new raw value to the filter, retrieve the filtered result
-    virtual T        apply(T sample);
+    virtual T        apply(T sample) override;
 
     // reset - clear the filter
     virtual void        reset();

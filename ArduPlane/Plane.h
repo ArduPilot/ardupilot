@@ -96,6 +96,7 @@
 #include <AP_ICEngine/AP_ICEngine.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
+#include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -286,7 +287,7 @@ private:
 
 #if OPTFLOW == ENABLED
     // Optical flow sensor
-    OpticalFlow optflow{ahrs};
+    OpticalFlow optflow;
 #endif
 
     // Rally Ponints
@@ -353,6 +354,19 @@ private:
         //Does not count rc inputs as valid if the standard failsafe is on
         uint32_t AFS_last_valid_rc_ms;
     } failsafe;
+
+    enum Landing_ApproachStage {
+        LOITER_TO_ALT,
+        WAIT_FOR_BREAKOUT,
+        APPROACH_LINE,
+        VTOL_LANDING,
+    };
+
+    // Landing
+    struct {
+        enum Landing_ApproachStage approach_stage;
+        float approach_direction_deg;
+    } vtol_approach_s;
 
     bool any_failsafe_triggered() {
         return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb;
@@ -430,6 +444,8 @@ private:
         uint32_t last_check_ms;
         uint32_t last_report_ms;
         bool launchTimerStarted;
+        uint8_t accel_event_counter;
+        uint32_t accel_event_ms;
     } takeoff_state;
     
     // ground steering controller state
@@ -534,8 +550,16 @@ private:
         // throttle  commanded from external controller in percent
         float forced_throttle;
         uint32_t last_forced_throttle_ms;
-} guided_state;
+    } guided_state;
 
+#if LANDING_GEAR_ENABLED == ENABLED
+    // landing gear state
+    struct {
+        int8_t last_auto_cmd;
+        int8_t last_cmd;
+    } gear;
+#endif
+    
     struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
@@ -603,7 +627,7 @@ private:
     float smoothed_airspeed;
 
     // Mission library
-    AP_Mission mission{ahrs,
+    AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&Plane::start_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::verify_command_callback, bool, const AP_Mission::Mission_Command &),
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
@@ -615,7 +639,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain{ahrs, mission, rally};
+    AP_Terrain terrain{mission, rally};
 #endif
 
     AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
@@ -745,7 +769,7 @@ private:
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
     // current_loc uses the baro/gps soloution for altitude rather than gps only.
-    AP_Mount camera_mount{ahrs, current_loc};
+    AP_Mount camera_mount{current_loc};
 #endif
 
     // Arming/Disarming mangement class
@@ -786,10 +810,7 @@ private:
 
     void send_aoa_ssa(mavlink_channel_t chan);
 
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
     void gcs_send_airspeed_calibration(const Vector3f &vg);
-    void gcs_retry_deferred(void);
 
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
@@ -799,7 +820,6 @@ private:
     void Log_Write_Nav_Tuning();
     void Log_Write_Status();
     void Log_Write_Sonar();
-    void Log_Write_Optflow();
     void Log_Arm_Disarm();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
@@ -868,7 +888,6 @@ private:
     void failsafe_short_off_event(mode_reason_t reason);
     void failsafe_long_off_event(mode_reason_t reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-    void update_events(void);
     uint8_t max_fencepoints(void);
     Vector2l get_fence_point_with_index(unsigned i);
     void set_fence_point_with_index(const Vector2l &point, unsigned i);
@@ -937,6 +956,7 @@ private:
     void takeoff_calc_pitch(void);
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
+    void landing_gear_update(void);
     void complete_auto_takeoff(void);
     void ahrs_update();
     void update_speed_height(void);
@@ -961,13 +981,14 @@ private:
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
+    void change_landing_gear(AP_LandingGear::LandingGearCommand cmd);
+    void set_landing_gear(void);
     void dspoiler_update(void);
     void servo_output_mixers(void);
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
-    bool allow_reverse_thrust(void);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
@@ -1002,6 +1023,7 @@ private:
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd);
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
@@ -1012,12 +1034,11 @@ private:
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_configure(const AP_Mission::Mission_Command& cmd);
-    void do_digicam_control(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     void notify_flight_mode(enum FlightMode mode);
@@ -1038,7 +1059,11 @@ private:
     void update_soaring();
 #endif
 
-    void read_aux_all();
+    bool reversed_throttle;
+    bool have_reverse_throttle_rc_option;
+    bool allow_reverse_thrust(void) const;
+    bool have_reverse_thrust(void) const;
+    int16_t get_throttle_input(bool no_deadzone=false) const;
 
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
@@ -1048,12 +1073,14 @@ private:
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
         Failsafe_Action_Land      = 2,
-        Failsafe_Action_Terminate = 3
+        Failsafe_Action_Terminate = 3,
+        Failsafe_Action_QLand     = 4,
     };
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
+                                                      Failsafe_Action_QLand,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,

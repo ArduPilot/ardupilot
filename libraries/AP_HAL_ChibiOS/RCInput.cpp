@@ -27,6 +27,10 @@ extern AP_IOMCU iomcu;
 
 #include <AP_Math/AP_Math.h>
 
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
+
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
@@ -116,21 +120,40 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
-    uint32_t width_s0, width_s1;
 
+#if HAL_USE_ICU == TRUE
+    const uint32_t *p;
+    uint32_t n;
+    while ((p = (const uint32_t *)sig_reader.sigbuf.readptr(n)) != nullptr) {
+        rcin_prot.process_pulse_list(p, n*2, sig_reader.need_swap);
+        sig_reader.sigbuf.advance(n);
+    }
+#endif
+
+#if HAL_USE_EICU == TRUE
+    uint32_t width_s0, width_s1;
     while(sig_reader.read(width_s0, width_s1)) {
         rcin_prot.process_pulse(width_s0, width_s1);
     }
+#endif
 
+#ifndef HAL_NO_UARTDRIVER
+    const char *rc_protocol = nullptr;
+#endif
+
+#if HAL_USE_ICU == TRUE || HAL_USE_EICU == TRUE
     if (rcin_prot.new_input()) {
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcin_prot.num_channels();
+        _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = rcin_prot.read(i);
         }
         rcin_mutex.give();
+#ifndef HAL_NO_UARTDRIVER
+        rc_protocol = rcin_prot.protocol_name();
+#endif
     }
 #endif
 
@@ -140,6 +163,7 @@ void RCInput::_timer_tick(void)
         rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
         _rcin_timestamp_last_signal = last_radio_us;
         _num_channels = radio->num_channels();
+        _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = radio->read(i);
         }
@@ -152,10 +176,19 @@ void RCInput::_timer_tick(void)
     if (AP_BoardConfig::io_enabled() &&
         iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
         _rcin_timestamp_last_signal = last_iomcu_us;
+#ifndef HAL_NO_UARTDRIVER
+        rc_protocol = iomcu.get_rc_protocol();
+#endif
     }
     rcin_mutex.give();
 #endif
-    
+
+#ifndef HAL_NO_UARTDRIVER
+    if (rc_protocol && rc_protocol != last_protocol) {
+        last_protocol = rc_protocol;
+        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+    }
+#endif
 
     // note, we rely on the vehicle code checking new_input()
     // and a timeout for the last valid input to handle failsafe
@@ -166,6 +199,14 @@ void RCInput::_timer_tick(void)
  */
 bool RCInput::rc_bind(int dsmMode)
 {
+#if HAL_WITH_IO_MCU
+    rcin_mutex.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.bind_dsm(dsmMode);
+    }
+    rcin_mutex.give();
+#endif
+
 #if HAL_USE_ICU == TRUE
     // ask AP_RCProtocol to start a bind
     rcin_prot.start_bind();

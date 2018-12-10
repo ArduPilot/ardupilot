@@ -93,7 +93,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
 */
 float Submarine::calculate_buoyancy_acceleration()
 {
-    float below_water_level = position.z - frame_proprietary.height/2;
+    float below_water_level = position.z - frame_property.height/2;
 
     // Completely above water level
     if (below_water_level < 0) {
@@ -101,12 +101,12 @@ float Submarine::calculate_buoyancy_acceleration()
     }
 
     // Completely below water level
-    if (below_water_level > frame_proprietary.height/2) {
-        return frame_proprietary.bouyancy_acceleration;
+    if (below_water_level > frame_property.height/2) {
+        return frame_property.bouyancy_acceleration;
     }
 
     // bouyant force is proportional to fraction of height in water
-    return frame_proprietary.bouyancy_acceleration * below_water_level/frame_proprietary.height;
+    return frame_property.bouyancy_acceleration * below_water_level/frame_property.height;
 };
 
 /*

@@ -9,6 +9,13 @@ the sensor library, such as libraries/AP_Compass/AP_Compass_Backend.h
 import sys
 import optparse
 
+def num(s):
+    try:
+        return int(s)
+    except ValueError:
+        return int(s, 16)
+
+
 parser = optparse.OptionParser("decode_devid.py")
 parser.add_option("-C", "--compass", action='store_true', help='decode compass IDs')
 parser.add_option("-I", "--imu", action='store_true', help='decode IMU IDs')
@@ -19,7 +26,7 @@ if len(args) == 0:
     print("Please supply a device ID")
     sys.exit(1)
 
-devid=int(args[0])
+devid=num(args[0])
 
 bus_type=devid & 0x07
 bus=(devid>>3) & 0x1F
@@ -47,7 +54,8 @@ compass_types = {
     0x0C : "DEVTYPE_MMC3416",
     0x0D : "DEVTYPE_QMC5883L",
     0x0E : "DEVTYPE_MAG3110",
-    0x0F : "DEVTYPE_SITL"
+    0x0F : "DEVTYPE_SITL",
+    0x10 : "DEVTYPE_IST8308",
 }
 
 imu_types = {

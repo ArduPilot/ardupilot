@@ -3,8 +3,6 @@
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
-#define PROXIMITY_MAV_TIMEOUT_MS    200 // requests timeout after 0.2 seconds
-
 class AP_Proximity_MAV : public AP_Proximity_Backend
 {
 
@@ -13,14 +11,14 @@ public:
     AP_Proximity_MAV(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const { return _distance_max; }
-    float distance_min() const { return _distance_min; };
+    float distance_max() const override { return _distance_max; }
+    float distance_min() const override { return _distance_min; };
 
     // get distance upwards in meters. returns true on success
-    bool get_upward_distance(float &distance) const;
+    bool get_upward_distance(float &distance) const override;
 
     // handle mavlink DISTANCE_SENSOR messages
     void handle_msg(mavlink_message_t *msg) override;

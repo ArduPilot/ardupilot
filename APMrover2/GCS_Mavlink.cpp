@@ -279,21 +279,6 @@ void Rover::send_fence_status(mavlink_channel_t chan)
     fence_send_mavlink_status(chan);
 }
 
-void Rover::send_wind(mavlink_channel_t chan)
-{
-    // exit immediately if no wind vane
-    if (!rover.g2.windvane.enabled()) {
-        return;
-    }
-
-    // send wind
-    mavlink_msg_wind_send(
-        chan,
-        degrees(rover.g2.windvane.get_apparent_wind_direction_rad()),
-        0,
-        0);
-}
-
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
 {
     // send wheel encoder data using rpm message
@@ -365,13 +350,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_wheel_encoder(chan);
         break;
 
-    case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        rover.camera_mount.status_msg(chan);
-#endif  // MOUNT == ENABLED
-        break;
-
     case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         rover.send_fence_status(chan);
@@ -379,7 +357,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
-        rover.send_wind(chan);
+        rover.g2.windvane.send_wind(chan);
         break;
 
     case MSG_PID_TUNING:
@@ -489,12 +467,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
-    MSG_RAW_IMU2,  // BARO
-    MSG_RAW_IMU3  // SENSOR_OFFSETS
+    MSG_SCALED_PRESSURE,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
-    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -654,36 +632,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
         return MAV_RESULT_ACCEPTED;
 
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_SET_ROI: {
-        // param1 : /* Region of interest mode (not used)*/
-        // param2 : /* MISSION index/ target ID (not used)*/
-        // param3 : /* ROI index (not used)*/
-        // param4 : /* empty */
-        // x : lat
-        // y : lon
-        // z : alt
-        // sanity check location
-        if (!check_latlng(packet.x, packet.y)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location roi_loc;
-        roi_loc.lat = packet.x;
-        roi_loc.lng = packet.y;
-        roi_loc.alt = (int32_t)(packet.z * 100.0f);
-        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-            // switch off the camera tracking if enabled
-            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                rover.camera_mount.set_mode_to_default();
-            }
-        } else {
-            // send the command to the camera mount
-            rover.camera_mount.set_roi_target(roi_loc);
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
-#endif
-
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -694,41 +642,16 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     switch (packet.command) {
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND);
-        return MAV_RESULT_ACCEPTED;
-
-#if MOUNT == ENABLED
-        // Sets the region of interest (ROI) for the camera
-    case MAV_CMD_DO_SET_ROI:
-        // sanity check location
-        if (!check_latlng(packet.param5, packet.param6)) {
-            return MAV_RESULT_FAILED;
+        if (rover.set_mode(rover.mode_rtl, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
         }
-        Location roi_loc;
-        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-        if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
-            // switch off the camera tracking if enabled
-            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                rover.camera_mount.set_mode_to_default();
-            }
-        } else {
-            // send the command to the camera mount
-            rover.camera_mount.set_roi_target(roi_loc);
-        }
-        return MAV_RESULT_ACCEPTED;
-#endif
-
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_MOUNT_CONTROL:
-        rover.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-        return MAV_RESULT_ACCEPTED;
-#endif
+        return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
-        rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND);
-        return MAV_RESULT_ACCEPTED;
+        if (rover.set_mode(rover.mode_auto, MODE_REASON_GCS_COMMAND)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
 
     case MAV_CMD_COMPONENT_ARM_DISARM:
         if (is_equal(packet.param1, 1.0f)) {
@@ -806,7 +729,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
 
         // exit if vehicle is not in Guided mode
         if (rover.control_mode != &rover.mode_guided) {
-            return MAV_RESULT_UNSUPPORTED;
+            return MAV_RESULT_FAILED;
         }
 
         // send yaw change and target speed to guided mode controller
@@ -861,6 +784,8 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(6, packet.chan7_raw, tnow);
         RC_Channels::set_override(7, packet.chan8_raw, tnow);
 
+        // an RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+        rover.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
@@ -884,18 +809,18 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(uint8_t(rover.rcmap.roll() - 1), roll, tnow);
         RC_Channels::set_override(uint8_t(rover.rcmap.throttle() - 1), throttle, tnow);
 
+        // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+        rover.failsafe.last_heartbeat_ms = tnow;
         break;
     }
 
     case MAVLINK_MSG_ID_HEARTBEAT:
         {
-            // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
+            // we keep track of the last time we received a heartbeat from our GCS for failsafe purposes
             if (msg->sysid != rover.g.sysid_my_gcs) {
                 break;
             }
-
-            rover.last_heartbeat_ms = AP_HAL::millis();
-            rover.failsafe_trigger(FAILSAFE_EVENT_GCS, false);
+            rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
             break;
         }
 
@@ -1194,22 +1119,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
         }
 #endif  // HIL_MODE
 
-#if MOUNT == ENABLED
-    // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:
-        {
-            rover.camera_mount.configure_msg(msg);
-            break;
-        }
-
-    // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-    case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        {
-            rover.camera_mount.control_msg(msg);
-            break;
-        }
-#endif  // MOUNT == ENABLED
-
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
         {
@@ -1261,8 +1170,8 @@ void Rover::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
+        gcs().update();
+        gcs().data_stream_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1271,30 +1180,6 @@ void Rover::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Rover::gcs_data_stream_send(void)
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Rover::gcs_update(void)
-{
-    gcs().update();
-}
-
-/**
-   retry any deferred messages
- */
-void Rover::gcs_retry_deferred(void)
-{
-    gcs().retry_deferred();
 }
 
 /*

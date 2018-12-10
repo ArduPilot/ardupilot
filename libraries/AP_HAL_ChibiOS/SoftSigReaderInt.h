@@ -23,7 +23,7 @@
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 #ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS
-#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 256
+#define SOFTSIG_MAX_SIGNAL_TRANSITIONS 128
 #endif
 
 
@@ -49,8 +49,11 @@ private:
     static void _irq_handler(EICUDriver *eicup, eicuchannel_t channel);
     
     static eicuchannel_t get_pair_channel(eicuchannel_t channel);
-
-    ObjectBuffer<uint16_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
+    typedef struct PACKED {
+        uint16_t w0;
+        uint16_t w1;
+    } pulse_t;
+    ObjectBuffer<pulse_t> sigbuf{SOFTSIG_MAX_SIGNAL_TRANSITIONS};
     EICUConfig icucfg;
     EICUChannelConfig channel_config;
     EICUChannelConfig aux_channel_config;

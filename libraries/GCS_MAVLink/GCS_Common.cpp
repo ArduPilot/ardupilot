@@ -50,6 +50,10 @@ uint8_t GCS_MAVLINK::mavlink_active = 0;
 uint8_t GCS_MAVLINK::chan_is_streaming = 0;
 uint32_t GCS_MAVLINK::reserve_param_space_start_ms;
 
+// private channels are ones used for point-to-point protocols, and
+// don't get broadcasts or fwded packets
+uint8_t GCS_MAVLINK::mavlink_private = 0;
+
 GCS *GCS::_singleton = nullptr;
 
 GCS_MAVLINK::GCS_MAVLINK()
@@ -618,13 +622,28 @@ void GCS_MAVLINK::handle_mission_write_partial_list(AP_Mission &mission, mavlink
 
 
 /*
-  handle a GIMBAL_REPORT mavlink packet
+  pass mavlink messages to the AP_Mount singleton
  */
-void GCS_MAVLINK::handle_gimbal_report(AP_Mount &mount, mavlink_message_t *msg) const
+void GCS_MAVLINK::handle_mount_message(const mavlink_message_t *msg)
 {
-    mount.handle_gimbal_report(chan, msg);
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->handle_message(chan, msg);
 }
 
+/*
+  pass parameter value messages through to mount library
+ */
+void GCS_MAVLINK::handle_param_value(mavlink_message_t *msg)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->handle_param_value(msg);
+}
 
 void GCS_MAVLINK::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
 {
@@ -885,7 +904,10 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     // we exclude radio packets because we historically used this to
     // make it possible to use the CLI over the radio
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
-        mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
+        const uint8_t mask = (1U<<(chan-MAVLINK_COMM_0));
+        if (!(mask & mavlink_private)) {
+            mavlink_active |= mask;
+        }
     }
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
@@ -970,7 +992,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
 
     // send a timesync message every 10 seconds; this is for data
     // collection purposes
-    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms) {
+    if (tnow - _timesync_request.last_sent_ms > _timesync_request.interval_ms && !is_private()) {
         if (HAVE_PAYLOAD_SPACE(chan, TIMESYNC)) {
             send_timesync();
             _timesync_request.last_sent_ms = tnow;
@@ -983,6 +1005,7 @@ GCS_MAVLINK::update(uint32_t max_time_us)
         // stop waypoint receiving if timeout
         if (tnow - waypoint_timelast_receive > wp_recv_time+waypoint_receive_timeout) {
             waypoint_receiving = false;
+            gcs().send_text(MAV_SEVERITY_WARNING, "Mission upload timeout");
         } else if (tnow - waypoint_timelast_request > wp_recv_time) {
             waypoint_timelast_request = tnow;
             send_message(MSG_NEXT_WAYPOINT);
@@ -1466,16 +1489,19 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
 /*
   send OPTICAL_FLOW message
  */
-void GCS_MAVLINK::send_opticalflow(const OpticalFlow &optflow)
+void GCS_MAVLINK::send_opticalflow()
 {
+    const OpticalFlow *optflow = AP::opticalflow();
+
     // exit immediately if no optical flow sensor or not healthy
-    if (!optflow.healthy()) {
+    if (optflow == nullptr ||
+        !optflow->healthy()) {
         return;
     }
 
     // get rates from sensor
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
+    const Vector2f &flowRate = optflow->flowRate();
+    const Vector2f &bodyRate = optflow->bodyRate();
 
     const AP_AHRS &ahrs = AP::ahrs();
     float hagl = 0;
@@ -1492,9 +1518,9 @@ void GCS_MAVLINK::send_opticalflow(const OpticalFlow &optflow)
         0, // sensor id is zero
         flowRate.x,
         flowRate.y,
-        bodyRate.x,
-        bodyRate.y,
-        optflow.quality(),
+        flowRate.x - bodyRate.x,
+        flowRate.y - bodyRate.y,
+        optflow->quality(),
         hagl,  // ground distance (in meters) set to zero
         flowRate.x,
         flowRate.y);
@@ -1774,6 +1800,11 @@ float GCS_MAVLINK::vfr_hud_climbrate() const
     return -vfr_hud_velned.z;
 }
 
+float GCS_MAVLINK::vfr_hud_alt() const
+{
+    return global_position_current_loc.alt * 0.01f; // cm -> m
+}
+
 void GCS_MAVLINK::send_vfr_hud()
 {
     AP_AHRS &ahrs = AP::ahrs();
@@ -1788,7 +1819,7 @@ void GCS_MAVLINK::send_vfr_hud()
         ahrs.groundspeed(),
         (ahrs.yaw_sensor / 100) % 360,
         vfr_hud_throttle(),
-        global_position_current_loc.alt * 0.01f, // cm -> m
+        vfr_hud_alt(),
         vfr_hud_climbrate());
 }
 
@@ -2060,6 +2091,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
     return result;
 }
 
+
 // sets ekf_origin if it has not been set.
 //  should only be used when there is no GPS to provide an absolute position
 void GCS_MAVLINK::set_ekf_origin(const Location& loc)
@@ -2216,15 +2248,15 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float yaw)
 {
     DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
-                                           "ssmmmrrr", "FF000000", "QQffffff",
+                                           "ssmmmddh", "FF000000", "QQffffff",
                                            (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
                                            (double)x,
                                            (double)y,
                                            (double)z,
-                                           (double)roll,
-                                           (double)pitch,
-                                           (double)yaw);
+                                           (double)(roll * RAD_TO_DEG),
+                                           (double)(pitch * RAD_TO_DEG),
+                                           (double)(yaw * RAD_TO_DEG));
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(mavlink_message_t *msg)
@@ -2353,6 +2385,14 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
         handle_command_int(msg);
         break;
 
+    case MAVLINK_MSG_ID_GIMBAL_REPORT:
+        handle_mount_message(msg);
+        break;
+
+    case MAVLINK_MSG_ID_PARAM_VALUE:
+        handle_param_value(msg);
+        break;
+
     case MAVLINK_MSG_ID_SERIAL_CONTROL:
         handle_serial_control(msg);
         break;
@@ -2371,6 +2411,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_LED_CONTROL:
         // send message to Notify
         AP_Notify::handle_led_control(msg);
+        break;
+
+    case MAVLINK_MSG_ID_MOUNT_CONFIGURE: // deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
+    case MAVLINK_MSG_ID_MOUNT_CONTROL: // deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
+        handle_mount_message(msg);
         break;
 
     case MAVLINK_MSG_ID_PLAY_TUNE:
@@ -2715,6 +2760,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_comman
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packet)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    return mount->handle_command_long(packet);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
@@ -2758,10 +2812,20 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_do_gripper(packet);
         break;
 
+    case MAV_CMD_DO_MOUNT_CONFIGURE:
+    case MAV_CMD_DO_MOUNT_CONTROL:
+        result = handle_command_mount(packet);
+        break;
+
     case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
         result = handle_command_request_autopilot_capabilities(packet);
         break;
     }
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI:
+        result = handle_command_do_set_roi(packet);
+        break;
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
@@ -2819,8 +2883,77 @@ void GCS_MAVLINK::handle_command_long(mavlink_message_t *msg)
     mavlink_msg_command_ack_send_buf(msg, chan, packet.command, result);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    // sanity check location
+    if (!check_latlng(roi_loc)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (roi_loc.lat == 0 && roi_loc.lng == 0 && roi_loc.alt == 0) {
+        // switch off the camera tracking if enabled
+        if (mount->get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+            mount->set_mode_to_default();
+        }
+    } else {
+        // send the command to the camera mount
+        mount->set_roi_target(roi_loc);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
+{
+    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
+    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
+    // of the extra fields in the former then you will need to split
+    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
+    // support the extra fields).
+
+    // param1 : /* Region of interest mode (not used)*/
+    // param2 : /* MISSION index/ target ID (not used)*/
+    // param3 : /* ROI index (not used)*/
+    // param4 : /* empty */
+    // x : lat
+    // y : lon
+    // z : alt
+    Location roi_loc;
+    roi_loc.lat = packet.x;
+    roi_loc.lng = packet.y;
+    roi_loc.alt = (int32_t)(packet.z * 100.0f);
+    return handle_command_do_set_roi(roi_loc);
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &packet)
+{
+    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
+    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
+    // of the extra fields in the former then you will need to split
+    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
+    // support the extra fields).
+
+    Location roi_loc;
+    roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
+    roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
+    roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
+    return handle_command_do_set_roi(roi_loc);
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
+    switch (packet.command) {
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+        return handle_command_do_set_roi(packet);
+    default:
+        break;
+    }
+
     return MAV_RESULT_UNSUPPORTED;
 }
 
@@ -2941,6 +3074,24 @@ void GCS_MAVLINK::send_global_position_int()
         ahrs.yaw_sensor);                // compass heading in 1/100 degree
 }
 
+void GCS_MAVLINK::send_gimbal_report() const
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->send_gimbal_report(chan);
+}
+
+void GCS_MAVLINK::send_mount_status() const
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->send_mount_status(chan);
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     if (telemetry_delayed()) {
@@ -2959,6 +3110,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_NEXT_PARAM:
         CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
+        break;
+
+    case MSG_GIMBAL_REPORT:
+        CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
+        send_gimbal_report();
         break;
 
     case MSG_HEARTBEAT:
@@ -3004,7 +3160,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
         break;
 
-    case MSG_EXTENDED_STATUS2:
+    case MSG_MEMINFO:
         CHECK_PAYLOAD_SIZE(MEMINFO);
         send_meminfo();
         break;
@@ -3053,6 +3209,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_local_position();
         break;
 
+    case MSG_MOUNT_STATUS:
+        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
+        send_mount_status();
+        break;
+
+    case MSG_OPTICAL_FLOW:
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+        send_opticalflow();
+        break;
+
     case MSG_POSITION_TARGET_GLOBAL_INT:
         CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
         send_position_target_global_int();
@@ -3068,12 +3234,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_raw_imu();
         break;
 
-    case MSG_RAW_IMU2:
+    case MSG_SCALED_PRESSURE:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure();
         break;
 
-    case MSG_RAW_IMU3:
+    case MSG_SENSOR_OFFSETS:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets();
         break;
@@ -3185,20 +3351,12 @@ void GCS_MAVLINK::data_stream_send(void)
 
 /*
   correct an offboard timestamp in microseconds into a local timestamp
-  since boot in milliseconds. This is a transport lag correction function, and works by assuming two key things:
-
-   1) the data did not come from the future in our time-domain
-   2) the data is not older than max_lag_ms in our time-domain
-
-  It works by estimating the transport lag by looking for the incoming
-  packet that had the least lag, and converging on the offset that is
-  associated with that lag
+  since boot in milliseconds. See the JitterCorrection code for details
 
   Return a value in milliseconds since boot (for use by the EKF)
  */
 uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size)
 {
-    const uint32_t max_lag_us = 500*1000UL;
     uint64_t local_us;
     // if the HAL supports it then constrain the latest possible time
     // the packet could have been sent by the uart receive time and
@@ -3209,58 +3367,9 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
     } else {
         local_us = AP_HAL::micros64();
     }
-    int64_t diff_us = int64_t(local_us) - int64_t(offboard_usec);
+    uint64_t corrected_us = lag_correction.correct_offboard_timestamp_usec(offboard_usec, local_us);
 
-    if (!lag_correction.initialised ||
-        diff_us < lag_correction.link_offset_usec) {
-        // this message arrived from the remote system with a
-        // timestamp that would imply the message was from the
-        // future. We know that isn't possible, so we adjust down the
-        // correction value
-        lag_correction.link_offset_usec = diff_us;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("link_offset_usec=%lld\n", (long long int)diff_us);
-#endif
-        lag_correction.initialised = true;
-    }
-
-    int64_t estimate_us = offboard_usec + lag_correction.link_offset_usec;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (estimate_us > (int64_t)local_us) {
-        // this should be impossible, just check it under SITL
-        printf("msg from future %lld\n", (long long int)(estimate_us - local_us));
-    }
-#endif
-
-    if (estimate_us + max_lag_us < int64_t(local_us)) {
-        // this implies the message came from too far in the past. Clamp the lag estimate
-        // to assume the message had maximum lag
-        estimate_us = local_us - max_lag_us;
-        lag_correction.link_offset_usec = estimate_us - offboard_usec;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("offboard timestammp too old %lld\n", (long long int)(local_us - estimate_us));
-#endif
-    }
-
-    if (lag_correction.min_sample_counter == 0) {
-        lag_correction.min_sample_us = diff_us;
-    }
-    lag_correction.min_sample_counter++;
-    if (diff_us < lag_correction.min_sample_us) {
-        lag_correction.min_sample_us = diff_us;
-    }
-    if (lag_correction.min_sample_counter == 200) {
-        // we have 200 samples of the transport lag. To
-        // account for long term clock drift we set the diff we will
-        // use in future to this value
-        lag_correction.link_offset_usec = lag_correction.min_sample_us;
-        lag_correction.min_sample_counter = 0;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        printf("new link_offset_usec=%lld\n", (long long int)(lag_correction.min_sample_us));
-#endif
-    }
-    
-    return estimate_us / 1000U;
+    return corrected_us / 1000U;
 }
 
 GCS &gcs()

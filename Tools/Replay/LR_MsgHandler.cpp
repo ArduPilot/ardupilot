@@ -383,7 +383,8 @@ bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE"};
+                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE",
+                                   "LOG_DISARMED"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);

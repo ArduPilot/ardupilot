@@ -478,11 +478,18 @@ char *DataFlash_File::_lastlog_file_name(void) const
 // remove all log files
 void DataFlash_File::EraseAll()
 {
-    uint16_t log_num;
+    if (hal.util->get_soft_armed()) {
+        // do not want to do any filesystem operations while we are e.g. flying
+        return;
+    }
+    if (!_initialised) {
+        return;
+    }
+
     const bool was_logging = (_write_fd != -1);
     stop_logging();
 
-    for (log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
+    for (uint16_t log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
             break;

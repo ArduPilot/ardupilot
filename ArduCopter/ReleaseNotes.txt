@@ -1,5 +1,64 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.3 04-Dec-2018 / 3.6.3-rc1 01-Dec-2018
+Changes from 3.6.2
+1) Bug fixes and minor enhancements
+    a) Pixhawk4 RC input fix
+    b) TradHeli parameter default fixes for Loiter and PosHold
+    c) Onboard OSD fix for MatekSys 405
+    d) Solo power off button delay time increased
+------------------------------------------------------------------
+Copter 3.6.2 24-Nov-2018 / 3.6.2-rc4 22-Nov-2018
+Changes from 3.6.2-rc3
+1) Bug fixes and minor changes:
+    a) Benewake TFmini short range scaling fix
+    b) Fix alt drop after quick switch from RTL to stabilize to RTL
+    c) Winch removed from build by default
+------------------------------------------------------------------
+Copter 3.6.2-rc3 19-Nov-2018
+Changes from 3.6.2-rc2
+1) Bug fixes:
+    a) Benewake TFmini and TF02 driver reliability fix
+    b) Spektrum RC parsing fix when more than 7 channels
+2) remove bootloader from px4-v2 builds (reduces firmware size)
+------------------------------------------------------------------
+Copter 3.6.2-rc1/rc2 15-Nov-2018
+Changes from 3.6.1
+1) Bug fixes:
+    a) Benewake TFmini and TF02 driver checksum fix (was missing many sensor readings)
+    b) Range finders report healthy to GCS when out-of-range
+    c) RPM sensor reliability fix by initialising analog input pin
+------------------------------------------------------------------
+Copter 3.6.1 10-Nov-2018 / 3.6.1-rc1 06-Nov-2018
+Changes from 3.6.0
+1) Garmin LidarLite V3HP support 
+2) VFR HUD messages send relative altitude if DEV_OPTIONS = 2.  Useful for older OSDs and GCSs
+3) Bug fixes:
+    a) Battery failsafe voltage parameter conversion fix
+    b) Safety switch startup fix (was occasionally not initialised properly)
+    c) Benewake TFmini and TF02 driver discards distances over 327m (avoids reporting 655m when can't read distance)
+    d) Dataflash erase only availabled when disarmed (avoids crash if user attempted to erase logs while flying)
+4) ChibiOS fixes and enhancements:
+    a) Pixracer LEDs colours fixed
+    b) Terrain support fixed on Pixracer, MindPx-v2, Radiolink mini-pix
+    c) RC input processing fix to avoid memory corruption in some rare cases
+    d) FuriousFPV F-35 Lightning board support
+    e) SpeedyBee F4 board support
+    f) Bootloaders for OmnibusF4v6, mRoX2.1-777, Radiolink mini-pix 
+    g) Revo-mini support for external barometer
+    h) Pins numbers made consistent across boards (setup of some features now more consistent across boards)
+    i) enable safety switch on Pixhawk family f7 boards
+------------------------------------------------------------------
+Copter 3.6.0 26-Oct-2018
+Changes from 3.6.0-rc12
+1) Bug Fixes:
+    a) Object avoidance fix when using 360 Lidar (mini fence was not including first distance)
+    b) Flowhold mode descending fix
+2) ChibiOS related fixes:
+    a) Kakutef7 support pin mapping fixes
+    b) PixRacer LED fix
+    c) I2C Lidar driver fix to avoid freeze at startup if sensor not connected
+------------------------------------------------------------------
 Copter 3.6.0-rc12 05-Oct-2018
 Changes from 3.6.0-rc11
 1) Bug Fixes:

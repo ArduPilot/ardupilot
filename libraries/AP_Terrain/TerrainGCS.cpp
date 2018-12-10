@@ -92,7 +92,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     schedule_disk_io();
 
     Location loc;
-    if (!ahrs.get_position(loc)) {
+    if (!AP::ahrs().get_position(loc)) {
         // we don't know where we are
         return;
     }
@@ -206,6 +206,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     float home_terrain_height = 0;
     uint16_t spacing = 0;
     Location current_loc;
+    const AP_AHRS &ahrs = AP::ahrs();
     if (ahrs.get_position(current_loc) &&
         height_amsl(ahrs.get_home(), home_terrain_height, false) &&
         height_amsl(loc, terrain_height, false)) {

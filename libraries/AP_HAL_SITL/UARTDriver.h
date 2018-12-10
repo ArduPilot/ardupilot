@@ -18,6 +18,7 @@ public:
         _sitlState = sitlState;
 
         _fd = -1;
+        _mc_fd = -1;
         _listen_fd = -1;
     }
 
@@ -26,22 +27,22 @@ public:
     }
     
     /* Implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) {
+    void begin(uint32_t b) override {
         begin(b, 0, 0);
     }
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS);
-    void end();
-    void flush();
-    bool is_initialized() {
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void end() override;
+    void flush() override;
+    bool is_initialized() override {
         return true;
     }
 
-    void set_blocking_writes(bool blocking)
+    void set_blocking_writes(bool blocking) override
     {
         _nonblocking_writes = !blocking;
     }
 
-    bool tx_pending() {
+    bool tx_pending() override {
         return false;
     }
 
@@ -51,21 +52,24 @@ public:
     int16_t read() override;
 
     /* Implementations of Print virtual methods */
-    size_t write(uint8_t c);
-    size_t write(const uint8_t *buffer, size_t size);
+    size_t write(uint8_t c) override;
+    size_t write(const uint8_t *buffer, size_t size) override;
 
     // file descriptor, exposed so SITL_State::loop_hook() can use it
     int _fd;
 
+    // file descriptor for reading multicast packets
+    int _mc_fd;
+
     bool _unbuffered_writes;
 
-    enum flow_control get_flow_control(void) { return FLOW_CONTROL_ENABLE; }
+    enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
     bool set_unbuffered_writes(bool on) override;
 
-    void _timer_tick(void);
+    void _timer_tick(void) override;
 
     /*
       return timestamp estimate in microseconds for when the start of
@@ -93,6 +97,10 @@ private:
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
+    // default multicast IP and port
+    const char *mcast_ip_default = "239.255.145.50";
+    const uint16_t mcast_port_default = 14550;
+
     const char *_uart_path;
     uint32_t _uart_baudrate;
 
@@ -103,6 +111,8 @@ private:
     void _uart_start_connection(void);
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
+    void _udp_start_client(const char *address, uint16_t port);
+    void _udp_start_multicast(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
@@ -110,6 +120,9 @@ private:
 
     SITL_State *_sitlState;
     uint64_t _receive_timestamp;
+    bool _is_udp;
+    bool _packetise;
+    uint16_t _mc_myport;
 };
 
 #endif

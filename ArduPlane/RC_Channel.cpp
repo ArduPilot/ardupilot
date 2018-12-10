@@ -35,7 +35,20 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case ARMDISARM:
     case INVERTED:
         break;
+
+    case REVERSE_THROTTLE:
+        plane.have_reverse_throttle_rc_option = true;
+        // setup input throttle as a range. This is needed as init_aux_function is called
+        // after set_control_channels()
+        if (plane.channel_throttle) {
+            plane.channel_throttle->set_range(100);
+        }
+        // note that we don't call do_aux_function() here as we don't
+        // want to startup with reverse thrust
+        break;
+
     default:
+        // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
 }
@@ -62,6 +75,12 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
     case INVERTED:
         plane.inverted_flight = (ch_flag == HIGH);
         break;
+
+    case REVERSE_THROTTLE:
+        plane.reversed_throttle = (ch_flag == HIGH);
+        gcs().send_text(MAV_SEVERITY_INFO, "RevThrottle: %s", plane.reversed_throttle?"ENABLE":"DISABLE");
+        break;
+        
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
         break;

@@ -10,11 +10,6 @@ void Sub::gcs_send_heartbeat()
     gcs().send_message(MSG_HEARTBEAT);
 }
 
-void Sub::gcs_send_deferred()
-{
-    gcs().retry_deferred();
-}
-
 /*
  *  !!NOTE!!
  *
@@ -441,27 +436,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_MOUNT_STATUS:
-#if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        sub.camera_mount.status_msg(chan);
-#endif // MOUNT == ENABLED
-        break;
-
-    case MSG_OPTICAL_FLOW:
-#if OPTFLOW == ENABLED
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
-        send_opticalflow(sub.optflow);
-#endif
-        break;
-
-    case MSG_GIMBAL_REPORT:
-#if MOUNT == ENABLED
-        CHECK_PAYLOAD_SIZE(GIMBAL_REPORT);
-        sub.camera_mount.send_gimbal_report(chan);
-#endif
-        break;
-
     case MSG_PID_TUNING:
         CHECK_PAYLOAD_SIZE(PID_TUNING);
         sub.send_pid_tuning(chan);
@@ -552,12 +526,12 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
-    MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
-    MSG_RAW_IMU3  // SENSOR_OFFSETS
+    MSG_SCALED_PRESSURE,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
-    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -661,6 +635,15 @@ MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration(const mavlink_
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
+{
+    if (!check_latlng(roi_loc)) {
+        return MAV_RESULT_FAILED;
+    }
+    sub.set_auto_yaw_roi(roi_loc);
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
@@ -707,25 +690,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
         return MAV_RESULT_FAILED;
     }
 
-    case MAV_CMD_DO_SET_ROI: {
-        // param1 : /* Region of interest mode (not used)*/
-        // param2 : /* MISSION index/ target ID (not used)*/
-        // param3 : /* ROI index (not used)*/
-        // param4 : /* empty */
-        // x : lat
-        // y : lon
-        // z : alt
-        // sanity check location
-        if (!check_latlng(packet.x, packet.y)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location roi_loc;
-        roi_loc.lat = packet.x;
-        roi_loc.lng = packet.y;
-        roi_loc.alt = (int32_t)(packet.z * 100.0f);
-        sub.set_auto_yaw_roi(roi_loc);
-        return MAV_RESULT_ACCEPTED;
-    }
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -801,30 +765,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         }
         return MAV_RESULT_FAILED;
 
-    case MAV_CMD_DO_SET_ROI:
-        // param1 : regional of interest mode (not supported)
-        // param2 : mission index/ target id (not supported)
-        // param3 : ROI index (not supported)
-        // param5 : x / lat
-        // param6 : y / lon
-        // param7 : z / alt
-        // sanity check location
-        if (!check_latlng(packet.param5, packet.param6)) {
-            return MAV_RESULT_FAILED;
-        }
-        Location roi_loc;
-        roi_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-        roi_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-        roi_loc.alt = (int32_t)(packet.param7 * 100.0f);
-        sub.set_auto_yaw_roi(roi_loc);
-        return MAV_RESULT_ACCEPTED;
-
-#if MOUNT == ENABLED
-    case MAV_CMD_DO_MOUNT_CONTROL:
-        sub.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-        return MAV_RESULT_ACCEPTED;
-#endif
-
     case MAV_CMD_MISSION_START:
         if (sub.motors.armed() && sub.set_mode(AUTO, MODE_REASON_GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
@@ -889,20 +829,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
             break;
         }
         sub.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        break;
-    }
-
-    case MAVLINK_MSG_ID_PARAM_VALUE: {
-#if MOUNT == ENABLED
-        sub.camera_mount.handle_param_value(msg);
-#endif
-        break;
-    }
-
-    case MAVLINK_MSG_ID_GIMBAL_REPORT: {
-#if MOUNT == ENABLED
-        handle_gimbal_report(sub.camera_mount, msg);
-#endif
         break;
     }
 
@@ -1143,17 +1069,6 @@ void GCS_MAVLINK_Sub::handleMessage(mavlink_message_t* msg)
         break;
 #endif // AC_FENCE == ENABLED
 
-#if MOUNT == ENABLED
-        //deprecated. Use MAV_CMD_DO_MOUNT_CONFIGURE
-    case MAVLINK_MSG_ID_MOUNT_CONFIGURE:        // MAV ID: 204
-        sub.camera_mount.configure_msg(msg);
-        break;
-        //deprecated. Use MAV_CMD_DO_MOUNT_CONTROL
-    case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        sub.camera_mount.control_msg(msg);
-        break;
-#endif // MOUNT == ENABLED
-
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -1225,9 +1140,9 @@ void Sub::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
-        gcs_send_deferred();
+        gcs().update();
+        gcs().data_stream_send();
+        gcs().retry_deferred();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
@@ -1236,22 +1151,6 @@ void Sub::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Sub::gcs_data_stream_send()
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Sub::gcs_update()
-{
-    gcs().update();
 }
 
 AP_Mission *GCS_MAVLINK_Sub::get_mission()

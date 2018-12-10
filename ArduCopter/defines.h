@@ -145,6 +145,7 @@ enum AutoMode {
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
+    Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
 };
 
@@ -231,6 +232,7 @@ enum PayloadPlaceStateType {
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
+    DevOptionVFR_HUDRelativeAlt = 2,
 };
 
 //  Logging parameters
@@ -238,7 +240,6 @@ enum LoggingParameters {
      TYPE_AIRSTART_MSG,
      TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
-     LOG_OPTFLOW_MSG,
      LOG_EVENT_MSG,
      LOG_ERROR_MSG,
      LOG_DATA_INT16_MSG,
@@ -334,6 +335,7 @@ enum LoggingParameters {
 #define DATA_WINCH_RATE_CONTROL             70
 #define DATA_ZIGZAG_STORE_A                 71
 #define DATA_ZIGZAG_STORE_B                 72
+#define DATA_LAND_REPO_ACTIVE               73
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1

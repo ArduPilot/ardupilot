@@ -97,9 +97,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_FLIP_ENABLED == ENABLED
         case FLIP:
             ret = &mode_flip;
             break;
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
         case AUTOTUNE:
@@ -478,6 +480,9 @@ void Copter::Mode::land_run_horizontal_control()
 
             // record if pilot has overriden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!ap.land_repo_active) {
+                    copter.Log_Write_Event(DATA_LAND_REPO_ACTIVE);
+                }
                 ap.land_repo_active = true;
             }
         }
