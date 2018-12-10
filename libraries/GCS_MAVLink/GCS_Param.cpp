@@ -36,10 +36,6 @@ bool GCS_MAVLINK::param_timer_registered;
 void
 GCS_MAVLINK::queued_param_send()
 {
-    if (!initialised) {
-        return;
-    }
-
     // send parameter async replies
     uint8_t async_replies_sent_count = send_parameter_async_replies();
 

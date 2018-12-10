@@ -7,17 +7,19 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+AP_SerialManager _serialmanager;
 GCS_Dummy _gcs;
 
 extern mavlink_system_t mavlink_system;
 
-const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
+const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPEND
 };
 
@@ -26,7 +28,7 @@ static MAVLink_routing routing;
 void setup(void)
 {
     hal.console->printf("routing test startup...");
-    gcs().chan(0).init(hal.uartA, MAVLINK_COMM_0);
+    gcs().setup_console();
 }
 
 void loop(void)
