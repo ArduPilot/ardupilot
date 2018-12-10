@@ -20,6 +20,8 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_string: "routing example"
 };
 
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+
 class GCS_MAVLINK_routing : public GCS_MAVLINK
 {
 

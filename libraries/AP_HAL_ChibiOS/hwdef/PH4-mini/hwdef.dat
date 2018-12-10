@@ -31,3 +31,9 @@ PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60)
 
 # RCInput on the PPM pin, for all protocols
 PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
+
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364

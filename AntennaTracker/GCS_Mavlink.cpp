@@ -71,7 +71,7 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Tracker::send_extended_status1(mavlink_channel_t chan)
+void Tracker::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -137,7 +137,7 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
 
     case MSG_EXTENDED_STATUS1:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        tracker.send_extended_status1(chan);
+        tracker.send_sys_status(chan);
         break;
 
     default:
@@ -235,7 +235,9 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 };
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
+    MSG_RAW_IMU,
+    MSG_SCALED_IMU2,
+    MSG_SCALED_IMU3,
     MSG_SCALED_PRESSURE,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
     MSG_SENSOR_OFFSETS
 };
@@ -268,6 +270,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
 };
+static const ap_message STREAM_PARAMS_msgs[] = {
+    MSG_NEXT_PARAM
+};
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
@@ -277,6 +282,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
@@ -573,8 +579,8 @@ void Tracker::mavlink_delay_cb()
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs().update();
-        gcs().data_stream_send();
+        gcs().update_receive();
+        gcs().update_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {

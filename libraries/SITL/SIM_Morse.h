@@ -48,8 +48,9 @@ private:
     uint16_t morse_control_port = 60001;
 
     enum {
-        OUTPUT_ROVER,
-        OUTPUT_QUAD
+        OUTPUT_ROVER=1,
+        OUTPUT_QUAD=2,
+        OUTPUT_PWM=3
     } output_type;
 
     bool connect_sockets(void);
@@ -57,6 +58,7 @@ private:
     bool sensors_receive(void);
     void output_rover(const struct sitl_input &input);
     void output_quad(const struct sitl_input &input);
+    void output_pwm(const struct sitl_input &input);
     void report_FPS();
 
     // buffer for parsing pose data in JSON format
@@ -73,8 +75,6 @@ private:
     double last_time_s;
     double extrapolated_s;
     double average_frame_time_s;
-
-    Vector3f position_offset;
 
     uint64_t socket_frame_counter;
     uint64_t last_socket_frame_counter;
@@ -119,18 +119,18 @@ private:
         enum data_type type;
     } keytable[13] = {
         { "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { "vehicle.imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
-        { "vehicle.imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
-        { "vehicle.imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
-        { "vehicle.gps", "x", &state.gps.x, DATA_FLOAT },
-        { "vehicle.gps", "y", &state.gps.y, DATA_FLOAT },
-        { "vehicle.gps", "z", &state.gps.z, DATA_FLOAT },
-        { "vehicle.pose", "roll",  &state.pose.roll, DATA_FLOAT },
-        { "vehicle.pose", "pitch", &state.pose.pitch, DATA_FLOAT },
-        { "vehicle.pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
-        { "vehicle.velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
-        { "vehicle.scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
-        { "vehicle.scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
+        { ".imu", "angular_velocity",    &state.imu.angular_velocity, DATA_VECTOR3F },
+        { ".imu", "linear_acceleration", &state.imu.linear_acceleration, DATA_VECTOR3F },
+        { ".imu", "magnetic_field",      &state.imu.magnetic_field, DATA_VECTOR3F },
+        { ".gps", "x", &state.gps.x, DATA_FLOAT },
+        { ".gps", "y", &state.gps.y, DATA_FLOAT },
+        { ".gps", "z", &state.gps.z, DATA_FLOAT },
+        { ".pose", "roll",  &state.pose.roll, DATA_FLOAT },
+        { ".pose", "pitch", &state.pose.pitch, DATA_FLOAT },
+        { ".pose", "yaw",   &state.pose.yaw, DATA_FLOAT },
+        { ".velocity", "world_linear_velocity", &state.velocity.world_linear_velocity, DATA_VECTOR3F },
+        { ".scan", "point_list", &state.scanner.points, DATA_VECTOR3F_ARRAY },
+        { ".scan", "range_list", &state.scanner.ranges, DATA_FLOAT_ARRAY },
     };
 };
 

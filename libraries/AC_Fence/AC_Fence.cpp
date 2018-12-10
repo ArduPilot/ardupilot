@@ -567,7 +567,7 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
     return true;
 }
 
-// methods for mavlink SYS_STATUS message (send_extended_status1)
+// methods for mavlink SYS_STATUS message (send_sys_status)
 bool AC_Fence::sys_status_present() const
 {
     return _enabled;

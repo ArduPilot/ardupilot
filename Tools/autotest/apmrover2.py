@@ -853,6 +853,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.run_test("Test Camera Mission Items",
                           self.test_camera_mission_items)
 
+            self.run_test("Test MAV_CMD_SET_MESSAGE_INTERVAL",
+                          self.test_set_message_interval)
+
             self.run_test("Download logs", lambda:
                           self.log_download(
                               self.buildlogs_path("APMrover2-log.bin"),
