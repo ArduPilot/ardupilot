@@ -1803,8 +1803,9 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    if (dataflash_p != nullptr) {
-        dataflash_p->Log_Write_Message(text);
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        dataflash->Log_Write_Message(text);
     }
 
     // add statustext message to FrSky lib queue
