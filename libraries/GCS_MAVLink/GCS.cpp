@@ -52,10 +52,7 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
         return;
     }
     for (uint8_t i=0; i<num_gcs(); i++) {
-        GCS_MAVLINK &c = chan(i);
-        if (!c.initialised) {
-            continue;
-        }
+        GCS_MAVLINK &c = *chan(i);
         if (!c.is_active()) {
             continue;
         }
@@ -89,12 +86,12 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     if (c >= num_gcs()) {
         return false;
     }
-    if (chan(c).alternative.handler && handler) {
+    if (chan(c)->alternative.handler && handler) {
         // already have one installed - we may need to add support for
         // multiple alternative handlers
         return false;
     }
-    chan(c).alternative.handler = handler;
+    chan(c)->alternative.handler = handler;
     return true;
 }
 
