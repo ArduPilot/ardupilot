@@ -1018,6 +1018,15 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         RC_Channels::set_override(5, packet.chan6_raw, tnow);
         RC_Channels::set_override(6, packet.chan7_raw, tnow);
         RC_Channels::set_override(7, packet.chan8_raw, tnow);
+	RC_Channels::set_override(8, packet.chan9_raw, tnow);
+        RC_Channels::set_override(9, packet.chan10_raw, tnow);
+        RC_Channels::set_override(10, packet.chan11_raw, tnow);
+        RC_Channels::set_override(11, packet.chan12_raw, tnow);
+        RC_Channels::set_override(12, packet.chan13_raw, tnow);
+        RC_Channels::set_override(13, packet.chan14_raw, tnow);
+        RC_Channels::set_override(14, packet.chan15_raw, tnow);
+        RC_Channels::set_override(15, packet.chan16_raw, tnow);
+
 
         // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         copter.failsafe.last_heartbeat_ms = tnow;
