@@ -23,6 +23,12 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
  */
 class GCS_MAVLINK_Dummy : public GCS_MAVLINK
 {
+public:
+
+    using GCS_MAVLINK::GCS_MAVLINK;
+
+private:
+
     uint32_t telem_delay() const override { return 0; }
     void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
@@ -53,10 +59,32 @@ extern const AP_HAL::HAL& hal;
 
 class GCS_Dummy : public GCS
 {
-    GCS_MAVLINK_Dummy dummy_backend;
-    uint8_t num_gcs() const override { return 1; }
-    GCS_MAVLINK_Dummy &chan(const uint8_t ofs) override { return dummy_backend; }
-    const GCS_MAVLINK_Dummy &chan(const uint8_t ofs) const override { return dummy_backend; };
+public:
+
+    using GCS::GCS;
+
+protected:
+
+    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
+                                               AP_HAL::UARTDriver &uart) override {
+        return new GCS_MAVLINK_Dummy(params, uart);
+    }
+
+private:
+    GCS_MAVLINK_Dummy *chan(const uint8_t ofs) override {
+        if (ofs > _num_gcs) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
+        }
+        return (GCS_MAVLINK_Dummy *)_chan[ofs];
+    };
+    const GCS_MAVLINK_Dummy *chan(const uint8_t ofs) const override {
+        if (ofs > _num_gcs) {
+            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            return nullptr;
+        }
+        return (GCS_MAVLINK_Dummy *)_chan[ofs];
+    };
 
     void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override { hal.console->printf("TOGCS: %s\n", text); }
 
