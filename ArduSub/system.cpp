@@ -87,8 +87,6 @@ void Sub::init_ardupilot()
     log_init();
 #endif
 
-    gcs().set_dataflash(&DataFlash);
-
     // initialise rc channels including setting mode
     rc().init();
 
