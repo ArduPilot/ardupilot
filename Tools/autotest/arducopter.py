@@ -624,7 +624,6 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LAND')
         self.mavproxy.send('switch 6\n')  # stabilize mode
         self.wait_mode('STABILIZE')
-        self.progress()
         raise AutoTestTimeoutException(
             ("Fence test failed to reach home - "
              "timed out after %u seconds" % timeout))
@@ -761,7 +760,6 @@ class AutoTestCopter(AutoTest):
                 moved_distance = self.get_distance(curr_pos, start_pos)
                 self.progress("Alt: %u  Moved: %.0f" % (alt, moved_distance))
                 if moved_distance > max_distance:
-                    self.progress()
                     raise NotAchievedException(
                         "Moved over %u meters, Failed!" % max_distance)
 
@@ -1089,7 +1087,6 @@ class AutoTestCopter(AutoTest):
                 # near enough for now:
                 return
 
-        self.progress()
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
                                    (self.get_sim_time() - tstart))
 
