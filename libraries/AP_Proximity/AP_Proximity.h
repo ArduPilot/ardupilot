@@ -122,7 +122,7 @@ public:
     };
 
     //
-    // support for upwardward facing sensors
+    // support for upward facing sensors
     //
 
     // get distance upwards in meters. returns true on success
