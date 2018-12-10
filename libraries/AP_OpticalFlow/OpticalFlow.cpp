@@ -111,10 +111,11 @@ void OpticalFlow::init(uint32_t log_bit)
         backend = new AP_OpticalFlow_SITL(*this);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
         backend = new AP_OpticalFlow_Onboard(*this);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-        backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #elif defined(HAL_HAVE_PIXARTFLOW_SPI)
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
 #endif

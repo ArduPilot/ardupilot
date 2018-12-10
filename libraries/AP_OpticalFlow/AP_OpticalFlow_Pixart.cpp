@@ -166,13 +166,20 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
 
     integral.last_frame_us = AP_HAL::micros();
 
-    _dev->register_periodic_callback(2000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, void));
+    _dev->register_periodic_callback(5000, FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Pixart::timer, void));
     return true;
 }
 
 // write an 8 bit register
 void AP_OpticalFlow_Pixart::reg_write(uint8_t reg, uint8_t value)
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+    uint8_t tr[] = {reg, value};
+    _dev->set_chip_select(true);
+    reg |= PIXART_WRITE_FLAG;
+    _dev->transfer_fullduplex(tr, nullptr, 2);
+    _dev->set_chip_select(false);
+#else
     _dev->set_chip_select(true);
     reg |= PIXART_WRITE_FLAG;
     _dev->transfer(&reg, 1, nullptr, 0);
@@ -180,11 +187,19 @@ void AP_OpticalFlow_Pixart::reg_write(uint8_t reg, uint8_t value)
     _dev->transfer(&value, 1, nullptr, 0);
     _dev->set_chip_select(false);
     hal.scheduler->delay_microseconds(120);
+#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 }
 
 // read from an 8 bit register
 uint8_t AP_OpticalFlow_Pixart::reg_read(uint8_t reg)
 {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+    uint8_t tr[] = {reg, 0};
+    _dev->set_chip_select(true);
+    _dev->transfer_fullduplex(tr, tr, 2);
+    _dev->set_chip_select(false);
+    return tr[1];
+#else
     uint8_t v = 0;
     _dev->set_chip_select(true);
     _dev->transfer(&reg, 1, nullptr, 0);
@@ -193,6 +208,7 @@ uint8_t AP_OpticalFlow_Pixart::reg_read(uint8_t reg)
     _dev->set_chip_select(false);
     hal.scheduler->delay_microseconds(200);
     return v;
+#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
 }
 
 // read from a 16 bit unsigned register
@@ -253,13 +269,20 @@ void AP_OpticalFlow_Pixart::load_configuration(const RegData *init_data, uint16_
 
 void AP_OpticalFlow_Pixart::motion_burst(void)
 {
-    uint8_t *b = (uint8_t *)&burst;
-
     burst.delta_x = 0;
     burst.delta_y = 0;
 
     _dev->set_chip_select(true);
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+    burst.motion = reg_read(PIXART_REG_MOTION);
+    if (burst.motion & 0xB0) {
+        burst.delta_x = reg_read16s(PIXART_REG_DELTA_X_L);
+        burst.delta_y = reg_read16s(PIXART_REG_DELTA_Y_L);
+        burst.squal   = reg_read(PIXART_REG_SQUAL);
+    }
+#else
     uint8_t reg = model==PIXART_3900?PIXART_REG_MOT_BURST:PIXART_REG_MOT_BURST2;
+    uint8_t *b = (uint8_t *)&burst;
 
     _dev->transfer(&reg, 1, nullptr, 0);
     hal.scheduler->delay_microseconds(150);
@@ -272,6 +295,7 @@ void AP_OpticalFlow_Pixart::motion_burst(void)
             return;
         }
     }
+#endif // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
     _dev->set_chip_select(false);
 }
 
@@ -357,7 +381,6 @@ void AP_OpticalFlow_Pixart::update(void)
         state.flowRate.zero();
         state.bodyRate.zero();
     }
-
     // copy results to front end
     _update_frontend(state);
 }
