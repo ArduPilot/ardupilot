@@ -727,17 +727,6 @@ public:
     }
 
     /*
-      set a dataflash pointer for logging
-     */
-    void set_dataflash(DataFlash_Class *dataflash) {
-        dataflash_p = dataflash;
-    }
-
-    // pointer to static dataflash for logging of text messages
-    DataFlash_Class *dataflash_p;
-
-
-    /*
       set a frsky_telem pointer for queueing
      */
     void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
