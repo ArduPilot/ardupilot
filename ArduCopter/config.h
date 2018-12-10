@@ -356,6 +356,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// TerrainHold - allow vehicle to fly in TerrainHold mode
+#ifndef MODE_TERRAINHOLD_ENABLED
+# define MODE_TERRAINHOLD_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Beacon support - support for local positioning systems
 #ifndef BEACON_ENABLED
 # define BEACON_ENABLED !HAL_MINIMIZE_FEATURES

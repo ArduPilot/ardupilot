@@ -193,6 +193,7 @@ protected:
     void set_throttle_takeoff(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
+    float get_terrain_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
 
     // end pass-through functions
 };
