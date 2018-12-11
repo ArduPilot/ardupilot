@@ -324,6 +324,8 @@ bool Plane::trim_radio()
     // trim elevons
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_left);
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_elevon_right);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_canarderon_left);
+    SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_canarderon_right);
 
     // trim vtail
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_left);

@@ -548,6 +548,7 @@ void Plane::servo_output_mixers(void)
     // mix elevons and vtail channels
     channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right, 1, 1);
     channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left, 1, 1);
+    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_canarderon_left, SRV_Channel::k_canarderon_right, 1, -1);
 
     // implement differential spoilers
     dspoiler_update();
@@ -826,6 +827,8 @@ void Plane::servos_auto_trim(void)
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_left,  pitch_I - roll_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_elevon_right, pitch_I + roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_canarderon_left,  -pitch_I - roll_I);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_canarderon_right, -pitch_I + roll_I);
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_left,  pitch_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_vtail_right, pitch_I);
