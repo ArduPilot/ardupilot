@@ -107,12 +107,12 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
         chan,
         0,  // roll
         degrees(g2.attitude_control.get_desired_pitch()),
-        nav_controller->nav_bearing_cd() * 0.01f,
-        nav_controller->target_bearing_cd() * 0.01f,
+        control_mode->nav_bearing(),
+        control_mode->wp_bearing(),
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
         0,
         control_mode->speed_error(),
-        nav_controller->crosstrack_error());
+        control_mode->crosstrack_error());
 }
 
 void Rover::send_servo_out(mavlink_channel_t chan)
@@ -329,10 +329,8 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
-        if (rover.control_mode->is_autopilot_mode()) {
-            CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
-            rover.send_nav_controller_output(chan);
-        }
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+        rover.send_nav_controller_output(chan);
         break;
 
     case MSG_SERVO_OUT:
