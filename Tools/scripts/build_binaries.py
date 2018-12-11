@@ -169,7 +169,7 @@ is bob we will attempt to checkout bob-AVR'''
     def skip_frame(self, board, frame):
         '''returns true if this board/frame combination should not be built'''
         if frame == "heli":
-            if board in ["bebop", "aerofc-v1", "skyviper-v2450"]:
+            if board in ["bebop", "aerofc-v1", "skyviper-v2450", "CubeBlack-solo", "CubeGreen-solo"]:
                 self.progress("Skipping heli build for %s" % board)
                 return True
         return False
@@ -511,8 +511,6 @@ is bob we will attempt to checkout bob-AVR'''
                 "airbotf4",
                 "revo-mini",
                 "CubeBlack",
-                "CubeBlack-solo",
-                "CubeGreen-solo",
                 "Pixhawk1",
                 "Pixhawk4",
                 "PH4-mini",
@@ -528,7 +526,7 @@ is bob we will attempt to checkout bob-AVR'''
     def build_arducopter(self, tag):
         '''build Copter binaries'''
         boards = []
-        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop"])
+        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop", "CubeBlack-solo", "CubeGreen-solo"])
         boards.extend(self.common_boards()[:])
         self.build_vehicle(tag,
                            "ArduCopter",
