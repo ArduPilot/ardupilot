@@ -105,8 +105,8 @@ void Rover::send_nav_controller_output(mavlink_channel_t chan)
 {
     mavlink_msg_nav_controller_output_send(
         chan,
-        g2.attitude_control.get_desired_lat_accel(),
-        ahrs.groundspeed() * ins.get_gyro().z,  // use nav_pitch to hold actual Y accel
+        0,  // roll
+        degrees(g2.attitude_control.get_desired_pitch()),
         nav_controller->nav_bearing_cd() * 0.01f,
         nav_controller->target_bearing_cd() * 0.01f,
         MIN(control_mode->get_distance_to_destination(), UINT16_MAX),
