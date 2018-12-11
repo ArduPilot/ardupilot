@@ -150,4 +150,14 @@ void Copter::ModeFollow::run()
     Copter::ModeGuided::run();
 }
 
+uint32_t Copter::ModeFollow::wp_distance() const
+{
+    return g2.follow.get_distance_to_target() * 100;
+}
+
+int32_t Copter::ModeFollow::wp_bearing() const
+{
+    return g2.follow.get_bearing_to_target() * 100;
+}
+
 #endif // MODE_FOLLOW_ENABLED == ENABLED
