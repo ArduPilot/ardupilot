@@ -79,6 +79,11 @@ public:
     virtual bool requires_position() const { return true; }
     virtual bool requires_velocity() const { return true; }
 
+    // return heading (in degrees) and cross track error (in meteres) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const;
+    float nav_bearing() const;
+    float crosstrack_error() const;
+
     //
     // navigation methods
     //
