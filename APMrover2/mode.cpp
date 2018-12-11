@@ -163,6 +163,33 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 }
 
+// return heading (in degrees) to target destination (aka waypoint)
+float Mode::wp_bearing() const
+{
+    if (!is_autopilot_mode()) {
+        return 0.0f;
+    }
+    return rover.nav_controller->target_bearing_cd() * 0.01f;
+}
+
+// return short-term target heading in degrees (i.e. target heading back to line between waypoints)
+float Mode::nav_bearing() const
+{
+    if (!is_autopilot_mode()) {
+        return 0.0f;
+    }
+    return rover.nav_controller->nav_bearing_cd() * 0.01f;
+}
+
+// return cross track error (i.e. vehicle's distance from the line between waypoints)
+float Mode::crosstrack_error() const
+{
+    if (!is_autopilot_mode()) {
+        return 0.0f;
+    }
+    return rover.nav_controller->crosstrack_error();
+}
+
 // set desired location
 void Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
 {
@@ -406,9 +433,9 @@ float Mode::calc_reduced_speed_for_turn_or_distance(float desired_speed)
 
     // calculate distance from vehicle to line + wp_overshoot
     const float line_yaw_diff = wrap_180_cd(get_bearing_cd(_origin, _destination) - heading_cd);
-    const float crosstrack_error = rover.nav_controller->crosstrack_error();
-    const float dist_from_line = fabsf(crosstrack_error);
-    const bool heading_away = is_positive(line_yaw_diff) == is_positive(crosstrack_error);
+    const float xtrack_error = rover.nav_controller->crosstrack_error();
+    const float dist_from_line = fabsf(xtrack_error);
+    const bool heading_away = is_positive(line_yaw_diff) == is_positive(xtrack_error);
     const float wp_overshoot_adj = heading_away ? -dist_from_line : dist_from_line;
 
     // calculate radius of circle that touches vehicle's current position and heading and target position and heading
