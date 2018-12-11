@@ -165,6 +165,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
+        clear_dist_and_bearing_to_target();
          return false;
     }
 
@@ -172,6 +173,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     Location target_loc;
     Vector3f veh_vel;
     if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
@@ -185,6 +187,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
@@ -194,13 +197,23 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get offsets
     Vector3f offsets;
     if (!get_offsets_ned(offsets)) {
+        clear_dist_and_bearing_to_target();
         return false;
     }
 
-    // return results
+    // calculate results
     dist_ned = dist_vec;
     dist_with_offs = dist_vec + offsets;
     vel_ned = veh_vel;
+
+    // record distance and heading for reporting purposes
+    if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
+        clear_dist_and_bearing_to_target();
+    } else {
+        _dist_to_target = safe_sqrt(sq(dist_with_offs.x) + sq(dist_with_offs.y));
+        _bearing_to_target = degrees(atan2f(dist_with_offs.y, dist_with_offs.x));
+    }
+
     return true;
 }
 
@@ -371,3 +384,9 @@ Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
     return Vector3f((vec.x * cos_yaw) - (vec.y * sin_yaw), (vec.y * cos_yaw) + (vec.x * sin_yaw), vec.z);
 }
 
+// set recorded distance and bearing to target to zero
+void AP_Follow::clear_dist_and_bearing_to_target()
+{
+    _dist_to_target = 0.0f;
+    _bearing_to_target = 0.0f;
+}
