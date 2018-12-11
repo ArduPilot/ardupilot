@@ -143,13 +143,14 @@ bool Plane::suppress_throttle(void)
   SERVOn_* parameters
  */
 void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
-                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out)
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out,
+                                   const float gain_1, const float gain_2)
 {
     // the order is setup so that non-reversed servos go "up", and
     // func1 is the "left" channel. Users can adjust with channel
     // reversal as needed
-    float in1 = SRV_Channels::get_output_scaled(func1_in);
-    float in2 = SRV_Channels::get_output_scaled(func2_in);
+    float in1 = SRV_Channels::get_output_scaled(func1_in) * gain_1;
+    float in2 = SRV_Channels::get_output_scaled(func2_in) * gain_2;
 
     // apply MIXING_OFFSET to input channels
     if (g.mixing_offset < 0) {
@@ -158,8 +159,8 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
         in1 *= (100 + g.mixing_offset) * 0.01;
     }
     
-    float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
-    float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
+    const float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
+    const float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
     SRV_Channels::set_output_scaled(func1_out, out1);
     SRV_Channels::set_output_scaled(func2_out, out2);
 }
@@ -545,8 +546,8 @@ void Plane::set_landing_gear(void)
 void Plane::servo_output_mixers(void)
 {
     // mix elevons and vtail channels
-    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
-    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+    channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right, 1, 1);
+    channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left, 1, 1);
 
     // implement differential spoilers
     dspoiler_update();
