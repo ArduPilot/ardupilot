@@ -269,8 +269,8 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // stop mission when we leave auto mode
 #if MODE_AUTO_ENABLED == ENABLED
     if (old_flightmode == &mode_auto) {
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
+        if (mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
+            mode_auto.mission.stop();
         }
 #if MOUNT == ENABLED
         camera_mount.set_mode_to_default();
