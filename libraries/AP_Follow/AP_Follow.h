@@ -38,6 +38,9 @@ public:
     // constructor
     AP_Follow();
 
+    // returns true if library is enabled
+    bool enabled() const { return _enabled; }
+
     // set which target to follow
     void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
 
@@ -72,9 +75,6 @@ public:
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
-
-    // returns true if library is enabled
-    bool enabled() const { return _enabled; }
 
 private:
 
