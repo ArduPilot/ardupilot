@@ -73,6 +73,16 @@ public:
     // parse mavlink messages which may hold target's position, velocity and attitude
     void handle_msg(const mavlink_message_t &msg);
 
+    //
+    // GCS reporting functions
+    //
+
+    // get horizontal distance to target (including offset) in meters (for reporting purposes)
+    float get_distance_to_target() const { return _dist_to_target; }
+
+    // get bearing to target (including offset) in degrees (for reporting purposes)
+    float get_bearing_to_target() const { return _bearing_to_target; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -89,6 +99,9 @@ private:
 
     // rotate 3D vector clockwise by specified angle (in degrees)
     Vector3f rotate_vector(const Vector3f &vec, float angle_deg) const;
+
+    // set recorded distance and bearing to target to zero
+    void clear_dist_and_bearing_to_target();
 
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
@@ -109,4 +122,6 @@ private:
     uint32_t _last_heading_update_ms;   // system time of last heading update
     float _target_heading;          // heading in degrees
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
+    float   _dist_to_target;        // latest distance to target in meters (for reporting purposes)
+    float   _bearing_to_target;     // latest bearing to target in degrees (for reporting purposes)
 };
