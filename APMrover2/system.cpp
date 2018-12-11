@@ -146,15 +146,25 @@ void Rover::init_ardupilot()
 
     startup_ground();
 
-    Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
+    // [MATT] removed new replaced with old
+    //Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
+    Mode *initial_mode = mode_from_mode_num((enum mode)g.initial_mode.get());
     if (initial_mode == nullptr) {
         initial_mode = &mode_initializing;
     }
     set_mode(*initial_mode, MODE_REASON_INITIALISED);
 
+    
+    // [MATT] Replaced rc().init
+    // set the correct flight mode
+    // ---------------------------
+    reset_control_switch();
+    init_aux_switch();
+    /*
     // initialise rc channels
     rc().init();
-
+    */
+    
     // disable safety if requested
     BoardConfig.init_safety();
 

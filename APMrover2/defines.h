@@ -13,6 +13,39 @@
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
+// [MATT] added ch7_option and modes
+enum ch7_option {
+    CH7_DO_NOTHING      = 0,
+    CH7_SAVE_WP         = 1,
+    CH7_LEARN_CRUISE    = 2,
+    CH7_ARM_DISARM      = 3,
+    CH7_MANUAL          = 4,
+    CH7_ACRO            = 5,
+    CH7_STEERING        = 6,
+    CH7_HOLD            = 7,
+    CH7_AUTO            = 8,
+    CH7_RTL             = 9,
+    CH7_SMART_RTL       = 10,
+    CH7_GUIDED          = 11,
+    CH7_LOITER          = 12
+};
+
+
+// Auto Pilot modes
+// ----------------
+enum mode {
+    MANUAL       = 0,
+    ACRO         = 1,
+    STEERING     = 3,
+    HOLD         = 4,
+    LOITER       = 5,
+    AUTO         = 10,
+    RTL          = 11,
+    SMART_RTL    = 12,
+    GUIDED       = 15,
+    INITIALISING = 16
+};
+
 // HIL enumerations
 #define HIL_MODE_DISABLED 0
 #define HIL_MODE_SENSORS  1
@@ -20,6 +53,7 @@
 // types of failsafe events
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
+#define FAILSAFE_EVENT_RC       (1<<2)
 
 //  Logging parameters
 #define LOG_THR_MSG             0x01
@@ -83,6 +117,7 @@ enum fs_crash_action {
   FS_CRASH_HOLD_AND_DISARM = 2
 };
 
+
 #define DISTANCE_HOME_MAX 0.5f  // Distance max to home location before changing it when disarm
 
 enum mode_reason_t {
@@ -94,6 +129,14 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND,
     MODE_REASON_FENCE_BREACH,
+};
+
+// [MATT] Added old code
+// values used by the ap.ch7_opt and ap.ch8_opt flags
+enum aux_switch_pos {
+    AUX_SWITCH_LOW,
+    AUX_SWITCH_MIDDLE,
+    AUX_SWITCH_HIGH
 };
 
 enum pilot_steer_type_t {

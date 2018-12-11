@@ -63,8 +63,11 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(gcs_retry_deferred,     50,    500),
     SCHED_TASK(gcs_update,             50,    500),
     SCHED_TASK(gcs_data_stream_send,   50,   1000),
-    SCHED_TASK(read_mode_switch,        7,    200),
-    SCHED_TASK(read_aux_all,           10,    200),
+    // [MATT] removed and replaced with 2 lines under
+    // SCHED_TASK(read_mode_switch,        7,    200),
+    // SCHED_TASK(read_aux_all,           10,    200),
+    SCHED_TASK(read_control_switch,     7,    200),
+    SCHED_TASK(read_aux_switch,        10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
 #if MOUNT == ENABLED
@@ -99,6 +102,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(read_airspeed,          10,    100),
 };
 
+// [MATT] Removed two fuctions underneath
+/*
 void Rover::read_mode_switch()
 {
     rover.g2.rc_channels.read_mode_switch();
@@ -108,6 +113,7 @@ void Rover::read_aux_all()
 {
     rover.g2.rc_channels.read_aux_all();
 }
+*/
 
 constexpr int8_t Rover::_failsafe_priorities[7];
 

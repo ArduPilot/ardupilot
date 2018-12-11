@@ -294,7 +294,8 @@ public:
     AP_Int8 sysid_enforce;
 
     // RC input channels
-    RC_Channels_Rover rc_channels;
+    // [MATT] removed 
+    //RC_Channels_Rover rc_channels;
 
     // control over servo output ranges
     SRV_Channels servo_channels;

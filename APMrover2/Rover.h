@@ -98,7 +98,9 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
-#include "RC_Channel.h"                  // RC Channel Library
+// [MATT] Removed new RC_channels and replaced with old library
+#include <RC_Channel/RC_Channel.h>                  // RC Channel Library
+//#include "RC_Channel.h"                  // RC Channel Library
 
 class Rover : public AP_HAL::HAL::Callbacks {
 public:
@@ -189,6 +191,7 @@ private:
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
+    
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
@@ -223,7 +226,8 @@ private:
     GCS_Rover &gcs() { return _gcs; }
 
     // RC Channels:
-    RC_Channels_Rover &rc() { return g2.rc_channels; }
+    // [MATT] removed
+    // RC_Channels_Rover &rc() { return g2.rc_channels; }
 
     // relay support
     AP_Relay relay;
@@ -292,6 +296,10 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
     float ground_speed;
+    
+    // [MATT] Added back in
+    // CH7 auxiliary switches last known position
+    aux_switch_pos aux_ch7;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -449,8 +457,18 @@ private:
     // compat.cpp
     void delay(uint32_t ms);
 
+    // [MATT] removed new replaced with old
     // control_modes.cpp
-    Mode *mode_from_mode_num(enum Mode::Number num);
+    Mode *mode_from_mode_num(enum mode num);
+    void read_control_switch();
+    uint8_t readSwitch(void);
+    void reset_control_switch();
+    aux_switch_pos read_aux_switch_pos();
+    void init_aux_switch();
+    void read_aux_switch();
+    bool motor_active();
+    // control_modes.cpp
+    //Mode *mode_from_mode_num(enum Mode::Number num);
 
     // crash_check.cpp
     void crash_check();

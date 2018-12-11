@@ -1250,7 +1250,9 @@ AP_Rally *GCS_MAVLINK_Rover::get_rally() const
 
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
-    Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
+    // [MATT] removed new replaced with old
+    //Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
+    Mode *new_mode = rover.mode_from_mode_num((enum mode)mode);
     if (new_mode == nullptr) {
         return false;
     }
