@@ -215,7 +215,7 @@ void Rover::Log_Write_Startup(uint8_t type)
         LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
         time_us         : AP_HAL::micros64(),
         startup_type    : type,
-        command_total   : mission.num_commands()
+        command_total   : mode_auto.mission.num_commands()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }

@@ -4,6 +4,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Mission/AP_Mission.h>
 
 #include "defines.h"
 
@@ -195,7 +196,6 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
-    class AP_Mission &mission;
     class AR_AttitudeControl &attitude_control;
 
 
@@ -267,6 +267,11 @@ public:
     // start RTL (within auto)
     void start_RTL();
 
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
+
 protected:
 
     bool _enter() override;
@@ -289,6 +294,46 @@ private:
     bool auto_triggered;
 
     bool _reached_heading;      // true when vehicle has reached desired heading in TurnToHeading sub mode
+
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
+    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
+
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
+    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_RTL();
+    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_set_yaw_speed();
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+
+    enum Mis_Done_Behave {
+        MIS_DONE_BEHAVE_HOLD      = 0,
+        MIS_DONE_BEHAVE_LOITER    = 1
+    };
+
+    // Loiter control
+    uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
+    uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
+    bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
+
+    // Conditional command
+    // A value used in condition commands (eg delay, change alt, etc.)
+    // For example in a change altitude command, it is the altitude to change to.
+    int32_t condition_value;
+    // A starting value used to check the status of a conditional command.
+    // For example in a delay command the condition_start records that start time for the delay
+    int32_t condition_start;
+
 };
 
 

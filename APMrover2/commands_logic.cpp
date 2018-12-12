@@ -4,8 +4,8 @@
 void Rover::update_mission(void)
 {
     if (control_mode == &mode_auto) {
-        if (ahrs.home_is_set() && mission.num_commands() > 1) {
-            mission.update();
+        if (ahrs.home_is_set() && mode_auto.mission.num_commands() > 1) {
+            mode_auto.mission.update();
         }
     }
 }
@@ -13,11 +13,11 @@ void Rover::update_mission(void)
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
-bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
-    if (should_log(MASK_LOG_CMD)) {
-        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
+    if (rover.should_log(MASK_LOG_CMD)) {
+        rover.DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",
@@ -68,12 +68,12 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
         if (cmd.content.location.alt == 0 && cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
             // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
+            if (rover.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+                rover.camera_mount.set_mode_to_default();
             }
         } else {
             // send the command to the camera mount
-            camera_mount.set_roi_target(cmd.content.location);
+            rover.camera_mount.set_roi_target(cmd.content.location);
         }
         break;
 #endif
@@ -102,22 +102,22 @@ bool Rover::start_command(const AP_Mission::Mission_Command& cmd)
 }
 
 // exit_mission - callback function called from ap-mission when the mission has completed
-void Rover::exit_mission()
+void ModeAuto::exit_mission()
 {
     // play a tone
     AP_Notify::events.mission_complete = 1;
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && set_mode(mode_loiter, MODE_REASON_MISSION_END)) {
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && rover.set_mode(rover.mode_loiter, MODE_REASON_MISSION_END)) {
         return;
     }
-    set_mode(mode_hold, MODE_REASON_MISSION_END);
+    rover.set_mode(rover.mode_hold, MODE_REASON_MISSION_END);
 }
 
 // verify_command_callback - callback function called from ap-mission at 10hz or higher when a command is being run
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
-bool Rover::verify_command_callback(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 {
     const bool cmd_complete = verify_command(cmd);
 
@@ -138,7 +138,7 @@ should move onto the next mission element.
 Return true if we do not recognize the command so that we move on to the next command
 *******************************************************************************/
 
-bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 {
     switch (cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
@@ -184,13 +184,13 @@ bool Rover::verify_command(const AP_Mission::Mission_Command& cmd)
 //  Nav (Must) commands
 /********************************************************************************/
 
-void Rover::do_RTL(void)
+void ModeAuto::do_RTL(void)
 {
     // start rtl in auto mode
-    mode_auto.start_RTL();
+    start_RTL();
 }
 
-void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
+void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
@@ -210,12 +210,12 @@ void Rover::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_a
 
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
-    location_sanitize(current_loc, cmdloc);
-    mode_auto.set_desired_location(cmdloc, next_leg_bearing_cd);
+    location_sanitize(rover.current_loc, cmdloc);
+    set_desired_location(cmdloc, next_leg_bearing_cd);
 }
 
 // do_set_yaw_speed - turn to a specified heading and achieve and given speed
-void Rover::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
 {
     float desired_heading_cd;
 
@@ -229,17 +229,17 @@ void Rover::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
     }
 
     // set auto target
-    const float speed_max = control_mode->get_speed_default();
-    mode_auto.set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max));
+    const float speed_max = get_speed_default();
+    set_desired_heading_and_speed(desired_heading_cd, constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max));
 }
 
 /********************************************************************************/
 //  Verify Nav (Must) commands
 /********************************************************************************/
-bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // exit immediately if we haven't reached the destination
-    if (!mode_auto.reached_destination()) {
+    if (!reached_destination()) {
         return false;
     }
 
@@ -269,19 +269,19 @@ bool Rover::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-bool Rover::verify_RTL()
+bool ModeAuto::verify_RTL()
 {
-    return mode_auto.reached_destination();
+    return reached_destination();
 }
 
-bool Rover::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     verify_nav_wp(cmd);
     return false;
 }
 
 // verify_loiter_time - check if we have loitered long enough
-bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     const bool result = verify_nav_wp(cmd);
     if (result) {
@@ -291,22 +291,22 @@ bool Rover::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 }
 
 // verify_yaw - return true if we have reached the desired heading
-bool Rover::verify_nav_set_yaw_speed()
+bool ModeAuto::verify_nav_set_yaw_speed()
 {
-    return mode_auto.reached_heading();
+    return reached_heading();
 }
 
 /********************************************************************************/
 //  Condition (May) commands
 /********************************************************************************/
 
-void Rover::do_wait_delay(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
     condition_start = millis();
     condition_value = static_cast<int32_t>(cmd.content.delay.seconds * 1000);  // convert seconds to milliseconds
 }
 
-void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd)
 {
     condition_value = cmd.content.distance.meters;
 }
@@ -315,7 +315,7 @@ void Rover::do_within_distance(const AP_Mission::Mission_Command& cmd)
 // Verify Condition (May) commands
 /********************************************************************************/
 
-bool Rover::verify_wait_delay()
+bool ModeAuto::verify_wait_delay()
 {
     if (static_cast<uint32_t>(millis() - condition_start) > static_cast<uint32_t>(condition_value)) {
         condition_value = 0;
@@ -324,9 +324,9 @@ bool Rover::verify_wait_delay()
     return false;
 }
 
-bool Rover::verify_within_distance()
+bool ModeAuto::verify_within_distance()
 {
-    if (mode_auto.get_distance_to_destination() < condition_value) {
+    if (get_distance_to_destination() < condition_value) {
         condition_value = 0;
         return true;
     }
@@ -338,24 +338,24 @@ bool Rover::verify_within_distance()
 //  Do (Now) commands
 /********************************************************************************/
 
-void Rover::do_change_speed(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     // set speed for active mode
-    if (control_mode->set_desired_speed(cmd.content.speed.target_ms)) {
+    if (set_desired_speed(cmd.content.speed.target_ms)) {
         gcs().send_text(MAV_SEVERITY_INFO, "speed: %.1f m/s", static_cast<double>(cmd.content.speed.target_ms));
     }
 }
 
-void Rover::do_set_home(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 && have_position) {
-        set_home_to_current_location(false);
+    if (cmd.p1 == 1 && rover.have_position) {
+        rover.set_home_to_current_location(false);
     } else {
-        set_home(cmd.content.location, false);
+        rover.set_home(cmd.content.location, false);
     }
 }
 
-void Rover::do_set_reverse(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_set_reverse(const AP_Mission::Mission_Command& cmd)
 {
-    control_mode->set_reversed(cmd.p1 == 1);
+    set_reversed(cmd.p1 == 1);
 }

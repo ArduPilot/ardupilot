@@ -195,12 +195,6 @@ private:
     // selected navigation controller
     AP_Navigation *nav_controller;
 
-    // Mission library
-    AP_Mission mission{
-            FUNCTOR_BIND_MEMBER(&Rover::start_command, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::verify_command_callback, bool, const AP_Mission::Mission_Command&),
-            FUNCTOR_BIND_MEMBER(&Rover::exit_mission, void)};
-
 #if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow;
 #endif
@@ -307,14 +301,6 @@ private:
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
 
-    // Conditional command
-    // A value used in condition commands (eg delay, change alt, etc.)
-    // For example in a change altitude command, it is the altitude to change to.
-    int32_t condition_value;
-    // A starting value used to check the status of a conditional command.
-    // For example in a delay command the condition_start records that start time for the delay
-    int32_t condition_start;
-
     // 3D Location vectors
     // Location structure defined in AP_Common
     // The home location used for RTL.  The location is set when we first get stable GPS lock
@@ -338,11 +324,6 @@ private:
 
     static const AP_Param::Info var_info[];
     static const LogStructure log_structure[];
-
-    // Loiter control
-    uint16_t loiter_duration;       // How long we should loiter at the nav_waypoint (time in seconds)
-    uint32_t loiter_start_time;     // How long have we been loitering - The start time in millis
-    bool previously_reached_wp;     // set to true if we have EVER reached the waypoint
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -417,30 +398,6 @@ private:
 
     // commands_logic.cpp
     void update_mission(void);
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    void exit_mission();
-    bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    bool verify_command(const AP_Mission::Mission_Command& cmd);
-    void do_RTL(void);
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination);
-    void do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_RTL();
-    bool verify_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_set_yaw_speed();
-    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
-    void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    bool verify_wait_delay();
-    bool verify_within_distance();
-    void do_change_speed(const AP_Mission::Mission_Command& cmd);
-    void do_set_home(const AP_Mission::Mission_Command& cmd);
-    void do_set_reverse(const AP_Mission::Mission_Command& cmd);
-
-    enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1
-    };
 
     // commands.cpp
     void update_home_from_EKF();
