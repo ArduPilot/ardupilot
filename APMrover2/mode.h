@@ -363,6 +363,14 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override { return _desired_yaw_cd; }
+    float nav_bearing() const override { return _desired_yaw_cd; }
+    float crosstrack_error() const override { return 0.0f; }
+
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
