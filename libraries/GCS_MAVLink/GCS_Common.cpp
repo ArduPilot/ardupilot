@@ -1697,26 +1697,41 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
 }
 
 
+// send data for barometer and airspeed sensors instances.  In the
+// case that we run out of instances of one before the other we send
+// the relevant fields as 0.
 void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature))
 {
     const AP_Baro &barometer = AP::baro();
 
-    if (instance >= barometer.num_instances()) {
-        return;
+    bool have_data = false;
+
+    float press_abs = 0.0f;
+    float temperature = 0.0f;
+    if (instance < barometer.num_instances()) {
+        press_abs = barometer.get_pressure(instance) * 0.01f;
+        temperature = barometer.get_temperature(instance)*100;
+        have_data = true;
     }
 
-    float diff_pressure = 0; // pascal
+    float press_diff = 0; // pascal
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        diff_pressure = airspeed->get_differential_pressure();
+    if (airspeed != nullptr &&
+        instance < AIRSPEED_MAX_SENSORS) {
+        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+        have_data = true;
+    }
+
+    if (!have_data) {
+        return;
     }
 
     send_fn(
         chan,
         AP_HAL::millis(),
-        barometer.get_pressure(instance) * 0.01f, // hectopascal
-        diff_pressure*0.01f, // hectopascal
-        barometer.get_temperature(instance)*100); // 0.01 degrees C
+        press_abs, // hectopascal
+        press_diff, // hectopascal
+        temperature); // 0.01 degrees C
 }
 
 void GCS_MAVLINK::send_scaled_pressure()
