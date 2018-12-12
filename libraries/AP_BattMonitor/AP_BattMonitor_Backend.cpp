@@ -102,10 +102,10 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
 {
     const uint32_t now = AP_HAL::millis();
 
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity, low_cell_voltage, critical_cell_voltage;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity, low_cell_voltage, critical_cell_voltage);
 
-    if (critical_voltage) {
+    if (critical_voltage || critical_cell_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.critical_voltage_start_ms == 0) {
             _state.critical_voltage_start_ms = now;
@@ -122,7 +122,7 @@ AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Backend::update_failsafes(void)
         return AP_BattMonitor::BatteryFailsafe_Critical;
     }
 
-    if (low_voltage) {
+    if (low_voltage || low_cell_voltage) {
         // this is the first time our voltage has dropped below minimum so start timer
         if (_state.low_voltage_start_ms == 0) {
             _state.low_voltage_start_ms = now;
@@ -154,8 +154,8 @@ static bool update_check(size_t buflen, char *buffer, bool failed, const char *m
 
 bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
 {
-    bool low_voltage, low_capacity, critical_voltage, critical_capacity;
-    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity);
+    bool low_voltage, low_capacity, critical_voltage, critical_capacity, low_cell_voltage, critical_cell_voltage;
+    check_failsafe_types(low_voltage, low_capacity, critical_voltage, critical_capacity, low_cell_voltage, critical_cell_voltage);
 
     bool below_arming_voltage = is_positive(_params._arming_minimum_voltage) &&
                                 (_state.voltage < _params._arming_minimum_voltage);
@@ -168,11 +168,13 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
     result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+    result = result && update_check(buflen, buffer, low_cell_voltage, "low cell voltage failsafe");
+    result = result && update_check(buflen, buffer, critical_cell_voltage, "critical cell voltage failsafe");
 
     return result;
 }
 
-void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const
+void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity, bool &low_cell_voltage, bool &critical_cell_voltage) const
 {
     // use voltage or sag compensated voltage
     float voltage_used;
@@ -213,5 +215,44 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
         low_capacity = true;
     } else {
         low_capacity = false;
+    }
+
+    // check battery cell voltages
+    if (has_cell_voltages()) {
+
+        uint16_t cell_lowest_mv = _state.cell_voltages.cells[0];  // initialize with the first cell's voltage
+        uint16_t cell_highest_mv = 0;
+
+        for (uint8_t i = 0; i < ARRAY_SIZE(_state.cell_voltages.cells); i++) {          
+            // look for the lowest & highest cell voltage
+            // skip UINT16_MAX since this indicates an invalid or unused member
+            if (_state.cell_voltages.cells[i] != UINT16_MAX) {
+                cell_lowest_mv = MIN(cell_lowest_mv, _state.cell_voltages.cells[i]);
+                cell_highest_mv = MAX(cell_highest_mv, _state.cell_voltages.cells[i]);
+            }
+        }
+
+        // calc mv difference between the lowest & highest cells
+        _state.cell_diff_mv = cell_highest_mv - cell_lowest_mv;
+
+        // critical cell voltage
+        if (is_positive(_params._crt_cell_voltage_diff) && ((float)(_state.cell_diff_mv * 1e-3) > _params._crt_cell_voltage_diff)) {
+            critical_cell_voltage = true;
+        } else {
+            critical_cell_voltage = false;
+        }
+
+        // low cell voltage or cell highest to lowest diff
+        if ((is_positive(_params._low_cell_voltage_diff) && ((float)(_state.cell_diff_mv * 1e-3) > _params._low_cell_voltage_diff)) &&
+           (!critical_cell_voltage)) {
+            low_cell_voltage = true;
+        } else {
+            low_cell_voltage = false;
+        }
+
+    } else {
+        // no cell voltages
+        low_cell_voltage = false;
+        critical_cell_voltage = false;
     }
 }

@@ -78,6 +78,7 @@ public:
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         BatteryFailsafe failsafe;              // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
+        uint16_t    cell_diff_mv;              // smart battery cell voltage differential
     };
 
     // Return the number of battery monitor instances
