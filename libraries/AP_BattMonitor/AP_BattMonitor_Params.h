@@ -53,5 +53,7 @@ public:
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
     AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
+    AP_Float _low_cell_voltage_diff;         /// cell voltage level used to trigger a low battery failsafe
+    AP_Float _crt_cell_voltage_diff;         /// cell voltage level used to trigger a critical battery failsafe
 
 };

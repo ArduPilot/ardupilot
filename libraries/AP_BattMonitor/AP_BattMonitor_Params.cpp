@@ -162,6 +162,22 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ARM_MAH", 19, AP_BattMonitor_Params, _arming_minimum_capacity, 0),
 
+    // @Param: LOW_CELLD
+    // @DisplayName: Smart battery cell lowest-to-highest max voltage difference
+    // @Description: Smart battery cell voltage difference between highest and lowest cell that triggers a low battery failsafe. Set to 0 to disable. If the difference between the highest lowest cell voltage rises above this voltage continuously for more then the period specified by the @PREFIX@LOW_TIMER parameter then the vehicle will perform the failsafe specified by the @PREFIX@FS_LOW_ACT parameter.
+    // @Units: V
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("LOW_CELLD", 20, AP_BattMonitor_Params, _low_cell_voltage_diff, 0),
+
+    // @Param: CRT_CELLD
+    // @DisplayName: Smart battery cell lowest-to-highest max voltage difference
+    // @Description: Smart battery cell voltage difference between highest and lowest cell that triggers a critical battery failsafe. Set to 0 to disable. If the difference between the highest lowest cell voltage rises above this voltage continuously for more then the period specified by the @PREFIX@LOW_TIMER parameter then the vehicle will perform the failsafe specified by the @PREFIX@FS_CRT_ACT parameter.
+    // @Units: V
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("CRT_CELLD", 21, AP_BattMonitor_Params, _crt_cell_voltage_diff, 0),
+
     AP_GROUPEND
 
 };
