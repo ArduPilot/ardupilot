@@ -113,7 +113,7 @@ class AutoTestRover(AutoTest):
     # # TEST RC OVERRIDE TIMEOUT
     # def test_rtl(self, home, distance_min=5, timeout=250):
     #     """Return, land."""
-    #     super(AutotestRover, self).test_rtl(home, distance_min, timeout)
+    #     super(AutoTestRover, self).test_rtl(home, distance_min, timeout)
     #
     # def test_mission(self, filename):
     #     """Test a mission from a file."""
@@ -619,6 +619,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         try:
             self.set_parameter("MODE5", 1)
+            self.mavproxy.send('switch 1\n')  # random mode
+            self.wait_heartbeat()
+            self.change_mode('MANUAL')
             self.mavproxy.send('switch 5\n')  # acro mode
             self.wait_mode("ACRO")
             self.set_rc(9, 1000)
