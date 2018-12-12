@@ -79,10 +79,10 @@ public:
     virtual bool requires_position() const { return true; }
     virtual bool requires_velocity() const { return true; }
 
-    // return heading (in degrees) and cross track error (in meteres) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
-    float wp_bearing() const;
-    float nav_bearing() const;
-    float crosstrack_error() const;
+    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    virtual float wp_bearing() const;
+    virtual float nav_bearing() const;
+    virtual float crosstrack_error() const;
 
     //
     // navigation methods
@@ -492,6 +492,17 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override;
+    float nav_bearing() const override { return wp_bearing(); }
+    float crosstrack_error() const override { return 0.0f; }
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override;
 
 protected:
 
