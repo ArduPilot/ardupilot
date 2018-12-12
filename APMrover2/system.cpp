@@ -181,11 +181,11 @@ void Rover::startup_ground(void)
     startup_INS_ground();
 
     // initialise mission library
-    mission.init();
+    mode_auto.mission.init();
 
     // initialise DataFlash library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
+    DataFlash.set_mission(&mode_auto.mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
@@ -354,7 +354,7 @@ bool Rover::disarm_motors(void)
     }
     if (control_mode != &mode_auto) {
         // reset the mission on disarm if we are not in auto
-        mission.reset();
+        mode_auto.mission.reset();
     }
 
     // only log if disarming was successful
