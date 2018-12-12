@@ -142,15 +142,6 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Path: AP_Landing_Deepstall.cpp
     AP_SUBGROUPINFO(deepstall, "DS_", 15, AP_Landing, AP_Landing_Deepstall),
     
-    // @Param: TD_ALT
-    // @DisplayName: Touch down altitude
-    // @Description: Altitude to trigger touchdown condition if weight on wheels sensor is not available. Disabled when 0. Recommend using an RTK GPS or rangefinder for accurate altitude
-    // @Units: m
-    // @Range: 0 5
-    // @Increment: 0.01
-    // @User: Advanced
-    AP_GROUPINFO("TD_ALT", 16, AP_Landing, touchdown_altitude, 0.0f),
-    
     AP_GROUPEND
 };
 
