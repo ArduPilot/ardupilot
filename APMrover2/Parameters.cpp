@@ -397,7 +397,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
-    GOBJECT(mission, "MIS_",       AP_Mission),
+    GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp

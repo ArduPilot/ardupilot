@@ -8,7 +8,6 @@ Mode::Mode() :
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
     channel_lateral(rover.channel_lateral),
-    mission(rover.mission),
     attitude_control(rover.g2.attitude_control)
 { }
 
