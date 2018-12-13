@@ -1162,11 +1162,6 @@ void Sub::mavlink_delay_cb()
     DataFlash.EnableWrites(true);
 }
 
-AP_Mission *GCS_MAVLINK_Sub::get_mission()
-{
-    return &sub.mission;
-}
-
 AP_Rally *GCS_MAVLINK_Sub::get_rally() const
 {
 #if AC_RALLY == ENABLED
