@@ -172,7 +172,7 @@ private:
     float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step
     float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step
     uint32_t step_start_time;                       // start time of current tuning step (used for timeout checks)
-    uint32_t step_stop_time;                        // start time of current tuning step (used for timeout checks)
+    uint32_t step_time_limit_ms;                    // time limit of current tuning step
     int8_t   counter;                               // counter for tuning gains
     float    target_rate, start_rate;               // target and start rate
     float    target_angle, start_angle;             // target and start angles
