@@ -629,14 +629,14 @@ class AutoTestPlane(AutoTest):
         if off:
             raise PreconditionFailedException("SIM_MASK_PIN off")
         self.set_rc(12, 2000)
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
         on = self.get_parameter("SIM_PIN_MASK")
         if not on:
             raise NotAchievedException("SIM_PIN_MASK doesn't reflect ON")
         self.set_rc(12, 1000)
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
             raise NotAchievedException("SIM_PIN_MASK doesn't reflect OFF")
@@ -652,7 +652,7 @@ class AutoTestPlane(AutoTest):
             x = self.mav.messages.get("CAMERA_FEEDBACK", None)
             if x is not None:
                 break
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
         self.set_rc(12, 1000)
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
@@ -687,7 +687,7 @@ class AutoTestPlane(AutoTest):
         try:
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(3, 1000)

@@ -99,13 +99,13 @@ class AutoTestRover(AutoTest):
 
     # def reset_and_arm(self):
     #     """Reset RC, set to MANUAL and arm."""
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     # ensure all sticks in the middle
     #     self.set_rc_default()
     #     self.mavproxy.send('switch 1\n')
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     self.disarm_vehicle()
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     self.arm_vehicle()
     #
 
@@ -120,14 +120,14 @@ class AutoTestRover(AutoTest):
     #     self.progress("Test mission %s" % filename)
     #     num_wp = self.load_mission(filename)
     #     self.mavproxy.send('wp set 1\n')
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     self.mavproxy.send('switch 4\n')  # auto mode
     #     self.wait_mode('AUTO')
     #     ret = self.wait_waypoint(0, num_wp-1, max_dist=5, timeout=500)
     #
     #     if ret:
     #         self.mavproxy.expect("Mission Complete")
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     self.wait_mode('HOLD')
     #     self.progress("test: MISSION COMPLETE: passed=%s" % ret)
     #     return ret
@@ -272,7 +272,7 @@ class AutoTestRover(AutoTest):
     #     self.mavproxy.send('rc 3 1500\n')
     #     self.mavproxy.expect('APM: Failsafe ended')
     #     self.mavproxy.send('switch 2\n')  # manual mode
-    #     self.mav.wait_heartbeat()
+    #     self.wait_heartbeat()
     #     self.wait_mode('MANUAL')
     #
     #     if success:
@@ -812,7 +812,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         try:
             self.progress("Waiting for a heartbeat with mavlink protocol %s" %
                           self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             self.progress("Setting up RC parameters")
             self.set_rc_default()
             self.set_rc(8, 1800)
