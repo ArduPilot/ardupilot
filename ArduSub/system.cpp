@@ -187,7 +187,6 @@ void Sub::init_ardupilot()
 
     // initialise DataFlash library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
