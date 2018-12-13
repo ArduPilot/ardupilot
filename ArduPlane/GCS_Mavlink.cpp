@@ -1511,11 +1511,6 @@ bool GCS_MAVLINK_Plane::accept_packet(const mavlink_status_t &status, mavlink_me
     return (msg.sysid == plane.g.sysid_my_gcs);
 }
 
-AP_Mission *GCS_MAVLINK_Plane::get_mission()
-{
-    return &plane.mission;
-}
-
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
 {
     plane.auto_state.next_wp_crosstrack = false;
