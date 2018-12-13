@@ -249,7 +249,6 @@ void Plane::startup_ground(void)
 
     // initialise DataFlash library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
         );
