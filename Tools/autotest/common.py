@@ -893,6 +893,11 @@ class AutoTest(ABC):
             bearing += 360.00
         return bearing
 
+    def change_mode(self, mode):
+        '''change vehicle flightmode'''
+        self.mavproxy.send('mode %s\n' % mode)
+        self.wait_mode(mode)
+
     def do_get_autopilot_capabilities(self):
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 10:
