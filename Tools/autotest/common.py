@@ -373,16 +373,16 @@ class AutoTest(ABC):
 
     def log_download(self, filename, timeout=360, upload_logs=False):
         """Download latest log."""
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
         self.mavproxy.send("log list\n")
         self.mavproxy.expect("numLogs")
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
         self.mavproxy.send("set shownoise 0\n")
         self.mavproxy.send("log download latest %s\n" % filename)
         self.mavproxy.expect("Finished downloading", timeout=timeout)
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
         if upload_logs and not os.getenv("AUTOTEST_NO_UPLOAD"):
             # optionally upload logs to server so we can see travis failure logs
             import datetime
@@ -636,7 +636,7 @@ class AutoTest(ABC):
                      )
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
                 return True
@@ -656,7 +656,7 @@ class AutoTest(ABC):
                      )
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("Motors DISARMED")
                 return True
@@ -684,7 +684,7 @@ class AutoTest(ABC):
         self.set_output_to_max(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while True:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if self.mav.motors_armed():
                 arm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS ARMED OK WITH RADIO")
@@ -705,7 +705,7 @@ class AutoTest(ABC):
         self.set_output_to_min(self.get_rudder_channel())
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS DISARMED OK WITH RADIO")
@@ -722,7 +722,7 @@ class AutoTest(ABC):
         self.set_rc(switch_chan, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("MOTORS ARMED OK WITH SWITCH")
                 return True
@@ -735,7 +735,7 @@ class AutoTest(ABC):
         self.set_rc(switch_chan, 1000)
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if not self.mav.motors_armed():
                 self.progress("MOTORS DISARMED OK WITH SWITCH")
                 return True
@@ -751,7 +751,7 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         timeout = 15
         while self.get_sim_time() < tstart + timeout:
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time() - tstart
                 self.progress("MOTORS AUTODISARMED")
@@ -1282,12 +1282,12 @@ class AutoTest(ABC):
         self.get_mode_from_mode_mapping(mode)
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
         while self.mav.flightmode != mode:
             if (timeout is not None and
                     self.get_sim_time() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
         # self.progress("heartbeat mode %s Want: %s" % (
         # self.mav.flightmode, mode))
         self.progress("Got mode %s" % mode)
@@ -1297,6 +1297,13 @@ class AutoTest(ABC):
         self.progress("Waiting reading for arm")
         return self.wait_ekf_happy(timeout=timeout,
                                    require_absolute=require_absolute)
+
+    def wait_heartbeat(self, *args, **x):
+        '''as opposed to mav.wait_heartbeat, raises an exception on timeout'''
+        self.drain_mav()
+        m = self.mav.wait_heartbeat(*args, **x)
+        if m is None:
+            raise AutoTestTimeoutException("Did not receive heartbeat")
 
     def wait_ekf_happy(self, timeout=30, require_absolute=True):
         """Wait for EKF to be happy"""
@@ -1499,14 +1506,14 @@ class AutoTest(ABC):
             if self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to NOT DISARM")
             self.disarm_vehicle()
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             self.start_test("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
             if self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to NOT ARM")
             self.disarm_vehicle()
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
         if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
@@ -1522,7 +1529,7 @@ class AutoTest(ABC):
             if self.arm_motors_with_switch(arming_switch):
                 raise NotAchievedException("Failed to NOT ARM")
             self.disarm_vehicle()
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
             self.set_rc(arming_switch, 1000)
             self.set_rc(interlock_channel, 1000)
             if self.mav.mav_type is mavutil.mavlink.MAV_TYPE_HELICOPTER:
