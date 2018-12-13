@@ -1222,11 +1222,6 @@ AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
 #endif
 }
 
-AP_Mission *GCS_MAVLINK_Rover::get_mission()
-{
-    return &rover.mission;
-}
-
 AP_Rally *GCS_MAVLINK_Rover::get_rally() const
 {
 #if AP_RALLY == ENABLED
