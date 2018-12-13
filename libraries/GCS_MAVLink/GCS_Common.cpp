@@ -2997,7 +2997,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
 {
-    AP_Mission *_mission = get_mission();
+    AP_Mission *_mission = AP::mission();
     if (_mission == nullptr) {
         return;
     }
@@ -3527,7 +3527,7 @@ bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
 
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
-    AP_Mission *mission = get_mission();
+    AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         return true;
     }
