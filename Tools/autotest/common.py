@@ -198,22 +198,33 @@ class AutoTest(ABC):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
+        old_bootcount= self.get_parameter('STAT_BOOTCNT')
         self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Initialising APM")
-        # empty mav to avoid getting old timestamps:
-        if self.mav is not None:
-            while self.mav.recv_match(blocking=False):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 10:
+                raise AutoTestTimeoutException("Did not detect reboot")
+            try:
+                if self.get_parameter('STAT_BOOTCNT', timeout=1) != old_bootcount:
+                    break
+            except NotAchievedException:
                 pass
+
+        # empty mav to avoid getting old timestamps:
+        while self.mav.recv_match(blocking=False):
+            pass
+
+        self.initialise_after_reboot_sitl()
+
+    def initialise_after_reboot_sitl(self):
+
         # after reboot stream-rates may be zero.  Prompt MAVProxy to
         # send a rate-change message by changing away from our normal
         # stream rates and back again:
-        if self.mav is not None:
-            tstart = self.get_sim_time()
+        tstart = self.get_sim_time()
         while True:
 
             self.mavproxy.send("set streamrate %u\n" % (self.sitl_streamrate()+1))
-            if self.mav is None:
-                break
 
             if self.get_sim_time() - tstart > 10:
                 raise AutoTestTimeoutException("SYSTEM_TIME not received")
