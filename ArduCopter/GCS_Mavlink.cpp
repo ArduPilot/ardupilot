@@ -1469,15 +1469,6 @@ bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_m
     return (msg.sysid == copter.g.sysid_my_gcs);
 }
 
-AP_Mission *GCS_MAVLINK_Copter::get_mission()
-{
-#if MODE_AUTO_ENABLED == ENABLED
-    return &copter.mode_auto.mission;
-#else
-    return nullptr;
-#endif
-}
-
 AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
 {
 #if ADVANCED_FAILSAFE == ENABLED
