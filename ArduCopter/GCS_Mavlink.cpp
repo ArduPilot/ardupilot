@@ -244,6 +244,10 @@ uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
 {
     return copter.g.sysid_my_gcs;
 }
+bool GCS_MAVLINK_Copter::sysid_enforce() const
+{
+    return copter.g2.sysid_enforce;
+}
 
 uint32_t GCS_MAVLINK_Copter::telem_delay() const
 {
@@ -1453,20 +1457,6 @@ void Copter::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-/*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
- */
-bool GCS_MAVLINK_Copter::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
-{
-    if (!copter.g2.sysid_enforce) {
-        return true;
-    }
-    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
-        return true;
-    }
-    return (msg.sysid == copter.g.sysid_my_gcs);
 }
 
 AP_AdvancedFailsafe *GCS_MAVLINK_Copter::get_advanced_failsafe() const
