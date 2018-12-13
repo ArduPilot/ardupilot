@@ -129,6 +129,7 @@ public:
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
     virtual uint8_t sysid_my_gcs() const = 0;
+    virtual bool sysid_enforce() const { return false; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -278,7 +279,7 @@ protected:
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
-    virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
+    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg);
     virtual AP_Rally *get_rally() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
