@@ -83,10 +83,6 @@ void DataFlash_Backend::internal_error() {
 #endif
 }
 
-void DataFlash_Backend::set_mission(const AP_Mission *mission) {
-    _startup_messagewriter->set_mission(mission);
-}
-
 // this method can be overridden to do extra things with your buffer.
 // for example, in DataFlash_MAVLink we may push messages into the UART.
 void DataFlash_Backend::push_log_blocks() {
