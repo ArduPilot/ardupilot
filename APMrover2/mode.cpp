@@ -308,7 +308,7 @@ void Mode::calc_throttle(float target_speed, bool nudge_allowed, bool avoidance_
     float throttle_out;
 
     // call speed or stop controller
-    if (is_zero(target_speed)) {
+    if (is_zero(target_speed) && !rover.is_balancebot()) {
         bool stopped;
         throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
     } else {
@@ -336,6 +336,7 @@ bool Mode::stop_vehicle()
 
     // if vehicle is balance bot, calculate actual throttle required for balancing
     if (rover.is_balancebot()) {
+        throttle_out = 100.0f * attitude_control.get_throttle_out_speed(0, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
         rover.balancebot_pitch_control(throttle_out);
     }
 
