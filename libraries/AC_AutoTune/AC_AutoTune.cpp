@@ -42,7 +42,7 @@
 #define AUTOTUNE_AXIS_BITMASK_YAW             4
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000     // timeout for tuning mode's testing step
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
 #define AUTOTUNE_LEVEL_ANGLE_CD             500     // angle which qualifies as level
 #define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
@@ -493,7 +493,7 @@ void AC_AutoTune::control_attitude()
             // initiate variables for next step
             step = TWITCHING;
             step_start_time = now;
-            step_stop_time = step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+            step_time_limit_ms = AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
             twitch_first_iter = true;
             test_rate_max = 0.0f;
             test_rate_min = 0.0f;
@@ -1198,8 +1198,8 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_rate_max < rate_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_stop_time = step_start_time + (now - step_start_time) * 3.0f;
-        step_stop_time = MIN(step_stop_time, step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+        step_time_limit_ms = (now - step_start_time) * 3.0f;
+        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
     if (meas_rate_max > rate_target_max) {
@@ -1212,7 +1212,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
         step = UPDATE_GAINS;
     }
 
-    if (now >= step_stop_time) {
+    if (now - step_start_time >= step_time_limit_ms) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
     }
@@ -1253,8 +1253,8 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_angle_max < angle_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_stop_time = step_start_time + (now - step_start_time) * 3.0f;
-        step_stop_time = MIN(step_stop_time, step_start_time + AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+        step_time_limit_ms = (now - step_start_time) * 3.0f;
+        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
     if (meas_angle_max > angle_target_max) {
@@ -1267,7 +1267,7 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
         step = UPDATE_GAINS;
     }
 
-    if (now >= step_stop_time) {
+    if (now - step_start_time >= step_time_limit_ms) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
     }
