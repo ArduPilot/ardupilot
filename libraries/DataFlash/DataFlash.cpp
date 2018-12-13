@@ -514,10 +514,6 @@ void DataFlash_Class::set_vehicle_armed(const bool armed_state)
 }
 
 
-void DataFlash_Class::set_mission(const AP_Mission *mission) {
-    FOR_EACH_BACKEND(set_mission(mission));
-}
-
 // start functions pass straight through to backend:
 void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));

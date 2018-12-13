@@ -436,7 +436,6 @@ void DataFlash_Backend::Log_Write_EntireMission(const AP_Mission &mission)
 {
     DFMessageWriter_WriteEntireMission writer;
     writer.set_dataflash_backend(this);
-    writer.set_mission(&mission);
     writer.process();
 }
 
