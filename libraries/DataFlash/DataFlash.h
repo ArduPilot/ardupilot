@@ -63,8 +63,6 @@ public:
         return _instance;
     }
 
-    void set_mission(const AP_Mission *mission);
-
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
     void set_num_types(uint8_t num_types) { _num_types = num_types; }
