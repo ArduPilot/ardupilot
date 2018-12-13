@@ -153,6 +153,15 @@ class AutoTestSub(AutoTest):
         if ex is not None:
             raise ex
 
+    def reboot_sitl(self):
+        """Reboot SITL instance and wait it to reconnect."""
+        self.mavproxy.send("reboot\n")
+        self.mavproxy.expect("Initialising APM")
+        # empty mav to avoid getting old timestamps:
+        while self.mav.recv_match(blocking=False):
+            pass
+        self.initialise_after_reboot_sitl()
+
     def autotest(self):
         """Autotest ArduSub in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))

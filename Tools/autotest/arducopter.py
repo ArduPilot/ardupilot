@@ -107,6 +107,8 @@ class AutoTestCopter(AutoTest):
         self.progress("WAITING FOR PARAMETERS")
         self.mavproxy.expect('Received [0-9]+ parameters')
 
+        self.get_mavlink_connection_going()
+
         self.apply_defaultfile_parameters()
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
@@ -115,8 +117,6 @@ class AutoTestCopter(AutoTest):
         self.expect_list_extend([self.sitl, self.mavproxy])
 
         self.progress("Started simulator")
-
-        self.get_mavlink_connection_going()
 
         self.hasInit = True
         self.progress("Ready to start testing!")
