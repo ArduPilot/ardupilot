@@ -3951,15 +3951,26 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
                                 mavlink_message_t &msg)
 {
-    if (!sysid_enforce()) {
-      return true;
+    if (msg.sysid == mavlink_system.sysid) {
+        // accept packets from our own components
+        // (e.g. mavlink-connected companion computers)
+        return true;
     }
+
+    if (msg.sysid == sysid_my_gcs()) {
+        return true;
+    }
+
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
         return true;
     }
 
-    return (msg.sysid == sysid_my_gcs());
+    if (!sysid_enforce()) {
+        return true;
+    }
+
+    return false;
 }
 
 
