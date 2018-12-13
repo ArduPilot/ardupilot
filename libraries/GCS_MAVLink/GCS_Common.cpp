@@ -1236,6 +1236,11 @@ void GCS_MAVLINK::update_send()
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
 {
     deferred_message_bucket[bucket].ap_message_ids.clear(id);
+
+    if (bucket == sending_bucket_id) {
+        bucket_message_ids_to_send.clear(id);
+    }
+
     if (deferred_message_bucket[bucket].ap_message_ids.count() == 0) {
         // bucket empty.  Free it:
         deferred_message_bucket[bucket].interval_ms = 0;
@@ -1243,10 +1248,6 @@ void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
         if (sending_bucket_id == bucket) {
             find_next_bucket_to_send();
         }
-    }
-
-    if (bucket == sending_bucket_id) {
-        bucket_message_ids_to_send.clear(id);
     }
 }
 
