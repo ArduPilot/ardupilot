@@ -12,7 +12,6 @@ protected:
         return 0;
     };
 
-    AP_Mission *get_mission() override;
     AP_Rally *get_rally() const override;
 
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
