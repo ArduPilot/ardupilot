@@ -694,6 +694,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
 #endif
 
+    // @Param: BAL_PITCH_TRIM
+    // @DisplayName: Balance Bot pitch trim angle
+    // @Description: Balance Bot pitch trim for balancing. This offsets the tilt of the center of mass.
+    // @Units: deg
+    // @Range: -2 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
+
     AP_GROUPEND
 };
 

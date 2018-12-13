@@ -396,6 +396,9 @@ public:
 
     // mission behave
     AP_Int8 mis_done_behave;
+
+    // balance both pitch trim
+    AP_Float bal_pitch_trim;
 };
 
 extern const AP_Param::Info var_info[];
