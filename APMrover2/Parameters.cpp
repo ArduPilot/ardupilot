@@ -684,6 +684,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
+    // @Param: BAL_ZERO_OFFSET
+    // @DisplayName: Balance Bot zero angle offset
+    // @Description: Zero/Equilibrium angle for balancing. Used when center of mass is not along roll axis. This offsets the tilt of the center of mass.
+    // @Units: deg
+    // @Range: -2 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("BAL_ZERO_OFFSET", 39, ParametersG2, bal_zero_offset, 0),
+
     AP_GROUPEND
 };
 

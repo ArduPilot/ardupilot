@@ -391,6 +391,9 @@ public:
 
     // mission behave
     AP_Int8 mis_done_behave;
+
+    // zero point offset for balance bots
+    AP_Float bal_zero_offset;
 };
 
 extern const AP_Param::Info var_info[];
