@@ -185,7 +185,6 @@ void Rover::startup_ground(void)
 
     // initialise DataFlash library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mode_auto.mission);
     DataFlash.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
