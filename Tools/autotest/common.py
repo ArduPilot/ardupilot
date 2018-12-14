@@ -1915,7 +1915,7 @@ class AutoTest(ABC):
     #     pass
 
     def run_tests(self, tests):
-        """Autotest ArduCopter in SITL."""
+        """Autotest vehicle in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
         if not self.hasInit:
             self.init()

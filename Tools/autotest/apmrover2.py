@@ -681,8 +681,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             # now override to stop:
             throttle_override = 1500
+
+            tstart = self.get_sim_time_cached()
             while True:
-                print("Sending throttle of %u" % (throttle_override,))
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise AutoTestTimeoutException("Did not reach speed")
+                self.progress("Sending throttle of %u" % (throttle_override,))
                 self.mav.mav.rc_channels_override_send(
                     1, # target system
                     1, # targe component
@@ -697,7 +701,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
                 m = self.mav.recv_match(type='VFR_HUD', blocking=True)
                 want_speed = 2.0
-                print("Speed=%f want=<%f" % (m.groundspeed, want_speed))
+                self.progress("Speed=%f want=<%f" % (m.groundspeed, want_speed))
                 if m.groundspeed < want_speed:
                     break
 
@@ -707,7 +711,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_rc(12, 1000)
 
             throttle_override = 1500
+            tstart = self.get_sim_time_cached()
             while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise AutoTestTimeoutException("Did not stop")
                 print("Sending throttle of %u" % (throttle_override,))
                 self.mav.mav.rc_channels_override_send(
                     1, # target system
