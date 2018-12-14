@@ -828,6 +828,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if not success:
                 raise NotAchievedException(
                     "Managed to arm with SYSID_ENFORCE set")
+
+            self.progress("Attempting to arm vehicle from vehicle component")
+            old_srcSystem = self.mav.mav.srcSystem
+            comp_arm_exception = None
+            try:
+                self.mav.mav.srcSystem = 1
+                self.arm_vehicle(timeout=5)
+                self.disarm_vehicle()
+            except Exception as e:
+                comp_arm_exception = e
+                pass
+            self.mav.srcSystem = old_srcSystem
+            if comp_arm_exception is not None:
+                raise comp_arm_exception
+
         except Exception as e:
             self.progress("Exception caught")
             ex = e
