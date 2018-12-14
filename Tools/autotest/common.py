@@ -633,7 +633,7 @@ class AutoTest(ABC):
                      0,
                      0,
                      0,
-                     )
+                     timeout=timeout)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
             self.wait_heartbeat()
@@ -653,7 +653,7 @@ class AutoTest(ABC):
                      0,
                      0,
                      0,
-                     )
+                     timeout=timeout)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < timeout:
             self.wait_heartbeat()
@@ -832,7 +832,8 @@ class AutoTest(ABC):
                 p5,
                 p6,
                 p7,
-                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                timeout=10):
         """Send a MAVLink command long."""
         self.mav.mav.command_long_send(1,
                                        1,
@@ -845,8 +846,15 @@ class AutoTest(ABC):
                                        p5,
                                        p6,
                                        p7)
+        tstart = self.get_sim_time_cached()
         while True:
-            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get good COMMAND_ACK")
+            m = self.mav.recv_match(type='COMMAND_ACK',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
             self.progress("ACK received: %s" % str(m))
             if m.command == command:
                 if m.result != want_result:
