@@ -69,16 +69,10 @@ class AutoTestBalanceBot(AutoTestRover):
             self.mavproxy.send('switch 6\n')  # Manual mode
             self.wait_mode('MANUAL')
 
-            self.progress("Waiting reading for arm")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-
             self.run_test("Drive an RTL Mission", self.drive_rtl_mission)
 
             self.run_test("Drive Mission %s" % "balancebot1.txt",
                           self.drive_mission_balancebot1)
-
-            self.run_test("Disarm Vehicle", self.disarm_vehicle)
 
             self.run_test("Get Banner", self.do_get_banner)
 
@@ -95,12 +89,6 @@ class AutoTestBalanceBot(AutoTestRover):
                           self.log_download(
                               self.buildlogs_path("APMrover2-log.bin"),
                               upload_logs=len(self.fail_list)>0))
-    #        if not drive_left_circuit(self):
-    #            self.progress("Failed left circuit")
-    #            failed = True
-    #        if not drive_RTL(self):
-    #            self.progress("Failed RTL")
-    #            failed = True
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
