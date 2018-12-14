@@ -6,16 +6,17 @@ void Rover::cruise_learn_start()
     // if disarmed or no speed available do nothing
     float speed;
     if (!arming.is_armed() || !g2.attitude_control.get_forward_speed(speed)) {
-        cruise_learn.learning = false;
+        cruise_learn.learn_start_ms = 0;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning NOT started");
         return;
     }
     // start learning
-    cruise_learn.learning = true;
     cruise_learn.speed_filt.reset(speed);
     cruise_learn.throttle_filt.reset(g2.motors.get_throttle());
+    cruise_learn.learn_start_ms = AP_HAL::millis();
+    cruise_learn.log_count = 0;
+    log_write_cruise_learn();
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning started");
-    // To-Do: add dataflash logging of learning started event
 }
 
 // update cruise learning with latest speed and throttle
@@ -23,10 +24,19 @@ void Rover::cruise_learn_start()
 void Rover::cruise_learn_update()
 {
     float speed;
-    if (cruise_learn.learning && g2.attitude_control.get_forward_speed(speed)) {
+    if (cruise_learn.learn_start_ms > 0 && g2.attitude_control.get_forward_speed(speed)) {
         // update filters with latest speed and throttle
         cruise_learn.speed_filt.apply(speed, 0.02f);
         cruise_learn.throttle_filt.apply(g2.motors.get_throttle(), 0.02f);
+        // 10Hz logging
+        if (cruise_learn.log_count % 5 == 0) {
+            log_write_cruise_learn();
+        }
+        cruise_learn.log_count += 1;
+        // check how long it took to learn
+        if (AP_HAL::millis() - cruise_learn.learn_start_ms >= 2000) {
+            cruise_learn_complete();
+        }
         return;
     }
 }
@@ -35,7 +45,7 @@ void Rover::cruise_learn_update()
 void Rover::cruise_learn_complete()
 {
     // when switch is moved low, save learned cruise value
-    if (cruise_learn.learning) {
+    if (cruise_learn.learn_start_ms > 0) {
         const float thr = cruise_learn.throttle_filt.get();
         const float speed = cruise_learn.speed_filt.get();
         if (thr >= 10.0f && thr <= 100.0f && is_positive(speed)) {
@@ -45,7 +55,17 @@ void Rover::cruise_learn_complete()
         } else {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Cruise Learning failed");
         }
-        cruise_learn.learning = false;
-        // To-Do: add dataflash logging of learning completion event
+        cruise_learn.learn_start_ms = 0;
+        log_write_cruise_learn();
     }
+}
+
+// logging for cruise learn
+void Rover::log_write_cruise_learn()
+{
+    DataFlash_Class::instance()->Log_Write("CRSE", "TimeUS,State,Speed,Throttle", "Qbff",
+                                            AP_HAL::micros64,
+                                            cruise_learn.learn_start_ms > 0,
+                                            cruise_learn.speed_filt.get(),
+                                            cruise_learn.throttle_filt.get());
 }

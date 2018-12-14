@@ -166,8 +166,6 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
     case LEARN_CRUISE:
         if (ch_flag == HIGH) {
             rover.cruise_learn_start();
-        } else if (ch_flag == LOW) {
-            rover.cruise_learn_complete();
         }
         break;
 
