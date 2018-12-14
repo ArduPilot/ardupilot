@@ -95,16 +95,22 @@ bool AP_RangeFinder_LightWareI2C::get_reading(uint16_t &reading_cm)
 */
 void AP_RangeFinder_LightWareI2C::update(void)
 {
-    // nothing to do - its all done in the timer()
+    if (_counter > 0) {
+        state.distance_cm = _sum_cm / _counter;
+        state.last_reading_ms = AP_HAL::millis();
+        _sum_cm = 0;
+        _counter = 0;
+        update_status();
+    } else {
+        set_status(RangeFinder::RangeFinder_NoData);
+    }
 }
 
 void AP_RangeFinder_LightWareI2C::timer(void)
 {
-    if (get_reading(state.distance_cm)) {
-        state.last_reading_ms = AP_HAL::millis();
-        // update range_valid state based on distance measured
-        update_status();
-    } else {
-        set_status(RangeFinder::RangeFinder_NoData);
+    uint16_t range_cm;
+    if (get_reading(range_cm) && range_cm <= state.max_distance_cm ) {
+        _sum_cm += range_cm;
+        _counter++;
     }
 }

@@ -31,4 +31,6 @@ private:
     // get a reading
     bool get_reading(uint16_t &reading_cm);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    uint32_t _sum_cm;
+    uint32_t _counter;
 };
