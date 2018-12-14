@@ -200,9 +200,9 @@ class AutoTest(ABC):
         """Reboot SITL instance and wait it to reconnect."""
         old_bootcount= self.get_parameter('STAT_BOOTCNT')
         self.mavproxy.send("reboot\n")
-        tstart = self.get_sim_time()
+        tstart = time.time()
         while True:
-            if self.get_sim_time() - tstart > 10:
+            if time.time() - tstart > 10:
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
                 if self.get_parameter('STAT_BOOTCNT', timeout=1) != old_bootcount:
