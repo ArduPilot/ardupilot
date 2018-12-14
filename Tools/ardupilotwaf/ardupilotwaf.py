@@ -201,6 +201,7 @@ def ap_common_vehicle_libraries(bld):
     if bld.env.DEST_BINFMT == 'pe':
         libraries += [
             'AC_Fence',
+            'AC_AttitudeControl',
         ]
 
     return libraries
