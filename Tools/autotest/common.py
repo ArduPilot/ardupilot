@@ -8,6 +8,7 @@ import re
 import shutil
 import sys
 import time
+import traceback
 import pexpect
 import fnmatch
 
@@ -1193,7 +1194,8 @@ class AutoTest(ABC):
             self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
                           (channel_field, m_value, value))
             if m_value is None:
-                raise ValueError("message has no field %s" % channel_field)
+                raise ValueError("message (%s) has no field %s" %
+                                 (str(m), channel_field))
             if m_value == value:
                 return
 
@@ -1297,6 +1299,9 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         self.wait_heartbeat()
         while self.mav.flightmode != mode:
+            custom_num = self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s custom=%u" % (
+                    self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
                     self.get_sim_time() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
@@ -1392,6 +1397,7 @@ class AutoTest(ABC):
         self.mav.idle_hooks.append(self.idle_hook)
 
     def run_test(self, desc, test_function, interact=False):
+        '''old--style run-one-test used by vehicle test scripts, to be eliminated when all are converted'''
         self.start_test(desc)
 
         try:
@@ -1404,6 +1410,28 @@ class AutoTest(ABC):
                 self.mavproxy.interact()
             return
         self.progress('PASSED: "%s"' % desc)
+
+    def run_one_test(self, name, desc, test_function, interact=False):
+        '''new-style run-one-test used by run_tests'''
+        prettyname = "%s (%s)" % (name, desc)
+        self.start_test(prettyname)
+
+        self.context_push()
+
+        try:
+            self.change_mode(self.default_mode())
+            test_function()
+        except Exception as e:
+            self.progress("Exception caught: %s" % traceback.format_exc(e))
+            self.context_pop()
+            self.progress('FAILED: "%s": %s' % (prettyname, repr(e)))
+            self.fail_list.append((prettyname, e))
+            if interact:
+                self.progress("Starting MAVProxy interaction as directed")
+                self.mavproxy.interact()
+            return
+        self.context_pop()
+        self.progress('PASSED: "%s"' % prettyname)
 
     def check_test_syntax(self, test_file):
         """Check mistake on autotest function syntax."""
@@ -1442,6 +1470,7 @@ class AutoTest(ABC):
         self.set_rc(interlock_channel, 1000)
         self.set_throttle_zero()
         self.start_test("Test normal arm and disarm features")
+        self.wait_ready_to_arm()
         if not self.arm_vehicle():
             raise NotAchievedException("Failed to ARM")
         if not self.disarm_vehicle():
@@ -1834,7 +1863,39 @@ class AutoTest(ABC):
     # def test_mission(self, filename):
     #     pass
 
-    @abc.abstractmethod
+    def run_tests(self, tests):
+        """Autotest ArduCopter in SITL."""
+        self.check_test_syntax(test_file=os.path.realpath(__file__))
+        if not self.hasInit:
+            self.init()
+
+        self.fail_list = []
+
+        try:
+            self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                          % self.mav.WIRE_PROTOCOL_VERSION)
+            self.wait_heartbeat()
+            self.progress("Setting up RC parameters")
+            self.set_rc_default()
+            self.set_rc(3, 1000)
+
+            for test in tests:
+                (name, desc, func) = test
+                self.run_one_test(name, desc, func)
+
+        except pexpect.TIMEOUT:
+            self.progress("Failed with timeout")
+            self.fail_list.append("Failed with timeout")
+        self.close()
+
+        if len(self.fail_list):
+            self.progress("FAILED: %s" % self.fail_list)
+            return False
+        return True
+
+    def tests(self):
+        return []
+
     def autotest(self):
         """Autotest used by ArduPilot autotest CI."""
-        pass
+        return self.run_tests(self.tests())
