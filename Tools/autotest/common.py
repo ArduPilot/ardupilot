@@ -501,6 +501,8 @@ class AutoTest(ABC):
         f1 = open(file1)
         f2 = open(file2)
         for l1, l2 in itertools.izip(f1, f2):
+            l1 = l1.rstrip("\r\n")
+            l2 = l2.rstrip("\r\n")
             if l1 == l2:
                 # e.g. the first "QGC WPL 110" line
                 continue
