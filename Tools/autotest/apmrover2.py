@@ -853,102 +853,91 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
-    def autotest(self):
-        """Autotest APMrover2 in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
-        self.progress("Started simulator")
+    def tests(self):
+        '''return list of all tests'''
+        ret = super(AutoTestRover, self).tests()
 
-        self.fail_list = []
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s" %
-                          self.mav.WIRE_PROTOCOL_VERSION)
-            self.wait_heartbeat()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.set_rc(8, 1800)
-            self.progress("Waiting for GPS fix")
-            self.mav.wait_gps_fix()
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
+        ret.extend([
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            self.mavproxy.send('switch 6\n')  # Manual mode
-            self.wait_mode('MANUAL')
+            ("MAVProxy_SetModeUsingSwitch",
+             "Set modes via mavproxy switch",
+             self.test_setting_modes_via_mavproxy_switch),
 
-            self.wait_ready_to_arm()
-            self.run_test("Arm features", self.test_arm_feature)
+            ("MAVProxy_SetModeUsingMode",
+             "Set modes via mavproxy mode command",
+             self.test_setting_modes_via_mavproxy_mode_command),
 
-            self.run_test("Set modes via mavproxy switch",
-                          self.test_setting_modes_via_mavproxy_switch)
+            ("ModeSwitch",
+             "Set modes via modeswitch",
+             self.test_setting_modes_via_modeswitch),
 
-            self.run_test("Set modes via mavproxy mode command",
-                          self.test_setting_modes_via_mavproxy_mode_command)
+            ("AuxModeSwitch",
+             "Set modes via auxswitches",
+             self.test_setting_modes_via_auxswitches),
 
-            self.run_test("Set modes via modeswitch",
-                          self.test_setting_modes_via_modeswitch)
+            ("DriveRTL",
+             "Drive an RTL Mission", self.drive_rtl_mission),
 
-            self.run_test("Set modes via auxswitches",
-                          self.test_setting_modes_via_auxswitches)
+            ("DriveSquare",
+             "Learn/Drive Square with Ch7 option",
+             self.drive_square),
 
-            self.run_test("Drive an RTL Mission", self.drive_rtl_mission)
-
-            self.run_test("Learn/Drive Square with Ch7 option",
-                          self.drive_square)
-
-            self.run_test("Drive Mission %s" % "rover1.txt",
-                          lambda: self.drive_mission("rover1.txt"))
+            ("DriveMission",
+             "Drive Mission %s" % "rover1.txt",
+             lambda: self.drive_mission("rover1.txt")),
 
             # disabled due to frequent failures in travis. This test needs re-writing
-            # self.run_test("Drive Brake", self.drive_brake)
+                # ("Drive Brake", self.drive_brake),
 
-            self.run_test("Get Banner", self.do_get_banner)
+            ("GetBanner", "Get Banner", self.do_get_banner),
 
-            self.run_test("Get Capabilities",
-                          self.do_get_autopilot_capabilities)
+            ("GetCapabilities",
+             "Get Capabilities",
+             self.do_get_autopilot_capabilities),
 
-            self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE",
-                          self.test_do_set_mode_via_command_long)
+            ("DO_SET_MODE",
+             "Set mode via MAV_COMMAND_DO_SET_MODE",
+             self.test_do_set_mode_via_command_long),
 
-            self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE with MAVProxy",
-                          self.test_mavproxy_do_set_mode_via_command_long)
+            ("MAVProxy_DO_SET_MODE",
+            "Set mode via MAV_COMMAND_DO_SET_MODE with MAVProxy",
+             self.test_mavproxy_do_set_mode_via_command_long),
 
-            self.run_test("Test ServoRelayEvents",
-                          self.test_servorelayevents)
+            ("ServoRelayEvents",
+             "Test ServoRelayEvents",
+             self.test_servorelayevents),
 
-            self.run_test("Test RC overrides", self.test_rc_overrides)
+            ("RCOverrides", "Test RC overrides", self.test_rc_overrides),
 
-            self.run_test("Test Sprayer", self.test_sprayer)
+            ("Sprayer", "Test Sprayer", self.test_sprayer),
 
-            self.run_test("Test AC Avoidance switch",
-                          self.drive_fence_ac_avoidance)
+            ("AC_Avoidance",
+             "Test AC Avoidance switch",
+             self.drive_fence_ac_avoidance),
 
-            self.run_test("Test Camera Mission Items",
-                          self.test_camera_mission_items)
+            ("CameraMission",
+             "Test Camera Mission Items",
+             self.test_camera_mission_items),
 
-            self.run_test("Test MAV_CMD_SET_MESSAGE_INTERVAL",
-                          self.test_set_message_interval)
+            ("SET_MESSAGE_INTERVAL",
+             "Test MAV_CMD_SET_MESSAGE_INTERVAL",
+             self.test_set_message_interval),
 
-            self.run_test("SYSID_ENFORCE", self.test_sysid_enforce)
+            ("SYSID_ENFORCE",
+             "Test enforcement of SYSID_MYGCS",
+             self.test_sysid_enforce),
 
-            self.run_test("Download logs", lambda:
-                          self.log_download(
-                              self.buildlogs_path("APMrover2-log.bin"),
-                              upload_logs=len(self.fail_list) > 0))
-    #        if not drive_left_circuit(self):
-    #            self.progress("Failed left circuit")
-    #            failed = True
-    #        if not drive_RTL(self):
-    #            self.progress("Failed RTL")
-    #            failed = True
+            ("DownLoadLogs", "Download logs", lambda:
+             self.log_download(
+                 self.buildlogs_path("APMrover2-log.bin"),
+                 upload_logs=len(self.fail_list) > 0)),
+            ])
+        return ret
 
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append(("*timeout*", None))
+    def set_rc_default(self):
+        super(AutoTestRover, self).set_rc_default()
+        self.set_rc(8, 1800)
 
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED STEPS: %s" % self.fail_list)
-            return False
-        return True
+    def default_mode(self):
+        return 'MANUAL'
