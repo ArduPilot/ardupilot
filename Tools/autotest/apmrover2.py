@@ -796,6 +796,45 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.mavproxy_do_set_mode_via_command_long("HOLD")
         self.mavproxy_do_set_mode_via_command_long("MANUAL")
 
+    def test_sysid_enforce(self):
+        '''Run the same arming code with correct then incorrect SYSID'''
+        self.context_push()
+        ex = None
+        try:
+            # if set_parameter is ever changed to not use MAVProxy
+            # this test is going to break horribly.  Sorry.
+            self.set_parameter("SYSID_MYGCS", 255) # assume MAVProxy does this!
+            self.set_parameter("SYSID_ENFORCE", 1) # assume MAVProxy does this!
+
+            self.change_mode('MANUAL')
+
+            self.progress("make sure I can arm ATM")
+            self.wait_ready_to_arm()
+            self.arm_vehicle(timeout=5)
+            self.disarm_vehicle()
+
+            # temporarily set a different system ID than MAVProxy:
+            self.progress("Attempting to arm vehicle myself")
+            old_srcSystem = self.mav.mav.srcSystem
+            try:
+                self.mav.mav.srcSystem = 243
+                self.arm_vehicle(timeout=5)
+                self.disarm_vehicle()
+                success = False
+            except NotAchievedException as e:
+                success = True
+                pass
+            self.mav.srcSystem = old_srcSystem
+            if not success:
+                raise NotAchievedException(
+                    "Managed to arm with SYSID_ENFORCE set")
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def autotest(self):
         """Autotest APMrover2 in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -871,6 +910,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.run_test("Test MAV_CMD_SET_MESSAGE_INTERVAL",
                           self.test_set_message_interval)
+
+            self.run_test("SYSID_ENFORCE", self.test_sysid_enforce)
 
             self.run_test("Download logs", lambda:
                           self.log_download(
