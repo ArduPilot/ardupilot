@@ -903,6 +903,7 @@ class AutoTestPlane(AutoTest):
              "Log download",
              lambda: self.log_download(
                  self.buildlogs_path("ArduPlane-log.bin"),
+                 timeout=450,
                  upload_logs=True))
         ])
         return ret
