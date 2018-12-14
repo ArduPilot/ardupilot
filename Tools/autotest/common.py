@@ -107,6 +107,23 @@ class Context(object):
     def __init__(self):
         self.parameters = []
 
+# https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
+class TeeBoth(object):
+    def __init__(self, name, mode):
+        self.file = open(name, mode)
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+    def close(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        self.file.close()
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+    def flush(self):
+        self.file.flush()
 
 class AutoTest(ABC):
     """Base abstract class.
@@ -1413,6 +1430,10 @@ class AutoTest(ABC):
 
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
+        test_output_filename = self.buildlogs_path("%s-%s.txt" %
+                                                   (self.log_name, name))
+        tee = TeeBoth(test_output_filename, 'w')
+
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
 
@@ -1424,14 +1445,19 @@ class AutoTest(ABC):
         except Exception as e:
             self.progress("Exception caught: %s" % traceback.format_exc(e))
             self.context_pop()
-            self.progress('FAILED: "%s": %s' % (prettyname, repr(e)))
+            self.progress('FAILED: "%s": %s (see %s)' %
+                          (prettyname, repr(e), test_output_filename))
             self.fail_list.append((prettyname, e))
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
+            tee.close()
+            tee = None
             return
         self.context_pop()
         self.progress('PASSED: "%s"' % prettyname)
+        tee.close()
+        tee = None
 
     def check_test_syntax(self, test_file):
         """Check mistake on autotest function syntax."""
