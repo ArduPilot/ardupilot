@@ -164,6 +164,7 @@ private:
     bool     use_poshold         : 1;    // true = enable position hold
     bool     have_position       : 1;    // true = start_position is value
     Vector3f start_position;
+    uint8_t  axes_completed;             // bitmask of completed axes
 
     // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls
