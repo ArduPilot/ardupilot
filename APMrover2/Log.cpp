@@ -393,7 +393,7 @@ void Rover::Log_Write_Throttle() {}
 void Rover::Log_Write_Rangefinder() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_Steering() {}
-void Rover::Log_Write_WheelEncoder() {}\
+void Rover::Log_Write_WheelEncoder() {}
 void Rover::Log_Write_Vehicle_Startup_Messages() {}
 
 #endif  // LOGGING_ENABLED
