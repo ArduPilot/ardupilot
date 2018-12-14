@@ -122,9 +122,21 @@ void SITL_State::_setup_fdm(void)
         fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
-    _sitl_rc_in.reuseaddress();
-    _sitl_rc_in.set_blocking(false);
-    _sitl_rc_in.set_cloexec();
+    if (!_sitl_rc_in.reuseaddress()) {
+        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
+    if (!_sitl_rc_in.set_blocking(false)) {
+        fprintf(stderr, "SITL: socket set_blocking(false) failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
+    if (!_sitl_rc_in.set_cloexec()) {
+        fprintf(stderr, "SITL: socket set_cloexec() failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
 }
 #endif
 
