@@ -357,11 +357,13 @@ private:
     ModeSimple mode_simple;
 
     // cruise throttle and speed learning
-    struct {
-        bool learning;
+    typedef struct {
         LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);
         LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
-    } cruise_learn;
+        uint32_t learn_start_ms;
+        uint32_t log_count;
+    } cruise_learn_t;
+    cruise_learn_t cruise_learn;
 
     // sailboat variables
     enum Sailboat_Tack {
@@ -415,6 +417,7 @@ private:
     void cruise_learn_start();
     void cruise_learn_update();
     void cruise_learn_complete();
+    void log_write_cruise_learn();
 
     // ekf_check.cpp
     void ekf_check();
