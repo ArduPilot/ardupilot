@@ -109,21 +109,43 @@ class Context(object):
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
 class TeeBoth(object):
-    def __init__(self, name, mode):
+    def __init__(self, name, mode, mavproxy_logfile):
         self.file = open(name, mode)
         self.stdout = sys.stdout
         self.stderr = sys.stderr
+        self.mavproxy_logfile = mavproxy_logfile
+        self.mavproxy_logfile.set_fh(self)
         sys.stdout = self
         sys.stderr = self
     def close(self):
         sys.stdout = self.stdout
         sys.stderr = self.stderr
+        self.mavproxy_logfile.set_fh(self)
+        self.mavproxy_logfile = None
         self.file.close()
     def write(self, data):
         self.file.write(data)
         self.stdout.write(data)
     def flush(self):
         self.file.flush()
+
+class MAVProxyLogFile(object):
+    def __init__(self):
+        self.fh = None
+    def close(self):
+        pass
+    def set_fh(self, fh):
+        self.fh = fh
+    def write(self, data):
+        if self.fh is not None:
+            self.fh.write(data)
+        else:
+            sys.stdout.write(data)
+    def flush(self):
+        if self.fh is not None:
+            self.fh.flush()
+        else:
+            sys.stdout.flush()
 
 class AutoTest(ABC):
     """Base abstract class.
@@ -153,6 +175,9 @@ class AutoTest(ABC):
     @staticmethod
     def buildlogs_dirpath():
         return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
+
+    def open_mavproxy_logfile(self):
+        return MAVProxyLogFile()
 
     def buildlogs_path(self, path):
         """Return a string representing path in the buildlogs directory."""
@@ -1432,7 +1457,7 @@ class AutoTest(ABC):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
                                                    (self.log_name, name))
-        tee = TeeBoth(test_output_filename, 'w')
+        tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
