@@ -231,6 +231,9 @@ private:
     // transition deceleration, m/s/s
     AP_Float transition_decel;
 
+    // transition failure milliseconds
+    AP_Int16 transition_failure;
+
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
 
@@ -304,6 +307,7 @@ private:
     
     // timer start for transition
     uint32_t transition_start_ms;
+    uint32_t transition_low_airspeed_ms;
 
     Location last_auto_target;
 

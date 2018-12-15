@@ -392,6 +392,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("FW_LND_APR_RAD", 7, QuadPlane, fw_land_approach_radius, 0),
 
+    // @Param: TRANS_FAIL
+    // @DisplayName: Quadplane transition failure time
+    // @Description: Maximum time allowed for forward transitions, exceeding this time will cancel the transition and the aircraft will immediately change to QLAND. 0 for no limit.
+    // @Units: s
+    // @Range: 0 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
+
     AP_GROUPEND
 };
 
@@ -1240,8 +1249,23 @@ void QuadPlane::update_transition(void)
             motors->output();
         }
         transition_state = TRANSITION_DONE;
+        transition_start_ms = 0;
+        transition_low_airspeed_ms = 0;
         assisted_flight = false;
         return;
+    }
+
+    const uint32_t now = millis();
+
+    if (!hal.util->get_soft_armed()) {
+        // reset the failure timer if we haven't started transitioning
+        transition_start_ms = now;
+    } else if ((transition_state != TRANSITION_DONE) &&
+        (transition_start_ms != 0) &&
+        (transition_failure > 0) &&
+        ((now - transition_start_ms) > ((uint32_t)transition_failure * 1000))) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Transition failed, exceeded time limit");
+        plane.set_mode(QLAND, MODE_REASON_VTOL_FAILED_TRANSITION);
     }
 
     float aspeed;
@@ -1267,7 +1291,9 @@ void QuadPlane::update_transition(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
         }
         transition_state = TRANSITION_AIRSPEED_WAIT;
-        transition_start_ms = millis();
+        if (transition_start_ms == 0) {
+            transition_start_ms = now;
+        }
         assisted_flight = true;
     } else {
         assisted_flight = false;
@@ -1278,6 +1304,8 @@ void QuadPlane::update_transition(void)
             tailsitter_transition_fw_complete()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
             transition_state = TRANSITION_DONE;
+            transition_start_ms = 0;
+            transition_low_airspeed_ms = 0;
         }
     }
     
@@ -1286,6 +1314,8 @@ void QuadPlane::update_transition(void)
     // the tilt will decrease rapidly)
     if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_DONE;
+        transition_start_ms = 0;
+        transition_low_airspeed_ms = 0;
     }
     
     if (transition_state < TRANSITION_TIMER) {
@@ -1312,11 +1342,11 @@ void QuadPlane::update_transition(void)
         // we hold in hover until the required airspeed is reached
         if (transition_start_ms == 0) {
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed wait");
-            transition_start_ms = millis();
+            transition_start_ms = now;
         }
 
+        transition_low_airspeed_ms = now;
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !assisted_flight) {
-            transition_start_ms = millis();
             transition_state = TRANSITION_TIMER;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
@@ -1354,12 +1384,15 @@ void QuadPlane::update_transition(void)
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         // after airspeed is reached we degrade throttle over the
         // transition time, but continue to stabilize
-        if (millis() - transition_start_ms > (unsigned)transition_time_ms) {
+        const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
+        if (transition_timer_ms > (unsigned)transition_time_ms) {
             transition_state = TRANSITION_DONE;
+            transition_start_ms = 0;
+            transition_low_airspeed_ms = 0;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
         }
         float trans_time_ms = (float)transition_time_ms.get();
-        float transition_scale = (trans_time_ms - (millis() - transition_start_ms)) / trans_time_ms;
+        float transition_scale = (trans_time_ms - transition_timer_ms) / trans_time_ms;
         float throttle_scaled = last_throttle * transition_scale;
 
         // set zero throttle mix, to give full authority to
@@ -1391,7 +1424,7 @@ void QuadPlane::update_transition(void)
         // millisecond. Assume we want to get to the transition angle
         // in half the transition time
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
-        uint32_t dt = AP_HAL::millis() - transition_start_ms;
+        uint32_t dt = now - transition_low_airspeed_ms;
         plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
         plane.nav_roll_cd = 0;
         check_attitude_relax();
@@ -1491,6 +1524,7 @@ void QuadPlane::update(void)
               setup the transition state appropriately for next time we go into a non-VTOL mode
             */
             transition_start_ms = 0;
+            transition_low_airspeed_ms = 0;
             if (throttle_wait && !plane.is_flying()) {
                 transition_state = TRANSITION_DONE;
             } else if (is_tailsitter()) {
