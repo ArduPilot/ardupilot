@@ -265,7 +265,8 @@ __bin_names = {
     "CopterAVC": "arducopter-heli",
     "QuadPlane": "arduplane",
     "ArduSub": "ardusub",
-    "balancebot": "ardurover"
+    "balancebot": "ardurover",
+    "BalanceBot": "ardurover",
 }
 
 
@@ -317,6 +318,7 @@ def run_specific_test(step, *args, **kwargs):
         "fly.ArduCopter": arducopter.AutoTestCopter,
         "fly.ArduPlane": arduplane.AutoTestPlane,
         "drive.APMrover2": apmrover2.AutoTestRover,
+        "drive.BalanceBot": balancebot.AutoTestBalanceBot,
     }
     tester_class = tester_class_map[testname]
     tester = tester_class(*args, **kwargs)
