@@ -1446,7 +1446,7 @@ class AutoTest(ABC):
             test_function()
         except Exception as e:
             self.progress('FAILED: "%s": %s' % (desc, repr(e)))
-            self.fail_list.append((desc, e))
+            self.fail_list.append((desc, e, None))
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
@@ -1472,7 +1472,7 @@ class AutoTest(ABC):
             self.context_pop()
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(e), test_output_filename))
-            self.fail_list.append((prettyname, e))
+            self.fail_list.append((prettyname, e, test_output_filename))
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
@@ -1936,11 +1936,14 @@ class AutoTest(ABC):
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
-            self.fail_list.append("Failed with timeout")
+            self.fail_list.append(["Failed with timeout", None, None])
         self.close()
 
         if len(self.fail_list):
-            self.progress("FAILED: %s" % self.fail_list)
+            self.progress("Failing tests:")
+            for failure in self.fail_list:
+                (desc, exception, debug_filename) = failure
+                print("  %s (%s) (see %s)" % (desc, exception, debug_filename))
             return False
         return True
 
