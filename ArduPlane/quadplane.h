@@ -511,6 +511,10 @@ private:
         OPTION_FS_QRTL=(1<<5),
     };
 
+    AP_Float takeoff_failure_scalar;
+    uint32_t takeoff_start_time_ms;
+    uint32_t takeoff_time_limit_ms;
+
     /*
       return true if current mission item is a vtol takeoff
      */
