@@ -949,6 +949,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def set_rc_default(self):
         super(AutoTestRover, self).set_rc_default()
+        self.set_rc(3, 1000)
         self.set_rc(8, 1800)
 
     def default_mode(self):
