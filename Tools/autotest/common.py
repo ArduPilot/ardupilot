@@ -525,6 +525,7 @@ class AutoTest(ABC):
 
     def load_mission(self, filename):
         """Load a mission from a file to flight controller."""
+        self.progress("Loading mission (%s)" % filename)
         path = os.path.join(self.mission_directory(), filename)
         tstart = self.get_sim_time_cached()
         while True:
@@ -1928,7 +1929,6 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             self.progress("Setting up RC parameters")
             self.set_rc_default()
-            self.set_rc(3, 1000)
 
             for test in tests:
                 (name, desc, func) = test
