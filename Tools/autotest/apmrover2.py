@@ -63,6 +63,8 @@ class AutoTestRover(AutoTest):
         if self.frame is None:
             self.frame = 'rover'
 
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
+
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
                                     home=self.home,
@@ -73,7 +75,9 @@ class AutoTestRover(AutoTest):
                                     breakpoints=self.breakpoints,
                                     wipe=True)
         self.mavproxy = util.start_MAVProxy_SITL(
-            'APMrover2', options=self.mavproxy_options())
+            'APMrover2',
+            logfile=self.mavproxy_logfile,
+            options=self.mavproxy_options())
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
