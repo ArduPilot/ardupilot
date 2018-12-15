@@ -443,6 +443,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("ACRO_YAW_RATE", 13, QuadPlane, acro_yaw_rate, 90),
+
+    // @Param: TKOFF_FAIL_SCL
+    // @DisplayName: Takeoff time failure scalar
+    // @Description: Scalar for how long past the expected takeoff time a takeoff should be considered as failed and the vehicle will switch to QLAND. If set to 0 there is no limit on takeoff time.
+    // @Range: 1.1 5.0
+    // @Increment: 5.1
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_FAIL_SCL", 14, QuadPlane, takeoff_failure_scalar, 0),
+
     AP_GROUPEND
 };
 
@@ -2457,6 +2466,29 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     
     // also update nav_controller for status output
     plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+
+    // calculate the time required to complete a takeoff
+    // this may be conservative and accept extra time due to clamping
+    // derived from the following latex equations if you want a nicely formatted view
+    // t_{accel} = \frac{V_max - V_z}{a}
+    // d_{accel} = V_z*t_{accel} + \frac{1}{2}*a*t_{accel}^2
+    // d_{remaining} = d_{total} - d_{accel}
+    // t_{constant} = \frac{d_{remaining}}{V_z}
+    // t = max(t_{accel}, 0) + max(t_{constant}, 0)
+    const float d_total = (plane.next_WP_loc.alt - plane.current_loc.alt) * 0.01f;
+    const float accel_m_s_s = MAX(10, pilot_accel_z) * 0.01f;
+    const float vel_max = MAX(10, pilot_velocity_z_max) * 0.01f;
+    const float vel_z = inertial_nav.get_velocity_z() * 0.01f;
+    const float t_accel = (vel_max - vel_z) / accel_m_s_s;
+    const float d_accel = vel_z * t_accel + 0.5f * accel_m_s_s * sq(t_accel);
+    const float d_remaining = d_total - d_accel;
+    const float t_constant = d_remaining / vel_max;
+    const float travel_time = MAX(t_accel, 0) + MAX(t_constant, 0);
+
+    // setup the takeoff failure handling code
+    takeoff_start_time_ms = millis();
+    takeoff_time_limit_ms = MAX(travel_time * takeoff_failure_scalar * 1000, 5000); // minimum time 5 seconds
+
     return true;
 }
 
@@ -2501,6 +2533,21 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     if (!available()) {
         return true;
     }
+
+    const uint32_t now = millis();
+
+    // reset takeoff start time if we aren't armed, as we won't have made any progress
+    if (!hal.util->get_soft_armed()) {
+        takeoff_start_time_ms = now;
+    }
+
+    // check for failure conditions
+    if (is_positive(takeoff_failure_scalar) && ((now - takeoff_start_time_ms) > takeoff_time_limit_ms)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
+        plane.set_mode(plane.mode_qland, MODE_REASON_VTOL_FAILED_TAKEOFF);
+        return false;
+    }
+
     if (plane.current_loc.alt < plane.next_WP_loc.alt) {
         return false;
     }
