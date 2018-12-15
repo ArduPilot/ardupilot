@@ -512,6 +512,7 @@ private:
     };
 
     AP_Float takeoff_failure_scalar;
+    AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
 
