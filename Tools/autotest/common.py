@@ -352,9 +352,12 @@ class AutoTest(ABC):
 
     def drain_mav(self):
         count = 0
+        tstart = time.time()
         while self.mav.recv_match(type='SYSTEM_TIME', blocking=False) is not None:
             count += 1
-        self.progress("Drained %u messages from mav" % count)
+        tdelta = time.time() - tstart
+        self.progress("Drained %u messages from mav (%f/s)" % (
+            count, count/float(tdelta)))
 
     #################################################
     # SIM UTILITIES
