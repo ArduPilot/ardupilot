@@ -1340,11 +1340,27 @@ void Copter::ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd
 
 void Copter::ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
-	auto_yaw.set_fixed_yaw(
-		cmd.content.yaw.angle_deg,
-		cmd.content.yaw.turn_rate_dps,
-		cmd.content.yaw.direction,
-		cmd.content.yaw.relative_angle > 0);
+    float target_angle = cmd.content.yaw.angle_deg;
+    if (copter.wp_nav->reached_wp_destination()) {
+        if (cmd.content.yaw.relative_angle > 0) {
+            const float relative_angle = mission.get_next_ground_course_cd(static_cast<int32_t>(copter.attitude_control->get_att_target_euler_cd().z)) * 0.01f;
+            if (cmd.content.yaw.direction < 0) {
+                target_angle = -target_angle;
+            }
+            target_angle = target_angle + relative_angle;
+        }
+        auto_yaw.set_fixed_yaw(
+                target_angle,
+                cmd.content.yaw.turn_rate_dps,
+                cmd.content.yaw.direction,
+                false);
+    } else {
+        auto_yaw.set_fixed_yaw(
+                target_angle,
+                cmd.content.yaw.turn_rate_dps,
+                cmd.content.yaw.direction,
+                cmd.content.yaw.relative_angle > 0);
+    }
 }
 
 /********************************************************************************/
