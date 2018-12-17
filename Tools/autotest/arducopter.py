@@ -81,13 +81,6 @@ class AutoTestCopter(AutoTest):
 
         self.mavproxy_logfile = self.open_mavproxy_logfile()
 
-        if self.frame == 'heli':
-            self.log_name = "HeliCopter"
-            self.home = "%f,%f,%u,%u" % (AVCHOME.lat,
-                                         AVCHOME.lng,
-                                         AVCHOME.alt,
-                                         AVCHOME.heading)
-
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
                                     home=self.home,
@@ -2559,42 +2552,37 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
-    def autotest_heli(self):
-        """Autotest Helicopter in SITL with AVC2013 mission."""
+
+class AutoTestHeli(AutoTestCopter):
+
+    def __init__(self, *args, **kwargs):
+
+        super(AutoTestHeli, self).__init__(*args, **kwargs)
+
+        self.log_name = "HeliCopter"
+        self.home = "%f,%f,%u,%u" % (AVCHOME.lat,
+                                     AVCHOME.lng,
+                                     AVCHOME.alt,
+                                     AVCHOME.heading)
         self.frame = 'heli'
-        if not self.hasInit:
-            self.init()
 
-        self.fail_list = []
+    def set_rc_default(self):
+        super(AutoTestCopter, self).set_rc_default()
+        self.progress("Lowering rotor speed")
+        self.set_rc(8, 1000)
 
-        try:
-            self.wait_heartbeat()
-            self.set_rc_default()
-            self.set_rc(3, 1000)
-            self.homeloc = self.mav.location()
+    def tests(self):
+        '''return list of all tests'''
+        ret = super(AutoTestCopter, self).tests()
+        ret.extend([
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            self.progress("Lowering rotor speed")
-            self.set_rc(8, 1000)
-            self.mavproxy.send('switch 6\n')  # stabilize mode
-            self.wait_mode('STABILIZE')
-            self.wait_ready_to_arm()
+            ("AVCMission", "Fly AVC mission", self.fly_avc_test),
 
-            self.run_test("Arm features", self.test_arm_feature)
-
-            self.run_test("Fly AVC mission", self.fly_avc_test)
-
-            # mission ends with disarm so should be ok to download logs now
-            self.run_test("log download",
-                          lambda: self.log_download(
-                              self.buildlogs_path("Helicopter-log.bin"),
-                              upload_logs=len(self.fail_list) > 0))
-
-        except pexpect.TIMEOUT:
-            self.fail_list.append("Failed with timeout")
-
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED: %s" % self.fail_list)
-            return False
-        return True
+            ("LogDownLoad",
+             "Log download",
+             lambda: self.log_download(
+                 self.buildlogs_path("ArduPlane-log.bin"),
+                 upload_logs=len(self.fail_list) > 0))
+        ])
+        return ret

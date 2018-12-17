@@ -394,8 +394,8 @@ def run_step(step):
         return tester.autotest()
 
     if step == 'fly.CopterAVC':
-        tester = arducopter.AutoTestCopter(binary, **fly_opts)
-        return tester.autotest_heli()
+        tester = arducopter.AutoTestHeli(binary, **fly_opts)
+        return tester.autotest()
 
     if step == 'fly.ArduPlane':
         tester = arduplane.AutoTestPlane(binary, **fly_opts)
