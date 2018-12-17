@@ -121,6 +121,7 @@ public:
     // NAV_CONTROLLER parameter
     enum ControllerType {
         CONTROLLER_DEFAULT      = 0,
-        CONTROLLER_L1           = 1
+        CONTROLLER_L1           = 1,
+        CONTROLLER_LQR          = 2
     };
 };
