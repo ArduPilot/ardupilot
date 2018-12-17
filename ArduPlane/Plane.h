@@ -384,6 +384,7 @@ private:
     // The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
     // Also used for flap deployment criteria.  Centimeters per second.
     int32_t target_airspeed_cm;
+    int32_t target_airspeed_cm_base; // used for min ground speed compensation
 
     // The difference between current and desired airspeed.  Used in the pitch controller.  Meters per second.
     float airspeed_error;
@@ -398,7 +399,7 @@ private:
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
-    int32_t groundspeed_undershoot;
+    float groundspeed_undershoot;
 
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
