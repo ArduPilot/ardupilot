@@ -9,6 +9,7 @@ import time
 
 from common import AutoTest
 
+from common import AutoTestTimeoutException
 from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
