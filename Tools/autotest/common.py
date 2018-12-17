@@ -165,6 +165,7 @@ class AutoTest(ABC):
         self.logfile = None
         self.max_set_rc_timeout = 0
         self.last_wp_load = 0
+        self.forced_post_test_sitl_reboots = 0
 
     @staticmethod
     def progress(text):
@@ -1457,6 +1458,11 @@ class AutoTest(ABC):
             return
         self.progress('PASSED: "%s"' % desc)
 
+    def check_sitl_reset(self):
+        if self.armed():
+            self.forced_post_test_sitl_reboots += 1
+            self.reboot_sitl() # that'll learn it
+
     def run_one_test(self, name, desc, test_function, interact=False):
         '''new-style run-one-test used by run_tests'''
         test_output_filename = self.buildlogs_path("%s-%s.txt" %
@@ -1482,6 +1488,7 @@ class AutoTest(ABC):
                 self.mavproxy.interact()
             tee.close()
             tee = None
+            self.check_sitl_reset()
             return
         self.context_pop()
         self.progress('PASSED: "%s"' % prettyname)
@@ -1512,6 +1519,46 @@ class AutoTest(ABC):
     def init(self):
         """Initilialize autotest feature."""
         pass
+
+    def expect_command_ack(self, command):
+        m = self.mav.recv_match(type='COMMAND_ACK', blocking=True, timeout=10)
+        if m is None:
+            raise NotAchievedException()
+        if m.command != command:
+            raise ValueError()
+        if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException()
+
+    def poll_home_position(self):
+        old = self.mav.messages.get("HOME_POSITION", None)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 30:
+                raise NotAchievedException("Failed to poll home position")
+            self.mav.mav.command_long_send(
+                1,
+                1,
+                mavutil.mavlink.MAV_CMD_GET_HOME_POSITION,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0)
+            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True, timeout=10)
+            if m is None:
+                continue
+            if m.command != mavutil.mavlink.MAV_CMD_GET_HOME_POSITION:
+                continue
+            if m.result != 0:
+                continue
+            break
+        m = self.mav.messages.get("HOME_POSITION", None)
+        if old is not None and m._timestamp == old._timestamp:
+            raise NotAchievedException("home position not updated")
+        return m
 
     def test_arm_feature(self):
         """Common feature to test."""
@@ -1760,6 +1807,14 @@ class AutoTest(ABC):
             self.mavproxy.send("set streamrate %u\n" % sr)
             raise e
 
+    def clear_mission(self):
+        self.mavproxy.send("wp clear\n")
+        self.mavproxy.send('wp list\n')
+        self.mavproxy.expect('Requesting [0-9]+ waypoints')
+        num_wp = mavwp.MAVWPLoader().count()
+        if num_wp != 0:
+            raise NotAchievedException("Failed to clear mission")
+
     def test_gripper(self):
         self.context_push()
         self.set_parameter("GRIP_ENABLE", 1)
@@ -1959,6 +2014,13 @@ class AutoTest(ABC):
     def tests(self):
         return []
 
+    def post_tests_announcements(self):
+        if self.forced_post_test_sitl_reboots != 0:
+            print("Had to force-reset SITL %u times" %
+                  (self.forced_post_test_sitl_reboots,))
+
     def autotest(self):
         """Autotest used by ArduPilot autotest CI."""
-        return self.run_tests(self.tests())
+        ret = self.run_tests(self.tests())
+        self.post_tests_announcements()
+        return ret
