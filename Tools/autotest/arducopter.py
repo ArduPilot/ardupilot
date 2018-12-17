@@ -79,6 +79,8 @@ class AutoTestCopter(AutoTest):
         if self.frame is None:
             self.frame = '+'
 
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
+
         if self.frame == 'heli':
             self.log_name = "HeliCopter"
             self.home = "%f,%f,%u,%u" % (AVCHOME.lat,
@@ -147,11 +149,11 @@ class AutoTestCopter(AutoTest):
     def takeoff(self,
                 alt_min=30,
                 takeoff_throttle=1700,
-                require_absolute=True):
+                require_absolute=True,
+                mode="STABILIZE"):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
+        self.change_mode(mode)
         if not self.armed():
             self.progress("Waiting reading for arm")
             self.wait_ready_to_arm(require_absolute=require_absolute)
@@ -174,9 +176,7 @@ class AutoTestCopter(AutoTest):
     def land(self, timeout=60):
         """Land the quad."""
         self.progress("STARTING LANDING")
-        self.mavproxy.send('switch 2\n')  # land mode
-        self.wait_mode('LAND', timeout=timeout)
-        self.progress("Entered Landing Mode")
+        self.change_mode("LAND")
         self.wait_altitude(-5, 1, relative=True, timeout=timeout)
         self.progress("LANDING: ok!")
 
@@ -186,8 +186,7 @@ class AutoTestCopter(AutoTest):
     # loiter - fly south west, then loiter within 5m position and altitude
     def loiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
         """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         # first aim south east
         self.progress("turn south east")
@@ -225,6 +224,14 @@ class AutoTestCopter(AutoTest):
                     (delta, maxdistchange))
         self.progress("Loiter OK for %u seconds" % holdtime)
 
+        self.progress("Climb to 30m")
+        self.change_alt(30)
+
+        self.progress("Descend to 20m")
+        self.change_alt(20)
+
+        self.do_RTL()
+
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -245,6 +252,11 @@ class AutoTestCopter(AutoTest):
 
     # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
+
+        self.clear_mission()
+
+        self.takeoff(10)
+
         """Fly a square, flying N then E ."""
         tstart = self.get_sim_time()
 
@@ -255,8 +267,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(4, 1500)
 
         # switch to loiter mode temporarily to stop us from rising
-        self.mavproxy.send('switch 5\n')
-        self.wait_mode('LOITER')
+        self.change_mode('LOITER')
 
         # first aim north
         self.progress("turn right towards north")
@@ -271,8 +282,7 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # switch back to stabilize mode
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('STABILIZE')
+        self.change_mode('STABILIZE')
 
         # increase throttle a bit because we're about to pitch:
         self.set_rc(3, 1525)
@@ -333,11 +343,27 @@ class AutoTestCopter(AutoTest):
         self.set_rc(3, 1500)
         self.save_wp()
 
+        # save the stored mission to file
+        global num_wp
+        num_wp = self.save_mission_to_file(os.path.join(testdir,
+                                                        "ch7_mission.txt"))
+        if not num_wp:
+            self.fail_list.append("save_mission_to_file")
+            self.progress("save_mission_to_file failed")
+
+        global num_wp
+        self.progress("test: Fly a mission from 1 to %u" % num_wp)
+        self.mavproxy.send('wp set 1\n')
+        self.change_mode('AUTO')
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+        self.progress("test: MISSION COMPLETE: passed!")
+        self.change_mode('LAND')
+        self.mav.motors_disarmed_wait()
+
     # enter RTL mode and wait for the vehicle to disarm
-    def fly_RTL(self, timeout=250):
+    def do_RTL(self, timeout=250):
         """Return, land."""
-        self.progress("# Enter RTL")
-        self.mavproxy.send('switch 3\n')
+        self.change_mode("RTL")
         self.set_rc(3, 1500)
         tstart = self.get_sim_time()
         while self.get_sim_time() < tstart + timeout:
@@ -413,9 +439,10 @@ class AutoTestCopter(AutoTest):
     def fly_throttle_failsafe(self, side=60, timeout=180):
         """Fly east, Failsafe, return, land."""
 
+        self.takeoff(10)
+
         # switch to loiter mode temporarily to stop us from rising
-        self.mavproxy.send('switch 5\n')
-        self.wait_mode('LOITER')
+        self.change_mode('LOITER')
 
         # first aim east
         self.progress("turn east")
@@ -433,9 +460,8 @@ class AutoTestCopter(AutoTest):
             self.wait_altitude(20, 25, relative=True)
         self.hover()
 
-        # switch to stabilize mode
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('STABILIZE')
+        self.change_mode("STABILIZE")
+
         self.hover()
 
         # fly east 60 meters
@@ -445,47 +471,42 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # pull throttle low
-        self.progress("# Enter Failsafe")
+        self.progress("# Enter Failsafe by setting very low throttle")
         self.set_rc(3, 900)
 
         tstart = self.get_sim_time()
+        homeloc = self.poll_home_position()
+        home = mavutil.location(homeloc.latitude/1e7,
+                                homeloc.longitude/1e7,
+                                homeloc.altitude/1e3,
+                                0)
         while self.get_sim_time() < tstart + timeout:
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
             pos = self.mav.location()
-            home_distance = self.get_distance(HOME, pos)
+            home_distance = self.get_distance(home, pos )
             self.progress("Alt: %u  HomeDist: %.0f" % (alt, home_distance))
             # check if we've reached home
             if alt <= 1 and home_distance < 10:
                 # reduce throttle
                 self.set_rc(3, 1100)
                 # switch back to stabilize
-                self.mavproxy.send('switch 2\n')  # land mode
-                self.wait_mode('LAND')
+                self.change_mode("LAND")
                 self.progress("Waiting for disarm")
                 self.mav.motors_disarmed_wait()
                 self.progress("Reached failsafe home OK")
-                self.mavproxy.send('switch 6\n')  # stabilize mode
-                self.wait_mode('STABILIZE')
+                self.change_mode('STABILIZE')
                 self.set_rc(3, 1000)
-                self.arm_vehicle()
                 return
-        # reduce throttle
-        self.set_rc(3, 1100)
-        # switch back to stabilize mode
-        self.mavproxy.send('switch 2\n')  # land mode
-        self.wait_mode('LAND')
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
+
+        self.reboot_sitl()
+
         raise AutoTestTimeoutException(
-            ("Failed to land on failsafe RTL - "
+            ("Failed to land and disarm on failsafe RTL - "
              "timed out after %u seconds" % timeout))
 
     def fly_battery_failsafe(self, timeout=300):
-        # switch to loiter mode so that we hold position
-        self.mavproxy.send('switch 5\n')
-        self.wait_mode('LOITER')
-        self.set_rc(3, 1500)
+        self.takeoff(10, mode='LOITER')
 
         # enable battery failsafe
         self.set_parameter('BATT_FS_LOW_ACT', 1)
@@ -509,9 +530,8 @@ class AutoTestCopter(AutoTest):
                             holdtime=30,
                             maxaltchange=5,
                             maxdistchange=10):
-        """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+
+        self.takeoff(10, mode="LOITER")
 
         # first south
         self.progress("turn south")
@@ -558,11 +578,12 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Stability patch and Loiter OK for %us" % holdtime)
 
+        self.progress("RTL after stab patch")
+        self.do_RTL()
+
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def fly_fence_test(self, timeout=180):
-        """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         # enable fence, disable avoidance
         self.set_parameter("FENCE_ENABLE", 1)
@@ -597,13 +618,11 @@ class AutoTestCopter(AutoTest):
             if (alt <= 1 and home_distance < 10) or (not self.armed() and home_distance < 10):
                 # reduce throttle
                 self.set_rc(3, 1000)
-                self.mavproxy.send('switch 2\n')  # land mode
-                self.wait_mode('LAND')
+                self.change_mode("LAND")
                 self.progress("Waiting for disarm")
                 self.mav.motors_disarmed_wait()
                 self.progress("Reached home OK")
-                self.mavproxy.send('switch 6\n')  # stabilize mode
-                self.wait_mode('STABILIZE')
+                self.change_mode("STABILIZE")
                 self.set_rc(3, 1000)
                 # remove if we ever clear battery failsafe flag on disarm:
                 self.mavproxy.send('arm uncheck all\n')
@@ -617,19 +636,14 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("FENCE_ENABLE", 0)
         self.set_parameter("AVOID_ENABLE", 1)
 
-        # reduce throttle
-        self.set_rc(3, 1000)
-        # switch mode to stabilize
-        self.mavproxy.send('switch 2\n')  # land mode
-        self.wait_mode('LAND')
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
+        # give we're testing RTL, doing one here probably doesn't make sense
         raise AutoTestTimeoutException(
             ("Fence test failed to reach home - "
              "timed out after %u seconds" % timeout))
 
     # fly_alt_fence_test - fly up until you hit the fence
     def fly_alt_max_fence_test(self):
+        self.takeoff(10, mode="LOITER")
         """Hold loiter position."""
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
@@ -674,8 +688,7 @@ class AutoTestCopter(AutoTest):
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
         reaction to gps glitch."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         # turn on simulator display of gps and actual position
         if self.use_map:
@@ -773,6 +786,7 @@ class AutoTestCopter(AutoTest):
         self.progress("GPS glitch test passed!"
                       "  stayed within %u meters for %u seconds" %
                       (max_distance, timeout))
+        self.do_RTL()
 
     # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
     def fly_gps_glitch_auto_test(self, timeout=120):
@@ -811,6 +825,11 @@ class AutoTestCopter(AutoTest):
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.mavproxy.send('wp set 1\n')
+
+        self.change_mode("STABILIZE")
+        self.wait_ready_to_arm()
+        self.set_rc(3, 1000)
+        self.arm_vehicle()
 
         # switch into AUTO mode and raise throttle
         self.mavproxy.send('switch 4\n')  # auto mode
@@ -883,7 +902,7 @@ class AutoTestCopter(AutoTest):
     #   directly north flies a box with 100m west, 15 seconds north,
     #   50 seconds east, 15 seconds south
     def fly_simple(self, side=50):
-
+        self.takeoff(10, mode="LOITER")
         # hold position in loiter
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
@@ -930,12 +949,11 @@ class AutoTestCopter(AutoTest):
         # hover in place
         self.hover()
 
+        self.do_RTL()
+
     # fly_super_simple - flies a circle around home for 45 seconds
     def fly_super_simple(self, timeout=45):
-
-        # hold position in loiter
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         # fly forward 20m
         self.progress("# Flying forward 20 meters")
@@ -947,8 +965,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SUPER_SIMPLE", 63)
 
         # switch to stabilize mode
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('STABILIZE')
+        self.change_mode("STABILIZE")
         self.set_rc(3, 1500)
 
         # start copter yawing slowly
@@ -972,11 +989,11 @@ class AutoTestCopter(AutoTest):
         # hover in place
         self.hover()
 
+        self.do_RTL()
+
     # fly_circle - flies a circle with 20m radius
     def fly_circle(self, holdtime=36):
-        # hold position in loiter
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         # face west
         self.progress("turn west")
@@ -1009,11 +1026,14 @@ class AutoTestCopter(AutoTest):
 
         self.progress("CIRCLE OK for %u seconds" % holdtime)
 
+        self.do_RTL()
+
     # fly_optical_flow_limits - test EKF navigation limiting
     def fly_optical_flow_limits(self):
         ex = None
         self.context_push()
         try:
+
             self.set_parameter("SIM_FLOW_ENABLE", 1)
             self.set_parameter("FLOW_ENABLE", 1)
 
@@ -1067,6 +1087,8 @@ class AutoTestCopter(AutoTest):
     # fly_autotune - autotune the virtual vehicle
     def fly_autotune(self):
 
+        self.takeoff(10)
+
         # hold position in loiter
         self.mavproxy.send('mode autotune\n')
         self.wait_mode('AUTOTUNE')
@@ -1085,6 +1107,8 @@ class AutoTestCopter(AutoTest):
             if "AutoTune: Success" in m.text:
                 self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
                 # near enough for now:
+                self.change_mode('LAND')
+                self.mav.motors_disarmed_wait()
                 return
 
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
@@ -1103,9 +1127,12 @@ class AutoTestCopter(AutoTest):
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.mavproxy.send('wp set 1\n')
 
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
         # switch into AUTO mode and raise throttle
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.wait_mode('AUTO')
+        self.change_mode("AUTO")
         self.set_rc(3, 1500)
 
         # fly the mission
@@ -1184,8 +1211,7 @@ class AutoTestCopter(AutoTest):
         if fail_servo < 0 or fail_servo > servo_count:
             raise ValueError('fail_servo outside range for frame class')
 
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.takeoff(10, mode="LOITER")
 
         self.change_alt(alt_min=50)
 
@@ -1273,21 +1299,10 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_ENGINE_MUL", 1.0)
             raise e
 
-        return True
+        self.do_RTL()
 
     def fly_mission(self):
         """Fly a mission from a file."""
-        global num_wp
-        self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.wait_mode('AUTO')
-        self.wait_waypoint(0, num_wp-1, timeout=500)
-        self.progress("test: MISSION COMPLETE: passed!")
-        # wait here until ready
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
-        self.set_rc(3, 1500)
 
     def fly_vision_position(self):
         """Disable GPS navigation, enable Vicon input."""
@@ -2403,254 +2418,146 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def autotest(self):
-        """Autotest ArduCopter in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
+    def default_mode(self):
+        return "STABILIZE"
 
-        self.fail_list = []
+    def set_rc_default(self):
+        super(AutoTestCopter, self).set_rc_default()
+        self.set_rc(3, 1000)
 
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.wait_heartbeat()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.set_rc(3, 1000)
+    def tests(self):
+        '''return list of all tests'''
+        ret = super(AutoTestCopter, self).tests()
+        ret.extend([
 
-            self.run_test("Fly Nav Delay (takeoff)",
-                          self.fly_nav_takeoff_delay_abstime)
+            ("NavDelayTakeoffAbsTime",
+             "Fly Nav Delay (takeoff)",
+             self.fly_nav_takeoff_delay_abstime),
 
-            self.run_test("Fly Nav Delay (AbsTime)",
-                          self.fly_nav_delay_abstime)
+            ("NavDelayAbsTime",
+             "Fly Nav Delay (AbsTime)",
+             self.fly_nav_delay_abstime),
 
-            self.run_test("Fly Nav Delay", self.fly_nav_delay)
+            ("NavDelay",
+             "Fly Nav Delay",
+             self.fly_nav_delay),
 
-            self.run_test("Test submode change",
-                          self.fly_guided_change_submode)
+            ("GuidedSubModeChange",
+             "Test submode change",
+             self.fly_guided_change_submode),
 
-            self.run_test("Loiter-To-Alt", self.fly_loiter_to_alt)
+            ("LoiterToAlt",
+             "Loiter-To-Alt",
+             self.fly_loiter_to_alt),
 
-            self.run_test("Payload Place Mission",
-                          self.fly_payload_place_mission)
-            self.run_test("Precision Loiter (Companion)",
-                          self.fly_precision_companion)
-            self.run_test("Precision Landing (SITL)",
-                          self.fly_precision_sitl)
+            ("PayLoadPlaceMission",
+             "Payload Place Mission",
+             self.fly_payload_place_mission),
 
-            self.progress("Waiting for location")
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
-            self.mavproxy.send('switch 6\n')  # stabilize mode
-            self.wait_heartbeat()
-            self.wait_mode('STABILIZE')
-            self.set_rc(3, 1000)
-            self.progress("Waiting reading for arm")
-            self.wait_ready_to_arm()
+            ("PrecisionLoiterCompanion",
+             "Precision Loiter (Companion)",
+             self.fly_precision_companion),
 
-            self.run_test("Set modes via modeswitch",
-                          self.test_setting_modes_via_modeswitch)
+            ("PrecisionLandingSITL",
+             "Precision Landing (SITL)",
+             self.fly_precision_sitl),
 
-            self.run_test("Set modes via auxswitch",
-                          self.test_setting_modes_via_auxswitch)
+            ("SetModesViaModeSwitch",
+             "Set modes via modeswitch",
+             self.test_setting_modes_via_modeswitch),
 
-            self.mavproxy.send('switch 6\n')  # stabilize mode
-            self.wait_mode('STABILIZE')
+            ("SetModesViaAuxSwitch",
+             "Set modes via auxswitch",
+             self.test_setting_modes_via_auxswitch),
 
-            self.mavproxy.send("wp clear\n")
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            # Arm
-            self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
+            ("AutoTune", "Fly AUTOTUNE mode", self.fly_autotune),
 
-            # Takeoff
-            self.run_test("Takeoff to test fly Square",
-                          lambda: self.takeoff(10))
+            ("RecordThenPlayMission",
+             "Use switches to toggle in mission, then fly it",
+             self.fly_square),
 
-            # AutoTune mode
-            self.run_test("Fly AUTOTUNE mode", self.fly_autotune)
+            ("ThrottleFailsafe",
+             "Test Throttle Failsafe",
+             self.fly_throttle_failsafe),
 
-            # Fly a square in Stabilize mode
-            self.run_test("Fly a square and save WPs with CH7",
-                          self.fly_square)
+            ("BatteryFailsafe",
+             "Fly Battery Failsafe",
+             self.fly_battery_failsafe),
 
-            # save the stored mission to file
-            global num_wp
-            num_wp = self.save_mission_to_file(os.path.join(testdir,
-                                                            "ch7_mission.txt"))
-            if not num_wp:
-                self.fail_list.append("save_mission_to_file")
-                self.progress("save_mission_to_file failed")
+            ("StabilityPatch",
+             "Fly stability patch",
+             lambda: self.fly_stability_patch(30)),
 
-            # fly the stored mission
-            self.run_test("Fly CH7 saved mission", self.fly_mission)
+            ("HorizontalFence",
+             "Test horizontal fence",
+             lambda: self.fly_fence_test(180)),
 
-            # Throttle Failsafe
-            self.run_test("Test Failsafe", self.fly_throttle_failsafe)
+            ("MaxAltFence",
+             "Test Max Alt Fence",
+             self.fly_alt_max_fence_test),
 
-            # Takeoff
-            self.run_test("Takeoff to test battery failsafe",
-                          lambda: self.takeoff(10))
+            ("GPSGlitchLoiter",
+             "GPS Glitch Loiter Test",
+             self.fly_gps_glitch_loiter_test),
 
-            # Battery failsafe
-            self.run_test("Fly Battery Failsafe", self.fly_battery_failsafe)
+            ("GPSGlitchAuto",
+             "GPS Glitch Auto Test",
+             self.fly_gps_glitch_auto_test),
 
-            # Takeoff
-            self.run_test("Takeoff to test stability patch",
-                          lambda: self.takeoff(10))
+            ("ModeLoiter",
+             "Test Loiter Mode",
+             self.loiter),
 
-            # Stability patch
-            self.run_test("Fly stability patch",
-                          lambda: self.fly_stability_patch(30))
+            ("SimpleMode",
+             "Fly in SIMPLE mode",
+             self.fly_simple),
 
-            # RTL
-            self.run_test("RTL after stab patch", self.fly_RTL)
+            ("SuperSimpleCircle",
+             "Fly a circle in SUPER SIMPLE mode",
+             self.fly_super_simple),
 
-            # Takeoff
-            self.run_test("Takeoff to test horizontal fence",
-                          lambda: self.takeoff(10))
+            ("ModeCircle",
+             "Fly CIRCLE mode",
+             self.fly_circle),
 
-            # Fence test
-            self.run_test("Test horizontal fence",
-                          lambda: self.fly_fence_test(180))
+            ("OpticalFlowLimits",
+             "Fly Optical Flow limits",
+             self.fly_optical_flow_limits),
 
-            # Takeoff
-            self.run_test("Takeoff to test Max Alt fence",
-                          lambda: self.takeoff(10))
+            ("MotorFail",
+             "Fly motor failure test",
+             self.fly_motor_fail),
 
-            # Fence test
-            self.run_test("Test Max Alt Fence", self.fly_alt_max_fence_test)
-
-            # Takeoff
-            self.run_test("Takeoff to test GPS glitch loiter",
-                          lambda: self.takeoff(10))
-
-            # Fly GPS Glitch Loiter test
-            self.run_test("GPS Glitch Loiter Test",
-                          self.fly_gps_glitch_loiter_test)
-
-            # RTL after GPS Glitch Loiter test
-            self.run_test("RTL after GPS Glitch Loiter test", self.fly_RTL)
-
-            # Arm
-            self.mavproxy.send('mode stabilize\n')  # stabilize mode
-            self.wait_mode('STABILIZE')
-            self.set_rc(3, 1000)
-            self.run_test("Arm motors", self.arm_vehicle)
-
-            # Fly GPS Glitch test in auto mode
-            self.run_test("GPS Glitch Auto Test",
-                          self.fly_gps_glitch_auto_test)
-
-            # Takeoff
-            self.run_test("Takeoff to test loiter", lambda: self.takeoff(10))
-
-            # Loiter for 10 seconds
-            self.run_test("Test Loiter for 10 seconds", self.loiter)
-
-            # Loiter Climb
-            self.run_test("Loiter - climb to 30m", lambda: self.change_alt(30))
-
-            # Loiter Descend
-            self.run_test("Loiter - descend to 20m",
-                          lambda: self.change_alt(20))
-
-            # RTL
-            self.run_test("RTL after Loiter climb/descend", self.fly_RTL)
-
-            # Takeoff
-            self.run_test("Takeoff to test fly SIMPLE mode",
-                          lambda: self.takeoff(10))
-
-            # Simple mode
-            self.run_test("Fly in SIMPLE mode", self.fly_simple)
-
-            # RTL
-            self.run_test("RTL after SIMPLE mode", self.fly_RTL)
-
-            # Takeoff
-            self.run_test("Takeoff to test circle in SUPER SIMPLE mode",
-                          lambda: self.takeoff(10))
-
-            # Fly a circle in super simple mode
-            self.run_test("Fly a circle in SUPER SIMPLE mode",
-                          self.fly_super_simple)
-
-            # RTL
-            self.run_test("RTL after SUPER SIMPLE mode", self.fly_RTL)
-
-            # Takeoff
-            self.run_test("Takeoff to test CIRCLE mode",
-                          lambda: self.takeoff(10))
-
-            # Circle mode
-            self.run_test("Fly CIRCLE mode", self.fly_circle)
-
-            # Optical flow limits test
-            self.run_test("Fly Optical Flow limits",
-                          self.fly_optical_flow_limits)
-
-            # RTL
-            self.run_test("RTL after CIRCLE mode", self.fly_RTL)
-
-            # Arm
-            self.set_rc(3, 1000)
-            self.mavproxy.send('mode stabilize\n')  # stabilize mode
-            self.wait_mode('STABILIZE')
-
-            # Takeoff
-            self.run_test("Takeoff to test motor failure",
-                          lambda: self.takeoff(10))
-
-            self.run_test("Fly motor failure test",
-                          self.fly_motor_fail)
-
-            # RTL
-            self.run_test("RTL after motor failure test", self.fly_RTL)
-
-            # Arm
-            self.set_rc(3, 1000)
-            self.mavproxy.send('mode stabilize\n')  # stabilize mode
-            self.wait_mode('STABILIZE')
-            self.run_test("Arm motors", self.arm_vehicle)
-
-            # Fly auto test
-            self.run_test("Fly copter mission", self.fly_auto_test)
-
-            # land
-            self.run_test("Fly copter mission", self.land)
-
-            # wait for disarm
-            self.mav.motors_disarmed_wait()
+            ("CopterMission",
+             "Fly copter mission",
+             self.fly_auto_test),
 
             # Gripper test
-            self.run_test("Test gripper", self.test_gripper)
+            ("Gripper",
+             "Test gripper",
+             self.test_gripper),
 
-            self.run_test("Test gripper mission items",
-                          self.test_gripper_mission)
+            ("TestGripperMission",
+             "Test Gripper mission items",
+             self.test_gripper_mission),
 
-            '''vision position'''  # expects vehicle to be disarmed
-            self.run_test("Fly Vision Position", self.fly_vision_position)
+            ("VisionPosition",
+             "Fly Vision Position",
+             self.fly_vision_position),
 
-            '''tests for camera/antenna mount'''
-            self.run_test("Test Mount", self.test_mount)
+            ("Mount",
+             "Test Camera/Antenna Mount",
+             self.test_mount),
 
-            # Download logs
-            self.run_test("log download",
-                          lambda: self.log_download(
-                              self.buildlogs_path("ArduCopter-log.bin"),
-                              upload_logs=len(self.fail_list) > 0))
-
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append("Failed with timeout")
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED : %s" % self.fail_list)
-            return False
-        return True
+            ("LogDownLoad",
+             "Log download",
+             lambda: self.log_download(
+                 self.buildlogs_path("ArduPlane-log.bin"),
+                 upload_logs=len(self.fail_list) > 0))
+        ])
+        return ret
 
     def autotest_heli(self):
         """Autotest Helicopter in SITL with AVC2013 mission."""
