@@ -301,12 +301,12 @@ void AP_BLHeli::msp_process_command(void)
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
-        
+
     case MSP_FC_VARIANT:
         debug("MSP_FC_VARIANT");
         msp_send_reply(msp.cmdMSP, (const uint8_t *)ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
         break;
-        
+
     case MSP_FC_VERSION: {
         debug("MSP_FC_VERSION");
         uint8_t version[3] = { 3, 3, 0 };
@@ -435,7 +435,7 @@ void AP_BLHeli::msp_process_command(void)
         hal.rcout->push();
         break;
     }
-    
+
     case MSP_SET_4WAY_IF: {
         debug("MSP_SET_4WAY_IF");
         if (msp.dataSize == 0) {
@@ -463,7 +463,6 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 }
-
 
 /*
   send a blheli 4way protocol reply
@@ -677,7 +676,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
     blheli.deviceInfo[blheli.chan][0] = BootInfo[5];
 
     blheli.interface_mode[blheli.chan] = 0;
-    
+
     uint16_t *devword = (uint16_t *)blheli.deviceInfo[blheli.chan];
     switch (*devword) {
     case 0x9307:
@@ -1039,7 +1038,7 @@ void AP_BLHeli::blheli_process_command(void)
         blheli_send_reply(&b, 1);
         break;
     }
-        
+
     case cmd_DeviceEraseAll:
     case cmd_DeviceC2CK_LOW:
     default:
@@ -1059,7 +1058,7 @@ void AP_BLHeli::blheli_process_command(void)
 bool AP_BLHeli::process_input(uint8_t b)
 {
     bool valid_packet = false;
-    
+
     if (msp.escMode == PROTOCOL_4WAY && blheli.state == BLHELI_IDLE && b == '$') {
         debug("Change to MSP mode");
         msp.escMode = PROTOCOL_NONE;
@@ -1115,7 +1114,6 @@ bool AP_BLHeli::protocol_handler(uint8_t b, AP_HAL::UARTDriver *_uart)
     }
     return process_input(b);
 }
-
 
 /*
   run a connection test to the ESCs. This is used to test the
@@ -1246,7 +1244,7 @@ void AP_BLHeli::update(void)
     if (mask && mode != AP_HAL::RCOutput::MODE_PWM_NONE) {
         hal.rcout->set_output_mode(mask, mode);
     }
-    
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     /*
       plane and copter can use AP_Motors to get an automatic mask
@@ -1326,7 +1324,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         }
         buf[i] = uint8_t(v);
     }
-    
+
     // calculate crc
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
         crc = telem_crc8(buf[i], crc);
@@ -1347,7 +1345,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
-    
+
     DataFlash_Class *df = DataFlash_Class::instance();
     if (df && df->logging_enabled()) {
         struct log_Esc pkt = {
@@ -1392,9 +1390,9 @@ void AP_BLHeli::update_telemetry(void)
         telem_uart->begin(115200);
         telem_uart_started = true;
     }
-        
+
     uint32_t nbytes = telem_uart->available();
-    
+
     if (nbytes > telem_packet_size) {
         // if we have more than 10 bytes then we don't know which ESC
         // they are from. Throw them all away
@@ -1433,7 +1431,6 @@ void AP_BLHeli::update_telemetry(void)
         last_telem_request_us = now;
     }
 }
-
 
 /*
   send ESC telemetry messages over MAVLink
