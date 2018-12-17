@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Units: Hz
     // @Range: 0 500
     // @User: Standard
-    AP_GROUPINFO("TRATE",  5, AP_BLHeli, telem_rate, 0),
+    AP_GROUPINFO("TRATE",  5, AP_BLHeli, telem_rate, 10),
 
     // @Param: DEBUG
     // @DisplayName: BLHeli debug level
