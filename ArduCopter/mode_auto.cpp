@@ -56,7 +56,7 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void Copter::ModeAuto::run()
 {
-    // call the correct auto controller
+	// call the correct auto controller
     switch (_mode) {
 
     case Auto_TakeOff:
@@ -367,6 +367,15 @@ void Copter::ModeAuto::payload_place_start()
 
 }
 
+/*int Copter::ModeAuto::pump(int bomb) {
+if (bomb == 1) {
+hal.console->printf("pump on\n");
+}
+else {
+hal.console->printf("pump off\n");
+}
+return bomb;
+}*/ 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -505,7 +514,9 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        //bomb = 0;
         copter.camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
+        //pump(bomb);
         break;
 #endif
 
@@ -771,7 +782,7 @@ void Copter::ModeAuto::wp_run()
         set_throttle_takeoff();
         return;
     }
-
+   
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -781,13 +792,51 @@ void Copter::ModeAuto::wp_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
-
-    // set motors to full range
+	
+	// set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
-    // run waypoint controller
+    // run waypoint controller 
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+    
+    // Auto Manual Altitude Control
+    if (g2.auto_man_alt == 1) {
+        
+        // get pilot desired climb rate alt control Alt_Hold
+        float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+        target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
 
+        // get pilot desired lean angles Althold 
+        float target_roll, target_pitch;
+        get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+
+        // added control to resume the return plan, this may be due to loss of information, once a height change of more or less than 5 meters has been reached,
+        // whereby the aircraft stops its advance forward. To resume the flight plan, enter the pitch or roll 
+        if (target_roll != 0.0f || target_pitch != 0.0f) {
+            //Restart the automatic mode
+            copter.mode_auto.init(true);
+            //Re initialise wpnav targets after stopping when giving control of alt
+            wp_nav->shift_wp_origin_to_current_pos();
+        }
+       
+        // call attitude controller
+        // attitude Alt_Hold
+        pos_control->set_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
+        pos_control->set_accel_z(g.pilot_accel_z);
+        pos_control->set_alt_target_to_current_alt();
+        // change (inertial_nav.get_velocity_z ()) by (target_climb_rate) to add more control to the alt
+        pos_control->set_desired_velocity_z(target_climb_rate);
+        
+        // adjust climb rate using rangefinder Alt_Hold
+        if (copter.rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
+            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control->get_alt_target(), G_Dt);
+        }
+
+        // update altitude target and call position controller Alt_Hold
+        pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+    }
+    
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
@@ -795,10 +844,15 @@ void Copter::ModeAuto::wp_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(),true);
     }
+    else {
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+    }
+    /*if (wp_nav->get_wp_distance_to_destination() < 500.0f) {
+    bomb = 1;
+    pump(bomb);
+    }*/
 }
 
 // auto_spline_run - runs the auto spline controller
@@ -821,7 +875,7 @@ void Copter::ModeAuto::spline_run()
         // get pilot's desired yaw rat
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
+			auto_yaw.set_mode(AUTO_YAW_HOLD);            
         }
     }
 
@@ -836,7 +890,7 @@ void Copter::ModeAuto::spline_run()
 
     // call attitude controller
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
+		// roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
@@ -1070,17 +1124,17 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
             // default to current altitude as alt-above-home
             target_loc.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
         }
-    }
-
-    // this will be used to remember the time in millis after we reach or pass the WP.
+	}
+	
+	// this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
-
-    // Set wp navigation target
-    wp_start(target_loc);
-
-    // if no delay as well as not final waypoint set the waypoint as "fast"
+	
+	// Set wp navigation target
+	wp_start(target_loc);
+	
+	// if no delay as well as not final waypoint set the waypoint as "fast"
     AP_Mission::Mission_Command temp_cmd;
     if (loiter_time_max == 0 && copter.mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         copter.wp_nav->set_fast_waypoint(true);
@@ -1283,8 +1337,8 @@ void Copter::ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
     copter.mode_guided.limit_set(
         cmd.p1 * 1000, // convert seconds to ms
         cmd.content.guided_limits.alt_min * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
-        cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
+		cmd.content.guided_limits.alt_max * 100.0f,    // convert meters to cm
+		cmd.content.guided_limits.horiz_max * 100.0f); // convert meters to cm
 }
 #endif  // NAV_GUIDED
 

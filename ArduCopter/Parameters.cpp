@@ -214,6 +214,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
+    /*// @Param: AUTO_MAN_ALT
+    // @DisplayName: Auto Manual Altitude Control
+    // @Description: This Behavior is based on the Auto and Alt_hold flight modes, which allows manual altitude control.While entering the height control the aircraft stops.it re starts the forward advance by giving it pitch input and continuing with the flight plan
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(auto_man_alt, "AUTO_MAN_ALT", AUTO_MAN_ALT),*/
+
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s
@@ -987,6 +994,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 27, ParametersG2, AP_Follow),
 #endif
+
+    // @Param: AUTO_MAN_ALT
+    // @DisplayName: Auto Manual Altitude Control
+    // @Description: This Behavior is based on the Auto and Alt_hold flight modes, which allows manual altitude control.While entering the height control the aircraft stops.it re starts the forward advance by giving it pitch input and continuing with the flight plan
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_MAN_ALT", 28, ParametersG2, auto_man_alt, AUTO_MAN_ALT),
 
     AP_GROUPEND
 };
