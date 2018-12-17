@@ -366,6 +366,7 @@ void Copter::ModeAuto::payload_place_start()
     payload_place_start(stopping_point);
 
 }
+<<<<<<< HEAD
 
 /*int Copter::ModeAuto::pump(int bomb) {
 if (bomb == 1) {
@@ -376,6 +377,9 @@ hal.console->printf("pump off\n");
 }
 return bomb;
 }*/ 
+=======
+
+>>>>>>> semi-auto-with-parameters
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -517,6 +521,9 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         //bomb = 0;
         copter.camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
         //pump(bomb);
+
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        copter.camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
         break;
 #endif
 
@@ -848,11 +855,15 @@ void Copter::ModeAuto::wp_run()
     else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+<<<<<<< HEAD
     }
     /*if (wp_nav->get_wp_distance_to_destination() < 500.0f) {
     bomb = 1;
     pump(bomb);
     }*/
+=======
+    }
+>>>>>>> semi-auto-with-parameters
 }
 
 // auto_spline_run - runs the auto spline controller
