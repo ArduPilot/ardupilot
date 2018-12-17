@@ -141,7 +141,7 @@ bool JSBSim::create_templates(void)
     fprintf(f,
             "<?xml version=\"1.0\"?>\n"
             "<initialize name=\"Start up location\">\n"
-            "  <latitude unit=\"DEG\"> %f </latitude>\n"
+            "  <latitude unit=\"DEG\" type=\"geodetic\"> %f </latitude>\n"
             "  <longitude unit=\"DEG\"> %f </longitude>\n"
             "  <altitude unit=\"M\"> 1.3 </altitude>\n"
             "  <vt unit=\"FT/SEC\"> 0.0 </vt>\n"
@@ -291,7 +291,7 @@ bool JSBSim::open_control_socket(void)
     char startup[] =
         "info\n"
         "resume\n"
-        "step\n"
+        "iterate 1\n"
         "set atmosphere/turb-type 4\n";
     sock_control.send(startup, strlen(startup));
     return true;
@@ -351,7 +351,7 @@ void JSBSim::send_servos(const struct sitl_input &input)
              "set atmosphere/wind-mag-fps %f\n"
              "set atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps %f\n"
              "set atmosphere/turbulence/milspec/severity %f\n"
-             "step\n",
+             "iterate 1\n",
              aileron, elevator, rudder, throttle,
              radians(input.wind.direction),
              wind_speed_fps,
