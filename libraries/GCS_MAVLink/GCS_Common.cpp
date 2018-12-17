@@ -1065,6 +1065,9 @@ bool GCS_MAVLINK::do_try_send_message(const ap_message id)
     if (in_delay_callback && !should_send_message_in_delay_callback(id)) {
         return true;
     }
+    if (telemetry_delayed()) {
+        return false;
+    }
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_send_message_us = AP_HAL::micros();
@@ -3636,10 +3639,6 @@ void GCS_MAVLINK::send_mount_status() const
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
-    if (telemetry_delayed()) {
-        return false;
-    }
-
     bool ret = true;
 
     switch(id) {
