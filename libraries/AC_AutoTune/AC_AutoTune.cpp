@@ -350,13 +350,12 @@ void AC_AutoTune::run()
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the init() checks
-    if (!motors->armed() ||  !motors->get_interlock()) {
+    if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
         attitude_control->set_throttle_out_unstabilized(0.0f, true, 0);
         pos_control->relax_alt_hold_controllers(0.0f);
         return;
     }
-
 
     int32_t target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
     get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
@@ -651,7 +650,6 @@ void AC_AutoTune::control_attitude()
         // re-enable rate limits
         attitude_control->use_sqrt_controller(true);
 
-
         // log the latest gains
         if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
             switch (axis) {
@@ -678,7 +676,6 @@ void AC_AutoTune::control_attitude()
                 break;
             }
         }
-
 
         // Check results after mini-step to increase rate D gain
         switch (tune_type) {
