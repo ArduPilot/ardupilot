@@ -68,6 +68,8 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
@@ -190,6 +192,7 @@ public:
     virtual void send_rangefinder() const;
     void send_proximity() const;
     void send_ahrs2();
+    void send_ahrs3();
     void send_system_time();
     void send_radio_in();
     void send_raw_imu();
