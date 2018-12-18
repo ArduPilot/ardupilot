@@ -438,13 +438,9 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_EXTENDED_STATUS1:
-        if (PAYLOAD_SIZE(chan, SYS_STATUS) +
-            PAYLOAD_SIZE(chan, POWER_STATUS) > comm_get_txspace(chan)) {
-            return false;
-        }
+    case MSG_SYS_STATUS:
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
         plane.send_sys_status(chan);
-        send_power_status();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -619,7 +615,8 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
@@ -1495,7 +1492,7 @@ void Plane::mavlink_delay_cb()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
