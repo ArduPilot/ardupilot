@@ -30,6 +30,8 @@ protected:
 
     bool persist_streamrates() const override { return true; }
 
+    bool vehicle_initialised() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
