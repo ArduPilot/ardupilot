@@ -145,15 +145,15 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
     return rover.g2.motors.get_throttle();
 }
 
-void Rover::send_rangefinder(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_rangefinder() const
 {
     float distance_cm;
     float voltage;
     bool got_one = false;
 
     // report smaller distance of all rangefinders
-    for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
-        AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
+    for (uint8_t i=0; i<rover.rangefinder.num_sensors(); i++) {
+        AP_RangeFinder_Backend *s = rover.rangefinder.get_backend(i);
         if (s == nullptr) {
             continue;
         }
@@ -340,13 +340,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.send_servo_out(chan);
         break;
 
-    case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        rover.send_rangefinder(chan);
-        send_distance_sensor();
-        send_proximity();
-        break;
-
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         rover.send_wheel_encoder(chan);
@@ -512,6 +505,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
     MSG_BATTERY2,
     MSG_BATTERY_STATUS,

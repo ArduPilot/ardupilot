@@ -48,4 +48,6 @@ private:
 
     int16_t vfr_hud_throttle() const override;
 
+    void send_rangefinder() const override;
+
 };
