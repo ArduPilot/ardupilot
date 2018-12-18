@@ -71,6 +71,7 @@ enum ap_message : uint8_t {
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
     MSG_TERRAIN,
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
@@ -183,9 +184,11 @@ public:
     void send_battery_status(const AP_BattMonitor &battery,
                              const uint8_t instance) const;
     bool send_battery_status() const;
-    bool send_distance_sensor() const;
-    void send_rangefinder_downward() const;
-    bool send_proximity() const;
+    void send_distance_sensor() const;
+    // send_rangefinder sends only if a downward-facing instance is
+    // found.  Rover overrides this!
+    virtual void send_rangefinder() const;
+    void send_proximity() const;
     void send_ahrs2();
     void send_system_time();
     void send_radio_in();
