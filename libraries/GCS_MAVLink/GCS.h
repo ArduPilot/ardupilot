@@ -41,7 +41,8 @@ enum ap_message : uint8_t {
     MSG_HEARTBEAT,
     MSG_ATTITUDE,
     MSG_LOCATION,
-    MSG_EXTENDED_STATUS1,
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
     MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_CURRENT_WAYPOINT,
@@ -406,6 +407,8 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
+    virtual bool vehicle_initialised() const { return true; }
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
