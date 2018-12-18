@@ -221,8 +221,6 @@ bool AC_AutoTune::start(void)
         pos_control->set_desired_velocity_z(inertial_nav->get_velocity_z());
     }
 
-    axes_completed = 0;
-
     return true;
 }
 
@@ -879,6 +877,9 @@ void AC_AutoTune::backup_gains_and_initialise()
     } else if (yaw_enabled()) {
         axis = YAW;
     }
+    // no axes are complete
+    axes_completed = 0;
+
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
     step_start_time = AP_HAL::millis();
