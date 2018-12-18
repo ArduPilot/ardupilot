@@ -27,10 +27,7 @@ bool Mode::enter()
         rover.ahrs.get_filter_status(filt_status);
 
         // check position estimate.  requires origin and at least one horizontal position flag to be true
-        Location origin;
-        const bool position_ok = ahrs.get_origin(origin) &&
-                                (filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs ||
-                                 filt_status.flags.horiz_pos_rel || filt_status.flags.pred_horiz_pos_rel);
+        const bool position_ok = rover.ekf_position_ok() && !rover.failsafe.ekf;
         if (requires_position() && !position_ok) {
             return false;
         }
