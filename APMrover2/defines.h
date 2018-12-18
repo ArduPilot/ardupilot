@@ -121,6 +121,7 @@ enum mode_reason_t {
     MODE_REASON_CRASH_FAILSAFE,
     MODE_REASON_MISSION_COMMAND,
     MODE_REASON_FENCE_BREACH,
+    MODE_REASON_EKF_FAILSAFE,
 };
 
 enum pilot_steer_type_t {

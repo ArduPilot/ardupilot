@@ -55,6 +55,16 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
+    // ensure position esetimate is ok
+    if (!rover.ekf_position_ok()) {
+        const char *reason = AP::ahrs().prearm_failure_reason();
+        if (reason == nullptr) {
+            reason = "Need Position Estimate";
+        }
+        check_failed(ARMING_CHECK_NONE, display_failure, "%s", reason);
+        return false;
+    }
+
     // call parent gps checks
     return AP_Arming::gps_checks(display_failure);
 }
