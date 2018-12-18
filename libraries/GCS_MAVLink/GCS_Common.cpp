@@ -194,6 +194,10 @@ void GCS_MAVLINK::send_meminfo(void)
 // report power supply status
 void GCS_MAVLINK::send_power_status(void)
 {
+    if (!vehicle_initialised()) {
+        // avoid unnecessary errors being reported to user
+        return;
+    }
     mavlink_msg_power_status_send(chan,
                                   hal.analogin->board_voltage() * 1000,
                                   hal.analogin->servorail_voltage() * 1000,
@@ -860,7 +864,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
-        { MAVLINK_MSG_ID_SYS_STATUS,            MSG_EXTENDED_STATUS1},
+        { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
+        { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
         { MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, MSG_NAV_CONTROLLER_OUTPUT},
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
@@ -3759,6 +3764,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_POSITION_TARGET_GLOBAL_INT:
         CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
         send_position_target_global_int();
+        break;
+
+    case MSG_POWER_STATUS:
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
         break;
 
     case MSG_RADIO_IN:
