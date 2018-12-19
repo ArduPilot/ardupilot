@@ -754,6 +754,9 @@ public:
     // get the VFR_HUD throttle
     int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0).vfr_hud_throttle():0; }
 
+    // update uart pass-thru
+    void update_passthru();
+
 private:
 
     static GCS *_singleton;
@@ -778,6 +781,22 @@ private:
 
     // true if we are running short on time in our main loop
     bool _out_of_time;
+
+    // handle passthru between two UARTs
+    struct {
+        bool enabled;
+        bool timer_installed;
+        AP_HAL::UARTDriver *port1;
+        AP_HAL::UARTDriver *port2;
+        uint32_t start_ms;
+        uint32_t last_ms;
+        uint32_t last_port1_data_ms;
+        uint8_t timeout_s;
+        HAL_Semaphore sem;
+    } _passthru;
+
+    // timer called to implement pass-thru
+    void passthru_timer();
 };
 
 GCS &gcs();
