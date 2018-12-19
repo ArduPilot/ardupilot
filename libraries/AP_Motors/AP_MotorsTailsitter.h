@@ -23,7 +23,8 @@ public:
     // set update rate to motors - a value in hertz
     void set_update_rate( uint16_t speed_hz ) override;
 
-    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+    // spin a motor at the pwm value specified
+    void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // output_to_motors - sends output to named servos
     void output_to_motors() override;
