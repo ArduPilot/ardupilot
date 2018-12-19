@@ -1463,7 +1463,13 @@ void QuadPlane::update(void)
         motors->output();
         return;
     }
-    
+
+    if (plane.motor_emergency_stop) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        motors->output();
+        return;
+    }
+
     if (motor_test.running) {
         motor_test_output();
         return;
