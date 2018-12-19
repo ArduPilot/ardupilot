@@ -89,7 +89,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # 17.10, EOL July 2018
   # Only kept around for those few dev's who have already got this image and continue to use it; not available for download
-  config.vm.define "artful32", primary: true do |artful32|
+  config.vm.define "artful32", autostart: false do |artful32|
     config.vm.box = "ubuntu/artful32"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
@@ -109,7 +109,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 18.04 LTS , bleeding edge.
-  config.vm.define "bionic64", autostart: false do |bionic64|
+  config.vm.define "bionic64", primary: true do |bionic64|
     config.vm.box = "ubuntu/bionic64"
     config.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     config.vm.provider "virtualbox" do |vb|
