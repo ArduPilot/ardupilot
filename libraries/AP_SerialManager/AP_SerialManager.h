@@ -68,6 +68,9 @@
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_TX     128
 
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
+
 // SBUS servo outputs
 #define AP_SERIALMANAGER_SBUS1_BAUD           100000
 #define AP_SERIALMANAGER_SBUS1_BUFSIZE_RX     16
@@ -102,6 +105,7 @@ public:
         SerialProtocol_ESCTelemetry = 16,
         SerialProtocol_Devo_Telem = 17,
         SerialProtocol_OpticalFlow = 18,
+        SerialProtocol_Robotis = 19,
     };
 
     // get singleton instance
