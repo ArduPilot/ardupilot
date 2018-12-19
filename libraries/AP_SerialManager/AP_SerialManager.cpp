@@ -203,6 +203,28 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("6_OPTIONS",  19, AP_SerialManager, state[6].options, 0),
 
+    // @Param: _PASS1
+    // @DisplayName: Serial passthru first port
+    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
+    // @Values: -1:Disabled,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @User: Advanced
+    AP_GROUPINFO("_PASS1",  20, AP_SerialManager, passthru_port1, 0),
+
+    // @Param: _PASS2
+    // @DisplayName: Serial passthru second port
+    // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
+    // @Values: -1:Disabled,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @User: Advanced
+    AP_GROUPINFO("_PASS2",  21, AP_SerialManager, passthru_port2, -1),
+
+    // @Param: _PASSTIMO
+    // @DisplayName: Serial passthru timeout
+    // @Description: This sets a timeout for serial pass-through in seconds. When the pass-through is enabled by setting the SERIAL_PASS1 and SERIAL_PASS2 parameters then it remains in effect until no data comes from the first port for SERIAL_PASSTIMO seconds. This allows the port to revent to its normal usage (such as MAVLink connection to a GCS) when it is no longer needed. A value of 0 means no timeout.
+    // @Range: 0 120
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
+    
     AP_GROUPEND
 };
 
@@ -232,6 +254,9 @@ extern bool g_nsh_should_exit;
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
+    // always reset passthru port2 on boot
+    passthru_port2.set_and_save_ifchanged(-1);
+
     // initialise pointers to serial ports
     state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
     state[2].uart = hal.uartD;  // serial2, uartD, normally telem2
@@ -501,6 +526,27 @@ void AP_SerialManager::set_options(uint8_t i)
     if (!opt.uart->set_options(opt.options)) {
         hal.console->printf("Unable to setup options for Serial%u\n", i);
     }
+}
+
+// get the passthru ports if enabled
+bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s) const
+{
+    if (passthru_port2 < 0 ||
+        passthru_port2 >= SERIALMANAGER_NUM_PORTS ||
+        passthru_port1 < 0 ||
+        passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
+        return false;
+    }
+    port1 = state[passthru_port1].uart;
+    port2 = state[passthru_port2].uart;
+    timeout_s = MAX(passthru_timeout, 0);
+    return true;
+}
+
+// disable passthru by settings SERIAL_PASS2 to -1
+void AP_SerialManager::disable_passthru(void)
+{
+    passthru_port2.set_and_notify(-1);
 }
 
 
