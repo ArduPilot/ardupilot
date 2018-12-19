@@ -1379,7 +1379,7 @@ void NavEKF2_core::StoreQuatReset()
 }
 
 // Rotate the stored output quaternion history through a quaternion rotation
-void NavEKF2_core::StoreQuatRotate(Quaternion deltaQuat)
+void NavEKF2_core::StoreQuatRotate(const Quaternion &deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table

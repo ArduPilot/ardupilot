@@ -527,7 +527,7 @@ private:
     void StoreQuatReset(void);
 
     // Rotate the stored output quaternion history through a quaternion rotation
-    void StoreQuatRotate(Quaternion deltaQuat);
+    void StoreQuatRotate(const Quaternion &deltaQuat);
 
     // store altimeter data
     void StoreBaro();
