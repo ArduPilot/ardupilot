@@ -117,13 +117,13 @@ void SITL_State::_sitl_setup(const char *home_str)
  */
 void SITL_State::_setup_fdm(void)
 {
-    if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
-        fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
+    if (!_sitl_rc_in.reuseaddress()) {
+        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
         fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
-    if (!_sitl_rc_in.reuseaddress()) {
-        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+    if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
+        fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
         fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
