@@ -32,6 +32,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 {
     switch(ch_option) {
     // the following functions do not need to be initialised:
+    case MOTOR_ESTOP:
     case ARMDISARM:
     case INVERTED:
         break;
@@ -58,6 +59,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
 {
     switch(ch_option) {
+    case MOTOR_ESTOP:
+        // Turn on Emergency Stop logic when channel is high
+        plane.set_motor_emergency_stop(ch_flag == HIGH);
+        break;
     case ARMDISARM:
         // arm or disarm the vehicle
         switch (ch_flag) {
