@@ -44,13 +44,14 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
     // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t key) override;
+    bool lock_port(uint32_t write_key, uint32_t read_key) override;
 
     // control optional features
     bool set_options(uint8_t options) override;
@@ -125,8 +126,9 @@ private:
     uint8_t serial_num;
 
     // key for a locked port
-    uint32_t lock_key;
-    
+    uint32_t lock_write_key;
+    uint32_t lock_read_key;
+
     uint32_t _baudrate;
     uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
@@ -173,6 +175,13 @@ private:
     // we remember cr2 and cr2 options from set_options to apply on sdStart()
     uint32_t _cr3_options;
     uint32_t _cr2_options;
+
+    // half duplex control. After writing we throw away bytes for 4 byte widths to
+    // prevent reading our own bytes back
+    bool half_duplex;
+    uint32_t hd_read_delay_us;
+    uint32_t hd_write_us;
+    void half_duplex_setup_delay(uint16_t len);
 
     // set to true for unbuffered writes (low latency writes)
     bool unbuffered_writes;
