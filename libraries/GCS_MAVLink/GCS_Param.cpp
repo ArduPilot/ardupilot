@@ -314,17 +314,6 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     }
 }
 
-/*
-  send queued parameters if needed
- */
-void GCS_MAVLINK::send_queued_parameters(void)
-{
-    if (!param_timer_registered) {
-        param_timer_registered = true;
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
-    }
-}
-
 
 /*
   timer callback for async parameter requests
