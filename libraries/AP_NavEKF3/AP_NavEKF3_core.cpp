@@ -1393,7 +1393,7 @@ void NavEKF3_core::StoreQuatReset()
 }
 
 // Rotate the stored output quaternion history through a quaternion rotation
-void NavEKF3_core::StoreQuatRotate(Quaternion deltaQuat)
+void NavEKF3_core::StoreQuatRotate(const Quaternion &deltaQuat)
 {
     outputDataNew.quat = outputDataNew.quat*deltaQuat;
     // write current measurement to entire table
@@ -1665,7 +1665,7 @@ Vector3f NavEKF3_core::calcRotVecVariances()
 }
 
 // initialise the quaternion covariances using rotation vector variances
-void NavEKF3_core::initialiseQuatCovariances(Vector3f &rotVarVec)
+void NavEKF3_core::initialiseQuatCovariances(const Vector3f &rotVarVec)
 {
     // calculate an equivalent rotation vector from the quaternion
     float q0 = stateStruct.quat[0];
