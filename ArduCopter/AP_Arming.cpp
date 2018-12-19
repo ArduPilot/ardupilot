@@ -190,9 +190,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         #if RANGEFINDER_ENABLED == ENABLED && OPTFLOW == ENABLED
+        uint8_t failed_rangefinder;
         // check range finder if optflow enabled
-        if (copter.optflow.enabled() && !copter.rangefinder.pre_arm_check()) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "check range finder");
+        if (copter.optflow.enabled() && (!copter.rangefinder.pre_arm_check(failed_rangefinder) || !copter.rangefinder.pre_arm_check_opflow(failed_rangefinder))) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Moving rangefinder %d failed", failed_rangefinder);
             return false;
         }
         #endif
