@@ -24,3 +24,4 @@ LIBRARIES += AC_Sprayer
 LIBRARIES += AC_Avoidance
 LIBRARIES += AP_LandingGear
 LIBRARIES += AC_AutoTune
+LIBRARIES += AP_RobotisServo
