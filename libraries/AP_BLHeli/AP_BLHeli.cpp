@@ -865,7 +865,7 @@ void AP_BLHeli::blheli_process_command(void)
         }
         if (uart_locked) {
             debug("Unlocked UART");
-            uart->lock_port(0);
+            uart->lock_port(0, 0);
             uart_locked = false;
         }
         memset(blheli.connected, 0, sizeof(blheli.connected));
@@ -1079,7 +1079,7 @@ bool AP_BLHeli::process_input(uint8_t b)
         if (blheli.state == BLHELI_COMMAND_RECEIVED) {
             valid_packet = true;
             last_valid_ms = AP_HAL::millis();
-            if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
+            if (uart->lock_port(BLHELI_UART_LOCK_KEY, 0)) {
                 uart_locked = true;
             }
             blheli_process_command();
@@ -1089,7 +1089,7 @@ bool AP_BLHeli::process_input(uint8_t b)
     } else if (msp.state == MSP_COMMAND_RECEIVED) {
         if (msp.packetType == MSP_PACKET_COMMAND) {
             valid_packet = true;
-            if (uart->lock_port(BLHELI_UART_LOCK_KEY)) {
+            if (uart->lock_port(BLHELI_UART_LOCK_KEY, 0)) {
                 uart_locked = true;
             }
             last_valid_ms = AP_HAL::millis();
@@ -1185,7 +1185,7 @@ void AP_BLHeli::update(void)
             SRV_Channels::set_disabled_channel_mask(0);            
         }
         debug("Unlocked UART");
-        uart->lock_port(0);
+        uart->lock_port(0, 0);
         uart_locked = false;
     }
     if (initialised || (channel_mask.get() == 0 && channel_auto.get() == 0)) {
