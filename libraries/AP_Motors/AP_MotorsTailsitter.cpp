@@ -56,7 +56,7 @@ AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) 
 
 
 // set update rate to motors - a value in hertz
-void AP_MotorsTailsitter::set_update_rate( uint16_t speed_hz )
+void AP_MotorsTailsitter::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
     _speed_hz = speed_hz;
@@ -144,7 +144,6 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     yaw_thrust = _yaw_in * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
 
-
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {
         throttle_thrust = 0.0f;
@@ -155,7 +154,7 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
-    // caculate left and right throttle outputs
+    // calculate left and right throttle outputs
     _thrust_left  = throttle_thrust + roll_thrust*0.5;
     _thrust_right = throttle_thrust - roll_thrust*0.5;
 
@@ -167,7 +166,7 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
         limit.roll_pitch = true;
     }
 
-    // Add ajustment to reduce average throttle
+    // Add adjustment to reduce average throttle
     _thrust_left  = constrain_float(_thrust_left  + thr_adj, 0.0f, 1.0f);
     _thrust_right = constrain_float(_thrust_right + thr_adj, 0.0f, 1.0f);
     _throttle = throttle_thrust + thr_adj;
