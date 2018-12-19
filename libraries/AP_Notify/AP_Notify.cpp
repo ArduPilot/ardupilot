@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: BUZZ_ENABLE
     // @DisplayName: Buzzer enable
     // @Description: Enable or disable the buzzer.
-    // @Values: 0:Disable,1:Enable
+    // @Values: 0:Disable,1:Enable,2:Enable when disarmed only,3:Enable when armed only
     // @User: Advanced
     AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ENABLE_DEFAULT),
 

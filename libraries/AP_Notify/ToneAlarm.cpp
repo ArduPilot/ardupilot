@@ -94,9 +94,6 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 
 bool AP_ToneAlarm::init()
 {
-    if (pNotify->buzzer_enabled() == false) {
-        return false;
-    }
     if (!hal.util->toneAlarm_init()) {
         return false;
     }
@@ -137,11 +134,14 @@ void AP_ToneAlarm::_timer_task()
 void AP_ToneAlarm::play_string(const char *str)
 {
     WITH_SEMAPHORE(_sem);
-
     _mml_player.stop();
-    strncpy(_tone_buf, str, AP_NOTIFY_TONEALARM_TONE_BUF_SIZE);
-    _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE-1] = 0;
-    _mml_player.play(_tone_buf);
+    
+    if (pNotify->buzzer_enabled())
+    {
+        strncpy(_tone_buf, str, AP_NOTIFY_TONEALARM_TONE_BUF_SIZE);
+        _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE-1] = 0;
+        _mml_player.play(_tone_buf);
+    }
 }
 
 void AP_ToneAlarm::stop_cont_tone()
@@ -165,14 +165,9 @@ void AP_ToneAlarm::check_cont_tone()
     }
 }
 
-// update - updates led according to timed_updated.  Should be called at 50Hz
+// update - updates tone according to event.  Should be called at 50Hz
 void AP_ToneAlarm::update()
 {
-    // exit if buzzer is not enabled
-    if (pNotify->buzzer_enabled() == false) {
-        return;
-    }
-
     check_cont_tone();
 
     if (AP_Notify::flags.powering_off) {
@@ -381,6 +376,10 @@ void AP_ToneAlarm::update()
  */
 void AP_ToneAlarm::handle_play_tune(mavlink_message_t *msg)
 {
+    if (!pNotify->buzzer_enabled()) {
+        return;
+    }
+	
     // decode mavlink message
     mavlink_play_tune_t packet;
 
