@@ -299,7 +299,10 @@ private:
 #if OSD_ENABLED == ENABLED
     AP_OSD osd;
 #endif
-    
+
+    void set_motor_emergency_stop(bool b);
+    bool motor_emergency_stop;
+
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     enum FlightMode control_mode = INITIALISING;

@@ -945,4 +945,11 @@ void Plane::publish_osd_info()
 }
 #endif
 
+void Plane::set_motor_emergency_stop(bool b)
+{
+    if(motor_emergency_stop != b) {
+        motor_emergency_stop = b;
+    }
+}
+
 AP_HAL_MAIN_CALLBACKS(&plane);
