@@ -240,9 +240,6 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
-    // send queued parameters if needed
-    void send_queued_parameters(void);
-
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
