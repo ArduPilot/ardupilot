@@ -399,6 +399,13 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         return;
     }
 
+    if (uart_drv->half_duplex) {
+        uint32_t now = AP_HAL::micros();
+        if (now - uart_drv->hd_write_us < uart_drv->hd_read_delay_us) {
+            len = 0;
+        }
+    }
+
     uart_drv->_readbuf.write(uart_drv->rx_bounce_buf, len);
 
     uart_drv->receive_timestamp_update();
@@ -468,7 +475,7 @@ bool UARTDriver::tx_pending() { return false; }
 
 /* Empty implementations of Stream virtual methods */
 uint32_t UARTDriver::available() {
-    if (!_initialised) {
+    if (!_initialised || lock_read_key) {
         return 0;
     }
     if (sdef.is_usb) {
@@ -492,7 +499,7 @@ uint32_t UARTDriver::txspace()
 
 int16_t UARTDriver::read()
 {
-    if (_uart_owner_thd != chThdGetSelfX()){
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
         return -1;
     }
     if (!_initialised) {
@@ -510,10 +517,28 @@ int16_t UARTDriver::read()
     return byte;
 }
 
+int16_t UARTDriver::read_locked(uint32_t key)
+{
+    if (lock_read_key != 0 && key != lock_read_key) {
+        return -1;
+    }
+    if (!_initialised) {
+        return -1;
+    }
+    uint8_t byte;
+    if (!_readbuf.read_byte(&byte)) {
+        return -1;
+    }
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+    return byte;
+}
+
 /* Empty implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
-    if (lock_key != 0 || !_write_mutex.take_nonblocking()) {
+    if (lock_write_key != 0 || !_write_mutex.take_nonblocking()) {
         return 0;
     }
     
@@ -539,7 +564,7 @@ size_t UARTDriver::write(uint8_t c)
 
 size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 {
-    if (!_initialised || lock_key != 0) {
+    if (!_initialised || lock_write_key != 0) {
 		return 0;
 	}
 
@@ -569,15 +594,20 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 }
 
 /*
-  lock the uart for exclusive use by write_locked() with the right key
+  lock the uart for exclusive use by write_locked() and read_locked() with the right key
  */
-bool UARTDriver::lock_port(uint32_t key)
+bool UARTDriver::lock_port(uint32_t write_key, uint32_t read_key)
 {
-    if (lock_key && key != lock_key && key != 0) {
+    if (lock_write_key && write_key != lock_write_key && read_key != 0) {
         // someone else is using it
         return false;
     }
-    lock_key = key;
+    if (lock_read_key && read_key != lock_read_key && read_key != 0) {
+        // someone else is using it
+        return false;
+    }
+    lock_write_key = write_key;
+    lock_read_key = read_key;
     return true;
 }
 
@@ -587,7 +617,7 @@ bool UARTDriver::lock_port(uint32_t key)
 */
 size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key)
 {
-    if (lock_key != 0 && key != lock_key) {
+    if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
     if (!_write_mutex.take_nonblocking()) {
@@ -686,6 +716,11 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             tx_len = max_tx_bytes;
         }
     }
+
+    if (half_duplex) {
+        half_duplex_setup_delay(tx_len);
+    }
+
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
     dmaStreamSetMemory0(txdma, tx_bounce_buf);
@@ -707,6 +742,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
 void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
 {
     ByteBuffer::IoVec vec[2];
+    uint16_t nwritten = 0;
+
     const auto n_vec = _writebuf.peekiovec(vec, n);
     for (int i = 0; i < n_vec; i++) {
         int ret = -1;
@@ -725,7 +762,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         }
         if (ret > 0) {
             _last_write_completed_us = AP_HAL::micros();
-            _total_written += ret;
+            nwritten += ret;
         }
         _writebuf.advance(ret);
         
@@ -734,8 +771,13 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
             break;
         }
     }
-}
 
+    _total_written += nwritten;
+
+    if (half_duplex) {
+        half_duplex_setup_delay(nwritten);
+    }
+}
 
 /*
   write any pending bytes to the device
@@ -792,6 +834,19 @@ void UARTDriver::write_pending_bytes(void)
         }
     }
 }
+
+/*
+  setup a delay after writing bytes to a half duplex UART to prevent
+  read-back of the same bytes that we wrote. half-duplex protocols
+  tend to have quite loose timing, which makes this possible
+ */
+void UARTDriver::half_duplex_setup_delay(uint16_t len)
+{
+    const uint16_t pad_us = 1000;
+    hd_write_us = AP_HAL::micros();
+    hd_read_delay_us = ((1000000UL * len * 10) / _baudrate) + pad_us;
+}
+
 
 /*
   push any pending bytes to/from the serial port. This is called at
@@ -864,6 +919,12 @@ void UARTDriver::_timer_tick(void)
             }
             if (ret < 0) {
                 break;
+            }
+            if (half_duplex) {
+                uint32_t now = AP_HAL::micros();
+                if (now - hd_write_us < hd_read_delay_us) {
+                    break;
+                }
             }
             _readbuf.commit((unsigned)ret);
 
@@ -1150,6 +1211,7 @@ bool UARTDriver::set_options(uint8_t options)
     if (options & OPTION_HDPLEX) {
         cr3 |= USART_CR3_HDSEL;
         _cr3_options |= USART_CR3_HDSEL;
+        half_duplex = true;
     } else {
         cr3 &= ~USART_CR3_HDSEL;
     }
