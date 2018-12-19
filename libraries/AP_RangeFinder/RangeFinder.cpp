@@ -621,12 +621,25 @@ uint8_t RangeFinder::range_valid_count_orient(enum Rotation orientation) const
   returns true if pre-arm checks have passed for all range finders
   these checks involve the user lifting or rotating the vehicle so that sensor readings between
   the min and 2m can be captured
- */
-bool RangeFinder::pre_arm_check() const
+*/
+bool RangeFinder::pre_arm_check_opflow(uint8_t &failed_rangefinder)
+{
+    for (uint8_t i = 0; i < num_instances; i++) {
+        // if driver is valid but pre_arm_check is false, return false
+        if ((drivers[i] != nullptr) && (state[i].type != RangeFinder_TYPE_NONE) && state[i].pre_arm_check && !state[i].pre_arm_check_opflow) {
+            failed_rangefinder = i;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool RangeFinder::pre_arm_check(uint8_t &failed_rangefinder) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
         // if driver is valid but pre_arm_check is false, return false
         if ((drivers[i] != nullptr) && (params[i].type != RangeFinder_TYPE_NONE) && !state[i].pre_arm_check) {
+            failed_rangefinder = i;
             return false;
         }
     }

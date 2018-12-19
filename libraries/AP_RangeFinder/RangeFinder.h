@@ -92,6 +92,7 @@ public:
         enum RangeFinder_Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         bool     pre_arm_check;         // true if sensor has passed pre-arm checks
+        bool     pre_arm_check_opflow;  // true if sensor has passed opflow pre-arm checks
         uint16_t pre_arm_distance_min;  // min distance captured during pre-arm checks
         uint16_t pre_arm_distance_max;  // max distance captured during pre-arm checks
         uint32_t last_reading_ms;       // system time of last successful update from sensor
@@ -154,7 +155,9 @@ public:
       these checks involve the user lifting or rotating the vehicle so that sensor readings between
       the min and 2m can be captured
      */
-    bool pre_arm_check() const;
+    bool pre_arm_check_opflow(uint8_t &failed_rangefinder);
+
+    bool pre_arm_check(uint8_t &failed_rangefinder) const;
 
     static RangeFinder *get_singleton(void) { return _singleton; }
 
