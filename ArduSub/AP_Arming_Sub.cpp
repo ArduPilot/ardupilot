@@ -9,7 +9,7 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
         sub.channel_throttle,
         sub.channel_yaw
     };
-    return rc_checks_copter_sub(display_failure, channels, false /* check_min_max */);
+    return rc_checks_copter_sub(display_failure, channels);
 }
 
 bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
