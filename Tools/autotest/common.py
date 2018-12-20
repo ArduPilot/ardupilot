@@ -1443,21 +1443,6 @@ class AutoTest(ABC):
         self.mav.message_hooks.append(self.message_hook)
         self.mav.idle_hooks.append(self.idle_hook)
 
-    def run_test(self, desc, test_function, interact=False):
-        '''old--style run-one-test used by vehicle test scripts, to be eliminated when all are converted'''
-        self.start_test(desc)
-
-        try:
-            test_function()
-        except Exception as e:
-            self.progress('FAILED: "%s": %s' % (desc, repr(e)))
-            self.fail_list.append((desc, e, None))
-            if interact:
-                self.progress("Starting MAVProxy interaction as directed")
-                self.mavproxy.interact()
-            return
-        self.progress('PASSED: "%s"' % desc)
-
     def check_sitl_reset(self):
         if self.armed():
             self.forced_post_test_sitl_reboots += 1
