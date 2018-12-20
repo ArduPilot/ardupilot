@@ -2418,6 +2418,27 @@ class AutoTestCopter(AutoTest):
         super(AutoTestCopter, self).set_rc_default()
         self.set_rc(3, 1000)
 
+    def loiter_throttle_spike(self):
+        """Check no throttle spike when switching to loiter in auto takeoff"""
+        global num_wp
+        num_wp = self.load_mission("copter-mission-loiter-auto-throttle.txt")
+        if not num_wp:
+            self.progress("load copter_loiter_to_target failed")
+            raise NotAchievedException()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1500)
+        self.wait_for_alt(10) # takeoff command says 20m
+        self.change_mode('LOITER')
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 10:
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            print(m)
+        self.change_mode('RTL')
+        self.mav.motors_disarmed_wait()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()
@@ -2543,6 +2564,10 @@ class AutoTestCopter(AutoTest):
             ("Mount",
              "Test Camera/Antenna Mount",
              self.test_mount),
+
+            ("LoiterThrottleSpike",
+             "Check for spike moving from auto to loiter",
+             self.loiter_throttle_spike),
 
             ("LogDownLoad",
              "Log download",
