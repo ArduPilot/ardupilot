@@ -1,10 +1,8 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
