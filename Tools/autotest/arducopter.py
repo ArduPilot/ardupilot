@@ -349,14 +349,12 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # save the stored mission to file
-        global num_wp
         num_wp = self.save_mission_to_file(os.path.join(testdir,
                                                         "ch7_mission.txt"))
         if not num_wp:
             self.fail_list.append("save_mission_to_file")
             self.progress("save_mission_to_file failed")
 
-        global num_wp
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.mavproxy.send('wp set 1\n')
         self.change_mode('AUTO')
@@ -409,11 +407,7 @@ class AutoTestCopter(AutoTest):
 
             self.reboot_sitl()
 
-            global num_wp
-            num_wp = self.load_mission("copter_loiter_to_alt.txt")
-            if not num_wp:
-                self.progress("load copter_loiter_to_target failed")
-                raise NotAchievedException()
+            self.load_mission("copter_loiter_to_alt.txt")
 
             self.mavproxy.send('switch 5\n')
             self.wait_mode('LOITER')
@@ -820,7 +814,6 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_glitch_mission")
         # load the waypoint count
-        global num_wp
         num_wp = self.load_mission("copter_glitch_mission.txt")
         if not num_wp:
             raise NotAchievedException("load copter_glitch_mission failed")
@@ -1191,7 +1184,6 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_mission")
         # load the waypoint count
-        global num_wp
         num_wp = self.load_mission("copter_mission.txt")
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
@@ -1233,7 +1225,6 @@ class AutoTestCopter(AutoTest):
         # upload mission from file
         self.progress("# Load copter_AVC2013_mission")
         # load the waypoint count
-        global num_wp
         num_wp = self.load_mission("copter_AVC2013_mission.txt")
         if not num_wp:
             raise NotAchievedException("load copter_AVC2013_mission failed")
@@ -1951,8 +1942,7 @@ class AutoTestCopter(AutoTest):
 
     def fly_nav_takeoff_delay_abstime(self):
         """make sure taking off at a specific time works"""
-        global num_wp
-        num_wp = self.load_mission("copter_nav_delay_takeoff.txt")
+        self.load_mission("copter_nav_delay_takeoff.txt")
 
         self.progress("Starting mission")
 
@@ -2179,11 +2169,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             self.set_rc(9, 2000)
             # load the mission:
-            global num_wp
-            num_wp = self.load_mission("copter_payload_place.txt")
-            if not num_wp:
-                self.progress("load copter_mission failed")
-                raise NotAchievedException()
+            self.load_mission("copter_payload_place.txt")
 
             self.progress("Waiting for location")
             self.mav.location()
