@@ -158,6 +158,9 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
       prevents sudden turns if we overshoot the landing point
      */
     struct Location land_WP_loc = next_WP_loc;
+    if (!type_slope_flags.touched_down) {
+        runway_bearing = get_bearing_cd(prev_WP_loc, next_WP_loc) * 0.01f;
+    }
     location_update(land_WP_loc,
                     runway_bearing,
                     get_distance(prev_WP_loc, current_loc) + 200);
