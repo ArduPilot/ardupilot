@@ -56,7 +56,7 @@ public:
         AP_AccelCal::register_client(this);
     }
 
-    void    update_target(Vector3f newTarget);
+    void    update_target(const Vector3f &newTarget);
     void    receive_feedback(mavlink_channel_t chan, const mavlink_message_t *msg);
 
     void update_fast();
