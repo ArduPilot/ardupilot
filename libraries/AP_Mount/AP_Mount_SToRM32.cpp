@@ -46,6 +46,7 @@ void AP_Mount_SToRM32::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+            resend_now = true;
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
