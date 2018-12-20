@@ -87,7 +87,6 @@ protected:
 
     // internal members
     bool                    armed:1;
-    bool                    logging_available:1;
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
@@ -118,7 +117,7 @@ protected:
     virtual bool system_checks(bool report);
     
     bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4], const bool check_min_max = true) const;
+    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
