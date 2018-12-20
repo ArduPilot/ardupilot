@@ -373,7 +373,7 @@ Vector3f SoloGimbal::get_ang_vel_dem_body_lock()
     return gimbalRateDemVecBodyLock;
 }
 
-void SoloGimbal::update_target(Vector3f newTarget)
+void SoloGimbal::update_target(const Vector3f &newTarget)
 {
     // Low-pass filter
     _att_target_euler_rad.y = _att_target_euler_rad.y + 0.02f*(newTarget.y - _att_target_euler_rad.y);
