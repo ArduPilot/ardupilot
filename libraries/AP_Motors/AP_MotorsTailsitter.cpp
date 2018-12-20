@@ -104,8 +104,8 @@ void AP_MotorsTailsitter::output_to_motors()
     }
 
     // Always output to tilt servos
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, _tilt_left*SERVO_OUTPUT_RANGE);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, _tilt_right*SERVO_OUTPUT_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, _tilt_left*SERVO_OUTPUT_RANGE);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, _tilt_right*SERVO_OUTPUT_RANGE);
 
     // plane outputs for Qmodes are setup here, and written to the HAL by the plane servos loop
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, -_yaw_in*SERVO_OUTPUT_RANGE);
