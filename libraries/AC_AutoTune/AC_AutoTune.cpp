@@ -46,7 +46,8 @@
 #define AUTOTUNE_LEVEL_ANGLE_CD             500     // angle which qualifies as level
 #define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
-#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the copter to be level
+#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
+#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -485,15 +486,15 @@ void AC_AutoTune::control_attitude()
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
         if (!currently_level()) {
-            step_start_time = now;
+            step_start_time_ms = now;
         }
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
-        if (now - step_start_time >= AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+        if ((AUTOTUNE_REQUIRED_LEVEL_TIME_MS < now - step_start_time_ms) || (AUTOTUNE_LEVEL_TIMEOUT_MS < now - step_time_limit_ms)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             step = TWITCHING;
-            step_start_time = now;
+            step_start_time_ms = now;
             step_time_limit_ms = AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
             twitch_first_iter = true;
             test_rate_max = 0.0f;
@@ -860,7 +861,8 @@ void AC_AutoTune::control_attitude()
 
         // reset testing step
         step = WAITING_FOR_LEVEL;
-        step_start_time = now;
+        step_start_time_ms = now;
+        step_time_limit_ms = now;
         break;
     }
 }
@@ -882,7 +884,7 @@ void AC_AutoTune::backup_gains_and_initialise()
 
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
-    step_start_time = AP_HAL::millis();
+    step_start_time_ms = AP_HAL::millis();
     tune_type = RD_UP;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
@@ -1210,7 +1212,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_rate_max < rate_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_time_limit_ms = (now - step_start_time) * 3.0f;
+        step_time_limit_ms = (now - step_start_time_ms) * 3.0f;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
@@ -1224,7 +1226,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
         step = UPDATE_GAINS;
     }
 
-    if (now - step_start_time >= step_time_limit_ms) {
+    if (now - step_start_time_ms >= step_time_limit_ms) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
     }
@@ -1265,7 +1267,7 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_angle_max < angle_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_time_limit_ms = (now - step_start_time) * 3.0f;
+        step_time_limit_ms = (now - step_start_time_ms) * 3.0f;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
@@ -1279,7 +1281,7 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
         step = UPDATE_GAINS;
     }
 
-    if (now - step_start_time >= step_time_limit_ms) {
+    if (now - step_start_time_ms >= step_time_limit_ms) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
     }
@@ -1290,7 +1292,7 @@ void AC_AutoTune::twitching_measure_acceleration(float &rate_of_change, float ra
 {
     if (rate_measurement_max < rate_measurement) {
         rate_measurement_max = rate_measurement;
-        rate_of_change = (1000.0f*rate_measurement_max)/(AP_HAL::millis() - step_start_time);
+        rate_of_change = (1000.0f*rate_measurement_max)/(AP_HAL::millis() - step_start_time_ms);
     }
 }
 
