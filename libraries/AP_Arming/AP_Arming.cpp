@@ -14,12 +14,14 @@
  */
 
 #include "AP_Arming.h"
-#include <AP_Notify/AP_Notify.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Notify/AP_Notify.h>
+#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
