@@ -256,7 +256,7 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         }
         // get next gyro vector
         const Vector3f &gyro_vec = ins.get_gyro(i);
-        Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+        const Vector3f vec_diff = gyro_vec - prime_gyro_vec;
         // allow for up to 5 degrees/s difference. Pass if it has
         // been OK in last 10 seconds
         if (vec_diff.length() <= radians(5)) {
@@ -351,14 +351,14 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         // check for unreasonable compass offsets
-        Vector3f offsets = _compass.get_offsets();
+        const Vector3f offsets = _compass.get_offsets();
         if (offsets.length() > _compass.get_offsets_max()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compass offsets too high");
             return false;
         }
 
         // check for unreasonable mag field length
-        float mag_field = _compass.get_field().length();
+        const float mag_field = _compass.get_field().length();
         if (mag_field > AP_ARMING_COMPASS_MAGFIELD_MAX || mag_field < AP_ARMING_COMPASS_MAGFIELD_MIN) {
             check_failed(ARMING_CHECK_COMPASS, report, "Check mag field");
             return false;
@@ -405,7 +405,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        Location gps_loc = gps.location();
+        const Location gps_loc = gps.location();
         Location ahrs_loc;
         if (AP::ahrs().get_position(ahrs_loc)) {
             const float distance = location_diff(gps_loc, ahrs_loc).length();
@@ -417,7 +417,7 @@ bool AP_Arming::gps_checks(bool report)
     }
 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        uint8_t first_unconfigured = gps.first_unconfigured_gps();
+        const uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
