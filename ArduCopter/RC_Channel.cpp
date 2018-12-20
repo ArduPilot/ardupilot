@@ -116,10 +116,18 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
                                                      const aux_switch_pos_t ch_flag)
 {
     switch(ch_flag) {
-    case HIGH:
+    case HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        const bool success = copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        if (copter.ap.initialised) {
+            if (success) {
+                AP_Notify::events.user_mode_change = 1;
+            } else {
+                AP_Notify::events.user_mode_change_failed = 1;
+            }
+        }
         break;
+    }
     default:
         // return to flight mode switch's flight mode if we are currently
         // in this mode
