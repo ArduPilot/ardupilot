@@ -187,7 +187,7 @@ bool AP_AHRS::airspeed_estimate(float *airspeed_ret) const
 }
 
 // set_trim
-void AP_AHRS::set_trim(Vector3f new_trim)
+void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
     Vector3f trim;
     trim.x = constrain_float(new_trim.x, ToRad(-AP_AHRS_TRIM_LIMIT), ToRad(AP_AHRS_TRIM_LIMIT));
@@ -216,7 +216,7 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 // Set the board mounting orientation, may be called while disarmed
 void AP_AHRS::set_orientation()
 {
-    enum Rotation orientation = (enum Rotation)_board_orientation.get();
+    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
     if (orientation != ROTATION_CUSTOM) {
         AP::ins().set_board_orientation(orientation);
         if (_compass != nullptr) {
@@ -289,7 +289,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
         Vector2f ret(cosf(yaw), sinf(yaw));
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind = wind_estimate();
+        const Vector3f wind = wind_estimate();
         ret.x += wind.x;
         ret.y += wind.y;
         return ret;

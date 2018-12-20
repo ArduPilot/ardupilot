@@ -391,7 +391,7 @@ public:
     }
 
     // set trim
-    virtual void            set_trim(Vector3f new_trim);
+    virtual void            set_trim(const Vector3f &new_trim);
 
     // add_trim - adjust the roll and pitch trim up to a total of 10 degrees
     virtual void            add_trim(float roll_in_radians, float pitch_in_radians, bool save_to_eeprom = true);
