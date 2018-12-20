@@ -670,7 +670,7 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
 
 // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
 // This function can be used to predict the delay associated with angle requests.
-void AC_AttitudeControl::input_shaping_rate_predictor(Vector2f error_angle, Vector2f& target_ang_vel, float dt) const
+void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angle, Vector2f& target_ang_vel, float dt) const
 {
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
@@ -712,7 +712,7 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
 }
 
 // translates body frame acceleration limits to the euler axis
-Vector3f AC_AttitudeControl::euler_accel_limit(Vector3f euler_rad, Vector3f euler_accel)
+Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel)
 {
     float sin_phi = constrain_float(fabsf(sinf(euler_rad.x)), 0.1f, 1.0f);
     float cos_phi = constrain_float(fabsf(cosf(euler_rad.x)), 0.1f, 1.0f);
@@ -789,7 +789,7 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
 }
 
 // Update rate_target_ang_vel using attitude_error_rot_vec_rad
-Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(Vector3f attitude_error_rot_vec_rad)
+Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad)
 {
     Vector3f rate_target_ang_vel;
     // Compute the roll angular velocity demand from the roll angle error
