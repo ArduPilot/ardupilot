@@ -97,6 +97,9 @@ extern const AP_HAL::HAL& hal;
 
 #define REG_GOAL_POSITION 116
 
+// how many times to send servo configure msgs
+#define CONFIGURE_SERVO_COUNT 4
+
 const AP_Param::GroupInfo AP_RobotisServo::var_info[] = {
 
     // @Param: POSMIN
@@ -285,32 +288,34 @@ void AP_RobotisServo::detect_servos(void)
  */
 void AP_RobotisServo::configure_servos(void)
 {
-    // disable replies unless we read
-    send_command(BROADCAST_ID, REG_STATUS_RETURN, STATUS_RETURN_READ);
+    // disable torque control
+    send_command(BROADCAST_ID, REG_TORQUE_ENABLE, 0, 1);
+
+        // disable replies unless we read
+    send_command(BROADCAST_ID, REG_STATUS_RETURN, STATUS_RETURN_READ, 1);
 
     // use position control mode
-    send_command(BROADCAST_ID, REG_OPERATING_MODE, OPMODE_POS_CONTROL);
+    send_command(BROADCAST_ID, REG_OPERATING_MODE, OPMODE_POS_CONTROL, 1);
 
     // enable torque control
-    send_command(BROADCAST_ID, REG_TORQUE_ENABLE, 1);
+    send_command(BROADCAST_ID, REG_TORQUE_ENABLE, 1, 1);
 }
 
 
 /*
   send a command to a single servo, changing a register value
  */
-void AP_RobotisServo::send_command(uint8_t id, uint16_t reg, uint16_t value)
+void AP_RobotisServo::send_command(uint8_t id, uint16_t reg, uint32_t value, uint8_t len)
 {
     uint8_t txpacket[16] {};
 
     txpacket[PKT_ID] = id;
-    txpacket[PKT_LENGTH_L] = 9;
+    txpacket[PKT_LENGTH_L] = 5 + len;
     txpacket[PKT_LENGTH_H] = 0;
     txpacket[PKT_INSTRUCTION] = INST_WRITE;
     txpacket[PKT_INSTRUCTION+1] = DXL_LOBYTE(reg);
     txpacket[PKT_INSTRUCTION+2] = DXL_HIBYTE(reg);
-    txpacket[PKT_INSTRUCTION+3] = DXL_LOBYTE(value);
-    txpacket[PKT_INSTRUCTION+4] = DXL_HIBYTE(value);
+    memcpy(&txpacket[PKT_INSTRUCTION+3], &value, MIN(len,4));
 
     send_packet(txpacket);
 }
@@ -416,8 +421,8 @@ void AP_RobotisServo::update()
         return;
     }
 
-    if (!configured_servos) {
-        configured_servos = true;
+    if (configured_servos < CONFIGURE_SERVO_COUNT) {
+        configured_servos++;
         last_send_us = now;
         configure_servos();
         return;
@@ -439,7 +444,7 @@ void AP_RobotisServo::update()
         const uint16_t min = c->get_output_min();
         const uint16_t max = c->get_output_max();
         float v = float(pwm - min) / (max - min);
-        uint16_t value = pos_min + v * (pos_max - pos_min);
-        send_command(i+1, REG_GOAL_POSITION, value);
+        uint32_t value = pos_min + v * (pos_max - pos_min);
+        send_command(i+1, REG_GOAL_POSITION, value, 4);
     }
 }
