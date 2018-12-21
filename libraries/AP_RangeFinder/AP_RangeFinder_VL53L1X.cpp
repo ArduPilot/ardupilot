@@ -491,7 +491,7 @@ void AP_RangeFinder_VL53L1X::write_register32(uint16_t reg, uint32_t value)
 void AP_RangeFinder_VL53L1X::timer(void)
 {
     uint16_t range_mm;
-    if ((get_reading(range_mm)) && (range_mm <= 4000)) {
+    if ((get_reading(range_mm)) && (range_mm <= (state.max_distance_cm * 10))) {
         sum_mm += range_mm;
         counter++;
     }
