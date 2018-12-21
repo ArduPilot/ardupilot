@@ -120,16 +120,15 @@ public:
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
+        float    throttle_in;
         float    angle_boost;
         float    throttle_out;
+        float    throttle_hover;
         float    desired_alt;
         float    inav_alt;
-        int16_t  desired_climb_rate;
+        int32_t  baro_alt;
+        int16_t  target_climb_rate;
         int16_t  climb_rate;
-        float    dvx;
-        float    dvy;
-        float    dax;
-        float    day;
         float    throttle_mix;
     };
         
