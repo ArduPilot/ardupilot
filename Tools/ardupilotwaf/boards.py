@@ -96,6 +96,7 @@ class Board:
         if cfg.options.enable_scripting:
             env.DEFINES.update(
                 ENABLE_SCRIPTING = 1,
+                ENABLE_HEAP = 1,
                 LUA_32BITS = 1,
                 )
 
