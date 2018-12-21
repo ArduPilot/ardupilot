@@ -983,7 +983,9 @@ float AC_AttitudeControl::max_rate_step_bf_roll()
 {
     float alpha = get_rate_roll_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_roll_pid().kD())/_dt + get_rate_roll_pid().kP());
 }
 
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -991,7 +993,9 @@ float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
     float alpha = get_rate_pitch_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_pitch_pid().kD())/_dt + get_rate_pitch_pid().kP());
 }
 
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
@@ -999,5 +1003,7 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
     float alpha = get_rate_yaw_pid().get_filt_alpha();
     float alpha_remaining = 1-alpha;
-    return 2.0f*_motors.get_throttle_hover()*AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
+    // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
+    float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
+    return 2.0f*throttle_hover*AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX/((alpha_remaining*alpha_remaining*alpha_remaining*alpha*get_rate_yaw_pid().kD())/_dt + get_rate_yaw_pid().kP());
 }
