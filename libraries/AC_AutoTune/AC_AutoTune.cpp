@@ -1092,6 +1092,7 @@ void AC_AutoTune::save_tuning_gains()
         attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
         attitude_control->get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
+        attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
         attitude_control->get_rate_roll_pid().save_gains();
 
         // stabilize roll
@@ -1115,6 +1116,7 @@ void AC_AutoTune::save_tuning_gains()
         attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
         attitude_control->get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
+        attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
         attitude_control->get_rate_pitch_pid().save_gains();
 
         // stabilize pitch
@@ -1138,6 +1140,7 @@ void AC_AutoTune::save_tuning_gains()
         attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
         attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
         attitude_control->get_rate_yaw_pid().kD(0.0f);
+        attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
         attitude_control->get_rate_yaw_pid().filt_hz(tune_yaw_rLPF);
         attitude_control->get_rate_yaw_pid().save_gains();
 
