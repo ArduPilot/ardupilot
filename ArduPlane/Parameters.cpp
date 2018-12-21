@@ -62,7 +62,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: KFF_RDDRMIX
     // @DisplayName: Rudder Mix
-    // @Description: Percentage of rudder to add during aileron movement. Increase if nose initially yaws away from roll. Coordinates turns.
+    // @Description: Amount of rudder to add during aileron movement. Increase if nose initially yaws away from roll. Reduces adverse yaw.
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -585,8 +585,8 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
 
     // @Param: LIM_ROLL_CD
-    // @DisplayName: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
-    // @Description: 
+    // @DisplayName: Maximum Bank Angle
+    // @Description: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
     // @Units: cdeg
     // @Range: 0 9000
     // @Increment: 1
