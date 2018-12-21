@@ -3,8 +3,9 @@
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
-    // put your initialisation code here
-    // this will be called once at start-up
+    tmrs_motor_power_monitor.init();
+    tmrs_tether_power_monitor.init();
+    tmrs_payload_controller.init();
 }
 #endif
 
@@ -39,7 +40,17 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
-    // put your 1Hz code here
+    /**
+     * TMRS sensors
+     */
+    uint8_t n = gcs().num_gcs();
+    for(uint8_t i = 0; i < n; i++) {
+        if(gcs().chan(i).initialised) {
+            tmrs_motor_power_monitor.send_mavlink_tmrs_motor_status(gcs().chan(i).get_chan());
+            tmrs_tether_power_monitor.send_mavlink_tether_power_status(gcs().chan(i).get_chan());
+            tmrs_payload_controller.send_mavlink_tmrs_payload_status(gcs().chan(i).get_chan());
+        }
+    }
 }
 #endif
 

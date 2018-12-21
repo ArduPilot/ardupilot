@@ -1178,6 +1178,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             }
             break;
 
+
         default:
             result = handle_command_long_message(packet);
             break;
@@ -1570,7 +1571,18 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         copter.g2.toy_mode.handle_message(msg);
         break;
 #endif
-        
+
+#if TMRS_ENABLED == ENABLED
+    case MAVLINK_MSG_ID_TMRS_PAYLOAD_CONTROL:
+    {
+        mavlink_tmrs_payload_control_t payload;
+        mavlink_msg_tmrs_payload_control_decode(msg,&payload);
+        copter.tmrs_payload_controller.set_payload_settings(payload.control_bitmask);
+        gcs().send_text(MAV_SEVERITY_INFO, "received payload switch request  = %u",payload.control_bitmask);
+        break;
+    }
+#endif
+
     default:
         handle_common_message(msg);
         break;

@@ -84,6 +84,14 @@
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_TempCalibration/AP_TempCalibration.h>
 
+/**
+ * TMRS
+ */
+//#include <AC_TMRS/AP_ADC121C021_Device.h>
+#include <AC_TMRS/TMRS_Motor_Power_Monitor.h>
+#include <AC_TMRS/TMRS_Payload_Controller.h>
+#include <AC_TMRS/TMRS_Tether_Power_Monitor.h>
+
 // Configuration
 #include "defines.h"
 #include "config.h"
@@ -590,6 +598,7 @@ private:
     // last visual odometry update time
     uint32_t visual_odom_last_update_ms;
 #endif
+
 
     // Top-level logic
     // setup the var_info table

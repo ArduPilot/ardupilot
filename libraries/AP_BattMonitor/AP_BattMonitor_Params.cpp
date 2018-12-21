@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Increment: 1
     // @Range: 0 120
     // @User: Advanced
-    AP_GROUPINFO("LOW_TIMER", 10, AP_BattMonitor_Params, _low_voltage_timeout, 10),
+    AP_GROUPINFO("LOW_TIMER", 10, AP_BattMonitor_Params, _low_voltage_timeout, 1),
 
     // @Param: FS_VOLTSRC
     // @DisplayName: Failsafe voltage source
