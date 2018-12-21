@@ -100,6 +100,9 @@ extern const AP_HAL::HAL& hal;
 // how many times to send servo configure msgs
 #define CONFIGURE_SERVO_COUNT 4
 
+// how many times to send servo detection
+#define DETECT_SERVO_COUNT 4
+
 const AP_Param::GroupInfo AP_RobotisServo::var_info[] = {
 
     // @Param: POSMIN
@@ -134,7 +137,6 @@ void AP_RobotisServo::init(void)
         baudrate = serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Robotis, 0);
         us_per_byte = 10 * 1e6 / baudrate;
         us_gap = 4 * 1e6 / baudrate;
-        detect_servos();
     }
 }
 
@@ -280,7 +282,7 @@ void AP_RobotisServo::detect_servos(void)
 
     // give plenty of time for replies from all servos
     last_send_us = AP_HAL::micros();
-    delay_time_us += 500 * us_per_byte;
+    delay_time_us += 1000 * us_per_byte;
 }
 
 /*
@@ -411,13 +413,18 @@ void AP_RobotisServo::update()
 
     read_bytes();
 
-    if (servo_mask == 0) {
-        return;
-    }
-
     uint32_t now = AP_HAL::micros();
     if (last_send_us != 0 && now - last_send_us < delay_time_us) {
         // waiting for last send to complete
+        return;
+    }
+
+    if (detection_count < DETECT_SERVO_COUNT) {
+        detection_count++;
+        detect_servos();
+    }
+
+    if (servo_mask == 0) {
         return;
     }
 

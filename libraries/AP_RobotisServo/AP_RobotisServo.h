@@ -53,6 +53,7 @@ private:
 
     // auto-detected mask of available servos, from a broadcast ping
     uint16_t servo_mask;
+    uint8_t detection_count;
     uint8_t configured_servos;
     bool initialised;
 
