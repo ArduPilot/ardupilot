@@ -1607,7 +1607,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
     
     motors->output();
     if (motors->armed()) {
-        plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
+        plane.DataFlash.Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
         Log_Write_QControl_Tuning();
         const uint32_t now = AP_HAL::millis();
         if (now - last_ctrl_log_ms > 100) {
