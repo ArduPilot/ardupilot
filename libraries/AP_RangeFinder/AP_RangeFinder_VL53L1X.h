@@ -4,6 +4,8 @@
 #include "RangeFinder_Backend.h"
 #include <AP_HAL/I2CDevice.h>
 
+#define MEASUREMENT_TIME 50 // Start continuous readings at a rate of one measurement every 50 ms
+
 class AP_RangeFinder_VL53L1X : public AP_RangeFinder_Backend
 {
 

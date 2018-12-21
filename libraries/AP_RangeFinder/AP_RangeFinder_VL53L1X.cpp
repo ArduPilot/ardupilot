@@ -143,11 +143,11 @@ bool AP_RangeFinder_VL53L1X::init()
                      read_register16(MM_CONFIG__OUTER_OFFSET_MM) * 4);
 
     // set continuous mode
-    startContinuous(50);
+    startContinuous(MEASUREMENT_TIME);
     calibrated = false;
 
     // call timer() every 50ms. We expect new data to be available every 50ms
-    dev->register_periodic_callback(50000,
+    dev->register_periodic_callback(MEASUREMENT_TIME * 1000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_VL53L1X::timer, void));
 
     return true;
