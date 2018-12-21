@@ -511,24 +511,31 @@ void AC_AutoTune::control_attitude()
             load_twitch_gains();
         }
 
+        float target_max_rate;
         switch (axis) {
         case ROLL:
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+            abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_hz()*2.0f);
             break;
         case PITCH:
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+            abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
             rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_hz()*2.0f);
             break;
         case YAW:
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, AUTOTUNE_TARGET_RATE_YAW_CDS);
+            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
+            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
+            abort_angle = AUTOTUNE_TARGET_ANGLE_YAW_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
             rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
@@ -627,6 +634,7 @@ void AC_AutoTune::control_attitude()
         case RD_DOWN:
             twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
             twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
+            twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
             if (lean_angle >= target_angle) {
                 step = UPDATE_GAINS;
             }
@@ -634,9 +642,7 @@ void AC_AutoTune::control_attitude()
         case RP_UP:
             twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
             twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-            if (lean_angle >= target_angle) {
-                step = UPDATE_GAINS;
-            }
+            twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
             break;
         case SP_DOWN:
         case SP_UP:
@@ -1255,6 +1261,22 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
 
     if (now - step_start_time_ms >= step_time_limit_ms) {
         // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+    }
+}
+
+// twitching_test_rate - twitching tests
+// update min and max and test for end conditions
+void AC_AutoTune::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
+{
+    if (angle >= angle_max) {
+        if (is_equal(rate, meas_rate_min)) {
+            // we have reached the angle limit before completing the measurement of maximum and minimum
+            // reduce the maximum target rate
+            step_scaler *= 0.9f;
+            // ignore result and start test again
+            step = WAITING_FOR_LEVEL;
+        }
         step = UPDATE_GAINS;
     }
 }
