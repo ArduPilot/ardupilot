@@ -612,8 +612,3 @@ uint16_t Copter::Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }
-
-float Copter::Mode::get_terrain_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
-{
-    return copter.get_terrain_tracking_climb_rate(target_rate, current_alt_target, dt);
-}

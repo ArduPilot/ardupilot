@@ -676,7 +676,6 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
-    float get_terrain_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
 
 #if ADSB_ENABLED == ENABLED
     // avoidance_adsb.cpp
