@@ -1276,8 +1276,9 @@ void AC_AutoTune::twitching_abort_rate(float angle, float rate, float angle_max,
             step_scaler *= 0.9f;
             // ignore result and start test again
             step = WAITING_FOR_LEVEL;
+        } else {
+            step = UPDATE_GAINS;
         }
-        step = UPDATE_GAINS;
     }
 }
 
