@@ -643,7 +643,7 @@ void AC_AutoTune::control_attitude()
 
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
-        DataFlash_Class::instance()->Log_Write_Rate(AP::ahrs(), *motors, *attitude_control, *pos_control);
+        DataFlash_Class::instance()->Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
 
         break;
     }
