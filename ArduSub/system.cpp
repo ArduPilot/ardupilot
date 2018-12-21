@@ -75,6 +75,12 @@ void Sub::init_ardupilot()
 
     celsius.init();
 
+    // create an AHRS_View (for logging)
+    ahrs_view = ahrs.create_view(ROTATION_NONE);
+    if (ahrs_view == nullptr) {
+        AP_HAL::panic("Unable to allocate AP_AHRS_View");
+    }
+    
     // Register the mavlink service callback. This will run
     // anytime there are more than 5ms remaining in a call to
     // hal.scheduler->delay.
