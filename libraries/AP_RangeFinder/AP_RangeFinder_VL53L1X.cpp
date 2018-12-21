@@ -28,6 +28,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static const uint8_t MEASUREMENT_TIME_MS = 50; // Start continuous readings at a rate of one measurement every 50 ms
+
 AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
     : AP_RangeFinder_Backend(_state, _params)
     , dev(std::move(_dev)) {}
@@ -157,13 +159,13 @@ bool AP_RangeFinder_VL53L1X::init(DistanceMode mode)
           // measurement is started; assumes MM1 and MM2 are disabled
           write_register16(ALGO__PART_TO_PART_RANGE_OFFSET_MM, mm_config_outer_offset_mm * 4) &&
           // set continuous mode
-          startContinuous(50)
+          startContinuous(MEASUREMENT_TIME_MS)
           )) {
               return false;
           }
 
-    // call timer() every 50ms. We expect new data to be available every 50ms
-    dev->register_periodic_callback(50000,
+    // call timer() every MEASUREMENT_TIME_MS. We expect new data to be available every MEASUREMENT_TIME_MS
+    dev->register_periodic_callback(MEASUREMENT_TIME_MS * 1000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_VL53L1X::timer, void));
 
     return true;
