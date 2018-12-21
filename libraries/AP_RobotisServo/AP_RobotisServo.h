@@ -48,12 +48,12 @@ private:
     void send_packet(uint8_t *txpacket);
     void read_bytes();
     void process_packet(const uint8_t *pkt, uint8_t length);
-    void send_command(uint8_t id, uint16_t reg, uint16_t value);
+    void send_command(uint8_t id, uint16_t reg, uint32_t value, uint8_t len);
     void configure_servos(void);
 
     // auto-detected mask of available servos, from a broadcast ping
     uint16_t servo_mask;
-    bool configured_servos;
+    uint8_t configured_servos;
     bool initialised;
 
     uint8_t pktbuf[64];
