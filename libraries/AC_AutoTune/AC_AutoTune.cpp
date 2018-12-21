@@ -381,12 +381,15 @@ void AC_AutoTune::run()
             have_position = false;
         }
     } else if (pilot_override) {
+        uint32_t now = AP_HAL::millis();
         // check if we should resume tuning after pilot's override
-        if (AP_HAL::millis() - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
+        if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
             pilot_override = false;             // turn off pilot override
             // set gains to their intra-test values (which are very close to the original gains)
             // load_intra_test_gains(); //I think we should be keeping the originals here to let the I term settle quickly
             step = WAITING_FOR_LEVEL; // set tuning step back from beginning
+            step_start_time_ms = now;
+            level_start_time_ms = now;
             desired_yaw_cd = ahrs_view->yaw_sensor;
         }
     }
@@ -490,7 +493,8 @@ void AC_AutoTune::control_attitude()
         }
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
-        if ((AUTOTUNE_REQUIRED_LEVEL_TIME_MS < now - step_start_time_ms) || (AUTOTUNE_LEVEL_TIMEOUT_MS < now - step_time_limit_ms)) {
+        if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS ||
+            now - level_start_time_ms > AUTOTUNE_LEVEL_TIMEOUT_MS) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             step = TWITCHING;
@@ -862,7 +866,8 @@ void AC_AutoTune::control_attitude()
         // reset testing step
         step = WAITING_FOR_LEVEL;
         step_start_time_ms = now;
-        step_time_limit_ms = now;
+        level_start_time_ms = step_start_time_ms;
+        step_time_limit_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
         break;
     }
 }
@@ -885,6 +890,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
     step_start_time_ms = AP_HAL::millis();
+    level_start_time_ms = step_start_time_ms;
     tune_type = RD_UP;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
@@ -1233,7 +1239,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_rate_max < rate_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_time_limit_ms = (now - step_start_time_ms) * 3.0f;
+        step_time_limit_ms = (now - step_start_time_ms) * 3;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
@@ -1288,7 +1294,7 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
     // calculate early stopping time based on the time it takes to get to 75%
     if (meas_angle_max < angle_target_max * 0.75f) {
         // the measurement not reached the 75% threshold yet
-        step_time_limit_ms = (now - step_start_time_ms) * 3.0f;
+        step_time_limit_ms = (now - step_start_time_ms) * 3;
         step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
     }
 
