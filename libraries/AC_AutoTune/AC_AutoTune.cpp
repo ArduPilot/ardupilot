@@ -1309,7 +1309,7 @@ void AC_AutoTune::twitching_test_rate(float rate, float rate_target_max, float &
 void AC_AutoTune::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
 {
     if (angle >= angle_max) {
-        if (is_equal(rate, meas_rate_min)) {
+        if (is_equal(rate, meas_rate_min) && step_scaler > 0.5) {
             // we have reached the angle limit before completing the measurement of maximum and minimum
             // reduce the maximum target rate
             step_scaler *= 0.9f;
