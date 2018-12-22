@@ -183,23 +183,6 @@ public:
     friend class ModeQRTL;
     friend class ModeQAutotune;
 
-    friend class Mode;
-    friend class ModeCircle;
-    friend class ModeStabilize;
-    friend class ModeTraining;
-    friend class ModeAcro;
-    friend class ModeFBWA;
-    friend class ModeFBWB;
-    friend class ModeCruise;
-    friend class ModeAutoTune;
-    friend class ModeAuto;
-    friend class ModeRTL;
-    friend class ModeLoiter;
-    friend class ModeAvoidADSB;
-    friend class ModeGuided;
-    friend class ModeInitializing;
-    friend class ModeManual;
-
     Plane(void);
 
     // HAL::Callbacks implementation.

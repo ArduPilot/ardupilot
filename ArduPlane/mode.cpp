@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Plane.h"
 
 Mode::Mode()
