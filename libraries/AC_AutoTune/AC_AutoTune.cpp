@@ -1707,9 +1707,9 @@ void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float mea
         AP_HAL::micros64(),
         axis,
         tune_step,
-        meas_target,
-        meas_min,
-        meas_max,
+        meas_target*0.01f,
+        meas_min*0.01f,
+        meas_max*0.01f,
         new_gain_rp,
         new_gain_rd,
         new_gain_sp,
@@ -1726,6 +1726,6 @@ void AC_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
         "FBB",
         "Qff",
         AP_HAL::micros64(),
-        angle_cd,
-        rate_cds);
+        angle_cd*0.01f,
+        rate_cds*0.01f);
 }
