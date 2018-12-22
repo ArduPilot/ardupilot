@@ -61,5 +61,13 @@ void QAutoTune::Log_Write_Event(enum at_event id)
         ev_id);
 }
 
+// log VTOL PIDs for during twitch
+void QAutoTune::log_pids(void)
+{
+    DataFlash_Class::instance()->Log_Write_PID(LOG_PIQR_MSG, plane.quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
+    DataFlash_Class::instance()->Log_Write_PID(LOG_PIQP_MSG, plane.quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
+    DataFlash_Class::instance()->Log_Write_PID(LOG_PIQY_MSG, plane.quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
+}
+
 #endif // QAUTOTUNE_ENABLED
 
