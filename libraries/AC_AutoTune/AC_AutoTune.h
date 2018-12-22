@@ -154,6 +154,16 @@ private:
         SP_UP = 4                 // angle P is being tuned up
     };
 
+    // type of gains to load
+    enum GainType {
+        GAIN_ORIGINAL   = 0,
+        GAIN_TWITCH     = 1,
+        GAIN_INTRA_TEST = 2,
+        GAIN_TUNED      = 3,
+    };
+    enum GainType current_gain_type;
+    void load_gains(enum GainType gain_type);
+
     TuneMode mode                : 2;    // see TuneMode for what modes are allowed
     bool     pilot_override      : 1;    // true = pilot is overriding controls so we suspend tuning temporarily
     AxisType axis                : 2;    // see AxisType for which things can be tuned

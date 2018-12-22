@@ -167,7 +167,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         success = start();
         if (success) {
             // reset gains to tuning-start gains (i.e. low I term)
-            load_intra_test_gains();
+            load_gains(GAIN_INTRA_TEST);
             // write dataflash log even and send message to ground station
             Log_Write_Event(EVENT_AUTOTUNE_RESTART);
             update_gcs(AUTOTUNE_MESSAGE_STARTED);
@@ -177,7 +177,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
     case SUCCESS:
         // we have completed a tune and the pilot wishes to test the new gains in the current flight mode
         // so simply apply tuning gains (i.e. do not change flight mode)
-        load_tuned_gains();
+        load_gains(GAIN_TUNED);
         Log_Write_Event(EVENT_AUTOTUNE_PILOT_TESTING);
         break;
     }
@@ -193,7 +193,7 @@ void AC_AutoTune::stop()
     axes_completed = 0;
 
     // set gains to their original values
-    load_orig_gains();
+    load_gains(GAIN_ORIGINAL);
 
     // re-enable angle-to-rate request limits
     attitude_control->use_sqrt_controller(true);
@@ -371,7 +371,7 @@ void AC_AutoTune::run()
         if (!pilot_override) {
             pilot_override = true;
             // set gains to their original values
-            load_orig_gains();
+            load_gains(GAIN_ORIGINAL);
             attitude_control->use_sqrt_controller(true);
         }
         // reset pilot override time
@@ -386,7 +386,7 @@ void AC_AutoTune::run()
         if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
             pilot_override = false;             // turn off pilot override
             // set gains to their intra-test values (which are very close to the original gains)
-            // load_intra_test_gains(); //I think we should be keeping the originals here to let the I term settle quickly
+            // load_gains(GAIN_INTRA_TEST); //I think we should be keeping the originals here to let the I term settle quickly
             step = WAITING_FOR_LEVEL; // set tuning step back from beginning
             step_start_time_ms = now;
             level_start_time_ms = now;
@@ -515,7 +515,10 @@ void AC_AutoTune::control_attitude()
             rotation_rate_filt.reset(0.0f);
             rate_max = 0.0f;
             // set gains to their to-be-tested values
-            load_twitch_gains();
+            load_gains(GAIN_TWITCH);
+        } else {
+            // when waiting for level we use the intra-test gains
+            load_gains(GAIN_INTRA_TEST);
         }
 
         float target_max_rate;
@@ -877,7 +880,7 @@ void AC_AutoTune::control_attitude()
         }
 
         // set gains to their intra-test values (which are very close to the original gains)
-        load_intra_test_gains();
+        load_gains(GAIN_INTRA_TEST);
 
         // reset testing step
         step = WAITING_FOR_LEVEL;
@@ -903,6 +906,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     // no axes are complete
     axes_completed = 0;
 
+    current_gain_type = GAIN_ORIGINAL;
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
     step_start_time_ms = AP_HAL::millis();
@@ -1090,6 +1094,30 @@ void AC_AutoTune::load_twitch_gains()
         attitude_control->get_rate_yaw_pid().ff(0.0f);
         attitude_control->get_rate_yaw_pid().filt_hz(tune_yaw_rLPF);
         attitude_control->get_angle_yaw_p().kP(tune_yaw_sp);
+        break;
+    }
+}
+
+/*
+  load a specified set of gains
+ */
+void AC_AutoTune::load_gains(enum GainType gain_type)
+{
+    if (current_gain_type == gain_type) {
+        return;
+    }
+    switch (gain_type) {
+    case GAIN_ORIGINAL:
+        load_orig_gains();
+        break;
+    case GAIN_INTRA_TEST:
+        load_intra_test_gains();
+        break;
+    case GAIN_TWITCH:
+        load_twitch_gains();
+        break;
+    case GAIN_TUNED:
+        load_tuned_gains();
         break;
     }
 }
