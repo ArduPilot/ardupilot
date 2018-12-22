@@ -769,6 +769,9 @@ void AC_AutoTune::control_attitude()
             // reset counter
             counter = 0;
 
+            // reset scaling factor
+            step_scaler = 1;
+
             // move to the next tuning type
             switch (tune_type) {
             case RD_UP:
@@ -898,6 +901,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     step_start_time_ms = AP_HAL::millis();
     level_start_time_ms = step_start_time_ms;
     tune_type = RD_UP;
+    step_scaler = 1;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
 
