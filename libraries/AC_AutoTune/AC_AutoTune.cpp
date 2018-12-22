@@ -431,35 +431,43 @@ bool AC_AutoTune::check_level(const LEVEL_ISSUE issue, const float current, cons
 
 bool AC_AutoTune::currently_level()
 {
+    float threshold_mul = 1.0;
+
+    if (AP_HAL::millis() - level_start_time_ms > AUTOTUNE_LEVEL_TIMEOUT_MS) {
+        // after a long wait we use looser threshold, to allow tuning
+        // with poor initial gains
+        threshold_mul *= 2;
+    }
+
     if (!check_level(LEVEL_ISSUE_ANGLE_ROLL,
                      fabsf(ahrs_view->roll_sensor - roll_cd),
-                     AUTOTUNE_LEVEL_ANGLE_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
 
     if (!check_level(LEVEL_ISSUE_ANGLE_PITCH,
                      fabsf(ahrs_view->pitch_sensor - pitch_cd),
-                     AUTOTUNE_LEVEL_ANGLE_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
     if (!check_level(LEVEL_ISSUE_ANGLE_YAW,
                      fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)),
-                     AUTOTUNE_LEVEL_ANGLE_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
         return false;
     }
     if (!check_level(LEVEL_ISSUE_RATE_ROLL,
                      (ToDeg(ahrs_view->get_gyro().x) * 100.0f),
-                     AUTOTUNE_LEVEL_RATE_RP_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
     if (!check_level(LEVEL_ISSUE_RATE_PITCH,
                      (ToDeg(ahrs_view->get_gyro().y) * 100.0f),
-                     AUTOTUNE_LEVEL_RATE_RP_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
         return false;
     }
     if (!check_level(LEVEL_ISSUE_RATE_YAW,
                      (ToDeg(ahrs_view->get_gyro().z) * 100.0f),
-                     AUTOTUNE_LEVEL_RATE_Y_CD)) {
+                     threshold_mul*AUTOTUNE_LEVEL_RATE_Y_CD)) {
         return false;
     }
     return true;
@@ -493,8 +501,7 @@ void AC_AutoTune::control_attitude()
         }
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
-        if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS ||
-            now - level_start_time_ms > AUTOTUNE_LEVEL_TIMEOUT_MS) {
+        if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
             // initiate variables for next step
             step = TWITCHING;
