@@ -112,6 +112,13 @@ void Copter::AutoTune::init_z_limits()
     copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 }
 
+void Copter::AutoTune::log_pids()
+{
+    copter.DataFlash.Log_Write_PID(LOG_PIDR_MSG, copter.attitude_control->get_rate_roll_pid().get_pid_info());
+    copter.DataFlash.Log_Write_PID(LOG_PIDP_MSG, copter.attitude_control->get_rate_pitch_pid().get_pid_info());
+    copter.DataFlash.Log_Write_PID(LOG_PIDY_MSG, copter.attitude_control->get_rate_yaw_pid().get_pid_info());
+}
+
 
 /*
   Write an event packet. This maps from AC_AutoTune event IDs to
