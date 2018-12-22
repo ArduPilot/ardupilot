@@ -561,7 +561,7 @@ void AC_AutoTune::control_attitude()
 
     case TWITCHING: {
         // Run the twitching step
-        // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
+        load_gains(GAIN_TWITCH);
 
         // disable rate limits
         attitude_control->use_sqrt_controller(false);
@@ -664,7 +664,7 @@ void AC_AutoTune::control_attitude()
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
         DataFlash_Class::instance()->Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
-
+        log_pids();
         break;
     }
 
