@@ -445,7 +445,7 @@ class ModeQAutotune : public Mode
 {
 public:
 
-    uint32_t mode_number() const override { return QAUTOTUNE; }
+    Number mode_number() const override { return Number::QAUTOTUNE; }
     const char *name4() const override { return "QAUTOTUNE"; }
 
     // methods that affect movement of the vehicle in this mode

@@ -13,7 +13,7 @@ bool QAutoTune::init()
     }
 
     // use position hold while tuning if we were in QLOITER
-    bool position_hold = (plane.previous_mode == QLOITER);
+    bool position_hold = (plane.previous_mode == &plane.mode_qloiter);
 
     return init_internals(position_hold,
                           plane.quadplane.attitude_control,

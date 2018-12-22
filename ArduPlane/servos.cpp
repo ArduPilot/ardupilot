@@ -513,7 +513,7 @@ void Plane::change_landing_gear(AP_LandingGear::LandingGearCommand cmd)
  */
 void Plane::set_landing_gear(void)
 {
-    if (control_mode == AUTO && hal.util->get_soft_armed() && is_flying()) {
+    if (control_mode == &mode_auto && hal.util->get_soft_armed() && is_flying()) {
         AP_LandingGear::LandingGearCommand cmd = (AP_LandingGear::LandingGearCommand)gear.last_auto_cmd;
         switch (flight_stage) {
         case AP_Vehicle::FixedWing::FLIGHT_LAND:

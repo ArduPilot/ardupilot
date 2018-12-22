@@ -1646,7 +1646,7 @@ void QuadPlane::control_run(void)
         control_qrtl();
         break;
 #if QAUTOTUNE_ENABLED
-    case QAUTOTUNE:
+    case Mode::Number::QAUTOTUNE:
         qautotune.run();
         break;
 #endif
@@ -1694,7 +1694,7 @@ bool QuadPlane::init_mode(void)
         guided_takeoff = false;
         break;
 #if QAUTOTUNE_ENABLED
-    case QAUTOTUNE:
+    case Mode::Number::QAUTOTUNE:
         return qautotune.init();
 #endif
     default:
@@ -2318,7 +2318,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
 {
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
-    if (plane.control_mode != QSTABILIZE) {
+    if (plane.control_mode != &plane.mode_qstabilize) {
         des_alt_m = pos_control->get_alt_target() / 100.0f;
         target_climb_rate_cms = pos_control->get_vel_target_z();
     }
@@ -2576,7 +2576,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
 // return true if the wp_nav controller is being updated
 bool QuadPlane::using_wp_nav(void) const
 {
-    return plane.control_mode == QLOITER || plane.control_mode == QLAND || plane.control_mode == QRTL;
+    return plane.control_mode == &plane.mode_qloiter || plane.control_mode == &plane.mode_qland || plane.control_mode == &plane.mode_qrtl;
 }
 
 /*
