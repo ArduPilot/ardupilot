@@ -53,6 +53,9 @@ protected:
     // init pos controller Z velocity and accel limits
     virtual void init_z_limits() = 0;
 
+    // log PIDs at full rate for during twitch
+    virtual void log_pids() = 0;
+    
     // start tune - virtual so that vehicle code can add additional pre-conditions
     virtual bool start(void);
 
