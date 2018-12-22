@@ -69,6 +69,8 @@ public:
     // true only for vtol related FlightModes
     virtual bool is_vtol_flightmode() const { return false; }
 
+    virtual bool allows_stabilized_stick_mixing() const { return true; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -99,6 +101,7 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -134,6 +137,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -262,6 +267,7 @@ public:
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return !manual_pitch || !manual_roll; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 public:
     bool manual_roll;  // user has manual roll control
@@ -300,6 +306,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool allows_stabilized_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -315,6 +323,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool allows_stabilized_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -329,6 +339,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -364,6 +376,7 @@ public:
     void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -381,6 +394,7 @@ public:
     void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -398,6 +412,7 @@ public:
     void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -415,6 +430,7 @@ public:
     void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -435,6 +451,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 
@@ -452,6 +469,7 @@ public:
     void update() override;
 
     bool is_vtol_flightmode() const override { return true; }
+    bool allows_stabilized_stick_mixing() const override { return false; }
 
 protected:
 

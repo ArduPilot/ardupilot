@@ -145,18 +145,7 @@ void Plane::stick_mix_channel(RC_Channel *channel, int16_t &servo_out)
 void Plane::stabilize_stick_mixing_direct()
 {
     if (!stick_mixing_enabled() ||
-        control_mode == &mode_acro ||
-        control_mode == &mode_fbwa ||
-        control_mode == &mode_autotune ||
-        control_mode == &mode_fbwb ||
-        control_mode == &mode_cruise ||
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qrtl ||
-        control_mode == &mode_training ||
-        control_mode == &mode_qautotune) {
+            !control_mode->allows_stabilized_stick_mixing()) {
         return;
     }
     int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -175,18 +164,7 @@ void Plane::stabilize_stick_mixing_direct()
 void Plane::stabilize_stick_mixing_fbw()
 {
     if (!stick_mixing_enabled() ||
-        control_mode == &mode_acro ||
-        control_mode == &mode_fbwa ||
-        control_mode == &mode_autotune ||
-        control_mode == &mode_fbwb ||
-        control_mode == &mode_cruise ||
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qrtl ||
-        control_mode == &mode_training ||
-        control_mode == &mode_qautotune ||
+            !control_mode->allows_stabilized_stick_mixing() ||
         (control_mode == &mode_auto && g.auto_fbw_steer == 42)) {
         return;
     }
