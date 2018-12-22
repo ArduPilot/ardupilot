@@ -1231,9 +1231,7 @@ bool QuadPlane::assistance_needed(float aspeed)
  */
 void QuadPlane::update_transition(void)
 {
-    if (plane.control_mode == &plane.mode_manual ||
-        plane.control_mode == &plane.mode_acro ||
-        plane.control_mode == &plane.mode_training) {
+    if (plane.control_mode->has_manual_input()) {
         // in manual modes quad motors are always off
         if (!tilt.motors_active && !is_tailsitter()) {
             motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
