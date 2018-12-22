@@ -419,7 +419,7 @@ void Plane::calc_throttle()
     int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided() &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
         commanded_throttle = plane.guided_state.forced_throttle;
@@ -447,7 +447,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     int16_t commanded_rudder;
 
     // Received an external msg that guides yaw in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
@@ -535,7 +535,7 @@ void Plane::calc_nav_pitch()
     int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided() &&
             plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
         commanded_pitch = plane.guided_state.forced_rpy_cd.y;
@@ -553,7 +553,7 @@ void Plane::calc_nav_roll()
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == &mode_guided|| control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided() &&
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         commanded_roll = plane.guided_state.forced_rpy_cd.x;

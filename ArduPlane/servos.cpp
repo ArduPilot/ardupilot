@@ -398,8 +398,7 @@ void Plane::set_servos_controlled(void)
         // manual pass through of throttle while in FBWA or
         // STABILIZE mode with THR_PASS_STAB set
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
-    } else if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
-               guided_throttle_passthru) {
+    } else if (control_mode->is_guided() && guided_throttle_passthru) {
         // manual pass through of throttle while in GUIDED
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
     } else if (quadplane.in_vtol_mode()) {

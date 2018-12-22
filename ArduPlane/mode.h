@@ -63,6 +63,9 @@ public:
     // return if in non-manual mode : Auto, Guided, RTL
     virtual bool is_autopilot_mode() const { return false; }
 
+    // true if this mode accepts guided control commands
+    virtual bool is_guided() const { return false; }
+
     // returns true if any RC input is used
     virtual bool has_manual_input() const;
 
@@ -165,6 +168,8 @@ public:
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
+
+    bool is_guided() const override { return true; }
 
 protected:
 
@@ -377,6 +382,8 @@ public:
 
     // attributes for mavlink system status reporting
     bool is_autopilot_mode() const override { return true; }
+
+    bool is_guided() const override { return true; }
 
 protected:
 
