@@ -99,7 +99,7 @@ struct PACKED page_config {
 };
 
 struct PACKED page_reg_status {
-    uint16_t freemem;
+    uint32_t freemem;
     uint16_t cpuload;
 
     // status flags
