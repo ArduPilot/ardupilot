@@ -55,11 +55,7 @@ extern const AP_HAL::HAL& hal;
 
 // Class level parameters
 const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
-    // @Param: PRODUCT_ID
-    // @DisplayName: IMU Product ID
-    // @Description: unused
-    // @User: Advanced
-    AP_GROUPINFO("PRODUCT_ID",  0, AP_InertialSensor, _old_product_id,   0),
+    // 0 was PRODUCT_ID
 
     /*
       The following parameter indexes and reserved from previous use
