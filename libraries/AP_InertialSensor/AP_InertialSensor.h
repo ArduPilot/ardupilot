@@ -424,9 +424,6 @@ private:
     uint16_t _accel_raw_sampling_multiplier[INS_MAX_INSTANCES];
     uint16_t _gyro_raw_sampling_multiplier[INS_MAX_INSTANCES];
 
-    // product id
-    AP_Int16 _old_product_id;
-
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
     AP_Int32 _accel_id[INS_MAX_INSTANCES];
