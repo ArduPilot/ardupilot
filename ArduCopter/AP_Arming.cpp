@@ -497,10 +497,8 @@ bool AP_Arming_Copter::pre_arm_proximity_check(bool display_failure)
     }
 #endif
 
-    return true;
-#else
-    return true;
 #endif
+    return true;
 }
 
 // arm_checks - perform final checks before arming
