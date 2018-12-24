@@ -230,7 +230,7 @@ bool NavEKF2_core::calcGpsGoodToAlign(void)
     }
 
     // continuous period without fail required to return a healthy status
-    if (imuSampleTime_ms - lastGpsVelFail_ms > 10000) {
+    if (imuSampleTime_ms - lastGpsVelFail_ms > (static_cast<uint8_t>(frontend->_gpsQualityTime) * 1000)) {
         return true;
     }
     return false;

@@ -544,6 +544,15 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OGN_HGT_MASK", 49, NavEKF2, _originHgtMode, 0),
 
+    // @Param: GPS_QUAL_TIME
+    // @DisplayName: GPS quality duration
+    // @Description: Designate the time to confirm GPS quality stability.
+    // @Units: s
+    // @Range: 1 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QTIME", 50, NavEKF2, _gpsQualityTime, 10),
+
     AP_GROUPEND
 };
 
