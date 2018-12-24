@@ -93,7 +93,7 @@ void Copter::update_heli_control_dynamics(void)
 // should be called soon after update_land_detector in main code
 void Copter::heli_update_landing_swash()
 {
-    switch(control_mode) {
+    switch (control_mode) {
         case ACRO:
         case STABILIZE:
         case DRIFT:
