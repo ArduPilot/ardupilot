@@ -116,6 +116,9 @@ public:
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;
+
+    // return true if the user has set ENABLE
+    bool enabled(void) const { return enable != 0; }
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
