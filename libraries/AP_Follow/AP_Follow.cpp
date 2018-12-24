@@ -79,7 +79,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _OFS_Y
     // @DisplayName: Follow offsets in meters east/right
-    // @Description: Follow offsets in meters east/right.  If positive, this vehicle fly to the right or east of lead vehicle.  Depends on FOLL_OFS_TYPE
+    // @Description: Follow offsets in meters east/right.  If positive, this vehicle will fly to the right or east of lead vehicle.  Depends on FOLL_OFS_TYPE
     // @Range: -100 100
     // @Units: m
     // @Increment: 1
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _OFS_Z
     // @DisplayName: Follow offsets in meters down
-    // @Description: Follow offsets in meters down.  If positive, this vehicle fly below the lead vehicle
+    // @Description: Follow offsets in meters down.  If positive, this vehicle will fly below the lead vehicle
     // @Range: -100 100
     // @Units: m
     // @Increment: 1
