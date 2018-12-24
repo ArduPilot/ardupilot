@@ -2268,6 +2268,64 @@ MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_comman
     return MAV_RESULT_FAILED;
 }
 
+bool GCS_MAVLINK::get_ap_message_interval(ap_message id, uint16_t &interval_ms) const
+{
+    // check if it's a specially-handled message:
+    const int8_t deferred_offset = get_deferred_message_index(id);
+    if (deferred_offset != -1) {
+        interval_ms = deferred_message[deferred_offset].interval_ms;
+        return true;
+    }
+
+    // check the deferred message buckets:
+    for (uint8_t i=0; i<ARRAY_SIZE(deferred_message_bucket); i++) {
+        const deferred_message_bucket_t &bucket = deferred_message_bucket[i];
+        if (bucket.ap_message_ids.get(id)) {
+            interval_ms = bucket.interval_ms;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_command_long_t &packet)
+{
+    if (comm_get_txspace(chan) < PAYLOAD_SIZE(chan, MESSAGE_INTERVAL) + PAYLOAD_SIZE(chan, COMMAND_ACK)) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    const uint32_t mavlink_id = (uint32_t)packet.param1;
+    if (mavlink_id >= 2 << 15) {
+        // response packet limits range this works against!
+        mavlink_msg_message_interval_send(chan, mavlink_id, 0); // not available
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    const ap_message id = mavlink_id_to_ap_message_id(mavlink_id);
+    if (id == MSG_LAST) {
+        gcs().send_text(MAV_SEVERITY_INFO, "No ap_message for mavlink id (%u)", mavlink_id);
+        mavlink_msg_message_interval_send(chan, mavlink_id, 0); // not available
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    uint16_t interval_ms = 0;
+    if (!get_ap_message_interval(id, interval_ms)) {
+        // not streaming this message at the moment...
+        mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (interval_ms == 0) {
+        mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    mavlink_msg_message_interval_send(chan, mavlink_id, interval_ms * 1000);
+    return MAV_RESULT_ACCEPTED;
+}
+
+
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool GCS_MAVLINK::telemetry_delayed() const
 {
@@ -3456,6 +3514,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_SET_MESSAGE_INTERVAL:
         result = handle_command_set_message_interval(packet);
+        break;
+
+    case MAV_CMD_GET_MESSAGE_INTERVAL:
+        result = handle_command_get_message_interval(packet);
         break;
 
     case MAV_CMD_DO_SET_SERVO:
