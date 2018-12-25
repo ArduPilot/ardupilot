@@ -297,15 +297,15 @@ bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure
 
     // ensure we have units for each field:
     if (strlen(logstructure->units) != fieldcount) {
-        Debug("fieldcount=%u does not match unitcount=%lu",
-              fieldcount, strlen(logstructure->units));
+        Debug("fieldcount=%u does not match unitcount=%u",
+              (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
         passed = false;
     }
 
     // ensure we have multipliers for each field
     if (strlen(logstructure->multipliers) != fieldcount) {
-        Debug("fieldcount=%u does not match multipliercount=%lu",
-              fieldcount, strlen(logstructure->multipliers));
+        Debug("fieldcount=%u does not match multipliercount=%u",
+              (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
         passed = false;
     }
 
