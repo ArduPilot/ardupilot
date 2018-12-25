@@ -396,6 +396,15 @@ private:
     AP_Int8 _magMask;               // Bitmask forcng specific EKF core instances to use simple heading magnetometer fusion.
     AP_Int8 _originHgtMode;         // Bitmask controlling post alignment correction and reporting of the EKF origin height.
     AP_Int8 _gpsQualityTime;        // GPS quality duration
+    AP_Float _gpsQualityDrift;      // GPS quality drift rate
+    AP_Float _gpsQualityVerticalVelocity;  // GPS quality vertical velocity
+    AP_Float _gpsQualityHorizontalVelocity;  // GPS quality horizontal velocity
+    AP_Float _gpsQualityHoriziontalAccuracy;  // GPS quality horiziontal position accuracy
+    AP_Float _gpsQualityVerticalAccuracy;  // GPS quality vertical position accuracy
+    AP_Float _gpsQualitySpeedAccuracy;  // GPS quality speed accuracy
+    AP_Float _gpsQualitySatelliteGeometry;  // GPS quality satellite geometry
+    AP_Int8 _gpsQualitySatelliteNumbers;  // GPS quality satellite numbers
+    AP_Float _gpsQualitYawTestRate;  // GPS quality yaw test rate
 
     // Tuning parameters
     const float gpsNEVelVarAccScale = 0.05f;       // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

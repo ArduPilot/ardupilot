@@ -553,6 +553,81 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_QTIME", 50, NavEKF2, _gpsQualityTime, 10),
 
+    // @Param: GPS_QUAL_DRIFT
+    // @DisplayName: GPS quality drift rate
+    // @Description: Drift rate to confirm GPS quality stability.
+    // @Units: m
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QDRIFT", 51, NavEKF2, _gpsQualityDrift, 3.0f),
+
+    // @Param: GPS_QUAL_VVEL
+    // @DisplayName: GPS quality vertical velocity
+    // @Description: Vertical velocity to confirm GPS quality stability.
+    // @Units: m/s
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QVVEL", 52, NavEKF2, _gpsQualityVerticalVelocity, 0.3f),
+
+    // @Param: GPS_QUAL_HVEL
+    // @DisplayName: GPS quality horizontal velocity
+    // @Description: horizontal velocity to confirm GPS quality stability.
+    // @Units: m/s
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QHVEL", 53, NavEKF2, _gpsQualityHorizontalVelocity, 0.3f),
+
+    // @Param: GPS_QUAL_HACC
+    // @DisplayName: GPS quality horiziontal position accuracy
+    // @Description: horiziontal position accuracy to confirm GPS quality stability.
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QHACC", 54, NavEKF2, _gpsQualityHoriziontalAccuracy, 5.0f),
+
+    // @Param: GPS_QUAL_VACC
+    // @DisplayName: GPS quality vertical position accuracy
+    // @Description: vertical position accuracy to confirm GPS quality stability.
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QVACC", 55, NavEKF2, _gpsQualityVerticalAccuracy, 7.5f),
+
+    // @Param: GPS_QUAL_SACC
+    // @DisplayName: GPS quality speed accuracy
+    // @Description: speed accuracy to confirm GPS quality stability.
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QSACC", 56, NavEKF2, _gpsQualitySpeedAccuracy, 1.0f),
+
+    // @Param: GPS_QUAL_HDOP
+    // @DisplayName: GPS quality satellite geometry
+    // @Description: satellite geometry to confirm GPS quality stability.
+    // @Range: 0.00 10.00
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QHDOP", 57, NavEKF2, _gpsQualitySatelliteGeometry, 2.50f),
+
+    // @Param: GPS_QUAL_NSAT
+    // @DisplayName: GPS quality satellite numbers
+    // @Description: satellite numbers to confirm GPS quality stability.
+    // @Range: 3 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QNSAT", 58, NavEKF2, _gpsQualitySatelliteNumbers, 6),
+
+    // @Param: GPS_QUAL_YAW
+    // @DisplayName: GPS quality yaw test rate
+    // @Description: yaw test rate to confirm GPS quality stability.
+    // @Range: 0.0 10.0f
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_QYAW", 59, NavEKF2, _gpsQualitYawTestRate, 1.0f),
+
     AP_GROUPEND
 };
 
