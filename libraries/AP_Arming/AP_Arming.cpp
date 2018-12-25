@@ -18,6 +18,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Rally/AP_Rally.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
@@ -76,6 +78,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
                                                                                            AP_PARAM_FRAME_COPTER |
                                                                                            AP_PARAM_FRAME_TRICOPTER |
                                                                                            AP_PARAM_FRAME_HELI),
+
+    // @Param: MIS_ITEMS
+    // @DisplayName: Required mission items
+    // @Description: Bitmask of mission items that are required to be planned in order to arm the aircraft
+    // @Bitmask: 0:Land,1:VTOL Land,2:DO_LAND_START,3:Takeoff,4:VTOL Takeoff,5:Rallypoint
+    // @User: Advanced
+    AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
+
+    // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
 
@@ -493,6 +504,63 @@ bool AP_Arming::manual_transmitter_checks(bool report)
     return true;
 }
 
+bool AP_Arming::mission_checks(bool report)
+{
+    if (((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_MISSION)) &&
+        _required_mission_items) {
+        AP_Mission *mission = AP::mission();
+        if (mission == nullptr) {
+            check_failed(ARMING_CHECK_MISSION, report, "No mission library present");
+            #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                AP_HAL::panic("Mission checks requested, but no mission was allocated");
+            #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            return false;
+        }
+        AP_Rally *rally = AP::rally();
+        if (rally == nullptr) {
+            check_failed(ARMING_CHECK_MISSION, report, "No rally library present");
+            #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                AP_HAL::panic("Mission checks requested, but no rally was allocated");
+            #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            return false;
+        }
+
+        const struct MisItemTable {
+          MIS_ITEM_CHECK check;
+          MAV_CMD mis_item_type;
+          const char *type;
+        } misChecks[5] = {
+          {MIS_ITEM_CHECK_LAND,          MAV_CMD_NAV_LAND,           "land"},
+          {MIS_ITEM_CHECK_VTOL_LAND,     MAV_CMD_NAV_VTOL_LAND,      "vtol land"},
+          {MIS_ITEM_CHECK_DO_LAND_START, MAV_CMD_DO_LAND_START,      "do land start"},
+          {MIS_ITEM_CHECK_TAKEOFF,       MAV_CMD_NAV_TAKEOFF,        "takeoff"},
+          {MIS_ITEM_CHECK_VTOL_TAKEOFF,  MAV_CMD_NAV_VTOL_TAKEOFF,   "vtol takeoff"},
+        };
+        for (uint8_t i = 0; i < ARRAY_SIZE(misChecks); i++) {
+            if (_required_mission_items & misChecks[i].check) {
+                if (!mission->contains_item(misChecks[i].mis_item_type)) {
+                    check_failed(ARMING_CHECK_MISSION, report, "Missing mission item: %s", misChecks[i].type);
+                    return false;
+                }
+            }
+        }
+        if (_required_mission_items & MIS_ITEM_CHECK_RALLY) {
+            Location ahrs_loc;
+            if (!AP::ahrs().get_position(ahrs_loc)) {
+                check_failed(ARMING_CHECK_MISSION, report, "Can't check rally without position");
+                return false;
+            }
+            RallyLocation rally_loc = {};
+            if (!rally->find_nearest_rally_point(ahrs_loc, rally_loc)) {
+                check_failed(ARMING_CHECK_MISSION, report, "No sufficently close rally point located");
+                return false;
+            }
+          }
+    }
+
+    return true;
+}
+
 bool AP_Arming::servo_checks(bool report) const
 {
     bool check_passed = true;
@@ -583,6 +651,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  battery_checks(report)
         &  logging_checks(report)
         &  manual_transmitter_checks(report)
+        &  mission_checks(report)
         &  servo_checks(report)
         &  board_voltage_checks(report)
         &  system_checks(report);

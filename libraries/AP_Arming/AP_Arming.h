@@ -32,6 +32,7 @@ public:
         ARMING_CHECK_SWITCH     = 0x0800,
         ARMING_CHECK_GPS_CONFIG = 0x1000,
         ARMING_CHECK_SYSTEM     = 0x2000,
+        ARMING_CHECK_MISSION    = 0x4000,
     };
 
     enum ArmingMethod {
@@ -84,6 +85,7 @@ protected:
     AP_Int16                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
+    AP_Int32                 _required_mission_items;
 
     // internal members
     bool                    armed:1;
@@ -113,6 +115,8 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 
+    bool mission_checks(bool report);
+
     virtual bool system_checks(bool report);
     
     bool servo_checks(bool report) const;
@@ -130,4 +134,13 @@ private:
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
 
+    enum MIS_ITEM_CHECK {
+        MIS_ITEM_CHECK_LAND          = (1 << 0),
+        MIS_ITEM_CHECK_VTOL_LAND     = (1 << 1),
+        MIS_ITEM_CHECK_DO_LAND_START = (1 << 2),
+        MIS_ITEM_CHECK_TAKEOFF       = (1 << 3),
+        MIS_ITEM_CHECK_VTOL_TAKEOFF  = (1 << 4),
+        MIS_ITEM_CHECK_RALLY         = (1 << 5),
+        MIS_ITEM_CHECK_MAX
+    };
 };
