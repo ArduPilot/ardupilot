@@ -62,7 +62,13 @@ public:
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
+    // get singleton instance
+    static AP_Rally *get_singleton() { return _singleton; }
+
+
 private:
+    static AP_Rally *_singleton;
+
     virtual bool is_valid(const Location &rally_point) const { return true; }
 
     static StorageAccess _storage;
@@ -76,4 +82,8 @@ private:
     AP_Int8  _rally_incl_home;
 
     uint32_t _last_change_time_ms;
+};
+
+namespace AP {
+    AP_Rally *rally();
 };

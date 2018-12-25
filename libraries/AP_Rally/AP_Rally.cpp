@@ -52,6 +52,12 @@ AP_Rally::AP_Rally(AP_AHRS &ahrs)
     : _ahrs(ahrs)
     , _last_change_time_ms(0xFFFFFFFF)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Rally must be singleton");
+    }
+#endif
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -160,4 +166,16 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     }
 
     return return_loc;
+}
+
+// singleton instance
+AP_Rally *AP_Rally::_singleton;
+
+namespace AP {
+
+AP_Rally *rally()
+{
+    return AP_Rally::get_singleton();
+}
+
 }
