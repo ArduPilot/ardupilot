@@ -22,6 +22,7 @@ import textwrap
 import time
 import shlex
 
+from MAVProxy.modules.lib import mp_util
 from pysim import vehicleinfo
 
 # List of open terminal windows for macosx
@@ -390,6 +391,26 @@ def get_user_locations_path():
     return user_locations_path
 
 
+def find_new_spawn(loc, file_path):
+    (lat, lon, alt, heading)=loc.split(",")
+    swarminit_filepath = os.path.join(autotest, "swarminit.txt")
+    for path2 in [file_path, swarminit_filepath]:
+        if os.path.isfile(path2):
+            with open(path2,'r') as swd:
+                next(swd)
+                for lines in swd:
+                    if len(lines) == 0:
+                        continue
+                    (instance, offset) = lines.split("=")
+                    if ((int)(instance) == (int)(cmd_opts.instance)):
+                        (x,y,z,head) = offset.split(",")
+                        g=mp_util.gps_offset((float)(lat), (float)(lon), (float)(x), (float)(y))
+                        loc=str(g[0])+","+str(g[1])+","+str(alt+z)+","+str(head)
+                        return loc
+        g=mp_util.gps_newpos((float)(lat), (float)(lon), 90, 20*(int)(cmd_opts.instance))    
+        loc=str(g[0])+","+str(g[1])+","+str(alt)+","+str(heading)
+        return loc
+
 def find_location_by_name(autotest, locname):
     """Search locations.txt for locname, return GPS coords"""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
@@ -399,7 +420,6 @@ def find_location_by_name(autotest, locname):
     for path in [locations_userpath, locations_filepath]:
         if not os.path.isfile(path):
             continue
-
         with open(path, 'r') as fd:
             for line in fd:
                 line = re.sub(comment_regex, "", line)
@@ -408,6 +428,8 @@ def find_location_by_name(autotest, locname):
                     continue
                 (name, loc) = line.split("=")
                 if name == locname:
+                    if cmd_opts.swarm is not None:
+                        loc=find_new_spawn(loc, cmd_opts.swarm)    
                     return loc
 
     print("Failed to find location (%s)" % cmd_opts.location)
@@ -871,6 +893,10 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("-Z","--swarm",
+                     type='string',
+                     default=None,
+                     help="Specify path of swarminit.txt for shifting spawn location")
 parser.add_option_group(group_sim)
 
 
