@@ -1856,6 +1856,20 @@ const char *AP_Mission::Mission_Command::type() const {
     }
 }
 
+bool AP_Mission::contains_item(MAV_CMD command) const
+{
+    for (int i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == command) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // singleton instance
 AP_Mission *AP_Mission::_singleton;
 

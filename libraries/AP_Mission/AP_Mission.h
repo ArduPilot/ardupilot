@@ -478,6 +478,9 @@ public:
         return _rsem;
     }
 
+    // returns true if the mission contains the requested items
+    bool contains_item(MAV_CMD command) const;
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
