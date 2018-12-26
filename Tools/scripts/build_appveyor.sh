@@ -14,7 +14,7 @@ CXX=i686-pc-cygwin-g++.exe CC=i686-pc-cygwin-gcc ./waf configure --board sitl
 (
     date
     git submodule update --init --recursive -f
-
+    /usr/bin/python waf configure --board sitl
     /usr/bin/python waf -j4 copter plane rover heli sub
 
     # map to the names that MissionPlanner expects
