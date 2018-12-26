@@ -64,8 +64,6 @@ void Plane::set_next_WP(const struct Location &loc)
 
     setup_glide_slope();
     setup_turn_angle();
-
-    loiter_angle_reset();
 }
 
 void Plane::set_guided_WP(void)
