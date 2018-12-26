@@ -562,7 +562,6 @@ void Plane::update_flight_mode(void)
     case FLY_BY_WIRE_A: {
         // set nav_roll and nav_pitch using sticks
         nav_roll_cd  = channel_roll->norm_input() * roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
         float pitch_input = channel_pitch->norm_input();
         if (pitch_input > 0) {
@@ -597,7 +596,6 @@ void Plane::update_flight_mode(void)
     case FLY_BY_WIRE_B:
         // Thanks to Yury MonZon for the altitude limit code!
         nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
-        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
         update_load_factor();
         update_fbwb_speed_height();
         break;
@@ -615,7 +613,6 @@ void Plane::update_flight_mode(void)
         
         if (!cruise_state.locked_heading) {
             nav_roll_cd = channel_roll->norm_input() * roll_limit_cd;
-            nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
             update_load_factor();
         } else {
             calc_nav_roll();
