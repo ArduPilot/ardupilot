@@ -136,7 +136,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PITCH_MAX
     // @DisplayName: Maximum pitch in auto flight
-    // @Description: Overrides LIM_PITCH_MAX in automatic throttle modes to reduce climb rates. Uses LIM_PITCH_MAX if set to 0. For poper TECS tuning, set to the angle that the aircraft can climb at TRIM_ARSPD_CM and THR_MAX.
+    // @Description: Overrides LIM_PITCH_MAX in automatic throttle modes to reduce climb rates. Uses LIM_PITCH_MAX if set to 0. For proper TECS tuning, set to the angle that the aircraft can climb at TRIM_ARSPD_CM and THR_MAX.
     // @Range: 0 45
     // @Increment: 1
     // @User: Advanced
@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: PITCH_MIN
     // @DisplayName: Minimum pitch in auto flight
-    // @Description: Overrides LIM_PITCH_MIN in automatic throttle modes to reduce descent rates. Uses LIM_PITCH_MIN if set to 0. For poper TECS tuning, set to the angle that the aircraft can descend at without overspeeding.
+    // @Description: Overrides LIM_PITCH_MIN in automatic throttle modes to reduce descent rates. Uses LIM_PITCH_MIN if set to 0. For proper TECS tuning, set to the angle that the aircraft can descend at without overspeeding.
     // @Range: -45 0
     // @Increment: 1
     // @User: Advanced
