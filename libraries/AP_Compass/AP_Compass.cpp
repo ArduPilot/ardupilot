@@ -28,7 +28,7 @@
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 #ifndef COMPASS_LEARN_DEFAULT
 #define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
