@@ -4,6 +4,7 @@
 
 #include "RC_Channel.h"
 #include "AC_Sprayer/AC_Sprayer.h"
+#include "AP_Gripper/AP_Gripper.h"
 #include "AP_Rally.h"
 
 // Global parameter class.
