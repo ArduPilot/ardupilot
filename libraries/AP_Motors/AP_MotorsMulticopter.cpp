@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: BOOST_SCALE
     // @DisplayName: Motor boost scale
-    // @Description: This is a scaling factor for vehicles with a vertical booster motor used for extra lift. It is used with electric multicopters that have an internal combusion booster motor for longer endurance. The output to the BoostThrottle servo function is set to the current motor thottle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
+    // @Description: Booster motor output scaling factor vs main throttle.  The output to the BoostThrottle servo will be the main throttle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Advanced
