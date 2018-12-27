@@ -28,7 +28,7 @@
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
-extern AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
