@@ -139,10 +139,10 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     z_last = z;
 }
 
-void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
+void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 {
     // Act based on the function assigned to this button
-    switch (get_button(button)->function(shift)) {
+    switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
         if (motors.armed()) {
             arming.disarm();
@@ -586,10 +586,10 @@ void Sub::handle_jsbutton_press(uint8_t button, bool shift, bool held)
     }
 }
 
-void Sub::handle_jsbutton_release(uint8_t button, bool shift) {
+void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
 
     // Act based on the function assigned to this button
-    switch (get_button(button)->function(shift)) {
+    switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_relay_1_momentary:
         relay.off(0);
         break;
