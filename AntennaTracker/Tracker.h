@@ -79,7 +79,7 @@
 #include <SITL/SITL.h>
 #endif
 
-class Tracker : public AP_HAL::HAL::Callbacks {
+class Tracker : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Tracker;
     friend class GCS_Tracker;
