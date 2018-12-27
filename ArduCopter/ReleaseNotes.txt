@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 3.6.4-rc1 20-Dec-2018
+Copter 3.6.4 27-Dec-2018 / 3.6.4-rc1 20-Dec-2018
 Changes from 3.6.3
 1) Bug fixes and minor enhancements
     a) Detect and clear stuck I2C bus when using ChibiOS
