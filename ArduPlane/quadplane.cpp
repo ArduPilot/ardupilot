@@ -232,6 +232,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: VFWD_ALT
     // @DisplayName: Forward velocity alt cutoff
     // @Description: Controls altitude to disable forward velocity assist when below this relative altitude. This is useful to keep the forward velocity propeller from hitting the ground. Rangefinder height data is incorporated when available.
+    // @Units: m
     // @Range: 0 10
     // @Increment: 0.25
     // @User: Standard
