@@ -128,7 +128,7 @@
 #include <SITL/SITL.h>
 #endif
 
-class Sub : public AP_HAL::HAL::Callbacks {
+class Sub : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Sub;
     friend class GCS_Sub;
