@@ -1964,6 +1964,33 @@ class AutoTest(ABC):
     # def test_mission(self, filename):
     #     pass
 
+    def initial_mode(self):
+        '''return mode vehicle should start in with no RC inputs set'''
+        return None
+
+    def initial_mode_switch_mode(self):
+        '''return mode vehicle should start in with default RC inputs set'''
+        return None
+
+    def wait_for_initial_mode(self):
+        '''wait until we get a heartbeat with an expected initial mode (the
+one specified in the vehicle constructor)'''
+        want = self.initial_mode()
+        if want is None:
+            return
+        self.progress("Waiting for initial mode %s" % want)
+        self.wait_mode(want)
+
+    def wait_for_mode_switch_poll(self):
+        '''look for a transition from boot-up-mode (e.g. the flightmode
+specificied in Copter's constructor) to the one specified by the mode
+switch value'''
+        want = self.initial_mode_switch_mode()
+        if want is None:
+            return
+        self.progress("Waiting for mode-switch mode %s" % want)
+        self.wait_mode(want)
+
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -1976,8 +2003,10 @@ class AutoTest(ABC):
             self.progress("Waiting for a heartbeat with mavlink protocol %s"
                           % self.mav.WIRE_PROTOCOL_VERSION)
             self.wait_heartbeat()
+            self.wait_for_initial_mode()
             self.progress("Setting up RC parameters")
             self.set_rc_default()
+            self.wait_for_mode_switch_poll()
 
             for test in tests:
                 (name, desc, func) = test
