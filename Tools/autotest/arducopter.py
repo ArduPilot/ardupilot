@@ -2411,6 +2411,12 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def initial_mode(self):
+        return "STABILIZE"
+
+    def initial_mode_switch_mode(self):
+        return "AUTO"
+
     def default_mode(self):
         return "STABILIZE"
 
