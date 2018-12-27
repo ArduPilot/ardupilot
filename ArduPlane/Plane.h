@@ -128,7 +128,7 @@
 /*
   main APM:Plane class
  */
-class Plane : public AP_HAL::HAL::Callbacks {
+class Plane : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Plane;
     friend class Parameters;
