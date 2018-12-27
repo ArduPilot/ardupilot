@@ -31,13 +31,9 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-#include <AP_Button/AP_Button.h>
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
-#include <AP_GPS/AP_GPS.h>                          // ArduPilot GPS library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
 #include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
@@ -46,18 +42,11 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
-#include <AP_Relay/AP_Relay.h>                      // APM relay
-#include <AP_RPM/AP_RPM.h>
-#include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
-#include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
-#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Gripper/AP_Gripper.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
@@ -73,7 +62,6 @@
 #include <Filter/Filter.h>                          // Filter library
 #include <Filter/LowPassFilter.h>
 #include <Filter/ModeFilter.h>                      // Mode Filter from Filter library
-#include <StorageManager/StorageManager.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AC_Avoidance/AC_Avoid.h>
@@ -159,28 +147,12 @@ private:
     // mapping between input channels
     RCMapper rcmap;
 
-    // board specific config
-    AP_BoardConfig BoardConfig;
-
-#if HAL_WITH_UAVCAN
-    // board specific config for CAN bus
-    AP_BoardConfig_CAN BoardConfig_CAN;
-#endif
-
     // primary control channels
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_lateral;
 
     AP_Logger logger;
-
-    // sensor drivers
-    AP_GPS gps;
-    AP_Baro barometer;
-    Compass compass;
-    AP_InertialSensor ins;
-    RangeFinder rangefinder;
-    AP_Button button;
 
     // flight modes convenience array
     AP_Int8 *modes;
@@ -207,9 +179,6 @@ private:
     OpticalFlow optflow;
 #endif
 
-    // RSSI
-    AP_RSSI rssi;
-
 #if OSD_ENABLED == ENABLED
     AP_OSD osd;
 #endif
@@ -218,19 +187,12 @@ private:
     SITL::SITL sitl;
 #endif
 
-    AP_SerialManager serial_manager;
-
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
 
     // RC Channels:
     RC_Channels_Rover &rc() { return g2.rc_channels; }
-
-    // relay support
-    AP_Relay relay;
-
-    AP_ServoRelayEvents ServoRelayEvents;
 
     // The rover's current location
     struct Location current_loc;
@@ -267,9 +229,6 @@ private:
         uint32_t last_heartbeat_ms; // system time of most recent heartbeat from ground station
         bool ekf;
     } failsafe;
-
-    // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
-    AP_Notify notify;
 
     // true if we have a position estimate from AHRS
     bool have_position;
@@ -496,7 +455,6 @@ public:
     float simple_sin_yaw;
 };
 
-extern const AP_HAL::HAL& hal;
 extern Rover rover;
 
 using AP_HAL::millis;
