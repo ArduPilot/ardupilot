@@ -103,7 +103,7 @@ bool Copter::ModePosHold::init(bool ignore_checks)
         // if landed begin in loiter mode
         poshold.roll_mode = POSHOLD_LOITER;
         poshold.pitch_mode = POSHOLD_LOITER;
-    }else{
+    } else {
         // if not landed start in pilot override to avoid hard twitch
         poshold.roll_mode = POSHOLD_PILOT_OVERRIDE;
         poshold.pitch_mode = POSHOLD_PILOT_OVERRIDE;

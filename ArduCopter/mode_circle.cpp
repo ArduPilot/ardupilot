@@ -64,7 +64,7 @@ void Copter::ModeCircle::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(),
                                                                       copter.circle_nav->get_pitch(),
                                                                       target_yaw_rate);
-    }else{
+    } else {
         attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(),
                                                            copter.circle_nav->get_pitch(),
                                                            copter.circle_nav->get_yaw(), true);
