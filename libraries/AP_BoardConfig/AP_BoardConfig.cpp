@@ -236,7 +236,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Minimum voltage on the autopilot power rail to allow the aircraft to arm. 0 to disable the check.
     // @Units: V
     // @Range: 4.0 5.5
-    // Increment 0.1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VBUS_MIN",    15,     AP_BoardConfig,  _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN),
 
@@ -248,7 +248,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Minimum voltage on the servo rail to allow the aircraft to arm. 0 to disable the check.
     // @Units: V
     // @Range: 3.3 12.0
-    // Increment 0.1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),
 #endif
