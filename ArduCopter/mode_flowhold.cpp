@@ -336,7 +336,7 @@ void Copter::ModeFlowHold::run()
     case FlowHold_Landed:
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
