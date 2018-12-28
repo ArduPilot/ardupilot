@@ -23,6 +23,7 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -260,3 +261,13 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
     memcpy(buf, (const void *)UDID_START, len);
     return true;
 }
+
+#ifdef USE_POSIX
+/*
+  initialise filesystem
+ */
+bool Util::fs_init(void)
+{
+    return sdcard_init();
+}
+#endif
