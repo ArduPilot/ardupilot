@@ -226,7 +226,7 @@ void Copter::ModeFlowHold::run()
     copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
-    copter.update_simple_mode();
+    update_simple_mode();
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
