@@ -81,7 +81,7 @@ void AP_MotorsSingle::output_to_motors()
             rc_write(AP_MOTORS_MOT_5, get_pwm_output_min());
             rc_write(AP_MOTORS_MOT_6, get_pwm_output_min());
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1+i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);

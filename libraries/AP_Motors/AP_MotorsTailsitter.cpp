@@ -89,7 +89,7 @@ void AP_MotorsTailsitter::output_to_motors()
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, get_pwm_output_min());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, get_pwm_output_min());
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             throttle_pwm = calc_spin_up_to_pwm();
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, calc_spin_up_to_pwm());
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, calc_spin_up_to_pwm());
