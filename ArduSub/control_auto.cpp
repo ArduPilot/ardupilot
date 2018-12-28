@@ -117,7 +117,7 @@ void Sub::auto_wp_run()
         //    (of course it would be better if people just used take-off)
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
         return;
@@ -204,7 +204,7 @@ void Sub::auto_spline_run()
         //    (of course it would be better if people just used take-off)
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
 
         return;
     }
@@ -389,7 +389,7 @@ void Sub::auto_loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 
@@ -674,7 +674,7 @@ void Sub::auto_terrain_recover_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         return;
     }

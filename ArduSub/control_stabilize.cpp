@@ -20,7 +20,7 @@ void Sub::stabilize_run()
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
         last_pilot_heading = ahrs.yaw_sensor;
         return;
