@@ -52,8 +52,6 @@ void Copter::ModeBrake::run()
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), 0.0f);
 
-    // body-frame rate controller is run directly from 100hz loop
-
     // update altitude target and call position controller
     // protects heli's from inflight motor interlock disable
     if (motors->get_desired_spool_state() == AP_Motors::DESIRED_GROUND_IDLE && !ap.land_complete) {

@@ -999,11 +999,11 @@ void Copter::ModeAuto::payload_place_run()
 
 bool Copter::ModeAuto::payload_place_run_should_run()
 {
-    // muts be armed
+    // must be armed
     if (!motors->armed()) {
         return false;
     }
-    // muts be auto-armed
+    // must be auto-armed
     if (!ap.auto_armed) {
         return false;
     }
