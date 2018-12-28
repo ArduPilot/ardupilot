@@ -228,9 +228,6 @@ public:
     // Set output throttle
     virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0;
 
-    // Set output throttle and disable stabilization
-    void set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filt_cutoff);
-
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
     float get_throttle_in() const { return _throttle_in; }
 
