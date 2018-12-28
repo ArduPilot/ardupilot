@@ -51,6 +51,13 @@ public:
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
+#ifdef USE_POSIX
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    bool fs_init(void) override;
+#endif
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
