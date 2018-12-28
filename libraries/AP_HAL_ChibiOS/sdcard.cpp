@@ -18,12 +18,14 @@
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
 static bool sdcard_running;
+static HAL_Semaphore sem;
 #endif
 
 #if HAL_USE_SDC
@@ -48,6 +50,8 @@ static SPIConfig highspeed;
 bool sdcard_init()
 {
 #ifdef USE_POSIX
+    WITH_SEMAPHORE(sem);
+
     uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
 #if HAL_USE_SDC
 
@@ -61,7 +65,6 @@ bool sdcard_init()
 
     const uint8_t tries = 3;
     for (uint8_t i=0; i<tries; i++) {
-        hal.scheduler->delay(10);
         sdcconfig.slowdown = sd_slowdown;
         sdcStart(&SDCD1, &sdcconfig);
         if(sdcConnect(&SDCD1) == HAL_FAILED) {
@@ -106,7 +109,6 @@ bool sdcard_init()
      */
     const uint8_t tries = 3;
     for (uint8_t i=0; i<tries; i++) {
-        hal.scheduler->delay(10);
         mmcStart(&MMCD1, &mmcconfig);
 
         if (mmcConnect(&MMCD1) == HAL_FAILED) {
@@ -150,6 +152,15 @@ void sdcard_stop(void)
         mmcDisconnect(&MMCD1);
         mmcStop(&MMCD1);
         sdcard_running = false;
+    }
+#endif
+}
+
+void sdcard_retry(void)
+{
+#ifdef USE_POSIX
+    if (!sdcard_running) {
+        sdcard_init();
     }
 #endif
 }
