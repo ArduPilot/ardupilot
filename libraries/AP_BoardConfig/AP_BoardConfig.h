@@ -149,7 +149,12 @@ public:
 #endif
     }
 
-    
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static uint8_t get_sdcard_slowdown(void) {
+        return instance?instance->_sdcard_slowdown.get():0;
+    }
+#endif
+
 private:
     static AP_BoardConfig *instance;
     
@@ -216,4 +221,8 @@ private:
 
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    AP_Int8 _sdcard_slowdown;
+#endif
 };
