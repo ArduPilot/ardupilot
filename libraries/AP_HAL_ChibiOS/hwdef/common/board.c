@@ -78,11 +78,8 @@ void __late_init(void) {
  * @brief   SDC card detection.
  */
 bool sdc_lld_is_card_inserted(SDCDriver *sdcp) {
-  static bool last_status = false;
-
-  if (blkIsTransferring(sdcp))
-    return last_status;
-  return last_status = (bool)palReadPad(GPIOC, 11);
+    (void)sdcp;
+    return true;
 }
 
 /**
