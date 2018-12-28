@@ -170,9 +170,6 @@ static void main_loop()
     ChibiOS::SPIDevice::test_clock_freq();
 #endif 
 
-    //Setup SD Card and Initialise FATFS bindings
-    sdcard_init();
-
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
