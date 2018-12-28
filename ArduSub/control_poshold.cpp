@@ -43,7 +43,8 @@ void Sub::poshold_run()
         motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         loiter_nav.clear_pilot_desired_acceleration();
         loiter_nav.init_target();
-        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.relax_attitude_controllers();
         pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
         return;
     }
