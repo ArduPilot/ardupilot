@@ -402,11 +402,16 @@ is bob we will attempt to checkout bob-AVR'''
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
 
-        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
-        board_list = board_list.split(',')
-        if not px4-v2 in board_list:
-            print("Skipping px4 builds")
+        if not self.checkout(vehicle, tag, "PX4", None):
             self.checkout(vehicle, "latest")
+            return
+
+        board_list = self.run_program('BB-WAF', ['./waf', 'list_boards'])
+        board_list = board_list.split(' ')
+        self.checkout(vehicle, "latest")
+        if not 'px4-v2' in board_list:
+            print("Skipping px4 builds")
+            return
 
         # PX4-building
         board = "px4"
