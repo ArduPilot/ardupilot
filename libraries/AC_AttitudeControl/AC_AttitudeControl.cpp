@@ -147,18 +147,6 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
-// Set output throttle and disable stabilization
-void AC_AttitudeControl::set_throttle_out_unstabilized(float throttle_in, bool reset_attitude_control, float filter_cutoff)
-{
-    _throttle_in = throttle_in;
-    _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (reset_attitude_control) {
-        relax_attitude_controllers();
-    }
-    _motors.set_throttle(throttle_in);
-    _angle_boost = 0.0f;
-}
-
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
