@@ -113,6 +113,11 @@ public:
      */
     virtual uint32_t available_memory(void) { return 4096; }
 
+    /*
+      initialise (or re-initialise) filesystem storage
+     */
+    virtual bool fs_init(void) { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
