@@ -1609,27 +1609,28 @@ void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
 }
 
 // Write rally points
-void AP_Logger::Write_Rally()
+bool AP_Logger_Backend::Log_Write_RallyPoint(uint8_t total,
+                                             uint8_t sequence,
+                                             const RallyLocation &rally_point)
 {
-    const AP_Rally *rally = AP::rally();
-    if (rally == nullptr) {
-        return;
-    }
-    RallyLocation rally_point;
-    for (uint8_t i=0; i<rally->get_rally_total(); i++) {
-        if (rally->get_rally_point_with_index(i, rally_point)) {
-            struct log_Rally pkt_rally = {
-                LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
-                time_us         : AP_HAL::micros64(),
-                total           : rally->get_rally_total(),
-                sequence        : i,
-                latitude        : rally_point.lat,
-                longitude       : rally_point.lng,
-                altitude        : rally_point.alt
-            };
-            WriteBlock(&pkt_rally, sizeof(pkt_rally));
-        }
-    }
+    struct log_Rally pkt_rally = {
+        LOG_PACKET_HEADER_INIT(LOG_RALLY_MSG),
+        time_us         : AP_HAL::micros64(),
+        total           : total,
+        sequence        : sequence,
+        latitude        : rally_point.lat,
+        longitude       : rally_point.lng,
+        altitude        : rally_point.alt
+    };
+    return WriteBlock(&pkt_rally, sizeof(pkt_rally));
+}
+
+// Write rally points
+void AP_Logger::Log_Write_Rally()
+{
+    AP_Logger_WriteAllRallyPoints writer;
+    writer.set_dataflash_backend(this);
+    writer.process();
 }
 
 // Write visual odometry sensor data
