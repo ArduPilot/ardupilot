@@ -78,7 +78,8 @@ class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
     LoggerMessageWriter_DFLogStart() :
         _writesysinfo(),
-        _writeentiremission()
+        _writeentiremission(),
+        _writeallrallypoints()
         {
         }
 
