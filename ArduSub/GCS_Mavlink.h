@@ -12,8 +12,6 @@ protected:
         return 0;
     };
 
-    AP_Rally *get_rally() const override;
-
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
 
     uint8_t sysid_my_gcs() const override;
