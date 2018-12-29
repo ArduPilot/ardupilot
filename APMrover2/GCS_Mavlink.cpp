@@ -1208,15 +1208,6 @@ AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
 #endif
 }
 
-AP_Rally *GCS_MAVLINK_Rover::get_rally() const
-{
-#if AP_RALLY == ENABLED
-    return &rover.g2.rally;
-#else
-    return nullptr;
-#endif
-}
-
 bool GCS_MAVLINK_Rover::set_mode(const uint8_t mode)
 {
     Mode *new_mode = rover.mode_from_mode_num((enum Mode::Number)mode);
