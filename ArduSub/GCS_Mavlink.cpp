@@ -1163,15 +1163,6 @@ void Sub::mavlink_delay_cb()
     DataFlash.EnableWrites(true);
 }
 
-AP_Rally *GCS_MAVLINK_Sub::get_rally() const
-{
-#if AC_RALLY == ENABLED
-    return &sub.rally;
-#else
-    return nullptr;
-#endif
-}
-
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
     if (packet.param1 > 0.5f) {
         sub.init_disarm_motors();
