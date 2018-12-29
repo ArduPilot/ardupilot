@@ -626,13 +626,20 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             int16_t motor_out;
             if (mask & (1U<<i)) {
-                motor_out = calc_thrust_to_pwm(thrust);
+                /*
+                    apply rudder mixing differential thrust
+                    copter frame roll is plane frame yaw as this only
+                    apples to either tilted motors or tailsitters
+                */
+                float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
+
+                motor_out = calc_thrust_to_pwm(thrust + diff_thrust);
             } else {
                 motor_out = get_pwm_output_min();
             }
