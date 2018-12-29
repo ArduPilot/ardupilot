@@ -123,7 +123,6 @@ void DataFlash_File::Init()
     }
     if (ret == -1) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
-        return;
     }
 
     // determine and limit file backend buffersize
