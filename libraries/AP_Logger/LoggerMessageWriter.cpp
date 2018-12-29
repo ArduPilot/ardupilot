@@ -190,7 +190,8 @@ void LoggerMessageWriter_WriteSysInfo::process() {
     _finished = true;  // all done!
 }
 
-void LoggerMessageWriter_WriteAllRallyPoints::process() {
+void LoggerMessageWriter_WriteAllRallyPoints::process()
+{
     const AP_Rally *_rally = AP::rally();
     if (_rally == nullptr) {
         _finished = true;
@@ -208,7 +209,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::process() {
         FALLTHROUGH;
 
     case ar_blockwriter_stage_write_new_rally_message:
-        if (! _dataflash_backend->Log_Write_Message("New rally")) {
+        if (! _dataflash_backend->Write_Message("New rally")) {
             return; // call me again
         }
         stage = ar_blockwriter_stage_write_all_rally_points;
@@ -218,7 +219,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::process() {
         while (_rally_number_to_send < _rally->get_rally_total()) {
             RallyLocation rallypoint;
             if (_rally->get_rally_point_with_index(_rally_number_to_send, rallypoint)) {
-                if (!_dataflash_backend->Log_Write_RallyPoint(
+                if (!_dataflash_backend->Write_RallyPoint(
                         _rally->get_rally_total(),
                         _rally_number_to_send,
                         rallypoint)) {
@@ -237,9 +238,9 @@ void LoggerMessageWriter_WriteAllRallyPoints::process() {
     _finished = true;
 }
 
-void DFMessageWriter_WriteAllRallyPoints::reset()
+void LoggerMessageWriter_WriteAllRallyPoints::reset()
 {
-    DFMessageWriter::reset();
+    LoggerMessageWriter::reset();
     stage = ar_blockwriter_stage_init;
     _rally_number_to_send = 0;
 }
