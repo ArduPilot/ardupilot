@@ -86,6 +86,10 @@ public:
     const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
     void Write_EntireMission();
+    bool Write_RallyPoint(uint8_t total,
+                          uint8_t sequence,
+                          const RallyLocation &rally_point);
+    void Write_Rally();
     bool Write_Format(const struct LogStructure *structure);
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);

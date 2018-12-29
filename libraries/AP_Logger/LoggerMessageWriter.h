@@ -3,6 +3,7 @@
 #include "AP_Logger_Backend.h"
 
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Rally/AP_Rally.h>
 
 class LoggerMessageWriter {
 public:
@@ -55,6 +56,24 @@ private:
     entire_mission_blockwriter_stage stage = em_blockwriter_stage_init;
 };
 
+class LoggerMessageWriter_WriteAllRallyPoints : public LoggerMessageWriter {
+public:
+
+    void reset() override;
+    void process() override;
+
+private:
+    enum all_rally_points_blockwriter_stage {
+        ar_blockwriter_stage_init,
+        ar_blockwriter_stage_write_new_rally_message,
+        ar_blockwriter_stage_write_all_rally_points,
+        ar_blockwriter_stage_done
+    };
+
+    uint16_t _rally_number_to_send = 0;
+    all_rally_points_blockwriter_stage stage = ar_blockwriter_stage_init;
+};
+
 class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
     LoggerMessageWriter_DFLogStart() :
@@ -67,6 +86,7 @@ public:
         LoggerMessageWriter::set_dataflash_backend(backend);
         _writesysinfo.set_dataflash_backend(backend);
         _writeentiremission.set_dataflash_backend(backend);
+        _writeallrallypoints.set_dataflash_backend(backend);
     }
 
     void reset() override;
@@ -84,6 +104,7 @@ private:
         ls_blockwriter_stage_parms,
         ls_blockwriter_stage_sysinfo,
         ls_blockwriter_stage_write_entire_mission,
+        ls_blockwriter_stage_write_all_rally_points,
         ls_blockwriter_stage_vehicle_messages,
         ls_blockwriter_stage_done,
     };
@@ -105,4 +126,5 @@ private:
 
     LoggerMessageWriter_WriteSysInfo _writesysinfo;
     LoggerMessageWriter_WriteEntireMission _writeentiremission;
+    LoggerMessageWriter_WriteAllRallyPoints _writeallrallypoints;
 };
