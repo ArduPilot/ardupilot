@@ -157,6 +157,10 @@ public:
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
 
+    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // using copter motors for forward flight
+    virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
+
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
                     PWM_TYPE_ONESHOT125 = 2,
