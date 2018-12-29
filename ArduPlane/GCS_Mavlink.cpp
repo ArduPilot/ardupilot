@@ -1533,11 +1533,6 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Plane::get_advanced_failsafe() const
     return &plane.afs;
 }
 
-AP_Rally *GCS_MAVLINK_Plane::get_rally() const
-{
-    return &plane.rally;
-}
-
 /*
   set_mode() wrapper for MAVLink SET_MODE
  */
