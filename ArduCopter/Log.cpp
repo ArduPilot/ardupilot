@@ -440,9 +440,6 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     // only 200(?) bytes are guaranteed by AP_Logger
     logger.Write_MessageF("Frame: %s", get_frame_string());
     logger.Write_Mode(control_mode, control_mode_reason);
-#if AC_RALLY
-    logger.Write_Rally();
-#endif
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
