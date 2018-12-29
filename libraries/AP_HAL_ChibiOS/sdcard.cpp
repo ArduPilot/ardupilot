@@ -18,14 +18,14 @@
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_Common/Semaphore.h>
+#include "Semaphores.h"
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
 static bool sdcard_running;
-static HAL_Semaphore sem;
+static ChibiOS::Semaphore sem;
 #endif
 
 #if HAL_USE_SDC
@@ -50,7 +50,7 @@ static SPIConfig highspeed;
 bool sdcard_init()
 {
 #ifdef USE_POSIX
-    WITH_SEMAPHORE(sem);
+    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
 
     uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
 #if HAL_USE_SDC
@@ -80,7 +80,9 @@ bool sdcard_init()
 
         // Create APM Directory if needed
         mkdir("/APM", 0777);
+        mkdir("/APM/LOGS", 0777);
         sdcard_running = true;
+        sem.give();
         return true;
     }
 #elif HAL_USE_MMC_SPI
@@ -93,6 +95,7 @@ bool sdcard_init()
     device = AP_HAL::get_HAL().spi->get_device("sdcard");
     if (!device) {
         printf("No sdcard SPI device found\n");
+        sem.give();
         return false;
     }
     device->set_slowdown(sd_slowdown);
@@ -124,10 +127,13 @@ bool sdcard_init()
 
         // Create APM Directory if needed
         mkdir("/APM", 0777);
+        mkdir("/APM/LOGS", 0777);
+        sem.give();
         return true;
     }
     sdcard_running = false;
 #endif
+    sem.give();
 #endif
     return false;
 }
