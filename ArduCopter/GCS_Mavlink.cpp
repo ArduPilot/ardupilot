@@ -1498,15 +1498,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_l
     return result;
 }
 
-AP_Rally *GCS_MAVLINK_Copter::get_rally() const
-{
-#if AC_RALLY == ENABLED
-    return &copter.rally;
-#else
-    return nullptr;
-#endif
-}
-
 bool GCS_MAVLINK_Copter::set_mode(const uint8_t mode)
 {
 #ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
