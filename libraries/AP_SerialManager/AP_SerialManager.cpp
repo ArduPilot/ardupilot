@@ -206,14 +206,14 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: _PASS1
     // @DisplayName: Serial passthru first port
     // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
-    // @Values: -1:Disabled,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @User: Advanced
     AP_GROUPINFO("_PASS1",  20, AP_SerialManager, passthru_port1, 0),
 
     // @Param: _PASS2
     // @DisplayName: Serial passthru second port
     // @Description: This sets one side of pass-through between two serial ports. Once both sides are set then all data received on either port will be passed to the other port
-    // @Values: -1:Disabled,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @User: Advanced
     AP_GROUPINFO("_PASS2",  21, AP_SerialManager, passthru_port2, -1),
 
