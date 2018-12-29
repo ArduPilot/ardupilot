@@ -13,7 +13,6 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    AP_Rally *get_rally() const override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
 
