@@ -618,11 +618,10 @@ void Plane::update_load_factor(void)
 
     if (quadplane.in_transition() &&
         (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
-        /*
-          the user has asked for transitions to be kept level to
-          within LEVEL_ROLL_LIMIT
-         */
+        // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
         roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        return;
     }
     
     if (!aparm.stall_prevention) {
