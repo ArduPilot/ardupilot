@@ -21,6 +21,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_PID/AC_P.h>
+#include <AP_RTC/JitterCorrection.h>
 
 class AP_Follow
 {
@@ -124,4 +125,7 @@ private:
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
     float   _dist_to_target;        // latest distance to target in meters (for reporting purposes)
     float   _bearing_to_target;     // latest bearing to target in degrees (for reporting purposes)
+
+    // setup jitter correction with max transport lag of 3s
+    JitterCorrection _jitter{3000};
 };
