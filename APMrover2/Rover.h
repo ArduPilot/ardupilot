@@ -54,6 +54,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Relay/AP_Relay.h>                      // APM relay
+#include <AP_RPM/AP_RPM.h>
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
@@ -176,6 +177,9 @@ private:
     // flight modes convenience array
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
+
+    // AP_RPM Module
+    AP_RPM rpm_sensor;
 
     // Inertial Navigation EKF
 #if AP_AHRS_NAVEKF_AVAILABLE
@@ -441,6 +445,7 @@ private:
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
+    void send_rpm(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
@@ -509,6 +514,7 @@ private:
     void set_servos(void);
 
     // system.cpp
+    void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
     void update_ahrs_flyforward();
