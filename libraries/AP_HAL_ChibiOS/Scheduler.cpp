@@ -359,6 +359,7 @@ void Scheduler::_io_thread(void* arg)
             // thread when disarmed
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
+                last_sd_start_ms = now;
                 sdcard_retry();
             }
         }
