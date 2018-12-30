@@ -409,6 +409,10 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECTN(EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
