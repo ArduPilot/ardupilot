@@ -1142,6 +1142,7 @@ protected:
     const char *name4() const override { return "FOLL"; }
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
+    bool get_wp(Location_Class &loc) override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
