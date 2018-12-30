@@ -262,8 +262,6 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     // decode global-position-int message
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
 
-        const uint32_t now = AP_HAL::millis();
-
         // get estimated location and velocity (for logging)
         Location loc_estimate{};
         Vector3f vel_estimate;
@@ -295,10 +293,12 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
-        _last_location_update_ms = now;
+
+        // get a local timestamp with correction for transport jitter
+        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
         if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
-            _last_heading_update_ms = now;
+            _last_heading_update_ms = _last_location_update_ms;
         }
         // initialise _sysid if zero to sender's id
         if (_sysid == 0) {
