@@ -731,6 +731,14 @@ bool AP_Arming::disarm()
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
+#if HAL_HAVE_SAFETY_SWITCH
+    AP_BoardConfig *board_cfg = AP_BoardConfig::get_instance();
+    if ((board_cfg != nullptr) &&
+        (board_cfg->get_safety_button_options() & AP_BoardConfig::BOARD_SAFETY_OPTION_SAFETY_ON_DISARM)) {
+        hal.rcout->force_safety_on();
+    }
+#endif // HAL_HAVE_SAFETY_SWITCH
+
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
 
