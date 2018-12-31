@@ -207,7 +207,7 @@ public:
         k_param_ch10_option_old,
         k_param_ch11_option_old,
         k_param_ch12_option_old,
-        k_param_takeoff_trigger_dz,
+        k_param_takeoff_trigger_dz_old,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
@@ -376,7 +376,6 @@ public:
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
-    AP_Int16        takeoff_trigger_dz;
     AP_Float        pilot_takeoff_alt;
 
     AP_Int16        rtl_altitude;
