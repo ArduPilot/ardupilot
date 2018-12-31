@@ -43,7 +43,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
-#include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed/AP_Airspeed.h>

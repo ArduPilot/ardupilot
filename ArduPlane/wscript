@@ -10,6 +10,7 @@ def build(bld):
             'APM_Control',
             'AP_AdvancedFailsafe',
             'AP_ADSB',
+            'AP_Buffer',
             'AP_Avoidance',
             'AP_Arming',
             'AP_Camera',
