@@ -25,7 +25,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
-    'AP_Buffer',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',

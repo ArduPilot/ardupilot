@@ -23,7 +23,6 @@
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Notify/AP_Notify.h>
