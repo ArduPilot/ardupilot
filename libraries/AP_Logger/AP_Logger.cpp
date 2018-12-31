@@ -102,6 +102,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
 
+    // @Param: _MAX_FILES
+    // @DisplayName: Maximum number of log files
+    // @Description: Maximum number of log files
+    // @Range: 1 32767
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_MAX_FILES", 8, AP_Logger, _params.max_log_files, 500),
+
     AP_GROUPEND
 };
 

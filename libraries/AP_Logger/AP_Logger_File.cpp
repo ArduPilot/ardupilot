@@ -228,7 +228,7 @@ uint16_t AP_Logger_File::find_oldest_log()
         }
 
         uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-        if (thisnum > MAX_LOG_FILES) {
+        if (thisnum > _front._params.max_log_files) {
             // ignore files above our official maximum...
             continue;
         }
@@ -283,7 +283,7 @@ void AP_Logger_File::Prep_MinSpace()
         if (avail >= target_free) {
             break;
         }
-        if (count++ > MAX_LOG_FILES+10) {
+        if (count++ > _front._params.max_log_files+10) {
             // *way* too many deletions going on here.  Possible internal error.
             INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
             break;
@@ -312,7 +312,7 @@ void AP_Logger_File::Prep_MinSpace()
             }
         }
         log_to_remove++;
-        if (log_to_remove > MAX_LOG_FILES) {
+        if (log_to_remove > _front._params.max_log_files) {
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
@@ -423,7 +423,7 @@ void AP_Logger_File::EraseAll()
     const bool was_logging = (_write_fd != -1);
     stop_logging();
 
-    for (uint16_t log_num=1; log_num<=MAX_LOG_FILES; log_num++) {
+    for (uint16_t log_num=1; log_num<=_front._params.max_log_files; log_num++) {
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
             break;
@@ -705,7 +705,7 @@ uint16_t AP_Logger_File::get_num_logs()
         ret++;
     }
     if (i == 0) {
-        for (i=MAX_LOG_FILES; i>high; i--) {
+        for (i=_front._params.max_log_files; i>high; i--) {
             if (! log_exists(i)) {
                 break;
             }
@@ -770,7 +770,7 @@ void AP_Logger_File::start_new_log(void)
     if (_get_log_size(log_num) > 0 || log_num == 0) {
         log_num++;
     }
-    if (log_num > MAX_LOG_FILES) {
+    if (log_num > _front._params.max_log_files) {
         log_num = 1;
     }
     if (!write_fd_semaphore.take(1)) {
