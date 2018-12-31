@@ -59,7 +59,6 @@
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <AP_RSSI/AP_RSSI.h>                   // RSSI Library
 #include <Filter/Filter.h>             // Filter library
-#include <AP_Buffer/AP_Buffer.h>          // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
