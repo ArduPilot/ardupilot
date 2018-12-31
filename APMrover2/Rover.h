@@ -33,7 +33,6 @@
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
-#include <AP_Buffer/AP_Buffer.h>                    // FIFO buffer library
 #include <AP_Button/AP_Button.h>
 #include <AP_Camera/AP_Camera.h>                    // Camera triggering
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
