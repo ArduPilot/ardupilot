@@ -100,6 +100,20 @@
 // @}
 
 
+// assert_storage_size template: assert that the memory used to store an
+// item is of a specific size.
+// example invocation:
+// assert_storage_size<class Location, 16> _assert_storage_size_Location;
+// templates are used for this because the compiler's output will
+// usually contain details of the template instantiation so you can
+// see how the actual size differs from the expected size.
+template<typename s, int s_size, int t> struct _assert_storage_size {
+    static_assert(s_size == t, "wrong size");
+};
+template<typename s, int t> struct assert_storage_size {
+    _assert_storage_size<s, sizeof(s), t> _member;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Types
 ///
