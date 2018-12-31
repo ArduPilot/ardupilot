@@ -2882,6 +2882,63 @@ class AutoTestCopter(AutoTest):
     def test_parameter_checks(self):
         self.test_parameter_checks_poscontrol("PSC")
 
+    def fly_poshold_takeoff(self):
+        """ensure vehicle stays put until it is ready to fly"""
+        self.context_push()
+
+        ex = None
+        try:
+            self.set_parameter("PILOT_TKOFF_ALT", 700)
+            self.mavproxy.send('mode POSHOLD\n')
+            self.wait_mode('POSHOLD')
+            self.set_rc(3, 1000)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_seconds(2)
+            # check we are still on the ground...
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            if abs(m.relative_alt) > 100:
+                raise NotAchievedException("Took off prematurely")
+
+            self.progress("Pushing throttle up")
+            self.set_rc(3, 1710)
+            self.wait_seconds(0.5)
+            self.progress("Bringing back to hover throttle")
+            self.set_rc(3, 1500)
+
+            # make sure we haven't already reached alt:
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            max_initial_alt = 500
+            if abs(m.relative_alt) > max_initial_alt:
+                raise NotAchievedException("Took off too fast (%f > %f" %
+                                           (abs(m.relative_alt), max_initial_alt))
+
+            self.progress("Monitoring takeoff-to-alt")
+            self.wait_altitude(6.9, 8, relative=True)
+
+            self.progress("Making sure we stop at our takeoff altitude")
+            tstart = self.get_sim_time()
+            while self.get_sim_time() - tstart < 5:
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                delta = abs(7000 - m.relative_alt)
+                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
+                                                   delta/1000))
+                if delta > 1000:
+                    raise NotAchievedException("Failed to maintain takeoff alt")
+            self.progress("takeoff OK")
+        except Exception as e:
+            ex = e
+
+        self.mavproxy.send('mode LAND\n')
+        self.wait_mode('LAND')
+        self.mav.motors_disarmed_wait()
+        self.set_rc(8, 1000)
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def initial_mode(self):
         return "STABILIZE"
 
@@ -3091,6 +3148,10 @@ class AutoTestCopter(AutoTest):
             ("MANUAL_CONTROL",
              "Test mavlink MANUAL_CONTROL",
              self.test_manual_control),
+
+            ("PosHoldTakeOff",
+             "Fly POSHOLD takeoff",
+             self.fly_poshold_takeoff),
 
             ("LogDownLoad",
              "Log download",
