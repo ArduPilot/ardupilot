@@ -6,7 +6,6 @@ def build(bld):
         name= 'iofirmware_libs',
         ap_vehicle='iofirmware',
         ap_libraries= [
-        'AP_Buffer',
         'AP_Common',
         'AP_HAL',
         'AP_HAL_Empty',
