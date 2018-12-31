@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Math/AP_Math.h>
