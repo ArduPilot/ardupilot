@@ -623,7 +623,7 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
     case AP_PARAM_VECTOR3F:
         return 3*4;
     }
-    Debug("unknown type %u\n", type);
+    Debug("unknown type %d\n", type);
     return 0;
 }
 
