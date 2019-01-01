@@ -577,7 +577,7 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     loc.lat = packet.lat;
     loc.lng = packet.lon;
     loc.alt = packet.alt / 10; // mm -> cm
-    loc.flags.relative_alt = false;
+    loc.relative_alt = false;
     Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
                             packet.vy/100.0f,
                             packet.vz/100.0f);
