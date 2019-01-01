@@ -680,7 +680,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: MIS_DONE_BEHAVE
     // @DisplayName: Mission done behave
     // @Description: Mode to become after mission done
-    // @Values: 0:Hold,1:Loiter
+    // @Values: 0:Hold,1:Loiter, 2:Acro
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 

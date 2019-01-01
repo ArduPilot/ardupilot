@@ -112,6 +112,11 @@ void ModeAuto::exit_mission()
     if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && rover.set_mode(rover.mode_loiter, MODE_REASON_MISSION_END)) {
         return;
     }
+
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, MODE_REASON_MISSION_END)) {
+        return;
+    }
+
     rover.set_mode(rover.mode_hold, MODE_REASON_MISSION_END);
 }
 
