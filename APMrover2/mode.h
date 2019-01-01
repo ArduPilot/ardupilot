@@ -319,7 +319,8 @@ private:
 
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1
+        MIS_DONE_BEHAVE_LOITER    = 1,
+        MIS_DONE_BEHAVE_ACRO      = 2
     };
 
     // Loiter control
