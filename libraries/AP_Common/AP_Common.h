@@ -129,27 +129,17 @@ template<typename s, int t> struct assert_storage_size {
 
 //@{
 
-struct PACKED Location_Option_Flags {
+struct Location {
     uint8_t relative_alt : 1;           // 1 if altitude is relative to home
-    uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain
     uint8_t origin_alt   : 1;           // this altitude is above ekf origin
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
-};
 
-struct PACKED Location {
-    union {
-        Location_Option_Flags flags;                    ///< options bitmask (1<<0 = relative altitude)
-        uint8_t options;                                /// allows writing all flags to eeprom as one byte
-    };
-    // by making alt 24 bit we can make p1 in a command 16 bit,
-    // allowing an accurate angle in centi-degrees. This keeps the
-    // storage cost per mission item at 15 bytes, and allows mission
-    // altitudes of up to +/- 83km
-    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100) see LOCATION_ALT_MAX_M
-    int32_t lat;                                        ///< param 3 - Latitude * 10**7
-    int32_t lng;                                        ///< param 4 - Longitude * 10**7
+    // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
+    int32_t alt;
+    int32_t lat;
+    int32_t lng;
 };
 
 //@}

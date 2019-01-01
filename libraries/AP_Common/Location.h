@@ -66,9 +66,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
 
-    bool is_zero(void) { return (lat == 0 && lng == 0 && alt == 0 && options == 0); }
+    bool is_zero(void) const;
 
-    void zero(void) { lat = lng = alt = 0; options = 0; }
+    void zero(void);
 
 private:
     static AP_Terrain *_terrain;
