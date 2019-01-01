@@ -94,7 +94,7 @@ void loop()
 
     if (count++ == 0) {
         for (int i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
-            hal.console->printf("Ch %02d ", (unsigned)i+1);
+            hal.console->printf("Ch %02u ", (unsigned)i+1);
         }
         hal.console->printf("\n");
     }
