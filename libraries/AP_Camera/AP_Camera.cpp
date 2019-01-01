@@ -270,7 +270,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 void AP_Camera::send_feedback(mavlink_channel_t chan)
 {
     float altitude, altitude_rel;
-    if (current_loc.flags.relative_alt) {
+    if (current_loc.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;
         altitude_rel = current_loc.alt;
     } else {
