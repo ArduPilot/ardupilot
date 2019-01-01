@@ -296,7 +296,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
             for (i = 4; i < _rxpacket.length; i++) {
 #ifdef SUMD_DEBUG
-                hal.console->printf("ch[%d] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
+                hal.console->printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
                                     ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
                                     ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3);
 #endif
