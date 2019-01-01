@@ -36,3 +36,6 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound)
     return false;
 
 }
+
+// make sure we know what size the Location object is:
+assert_storage_size<Location, 16> _assert_storage_size_Location;
