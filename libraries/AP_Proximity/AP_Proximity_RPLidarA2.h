@@ -57,14 +57,16 @@ private:
             rp_resetted,
             rp_responding,
             rp_measurements,
-            rp_health
+            rp_health,
+            rp_rate
         };
 
     enum ResponseType {
         ResponseType_Descriptor = 0,
         ResponseType_SCAN,
         ResponseType_EXPRESS,
-        ResponseType_Health
+        ResponseType_HEALTH,
+        ResponseType_RATE
     };
 
     // initialise sensor (returns true if sensor is successfully initialised)
@@ -74,6 +76,7 @@ private:
 
     // send request for something from sensor
     void send_request_for_health();
+    void send_request_for_rate();
     void parse_response_data();
     void parse_response_descriptor();
     void get_readings();
@@ -120,9 +123,15 @@ private:
         uint16_t error_code;                  ///< the related error code
     };
 
+    struct PACKED _sensor_rate {
+        uint16_t t_standard;                  ///< The time used when RPLIDAR takes a single laser ranging in uS (valid for SCAN mode)
+        uint16_t t_express;                   ///< The time used when RPLIDAR takes a single laser ranging in uS (valid for EXPRESS_SCAN mode)
+    };
+
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
         _sensor_scan sensor_scan;
         _sensor_health sensor_health;
+        _sensor_rate sensor_rate;
     } payload;
 };
