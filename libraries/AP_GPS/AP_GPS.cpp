@@ -1341,7 +1341,7 @@ void AP_GPS::calc_blended_state(void)
     state[GPS_BLENDED_INSTANCE].have_speed_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = false;
-    memset(&state[GPS_BLENDED_INSTANCE].location, 0, sizeof(state[GPS_BLENDED_INSTANCE].location));
+    state[GPS_BLENDED_INSTANCE].location = {};
 
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
