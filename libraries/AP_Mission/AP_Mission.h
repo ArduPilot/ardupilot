@@ -191,7 +191,7 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
-    union PACKED Content {
+    union Content {
         // jump structure
         Jump_Command jump;
 
@@ -257,10 +257,6 @@ public:
 
         // location
         Location location;      // Waypoint location
-
-        // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
-        // if a 16 bit command ID is used
-        uint8_t bytes[12];
     };
 
     // command structure
@@ -488,6 +484,8 @@ private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
+
+    static bool stored_in_location(uint16_t id);
 
     struct Mission_Flags {
         mission_state state;
