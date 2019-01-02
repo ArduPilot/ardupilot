@@ -9,26 +9,26 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Terrain *Location_Class::_terrain = nullptr;
+AP_Terrain *Location::_terrain = nullptr;
 
 /// constructors
-Location_Class::Location_Class()
+Location::Location()
 {
     zero();
 }
 
-const Location_Class definitely_zero{};
-bool Location_Class::is_zero(void) const
+const Location definitely_zero{};
+bool Location::is_zero(void) const
 {
     return !memcmp(this, &definitely_zero, sizeof(*this));
 }
 
-void Location_Class::zero(void)
+void Location::zero(void)
 {
     memset(this, 0, sizeof(*this));
 }
 
-Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
+Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame)
 {
     zero();
     lat = latitude;
@@ -36,19 +36,7 @@ Location_Class::Location_Class(int32_t latitude, int32_t longitude, int32_t alt_
     set_alt_cm(alt_in_cm, frame);
 }
 
-Location_Class::Location_Class(const Location& loc)
-{
-    lat = loc.lat;
-    lng = loc.lng;
-    alt = loc.alt;
-    relative_alt = loc.relative_alt;
-    loiter_ccw = loc.loiter_ccw;
-    terrain_alt = loc.terrain_alt;
-    origin_alt = loc.origin_alt;
-    loiter_xtrack = loc.loiter_xtrack;
-}
-
-Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
+Location::Location(const Vector3f &ekf_offset_neu)
 {
     // store alt and alt frame
     set_alt_cm(ekf_offset_neu.z, ALT_FRAME_ABOVE_ORIGIN);
@@ -62,20 +50,7 @@ Location_Class::Location_Class(const Vector3f &ekf_offset_neu)
     }
 }
 
-Location_Class& Location_Class::operator=(const struct Location &loc)
-{
-    lat = loc.lat;
-    lng = loc.lng;
-    alt = loc.alt;
-    relative_alt = loc.relative_alt;
-    loiter_ccw = loc.loiter_ccw;
-    terrain_alt = loc.terrain_alt;
-    origin_alt = loc.origin_alt;
-    loiter_xtrack = loc.loiter_xtrack;
-    return *this;
-}
-
-void Location_Class::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
+void Location::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
 {
     alt = alt_cm;
     relative_alt = false;
@@ -101,7 +76,7 @@ void Location_Class::set_alt_cm(int32_t alt_cm, ALT_FRAME frame)
 }
 
 // converts altitude to new frame
-bool Location_Class::change_alt_frame(ALT_FRAME desired_frame)
+bool Location::change_alt_frame(ALT_FRAME desired_frame)
 {
     int32_t new_alt_cm;
     if (!get_alt_cm(desired_frame, new_alt_cm)) {
@@ -112,7 +87,7 @@ bool Location_Class::change_alt_frame(ALT_FRAME desired_frame)
 }
 
 // get altitude frame
-Location_Class::ALT_FRAME Location_Class::get_alt_frame() const
+Location::ALT_FRAME Location::get_alt_frame() const
 {
     if (terrain_alt) {
         return ALT_FRAME_ABOVE_TERRAIN;
@@ -127,9 +102,9 @@ Location_Class::ALT_FRAME Location_Class::get_alt_frame() const
 }
 
 /// get altitude in desired frame
-bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
+bool Location::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) const
 {
-    Location_Class::ALT_FRAME frame = get_alt_frame();
+    Location::ALT_FRAME frame = get_alt_frame();
 
     // shortcut if desired and underlying frame are the same
     if (desired_frame == frame) {
@@ -211,7 +186,7 @@ bool Location_Class::get_alt_cm(ALT_FRAME desired_frame, int32_t &ret_alt_cm) co
     }
 }
 
-bool Location_Class::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
+bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
@@ -222,7 +197,7 @@ bool Location_Class::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
     return true;
 }
 
-bool Location_Class::get_vector_from_origin_NEU(Vector3f &vec_neu) const
+bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 {
     // convert lat, lon
     Vector2f vec_ne;
@@ -243,7 +218,7 @@ bool Location_Class::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 }
 
 // return distance in meters between two locations
-float Location_Class::get_distance(const struct Location &loc2) const
+float Location::get_distance(const struct Location &loc2) const
 {
     float dlat = (float)(loc2.lat - lat);
     float dlng = ((float)(loc2.lng - lng)) * longitude_scale(loc2);
@@ -251,7 +226,7 @@ float Location_Class::get_distance(const struct Location &loc2) const
 }
 
 // extrapolate latitude/longitude given distances (in meters) north and east
-void Location_Class::offset(float ofs_north, float ofs_east)
+void Location::offset(float ofs_north, float ofs_east)
 {
     // use is_equal() because is_zero() is a local class conflict and is_zero() in AP_Math does not belong to a class
     if (!is_equal(ofs_north, 0.0f) || !is_equal(ofs_east, 0.0f)) {
@@ -261,3 +236,6 @@ void Location_Class::offset(float ofs_north, float ofs_east)
         lng += dlng;
     }
 }
+
+// make sure we know what size the Location object is:
+assert_storage_size<Location, 16> _assert_storage_size_Location;
