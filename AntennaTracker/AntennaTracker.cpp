@@ -141,7 +141,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Tracker::Tracker(void)
     : DataFlash(g.log_bitmask)
 {
-    memset(&current_loc, 0, sizeof(current_loc));
     memset(&vehicle, 0, sizeof(vehicle));
 }
 

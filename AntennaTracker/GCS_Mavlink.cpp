@@ -450,28 +450,31 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 
         mavlink_msg_mission_item_decode(msg, &packet);
 
-        struct Location tell_command = {};
+        struct Location tell_command;
 
         switch (packet.frame)
         {
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
         {
-            tell_command.lat = 1.0e7f*packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f*packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z*1.0e2f;                                     // in as m converted to cm
-            tell_command.options = 0;                                     // absolute altitude
+            tell_command = Location{
+                int32_t(1.0e7f*packet.x), // in as DD converted to * t7
+                int32_t(1.0e7f*packet.y), // in as DD converted to * t7
+                int32_t(packet.z*1.0e2f), // in as m converted to cm
+                Location::ALT_FRAME_ABSOLUTE
+            };
             break;
         }
 
 #ifdef MAV_FRAME_LOCAL_NED
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = -packet.z*1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            tell_command = Location{
+                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(-packet.z*1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 #endif
@@ -479,21 +482,24 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = packet.z*1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            tell_command = {
+                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(packet.z*1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 #endif
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:                         // absolute lat/lng, relative altitude
         {
-            tell_command.lat = 1.0e7f * packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f * packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z * 1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;                                     // store altitude relative!! Always!!
+            tell_command = {
+                int32_t(1.0e7f * packet.x), // in as DD converted to * t7
+                int32_t(1.0e7f * packet.y), // in as DD converted to * t7
+                int32_t(packet.z * 1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 
