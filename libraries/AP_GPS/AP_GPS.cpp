@@ -819,7 +819,6 @@ void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
-    istate.location.options = 0;
     istate.velocity = _velocity;
     istate.ground_speed = norm(istate.velocity.x, istate.velocity.y);
     istate.ground_course = wrap_360(degrees(atan2f(istate.velocity.y, istate.velocity.x)));
