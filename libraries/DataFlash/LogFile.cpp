@@ -1309,7 +1309,7 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
 {
     int32_t altitude, altitude_rel, altitude_gps;
-    if (current_loc.flags.relative_alt) {
+    if (current_loc.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;
         altitude_rel = current_loc.alt;
     } else {
