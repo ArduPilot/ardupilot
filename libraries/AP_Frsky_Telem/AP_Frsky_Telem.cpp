@@ -726,7 +726,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
         }
         // altitude between vehicle and home_loc
         _relative_home_altitude = loc.alt;
-        if (!loc.flags.relative_alt) {
+        if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
             _relative_home_altitude -= _ahrs.get_home().alt;
         }
@@ -853,7 +853,7 @@ void AP_Frsky_Telem::calc_nav_alt(void)
     float current_height = 0; // in centimeters above home
     if (_ahrs.get_position(loc)) {
         current_height = loc.alt*0.01f;
-        if (!loc.flags.relative_alt) {
+        if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
             current_height -= _ahrs.get_home().alt*0.01f;
         }
