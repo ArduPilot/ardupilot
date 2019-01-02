@@ -396,7 +396,7 @@ void Plane::geofence_check(bool altitude_check_only)
             guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
 
         } else { //return to fence return point, not a rally point
-            memset(&guided_WP_loc, 0, sizeof(guided_WP_loc));
+            guided_WP_loc = {};
             if (g.fence_retalt > 0) {
                 //fly to the return point using fence_retalt
                 guided_WP_loc.alt = home.alt + 100.0f*g.fence_retalt;
