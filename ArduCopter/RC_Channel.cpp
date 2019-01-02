@@ -192,10 +192,8 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 if (copter.mode_auto.mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
-                    cmd.content.location.options = 0;
                     cmd.p1 = 0;
-                    cmd.content.location.lat = 0;
-                    cmd.content.location.lng = 0;
+                    memset(&cmd.content.location, 0, sizeof(cmd.content.location));
                     cmd.content.location.alt = MAX(copter.current_loc.alt,100);
 
                     // use the current altitude for the target alt for takeoff.
