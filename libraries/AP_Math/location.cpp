@@ -174,8 +174,8 @@ bool location_sanitize(const struct Location &defaultLoc, struct Location &loc)
     }
 
     // convert relative alt=0 to mean current alt
-    if (loc.alt == 0 && loc.flags.relative_alt) {
-        loc.flags.relative_alt = false;
+    if (loc.alt == 0 && loc.relative_alt) {
+        loc.relative_alt = false;
         loc.alt = defaultLoc.alt;
         has_changed = true;
     }
