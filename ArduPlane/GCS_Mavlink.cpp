@@ -885,7 +885,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 {
     switch(packet.command) {
 
-    case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_CHANGE_SPEED: {
         // if we're in failsafe modes (e.g., RTL, LOITER) or in pilot
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
@@ -901,6 +901,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+    }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
@@ -1232,11 +1233,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         last_hil_state = packet;
 
         // set gps hil sensor
-        Location loc;
-        memset(&loc, 0, sizeof(loc));
-        loc.lat = packet.lat;
-        loc.lng = packet.lon;
-        loc.alt = packet.alt/10;
+        const Location loc{packet.lat, packet.lon, packet.alt/10, Location::ALT_FRAME_ABSOLUTE};
         Vector3f vel(packet.vx, packet.vy, packet.vz);
         vel *= 0.01f;
 
@@ -1442,10 +1439,10 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_GLOBAL_INT:
                     break; //default to MSL altitude
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-                    cmd.content.location.relative_alt = true;          
+                    cmd.content.location.relative_alt = true;
                     break;
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-                    cmd.content.location.relative_alt = true;          
+                    cmd.content.location.relative_alt = true;
                     cmd.content.location.terrain_alt = true;
                     break;
                 default:
