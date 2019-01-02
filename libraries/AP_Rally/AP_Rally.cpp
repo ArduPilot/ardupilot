@@ -101,7 +101,7 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
     Location ret = {};
 
     // we return an absolute altitude, as we add homeloc.alt below
-    ret.flags.relative_alt = false;
+    ret.relative_alt = false;
 
     //Currently can't do true AGL on the APM.  Relative altitudes are
     //relative to HOME point's altitude.  Terrain on the board is inbound
@@ -152,7 +152,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     // no valid rally point, return home position
     return_loc = home_loc;
     return_loc.alt = rtl_home_alt;
-    return_loc.flags.relative_alt = false; // read_alt_to_hold returns an absolute altitude
+    return_loc.relative_alt = false; // read_alt_to_hold returns an absolute altitude
 
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
