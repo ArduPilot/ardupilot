@@ -183,7 +183,7 @@ void AC_WPNav::set_speed_z(float speed_down_cms, float speed_up_cms)
 
 /// set_wp_destination waypoint using location class
 ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-bool AC_WPNav::set_wp_destination(const Location_Class& destination)
+bool AC_WPNav::set_wp_destination(const Location& destination)
 {
     bool terr_alt;
     Vector3f dest_neu;
@@ -197,7 +197,7 @@ bool AC_WPNav::set_wp_destination(const Location_Class& destination)
     return set_wp_destination(dest_neu, terr_alt);
 }
 
-bool AC_WPNav::get_wp_destination(Location_Class& destination) {
+bool AC_WPNav::get_wp_destination(Location& destination) {
     Vector3f dest = get_wp_destination();
     if (!AP::ahrs().get_origin(destination)) {
         return false;
@@ -620,7 +620,7 @@ void AC_WPNav::set_yaw_cd(float heading_cd)
 ///     stopped_at_start should be set to true if vehicle is stopped at the origin
 ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
 ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-bool AC_WPNav::set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination)
+bool AC_WPNav::set_spline_destination(const Location& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location next_destination)
 {
     // convert destination location to vector
     Vector3f dest_neu;
@@ -991,7 +991,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
 
 // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
 //      returns false if conversion failed (likely because terrain data was not available)
-bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt)
+bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt)
 {
     // convert location to NE vector2f
     Vector2f res_vec;
@@ -1000,9 +1000,9 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
     }
 
     // convert altitude
-    if (loc.get_alt_frame() == Location_Class::ALT_FRAME_ABOVE_TERRAIN) {
+    if (loc.get_alt_frame() == Location::ALT_FRAME_ABOVE_TERRAIN) {
         int32_t terr_alt;
-        if (!loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, terr_alt)) {
+        if (!loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, terr_alt)) {
             return false;
         }
         vec.z = terr_alt;
@@ -1010,7 +1010,7 @@ bool AC_WPNav::get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &te
     } else {
         terrain_alt = false;
         int32_t temp_alt;
-        if (!loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_ORIGIN, temp_alt)) {
+        if (!loc.get_alt_cm(Location::ALT_FRAME_ABOVE_ORIGIN, temp_alt)) {
             return false;
         }
         vec.z = temp_alt;
