@@ -440,7 +440,7 @@ private:
 
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
-    Location_Class current_loc;
+    Location current_loc;
 
     // IMU variables
     // Integration time (in seconds) for the gyros (DCM algorithm)

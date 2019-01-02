@@ -141,8 +141,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 {
     _mode = Auto_TakeOff;
 
-    // convert location to class
-    Location_Class dest(dest_loc);
+    Location dest(dest_loc);
 
     // set horizontal target
     dest.lat = copter.current_loc.lat;
@@ -150,7 +149,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 
     // get altitude target
     int32_t alt_target;
-    if (!dest.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, alt_target)) {
+    if (!dest.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, alt_target)) {
         // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
         copter.Log_Write_Error(ERROR_SUBSYSTEM_TERRAIN, ERROR_CODE_MISSING_TERRAIN_DATA);
         // fall back to altitude above current altitude
@@ -159,11 +158,11 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 
     // sanity check target
     if (alt_target < copter.current_loc.alt) {
-        dest.set_alt_cm(copter.current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(copter.current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
     }
     // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
     if (alt_target < 100) {
-        dest.set_alt_cm(100, Location_Class::ALT_FRAME_ABOVE_HOME);
+        dest.set_alt_cm(100, Location::ALT_FRAME_ABOVE_HOME);
     }
 
     // set waypoint controller target
@@ -199,7 +198,7 @@ void Copter::ModeAuto::wp_start(const Vector3f& destination)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void Copter::ModeAuto::wp_start(const Location_Class& dest_loc)
+void Copter::ModeAuto::wp_start(const Location& dest_loc)
 {
     _mode = Auto_WP;
 
@@ -248,7 +247,7 @@ void Copter::ModeAuto::land_start(const Vector3f& destination)
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has performed all required GPS_ok checks
-void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_center, float radius_m)
+void Copter::ModeAuto::circle_movetoedge_start(const Location &circle_center, float radius_m)
 {
     // convert location to vector from ekf origin
     Vector3f circle_center_neu;
@@ -274,8 +273,8 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location_Class &circle_cent
         // set the state to move to the edge of the circle
         _mode = Auto_CircleMoveToEdge;
 
-        // convert circle_edge_neu to Location_Class
-        Location_Class circle_edge(circle_edge_neu);
+        // convert circle_edge_neu to Location
+        Location circle_edge(circle_edge_neu);
 
         // convert altitude to same as command
         circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
@@ -316,9 +315,9 @@ void Copter::ModeAuto::circle_start()
 
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
-void Copter::ModeAuto::spline_start(const Location_Class& destination, bool stopped_at_start,
+void Copter::ModeAuto::spline_start(const Location& destination, bool stopped_at_start,
                                AC_WPNav::spline_segment_end_type seg_end_type, 
-                               const Location_Class& next_destination)
+                               const Location& next_destination)
 {
     _mode = Auto_Spline;
 
@@ -544,7 +543,7 @@ bool Copter::ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
         case MAV_CMD_NAV_WAYPOINT:
         {
             // set wp_nav's destination
-            Location_Class dest(cmd.content.location);
+            Location dest(cmd.content.location);
             return copter.mode_guided.set_destination(dest);
         }
 
@@ -570,7 +569,7 @@ int32_t Copter::ModeAuto::wp_bearing() const
     return wp_nav->get_wp_bearing_to_destination();
 }
 
-bool Copter::ModeAuto::get_wp(Location_Class& destination)
+bool Copter::ModeAuto::get_wp(Location& destination)
 {
     switch (_mode) {
     case Auto_NavGuided:
@@ -1035,21 +1034,21 @@ void Copter::ModeAuto::payload_place_run_descend()
 
 // terrain_adjusted_location: returns a Location with lat/lon from cmd
 // and altitude from our current altitude adjusted for location
-Location_Class Copter::ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const
+Location Copter::ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const
 {
     // convert to location class
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
 
     // decide if we will use terrain following
     int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-        target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+    if (copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+        target_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
         curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
         // if using terrain, set target altitude to current altitude above terrain
-        target_loc.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+        target_loc.set_alt_cm(curr_terr_alt_cm, Location::ALT_FRAME_ABOVE_TERRAIN);
     } else {
         // set target altitude to current altitude above home
-        target_loc.set_alt_cm(copter.current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+        target_loc.set_alt_cm(copter.current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
     }
     return target_loc;
 }
@@ -1065,9 +1064,9 @@ void Copter::ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
-Location_Class Copter::ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
+Location Copter::ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
 {
-    Location_Class ret(cmd.content.location);
+    Location ret(cmd.content.location);
 
     // use current lat, lon if zero
     if (ret.lat == 0 && ret.lng == 0) {
@@ -1092,7 +1091,7 @@ Location_Class Copter::ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command&
 // do_nav_wp - initiate move to next waypoint
 void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc = loc_from_cmd(cmd);
+    Location target_loc = loc_from_cmd(cmd);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1119,7 +1118,7 @@ void Copter::ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         land_state = LandStateType_FlyToLocation;
 
-        Location_Class target_loc = terrain_adjusted_location(cmd);
+        const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
@@ -1136,14 +1135,14 @@ void Copter::ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     // convert back to location
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
 
     // use current location if not provided
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
         copter.wp_nav->get_wp_stopping_point_xy(temp_pos);
-        Location_Class temp_loc(temp_pos);
+        const Location temp_loc(temp_pos);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
@@ -1169,7 +1168,7 @@ void Copter::ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cm
 // do_circle - initiate moving in a circle
 void Copter::ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class circle_center = loc_from_cmd(cmd);
+    const Location circle_center = loc_from_cmd(cmd);
 
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1200,14 +1199,13 @@ void Copter::ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 
     // if we aren't navigating to a location then we have to adjust
     // altitude for current location
-    Location_Class target_loc(cmd.content.location);
-    const Location_Class &current_loc = copter.current_loc;
+    Location target_loc(cmd.content.location);
     if (target_loc.lat == 0 && target_loc.lng == 0) {
-        target_loc.lat = current_loc.lat;
-        target_loc.lng = current_loc.lng;
+        target_loc.lat = copter.current_loc.lat;
+        target_loc.lng = copter.current_loc.lng;
     }
 
-    if (!target_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_HOME, loiter_to_alt.alt)) {
+    if (!target_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_HOME, loiter_to_alt.alt)) {
         loiter_to_alt.reached_destination_xy = true;
         loiter_to_alt.reached_alt = true;
         gcs().send_text(MAV_SEVERITY_INFO, "bad do_loiter_to_alt");
@@ -1230,7 +1228,7 @@ void Copter::ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc = loc_from_cmd(cmd);
+    const Location target_loc = loc_from_cmd(cmd);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1254,7 +1252,7 @@ void Copter::ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
-    Location_Class next_loc;
+    Location next_loc;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         next_loc = temp_cmd.content.location;
         // default lat, lon to first waypoint's lat, lon
@@ -1451,7 +1449,7 @@ void Copter::ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
 
-        Location_Class target_loc = terrain_adjusted_location(cmd);
+        const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
@@ -1654,7 +1652,7 @@ bool Copter::ModeAuto::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        Location_Class target_loc = inertial_nav.get_position();
+        Location target_loc = inertial_nav.get_position();
         target_loc.alt = nav_payload_place.descend_start_altitude;
         wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;

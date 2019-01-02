@@ -54,8 +54,8 @@ bool Copter::ModeGuided::do_user_takeoff_start(float final_alt_above_home)
     guided_mode = Guided_TakeOff;
 
     // initialise wpnav destination
-    Location_Class target_loc = copter.current_loc;
-    target_loc.set_alt_cm(final_alt_above_home, Location_Class::ALT_FRAME_ABOVE_HOME);
+    Location target_loc = copter.current_loc;
+    target_loc.set_alt_cm(final_alt_above_home, Location::ALT_FRAME_ABOVE_HOME);
 
     if (!wp_nav->set_wp_destination(target_loc)) {
         // failure to set destination can only be because of missing terrain data
@@ -182,7 +182,7 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -201,7 +201,7 @@ bool Copter::ModeGuided::set_destination(const Vector3f& destination, bool use_y
     return true;
 }
 
-bool Copter::ModeGuided::get_wp(Location_Class& destination)
+bool Copter::ModeGuided::get_wp(Location& destination)
 {
     if (guided_mode != Guided_WP) {
         return false;
@@ -212,7 +212,7 @@ bool Copter::ModeGuided::get_wp(Location_Class& destination)
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool Copter::ModeGuided::set_destination(const Location_Class& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool Copter::ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -275,7 +275,7 @@ bool Copter::ModeGuided::set_destination_posvel(const Vector3f& destination, con
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!copter.fence.check_destination_within_fence(dest_loc)) {
         copter.Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
