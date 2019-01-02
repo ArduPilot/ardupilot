@@ -106,7 +106,6 @@ private:
     uint8_t   _last_sector;                   ///< last sector requested
     uint32_t  _last_request_ms;               ///< system time of last request
     uint32_t  _last_distance_received_ms;     ///< system time of last distance measurement received from sensor
-    uint32_t  _last_reset_ms;
 
     // sector related variables
     int16_t _forward_direction;

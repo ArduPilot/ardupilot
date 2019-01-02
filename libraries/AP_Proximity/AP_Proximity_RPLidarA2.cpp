@@ -61,6 +61,7 @@
 #define COMM_ACTIVITY_TIMEOUT_MS        200
 #define RESET_RPA2_WAIT_MS              20
 #define RESYNC_TIMEOUT                  5000
+#define RESET_TIMEOUT                   1000
 
 // Commands
 //-----------------------------------------
@@ -239,7 +240,7 @@ void AP_Proximity_RPLidarA2::send_request_for_reset()
     _uart->write(tx_buffer, 2);
     Debug(3, "sent reset request");
     _reseted = true;           // Lock the lidar for the time of reseting
-    _last_reset_ms =  AP_HAL::millis();
+    _last_request_ms =  AP_HAL::millis();
     _rp_state = rp_reseted;
 }
 
@@ -308,14 +309,22 @@ void AP_Proximity_RPLidarA2::get_readings()
      * The message is not documented anywhere and its length varies in different RP models,
      * thus we don't want to base on its content and use a predefined time instead.
      * The time is counted since receiving the first character of a welcome message. */
-    if (_rp_state == rp_reseted && _information_data == true)
+    if (_rp_state == rp_reseted)
     {
-        // Wait at least 10ms for the welcome message to finish
-        if (AP_HAL::millis() - _last_distance_received_ms > 10) {
-            Debug(3, "reset finished");
-            _information_data = false;
-            // Check health of the lidar after reset before proceeding
-            send_request_for_health();
+        // Do if the welcome message is being transmitted
+        if (_information_data == true) {
+            // Wait at least 10ms for the welcome message to finish
+            if (AP_HAL::millis() - _last_distance_received_ms > 10) {
+                Debug(3, "reset finished");
+                _information_data = false;
+                // Check health of the lidar after reset before proceeding
+                send_request_for_health();
+            }
+        } else {
+            // Or reset again after timeout
+            if (AP_HAL::millis() - _last_request_ms > RESET_TIMEOUT) {
+                send_request_for_reset();
+            }
         }
     }
 
@@ -329,8 +338,8 @@ void AP_Proximity_RPLidarA2::get_readings()
 
             case rp_reseted:
                 // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
-                if (AP_HAL::millis() - _last_reset_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
-                    Debug(2, "welcome msg start");
+                if (AP_HAL::millis() - _last_request_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
+                    Debug(3, "welcome msg start");
                     _information_data = true;
                     _last_distance_received_ms = AP_HAL::millis();
                 }
