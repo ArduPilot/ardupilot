@@ -178,7 +178,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     }
 
     // change to altitude above home if relative altitude is being used
-    if (target_loc.flags.relative_alt == 1) {
+    if (target_loc.relative_alt == 1) {
         current_loc.alt -= AP::ahrs().get_home().alt;
     }
 
@@ -283,11 +283,11 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
             _target_location.alt = packet.relative_alt / 10;        // convert millimeters to cm
-            _target_location.flags.relative_alt = 1;                // set relative_alt flag
+            _target_location.relative_alt = 1;                // set relative_alt flag
         } else {
             // absolute altitude
             _target_location.alt = packet.alt / 10;                 // convert millimeters to cm
-            _target_location.flags.relative_alt = 0;                // reset relative_alt flag
+            _target_location.relative_alt = 0;                // reset relative_alt flag
         }
 
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
