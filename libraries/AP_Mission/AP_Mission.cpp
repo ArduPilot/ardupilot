@@ -598,7 +598,6 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
 {
     bool copy_location = false;
-    bool copy_alt = false;
 
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
@@ -891,25 +890,21 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     }
 
     // copy location from mavlink to command
-    if (copy_location || copy_alt) {
+    if (copy_location) {
 
         // sanity check location
-        if (copy_location) {
-            if (!check_lat(packet.x)) {
-                return MAV_MISSION_INVALID_PARAM5_X;
-            }
-            if (!check_lng(packet.y)) {
-                return MAV_MISSION_INVALID_PARAM6_Y;
-            }
+        if (!check_lat(packet.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(packet.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
         }
         if (isnan(packet.z) || fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
             return MAV_MISSION_INVALID_PARAM7;
         }
 
-        if (copy_location) {
-            cmd.content.location.lat = packet.x;
-            cmd.content.location.lng = packet.y;
-        }
+        cmd.content.location.lat = packet.x;
+        cmd.content.location.lng = packet.y;
 
         cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
 
@@ -1062,7 +1057,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_com
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
     bool copy_location = false;
-    bool copy_alt = false;
 
     // command's position in mission list and mavlink id
     packet.seq = cmd.index;
@@ -1354,8 +1348,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     if (copy_location) {
         packet.x = cmd.content.location.lat;
         packet.y = cmd.content.location.lng;
-    }
-    if (copy_location || copy_alt) {
+
         packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
         if (cmd.content.location.flags.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
