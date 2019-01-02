@@ -23,7 +23,7 @@
 
 #define EK3_DISABLE_INTERRUPTS 0
 
-
+#include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_NavEKF3.h"
 #include <AP_Math/vectorN.h>
