@@ -32,14 +32,22 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#define RP_DEBUG_LEVEL 0
+#define RP_DEBUG_LEVEL 1
 
 #if RP_DEBUG_LEVEL
   #include <GCS_MAVLink/GCS.h>
-  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+/* Send debug messages via Mavlink to Ground Station */
+  #define Debug_gcs(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+/* Send debug messages via Mavlink to Ground Station and append timestamp */
+  #define Debug_gcs_ts(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, "%dms: " fmt, AP_HAL::millis(), ## args); } } while (0)
+/* Send debug messages to UART0 port (on pixhawk console output) and append timestamp */
+  #define Debug_uart(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { printf( "%dms: " fmt "\n", AP_HAL::millis(), ## args); } } while (0)
+/* Redirect debug messages to whatever output is needed */
+  #define Debug(level, fmt, args ...)  Debug_gcs_ts(level, fmt, ## args); Debug_uart(level, fmt, ## args);
 #else
   #define Debug(level, fmt, args ...)
 #endif
+
 
 #define COMM_ACTIVITY_TIMEOUT_MS        200
 #define RESET_RPA2_WAIT_MS              8
@@ -110,10 +118,10 @@ void AP_Proximity_RPLidarA2::update(void)
     // check for timeout and set health status
     if ((_last_distance_received_ms == 0) || (AP_HAL::millis() - _last_distance_received_ms > COMM_ACTIVITY_TIMEOUT_MS)) {
         set_status(AP_Proximity::Proximity_NoData);
-        Debug(3, "LIDAR NO DATA");
+        Debug(3, "RPLIDAR no data");
     } else {
         set_status(AP_Proximity::Proximity_Good);
-        Debug(3, "LIDAR DATA OK");
+        Debug(3, "RPLIDAR data ok");
     }
 }
 
@@ -152,9 +160,8 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
     }
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
-    _resetted = true;   ///< be aware of extra 63 bytes coming after reset containing FW information
     Debug(1, "LIDAR reset");
-    // To-Do: ensure delay of 8m after sending reset request
+    _resetted = true;           // Lock the lidar for the time of resetting
     _last_reset_ms =  AP_HAL::millis();
     _rp_state = rp_resetted;
 
@@ -268,6 +275,23 @@ void AP_Proximity_RPLidarA2::get_readings()
     Debug(3, "             CURRENT STATE: %d ", _rp_state);
     uint32_t nbytes = _uart->available();
 
+    /* Wait some time and take action after reset.
+     *
+     * The time is counted since first character of a welcome message (when the _resetted flag is cleared).
+     * Its length varies in different RP models (not documented anywhere), thus we don't want to base on it.
+     */
+    if (_rp_state == rp_resetted && _resetted == false)
+    {
+        // Wait at least 8ms for the welcome message to finish
+        if (AP_HAL::millis() - _last_distance_received_ms > RESET_RPA2_WAIT_MS) {
+            Debug(1, "RPLIDAR reset finished");
+            // Check health of the lidar after reset
+            send_request_for_health();
+            // Start scanning
+            // set_scan_mode();
+        }
+    }
+
     while (nbytes-- > 0) {
 
         uint8_t c = _uart->read();
@@ -277,37 +301,17 @@ void AP_Proximity_RPLidarA2::get_readings()
         switch(_rp_state){
 
             case rp_resetted:
-                Debug(3, "                  BYTE_COUNT %d", _byte_count);
-                if ((c == 0x52 || _information_data) && _byte_count < 55/*62*/) {
-                    if (c == 0x52) {
-                        _information_data = true;
-                    }
-                    _rp_systeminfo[_byte_count] = c;
-                    Debug(3, "_rp_systeminfo[%d]=%x",_byte_count,_rp_systeminfo[_byte_count]);
-                    _byte_count++;
-                    break;
-                } else {
-
-                    if (_information_data) {
-                        Debug(1, "GOT RPLIDAR INFORMATION");
-                        _information_data = false;
-                        _byte_count = 0;
-                        set_scan_mode();
-                        break;
-                    }
-
-                    if (_cnt>5) {
-                        _rp_state = rp_unknown;
-                        _cnt=0;
-                        break;
-                    }
-                    _cnt++;
-                    break;
+                /* A welcome message comes after the reset.
+                 * Register the time when it starts... (i.e. a first character is received after the reset) */
+                if( _resetted == true) {
+                    _last_distance_received_ms = AP_HAL::millis();
+                    _resetted = false;
+                    Debug(1, "RPLIDAR welcome msg");
                 }
                 break;
 
             case rp_responding:
-                Debug(2, "RESPONDING (%x)", c);
+                Debug(3, "RPLIDAR state: RESPONDING (%x)", c);
                 if (c == RPLIDAR_PREAMBLE || _descriptor_data) {
 //                    Debug(2, "_descriptor[%d] = %x", _byte_count, c);
                     _descriptor_data = true;
@@ -323,6 +327,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                         _descriptor_data = false;
                     }
                 } else {
+                    Debug(1, "RPLIDAR: invalid preamble (%x)", c);
                     _rp_state = rp_unknown;
                 }
                 break;
@@ -330,7 +335,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             case rp_measurements:
                 if (_sync_error) {
                     // out of 5-byte sync mask -> catch new revolution
-                    Debug(2, "       OUT OF SYNC");
+                    Debug(1, "       OUT OF SYNC");
                     // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
@@ -379,7 +384,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                 break;
 
             case rp_unknown:
-                Debug(1, "state: UNKNOWN");
+                Debug(3, "RPLIDAR state: UNKNOWN");
                 if (c == RPLIDAR_PREAMBLE) {
                     _rp_state = rp_responding;
                     goto STATE;
@@ -394,7 +399,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                 break;
 
             default:
-                Debug(1, "UNKNOWN LIDAR STATE");
+                Debug(1, "RPLIDAR: invalid state");
                 break;
         }
     }
