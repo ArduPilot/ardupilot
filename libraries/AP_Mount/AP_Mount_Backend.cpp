@@ -67,7 +67,7 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
             target_location.lat = pitch_or_lat;
             target_location.lng = roll_or_lon;
             target_location.alt = yaw_or_alt;
-            target_location.flags.relative_alt = true;
+            target_location.relative_alt = true;
             set_roi_target(target_location);
             break;
 
