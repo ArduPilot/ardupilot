@@ -12,7 +12,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         DataFlash.Log_Write_Mission_Cmd(mission, cmd);
     }
 
-    Location_Class target_loc(cmd.content.location);
+    const Location &target_loc = cmd.content.location;
 
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
@@ -21,7 +21,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
     }
 
     // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
-    if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
+    if (target_loc.get_alt_frame() != Location::ALT_FRAME_ABOVE_HOME) {
         gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
         return false;
     }
@@ -227,7 +227,7 @@ void Sub::exit_mission()
 // do_nav_wp - initiate move to next waypoint
 void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
     // use current lat, lon if zero
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         target_loc.lat = current_loc.lat;
@@ -262,7 +262,7 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 // do_surface - initiate surface procedure
 void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_location;
+    Location target_location;
 
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
@@ -271,24 +271,24 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 
         // calculate and set desired location below surface target
         // convert to location class
-        target_location = Location_Class(cmd.content.location);
+        target_location = Location(cmd.content.location);
 
         // decide if we will use terrain following
         int32_t curr_terr_alt_cm, target_terr_alt_cm;
-        if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-                target_location.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+        if (current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+                target_location.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
             // if using terrain, set target altitude to current altitude above terrain
-            target_location.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+            target_location.set_alt_cm(curr_terr_alt_cm, Location::ALT_FRAME_ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_location.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+            target_location.set_alt_cm(current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
         }
     } else {
         // set surface state to ascend
         auto_surface_state = AUTO_SURFACE_STATE_ASCEND;
 
         // Set waypoint destination to current location at zero depth
-        target_location = Location_Class(current_loc.lat, current_loc.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
+        target_location = Location(current_loc.lat, current_loc.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
     }
 
     // Go to wp location
@@ -305,14 +305,14 @@ void Sub::do_RTL()
 void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     // convert back to location
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
 
     // use current location if not provided
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
         wp_nav.get_wp_stopping_point_xy(temp_pos);
-        Location_Class temp_loc(temp_pos);
+        Location temp_loc(temp_pos);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
@@ -342,7 +342,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class circle_center(cmd.content.location);
+    Location circle_center(cmd.content.location);
 
     // default lat/lon to current position if not provided
     // To-Do: use stopping point or position_controller's target instead of current location to avoid jerk?
@@ -386,7 +386,7 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
     // use current lat, lon if zero
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         target_loc.lat = current_loc.lat;
@@ -426,7 +426,7 @@ void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
-    Location_Class next_loc;
+    Location next_loc;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         next_loc = temp_cmd.content.location;
         // default lat, lon to first waypoint's lat, lon
@@ -536,7 +536,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             if (wp_nav.reached_wp_destination()) {
                 // Set target to current xy and zero depth
                 // TODO get xy target from current wp destination, because current location may be acceptance-radius away from original destination
-                Location_Class target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
+                Location target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
 
                 auto_wp_start(target_location);
 
@@ -740,20 +740,16 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_WAYPOINT: {
         // set wp_nav's destination
-        Location_Class dest(cmd.content.location);
-        return guided_set_destination(dest);
-        break;
+        return guided_set_destination(cmd.content.location);
     }
 
     case MAV_CMD_CONDITION_YAW:
         do_yaw(cmd);
         return true;
-        break;
 
     default:
         // reject unrecognised command
         return false;
-        break;
     }
 
     return true;

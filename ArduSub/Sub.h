@@ -347,7 +347,7 @@ private:
 
     // 3D Location vectors
     // Current location of the Sub (altitude is relative to home)
-    Location_Class current_loc;
+    Location current_loc;
 
     // Navigation Yaw control
     // auto flight mode's yaw mode
@@ -522,10 +522,10 @@ private:
     bool auto_init(void);
     void auto_run();
     void auto_wp_start(const Vector3f& destination);
-    void auto_wp_start(const Location_Class& dest_loc);
+    void auto_wp_start(const Location& dest_loc);
     void auto_wp_run();
     void auto_spline_run();
-    void auto_circle_movetoedge_start(const Location_Class &circle_center, float radius_m);
+    void auto_circle_movetoedge_start(const Location &circle_center, float radius_m);
     void auto_circle_start();
     void auto_circle_run();
     void auto_nav_guided_start();
@@ -545,7 +545,7 @@ private:
     void guided_posvel_control_start();
     void guided_angle_control_start();
     bool guided_set_destination(const Vector3f& destination);
-    bool guided_set_destination(const Location_Class& dest_loc);
+    bool guided_set_destination(const Location& dest_loc);
     void guided_set_velocity(const Vector3f& velocity);
     bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
     void guided_set_angle(const Quaternion &q, float climb_rate_cms);
@@ -658,7 +658,7 @@ private:
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
-    void auto_spline_start(const Location_Class& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location_Class& next_destination);
+    void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
     void log_init(void);
     void init_capabilities(void);
     void accel_cal_update(void);
