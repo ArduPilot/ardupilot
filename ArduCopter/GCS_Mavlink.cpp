@@ -96,7 +96,7 @@ MAV_STATE GCS_MAVLINK_Copter::system_status() const
 
 void GCS_MAVLINK_Copter::send_position_target_global_int()
 {
-    Location_Class target;
+    Location target;
     if (!copter.flightmode->get_wp(target)) {
         return;
     }
