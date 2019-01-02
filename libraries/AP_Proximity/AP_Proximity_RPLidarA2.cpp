@@ -55,15 +55,18 @@
 
 // Commands
 //-----------------------------------------
+#define RPLIDAR_PREAMBLE               0xA5
 
 // Commands without payload and response
-#define RPLIDAR_PREAMBLE               0xA5
+
 #define RPLIDAR_CMD_STOP               0x25
+#define RPLIDAR_CMD_RESET              0x40     // Be aware of an undocumented device information message that comes afterwards
+// Commands without payload but have response
 #define RPLIDAR_CMD_SCAN               0x20
 #define RPLIDAR_CMD_FORCE_SCAN         0x21
-#define RPLIDAR_CMD_RESET              0x40
 
-// Commands without payload but have response
+
+
 #define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
 #define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
 #define RPLIDAR_CMD_GET_DEVICE_RATE    0x59
@@ -137,6 +140,7 @@ float AP_Proximity_RPLidarA2::distance_min() const
     return 0.20f;  //20cm min range RPLIDAR2
 }
 
+// initialise sensor (returns true if sensor is succesfully initialised)
 bool AP_Proximity_RPLidarA2::initialise()
 {
     // initialise sectors
@@ -144,26 +148,27 @@ bool AP_Proximity_RPLidarA2::initialise()
         init_sectors();
         return false;
     }
+    // reset the device
     if (!_initialised) {
-        reset_rplidar();            // set to a known state
-        Debug(1, "initialised");
+        send_request_for_reset();            // set to a known state
+        Debug(3, "initialised");
         return true;
     }
 
     return true;
-}
 
-void AP_Proximity_RPLidarA2::reset_rplidar()
-{
-    if (_uart == nullptr) {
-        return;
-    }
-    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
-    _uart->write(tx_buffer, 2);
-    Debug(1, "sent reset request");
-    _resetted = true;           // Lock the lidar for the time of resetting
-    _last_reset_ms =  AP_HAL::millis();
-    _rp_state = rp_resetted;
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
@@ -226,8 +231,20 @@ void AP_Proximity_RPLidarA2::init_sectors()
     _sector_initialised = true;
 }
 
+void AP_Proximity_RPLidarA2::send_request_for_reset()
+{
+    if (_uart == nullptr) {
+        return;
+    }
+    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
+    _uart->write(tx_buffer, 2);
+    Debug(3, "sent reset request");
+    _reseted = true;           // Lock the lidar for the time of reseting
+    _last_reset_ms =  AP_HAL::millis();
+    _rp_state = rp_reseted;
+}
 // set Lidar into SCAN mode
-void AP_Proximity_RPLidarA2::set_scan_mode()
+void AP_Proximity_RPLidarA2::send_request_for_scan()
 {
     if (_uart == nullptr) {
         return;
@@ -236,6 +253,18 @@ void AP_Proximity_RPLidarA2::set_scan_mode()
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
     Debug(1, "activated scan mode");
+    _rp_state = rp_responding;
+}
+// set Lidar into FORCE SCAN mode (scanning independently of the real speed)
+void AP_Proximity_RPLidarA2::send_request_for_force_scan()
+{
+    if (_uart == nullptr) {
+        return;
+    }
+    uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_FORCE_SCAN};
+    _uart->write(tx_buffer, 2);
+    _last_request_ms = AP_HAL::millis();
+    Debug(3, "activated scan mode");
     _rp_state = rp_responding;
 }
 
@@ -275,11 +304,11 @@ void AP_Proximity_RPLidarA2::get_readings()
     Debug(3, "             CURRENT STATE: %d ", _rp_state);
     uint32_t nbytes = _uart->available();
 
-    /* Reset: wait for the welcome message to finish and take the next action.
+    /* After reset: wait for the welcome message to finish and take the next action.
      * The message is not documented anywhere and its length varies in different RP models,
      * thus we don't want to base on its content and use a predefined time instead.
      * The time is counted since receiving the first character of a welcome message. */
-    if (_rp_state == rp_resetted && _information_data == true)
+    if (_rp_state == rp_reseted && _information_data == true)
     {
         // Wait at least 10ms for the welcome message to finish
         if (AP_HAL::millis() - _last_distance_received_ms > 10) {
@@ -298,7 +327,7 @@ void AP_Proximity_RPLidarA2::get_readings()
         STATE:
         switch(_rp_state){
 
-            case rp_resetted:
+            case rp_reseted:
                 // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
                 if (AP_HAL::millis() - _last_reset_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
                     Debug(1, "welcome msg start");
@@ -332,14 +361,14 @@ void AP_Proximity_RPLidarA2::get_readings()
             case rp_measurements:
                 if (_sync_error) {
                     // out of 5-byte sync mask -> catch new revolution
-                    Debug(1, "out of sync!");
-                    // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
+                    //Debug(1, "out of sync!");
+                    // bit 1 = 1 and bit 2 = 0 of the correct data response
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
                         Debug(2, "          resync");
                     } else {
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) {
-                            reset_rplidar();
+                            send_request_for_reset();
                         }
                         break;
                     }
@@ -363,9 +392,9 @@ void AP_Proximity_RPLidarA2::get_readings()
                     break;
                 }
                 _cnt++;
-                if (_cnt>100) {
-                    reset_rplidar();
-                    _rp_state = rp_resetted;
+                if (_cnt>10) {
+                    send_request_for_reset();
+                    _rp_state = rp_reseted;
                     _cnt=0;
                 }
                 break;
@@ -462,11 +491,11 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             Debug(1, "LIDAR health status: %d", payload.sensor_health.status);
             if (payload.sensor_health.error_code > 0) {
                 // Reset lidar on error
-                reset_rplidar();
-                Debug(1, "      error code: %d", payload.sensor_health.error_code);
+                send_request_for_reset();
+                Debug(3, " error code: %d", payload.sensor_health.error_code);
             } else {
                 // Start scanning if no error occurred
-                set_scan_mode();
+                send_request_for_force_scan();
             }
             break;
 

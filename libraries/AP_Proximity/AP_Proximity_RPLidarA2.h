@@ -54,7 +54,7 @@ public:
 private:
     enum rp_state {
             rp_unknown = 0,
-            rp_resetted,
+            rp_reseted,
             rp_responding,
             rp_measurements,
             rp_health,
@@ -72,15 +72,17 @@ private:
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
     void init_sectors();
-    void set_scan_mode();
 
     // send request for something from sensor
+    void send_request_for_reset();
+    void send_request_for_force_scan();
+    void send_request_for_scan();
     void send_request_for_health();
     void send_request_for_rate();
-    void parse_response_data();
-    void parse_response_descriptor();
+    // process the response
     void get_readings();
-    void reset_rplidar();
+    void parse_response_descriptor();
+    void parse_response_data();
 
     // reply related variables
     AP_HAL::UARTDriver *_uart;
@@ -88,7 +90,7 @@ private:
     char _rp_systeminfo[63];
     bool _descriptor_data;
     bool _information_data;
-    bool _resetted;
+    bool _reseted;
     bool _initialised;
     bool _sector_initialised;
 
