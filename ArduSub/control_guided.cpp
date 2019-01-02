@@ -147,7 +147,7 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
@@ -166,7 +166,7 @@ bool Sub::guided_set_destination(const Vector3f& destination)
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
-bool Sub::guided_set_destination(const Location_Class& dest_loc)
+bool Sub::guided_set_destination(const Location& dest_loc)
 {
     // ensure we are in position control mode
     if (guided_mode != Guided_WP) {
@@ -219,7 +219,7 @@ bool Sub::guided_set_destination_posvel(const Vector3f& destination, const Vecto
 
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
-    Location_Class dest_loc(destination);
+    const Location dest_loc(destination);
     if (!fence.check_destination_within_fence(dest_loc)) {
         Log_Write_Error(ERROR_SUBSYSTEM_NAVIGATION, ERROR_CODE_DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
