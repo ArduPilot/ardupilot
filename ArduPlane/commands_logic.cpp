@@ -437,7 +437,7 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
 
 void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.content.location.flags.loiter_ccw) {
+    if (cmd.content.location.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -1122,7 +1122,7 @@ bool Plane::verify_loiter_heading(bool init)
         // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
 
         // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        if (next_WP_loc.flags.loiter_xtrack) {
+        if (next_WP_loc.loiter_xtrack) {
             next_WP_loc = current_loc;
         }
         return true;
