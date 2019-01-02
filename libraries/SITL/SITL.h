@@ -2,6 +2,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/Location.h>
 
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
