@@ -50,7 +50,7 @@
 
 
 #define COMM_ACTIVITY_TIMEOUT_MS        200
-#define RESET_RPA2_WAIT_MS              8
+#define RESET_RPA2_WAIT_MS              20
 #define RESYNC_TIMEOUT                  5000
 
 // Commands
@@ -275,17 +275,17 @@ void AP_Proximity_RPLidarA2::get_readings()
     Debug(3, "             CURRENT STATE: %d ", _rp_state);
     uint32_t nbytes = _uart->available();
 
-    /* Wait some time and take action after reset.
-     *
-     * The time is counted since first character of a welcome message (when the _resetted flag is cleared).
-     * Its length varies in different RP models (not documented anywhere), thus we don't want to base on it.
-     */
-    if (_rp_state == rp_resetted && _resetted == false)
+    /* Reset: wait for the welcome message to finish and take the next action.
+     * The message is not documented anywhere and its length varies in different RP models,
+     * thus we don't want to base on its content and use a predefined time instead.
+     * The time is counted since receiving the first character of a welcome message. */
+    if (_rp_state == rp_resetted && _information_data == true)
     {
-        // Wait at least 8ms for the welcome message to finish
-        if (AP_HAL::millis() - _last_distance_received_ms > RESET_RPA2_WAIT_MS) {
+        // Wait at least 10ms for the welcome message to finish
+        if (AP_HAL::millis() - _last_distance_received_ms > 10) {
             Debug(1, "reset finished");
-            // Check health of the lidar after reset
+            _information_data = false;
+            // Check health of the lidar after reset before proceeding
             send_request_for_health();
         }
     }
@@ -299,23 +299,22 @@ void AP_Proximity_RPLidarA2::get_readings()
         switch(_rp_state){
 
             case rp_resetted:
-                /* A welcome message comes after the reset.
-                 * Register the time when it starts... (i.e. a first character is received after the reset) */
-                if( _resetted == true) {
+                // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
+                if (AP_HAL::millis() - _last_reset_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
+                    Debug(1, "welcome msg start");
+                    _information_data = true;
                     _last_distance_received_ms = AP_HAL::millis();
-                    _resetted = false;
-                    Debug(1, "welcome msg");
                 }
                 break;
 
             case rp_responding:
-                Debug(3, "state: RESPONDING (%x)", c);
+                Debug(1, "state: RESPONDING (%x)", c);
                 if (c == RPLIDAR_PREAMBLE || _descriptor_data) {
-//                    Debug(2, "_descriptor[%d] = %x", _byte_count, c);
+                    Debug(1, "_descriptor[%d] = %x", _byte_count, c);
                     _descriptor_data = true;
                     _descriptor[_byte_count] = c;
                     _byte_count++;
-                    // descriptor packet has 7 byte in total
+                    // descriptor packet has 7 bytes in total
                     if (_byte_count == sizeof(_descriptor)) {
                         Debug(1,"descriptor catched");
                         _response_type = ResponseType_Descriptor;
@@ -333,11 +332,11 @@ void AP_Proximity_RPLidarA2::get_readings()
             case rp_measurements:
                 if (_sync_error) {
                     // out of 5-byte sync mask -> catch new revolution
-                    Debug(1, "       OUT OF SYNC");
+                    Debug(1, "out of sync!");
                     // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
-                        Debug(2, "                  RESYNC");
+                        Debug(2, "          resync");
                     } else {
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) {
                             reset_rplidar();
@@ -350,7 +349,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                 _byte_count++;
 
                 if (_byte_count == _payload_length) {
-                    Debug(2, "LIDAR MEASUREMENT CATCHED");
+                    Debug(2, "measurement catched");
                     parse_response_data();
                     _byte_count = 0;
                 }
