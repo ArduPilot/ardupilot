@@ -104,12 +104,12 @@ public:
 
     /// set_wp_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
-    bool set_wp_destination(const Location_Class& destination);
+    bool set_wp_destination(const Location& destination);
 
     // returns wp location using location class.
     // returns false if unable to convert from target vector to global
     // coordinates
-    bool get_wp_destination(Location_Class& destination);
+    bool get_wp_destination(Location& destination);
 
     /// set_wp_destination waypoint using position vector (distance from ekf origin in cm)
     ///     terrain_alt should be true if destination.z is a desired altitude above terrain
@@ -184,7 +184,7 @@ public:
     ///     stopped_at_start should be set to true if vehicle is stopped at the origin
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
-    bool set_spline_destination(const Location_Class& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location_Class next_destination);
+    bool set_spline_destination(const Location& destination, bool stopped_at_start, spline_segment_end_type seg_end_type, Location next_destination);
 
     /// set_spline_destination waypoint using position vector (distance from ekf origin in cm)
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -267,7 +267,7 @@ protected:
 
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
-    bool get_vector_NEU(const Location_Class &loc, Vector3f &vec, bool &terrain_alt);
+    bool get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_alt);
 
     // set heading used for spline and waypoint navigation
     void set_yaw_cd(float heading_cd);
