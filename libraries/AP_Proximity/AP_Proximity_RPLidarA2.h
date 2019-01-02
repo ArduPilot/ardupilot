@@ -54,7 +54,7 @@ public:
 private:
     enum rp_state {
             rp_unknown = 0,
-            rp_reseted,
+            rp_reset,
             rp_responding,
             rp_measurements,
             rp_health,
@@ -91,7 +91,7 @@ private:
     char _rp_systeminfo[63];
     bool _descriptor_data;
     bool _information_data;
-    bool _reseted;
+    bool _reset;
     bool _initialised;
     bool _sector_initialised;
 

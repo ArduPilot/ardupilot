@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define RP_DEBUG_LEVEL 0
+#define RP_DEBUG_LEVEL 1
 
 /*
  * DEBUG macros:
@@ -46,6 +46,7 @@
 #if RP_DEBUG_LEVEL
 /* Redirect debug messages to whatever output is needed */
   #define Debug(level, fmt, args ...)  Debug_gcs(level, fmt, ## args); Debug_uart(level, fmt, ## args);
+
 /* Send debug messages via Mavlink to Ground Station (_ts version appends timestamp) */
   #define Debug_gcs(level, fmt, args ...)  do { if (level&0x01) { gcs().send_text(MAV_SEVERITY_INFO, "RPL: " fmt, ## args); } } while (0)
   #define Debug_gcs_ts(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, "%dms/RPLIDAR: " fmt, AP_HAL::millis(), ## args); } } while (0)
@@ -62,6 +63,7 @@
 #define RESET_RPA2_WAIT_MS              20
 #define RESYNC_TIMEOUT                  5000
 #define RESET_TIMEOUT                   1000
+#define MIN_SCAN_QUALITY                10
 
 // Commands
 //-----------------------------------------
@@ -165,9 +167,9 @@ bool AP_Proximity_RPLidarA2::initialise()
     // reset the device
     if (!_initialised) {
         send_request_for_reset();            // set to a known state
-        Debug(3, "initialised");
-        return true;
     }
+
+    Debug(3, "RPLidar initialized. Max range: %f", distance_max());
 
     return true;
 }
@@ -239,9 +241,9 @@ void AP_Proximity_RPLidarA2::send_request_for_reset()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
     Debug(3, "sent reset request");
-    _reseted = true;           // Lock the lidar for the time of reseting
+    _reset = true;           // Lock the lidar for the time of reseting
     _last_request_ms =  AP_HAL::millis();
-    _rp_state = rp_reseted;
+    _rp_state = rp_reset;
 }
 
 // set Lidar into SCAN mode
@@ -271,7 +273,7 @@ void AP_Proximity_RPLidarA2::send_request_for_force_scan()
 }
 
 // send request for sensor health
-void AP_Proximity_RPLidarA2::send_request_for_health()                                    //not called yet
+void AP_Proximity_RPLidarA2::send_request_for_health()
 {
     if (_uart == nullptr) {
         return;
@@ -284,7 +286,7 @@ void AP_Proximity_RPLidarA2::send_request_for_health()                          
 }
 
 // send request for sensor sampling rate
-void AP_Proximity_RPLidarA2::send_request_for_rate()                                    //not called yet
+void AP_Proximity_RPLidarA2::send_request_for_rate()
 {
     if (_uart == nullptr) {
         return;
@@ -309,7 +311,7 @@ void AP_Proximity_RPLidarA2::get_readings()
      * The message is not documented anywhere and its length varies in different RP models,
      * thus we don't want to base on its content and use a predefined time instead.
      * The time is counted since receiving the first character of a welcome message. */
-    if (_rp_state == rp_reseted)
+    if (_rp_state == rp_reset)
     {
         // Do if the welcome message is being transmitted
         if (_information_data == true) {
@@ -323,6 +325,7 @@ void AP_Proximity_RPLidarA2::get_readings()
         } else {
             // Or reset again after timeout
             if (AP_HAL::millis() - _last_request_ms > RESET_TIMEOUT) {
+                Debug(2, "rp_reset timeout! (%d - %d ms)", AP_HAL::millis(),_last_request_ms);
                 send_request_for_reset();
             }
         }
@@ -336,7 +339,7 @@ void AP_Proximity_RPLidarA2::get_readings()
         STATE:
         switch(_rp_state){
 
-            case rp_reseted:
+            case rp_reset:
                 // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
                 if (AP_HAL::millis() - _last_request_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
                     Debug(3, "welcome msg start");
@@ -370,8 +373,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             case rp_measurements:
                 if (_sync_error) {
                     // out of 5-byte sync mask -> catch new revolution
-                    //Debug(1, "out of sync!");
-                    // bit 1 = 1 and bit 2 = 0 of the correct data response
+                    // bit 0 = 1 and bit 1 = 0 of the correct data response that starts a new scan
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
                         Debug(3, "resynced!");
@@ -394,7 +396,6 @@ void AP_Proximity_RPLidarA2::get_readings()
                 break;
 
             case rp_unknown:
-                Debug(0, "state: UNKNOWN");
                 if (c == RPLIDAR_PREAMBLE) {
                     _rp_state = rp_responding;
                     goto STATE;
@@ -402,8 +403,8 @@ void AP_Proximity_RPLidarA2::get_readings()
                 }
                 _cnt++;
                 if (_cnt>10) {
+                    Debug(2, "state: UNKNOWN");
                     send_request_for_reset();
-                    _rp_state = rp_reseted;
                     _cnt=0;
                 }
                 break;
@@ -430,7 +431,7 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
             _rp_state = rp_measurements;
         }
         if (_descriptor[2] == 0x03 && _descriptor[3] == 0x00 && _descriptor[4] == 0x00 && _descriptor[5] == 0x00 && _descriptor[6] == 0x06) {
-            // payload is health data
+            // payload is HEALTH data
             _payload_length = sizeof(payload.sensor_health);
             static_assert(sizeof(payload.sensor_health) == 3, "Unexpected payload.sensor_health data structure size");
             _response_type = ResponseType_HEALTH;
@@ -438,7 +439,7 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
             _rp_state= rp_measurements;
         }
         if (_descriptor[2] == 0x04 && _descriptor[3] == 0x00 && _descriptor[4] == 0x00 && _descriptor[5] == 0x00 && _descriptor[6] == 0x15) {
-            // payload is sample rate data
+            // payload is SAMPLE RATE data
             _payload_length = sizeof(payload.sensor_health);
             static_assert(sizeof(payload.sensor_rate) == 4, "Unexpected payload.sensor_rate data structure size");
             _response_type = ResponseType_RATE;
@@ -459,17 +460,9 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                if (payload.sensor_scan.quality > 10) {
+                if (payload.sensor_scan.quality > MIN_SCAN_QUALITY) {
                     const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f - (float)_forward_direction);
                     const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
-    #if RP_DEBUG_LEVEL >= 5
-                    static int cnt = 0;
-
-                    if (++cnt == 1) {
-                        Debug(2, "D%2.1f A%3.1f", distance_m, angle_deg);
-                        cnt = 0;
-                    }
-    #endif
                     _last_distance_received_ms = AP_HAL::millis();
                     uint8_t sector;
                     if (convert_angle_to_sector(angle_deg, sector)) {
@@ -481,7 +474,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                                 }
                             } else {
                                 // a new sector started, the previous one can be updated now
-                                Debug(2, "D%2.1f A%3.1f", _distance_m_last, _angle_deg_last);
+                                Debug(0, "D%2.1f A%3.1f", _distance_m_last, _angle_deg_last);
                                 _angle[_last_sector] = _angle_deg_last;
                                 _distance[_last_sector] = _distance_m_last;
                                 _distance_valid[_last_sector] = true;
@@ -514,7 +507,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 Debug(3, " error code: %d", payload.sensor_health.error_code);
             } else {
                 // Start scanning if no error occurred
-                send_request_for_force_scan();
+                send_request_for_scan();
             }
             break;
 
