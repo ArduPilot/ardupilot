@@ -125,7 +125,7 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
         return false;
     }
 
-    memset(&loc, 0, sizeof(loc));
+    loc = {};
     loc.lat = static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7);
     loc.lng = static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7);
     loc.alt = static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2);
