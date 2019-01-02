@@ -45,9 +45,7 @@ GCS_MAVLINK::queued_param_send()
     if (_queued_parameter == nullptr) {
         return;
     }
-    
-    uint16_t bytes_allowed;
-    uint8_t count;
+
     uint32_t tnow = AP_HAL::millis();
     uint32_t tstart = AP_HAL::micros();
 
@@ -55,7 +53,7 @@ GCS_MAVLINK::queued_param_send()
     // 1/(1000 * 1/8 * 0.001 * 0.3)
     const uint32_t link_bw = _port->bw_in_kilobytes_per_second();
 
-    bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) * 26;
+    uint16_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) * 26;
     const uint16_t size_for_one_param_value_msg = MAVLINK_MSG_ID_PARAM_VALUE_LEN + packet_overhead();
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
@@ -63,7 +61,7 @@ GCS_MAVLINK::queued_param_send()
     if (bytes_allowed > comm_get_txspace(chan)) {
         bytes_allowed = comm_get_txspace(chan);
     }
-    count = bytes_allowed / size_for_one_param_value_msg;
+    uint8_t count = bytes_allowed / size_for_one_param_value_msg;
 
     // when we don't have flow control we really need to keep the
     // param download very slow, or it tends to stall
@@ -72,22 +70,13 @@ GCS_MAVLINK::queued_param_send()
     }
 
     while (_queued_parameter != nullptr && count--) {
-        AP_Param      *vp;
-        float value;
-
-        // copy the current parameter and prepare to move to the next
-        vp = _queued_parameter;
-
-        // if the parameter can be cast to float, report it here and break out of the loop
-        value = vp->cast_to_float(_queued_parameter_type);
-
         char param_name[AP_MAX_NAME_SIZE];
-        vp->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
+        _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
         mavlink_msg_param_value_send(
             chan,
             param_name,
-            value,
+            _queued_parameter->cast_to_float(_queued_parameter_type),
             mav_var_type(_queued_parameter_type),
             _queued_parameter_count,
             _queued_parameter_index);
@@ -322,17 +311,6 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     DataFlash_Class *dataflash = DataFlash_Class::instance();
     if (dataflash != nullptr) {
         dataflash->Log_Write_Parameter(param_name, param_value);
-    }
-}
-
-/*
-  send queued parameters if needed
- */
-void GCS_MAVLINK::send_queued_parameters(void)
-{
-    if (!param_timer_registered) {
-        param_timer_registered = true;
-        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::param_io_timer, void));
     }
 }
 

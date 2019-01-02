@@ -116,10 +116,18 @@ void RC_Channel_Copter::do_aux_function_change_mode(const control_mode_t mode,
                                                      const aux_switch_pos_t ch_flag)
 {
     switch(ch_flag) {
-    case HIGH:
+    case HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        const bool success = copter.set_mode(mode, MODE_REASON_TX_COMMAND);
+        if (copter.ap.initialised) {
+            if (success) {
+                AP_Notify::events.user_mode_change = 1;
+            } else {
+                AP_Notify::events.user_mode_change_failed = 1;
+            }
+        }
         break;
+    }
     default:
         // return to flight mode switch's flight mode if we are currently
         // in this mode
@@ -173,7 +181,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if ((copter.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
+                if ((copter.mode_auto.mission.num_commands() == 0) && (copter.channel_throttle->get_control_in() == 0)) {
                     return;
                 }
 
@@ -181,7 +189,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 AP_Mission::Mission_Command cmd  = {};
 
                 // if the mission is empty save a takeoff command
-                if (copter.mission.num_commands() == 0) {
+                if (copter.mode_auto.mission.num_commands() == 0) {
                     // set our location ID to 16, MAV_CMD_NAV_WAYPOINT
                     cmd.id = MAV_CMD_NAV_TAKEOFF;
                     cmd.content.location.options = 0;
@@ -192,7 +200,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 
                     // use the current altitude for the target alt for takeoff.
                     // only altitude will matter to the AP mission script for takeoff.
-                    if (copter.mission.add_cmd(cmd)) {
+                    if (copter.mode_auto.mission.add_cmd(cmd)) {
                         // log event
                         copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                     }
@@ -210,7 +218,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 }
 
                 // save command
-                if (copter.mission.add_cmd(cmd)) {
+                if (copter.mode_auto.mission.add_cmd(cmd)) {
                     // log event
                     copter.Log_Write_Event(DATA_SAVEWP_ADD_WP);
                 }
@@ -221,7 +229,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case MISSION_RESET:
 #if MODE_AUTO_ENABLED == ENABLED
             if (ch_flag == HIGH) {
-                copter.mission.reset();
+                copter.mode_auto.mission.reset();
             }
 #endif
             break;

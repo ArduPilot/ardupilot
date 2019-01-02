@@ -10,6 +10,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "qautotune.h"
 
 /*
   QuadPlane specific functionality
@@ -21,7 +22,8 @@ public:
     friend class AP_Tuning_Plane;
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
-    
+    friend class QAutoTune;
+
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information
@@ -114,20 +116,22 @@ public:
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;
+
+    // return true if the user has set ENABLE
+    bool enabled(void) const { return enable != 0; }
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
+        float    throttle_in;
         float    angle_boost;
         float    throttle_out;
+        float    throttle_hover;
         float    desired_alt;
         float    inav_alt;
-        int16_t  desired_climb_rate;
+        int32_t  baro_alt;
+        int16_t  target_climb_rate;
         int16_t  climb_rate;
-        float    dvx;
-        float    dvy;
-        float    dax;
-        float    day;
         float    throttle_mix;
     };
         
@@ -232,6 +236,9 @@ private:
 
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
+
+    // fw landing approach radius
+    AP_Float fw_land_approach_radius;
 
     AP_Int16 rc_speed;
 
@@ -471,7 +478,12 @@ private:
       return true if current mission item is a vtol landing
      */
     bool is_vtol_land(uint16_t id) const;
-    
+
+#if QAUTOTUNE_ENABLED
+    // qautotune mode
+    QAutoTune qautotune;
+#endif
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

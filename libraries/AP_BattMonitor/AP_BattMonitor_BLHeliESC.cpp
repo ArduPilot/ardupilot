@@ -35,13 +35,13 @@ void AP_BattMonitor_BLHeliESC::read(void)
     }
 
     uint8_t num_escs = 0;
-    float voltage_sum=0;
-    float current_sum=0;
-    float consumed_sum=0;
-    float temperature_sum=0;
+    float voltage_sum = 0;
+    float current_sum = 0;
+    float consumed_sum = 0;
+    float temperature_sum = 0;
     uint32_t now = AP_HAL::millis();
-    uint32_t highest_ms=0;
-    
+    uint32_t highest_ms = 0;
+
     for (uint8_t i=0; i<AP_BLHELI_MAX_ESCS; i++) {
         AP_BLHeli::telem_data td;
         if (!blheli->get_telem_data(i, td)) {
@@ -51,12 +51,12 @@ void AP_BattMonitor_BLHeliESC::read(void)
         // accumulate consumed_sum regardless of age, to cope with ESC
         // dropping out
         consumed_sum += td.consumption;
-        
+
         if (now - td.timestamp_ms > 1000) {
             // don't use old data
             continue;
         }
-        
+
         num_escs++;
         voltage_sum += td.voltage;
         current_sum += td.current;

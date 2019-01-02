@@ -63,8 +63,6 @@ public:
         return _instance;
     }
 
-    void set_mission(const AP_Mission *mission);
-
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
     void set_num_types(uint8_t num_types) { _num_types = num_types; }
@@ -140,7 +138,7 @@ public:
                                const AP_Mission::Mission_Command &cmd);
     void Log_Write_Origin(uint8_t origin_type, const Location &loc);
     void Log_Write_RPM(const AP_RPM &rpm_sensor);
-    void Log_Write_Rate(const AP_AHRS &ahrs,
+    void Log_Write_Rate(const AP_AHRS_View *ahrs,
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);

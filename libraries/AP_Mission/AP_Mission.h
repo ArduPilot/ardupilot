@@ -469,6 +469,9 @@ public:
     // available.
     bool jump_to_landing_sequence(void);
 
+    // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+    bool jump_to_abort_landing_sequence(void);
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore_Recursive &get_semaphore(void) {

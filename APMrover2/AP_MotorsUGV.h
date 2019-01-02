@@ -16,6 +16,10 @@ public:
         PWM_TYPE_ONESHOT125 = 2,
         PWM_TYPE_BRUSHED_WITH_RELAY = 3,
         PWM_TYPE_BRUSHED_BIPOLAR = 4,
+        PWM_TYPE_DSHOT150 = 5,
+        PWM_TYPE_DSHOT300 = 6,
+        PWM_TYPE_DSHOT600 = 7,
+        PWM_TYPE_DSHOT1200 = 8
      };
 
     enum motor_test_order {

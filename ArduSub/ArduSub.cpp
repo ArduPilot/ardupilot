@@ -40,7 +40,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(one_hz_loop,            1,    100),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_receive,     400, 180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        4000, 550),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        400, 550),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
 #endif
@@ -185,7 +185,7 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
+        DataFlash.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
@@ -219,7 +219,7 @@ void Sub::twentyfive_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(ahrs, motors, attitude_control, pos_control);
+        DataFlash.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
             DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());

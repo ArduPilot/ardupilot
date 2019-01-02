@@ -47,8 +47,6 @@ void Copter::init_ardupilot()
     g2.stats.init();
 #endif
 
-    gcs().set_dataflash(&DataFlash);
-
     // identify ourselves correctly with the ground station
     mavlink_system.sysid = g.sysid_this_mav;
     
@@ -242,9 +240,6 @@ void Copter::init_ardupilot()
 #endif
 
     // initialise DataFlash library
-#if MODE_AUTO_ENABLED == ENABLED
-    DataFlash.set_mission(&mode_auto.mission);
-#endif
     DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise rc channels including setting mode
@@ -556,7 +551,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
-    AP_AHRS_View *ahrs_view = ahrs.create_view(ROTATION_NONE);
+    ahrs_view = ahrs.create_view(ROTATION_NONE);
     if (ahrs_view == nullptr) {
         AP_HAL::panic("Unable to allocate AP_AHRS_View");
     }

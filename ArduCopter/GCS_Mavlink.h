@@ -14,15 +14,13 @@ protected:
 
     uint32_t telem_delay() const override;
 
-    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) override;
-
-    AP_Mission *get_mission() override;
     AP_Rally *get_rally() const override;
     MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet) override;
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
     AP_VisualOdom *get_visual_odom() const override;
 
     uint8_t sysid_my_gcs() const override;
+    bool sysid_enforce() const override;
 
     bool set_mode(uint8_t mode) override;
 
@@ -48,6 +46,8 @@ private:
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     bool try_send_message(enum ap_message id) override;
+
+    bool vehicle_initialised() const override;
 
     void packetReceived(const mavlink_status_t &status,
                         mavlink_message_t &msg) override;

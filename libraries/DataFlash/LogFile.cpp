@@ -436,7 +436,6 @@ void DataFlash_Backend::Log_Write_EntireMission(const AP_Mission &mission)
 {
     DFMessageWriter_WriteEntireMission writer;
     writer.set_dataflash_backend(this);
-    writer.set_mission(&mission);
     writer.process();
 }
 
@@ -1622,7 +1621,7 @@ void DataFlash_Class::Log_Write_RPM(const AP_RPM &rpm_sensor)
 }
 
 // Write a rate packet
-void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
+void DataFlash_Class::Log_Write_Rate(const AP_AHRS_View *ahrs,
                                      const AP_Motors &motors,
                                      const AC_AttitudeControl &attitude_control,
                                      const AC_PosControl &pos_control)
@@ -1633,16 +1632,16 @@ void DataFlash_Class::Log_Write_Rate(const AP_AHRS &ahrs,
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_us         : AP_HAL::micros64(),
         control_roll    : degrees(rate_targets.x),
-        roll            : degrees(ahrs.get_gyro().x),
+        roll            : degrees(ahrs->get_gyro().x),
         roll_out        : motors.get_roll(),
         control_pitch   : degrees(rate_targets.y),
-        pitch           : degrees(ahrs.get_gyro().y),
+        pitch           : degrees(ahrs->get_gyro().y),
         pitch_out       : motors.get_pitch(),
         control_yaw     : degrees(rate_targets.z),
-        yaw             : degrees(ahrs.get_gyro().z),
+        yaw             : degrees(ahrs->get_gyro().z),
         yaw_out         : motors.get_yaw(),
         control_accel   : (float)accel_target.z,
-        accel           : (float)(-(ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
+        accel           : (float)(-(ahrs->get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
         accel_out       : motors.get_throttle()
     };
     WriteBlock(&pkt_rate, sizeof(pkt_rate));

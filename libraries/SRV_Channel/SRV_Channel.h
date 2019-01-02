@@ -18,6 +18,7 @@
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
@@ -480,6 +481,10 @@ private:
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
 
+    // support for Robotis servo protocol
+    AP_RobotisServo robotis;
+    static AP_RobotisServo *robotis_ptr;
+    
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;

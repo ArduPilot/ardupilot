@@ -997,7 +997,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d, uint8_t instance)
         float cutoff;
         uint32_t svcount;
         // extra data for individual prns
-    } psrdop;
+    } psrdop {};
 
     struct PACKED bestpos
     {
@@ -1023,7 +1023,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d, uint8_t instance)
         uint8_t extsolstat;
         uint8_t galbeisigmask;
         uint8_t gpsglosigmask;
-    } bestpos;
+    } bestpos {};
 
     struct PACKED bestvel
     {
@@ -1036,7 +1036,7 @@ void SITL_State::_update_gps_nova(const struct gps_data *d, uint8_t instance)
         // + up
         double vertspd;
         float resv;
-    } bestvel;
+    } bestvel {};
     
     uint16_t time_week;
     uint32_t time_week_ms;

@@ -87,3 +87,14 @@ uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_use
     
     return uint64_t(estimate_us);
 }
+
+/*
+  correct an offboard timestamp in microseconds into a local
+  timestamp, removing timing jitter caused by the transport. 
+
+  Return a value in milliseconds since boot in the local time domain
+ */
+uint32_t JitterCorrection::correct_offboard_timestamp_msec(uint32_t offboard_ms, uint32_t local_ms)
+{
+    return correct_offboard_timestamp_usec(offboard_ms*1000ULL, local_ms*1000ULL) / 1000ULL;
+}

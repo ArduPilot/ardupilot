@@ -9,7 +9,7 @@
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
 #define BATTMONITOR_SMBUS_SOLO_BUTTON_DEBOUNCE      6       // button held down for 5 intervals will cause a power off event
-#define BATTMONITOR_SMBUS_SOLO_NUM_CELLS            4       // solo's battery back is 4S
+#define BATTMONITOR_SMBUS_SOLO_NUM_CELLS            4       // solo's battery pack is 4S
 
 /*
  * Other potentially useful registers, listed here for future use

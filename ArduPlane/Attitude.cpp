@@ -155,7 +155,8 @@ void Plane::stabilize_stick_mixing_direct()
         control_mode == QLOITER ||
         control_mode == QLAND ||
         control_mode == QRTL ||
-        control_mode == TRAINING) {
+        control_mode == TRAINING ||
+        control_mode == QAUTOTUNE) {
         return;
     }
     int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -185,6 +186,7 @@ void Plane::stabilize_stick_mixing_fbw()
         control_mode == QLAND ||
         control_mode == QRTL ||
         control_mode == TRAINING ||
+        control_mode == QAUTOTUNE ||
         (control_mode == AUTO && g.auto_fbw_steer == 42)) {
         return;
     }
@@ -393,7 +395,8 @@ void Plane::stabilize()
                 control_mode == QHOVER ||
                 control_mode == QLOITER ||
                 control_mode == QLAND ||
-                control_mode == QRTL) &&
+                control_mode == QRTL ||
+                control_mode == QAUTOTUNE) &&
                !quadplane.in_tailsitter_vtol_transition()) {
         quadplane.control_run();
     } else {
@@ -615,11 +618,10 @@ void Plane::update_load_factor(void)
 
     if (quadplane.in_transition() &&
         (quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION)) {
-        /*
-          the user has asked for transitions to be kept level to
-          within LEVEL_ROLL_LIMIT
-         */
+        // the user wants transitions to be kept level to within LEVEL_ROLL_LIMIT
         roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+        return;
     }
     
     if (!aparm.stall_prevention) {

@@ -378,13 +378,13 @@ uint8_t GCS_MAVLINK_Sub::sysid_my_gcs() const
     return sub.g.sysid_my_gcs;
 }
 
+bool GCS_MAVLINK_Sub::vehicle_initialised() const {
+    return sub.ap.initialised;
+}
+
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 {
-    if (telemetry_delayed()) {
-        return false;
-    }
-
     // if we don't have at least 250 micros remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
@@ -399,17 +399,14 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_info();
         break;
 
-    case MSG_EXTENDED_STATUS1:
+    case MSG_SYS_STATUS:
         // send extended status only once vehicle has been initialised
         // to avoid unnecessary errors being reported to user
-        if (sub.ap.initialised) {
-            if (PAYLOAD_SIZE(chan, SYS_STATUS) +
-                PAYLOAD_SIZE(chan, POWER_STATUS) > comm_get_txspace(chan)) {
-                return false;
-            }
-            sub.send_sys_status(chan);
-            send_power_status();
+        if (!vehicle_initialised()) {
+            return true;
         }
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        sub.send_sys_status(chan);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -530,11 +527,14 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU,
     MSG_SCALED_IMU2,
     MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
     MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
@@ -557,7 +557,9 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
-    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_PID_TUNING
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -568,6 +570,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_HWSTATUS,
     MSG_SYSTEM_TIME,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     MSG_TERRAIN,
 #endif
@@ -1144,7 +1147,7 @@ void Sub::mavlink_delay_cb()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs_send_heartbeat();
-        gcs().send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -1158,11 +1161,6 @@ void Sub::mavlink_delay_cb()
     }
 
     DataFlash.EnableWrites(true);
-}
-
-AP_Mission *GCS_MAVLINK_Sub::get_mission()
-{
-    return &sub.mission;
 }
 
 AP_Rally *GCS_MAVLINK_Sub::get_rally() const

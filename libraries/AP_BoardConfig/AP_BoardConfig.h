@@ -156,6 +156,12 @@ public:
         return instance?instance->_vservo_min.get():0;
     }
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    static uint8_t get_sdcard_slowdown(void) {
+        return instance?instance->_sdcard_slowdown.get():0;
+    }
+#endif
     
 private:
     static AP_BoardConfig *instance;
@@ -227,5 +233,9 @@ private:
 
 #if HAL_HAVE_SERVO_VOLTAGE
     AP_Float _vservo_min;
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    AP_Int8 _sdcard_slowdown;
 #endif
 };

@@ -64,7 +64,7 @@ void AP_Proximity_MorseSITL::update(void)
         }
         float angle_deg = wrap_360(degrees(atan2f(-point.y, point.x)));
         uint16_t angle_rounded = uint16_t(angle_deg+0.5);
-        uint8_t sector = angle_rounded / degrees_per_sector;
+        uint8_t sector = wrap_360(angle_rounded + 22.5f) / degrees_per_sector;
         if (!_distance_valid[sector] || range < _distance[sector]) {
             _distance_valid[sector] = true;
             _distance[sector] = range;

@@ -29,8 +29,6 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
 
     // once landed, post some landing statistics to the GCS
     type_slope_flags.post_stats = false;
-    
-    type_slope_flags.force_flare = false;
 
     type_slope_stage = SLOPE_STAGE_NORMAL;
     gcs().send_text(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
@@ -67,26 +65,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             type_slope_stage = SLOPE_STAGE_APPROACH;
         }
     }
-    
-    // Check for weight-on-wheels touchdown
-    AP_LandingGear *landinggear = AP_LandingGear::instance();
-    bool touchdown_debounced = false;
-    if (landinggear != nullptr) {
-        touchdown_debounced = (landinggear->get_wow_state() == AP_LandingGear::LG_WOW) && landinggear->get_wow_state_duration_ms() >= 500;
-     }
-    const bool touchdown_alt_override = !is_zero(touchdown_altitude) &&
-        (height < touchdown_altitude);
 
-    if (!type_slope_flags.touched_down) {
-        if (touchdown_alt_override || touchdown_debounced) {
-            type_slope_flags.touched_down = true; // sticky flag
-            type_slope_flags.force_flare = true; // force flare
-            gcs().send_text(MAV_SEVERITY_INFO, "Touchdown encountered");
-        }
-    } else if (type_slope_stage != SLOPE_STAGE_FINAL) {
-        type_slope_flags.touched_down = false;
-    }
-    
     /* Set land_complete (which starts the flare) under 3 conditions:
        1) we are within LAND_FLARE_ALT meters of the landing altitude
        2) we are within LAND_FLARE_SEC of the landing point vertically
@@ -111,10 +90,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
-        type_slope_flags.force_flare ||
         probably_crashed) {
 
-        type_slope_flags.force_flare = false;
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
@@ -130,7 +107,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             
             // Check if the landing gear was deployed before landing
             // If not - go around
-            if (landinggear != nullptr && !landinggear->check_before_land()) {
+            AP_LandingGear *LG_inst = AP_LandingGear::instance();
+            if (LG_inst != nullptr && !LG_inst->check_before_land()) {
                 type_slope_request_go_around();
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
             }
@@ -158,14 +136,11 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
       prevents sudden turns if we overshoot the landing point
      */
     struct Location land_WP_loc = next_WP_loc;
+    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
     location_update(land_WP_loc,
-                    runway_bearing,
+                    land_bearing_cd*0.01f,
                     get_distance(prev_WP_loc, current_loc) + 200);
-    if (!type_slope_flags.touched_down) {
-        nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
-    } else {
-        nav_controller->update_heading_hold(runway_bearing*100);
-    }
+    nav_controller->update_waypoint(prev_WP_loc, land_WP_loc);
 
     // once landed and stationary, post some statistics
     // this is done before disarm_if_autoland_complete() so that it happens on the next loop after the disarm
@@ -177,13 +152,6 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     // check if we should auto-disarm after a confirmed landing
     if (type_slope_stage == SLOPE_STAGE_FINAL) {
         disarm_if_autoland_complete_fn();
-
-        // Check for touchdown
-        if (!type_slope_flags.touched_down &&
-            (touchdown_alt_override || touchdown_debounced)) {
-            type_slope_flags.touched_down = true;
-            gcs().send_text(MAV_SEVERITY_INFO, "Touchdown encountered");
-        }
     }
 
     /*
@@ -320,17 +288,16 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     // project a point 500 meters past the landing point, passing
     // through the landing point
     const float land_projection = 500;
-    runway_bearing = get_bearing_cd(prev_WP_loc, next_WP_loc) * 0.01f;
-    type_slope_flags.touched_down = false;
+    int32_t land_bearing_cd = get_bearing_cd(prev_WP_loc, next_WP_loc);
 
     // now calculate our aim point, which is before the landing
     // point and above it
     Location loc = next_WP_loc;
-    location_update(loc, runway_bearing, -flare_distance);
+    location_update(loc, land_bearing_cd*0.01f, -flare_distance);
     loc.alt += aim_height*100;
 
     // calculate point along that slope 500m ahead
-    location_update(loc, runway_bearing, land_projection);
+    location_update(loc, land_bearing_cd*0.01f, land_projection);
     loc.alt -= slope * land_projection * 100;
 
     // setup the offset_cm for set_target_altitude_proportion()

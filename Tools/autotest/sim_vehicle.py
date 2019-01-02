@@ -252,34 +252,6 @@ def kill_tasks():
         progress("kill_tasks failed: {}".format(str(e)))
 
 
-def check_jsbsim_version():
-    """Assert that the JSBSim we will run is the one we expect to run"""
-    jsbsim_cmd = ["JSBSim", "--version"]
-    progress_cmd("Get JSBSim version", jsbsim_cmd)
-    try:
-        jsbsim = subprocess.Popen(jsbsim_cmd, stdout=subprocess.PIPE)
-        jsbsim_version = jsbsim.communicate()[0]
-    except OSError:
-        # this value will trigger the ".index" check below and produce
-        # a reasonable error message:
-        jsbsim_version = ''
-    try:
-        jsbsim_version.index(b"ArduPilot")
-    except ValueError:
-        print(r"""
-=========================================================
-You need the latest ArduPilot version of JSBSim installed
-and in your \$PATH
-
-Please get it from git://github.com/tridge/jsbsim.git
-See
-http://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html
-for more details
-=========================================================
-""")
-        sys.exit(1)
-
-
 def progress(text):
     """Display sim_vehicle progress text"""
     print("SIM_VEHICLE: " + text)
@@ -1005,9 +977,6 @@ simout_port = "127.0.0.1:" + str(5501 + 10 * cmd_opts.instance)
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
                                       cmd_opts.vehicle,
                                       cmd_opts)
-
-if frame_infos["model"] == "jsbsim":
-    check_jsbsim_version()
 
 vehicle_dir = os.path.realpath(os.path.join(find_root_dir(), cmd_opts.vehicle))
 if not os.path.exists(vehicle_dir):

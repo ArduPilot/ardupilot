@@ -138,7 +138,7 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
 
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
-                rover.mission.clear();
+                rover.mode_auto.mission.clear();
                 rover.set_home_to_current_location(false);
                 return;
             }
@@ -155,8 +155,8 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const aux_swi
                 cmd.id = MAV_CMD_NAV_WAYPOINT;
 
                 // save command
-                if (rover.mission.add_cmd(cmd)) {
-                    hal.console->printf("Added waypoint %u", (unsigned)rover.mission.num_commands());
+                if (rover.mode_auto.mission.add_cmd(cmd)) {
+                    hal.console->printf("Added waypoint %u", (unsigned)rover.mode_auto.mission.num_commands());
                 }
             }
         }

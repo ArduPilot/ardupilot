@@ -660,7 +660,7 @@ const AP_Param::Info Copter::var_info[] = {
 #if MODE_AUTO_ENABLED == ENABLED
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
-    GOBJECT(mission, "MIS_",       AP_Mission),
+    GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 #endif
 
     // @Group: RSSI_
@@ -705,30 +705,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: AVD_
     // @Path: ../libraries/AP_Avoidance/AP_Avoidance.cpp
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Copter),
-#endif
-
-#if AUTOTUNE_ENABLED == ENABLED
-    // @Param: AUTOTUNE_AXES
-    // @DisplayName: Autotune axis bitmask
-    // @Description: 1-byte bitmap of axes to autotune
-    // @Values: 7:All,1:Roll Only,2:Pitch Only,4:Yaw Only,3:Roll and Pitch,5:Roll and Yaw,6:Pitch and Yaw
-    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
-    // @User: Standard
-    GSCALAR(autotune_axis_bitmask, "AUTOTUNE_AXES", 7),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
-
-    // @Param: AUTOTUNE_AGGR
-    // @DisplayName: Autotune aggressiveness
-    // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
-    // @Range: 0.05 0.10
-    // @User: Standard
-    GSCALAR(autotune_aggressiveness, "AUTOTUNE_AGGR", 0.1f),
-
-    // @Param: AUTOTUNE_MIN_D
-    // @DisplayName: AutoTune minimum D
-    // @Description: Defines the minimum D gain
-    // @Range: 0.001 0.006
-    // @User: Standard
-    GSCALAR(autotune_min_d, "AUTOTUNE_MIN_D", 0.001f),
 #endif
 
     // @Group: NTF_
@@ -869,7 +845,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, 0),
@@ -948,6 +924,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(user_parameters, "USR", 28, ParametersG2, UserParameters),
 #endif
 
+#if AUTOTUNE_ENABLED == ENABLED
+    // @Group: AUTOTUNE_
+    // @Path: ../libraries/AC_AutoTune/AC_AutoTune.cpp
+    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, Copter::AutoTune),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -1002,7 +984,7 @@ ParametersG2::ParametersG2(void)
     , proximity(copter.serial_manager)
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
-    ,afs(copter.mission, copter.gps)
+    ,afs(copter.mode_auto.mission, copter.gps)
 #endif
 #if MODE_SMARTRTL_ENABLED == ENABLED
     ,smart_rtl()
@@ -1015,6 +997,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #ifdef USER_PARAMS_ENABLED
     ,user_parameters()
+#endif
+#if AUTOTUNE_ENABLED == ENABLED
+    ,autotune_ptr(&copter.autotune)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);

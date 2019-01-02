@@ -236,7 +236,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Minimum voltage on the autopilot power rail to allow the aircraft to arm. 0 to disable the check.
     // @Units: V
     // @Range: 4.0 5.5
-    // Increment 0.1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VBUS_MIN",    15,     AP_BoardConfig,  _vbus_min,  BOARD_CONFIG_BOARD_VOLTAGE_MIN),
 
@@ -248,11 +248,21 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Description: Minimum voltage on the servo rail to allow the aircraft to arm. 0 to disable the check.
     // @Units: V
     // @Range: 3.3 12.0
-    // Increment 0.1
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // @Param: SD_SLOWDOWN
+    // @DisplayName: microSD slowdown
+    // @Description: This is a scaling factor to slow down microSD operation. It can be used on flight board and microSD card combinations where full speed is not reliable. For normal full speed operation a value of 0 should be used.
+    // @Range: 0 32
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("SD_SLOWDOWN",  17,     AP_BoardConfig, _sdcard_slowdown,  0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -268,6 +278,23 @@ void AP_BoardConfig::init()
 #endif
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
+    uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
+    const uint8_t max_slowdown = 8;
+    do {
+        if (hal.util->fs_init()) {
+            break;
+        }
+        slowdown++;
+        hal.scheduler->delay(5);
+    } while (slowdown < max_slowdown);
+    if (slowdown < max_slowdown) {
+        _sdcard_slowdown.set(slowdown);
+    } else {
+        printf("SDCard failed to start\n");
+    }
+#endif
 }
 
 // set default value for BRD_SAFETY_MASK

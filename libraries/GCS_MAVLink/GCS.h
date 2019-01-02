@@ -41,7 +41,8 @@ enum ap_message : uint8_t {
     MSG_HEARTBEAT,
     MSG_ATTITUDE,
     MSG_LOCATION,
-    MSG_EXTENDED_STATUS1,
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
     MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_CURRENT_WAYPOINT,
@@ -53,6 +54,8 @@ enum ap_message : uint8_t {
     MSG_SCALED_IMU2,
     MSG_SCALED_IMU3,
     MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
     MSG_SENSOR_OFFSETS,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -65,9 +68,12 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
     MSG_TERRAIN,
     MSG_BATTERY2,
     MSG_CAMERA_FEEDBACK,
@@ -127,6 +133,7 @@ public:
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
     virtual uint8_t sysid_my_gcs() const = 0;
+    virtual bool sysid_enforce() const { return false; }
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -179,15 +186,21 @@ public:
     void send_battery_status(const AP_BattMonitor &battery,
                              const uint8_t instance) const;
     bool send_battery_status() const;
-    bool send_distance_sensor() const;
-    void send_rangefinder_downward() const;
-    bool send_proximity() const;
+    void send_distance_sensor() const;
+    // send_rangefinder sends only if a downward-facing instance is
+    // found.  Rover overrides this!
+    virtual void send_rangefinder() const;
+    void send_proximity() const;
     void send_ahrs2();
+    void send_ahrs3();
     void send_system_time();
     void send_radio_in();
     void send_raw_imu();
-    virtual void send_scaled_pressure3(); // allow sub to override this
+
+    void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature));
     void send_scaled_pressure();
+    void send_scaled_pressure2();
+    virtual void send_scaled_pressure3(); // allow sub to override this
     void send_sensor_offsets();
     virtual void send_simstate() const;
     void send_ahrs();
@@ -230,9 +243,6 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
-    // send queued parameters if needed
-    void send_queued_parameters(void);
-
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
@@ -273,8 +283,7 @@ protected:
 
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
-    virtual bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg) { return true; }
-    virtual AP_Mission *get_mission() = 0;
+    bool accept_packet(const mavlink_status_t &status, mavlink_message_t &msg);
     virtual AP_Rally *get_rally() const = 0;
     virtual AP_AdvancedFailsafe *get_advanced_failsafe() const { return nullptr; };
     virtual AP_VisualOdom *get_visual_odom() const { return nullptr; }
@@ -401,6 +410,8 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+
+    virtual bool vehicle_initialised() const { return true; }
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
@@ -727,17 +738,6 @@ public:
     }
 
     /*
-      set a dataflash pointer for logging
-     */
-    void set_dataflash(DataFlash_Class *dataflash) {
-        dataflash_p = dataflash;
-    }
-
-    // pointer to static dataflash for logging of text messages
-    DataFlash_Class *dataflash_p;
-
-
-    /*
       set a frsky_telem pointer for queueing
      */
     void register_frsky_telemetry_callback(AP_Frsky_Telem *frsky_telemetry) {
@@ -753,6 +753,9 @@ public:
 
     // get the VFR_HUD throttle
     int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0).vfr_hud_throttle():0; }
+
+    // update uart pass-thru
+    void update_passthru();
 
 private:
 
@@ -778,6 +781,22 @@ private:
 
     // true if we are running short on time in our main loop
     bool _out_of_time;
+
+    // handle passthru between two UARTs
+    struct {
+        bool enabled;
+        bool timer_installed;
+        AP_HAL::UARTDriver *port1;
+        AP_HAL::UARTDriver *port2;
+        uint32_t start_ms;
+        uint32_t last_ms;
+        uint32_t last_port1_data_ms;
+        uint8_t timeout_s;
+        HAL_Semaphore sem;
+    } _passthru;
+
+    // timer called to implement pass-thru
+    void passthru_timer();
 };
 
 GCS &gcs();

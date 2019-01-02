@@ -49,9 +49,14 @@ class AutoTestSub(AutoTest):
 
         self.log_name = "ArduSub"
 
+    def default_mode(self):
+        return 'MANUAL'
+
     def init(self):
         if self.frame is None:
             self.frame = 'vectored'
+
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
 
         self.sitl = util.start_SITL(self.binary,
                                     model=self.frame,
@@ -85,9 +90,15 @@ class AutoTestSub(AutoTest):
 
         self.apply_defaultfile_parameters()
 
+        # FIXME:
+        self.set_parameter("FS_GCS_ENABLE", 0)
+
         self.progress("Ready to start testing!")
 
     def dive_manual(self):
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
         self.set_rc(3, 1600)
         self.set_rc(5, 1600)
         self.set_rc(6, 1550)
@@ -153,53 +164,36 @@ class AutoTestSub(AutoTest):
         if ex is not None:
             raise ex
 
-    def autotest(self):
-        """Autotest ArduSub in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
+    def reboot_sitl(self):
+        """Reboot SITL instance and wait it to reconnect."""
+        self.mavproxy.send("reboot\n")
+        self.mavproxy.expect("Initialising APM")
+        # empty mav to avoid getting old timestamps:
+        while self.mav.recv_match(blocking=False):
+            pass
+        self.initialise_after_reboot_sitl()
 
-        self.fail_list = []
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
-            self.set_parameter("FS_GCS_ENABLE", 0)
-            self.progress("Waiting for GPS fix")
-            self.mav.wait_gps_fix()
+    def tests(self):
+        '''return list of all tests'''
+        ret = super(AutoTestSub, self).tests()
 
-            # wait for EKF and GPS checks to pass
-            self.progress("Waiting for ready-to-arm")
-            self.wait_ready_to_arm()
-            self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
+        ret.extend([
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
-            self.set_rc_default()
+            ("DiveManual", "Dive manual", self.dive_manual),
 
-            self.run_test("Arm vehicle", self.arm_vehicle)
+            ("DiveMission",
+             "Dive mission",
+             lambda: self.dive_mission("sub_mission.txt")),
 
-            self.run_test("Dive manual", self.dive_manual)
+            ("GripperMission",
+             "Test gripper mission items",
+             self.test_gripper_mission),
 
-            self.run_test("Dive mission",
-                          lambda: self.dive_mission("sub_mission.txt"))
+            ("DownLoadLogs", "Download logs", lambda:
+             self.log_download(
+                 self.buildlogs_path("APMrover2-log.bin"),
+                 upload_logs=len(self.fail_list) > 0)),
+        ])
 
-            self.run_test("Test gripper mission items",
-                          self.test_gripper_mission)
-
-            self.run_test("Log download",
-                          lambda: self.log_download(
-                              self.buildlogs_path("ArduSub-log.bin"),
-                              upload_logs=len(self.fail_list) > 0))
-
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append("Failed with timeout")
-
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED: %s" % self.fail_list)
-            return False
-        return True
+        return ret

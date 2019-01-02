@@ -33,7 +33,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // 12 ~ 16 were used by position, velocity and acceleration PIDs
 
-    // @Group: P_
+    // @Group: P
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
     AP_SUBGROUPPTR(pos_control, "P", 17, QuadPlane, AC_PosControl),
 
@@ -232,6 +232,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: VFWD_ALT
     // @DisplayName: Forward velocity alt cutoff
     // @Description: Controls altitude to disable forward velocity assist when below this relative altitude. This is useful to keep the forward velocity propeller from hitting the ground. Rangefinder height data is incorporated when available.
+    // @Units: m
     // @Range: 0 10
     // @Increment: 0.25
     // @User: Standard
@@ -332,7 +333,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
-    
+
     AP_GROUPEND
 };
 
@@ -376,6 +377,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 80
     // @User: Standard
     AP_GROUPINFO("TAILSIT_RLL_MX", 5, QuadPlane, tailsitter.max_roll_angle, 0),
+
+#if QAUTOTUNE_ENABLED
+    // @Group: AUTOTUNE_
+    // @Path: qautotune.cpp
+    AP_SUBGROUPINFO(qautotune, "AUTOTUNE_",  6, QuadPlane, QAutoTune),
+#endif
+
+    // @Param: FW_LND_APR_RAD
+    // @DisplayName: Quadplane fixed wing landing approach radius
+    // @Description: This provides the radius used, when using a fixed wing landing approach. If set to 0 then the WP_LOITER_RAD will be selected.
+    // @Units: m
+    // @Range: 0 200
+    // @Increment: 5
+    // @User: Advanced
+    AP_GROUPINFO("FW_LND_APR_RAD", 7, QuadPlane, fw_land_approach_radius, 0),
 
     AP_GROUPEND
 };
@@ -930,7 +946,7 @@ bool QuadPlane::is_flying_vtol(void) const
     if (plane.control_mode == GUIDED && guided_takeoff) {
         return true;
     }
-    if (plane.control_mode == QSTABILIZE || plane.control_mode == QHOVER || plane.control_mode == QLOITER) {
+    if (plane.control_mode == QSTABILIZE || plane.control_mode == QHOVER || plane.control_mode == QLOITER || plane.control_mode == QAUTOTUNE) {
         // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
         return plane.get_throttle_input() > 0;
     }
@@ -1591,8 +1607,8 @@ void QuadPlane::motors_output(bool run_rate_controller)
     check_throttle_suppression();
     
     motors->output();
-    if (motors->armed()) {
-        plane.DataFlash.Log_Write_Rate(plane.ahrs, *motors, *attitude_control, *pos_control);
+    if (motors->armed() && motors->get_throttle() > 0) {
+        plane.DataFlash.Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
         Log_Write_QControl_Tuning();
         const uint32_t now = AP_HAL::millis();
         if (now - last_ctrl_log_ms > 100) {
@@ -1630,6 +1646,11 @@ void QuadPlane::control_run(void)
     case QRTL:
         control_qrtl();
         break;
+#if QAUTOTUNE_ENABLED
+    case QAUTOTUNE:
+        qautotune.run();
+        break;
+#endif
     default:
         break;
     }
@@ -1673,6 +1694,10 @@ bool QuadPlane::init_mode(void)
     case GUIDED:
         guided_takeoff = false;
         break;
+#if QAUTOTUNE_ENABLED
+    case QAUTOTUNE:
+        return qautotune.init();
+#endif
     default:
         break;
     }
@@ -1762,6 +1787,7 @@ bool QuadPlane::in_vtol_mode(void) const
             plane.control_mode == QLOITER ||
             plane.control_mode == QLAND ||
             plane.control_mode == QRTL ||
+            plane.control_mode == QAUTOTUNE ||
             ((plane.control_mode == GUIDED || plane.control_mode == AVOID_ADSB) && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
@@ -2296,21 +2322,25 @@ bool QuadPlane::verify_vtol_land(void)
 // Write a control tuning packet
 void QuadPlane::Log_Write_QControl_Tuning()
 {
-    const Vector3f &desired_velocity = pos_control->get_desired_velocity();
-    const Vector3f &accel_target = pos_control->get_accel_target();
+    float des_alt_m = 0.0f;
+    int16_t target_climb_rate_cms = 0;
+    if (plane.control_mode != QSTABILIZE) {
+        des_alt_m = pos_control->get_alt_target() / 100.0f;
+        target_climb_rate_cms = pos_control->get_vel_target_z();
+    }
+
     struct log_QControl_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_QTUN_MSG),
         time_us             : AP_HAL::micros64(),
+        throttle_in         : attitude_control->get_throttle_in(),
         angle_boost         : attitude_control->angle_boost(),
         throttle_out        : motors->get_throttle(),
-        desired_alt         : pos_control->get_alt_target() / 100.0f,
+        throttle_hover      : motors->get_throttle_hover(),
+        desired_alt         : des_alt_m,
         inav_alt            : inertial_nav.get_altitude() / 100.0f,
-        desired_climb_rate  : (int16_t)pos_control->get_vel_target_z(),
-        climb_rate          : (int16_t)inertial_nav.get_velocity_z(),
-        dvx                 : desired_velocity.x*0.01f,
-        dvy                 : desired_velocity.y*0.01f,
-        dax                 : accel_target.x*0.01f,
-        day                 : accel_target.y*0.01f,
+        baro_alt            : int32_t(plane.barometer.get_altitude() * 100),
+        target_climb_rate   : target_climb_rate_cms,
+        climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
     };
     plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
@@ -2338,7 +2368,8 @@ int8_t QuadPlane::forward_throttle_pct(void)
         !motors->armed() ||
         vel_forward.gain <= 0 ||
         plane.control_mode == QSTABILIZE ||
-        plane.control_mode == QHOVER) {
+        plane.control_mode == QHOVER ||
+        plane.control_mode == QAUTOTUNE) {
         return 0;
     }
 
@@ -2415,7 +2446,8 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         !motors->armed() ||
         weathervane.gain <= 0 ||
         plane.control_mode == QSTABILIZE ||
-        plane.control_mode == QHOVER) {
+        plane.control_mode == QHOVER ||
+        plane.control_mode == QAUTOTUNE) {
         weathervane.last_output = 0;
         return 0;
     }

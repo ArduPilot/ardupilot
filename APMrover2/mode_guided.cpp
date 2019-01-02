@@ -26,12 +26,16 @@ void ModeGuided::update()
                 rover.gcs().send_mission_item_reached_message(0);
             }
             // determine if we should keep navigating
-            if (!_reached_destination || (rover.is_boat() && !near_wp)) {
+            if (!_reached_destination) {
                 // drive towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
-                stop_vehicle();
+                if (rover.is_boat() && !start_loiter()) {
+                    stop_vehicle();
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
@@ -48,7 +52,11 @@ void ModeGuided::update()
                 calc_steering_to_heading(_desired_yaw_cd);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
             } else {
-                stop_vehicle();
+                if (rover.is_boat() && !start_loiter()) {
+                    stop_vehicle();
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
@@ -69,8 +77,18 @@ void ModeGuided::update()
                 g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true, true);
             } else {
-                stop_vehicle();
+                if (rover.is_boat() && !start_loiter()) {
+                    stop_vehicle();
+                } else {
+                    stop_vehicle();
+                }
             }
+            break;
+        }
+
+        case Guided_Loiter:
+        {
+            rover.mode_loiter.update();
             break;
         }
 
@@ -146,4 +164,13 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
 
     // log new target
     rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+}
+
+bool ModeGuided::start_loiter()
+{
+    if (rover.mode_loiter.enter()) {
+        _guided_mode = Guided_Loiter;
+        return true;
+    }
+    return false;
 }

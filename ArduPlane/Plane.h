@@ -43,7 +43,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
-#include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 #include <AP_Relay/AP_Relay.h>       // APM relay
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -151,6 +150,7 @@ public:
     friend class ParametersG2;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class QAutoTune;
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
@@ -357,6 +357,7 @@ private:
 
     enum Landing_ApproachStage {
         LOITER_TO_ALT,
+        ENSURE_RADIUS,
         WAIT_FOR_BREAKOUT,
         APPROACH_LINE,
         VTOL_LANDING,
@@ -861,10 +862,10 @@ private:
     void set_home(const Location &loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
-    bool verify_loiter_unlim();
+    bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
     bool verify_loiter_time();
-    bool verify_loiter_turns();
-    bool verify_loiter_to_alt();
+    bool verify_loiter_turns(const AP_Mission::Mission_Command &cmd);
+    bool verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd);
     bool verify_RTL();
     bool verify_continue_and_change_alt();
     bool verify_wait_delay();

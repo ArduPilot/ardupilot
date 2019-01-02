@@ -561,7 +561,7 @@ private:
     void StoreQuatReset(void);
 
     // Rotate the stored output quaternion history through a quaternion rotation
-    void StoreQuatRotate(Quaternion deltaQuat);
+    void StoreQuatRotate(const Quaternion &deltaQuat);
 
     // store altimeter data
     void StoreBaro();
@@ -790,7 +790,7 @@ private:
     Vector3f calcRotVecVariances(void);
     
     // initialise the quaternion covariances using rotation vector variances
-    void initialiseQuatCovariances(Vector3f &rotVarVec);
+    void initialiseQuatCovariances(const Vector3f &rotVarVec);
 
     // update timing statistics structure
     void updateTimingStatistics(void);

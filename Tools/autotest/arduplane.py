@@ -58,6 +58,8 @@ class AutoTestPlane(AutoTest):
         if self.frame is None:
             self.frame = 'plane-elevrev'
 
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
+
         defaults_file = os.path.join(testdir,
                                      'default_params/plane-jsbsim.parm')
         self.sitl = util.start_SITL(self.binary,
@@ -625,24 +627,36 @@ class AutoTestPlane(AutoTest):
 
     def test_rc_relay(self):
         '''test toggling channel 12 toggles relay'''
+        self.set_parameter("RC12_OPTION", 28) # Relay On/Off
+        self.set_rc(12, 1000)
+        self.reboot_sitl() # needed for RC12_OPTION to take effect
+
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
             raise PreconditionFailedException("SIM_MASK_PIN off")
+
+        # allow time for the RC library to register initial value:
+        self.delay_sim_time(1)
+
         self.set_rc(12, 2000)
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
+
         on = self.get_parameter("SIM_PIN_MASK")
         if not on:
             raise NotAchievedException("SIM_PIN_MASK doesn't reflect ON")
         self.set_rc(12, 1000)
-        self.mav.wait_heartbeat()
-        self.mav.wait_heartbeat()
+        self.wait_heartbeat()
+        self.wait_heartbeat()
         off = self.get_parameter("SIM_PIN_MASK")
         if off:
             raise NotAchievedException("SIM_PIN_MASK doesn't reflect OFF")
 
     def test_rc_option_camera_trigger(self):
         '''test toggling channel 12 takes picture'''
+        self.set_parameter("RC12_OPTION", 9) # CameraTrigger
+        self.reboot_sitl() # needed for RC12_OPTION to take effect
+
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
         if x is not None:
             raise PreconditionFailedException("Receiving CAMERA_FEEDBACK?!")
@@ -652,7 +666,7 @@ class AutoTestPlane(AutoTest):
             x = self.mav.messages.get("CAMERA_FEEDBACK", None)
             if x is not None:
                 break
-            self.mav.wait_heartbeat()
+            self.wait_heartbeat()
         self.set_rc(12, 1000)
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
@@ -663,8 +677,7 @@ class AutoTestPlane(AutoTest):
         try:
             self.load_mission("plane-gripper-mission.txt")
             self.mavproxy.send("wp set 1\n")
-            self.mavproxy.send('switch 1\n')  # auto mode
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.mavproxy.expect("Gripper Grabbed")
@@ -677,95 +690,84 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
-    def autotest(self):
-        """Autotest ArduPlane in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
+    def start_subtest(self, description):
+        self.progress("-")
+        self.progress("---------- %s  ----------" % description)
+        self.progress("-")
 
-        self.fail_list = []
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1800)
+    def run_subtest(self, desc, func):
+        self.start_subtest(desc)
+        func()
 
-            self.set_parameter("RC12_OPTION", 9)
-            self.reboot_sitl() # needed for RC12_OPTION to take effect
+    def test_main_flight(self):
 
-            self.run_test("Test RC Option - Camera Trigger",
-                          self.test_rc_option_camera_trigger)
+        self.change_mode('MANUAL')
 
-            self.set_parameter("RC12_OPTION", 28)
-            self.reboot_sitl() # needed for RC12_OPTION to take effect
+        # grab home position:
+        m = self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.homeloc = self.mav.location()
 
-            self.run_test("Test Relay RC Channel Option",
-                          self.test_rc_relay)
+        self.run_subtest("Takeoff", self.takeoff)
 
-            self.progress("Waiting for GPS fix")
-            self.mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
-            self.mav.wait_gps_fix()
-            while self.mav.location().alt < 10:
-                self.mav.wait_gps_fix()
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
-            self.wait_ready_to_arm()
-            self.run_test("Arm features", self.test_arm_feature)
+        self.run_subtest("Set Attitude Target", self.set_attitude_target)
 
-            self.run_test("Flaps", self.fly_flaps)
+        self.run_subtest("Fly left circuit", self.fly_left_circuit)
 
-            self.mavproxy.send('switch 6\n')
-            self.wait_mode('MANUAL')
+        self.run_subtest("Left roll", lambda: self.axial_left_roll(1))
 
-            self.run_test("Takeoff", self.takeoff)
+        self.run_subtest("Inside loop", self.inside_loop)
 
-            self.run_test("Set Attitude Target", self.set_attitude_target)
+        self.run_subtest("Stablize test", self.test_stabilize)
 
-            self.run_test("Fly left circuit", self.fly_left_circuit)
+        self.run_subtest("ACRO test", self.test_acro)
 
-            self.run_test("Left roll", lambda: self.axial_left_roll(1))
+        self.run_subtest("FBWB test", self.test_FBWB)
 
-            self.run_test("Inside loop", self.inside_loop)
+        self.run_subtest("CRUISE test", lambda: self.test_FBWB(mode='CRUISE'))
 
-            self.run_test("Stablize test", self.test_stabilize)
+        self.run_subtest("RTL test", self.fly_RTL)
 
-            self.run_test("ACRO test", self.test_acro)
+        self.run_subtest("LOITER test", self.fly_LOITER)
 
-            self.run_test("FBWB test", self.test_FBWB)
+        self.run_subtest("CIRCLE test", self.fly_CIRCLE)
 
-            self.run_test("CRUISE test", lambda: self.test_FBWB(mode='CRUISE'))
+        self.run_subtest("Mission test",
+                         lambda: self.fly_mission(
+                             os.path.join(testdir, "ap1.txt")))
 
-            self.run_test("RTL test", self.fly_RTL)
+    def set_rc_default(self):
+        super(AutoTestPlane, self).set_rc_default()
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1800)
 
-            self.run_test("LOITER test", self.fly_LOITER)
+    def default_mode(self):
+        return "MANUAL"
 
-            self.run_test("CIRCLE test", self.fly_CIRCLE)
+    def tests(self):
+        '''return list of all tests'''
+        ret = super(AutoTestPlane, self).tests()
+        ret.extend([
 
-            self.run_test("Mission test",
-                          lambda: self.fly_mission(
-                              os.path.join(testdir, "ap1.txt")))
+            ("TestRCCamera",
+             "Test RC Option - Camera Trigger",
+             self.test_rc_option_camera_trigger),
 
-            self.run_test("Test Gripper mission items",
-                          self.test_gripper_mission)
+            ("TestRCRelay", "Test Relay RC Channel Option", self.test_rc_relay),
 
-            self.run_test("Log download",
-                          lambda: self.log_download(
-                              self.buildlogs_path("ArduPlane-log.bin"),
-                              upload_logs=True))
+            ("TestFlaps", "Flaps", self.fly_flaps),
 
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append("timeout")
+            ("MainFlight",
+             "Lots of things in one flight",
+             self.test_main_flight),
 
-        self.close()
+            ("TestGripperMission",
+             "Test Gripper mission items",
+             self.test_gripper_mission),
 
-        if len(self.fail_list):
-            self.progress("FAILED: %s" % self.fail_list)
-            return False
-
-        self.progress("Max set_rc_timeout=%s" % self.max_set_rc_timeout)
-
-        return True
+            ("LogDownLoad",
+             "Log download",
+             lambda: self.log_download(
+                 self.buildlogs_path("ArduPlane-log.bin"),
+                 upload_logs=True))
+        ])
+        return ret

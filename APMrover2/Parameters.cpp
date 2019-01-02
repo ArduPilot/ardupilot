@@ -170,6 +170,20 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    FS_CRASH_DISABLE),
 
+    // @Param: FS_EKF_ACTION
+    // @DisplayName: EKF Failsafe Action
+    // @Description: Controls the action that will be taken when an EKF failsafe is invoked
+    // @Values: 0:Disabled,1:Hold
+    // @User: Advanced
+    GSCALAR(fs_ekf_action, "FS_EKF_ACTION", 1),
+
+    // @Param: FS_EKF_THRESH
+    // @DisplayName: EKF failsafe variance threshold
+    // @Description: Allows setting the maximum acceptable compass and velocity variance
+    // @Values: 0.6:Strict, 0.8:Default, 1.0:Relaxed
+    // @User: Advanced
+    GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", 0.8f),
+
     // @Param: RNGFND_TRIGGR_CM
     // @DisplayName: Object avoidance trigger distance
     // @Description: The distance from an obstacle in centimeters at which the rangefinder triggers a turn to avoid the obstacle
@@ -397,7 +411,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
-    GOBJECT(mission, "MIS_",       AP_Mission),
+    GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp

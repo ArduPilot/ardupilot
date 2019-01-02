@@ -117,14 +117,26 @@ void SITL_State::_sitl_setup(const char *home_str)
  */
 void SITL_State::_setup_fdm(void)
 {
+    if (!_sitl_rc_in.reuseaddress()) {
+        fprintf(stderr, "SITL: socket reuseaddress failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
     if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
         fprintf(stderr, "SITL: socket bind failed on RC in port : %d - %s\n", _rcin_port, strerror(errno));
         fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
-    _sitl_rc_in.reuseaddress();
-    _sitl_rc_in.set_blocking(false);
-    _sitl_rc_in.set_cloexec();
+    if (!_sitl_rc_in.set_blocking(false)) {
+        fprintf(stderr, "SITL: socket set_blocking(false) failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
+    if (!_sitl_rc_in.set_cloexec()) {
+        fprintf(stderr, "SITL: socket set_cloexec() failed on RC in port: %d - %s\n", _rcin_port, strerror(errno));
+        fprintf(stderr, "Aborting launch...\n");
+        exit(1);
+    }
 }
 #endif
 
@@ -469,7 +481,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
                 }
             } else {
                 // simulate simple battery setup
-                float throttle = motors_on?(input.servos[2]-1000) / 1000.0f:0;
+                float throttle;
+                if (_vehicle == APMrover2) {
+                    throttle = motors_on ? (input.servos[2] - 1500) / 500.0f : 0;
+                } else {
+                    throttle = motors_on ? (input.servos[2] - 1000) / 1000.0f : 0;
+                }
                 // lose 0.7V at full throttle
                 voltage = _sitl->batt_voltage - 0.7f*fabsf(throttle);
 

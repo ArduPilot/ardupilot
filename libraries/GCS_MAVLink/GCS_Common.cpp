@@ -194,6 +194,10 @@ void GCS_MAVLINK::send_meminfo(void)
 // report power supply status
 void GCS_MAVLINK::send_power_status(void)
 {
+    if (!vehicle_initialised()) {
+        // avoid unnecessary errors being reported to user
+        return;
+    }
     mavlink_msg_power_status_send(chan,
                                   hal.analogin->board_voltage() * 1000,
                                   hal.analogin->servorail_voltage() * 1000,
@@ -271,16 +275,19 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
         0);                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
 }
-
-bool GCS_MAVLINK::send_distance_sensor() const
+// send any and all distance_sensor messages.  This starts by sending
+// any distance sensors not used by a Proximity sensor, then sends the
+// proximity sensor ones.
+void GCS_MAVLINK::send_distance_sensor() const
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder == nullptr) {
-        return true; // this is wrong, but pretend we sent data and don't requeue
+        return;
     }
 
-    // if we have a proximity backend that utilizes rangefinders cull sending them here,
-    // and allow the later proximity code to manage them
+    // if we have a proximity backend that utilizes rangefinders cull
+    // sending them here, and allow the later proximity code to manage
+    // them
     bool filter_possible_proximity_sensors = false;
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity != nullptr) {
@@ -292,7 +299,9 @@ bool GCS_MAVLINK::send_distance_sensor() const
     }
 
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
+            return;
+        }
         AP_RangeFinder_Backend *sensor = rangefinder->get_backend(i);
         if (sensor == nullptr) {
             continue;
@@ -303,10 +312,11 @@ bool GCS_MAVLINK::send_distance_sensor() const
             send_distance_sensor(sensor, i);
         }
     }
-    return true;
+
+    send_proximity();
 }
 
-void GCS_MAVLINK::send_rangefinder_downward() const
+void GCS_MAVLINK::send_rangefinder() const
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder == nullptr) {
@@ -322,11 +332,11 @@ void GCS_MAVLINK::send_rangefinder_downward() const
             s->voltage_mv() * 0.001f);
 }
 
-bool GCS_MAVLINK::send_proximity() const
+void GCS_MAVLINK::send_proximity() const
 {
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity == nullptr || proximity->get_status() == AP_Proximity::Proximity_NotConnected) {
-        return true; // this is wrong, but pretend we sent data and don't requeue
+        return; // this is wrong, but pretend we sent data and don't requeue
     }
 
     const uint16_t dist_min = (uint16_t)(proximity->distance_min() * 100.0f); // minimum distance the sensor can measure in centimeters
@@ -335,7 +345,9 @@ bool GCS_MAVLINK::send_proximity() const
     AP_Proximity::Proximity_Distance_Array dist_array;
     if (proximity->get_horizontal_distances(dist_array)) {
         for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
-            CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+            if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
+                return;
+            }
             mavlink_msg_distance_sensor_send(
                     chan,
                     AP_HAL::millis(),                               // time since system boot
@@ -352,7 +364,9 @@ bool GCS_MAVLINK::send_proximity() const
     // send upward distance
     float dist_up;
     if (proximity->get_upward_distance(dist_up)) {
-        CHECK_PAYLOAD_SIZE(DISTANCE_SENSOR);
+        if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
+            return;
+        }
         mavlink_msg_distance_sensor_send(
                 chan,
                 AP_HAL::millis(),                                         // time since system boot
@@ -364,7 +378,6 @@ bool GCS_MAVLINK::send_proximity() const
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
                 0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
     }
-    return true;
 }
 
 // report AHRS2 state
@@ -374,7 +387,8 @@ void GCS_MAVLINK::send_ahrs2()
     const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc {};
-    if (ahrs.get_secondary_attitude(euler)) {
+    if (ahrs.get_secondary_attitude(euler) ||
+        ahrs.get_secondary_position(loc)) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
                                euler.y,
@@ -383,11 +397,18 @@ void GCS_MAVLINK::send_ahrs2()
                                loc.lat,
                                loc.lng);
     }
-    const AP_AHRS_NavEKF &_ahrs = reinterpret_cast<const AP_AHRS_NavEKF&>(ahrs);
-    const NavEKF2 &ekf2 = _ahrs.get_NavEKF2_const();
+#endif
+}
+
+void GCS_MAVLINK::send_ahrs3()
+{
+#if AP_AHRS_NAVEKF_AVAILABLE
+    const NavEKF2 &ekf2 = AP::ahrs_navekf().get_NavEKF2_const();
     if (ekf2.activeCores() > 0 &&
         HAVE_PAYLOAD_SPACE(chan, AHRS3)) {
+        struct Location loc {};
         ekf2.getLLH(loc);
+        Vector3f euler;
         ekf2.getEulerAngles(-1,euler);
         mavlink_msg_ahrs3_send(chan,
                                euler.x,
@@ -860,7 +881,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
-        { MAVLINK_MSG_ID_SYS_STATUS,            MSG_EXTENDED_STATUS1},
+        { MAVLINK_MSG_ID_SYS_STATUS,            MSG_SYS_STATUS},
+        { MAVLINK_MSG_ID_POWER_STATUS,          MSG_POWER_STATUS},
         { MAVLINK_MSG_ID_MEMINFO,               MSG_MEMINFO},
         { MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, MSG_NAV_CONTROLLER_OUTPUT},
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
@@ -872,6 +894,8 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
         { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
+        { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
+        { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
         { MAVLINK_MSG_ID_SENSOR_OFFSETS,        MSG_SENSOR_OFFSETS},
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
         { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
@@ -883,9 +907,12 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_FENCE_STATUS,          MSG_FENCE_STATUS},
         { MAVLINK_MSG_ID_AHRS,                  MSG_AHRS},
         { MAVLINK_MSG_ID_SIMSTATE,              MSG_SIMSTATE},
+        { MAVLINK_MSG_ID_AHRS2,                 MSG_AHRS2},
+        { MAVLINK_MSG_ID_AHRS3,                 MSG_AHRS3},
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
+        { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
             // request also does report:
         { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN},
         { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
@@ -1057,6 +1084,9 @@ bool GCS_MAVLINK::do_try_send_message(const ap_message id)
     const bool in_delay_callback = hal.scheduler->in_delay_callback();
     if (in_delay_callback && !should_send_message_in_delay_callback(id)) {
         return true;
+    }
+    if (telemetry_delayed()) {
+        return false;
     }
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
@@ -1234,6 +1264,11 @@ void GCS_MAVLINK::update_send()
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
 {
     deferred_message_bucket[bucket].ap_message_ids.clear(id);
+
+    if (bucket == sending_bucket_id) {
+        bucket_message_ids_to_send.clear(id);
+    }
+
     if (deferred_message_bucket[bucket].ap_message_ids.count() == 0) {
         // bucket empty.  Free it:
         deferred_message_bucket[bucket].interval_ms = 0;
@@ -1241,10 +1276,6 @@ void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
         if (sending_bucket_id == bucket) {
             find_next_bucket_to_send();
         }
-    }
-
-    if (bucket == sending_bucket_id) {
-        bucket_message_ids_to_send.clear(id);
     }
 }
 
@@ -1695,58 +1726,56 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
 }
 
 
-// sub overrides this to send on-board temperature
-void GCS_MAVLINK::send_scaled_pressure3()
+// send data for barometer and airspeed sensors instances.  In the
+// case that we run out of instances of one before the other we send
+// the relevant fields as 0.
+void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature))
 {
     const AP_Baro &barometer = AP::baro();
 
-    if (barometer.num_instances() < 3) {
-        return;
+    bool have_data = false;
+
+    float press_abs = 0.0f;
+    float temperature = 0.0f;
+    if (instance < barometer.num_instances()) {
+        press_abs = barometer.get_pressure(instance) * 0.01f;
+        temperature = barometer.get_temperature(instance)*100;
+        have_data = true;
     }
-    if (!HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE3)) {
+
+    float press_diff = 0; // pascal
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed != nullptr &&
+        instance < AIRSPEED_MAX_SENSORS) {
+        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+        have_data = true;
+    }
+
+    if (!have_data) {
         return;
     }
 
-    const float pressure = barometer.get_pressure(2);
-    mavlink_msg_scaled_pressure3_send(
+    send_fn(
         chan,
         AP_HAL::millis(),
-        pressure*0.01f, // hectopascal
-        (pressure - barometer.get_ground_pressure(2))*0.01f, // hectopascal
-        barometer.get_temperature(2)*100); // 0.01 degrees C
+        press_abs, // hectopascal
+        press_diff, // hectopascal
+        temperature); // 0.01 degrees C
 }
 
 void GCS_MAVLINK::send_scaled_pressure()
 {
-    uint32_t now = AP_HAL::millis();
-    const AP_Baro &barometer = AP::baro();
-    float pressure = barometer.get_pressure(0);
-    float diff_pressure = 0; // pascal
+    send_scaled_pressure_instance(0, mavlink_msg_scaled_pressure_send);
+}
 
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        diff_pressure = airspeed->get_differential_pressure();
-    }
+void GCS_MAVLINK::send_scaled_pressure2()
+{
+    send_scaled_pressure_instance(1, mavlink_msg_scaled_pressure2_send);
+}
 
-    mavlink_msg_scaled_pressure_send(
-        chan,
-        now,
-        pressure*0.01f, // hectopascal
-        diff_pressure*0.01f, // hectopascal
-        barometer.get_temperature(0)*100); // 0.01 degrees C
-
-    if (barometer.num_instances() > 1 &&
-        HAVE_PAYLOAD_SPACE(chan, SCALED_PRESSURE2)) {
-        pressure = barometer.get_pressure(1);
-        mavlink_msg_scaled_pressure2_send(
-            chan,
-            now,
-            pressure*0.01f, // hectopascal
-            (pressure - barometer.get_ground_pressure(1))*0.01f, // hectopascal
-            barometer.get_temperature(1)*100); // 0.01 degrees C        
-    }
-
-    send_scaled_pressure3();
+void GCS_MAVLINK::send_scaled_pressure3()
+{
+    send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
 }
 
 void GCS_MAVLINK::send_sensor_offsets()
@@ -1803,8 +1832,9 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    if (dataflash_p != nullptr) {
-        dataflash_p->Log_Write_Message(text);
+    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    if (dataflash != nullptr) {
+        dataflash->Log_Write_Message(text);
     }
 
     // add statustext message to FrSky lib queue
@@ -1914,6 +1944,8 @@ void GCS::update_receive(void)
             chan(i).update_receive();
         }
     }
+    // also update UART pass-thru, if enabled
+    update_passthru();
 }
 
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
@@ -2996,7 +3028,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
 {
-    AP_Mission *_mission = get_mission();
+    AP_Mission *_mission = AP::mission();
     if (_mission == nullptr) {
         return;
     }
@@ -3526,7 +3558,7 @@ bool GCS_MAVLINK::try_send_compass_message(const enum ap_message id)
 
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
-    AP_Mission *mission = get_mission();
+    AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         return true;
     }
@@ -3629,10 +3661,6 @@ void GCS_MAVLINK::send_mount_status() const
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
-    if (telemetry_delayed()) {
-        return false;
-    }
-
     bool ret = true;
 
     switch(id) {
@@ -3702,9 +3730,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
-        send_rangefinder_downward();
-        ret = send_distance_sensor();
-        ret = ret && send_proximity();
+        send_rangefinder();
+        break;
+
+    case MSG_DISTANCE_SENSOR:
+        send_distance_sensor();
         break;
 
     case MSG_CAMERA_FEEDBACK:
@@ -3759,6 +3789,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_position_target_global_int();
         break;
 
+    case MSG_POWER_STATUS:
+        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+        send_power_status();
+        break;
+
     case MSG_RADIO_IN:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_radio_in();
@@ -3789,6 +3824,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_scaled_pressure();
         break;
 
+    case MSG_SCALED_PRESSURE2:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE2);
+        send_scaled_pressure2();
+        break;
+
+    case MSG_SCALED_PRESSURE3:
+        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
+        send_scaled_pressure3();
+        break;
+
     case MSG_SENSOR_OFFSETS:
         CHECK_PAYLOAD_SIZE(SENSOR_OFFSETS);
         send_sensor_offsets();
@@ -3802,8 +3847,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
+        break;
+
+    case MSG_AHRS2:
         CHECK_PAYLOAD_SIZE(AHRS2);
         send_ahrs2();
+        break;
+
+    case MSG_AHRS3:
+        CHECK_PAYLOAD_SIZE(AHRS3);
+        send_ahrs3();
         break;
 
     case MSG_AHRS:
@@ -3932,6 +3985,120 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
 
     return corrected_us / 1000U;
 }
+
+/*
+  return true if we will accept this packet. Used to implement SYSID_ENFORCE
+ */
+bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
+                                mavlink_message_t &msg)
+{
+    if (msg.sysid == mavlink_system.sysid) {
+        // accept packets from our own components
+        // (e.g. mavlink-connected companion computers)
+        return true;
+    }
+
+    if (msg.sysid == sysid_my_gcs()) {
+        return true;
+    }
+
+    if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
+        msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+        return true;
+    }
+
+    if (!sysid_enforce()) {
+        return true;
+    }
+
+    return false;
+}
+
+/*
+  update UART pass-thru, if enabled
+ */
+void GCS::update_passthru(void)
+{
+    WITH_SEMAPHORE(_passthru.sem);
+    uint32_t now = AP_HAL::millis();
+
+    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s);
+    if (enabled && !_passthru.enabled) {
+        _passthru.start_ms = now;
+        _passthru.last_ms = 0;
+        _passthru.enabled = true;
+        _passthru.last_port1_data_ms = now;
+        gcs().send_text(MAV_SEVERITY_INFO, "Passthru enabled");
+        if (!_passthru.timer_installed) {
+            _passthru.timer_installed = true;
+            hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&GCS::passthru_timer, void));
+        }
+    } else if (!enabled && _passthru.enabled) {
+        _passthru.enabled = false;
+        _passthru.port1->lock_port(0, 0);
+        _passthru.port2->lock_port(0, 0);
+        gcs().send_text(MAV_SEVERITY_INFO, "Passthru disabled");
+    } else if (enabled &&
+               _passthru.timeout_s &&
+               now - _passthru.last_port1_data_ms > uint32_t(_passthru.timeout_s)*1000U) {
+        // timed out, disable
+        _passthru.enabled = false;
+        _passthru.port1->lock_port(0, 0);
+        _passthru.port2->lock_port(0, 0);
+        AP::serialmanager().disable_passthru();
+        gcs().send_text(MAV_SEVERITY_INFO, "Passthru timed out");
+    }
+}
+
+/*
+  called at 1kHz to handle pass-thru between SERIA0_PASSTHRU port and hal.console
+ */
+void GCS::passthru_timer(void)
+{
+    WITH_SEMAPHORE(_passthru.sem);
+
+    if (!_passthru.enabled) {
+        // it has been disabled after starting
+        return;
+    }
+    if (_passthru.start_ms != 0) {
+        uint32_t now = AP_HAL::millis();
+        if (now - _passthru.start_ms < 1000) {
+            // delay for 1s so the reply for the SERIAL0_PASSTHRU param set can be seen by GCS
+            return;
+        }
+        _passthru.start_ms = 0;
+    }
+
+    // while pass-thru is enabled lock both ports. They remain
+    // locked until disabled again, or reboot
+    const uint32_t lock_key = 0x3256AB9F;
+    _passthru.port1->lock_port(lock_key, lock_key);
+    _passthru.port2->lock_port(lock_key, lock_key);
+
+    int16_t b;
+    uint8_t buf[64];
+    uint8_t nbytes = 0;
+
+    // read from port1, and write to port2
+    while (nbytes < sizeof(buf) && (b = _passthru.port1->read_locked(lock_key)) >= 0) {
+        buf[nbytes++] = b;
+    }
+    if (nbytes > 0) {
+        _passthru.last_port1_data_ms = AP_HAL::millis();
+        _passthru.port2->write_locked(buf, nbytes, lock_key);
+    }
+
+    // read from port2, and write to port1
+    nbytes = 0;
+    while (nbytes < sizeof(buf) && (b = _passthru.port2->read_locked(lock_key)) >= 0) {
+        buf[nbytes++] = b;
+    }
+    if (nbytes > 0) {
+        _passthru.port1->write_locked(buf, nbytes, lock_key);
+    }
+}
+
 
 GCS &gcs()
 {

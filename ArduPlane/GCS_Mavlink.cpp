@@ -34,6 +34,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case QLOITER:
     case QLAND:
     case CRUISE:
+    case QAUTOTUNE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
     case AUTO:
@@ -409,6 +410,10 @@ uint8_t GCS_MAVLINK_Plane::sysid_my_gcs() const
 {
     return plane.g.sysid_my_gcs;
 }
+bool GCS_MAVLINK_Plane::sysid_enforce() const
+{
+    return plane.g2.sysid_enforce;
+}
 
 uint32_t GCS_MAVLINK_Plane::telem_delay() const
 {
@@ -418,10 +423,6 @@ uint32_t GCS_MAVLINK_Plane::telem_delay() const
 // try to send a message, return false if it won't fit in the serial tx buffer
 bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 {
-    if (telemetry_delayed()) {
-        return false;
-    }
-
     // if we don't have at least 0.2ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
@@ -433,13 +434,9 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 
     switch (id) {
 
-    case MSG_EXTENDED_STATUS1:
-        if (PAYLOAD_SIZE(chan, SYS_STATUS) +
-            PAYLOAD_SIZE(chan, POWER_STATUS) > comm_get_txspace(chan)) {
-            return false;
-        }
+    case MSG_SYS_STATUS:
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
         plane.send_sys_status(chan);
-        send_power_status();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
@@ -608,11 +605,14 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU,
     MSG_SCALED_IMU2,
     MSG_SCALED_IMU3,
-    MSG_SCALED_PRESSURE,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
+    MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
     MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
@@ -636,7 +636,9 @@ static const ap_message STREAM_RC_CHANNELS_msgs[] = {
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
-    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_RPM,
     MSG_AOA_SSA,
     MSG_PID_TUNING,
@@ -651,6 +653,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
+    MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE
     MSG_TERRAIN,
@@ -945,21 +948,38 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_GO_AROUND:
-        if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-            // Initiate an aborted landing. This will trigger a pitch-up and
-            // climb-out to a safe altitude holding heading then one of the
-            // following actions will occur, check for in this order:
-            // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
-            //      increment mission index to execute it
-            // - else if DO_LAND_START is available, jump to it
-            // - else decrement the mission index to repeat the landing approach
+        {
+            uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
+            bool is_in_landing = (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) ||
+                                 (mission_id == MAV_CMD_NAV_LAND) ||
+                                 (mission_id == MAV_CMD_NAV_VTOL_LAND);
+            if (is_in_landing) {
+                // fly a user planned abort pattern if available
+                if (plane.mission.jump_to_abort_landing_sequence()) {
+                    return MAV_RESULT_ACCEPTED;
+                }
 
-            if (!is_zero(packet.param1)) {
-                plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
-            }
-            if (plane.landing.request_go_around()) {
-                plane.auto_state.next_wp_crosstrack = false;
-                return MAV_RESULT_ACCEPTED;
+                // only fly a fixed wing abort if we aren't doing quadplane stuff, or potentially
+                // shooting a quadplane approach
+                if ((!plane.quadplane.available()) ||
+                    ((!plane.quadplane.in_vtol_auto()) &&
+                     (!(plane.quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)))) {
+                    // Initiate an aborted landing. This will trigger a pitch-up and
+                    // climb-out to a safe altitude holding heading then one of the
+                    // following actions will occur, check for in this order:
+                    // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
+                    //      increment mission index to execute it
+                    // - else if DO_LAND_START is available, jump to it
+                    // - else decrement the mission index to repeat the landing approach
+
+                    if (!is_zero(packet.param1)) {
+                        plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
+                    }
+                    if (plane.landing.request_go_around()) {
+                        plane.auto_state.next_wp_crosstrack = false;
+                        return MAV_RESULT_ACCEPTED;
+                    }
+                }
             }
         }
         return MAV_RESULT_FAILED;
@@ -1471,7 +1491,7 @@ void Plane::mavlink_delay_cb()
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -1493,25 +1513,6 @@ void Plane::mavlink_delay_cb()
 void Plane::gcs_send_airspeed_calibration(const Vector3f &vg)
 {
     gcs().send_airspeed_calibration(vg);
-}
-
-/*
-  return true if we will accept this packet. Used to implement SYSID_ENFORCE
- */
-bool GCS_MAVLINK_Plane::accept_packet(const mavlink_status_t &status, mavlink_message_t &msg)
-{
-    if (!plane.g2.sysid_enforce) {
-        return true;
-    }
-    if (msg.msgid == MAVLINK_MSG_ID_RADIO || msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
-        return true;
-    }
-    return (msg.sysid == plane.g.sysid_my_gcs);
-}
-
-AP_Mission *GCS_MAVLINK_Plane::get_mission()
-{
-    return &plane.mission;
 }
 
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg)
@@ -1558,6 +1559,7 @@ bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
     case QLOITER:
     case QLAND:
     case QRTL:
+    case QAUTOTUNE:
         plane.set_mode((enum FlightMode)mode, MODE_REASON_GCS_COMMAND);
         return true;
     }
