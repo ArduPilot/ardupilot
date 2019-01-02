@@ -525,7 +525,7 @@ bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
 {
     // add home alt if needed
-    if (cmd.content.location.flags.relative_alt) {
+    if (cmd.content.location.relative_alt) {
         cmd.content.location.alt += copter.ahrs.get_home().alt;
     }
 
@@ -1248,13 +1248,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
             switch (packet.coordinate_frame) {
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
                 case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-                    loc.flags.relative_alt = true;
-                    loc.flags.terrain_alt = false;
+                    loc.relative_alt = true;
+                    loc.terrain_alt = false;
                     break;
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT:
                 case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-                    loc.flags.relative_alt = true;
-                    loc.flags.terrain_alt = true;
+                    loc.relative_alt = true;
+                    loc.terrain_alt = true;
                     break;
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
@@ -1262,8 +1262,8 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                     // pv_location_to_vector does not support absolute altitudes.
                     // Convert the absolute altitude to a home-relative altitude before calling pv_location_to_vector
                     loc.alt -= copter.ahrs.get_home().alt;
-                    loc.flags.relative_alt = true;
-                    loc.flags.terrain_alt = false;
+                    loc.relative_alt = true;
+                    loc.terrain_alt = false;
                     break;
             }
             pos_neu_cm = copter.pv_location_to_vector(loc);
