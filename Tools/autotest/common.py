@@ -517,12 +517,23 @@ class AutoTest(ABC):
                                          (file1, file2, l1, l2, int(i1), int(i2), count))  # NOCI
                     continue
                 if 4 <= count <= 10:
-                    delta = abs(float(i1) - float(i2))
+                    f_i1 = float(i1)
+                    f_i2 = float(i2)
+                    delta = abs(f_i1 - f_i2)
                     max_allowed_delta = 0.000009
                     if delta > max_allowed_delta:
-                        raise ValueError("Files have different (float) content: (%s) and " +
-                                         "(%s) (%s vs %s) (%f vs %f) (%.10f) (count=%u)" %
-                                         (file1, file2, l1, l2, float(i1), float(i2), delta, count)) # NOCI
+                        raise ValueError(
+                            ("Files have different (float) content: " +
+                             "(%s) and (%s) " +
+                             "(%s vs %s) " +
+                             "(%f vs %f) " +
+                             "(%.10f) " +
+                             "(count=%u)") %
+                            (file1, file2,
+                             l1, l2,
+                             f_i1, f_i2,
+                             delta,
+                             count)) # NOCI
                     continue
                 raise ValueError("count %u not handled" % count)
         self.progress("Files same")
