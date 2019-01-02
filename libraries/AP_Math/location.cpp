@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include "AP_Math.h"
 #include "location.h"
+#include "AP_Common/Location.h"
 
 float longitude_scale(const struct Location &loc)
 {
