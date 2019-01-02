@@ -79,6 +79,7 @@ private:
     void send_request_for_scan();
     void send_request_for_health();
     void send_request_for_rate();
+
     // process the response
     void get_readings();
     void parse_response_descriptor();
@@ -108,6 +109,7 @@ private:
     uint32_t  _last_reset_ms;
 
     // sector related variables
+    int16_t _forward_direction;
     float _angle_deg_last;
     float _distance_m_last;
 

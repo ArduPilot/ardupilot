@@ -67,14 +67,12 @@
 #define RPLIDAR_PREAMBLE               0xA5
 
 // Commands without payload and response
-
 #define RPLIDAR_CMD_STOP               0x25
 #define RPLIDAR_CMD_RESET              0x40     // Be aware of an undocumented device information message that comes afterwards
+
 // Commands without payload but have response
 #define RPLIDAR_CMD_SCAN               0x20
 #define RPLIDAR_CMD_FORCE_SCAN         0x21
-
-
 
 #define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
 #define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
@@ -117,6 +115,11 @@ void AP_Proximity_RPLidarA2::update(void)
         return;
     }
 
+    // read parameters
+    if (_forward_direction != frontend.get_yaw_correction(state.instance)) {
+        Debug(3, "new forward direction received (%d io %d)", frontend.get_yaw_correction(state.instance), _forward_direction);
+        _forward_direction = frontend.get_yaw_correction(state.instance);
+    }
     // initialise sensor if necessary
     if (!_initialised) {
         _initialised = initialise();    //returns true if everything initialized properly
@@ -157,6 +160,7 @@ bool AP_Proximity_RPLidarA2::initialise()
         init_sectors();
         return false;
     }
+
     // reset the device
     if (!_initialised) {
         send_request_for_reset();            // set to a known state
@@ -443,38 +447,48 @@ void AP_Proximity_RPLidarA2::parse_response_data()
     switch (_response_type){
         case ResponseType_SCAN:
             Debug(0, "uart: %02x %02x %02x %02x %02x", payload[0], payload[1], payload[2], payload[3], payload[4]); //show HEX values
+
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                const float angle_deg = payload.sensor_scan.angle_q6/64.0f;
-                const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
-#if RP_DEBUG_LEVEL >= 2
-                const float quality = payload.sensor_scan.quality;
-                Debug(3, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
-#endif
-                _last_distance_received_ms = AP_HAL::millis();
-                uint8_t sector;
-                if (convert_angle_to_sector(angle_deg, sector)) {
-                    if (distance_m > distance_min()) {
-                        if (_last_sector == sector) {
-                            if (_distance_m_last > distance_m) {
+                if (payload.sensor_scan.quality > 10) {
+                    const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f - (float)_forward_direction);
+                    const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
+    #if RP_DEBUG_LEVEL >= 5
+                    static int cnt = 0;
+
+                    if (++cnt == 1) {
+                        Debug(2, "D%2.1f A%3.1f", distance_m, angle_deg);
+                        cnt = 0;
+                    }
+    #endif
+                    _last_distance_received_ms = AP_HAL::millis();
+                    uint8_t sector;
+                    if (convert_angle_to_sector(angle_deg, sector)) {
+                        if (distance_m > distance_min()) {
+                            if (_last_sector == sector) {
+                                if (_distance_m_last > distance_m) {
+                                    _distance_m_last = distance_m;
+                                    _angle_deg_last  = angle_deg;
+                                }
+                            } else {
+                                // a new sector started, the previous one can be updated now
+                                Debug(2, "D%2.1f A%3.1f", _distance_m_last, _angle_deg_last);
+                                _angle[_last_sector] = _angle_deg_last;
+                                _distance[_last_sector] = _distance_m_last;
+                                _distance_valid[_last_sector] = true;
+                                // update boundary used for avoidance
+                                update_boundary_for_sector(_last_sector);
+                                // initialize the new sector
+                                _last_sector     = sector;
                                 _distance_m_last = distance_m;
                                 _angle_deg_last  = angle_deg;
                             }
                         } else {
-                            // a new sector started, the previous one can be updated now
-                            _angle[_last_sector] = _angle_deg_last;
-                            _distance[_last_sector] = _distance_m_last;
-                            _distance_valid[_last_sector] = true;
-                            // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector);
-                            // initialize the new sector
-                            _last_sector     = sector;
-                            _distance_m_last = distance_m;
-                            _angle_deg_last  = angle_deg;
+                            _distance_valid[sector] = false;
                         }
-                    } else {
-                        _distance_valid[sector] = false;
                     }
+                } else {
+                    Debug(0, "low Q (%d)!", payload.sensor_scan.quality);
                 }
             } else {
                 // not valid payload packet
