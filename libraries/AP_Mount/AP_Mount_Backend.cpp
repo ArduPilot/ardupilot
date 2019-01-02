@@ -61,15 +61,17 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
             break;
 
         // set lat, lon, alt position targets from mavlink message
-        case MAV_MOUNT_MODE_GPS_POINT:
-            Location target_location;
-            memset(&target_location, 0, sizeof(target_location));
-            target_location.lat = pitch_or_lat;
-            target_location.lng = roll_or_lon;
-            target_location.alt = yaw_or_alt;
-            target_location.relative_alt = true;
+
+        case MAV_MOUNT_MODE_GPS_POINT: {
+            const Location target_location{
+                pitch_or_lat,
+                roll_or_lon,
+                yaw_or_alt,
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             set_roi_target(target_location);
             break;
+        }
 
         default:
             // do nothing
