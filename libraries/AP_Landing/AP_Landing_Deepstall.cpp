@@ -160,7 +160,7 @@ void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const
     // load the landing point in, the rest of path building is deferred for a better wind estimate
     memcpy(&landing_point, &cmd.content.location, sizeof(Location));
 
-    if (!landing_point.flags.relative_alt && !landing_point.flags.terrain_alt) {
+    if (!landing_point.relative_alt && !landing_point.terrain_alt) {
         approach_alt_offset = cmd.p1;
         landing_point.alt += approach_alt_offset * 100;
     } else {
@@ -196,7 +196,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         FALLTHROUGH;
     case DEEPSTALL_STAGE_ESTIMATE_WIND:
         {
-        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+        landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
         if (!landing.nav_controller->reached_loiter_target() || (fabsf(height - approach_alt_offset) > DEEPSTALL_LOITER_ALT_TOLERANCE)) {
             // wait until the altitude is correct before considering a breakout
             return false;
@@ -204,7 +204,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         // only count loiter progress when within the target altitude
         int32_t target_bearing = landing.nav_controller->target_bearing_cd();
         int32_t delta = wrap_180_cd(target_bearing - last_target_bearing);
-        delta *= (landing_point.flags.loiter_ccw ? -1 : 1);
+        delta *= (landing_point.loiter_ccw ? -1 : 1);
         if (delta > 0) { // only accumulate turns in the correct direction
             loiter_sum_cd += delta;
         }
@@ -232,7 +232,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
                 loiter_sum_cd += delta;
             }
             last_target_bearing = target_bearing;
-            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+            landing.nav_controller->update_loiter(landing_point, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_FLY_TO_ARC;
@@ -251,7 +251,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
         if (!landing.nav_controller->reached_loiter_target() ||
             (fabsf(wrap_180(target_heading_deg -
                             degrees(atan2f(-groundspeed.y, -groundspeed.x) + M_PI))) >= 10.0f)) {
-            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.flags.loiter_ccw ? -1 : 1);
+            landing.nav_controller->update_loiter(arc, landing.aparm.loiter_radius, landing_point.loiter_ccw ? -1 : 1);
             return false;
         }
         stage = DEEPSTALL_STAGE_APPROACH;
@@ -499,7 +499,7 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
     memcpy(&arc, &arc_exit, sizeof(Location));
     memcpy(&arc_entry, &arc_exit, sizeof(Location));
 
-    float arc_heading_deg = target_heading_deg + (landing_point.flags.loiter_ccw ? -90.0f : 90.0f);
+    float arc_heading_deg = target_heading_deg + (landing_point.loiter_ccw ? -90.0f : 90.0f);
     location_update(arc, arc_heading_deg, loiter_radius_m_abs);
     location_update(arc_entry, arc_heading_deg, loiter_radius_m_abs * 2);
 
