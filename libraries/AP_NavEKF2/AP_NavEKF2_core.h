@@ -25,6 +25,7 @@
 #define EK2_DISABLE_INTERRUPTS 0
 
 
+#include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_NavEKF2.h"
 #include <stdio.h>
