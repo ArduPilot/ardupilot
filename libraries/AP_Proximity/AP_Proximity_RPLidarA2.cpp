@@ -33,27 +33,32 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define RP_DEBUG_LEVEL 1
 
+
+#define RP_DEBUG_ENABLED 0
 /*
- * DEBUG macros:
- * Level 1 sends message to GCS.
- * Level 2 sends message to UART5 (pixhawk console output)
- * Level 3 sends message to both.
- * Choose "_ts" version in "Debug" macro to append timestamp.
+ * DEBUGGING MACROS
+ *
+ * Specify destination when using a "Debug" macro:
+ * - DBG_GCS sends a mavproxy message to GCS
+ * - DBG_UART sends message to UART5 (pixhawk console output)
+ *
+ * Control overall functionality by editing a "Debug" macro:
+ * - Choose "Debug_gcs" or/and "Debug_uart" to allow each output
+ * - Use "Debug_gcs_ts"/"Debug_uart_ts" versions to append timestamp.
  * WARNING! Sending too much data creates significant delays (especially via UART)!
  */
-#if RP_DEBUG_LEVEL
+#if RP_DEBUG_ENABLED
 /* Redirect debug messages to whatever output is needed */
   #define Debug(level, fmt, args ...)  Debug_gcs(level, fmt, ## args); Debug_uart(level, fmt, ## args);
 
-/* Send debug messages via Mavlink to Ground Station (_ts version appends timestamp) */
-  #define Debug_gcs(level, fmt, args ...)  do { if (level&0x01) { gcs().send_text(MAV_SEVERITY_INFO, "RPL: " fmt, ## args); } } while (0)
-  #define Debug_gcs_ts(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, "%dms/RPLIDAR: " fmt, AP_HAL::millis(), ## args); } } while (0)
-/* Send debug messages to UART5 port on pixhawk console output (_ts version appends timestamp) */
-  #define Debug_uart(level, fmt, args ...)  do { if (level&0x02) { printf( "RPL: " fmt "\n", ## args); } } while (0)
-  #define Debug_uart_ts(level, fmt, args ...)  do { if (level&0x02) { printf( "%dms/RPL: " fmt "\n", AP_HAL::millis(), ## args); } } while (0)
-
+/* Define debugging constants */
+  #define DBG_GCS     0x01
+  #define DBG_UART    0x02
+  #define Debug_gcs(level, fmt, args ...)  do { if ((level)&DBG_GCS) { gcs().send_text(MAV_SEVERITY_INFO, "RPL: " fmt, ## args); } } while (0)
+  #define Debug_gcs_ts(level, fmt, args ...)  do { if ((level)&DBG_GCS) { gcs().send_text(MAV_SEVERITY_INFO, "%dms/RPLIDAR: " fmt, AP_HAL::millis(), ## args); } } while (0)
+  #define Debug_uart(level, fmt, args ...)  do { if ((level)&DBG_UART) { printf( "RPL: " fmt "\n", ## args); } } while (0)
+  #define Debug_uart_ts(level, fmt, args ...)  do { if ((level)&DBG_UART) { printf( "%dms/RPL: " fmt "\n", AP_HAL::millis(), ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)
 #endif
@@ -120,7 +125,7 @@ void AP_Proximity_RPLidarA2::update(void)
 
     // read parameters
     if (_forward_direction != frontend.get_yaw_correction(state.instance)) {
-        Debug(3, "new forward direction received (%d io %d)", frontend.get_yaw_correction(state.instance), _forward_direction);
+        Debug(DBG_GCS|DBG_UART, "new forward direction received (%d io %d)", frontend.get_yaw_correction(state.instance), _forward_direction);
         _forward_direction = frontend.get_yaw_correction(state.instance);
     }
     // initialise sensor if necessary
@@ -169,7 +174,7 @@ bool AP_Proximity_RPLidarA2::initialise()
         send_request_for_reset();            // set to a known state
     }
 
-    Debug(3, "RPLidar initialized. Max range: %f", distance_max());
+    Debug(DBG_GCS|DBG_UART, "RPLidar initialized. Max range: %f", distance_max());
 
     return true;
 }
@@ -255,7 +260,7 @@ void AP_Proximity_RPLidarA2::send_request_for_scan()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_SCAN};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    Debug(3, "activated scan mode");
+    Debug(DBG_GCS|DBG_UART, "activated scan mode");
     _rp_state = rp_responding;
 }
 
@@ -268,7 +273,7 @@ void AP_Proximity_RPLidarA2::send_request_for_force_scan()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_FORCE_SCAN};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    Debug(3, "activated scan mode");
+    Debug(DBG_GCS|DBG_UART, "activated scan mode");
     _rp_state = rp_responding;
 }
 
@@ -281,7 +286,7 @@ void AP_Proximity_RPLidarA2::send_request_for_health()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_HEALTH};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    Debug(3, "sent health request");
+    Debug(DBG_GCS|DBG_UART, "sent health request");
     _rp_state = rp_responding;
 }
 
@@ -294,7 +299,7 @@ void AP_Proximity_RPLidarA2::send_request_for_rate()
     uint8_t tx_buffer[2] = {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_RATE};
     _uart->write(tx_buffer, 2);
     _last_request_ms = AP_HAL::millis();
-    Debug(3, "sent rate request");
+    Debug(DBG_GCS|DBG_UART, "sent rate request");
     _rp_state = rp_responding;
 }
 
@@ -317,7 +322,7 @@ void AP_Proximity_RPLidarA2::get_readings()
         if (_information_data == true) {
             // Wait at least 10ms for the welcome message to finish
             if (AP_HAL::millis() - _last_distance_received_ms > 10) {
-                Debug(3, "reset finished");
+                Debug(DBG_GCS|DBG_UART, "reset finished");
                 _information_data = false;
                 // Check health of the lidar after reset before proceeding
                 send_request_for_health();
@@ -325,7 +330,7 @@ void AP_Proximity_RPLidarA2::get_readings()
         } else {
             // Or reset again after timeout
             if (AP_HAL::millis() - _last_request_ms > RESET_TIMEOUT) {
-                Debug(2, "rp_reset timeout! (%d - %d ms)", AP_HAL::millis(),_last_request_ms);
+                Debug(DBG_UART, "rp_reset timeout! (%d - %d ms)", AP_HAL::millis(),_last_request_ms);
                 send_request_for_reset();
             }
         }
@@ -342,7 +347,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             case rp_reset:
                 // Register the time of a welcome message (wait at least one call to this function to make sure there's no outdated data in the buffer)
                 if (AP_HAL::millis() - _last_request_ms > RESET_RPA2_WAIT_MS && _information_data == false) {
-                    Debug(3, "welcome msg start");
+                    Debug(DBG_GCS|DBG_UART, "welcome msg start");
                     _information_data = true;
                     _last_distance_received_ms = AP_HAL::millis();
                 }
@@ -365,7 +370,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                         _descriptor_data = false;
                     }
                 } else {
-                    Debug(2, "invalid preamble (%x)", c);
+                    Debug(DBG_UART, "invalid preamble (%x)", c);
                     _rp_state = rp_unknown;
                 }
                 break;
@@ -376,7 +381,7 @@ void AP_Proximity_RPLidarA2::get_readings()
                     // bit 0 = 1 and bit 1 = 0 of the correct data response that starts a new scan
                     if ((c & 0x03) == 0x01) {
                         _sync_error = 0;
-                        Debug(3, "resynced!");
+                        Debug(DBG_GCS|DBG_UART, "resynced!");
                     } else {
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) {
                             send_request_for_reset();
@@ -403,14 +408,14 @@ void AP_Proximity_RPLidarA2::get_readings()
                 }
                 _cnt++;
                 if (_cnt>10) {
-                    Debug(2, "state: UNKNOWN");
+                    Debug(DBG_UART, "state: UNKNOWN");
                     send_request_for_reset();
                     _cnt=0;
                 }
                 break;
 
             default:
-                Debug(3, "invalid state");
+                Debug(DBG_GCS|DBG_UART, "invalid state");
                 break;
         }
     }
@@ -448,7 +453,7 @@ void AP_Proximity_RPLidarA2::parse_response_descriptor()
         }
         return;
     }
-    Debug(2, "Invalid response descriptor (%x %x)", _descriptor[0], _descriptor[1]);
+    Debug(DBG_UART, "Invalid response descriptor (%x %x)", _descriptor[0], _descriptor[1]);
     _rp_state = rp_unknown;
 }
 
@@ -500,11 +505,11 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             break;
 
         case ResponseType_HEALTH:
-            Debug(3, "health status: %d", payload.sensor_health.status);
+            Debug(DBG_GCS|DBG_UART, "health status: %d", payload.sensor_health.status);
             if (payload.sensor_health.error_code > 0) {
                 // Reset lidar on error
                 send_request_for_reset();
-                Debug(3, " error code: %d", payload.sensor_health.error_code);
+                Debug(DBG_GCS|DBG_UART, " error code: %d", payload.sensor_health.error_code);
             } else {
                 // Start scanning if no error occurred
                 send_request_for_scan();
@@ -514,16 +519,16 @@ void AP_Proximity_RPLidarA2::parse_response_data()
         case ResponseType_RATE:
             // calculate and print the sampling rate in [kHz]
             if (payload.sensor_rate.t_standard > 0) {
-                Debug(3, "STANDARD SCAN sampling rate: %d", 1000/payload.sensor_rate.t_standard);
+                Debug(DBG_GCS|DBG_UART, "STANDARD SCAN sampling rate: %d", 1000/payload.sensor_rate.t_standard);
             }
             if (payload.sensor_rate.t_express > 0) {
-                Debug(3, "EXPRESS SCAN sampling rate: %d", 1000/payload.sensor_rate.t_express);
+                Debug(DBG_GCS|DBG_UART, "EXPRESS SCAN sampling rate: %d", 1000/payload.sensor_rate.t_express);
             }
             break;
 
         default:
             // no valid payload packets recognized: return payload data=0
-            Debug(1, "Unknown LIDAR packet");
+            Debug(DBG_GCS, "Unknown LIDAR packet");
             break;
     }
 }
