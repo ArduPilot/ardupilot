@@ -692,7 +692,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
-    memset(&cmd.content.location, 0, sizeof(cmd.content.location));
+    cmd.content.location = {};
 
     MAV_MISSION_RESULT param_check = sanity_check_params(packet);
     if (param_check != MAV_MISSION_ACCEPTED) {

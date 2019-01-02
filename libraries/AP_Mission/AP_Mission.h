@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 
@@ -256,7 +257,7 @@ public:
         Winch_Command winch;
 
         // location
-        Location location;      // Waypoint location
+        Location location{};      // Waypoint location
     };
 
     // command structure
