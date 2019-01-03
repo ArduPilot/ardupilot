@@ -13,6 +13,10 @@ class Mode {
 
 public:
 
+    // do not allow copying
+    Mode(const Mode &other) = delete;
+    Mode &operator=(const Mode&) = delete;
+
     // Navigation Yaw control
     class AutoYaw {
 
