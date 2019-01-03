@@ -1842,6 +1842,11 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
         frsky_telemetry_p->queue_message(severity, text);
     }
 
+    AP_Notify *notify = AP_Notify::instance();
+    if (notify) {
+        notify->send_text(text);
+    }
+
     // filter destination ports to only allow active ports.
     statustext_t statustext{};
     statustext.bitmask = (GCS_MAVLINK::active_channel_mask()  | GCS_MAVLINK::streaming_channel_mask() ) & dest_bitmask;
@@ -1862,11 +1867,6 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 
     // try and send immediately if possible
     service_statustext();
-
-    AP_Notify *notify = AP_Notify::instance();
-    if (notify) {
-        notify->send_text(text);
-    }
 }
 
 /*
