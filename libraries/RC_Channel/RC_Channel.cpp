@@ -465,7 +465,8 @@ void RC_Channel::read_aux()
     }
     const aux_switch_pos_t new_position = read_3pos_switch();
     const aux_switch_pos_t old_position = old_switch_position();
-    if (new_position == old_position) {
+    if (new_position == aux_switch_pos_t::UNKNOWN ||
+        new_position == old_position) {
         debounce.count = 0;
         return;
     }
@@ -497,6 +498,7 @@ void RC_Channel::do_aux_function_avoid_proximity(const aux_switch_pos_t ch_flag)
         avoid->proximity_avoidance_enable(true);
         break;
     case MIDDLE:
+    case UNKNOWN:
         // nothing
         break;
     case LOW:
@@ -561,6 +563,7 @@ void RC_Channel::do_aux_function_gripper(const aux_switch_pos_t ch_flag)
 //        copter.Log_Write_Event(DATA_GRIPPER_RELEASE);
         break;
     case MIDDLE:
+    case UNKNOWN:
         // nothing
         break;
     case HIGH:
@@ -577,6 +580,7 @@ void RC_Channel::do_aux_function_lost_vehicle_sound(const aux_switch_pos_t ch_fl
         AP_Notify::flags.vehicle_lost = true;
         break;
     case MIDDLE:
+    case UNKNOWN:
         // nothing
         break;
     case LOW:
@@ -593,6 +597,7 @@ void RC_Channel::do_aux_function_rc_override_enable(const aux_switch_pos_t ch_fl
         break;
     }
     case MIDDLE:
+    case UNKNOWN:
         // nothing
         break;
     case LOW: {
@@ -663,6 +668,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
             lg->set_position(AP_LandingGear::LandingGear_Deploy);
             break;
         case MIDDLE:
+        case UNKNOWN:
             // nothing
             break;
         case HIGH:
@@ -684,7 +690,16 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
 void RC_Channel::init_aux()
 {
-    const aux_switch_pos_t position = read_3pos_switch();
+    aux_switch_pos_t position = read_3pos_switch();
+    if (position == aux_switch_pos_t::UNKNOWN) {
+        // at some stage we should cope with an RC receiver being
+        // turned on and us starting to get valid values.  This
+        // probably means checking for aux_switch_pos_t::UNKNOWN in
+        // do_aux_function, initialising the old switch positions to
+        // aux_switch_pos_t::UNKNOWN and essentially eliminating
+        // init_aux.
+        position = aux_switch_pos_t::LOW;
+    }
     set_old_switch_position(position);
     init_aux_function((aux_func_t)option.get(), position);
 }
@@ -693,6 +708,9 @@ void RC_Channel::init_aux()
 RC_Channel::aux_switch_pos_t RC_Channel::read_3pos_switch() const
 {
     const uint16_t in = get_radio_in();
+    if (in <= 900 or in >= 2200) {
+        return UNKNOWN;
+    }
     if (in < AUX_PWM_TRIGGER_LOW) return LOW;   // switch is in low position
     if (in > AUX_PWM_TRIGGER_HIGH) return HIGH; // switch is in high position
     return MIDDLE;                              // switch is in middle position

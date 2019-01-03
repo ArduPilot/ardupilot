@@ -180,14 +180,13 @@ public:
 
 protected:
 
-    // auxillary switch handling:
-    enum aux_switch_pos {
+    // auxillary switch handling (n.b.: we store this as 2-bits!):
+    enum aux_switch_pos_t : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
-        HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
+        HIGH,       // indicates auxiliary switch is in the high position (pwm >1800)
+        UNKNOWN     // indicates we were unable to determine a switch position
     };
-
-    typedef enum aux_switch_pos aux_switch_pos_t;
 
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
