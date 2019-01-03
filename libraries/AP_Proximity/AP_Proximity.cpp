@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL
+    // @Values: 0:None,1:LightWareSF40C,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2M6-R3,6:TeraRangerTowerEvo,10:SITL,11:MorseSITL,12:RPLidarA2M6-R4,13:RPLidarA2M4,14:RPLidarA2M8-R3,15:RPLidarA2M8-R4,16:RPLidarA1M8-R4,17:RPLidarA1M8-R5,18:RPLidarA3M1
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -148,6 +148,24 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
 
+    // @Param: _DISTMAX_M
+    // @DisplayName: maximum distance (in meters) of sensor
+    // @Description: maximum distance (in meters) of sensor
+    // @Units: m
+    // @Range: 0.00 25.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_DISTMAX_M", 19, AP_Proximity, _distance_max[0], 16.00f),
+
+    // @Param: __DISTMIN_M
+    // @DisplayName: minimum distance (in meters) of sensor
+    // @Description: minimum distance (in meters) of sensor
+    // @Units: m
+    // @Range: 0.00 25.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("__DISTMIN_M", 20, AP_Proximity, _distance_min[0], 0.20f),
+
 #if PROXIMITY_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
@@ -171,6 +189,24 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
+
+    // @Param: _DISTMAX_M
+    // @DisplayName: maximum distance (in meters) of sensor
+    // @Description: maximum distance (in meters) of sensor
+    // @Units: m
+    // @Range: 0.00 25.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_DISTMAX_M", 21, AP_Proximity, _distance_max[1], 16.00f),
+
+    // @Param: _DISTMIN_M
+    // @DisplayName: minimum distance (in meters) of sensor
+    // @Description: minimum distance (in meters) of sensor
+    // @Units: m
+    // @Range: 0.00 25.00
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("_DISTMIN_M", 22, AP_Proximity, _distance_min[1], 0.20f),
 #endif
 
     AP_GROUPEND
@@ -251,6 +287,26 @@ int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
     return _yaw_correction[instance].get();
 }
 
+// return sensor maximum distance (in meters)
+float AP_Proximity::get_distance_max(uint8_t instance) const
+{
+    if (instance >= PROXIMITY_MAX_INSTANCES) {
+        return 16.0f;
+    }
+
+    return _distance_max[instance].get();
+}
+
+// return sensor minimum distance (in meters)
+float AP_Proximity::get_distance_min(uint8_t instance) const
+{
+    if (instance >= PROXIMITY_MAX_INSTANCES) {
+        return 0.20f;
+    }
+
+    return _distance_min[instance].get();
+}
+
 // return sensor health
 AP_Proximity::Proximity_Status AP_Proximity::get_status(uint8_t instance) const
 {
@@ -288,12 +344,23 @@ void AP_Proximity::detect_instance(uint8_t instance)
             return;
         }
     }
-    if (type == Proximity_Type_RPLidarA2) {
+    switch (type) {
+    case Proximity_Type_RPLidarA2M6R3:
+    case Proximity_Type_RPLidarA2M6R4:
+    case Proximity_Type_RPLidarA2M4:
+    case Proximity_Type_RPLidarA2M8R3:
+    case Proximity_Type_RPLidarA2M8R4:
+    case Proximity_Type_RPLidarA1M8R4:
+    case Proximity_Type_RPLidarA1M8R5:
+    case Proximity_Type_RPLidarA3M1:
         if (AP_Proximity_RPLidarA2::detect(serial_manager)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], serial_manager);
             return;
         }
+        break;
+    default:
+        break;
     }
     if (type == Proximity_Type_MAV) {
         state[instance].instance = instance;

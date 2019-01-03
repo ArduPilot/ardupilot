@@ -46,10 +46,17 @@ public:
         Proximity_Type_MAV     = 2,
         Proximity_Type_TRTOWER = 3,
         Proximity_Type_RangeFinder = 4,
-        Proximity_Type_RPLidarA2 = 5,
+        Proximity_Type_RPLidarA2M6R3 = 5,
         Proximity_Type_TRTOWEREVO = 6,
         Proximity_Type_SITL    = 10,
         Proximity_Type_MorseSITL = 11,
+        Proximity_Type_RPLidarA2M6R4 = 12,
+        Proximity_Type_RPLidarA2M4 = 13,
+        Proximity_Type_RPLidarA2M8R3 = 14,
+        Proximity_Type_RPLidarA2M8R4 = 15,
+        Proximity_Type_RPLidarA1M8R4 = 16,
+        Proximity_Type_RPLidarA1M8R5 = 17,
+        Proximity_Type_RPLidarA3M1 = 18,
     };
 
     enum Proximity_Status {
@@ -77,6 +84,10 @@ public:
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
+
+    // return sensor maximum and minimum distance (in meters)
+    float get_distance_max(uint8_t instance) const;
+    float get_distance_min(uint8_t instance) const;
 
     // return sensor health
     Proximity_Status get_status(uint8_t instance) const;
@@ -157,6 +168,8 @@ private:
     AP_Int16 _yaw_correction[PROXIMITY_MAX_INSTANCES];
     AP_Int16 _ignore_angle_deg[PROXIMITY_MAX_IGNORE];   // angle (in degrees) of area that should be ignored by sensor (i.e. leg shows up)
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
+    AP_Float _distance_max[PROXIMITY_MAX_INSTANCES];  // maximum distance (in meters) of sensor
+    AP_Float _distance_min[PROXIMITY_MAX_INSTANCES];  // minimum distance (in meters) of sensor
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
