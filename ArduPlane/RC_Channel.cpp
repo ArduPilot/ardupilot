@@ -65,6 +65,7 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
             plane.arm_motors(AP_Arming::ArmingMethod::AUXSWITCH, true);
             break;
         case MIDDLE:
+        case UNKNOWN:
             // nothing
             break;
         case LOW:
