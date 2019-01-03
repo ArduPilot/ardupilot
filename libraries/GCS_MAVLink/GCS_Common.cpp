@@ -1059,7 +1059,7 @@ ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
 
     const uint16_t now16_ms = AP_HAL::millis16();
     const uint16_t ms_since_last_sent = now16_ms - deferred_message_bucket[sending_bucket_id].last_sent_ms;
-    if (ms_since_last_sent < deferred_message_bucket[sending_bucket_id].interval_ms) {
+    if (ms_since_last_sent < get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id])) {
         // not time to send this bucket
         return no_message_to_send;
     }
@@ -1236,7 +1236,7 @@ void GCS_MAVLINK::update_send()
             if (bucket_message_ids_to_send.count() == 0) {
                 // we sent everything in the bucket.  Reschedule it.
                 deferred_message_bucket[sending_bucket_id].last_sent_ms +=
-                    deferred_message_bucket[sending_bucket_id].interval_ms;
+                    get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id]);
                 find_next_bucket_to_send();
             }
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
