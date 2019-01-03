@@ -143,7 +143,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
     switch(ch_option) {
         case FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if (ch_flag == aux_switch_pos::HIGH) {
+            if (ch_flag == aux_switch_pos_t::HIGH) {
                 copter.set_mode(control_mode_t::FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
@@ -267,6 +267,8 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case ACRO_TRAINER:
 #if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
+                case UNKNOWN:
+                    break;
                 case LOW:
                     copter.g.acro_trainer = ACRO_TRAINER_DISABLED;
                     copter.Log_Write_Event(DATA_ACRO_TRAINER_DISABLED);
@@ -316,6 +318,8 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
 #if PARACHUTE == ENABLED
             // Parachute disable, enable, release with 3 position switch
             switch (ch_flag) {
+                case UNKNOWN:
+                    break;
                 case LOW:
                     copter.parachute.enabled(false);
                     copter.Log_Write_Event(DATA_PARACHUTE_DISABLED);
@@ -349,6 +353,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     copter.camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
                     break;
                 case MIDDLE:
+                case UNKNOWN:
                     // nothing
                     break;
                 case LOW:
@@ -400,6 +405,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 case HIGH:
                     copter.mode_loiter.set_precision_loiter_enabled(true);
                     break;
+                case UNKNOWN:
                 case MIDDLE:
                     // nothing
                     break;
@@ -418,6 +424,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 // remember that we are using an arming switch, for use by set_throttle_zero_flag
                 copter.ap.armed_with_switch = true;
                 break;
+            case UNKNOWN:
             case MIDDLE:
                 // nothing
                 break;
@@ -442,6 +449,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                 copter.heli_flags.inverted_flight = true;
                 break;
             case MIDDLE:
+            case UNKNOWN:
                 // nothing
                 break;
             case LOW:
@@ -515,6 +523,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
                     case LOW:
                         copter.mode_zigzag.save_or_move_to_destination(0);
                         break;
+                    case UNKNOWN:
                     case MIDDLE:
                         copter.mode_zigzag.return_to_manual_control();
                         break;
