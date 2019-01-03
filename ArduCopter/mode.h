@@ -177,10 +177,6 @@ protected:
     // altitude below which we do no navigation in auto takeoff
     static float auto_takeoff_no_nav_alt_cm;
 
-#if FRAME_CONFIG == HELI_FRAME
-    heli_flags_t &heli_flags;
-#endif
-
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
