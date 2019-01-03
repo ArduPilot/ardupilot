@@ -115,6 +115,7 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
         rover.set_mode(mode, MODE_REASON_TX_COMMAND);
         break;
     case MIDDLE:
+    case UNKNOWN:
         // do nothing
         break;
     case LOW:
