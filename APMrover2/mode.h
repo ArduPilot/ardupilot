@@ -37,6 +37,10 @@ public:
     // Constructor
     Mode();
 
+    // do not allow copying
+    Mode(const Mode &other) = delete;
+    Mode &operator=(const Mode&) = delete;
+
     // enter this mode, returns false if we failed to enter
     bool enter();
 
