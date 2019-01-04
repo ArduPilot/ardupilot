@@ -53,7 +53,7 @@ extern const AP_HAL::HAL& hal;
 AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    // this guarantees that _term is always nul terminated
+    // this guarantees that _term is always null terminated
     memset(_term, 0, sizeof(_term));
 }
 

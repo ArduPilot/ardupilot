@@ -80,8 +80,8 @@ AP_GPS_UBLOX::_request_next_config(void)
 
     Debug("Unconfigured messages: %u Current message: %u\n", (unsigned)_unconfigured_messages, (unsigned)_next_message);
 
-   // check AP_GPS_UBLOX.h for the enum that controls the order.
-   // This switch statement isn't maintained against the enum in order to reduce code churn
+    // check AP_GPS_UBLOX.h for the enum that controls the order.
+    // This switch statement isn't maintained against the enum in order to reduce code churn
     switch (_next_message++) {
     case STEP_PVT:
         if(!_request_message_rate(CLASS_NAV, MSG_PVT)) {
@@ -326,7 +326,8 @@ AP_GPS_UBLOX::_request_port(void)
     }
     _send_message(CLASS_CFG, MSG_CFG_PRT, nullptr, 0);
 }
-    // Ensure there is enough space for the largest possible outgoing message
+
+// Ensure there is enough space for the largest possible outgoing message
 // Process bytes available from the stream
 //
 // The stream is assumed to contain only messages we recognise.  If it
@@ -412,7 +413,7 @@ AP_GPS_UBLOX::read(void)
         case 2:
             _step++;
             _class = data;
-            _ck_b = _ck_a = data;                               // reset the checksum accumulators
+            _ck_b = _ck_a = data;                       // reset the checksum accumulators
             break;
         case 3:
             _step++;
@@ -422,7 +423,7 @@ AP_GPS_UBLOX::read(void)
         case 4:
             _step++;
             _ck_b += (_ck_a += data);                   // checksum byte
-            _payload_length = data;                             // payload length low byte
+            _payload_length = data;                     // payload length low byte
             break;
         case 5:
             _step++;
@@ -436,7 +437,7 @@ AP_GPS_UBLOX::read(void)
                 _step = 0;
 				goto reset;
             }
-            _payload_counter = 0;                               // prepare to receive payload
+            _payload_counter = 0;                       // prepare to receive payload
             break;
 
         // Receive message data
@@ -629,7 +630,7 @@ AP_GPS_UBLOX::_parse_gps(void)
                 case MSG_CFG_RATE:
                     // The GPS will ACK a update rate that is invalid. in order to detect this
                     // only accept the rate as configured by reading the settings back and
-                   //  validating that they all match the target values
+                    // validating that they all match the target values
                     break;
                 case MSG_CFG_SBAS:
                     _unconfigured_messages &= ~CONFIG_SBAS;
