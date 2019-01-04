@@ -207,7 +207,7 @@ static inline const char* getASCIIStatusCode(bool status) { return status ? "\r"
 
 bool SLCAN::CANManager::begin(uint32_t bitrate, uint8_t can_number)
 {
-    if (driver_.init(bitrate, SLCAN::CAN::NormalMode) < 0) {
+    if (driver_.init(bitrate, SLCAN::CAN::NormalMode, nullptr) < 0) {
         return false;
     }
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCAN::CANManager::reader_trampoline, void), "SLCAN", 4096, AP_HAL::Scheduler::PRIORITY_CAN, -1)) {
@@ -227,12 +227,12 @@ void SLCAN::CANManager::initialized(bool val)
     initialized_ = val;
 }
 
-int SLCAN::CAN::init(const uint32_t bitrate, const OperatingMode mode)
+int SLCAN::CAN::init(const uint32_t bitrate, const OperatingMode mode, AP_HAL::UARTDriver* port)
 {
-    _port = AP_SerialManager::get_instance()->find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
-    if (_port == nullptr) {
+    if (port == nullptr) {
         return -1;
     }
+    _port = port;
     initialized_ = true;
     return 0;
 }
@@ -337,7 +337,7 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
         return 0;
     }
     //Write to Serial
-    if (!_port->write(&buffer[0], frame_size)) {
+    if (!_port->write_locked(&buffer[0], frame_size, _serial_lock_key)) {
         return 0;
     }
     return 1;
@@ -378,7 +378,15 @@ const char* SLCAN::CAN::processCommand(char* cmd)
     case 'O':               // Open CAN in normal mode
     case 'L':               // Open CAN in listen-only mode
     case 'l':               // Open CAN with loopback enabled
+    {
+        _close = false;
+        return getASCIIStatusCode(true);    // Returning success for compatibility reasons
+    }
     case 'C':               // Close CAN
+    {
+        _close = true;
+        return getASCIIStatusCode(true);    // Returning success for compatibility reasons
+    }
     case 'M':               // Set CAN acceptance filter ID
     case 'm':               // Set CAN acceptance filter mask
     case 'U':               // Set UART baud rate, see http://www.can232.com/docs/can232_v3.pdf
@@ -451,8 +459,8 @@ inline void SLCAN::CAN::addByte(const uint8_t byte)
         // Sending the response if provided
         if (response != nullptr)
         {
-            _port->write(reinterpret_cast<const uint8_t*>(response),
-                            strlen(response));
+            _port->write_locked(reinterpret_cast<const uint8_t*>(response),
+                            strlen(response), _serial_lock_key);
         }
     }
     else if (byte == 8 || byte == 127)              // DEL or BS (backspace)
@@ -479,17 +487,15 @@ void SLCAN::CAN::reader() {
         return;
     }
     if (!_port_initialised) {
-        _port->begin(bitrate_);
+        //_port->begin(bitrate_);
         _port_initialised = true;
-
     }
-    _port->wait_timeout(1, 1);
-    size_t nread = _port->available();
-    if (nread > 0) {
-        int16_t data = _port->read();
-        while (data != -1) {
+    _port->lock_port(_serial_lock_key, _serial_lock_key);
+    if (!_port->wait_timeout(1,1)) {
+        int16_t data = _port->read_locked(_serial_lock_key);
+        while (data > 0) {
             addByte(data);
-            data = _port->read();
+            data = _port->read_locked(_serial_lock_key);
         }
     }
 }
