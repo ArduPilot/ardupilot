@@ -106,7 +106,7 @@ class CAN: public AP_HAL::CAN {
     bool handle_FrameRTRExt(const char* cmd);
     bool handle_FrameDataStd(const char* cmd);
     bool handle_FrameDataExt(const char* cmd);
-    void reader(void);
+    void reader();
 
     inline void addByte(const uint8_t byte);
 
@@ -120,6 +120,9 @@ class CAN: public AP_HAL::CAN {
     uint8_t self_index_;
     HAL_Semaphore rx_sem_;
     unsigned _pending_frame_size = 0;
+
+    const uint32_t _serial_lock_key = 0x53494442;
+    bool _close = true;
 public:
 
     CAN(uint8_t self_index, uint8_t rx_queue_capacity):
@@ -135,11 +138,11 @@ public:
         NormalMode, SilentMode
     };
 
-    int init(const uint32_t bitrate, const OperatingMode mode);
+    int init(const uint32_t bitrate, const OperatingMode mode, AP_HAL::UARTDriver* port);
 
     bool begin(uint32_t bitrate) override
     {
-        if (init(bitrate, OperatingMode::NormalMode) == 0) {
+        if (init(bitrate, OperatingMode::NormalMode, nullptr) == 0) {
             bitrate_ = bitrate;
             initialized_ = true;
         } else {
@@ -165,7 +168,7 @@ public:
     bool is_initialized() override {
         return initialized_;
     }
-
+    bool closed() { return _close; }
     bool pending_frame_sent();
 
     bool isRxBufferEmpty(void);
