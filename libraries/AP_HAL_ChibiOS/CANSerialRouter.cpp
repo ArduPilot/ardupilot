@@ -18,6 +18,8 @@
 #include "CANSerialRouter.h"
 
 #if HAL_WITH_UAVCAN
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 SLCANRouter* SLCANRouter::_singleton = nullptr;
 
 extern const AP_HAL::HAL& hal;
@@ -29,29 +31,68 @@ SLCANRouter &slcan_router()
 
 void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* update_event)
 {
-    can_if_ = can_if;
-    if (!slcan_if_.is_initialized()) {
-        if (slcan_if_.init(921600, SLCAN::CAN::OperatingMode::NormalMode) < 0) {
+    _can_if = can_if;
+    _update_event = update_event;
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&SLCANRouter::timer, void));
+}
+
+void SLCANRouter::run()
+{
+    if (!_slcan_if.is_initialized()) {
+        _port = AP_SerialManager::get_instance()->get_serial_by_id(AP::can().get_slcan_serial());
+        if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
             return;
         }
+        _slcan_rt_timeout = AP::can().get_slcan_timeout();
     }
-    update_event_ = update_event;
-    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::can2slcan_router_trampoline, void), "C2SRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
-    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::slcan2can_router_trampoline, void), "S2CRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+    if (!_thread_started) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::can2slcan_router_trampoline, void), "C2SRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::slcan2can_router_trampoline, void), "S2CRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+        _thread_started = true;
+        _thread_suspended = false;
+    } else if (_thread_suspended) { //wake up threads
+        chSysLock();
+        if (_c2s_thd_ref && _s2c_thd_ref) {
+            chThdResumeS(&_c2s_thd_ref, MSG_OK);
+            chThdResumeS(&_s2c_thd_ref, MSG_OK);
+            _thread_suspended = false;
+        }
+        chSysUnlock();
+    }
+}
+
+void SLCANRouter::timer()
+{
+    if ((!_thread_started || _thread_suspended) && (AP::can().get_slcan_serial() != -1)) {
+        run();
+        AP::can().reset_slcan_serial();
+        _last_active_time = AP_HAL::millis();
+    }
+    if (!_slcan_if.closed()) {
+        _last_active_time = AP_HAL::millis();
+    }
+    if (_thread_suspended) {
+        return;
+    }
+    if (AP_HAL::millis() - _last_active_time > (_slcan_rt_timeout * 1000) && _slcan_rt_timeout != 0) {
+        chSysLock();
+        _thread_suspended = true;
+        chSysUnlock();
+    }
 }
 
 void SLCANRouter::route_frame_to_slcan(ChibiOS_CAN::CanIface* can_if, const uavcan::CanFrame& frame, uint64_t timestamp_usec)
 {
-    if (can_if_ != can_if) {
+    if (_can_if != can_if) {
         return;
     }
     CanRouteItem it;
     it.frame = frame;
     it.utc_usec = timestamp_usec;
-    if (slcan_tx_queue_.space() == 0) {
-        slcan_tx_queue_.pop();
+    if (_slcan_tx_queue.space() == 0) {
+        _slcan_tx_queue.pop();
     }
-    slcan_tx_queue_.push(it);
+    _slcan_tx_queue.push(it);
 }
 
 void SLCANRouter::route_frame_to_can(const uavcan::CanFrame& frame, uint64_t timestamp_usec)
@@ -59,10 +100,10 @@ void SLCANRouter::route_frame_to_can(const uavcan::CanFrame& frame, uint64_t tim
     CanRouteItem it;
     it.frame = frame;
     it.utc_usec = timestamp_usec;
-    if (can_tx_queue_.space() == 0) {
-        can_tx_queue_.pop();
+    if (_can_tx_queue.space() == 0) {
+        _can_tx_queue.pop();
     }
-    can_tx_queue_.push(it);
+    _can_tx_queue.push(it);
 }
 
 void SLCANRouter::slcan2can_router_trampoline(void)
@@ -90,11 +131,18 @@ void SLCANRouter::can2slcan_router_trampoline(void)
 {
     CanRouteItem it;
     while(true) {
-        update_event_->wait(uavcan::MonotonicDuration::fromUSec(1000));
-        if (slcan_tx_queue_.available()) {
-            slcan_tx_queue_.peek(it);
-            if (slcan_if_.send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
-                slcan_tx_queue_.pop();
+        chSysLock();
+        _c2s_thd_ref = nullptr;
+        if (_thread_suspended) {
+            _port->lock_port(0, 0);
+            chThdSuspendS(&_c2s_thd_ref);
+        }
+        chSysUnlock();
+        _update_event->wait(uavcan::MonotonicDuration::fromUSec(1000));
+        if (_slcan_tx_queue.available()) {
+            _slcan_tx_queue.peek(it);
+            if (_slcan_if.send(it.frame, uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 1000), 0)) {
+                _slcan_tx_queue.pop();
             }
         }
     }
