@@ -88,6 +88,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    int8_t get_slcan_serial() { return _slcan_sr; }
+    uint8_t get_slcan_timeout() { return _slcan_to; }
+    void reset_slcan_serial() { _slcan_sr.set_and_save_ifchanged(-1); }
 private:
     class Interface {
         friend class AP_BoardConfig_CAN;
@@ -131,6 +134,8 @@ private:
     Driver _drivers[MAX_NUMBER_OF_CAN_DRIVERS];
     uint8_t _num_drivers;
     AP_Int8 _slcan_rt;
+    AP_Int8 _slcan_sr;
+    AP_Int8 _slcan_to;
     static AP_BoardConfig_CAN *_singleton;
 };
 
