@@ -89,7 +89,22 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     // @Description: CAN Driver ID to be routed to SLCAN, 0 means no routing
     // @Range: 0 3
     // @User: Advanced
-    AP_GROUPINFO("SLCAN_RT", 7, AP_BoardConfig_CAN, _slcan_rt, 0),
+    AP_GROUPINFO("SLCAN_RT", 7, AP_BoardConfig_CAN, _slcan_rt, 1),
+
+    // @Param: SLCAN_SR
+    // @DisplayName: SLCAN Serial Port
+    // @Description: Serial Port ID to be used for temporary SLCAN iface, -1 means no temporary serial
+    // @Range: 0 5
+    // @User: Advanced
+    AP_GROUPINFO("SLCAN_SR", 8, AP_BoardConfig_CAN, _slcan_sr, -1),
+
+
+    // @Param: SLCAN_TO
+    // @DisplayName: SLCAN Timeout
+    // @Description: Duration of inactivity after which SLCAN in seconds
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("SLCAN_TO", 9, AP_BoardConfig_CAN, _slcan_to, 0),
 
     AP_GROUPEND
 };
