@@ -427,6 +427,7 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!hal.scheduler->in_delay_callback() &&
+        !AP_BoardConfig::in_sensor_config_error() &&
         plane.scheduler.time_available_usec() < 200) {
         gcs().set_out_of_time(true);
         return false;
