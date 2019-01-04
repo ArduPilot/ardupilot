@@ -120,9 +120,10 @@ class TeeBoth(object):
     def close(self):
         sys.stdout = self.stdout
         sys.stderr = self.stderr
-        self.mavproxy_logfile.set_fh(self)
+        self.mavproxy_logfile.set_fh(None)
         self.mavproxy_logfile = None
         self.file.close()
+        self.file = None
     def write(self, data):
         self.file.write(data)
         self.stdout.write(data)
