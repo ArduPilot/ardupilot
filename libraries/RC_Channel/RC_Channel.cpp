@@ -86,6 +86,14 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE),
 
+    // @Param: TIMEOUT
+    // @DisplayName: RC value timeout
+    // @Description: If an incoming RC value did not change during the timeout then this interpreted as signal lost. 0 to disable the check.
+    // @Units: Seconds
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("TIMEOUT",   7, RC_Channel, rc_watchdog_timeout_sec, 0),
+    
     AP_GROUPEND
 };
 
@@ -128,8 +136,15 @@ RC_Channel::update(void)
 {
     if (has_override() && !(*RC_Channels::options & RC_IGNORE_OVERRIDES)) {
         radio_in = override_value;
+        rc_healthy = true;
     } else if (!(*RC_Channels::options & RC_IGNORE_RECEIVER)) {
-        radio_in = hal.rcin->read(ch_in);
+        int16_t in_value = hal.rcin->read(ch_in);
+        
+        rc_healthy = watchdog_check(in_value);
+        // TODO: && PWM Range check
+        // TODO: && Throttle FS PWM check
+        
+        radio_in = in_value;
     } else {
         return false;
     }
@@ -141,6 +156,26 @@ RC_Channel::update(void)
         control_in = pwm_to_angle();
     }
 
+    return true;
+}
+
+// Check new incoming RC value has not stuck
+bool
+RC_Channel::watchdog_check(int16_t new_rc_value) 
+{
+    if (rc_watchdog_timeout_sec > 0) {    
+        uint32_t now_sec = AP_HAL::millis() / 1000;
+        
+        if (now_sec != rc_watchdog_valid_time_sec) {
+            if (radio_in == new_rc_value){
+                if (now_sec - rc_watchdog_valid_time_sec >= rc_watchdog_timeout_sec)
+                    return false;
+            }
+            
+            rc_watchdog_valid_time_sec = now_sec;
+        }
+    }
+    
     return true;
 }
 

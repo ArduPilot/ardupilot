@@ -109,6 +109,8 @@ public:
     void init_aux();
     void read_aux();
 
+    bool healthy(void) const { return rc_healthy; }
+    
     // Aux Switch enumeration
     enum aux_func {
         DO_NOTHING =           0, // aux switch disabled
@@ -226,7 +228,14 @@ private:
 
     // the input channel this corresponds to
     uint8_t     ch_in;
-
+	
+	// rc input watchdog
+    AP_Int8     rc_watchdog_timeout_sec;
+    uint32_t    rc_watchdog_valid_time_sec;    
+    bool watchdog_check(int16_t new_rc_value);
+    
+    bool rc_healthy;    
+    
     // overrides
     uint16_t override_value;
     uint32_t last_override_time;

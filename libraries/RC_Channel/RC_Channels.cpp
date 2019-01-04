@@ -80,12 +80,15 @@ bool RC_Channels::read_input(void)
 
     has_new_overrides = false;
 
-    bool success = false;
+    bool any_updated = false;
+    bool all_healthy = true;
+    
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        success |= channel(i)->update();
+        any_updated |= channel(i)->update();
+        all_healthy &= channel(i)->healthy();
     }
 
-    return success;
+    return any_updated && all_healthy;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)
