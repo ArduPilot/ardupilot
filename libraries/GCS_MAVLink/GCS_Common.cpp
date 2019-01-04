@@ -959,7 +959,7 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // No ID we return true for may take more than a few hundred
     // microseconds to return!
 
-    if (id == MSG_HEARTBEAT) {
+    if (id == MSG_HEARTBEAT || id == MSG_NEXT_PARAM) {
         return true;
     }
 
