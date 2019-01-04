@@ -69,6 +69,7 @@
 #define RESYNC_TIMEOUT                  5000
 #define RESET_TIMEOUT                   1000
 #define MIN_SCAN_QUALITY                10
+#define RX_BUFFER_SIZE                  1024
 
 // Commands
 //-----------------------------------------
@@ -103,7 +104,7 @@ AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
 {
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
     if (_uart != nullptr) {
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
+        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), RX_BUFFER_SIZE, 256);
     }
     _cnt = 0 ;
     _sync_error = 0 ;
@@ -309,8 +310,15 @@ void AP_Proximity_RPLidarA2::get_readings()
         return;
     }
 
-    Debug(0, "current state: %d ", _rp_state);
+    static uint8_t sync_buff[2] = {0};
+
     uint32_t nbytes = _uart->available();
+
+    Debug(0, "current state: %d ", _rp_state);
+    Debug(0, "nbytes: %d", nbytes);
+    if(nbytes == RX_BUFFER_SIZE) {
+        Debug(DBG_GCS|DBG_UART, "UART BUFF FULL (%d)!", nbytes);
+    }
 
     /* After reset: wait for the welcome message to finish and take the next action.
      * The message is not documented anywhere and its length varies in different RP models,
@@ -337,9 +345,7 @@ void AP_Proximity_RPLidarA2::get_readings()
     }
 
     while (nbytes-- > 0) {
-
         uint8_t c = _uart->read();
-        Debug(0, "UART READ %x <%c>", c, c); //show HEX values
 
         STATE:
         switch(_rp_state){
@@ -377,19 +383,28 @@ void AP_Proximity_RPLidarA2::get_readings()
 
             case rp_measurements:
                 if (_sync_error) {
-                    // out of 5-byte sync mask -> catch new revolution
-                    // bit 0 = 1 and bit 1 = 0 of the correct data response that starts a new scan
-                    if ((c & 0x03) == 0x01) {
+                    // out of 5-byte sync mask -> catch a new revolution:
+                    // - bit 0 = 1 and bit 1 = 0 of the correct data response that starts a new scan
+                    // - bit 0 = 1 of the second byte (checkbit) to confirm it's not a coincidence
+                    sync_buff[0] = sync_buff[1];
+                    sync_buff[1] = c;
+                    if (((sync_buff[0] & 0x03) == 0x01) && ((sync_buff[1] & 0x01) == 0x01)) {
+                        Debug(DBG_UART|DBG_GCS, "resynced! (%02x %02x)", sync_buff[1], sync_buff[0]);
+                        // Accept the correct bytes and continue to normal operation
                         _sync_error = 0;
-                        Debug(DBG_GCS|DBG_UART, "resynced!");
+                        payload[0] = sync_buff[0];
+                        _byte_count = 1;
+                        sync_buff[0] = 0;
+                        sync_buff[1] = 0;
                     } else {
+                        // Search on until valid bytes are received or timeout elapses
                         if (AP_HAL::millis() - _last_distance_received_ms > RESYNC_TIMEOUT) {
                             send_request_for_reset();
                         }
                         break;
                     }
                 }
-                Debug(0, "READ PAYLOAD");
+                Debug(0, "%02x", c);
                 payload[_byte_count] = c;
                 _byte_count++;
 
@@ -461,7 +476,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 {
     switch (_response_type){
         case ResponseType_SCAN:
-            Debug(0, "uart: %02x %02x %02x %02x %02x", payload[0], payload[1], payload[2], payload[3], payload[4]); //show HEX values
+            Debug(0, "%02x %02x %02x %02x %02x", payload[0], payload[1], payload[2], payload[3], payload[4]); //show HEX values
 
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
@@ -499,7 +514,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 }
             } else {
                 // not valid payload packet
-                Debug(0, "invalid payload!");
+                Debug(DBG_UART, "invalid payload! (%02x)", payload[0]);
+                Debug(0, "%02x %02x %02x %02x %02x", payload[0], payload[1], payload[2], payload[3], payload[4]);
                 _sync_error++;
             }
             break;
