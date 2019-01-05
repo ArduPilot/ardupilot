@@ -31,11 +31,10 @@ void ModeGuided::update()
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
-                if (rover.is_boat() && !start_loiter()) {
-                    stop_vehicle();
-                } else {
-                    stop_vehicle();
+                if (rover.is_boat()) {
+                    start_loiter();
                 }
+                stop_vehicle();
             }
             break;
         }
@@ -52,11 +51,10 @@ void ModeGuided::update()
                 calc_steering_to_heading(_desired_yaw_cd);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_desired_speed), true, true);
             } else {
-                if (rover.is_boat() && !start_loiter()) {
-                    stop_vehicle();
-                } else {
-                    stop_vehicle();
+                if (rover.is_boat()) {
+                    start_loiter();
                 }
+                stop_vehicle();
             }
             break;
         }
@@ -77,11 +75,10 @@ void ModeGuided::update()
                 g2.motors.set_steering(steering_out * 4500.0f);
                 calc_throttle(_desired_speed, true, true);
             } else {
-                if (rover.is_boat() && !start_loiter()) {
-                    stop_vehicle();
-                } else {
-                    stop_vehicle();
+                if (rover.is_boat()) {
+                    start_loiter();
                 }
+                stop_vehicle();
             }
             break;
         }

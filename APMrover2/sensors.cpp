@@ -284,12 +284,12 @@ void Rover::update_sensor_status_flags(void)
                                                          ~MAV_SYS_STATUS_LOGGING &
                                                          ~MAV_SYS_STATUS_SENSOR_BATTERY);
     if (control_mode->attitude_stabilized()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL; // 3D angular rate control
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // 3D angular rate control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL // 3D angular rate control
+                                |  MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION; // 3D angular rate control
     }
     if (control_mode->is_autopilot_mode()) {
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION; // yaw position
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION // yaw position
+                                |  MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL; // X/Y position control
     }
 
     if (rover.DataFlash.logging_enabled()) {
