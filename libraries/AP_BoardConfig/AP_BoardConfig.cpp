@@ -328,20 +328,19 @@ void AP_BoardConfig::sensor_config_error(const char *reason)
       particular BRD_TYPE if needed)
     */
     uint32_t last_print_ms = 0;
-    bool have_gcs = GCS::instance() != nullptr;
     while (true) {
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 3000) {
             last_print_ms = now;
             printf("Sensor failure: %s\n", reason);
-            if (have_gcs) {
-                gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
-            }
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+            gcs().send_text(MAV_SEVERITY_ERROR, "Check BRD_TYPE: %s", reason);
+#endif
         }
-        if (have_gcs) {
-            gcs().update_receive();
-            gcs().update_send();
-        }
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+        gcs().update_receive();
+        gcs().update_send();
+#endif
         hal.scheduler->delay(5);
     }
 }
