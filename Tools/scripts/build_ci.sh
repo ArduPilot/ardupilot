@@ -15,7 +15,6 @@ unset CXX CC
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
 export GIT_VERSION="ci_test"
-export NUTTX_GIT_VERSION="ci_test"
 export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 autotest_args=""
@@ -105,7 +104,7 @@ for t in $CI_BUILD_TARGET; do
         $waf iofirmware
         continue
     fi
-    
+
     if [ "$t" == "revo-mini" ]; then
         # save some time by only building one target for revo-mini
         echo "Building revo-mini"
@@ -114,7 +113,7 @@ for t in $CI_BUILD_TARGET; do
         $waf plane
         continue
     fi
-    
+
     if [[ -n ${waf_supported_boards[$t]} && -z ${CI_CRON_JOB+1} ]]; then
         echo "Starting waf build for board ${t}..."
         $waf configure --board "$t" \
