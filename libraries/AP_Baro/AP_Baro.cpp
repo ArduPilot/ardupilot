@@ -452,11 +452,6 @@ void AP_Baro::init(void)
         return;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(new AP_Baro_SITL(*this));
-    return;
-#endif
-
 #if HAL_WITH_UAVCAN
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
@@ -541,6 +536,17 @@ void AP_Baro::init(void)
 
     default:
         break;
+    }
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        AP_HAL::panic("No SITL pointer");
+    }
+    if (sitl->baro_count > 1) {
+        ::fprintf(stderr, "More than one baro not supported.  Sorry.");
+    }
+    if (sitl->baro_count == 1) {
+        ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
     drivers[0] = new AP_Baro_HIL(*this);
