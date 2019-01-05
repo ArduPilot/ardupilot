@@ -8,9 +8,6 @@
 #define AP_MOTORS_DENSITY_COMP 1
 #endif
 
-#define AP_MOTORS_DEFAULT_MID_THROTTLE  500
-
-#define AP_MOTORS_SPIN_WHEN_ARMED       70      // spin motors at this PWM value when armed
 #define AP_MOTORS_YAW_HEADROOM_DEFAULT  200
 #define AP_MOTORS_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
 #define AP_MOTORS_THST_HOVER_DEFAULT    0.35f   // the estimated hover throttle, 0 ~ 1
