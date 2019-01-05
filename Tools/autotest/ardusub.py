@@ -170,6 +170,13 @@ class AutoTestSub(AutoTest):
             pass
         self.initialise_after_reboot_sitl()
 
+    def disabled_tests(self):
+        ret = super(AutoTestSub, self).disabled_tests()
+        ret.update({
+            "SensorConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+        })
+        return ret
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
