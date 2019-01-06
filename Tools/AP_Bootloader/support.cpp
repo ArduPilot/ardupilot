@@ -97,7 +97,7 @@ void flash_func_write_word(uint32_t offset, uint32_t v)
 
 uint32_t flash_func_sector_size(uint32_t sector)
 {
-    if (sector >= flash_base_page+num_pages) {
+    if (sector >= num_pages-flash_base_page) {
         return 0;
     }
     return stm32_flash_getpagesize(flash_base_page+sector);
