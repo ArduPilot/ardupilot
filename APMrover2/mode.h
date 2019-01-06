@@ -404,6 +404,15 @@ public:
     // hold mode does not require position or velocity estimate
     bool requires_position() const override { return false; }
     bool requires_velocity() const override { return false; }
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+
+private:
+
+    bool _can_loiter;
 };
 
 class ModeLoiter : public Mode
