@@ -16,16 +16,8 @@
 
 #define PX4_STORAGE_SIZE HAL_STORAGE_SIZE
 
-#if USE_FLASH_STORAGE
-// when using flash storage we use a small line size to make storage
-// compact and minimise the number of erase cycles needed
-#define PX4_STORAGE_LINE_SHIFT 3
-#else
-#define PX4_STORAGE_LINE_SHIFT 9
-#endif
-
-#define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
-#define PX4_STORAGE_NUM_LINES (PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE)
+//#define PX4_STORAGE_LINE_SIZE (1<<PX4_STORAGE_LINE_SHIFT)
+//#define PX4_STORAGE_NUM_LINES (PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE)
 
 class PX4::PX4Storage : public AP_HAL::Storage {
 public:
@@ -43,21 +35,25 @@ private:
     void _storage_open(void);
     void _mark_dirty(uint16_t loc, uint16_t length);
     uint8_t _buffer[PX4_STORAGE_SIZE] __attribute__((aligned(4)));
-    Bitmask _dirty_mask{PX4_STORAGE_NUM_LINES};
+    Bitmask _dirty_mask{0};
     perf_counter_t  _perf_storage;
     perf_counter_t  _perf_errors;
     uint32_t _last_re_init_ms;
 
-#if !USE_FLASH_STORAGE
+    int PX4_STORAGE_LINE_SHIFT = 0;
+    int PX4_STORAGE_LINE_SIZE = 0;
+    int PX4_STORAGE_NUM_LINES = 0;
+
     int _fd = -1;
+    bool mtd_load = false;
     void bus_lock(bool lock);
+
+    bool _mtd_start(void);
     void _mtd_load(void);
     void _mtd_write(uint16_t line);
-#if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
-    irqstate_t irq_state;
-#endif
 
-#else // USE_FLASH_STORAGE
+    irqstate_t irq_state;
+
     bool _flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length);
     bool _flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length);
     bool _flash_erase_sector(uint8_t sector);
@@ -74,5 +70,5 @@ private:
     
     void _flash_load(void);
     void _flash_write(uint16_t line);
-#endif
+
 };
