@@ -19,6 +19,7 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
+#include "SIM_ICEngine.h"
 
 namespace SITL {
 
@@ -44,7 +45,21 @@ private:
     float turning_circle;
     float skid_turn_rate;
     bool skid_steering;
+    bool use_icengine;
 
+    const uint8_t throttle_servo = 2;
+    const int8_t choke_servo = 14;
+    const int8_t ignition_servo = 12;
+    const int8_t starter_servo = 13;
+    const float slewrate = 100;
+    ICEngine icengine{
+        throttle_servo,
+        choke_servo,
+        ignition_servo,
+        starter_servo,
+        slewrate
+    };
+    
     float turn_circle(float steering);
     float calc_yaw_rate(float steering, float speed);
     float calc_lat_accel(float steering_angle, float speed);

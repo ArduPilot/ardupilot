@@ -32,6 +32,11 @@ SimRover::SimRover(const char *home_str, const char *frame_str) :
     skid_turn_rate(140), // degrees/sec
     skid_steering(false)
 {
+
+    if (strstr(frame_str, "-ice")) {
+        use_icengine = true;
+    }
+
     skid_steering = strstr(frame_str, "skid") != nullptr;
 
     if (skid_steering) {
@@ -101,6 +106,13 @@ void SimRover::update(const struct sitl_input &input)
         steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
         throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
     }
+    
+    if (use_icengine) {
+        throttle = icengine.update(input);
+    }
+
+    // simulate engine RPM
+    rpm1 = throttle * 7000;
 
     // how much time has passed?
     float delta_time = frame_time_us * 1.0e-6f;
