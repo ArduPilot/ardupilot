@@ -138,4 +138,7 @@ private:
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
+
+    AP_Int8 _ofs_x_chan;
+    AP_Float _ofs_x_max;
 };

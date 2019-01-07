@@ -122,6 +122,18 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Bitmask: 0:UseAvoidance
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, AP_FOLLOW_OPTION_AVOIDANCE),
+
+    // @Param: _OFSX_CHAN
+    // @DisplayName: OffsetX channel
+    // @Description: Channel to add extra negative X offset
+    // @User: Standard
+    AP_GROUPINFO("_OFSX_CHAN", 12, AP_Follow, _ofs_x_chan, 0),
+
+    // @Param: _OFSX_MAX
+    // @DisplayName: OffsetX max
+    // @Description: max distance for offset X channel
+    // @User: Standard
+    AP_GROUPINFO("_OFSX_MAX", 13, AP_Follow, _ofs_x_max, 20),
     
     AP_GROUPEND
 };
@@ -322,7 +334,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
         // log lead's estimated vs reported position
         AP::logger().Write("FOLL",
-                           "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
+                           "TimeUS,Lat,Lng,Alt,VelN,VelE,VelD,LatE,LngE,AltE",  // labels
                            "sDUmnnnDUm",    // units
                            "F--B000--B",    // mults
                            "QLLifffLLi",    // fmt
@@ -346,6 +358,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
                            _dist_to_target_z,
                            _dist_to_vehicle_xy,
                            _dist_to_vehicle_z);
+        gcs().send_named_float("FollowDist", _dist_to_target_xy);
     }
 }
 
@@ -379,7 +392,16 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
 // get offsets in meters in NED frame
 bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 {
-    const Vector3f &off = _offset.get();
+    Vector3f off = _offset.get();
+
+    if (_ofs_x_chan > 0) {
+        RC_Channel *chan = rc().channel(_ofs_x_chan-1);
+        if (chan) {
+            float pct = chan->percent_input();
+            float add_x = _ofs_x_max * pct * 0.01;
+            off.x -= add_x;
+        }
+    }
 
     // if offsets are zero or type is NED, simply return offset vector
     if (off.is_zero() || (_offset_type == AP_FOLLOW_OFFSET_TYPE_NED)) {
