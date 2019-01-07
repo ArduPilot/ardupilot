@@ -37,6 +37,7 @@ public:
 
     enum {
         AP_FOLLOW_OPTION_AVOIDANCE=(1U<<0),
+        AP_FOLLOW_OPTION_GROUND_COURSE=(1U<<1),
     };
 
     // constructor

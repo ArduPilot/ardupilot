@@ -118,8 +118,8 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Follow options
-    // @Description: Follow options. The UseAvoidance option enables using vehicle avoidance logic to avoid coming too close to the other vehicle.
-    // @Bitmask: 0:UseAvoidance
+    // @Description: Follow options. The UseAvoidance option enables using vehicle avoidance logic to avoid coming too close to the other vehicle. If GroundCourse is set then lead vehicle ground course is used for offset direction, otherwise lead vehicle yaw is used.
+    // @Bitmask: 0:UseAvoidance,1:GroundCourse
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, AP_FOLLOW_OPTION_AVOIDANCE),
 
@@ -322,7 +322,12 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         // get a local timestamp with correction for transport jitter
         uint32_t now = AP_HAL::millis();
         _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, now);
-        if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
+        if (_options.get() & AP_FOLLOW_OPTION_GROUND_COURSE) {
+            if (!is_zero(_target_velocity_ned.x) || !is_zero(_target_velocity_ned.y)) {
+                _target_heading = degrees(atan2f(_target_velocity_ned.y, _target_velocity_ned.x));
+                _last_heading_update_ms = _last_location_update_ms;
+            }
+        } else if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             _last_heading_update_ms = _last_location_update_ms;
         }
