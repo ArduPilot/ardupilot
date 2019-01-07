@@ -216,6 +216,9 @@ public:
 
     // weight on wheels pin
     AP_Int8 wow_pin;
+
+    // vibration frequencies in Hz on each axis
+    AP_Vector3f vibe_freq;
     
     uint16_t irlock_port;
 
