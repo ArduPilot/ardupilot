@@ -49,7 +49,10 @@ void ModeAuto::update()
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
                 calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
-                (rover.is_boat() && start_loiter()) || stop_vehicle();
+                if (rover.is_boat()) {
+                    start_loiter();
+                }
+                stop_vehicle();
             }
             break;
         }
@@ -63,7 +66,10 @@ void ModeAuto::update()
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
-                (rover.is_boat() && !start_loiter()) || stop_vehicle();
+                if (rover.is_boat()) {
+                    start_loiter();
+                }
+                stop_vehicle();
             }
             break;
         }
