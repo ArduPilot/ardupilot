@@ -10,52 +10,6 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
-Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
-{
-    Mode *ret = nullptr;
-    switch (num) {
-    case Mode::Number::MANUAL:
-        ret = &mode_manual;
-        break;
-    case Mode::Number::ACRO:
-        ret = &mode_acro;
-        break;
-    case Mode::Number::STEERING:
-        ret = &mode_steering;
-        break;
-    case Mode::Number::HOLD:
-        ret = &mode_hold;
-        break;
-    case Mode::Number::LOITER:
-        ret = &mode_loiter;
-        break;
-    case Mode::Number::FOLLOW:
-        ret = &mode_follow;
-        break;
-    case Mode::Number::SIMPLE:
-        ret = &mode_simple;
-        break;
-    case Mode::Number::AUTO:
-        ret = &mode_auto;
-        break;
-    case Mode::Number::RTL:
-        ret = &mode_rtl;
-        break;
-    case Mode::Number::SMART_RTL:
-        ret = &mode_smartrtl;
-        break;
-    case Mode::Number::GUIDED:
-       ret = &mode_guided;
-        break;
-    case Mode::Number::INITIALISING:
-        ret = &mode_initializing;
-        break;
-    default:
-        break;
-    }
-    return ret;
-}
-
 int8_t RC_Channels_Rover::flight_mode_channel_number() const
 {
     return rover.g.mode_channel;
