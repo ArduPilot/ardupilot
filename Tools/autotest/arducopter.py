@@ -1446,6 +1446,64 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_rangefinder(self):
+        ex = None
+        self.context_push()
+        self.progress("Making sure we don't ordinarily get RANGEFINDER")
+        try:
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=5)
+        except Exception as e:
+            print("Caught exception %s" % str(e))
+
+        if m is not None:
+            raise NotAchievedException("Received unexpected RANGEFINDER msg")
+
+        try:
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RC9_OPTION", 10) # rangefinder
+            self.set_rc(9, 2000)
+
+            self.reboot_sitl()
+
+            self.progress("Making sure we now get RANGEFINDER messages")
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=10)
+            if m is None:
+                raise NotAchievedException("Did not get expected RANGEFINDER msg")
+
+            self.progress("Checking RangeFinder is marked as enabled in mavlink")
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser not enabled in SYS_STATUS")
+            self.progress("Disabling laser using switch")
+            self.set_rc(9, 1000)
+            self.delay_sim_time(1)
+            self.progress("Checking RangeFinder is marked as disabled in mavlink")
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser enabled in SYS_STATUS")
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def fly_precision_sitl(self):
         """Use SITL PrecLand backend precision messages to land aircraft."""
 
@@ -2549,6 +2607,10 @@ class AutoTestCopter(AutoTest):
             ("Mount",
              "Test Camera/Antenna Mount",
              self.test_mount),
+
+            ("RangeFinder",
+             "Test RangeFinder Basic Functionality",
+             self.test_rangefinder),
 
             ("LogDownLoad",
              "Log download",
