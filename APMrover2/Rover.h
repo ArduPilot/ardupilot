@@ -408,7 +408,7 @@ private:
     // compat.cpp
     void delay(uint32_t ms);
 
-    // control_modes.cpp
+    // mode.cpp
     Mode *mode_from_mode_num(enum Mode::Number num);
 
     // crash_check.cpp
