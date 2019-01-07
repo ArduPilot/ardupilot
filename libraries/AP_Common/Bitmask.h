@@ -29,6 +29,12 @@ public:
     ~Bitmask(void) {
         delete[] bits;
     }
+    void BitmaskSet(uint16_t num_bits){
+    	delete[] bits;
+    	numbits=num_bits;
+    	numwords = ((num_bits+31)/32);
+    	bits = new uint32_t[(num_bits+31)/32];
+    }
 
     // set given bitnumber
     void set(uint16_t bit) {

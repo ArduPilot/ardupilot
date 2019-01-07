@@ -43,14 +43,22 @@ void PX4Storage::_storage_open(void)
         return;
     }
 
-    _dirty_mask.clearall();
+    if(_mtd_start()){
+    	mtd_load = true;
+    	PX4_STORAGE_LINE_SHIFT = 9;
+    	_mtd_load();
+    }else{
+    	printf("flash start\n");
+    	mtd_load = false;
+    	PX4_STORAGE_LINE_SHIFT = 3;
+    	_flash_load();
+    }
 
-    // load from storage backend
-#if USE_FLASH_STORAGE
-    _flash_load();
-#else
-    _mtd_load();
-#endif
+    PX4_STORAGE_LINE_SIZE = 1<<PX4_STORAGE_LINE_SHIFT;
+    PX4_STORAGE_NUM_LINES = PX4_STORAGE_SIZE/PX4_STORAGE_LINE_SIZE;
+
+    _dirty_mask.BitmaskSet(PX4_STORAGE_NUM_LINES);
+    _dirty_mask.clearall();
 
 #ifdef SAVE_STORAGE_FILE
     fd = open(SAVE_STORAGE_FILE, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -108,7 +116,8 @@ void PX4Storage::_timer_tick(void)
     }
     perf_begin(_perf_storage);
 
-#if !USE_FLASH_STORAGE
+
+    if(mtd_load){
     if (_fd == -1) {
         _fd = open(MTD_PARAMS_FILE, O_WRONLY);
         if (_fd == -1) {
@@ -117,7 +126,7 @@ void PX4Storage::_timer_tick(void)
             return;
         }
     }
-#endif
+    }
 
     // write out the first dirty line. We don't write more
     // than one to keep the latency of this call to a minimum
@@ -135,16 +144,15 @@ void PX4Storage::_timer_tick(void)
     }
 
     // save to storage backend
-#if USE_FLASH_STORAGE
-    _flash_write(i);
-#else
-    _mtd_write(i);
-#endif
+    if(!mtd_load)
+    	_flash_write(i);
+    else
+    	_mtd_write(i);
+
     
     perf_end(_perf_storage);
 }
 
-#if !USE_FLASH_STORAGE
 void PX4Storage::bus_lock(bool lock)
 {
 #if defined (CONFIG_ARCH_BOARD_PX4FMU_V4)
@@ -192,22 +200,28 @@ void PX4Storage::_mtd_write(uint16_t line)
     }
 }
 
+bool PX4Storage::_mtd_start(void)
+{
+	if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "start " MTD_PARAMS_FILE)) {
+	        printf("mtd: started OK\n");
+	        if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
+	            printf("mtd: readtest OK\n");
+	        } else {
+	            AP_BoardConfig::sensor_config_error("mtd: failed readtest");
+		        return false;
+	        }
+	    } else {
+	        printf("mtd: failed start");
+	        return false;
+	    }
+	return true;
+}
+
 /*
   load all data from mtd
  */
 void PX4Storage::_mtd_load(void)
 {
-    if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "start " MTD_PARAMS_FILE)) {
-        printf("mtd: started OK\n");
-        if (AP_BoardConfig::px4_start_driver(mtd_main, "mtd", "readtest " MTD_PARAMS_FILE)) {
-            printf("mtd: readtest OK\n");
-        } else {
-            AP_BoardConfig::sensor_config_error("mtd: failed readtest");
-        }
-    } else {
-        AP_BoardConfig::sensor_config_error("mtd: failed start");
-    }
-
     int fd = open(MTD_PARAMS_FILE, O_RDONLY);
     if (fd == -1) {
         AP_HAL::panic("Failed to open " MTD_PARAMS_FILE);
@@ -226,7 +240,6 @@ void PX4Storage::_mtd_load(void)
     close(fd);
 }
 
-#else // USE_FLASH_STORAGE
 
 /*
   load all data from flash
@@ -309,7 +322,5 @@ bool PX4Storage::_flash_erase_ok(void)
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();
 }
-#endif // USE_FLASH_STORAGE
-
 
 #endif // CONFIG_HAL_BOARD
