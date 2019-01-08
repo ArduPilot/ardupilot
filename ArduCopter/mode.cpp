@@ -373,9 +373,13 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
     return true;
 }
 
-void Copter::Mode::zero_throttle_and_relax_ac()
+void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
 {
-    motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    if (spool_up) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    }
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);

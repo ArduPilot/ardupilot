@@ -112,7 +112,7 @@ protected:
     bool takeoff_triggered(float target_climb_rate) const;
 
     // helper functions
-    void zero_throttle_and_relax_ac();
+    void zero_throttle_and_relax_ac(bool spool_up = false);
 
     // functions to control landing
     // in modes that support landing
