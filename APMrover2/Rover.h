@@ -408,9 +408,6 @@ private:
     // compat.cpp
     void delay(uint32_t ms);
 
-    // mode.cpp
-    Mode *mode_from_mode_num(enum Mode::Number num);
-
     // crash_check.cpp
     void crash_check();
 
@@ -462,6 +459,9 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
     void log_init(void);
+
+    // mode.cpp
+    Mode *mode_from_mode_num(enum Mode::Number num);
 
     // Parameters.cpp
     void load_parameters(void);
