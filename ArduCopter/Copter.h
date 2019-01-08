@@ -874,6 +874,7 @@ private:
     MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
+    bool is_tradheli() const;
 
     // terrain.cpp
     void terrain_update();
