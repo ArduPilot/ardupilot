@@ -43,7 +43,7 @@ void Copter::ModeZigZag::run()
 
     // if not auto armed or motors not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock() || ap.land_complete) {
-        zero_throttle_and_relax_ac();
+        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
         return;
     }
 
