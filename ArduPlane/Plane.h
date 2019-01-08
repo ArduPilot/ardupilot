@@ -104,6 +104,8 @@
 // Configuration
 #include "config.h"
 
+#include "afs_plane.h"
+
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -120,25 +122,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
-
-/*
-  a plane specific AP_AdvancedFailsafe class
- */
-class AP_AdvancedFailsafe_Plane : public AP_AdvancedFailsafe
-{
-public:
-    AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps);
-
-    // called to set all outputs to termination state
-    void terminate_vehicle(void);
-    
-protected:
-    // setup failsafe values for if FMU firmware stops running
-    void setup_IO_failsafe(void);
-
-    // return the AFS mapped control mode
-    enum AP_AdvancedFailsafe::control_mode afs_mode(void);
-};
 
 /*
   main APM:Plane class
