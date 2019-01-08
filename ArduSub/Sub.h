@@ -427,7 +427,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    AP_Terrain terrain{mission, rally};
+    AP_Terrain terrain{mission};
 #endif
 
     // used to allow attitude and depth control without a position system
