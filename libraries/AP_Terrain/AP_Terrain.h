@@ -29,7 +29,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_Rally/AP_Rally.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -76,7 +75,7 @@
 
 class AP_Terrain {
 public:
-    AP_Terrain(const AP_Mission &_mission, const AP_Rally &_rally);
+    AP_Terrain(const AP_Mission &_mission);
 
     /* Do not allow copies */
     AP_Terrain(const AP_Terrain &other) = delete;
@@ -339,10 +338,6 @@ private:
     // reference to AP_Mission, so we can ask preload terrain data for 
     // all waypoints
     const AP_Mission &mission;
-
-    // reference to AP_Rally, so we can ask preload terrain data for 
-    // all rally points
-    const AP_Rally &rally;
 
     // cache of grids in memory, LRU
     uint8_t cache_size = 0;
