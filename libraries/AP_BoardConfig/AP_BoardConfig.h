@@ -123,9 +123,10 @@ public:
 
 #if HAL_HAVE_SAFETY_SWITCH
     enum board_safety_button_option {
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF=1,
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=2,
-        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED=4,
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
+        BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED=      (1 << 2),
+        BOARD_SAFETY_OPTION_SAFETY_ON_DISARM=         (1 << 3),
     };
 
     // return safety button options. Bits are in enum board_safety_button_option
