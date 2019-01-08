@@ -526,7 +526,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN && MODE_AUTO_ENABLED == ENABLED
-    AP_Terrain terrain{mode_auto.mission, rally};
+    AP_Terrain terrain{mode_auto.mission};
 #endif
 
     // Precision Landing
