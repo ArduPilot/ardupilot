@@ -23,7 +23,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "hal.h"
@@ -201,12 +201,14 @@ static bool string_contains(const char *haystack, const char *needle)
  */
 static void string_substitute(const char *str, char *str2)
 {
+    const char *board = "%BOARD%";
+    const char *serial = "%SERIAL%";
     uint8_t new_len = strlen(str);
-    if (string_contains(str, "%BOARD%")) {
-        new_len += strlen(HAL_BOARD_NAME) - 7;
+    if (string_contains(str, board)) {
+        new_len += strlen(HAL_BOARD_NAME) - strlen(board);
     }
-    if (string_contains(str, "%SERIAL%")) {
-        new_len += 24 - 8;
+    if (string_contains(str, serial)) {
+        new_len += 24 - strlen(serial);
     }
     if (new_len+1 > USB_DESC_MAX_STRLEN) {
         strcpy(str2, str);
@@ -216,13 +218,13 @@ static void string_substitute(const char *str, char *str2)
     while (*str) {
         char c = *str;
         if (c == '%') {
-            if (strncmp(str, "%BOARD%", 7) == 0) {
+            if (strncmp(str, board, strlen(board)) == 0) {
                 memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
                 str += 7;
                 p += strlen(HAL_BOARD_NAME);
                 continue;
             }
-            if (strncmp(str, "%SERIAL%", 8) == 0) {
+            if (strncmp(str, serial, strlen(serial)) == 0) {
                 const char *hex = "0123456789ABCDEF";
                 const uint8_t *cpu_id = (const uint8_t *)UDID_START;
                 uint8_t i;
