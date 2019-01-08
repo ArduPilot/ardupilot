@@ -463,7 +463,10 @@ void RC_Channel::read_aux()
         // here e.g. RCMAP_ROLL etc once they become options
         return;
     }
-    const aux_switch_pos_t new_position = read_3pos_switch();
+    aux_switch_pos_t new_position;
+    if (!read_3pos_switch(new_position)) {
+        return;
+    }
     const aux_switch_pos_t old_position = old_switch_position();
     if (new_position == old_position) {
         debounce.count = 0;
@@ -684,18 +687,28 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const aux_switch_po
 
 void RC_Channel::init_aux()
 {
-    const aux_switch_pos_t position = read_3pos_switch();
-    set_old_switch_position(position);
+    aux_switch_pos_t position;
+    if (!read_3pos_switch(position)) {
+        position = aux_switch_pos_t::LOW;
+    }
     init_aux_function((aux_func_t)option.get(), position);
 }
 
 // read_3pos_switch
-RC_Channel::aux_switch_pos_t RC_Channel::read_3pos_switch() const
+bool RC_Channel::read_3pos_switch(RC_Channel::aux_switch_pos_t &ret) const
 {
     const uint16_t in = get_radio_in();
-    if (in < AUX_PWM_TRIGGER_LOW) return LOW;   // switch is in low position
-    if (in > AUX_PWM_TRIGGER_HIGH) return HIGH; // switch is in high position
-    return MIDDLE;                              // switch is in middle position
+    if (in <= 900 or in >= 2200) {
+        return false;
+    }
+    if (in < AUX_PWM_TRIGGER_LOW) {
+        ret = LOW;
+    } else if (in > AUX_PWM_TRIGGER_HIGH) {
+        ret = HIGH;
+    } else {
+        ret = MIDDLE;
+    }
+    return true;
 }
 
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::aux_func_t option)
