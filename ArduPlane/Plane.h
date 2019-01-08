@@ -640,7 +640,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain{mission, rally};
+    AP_Terrain terrain{mission};
 #endif
 
     AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
