@@ -221,7 +221,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
     // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
-    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed
+    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed,3:Force safety on when the aircraft disarms
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 #endif
