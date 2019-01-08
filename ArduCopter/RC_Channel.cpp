@@ -143,7 +143,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
     switch(ch_option) {
         case FLIP:
             // flip if switch is on, positive throttle and we're actually flying
-            if (ch_flag == aux_switch_pos::HIGH) {
+            if (ch_flag == aux_switch_pos_t::HIGH) {
                 copter.set_mode(control_mode_t::FLIP, MODE_REASON_TX_COMMAND);
             }
             break;
