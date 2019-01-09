@@ -137,7 +137,10 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
 
     // vibration frequencies on each axis
     AP_GROUPINFO("VIB_FREQ",   26, SITL,  vibe_freq, 0),
-    
+
+    // @Path: ./SIM_Parachute.cpp
+    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
+
     AP_GROUPEND
 };
     
