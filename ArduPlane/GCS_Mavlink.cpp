@@ -1407,7 +1407,11 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
 
 AP_AdvancedFailsafe *GCS_MAVLINK_Plane::get_advanced_failsafe() const
 {
+#if ADVANCED_FAILSAFE == ENABLED
     return &plane.afs;
+#else
+    return nullptr;
+#endif
 }
 
 /*

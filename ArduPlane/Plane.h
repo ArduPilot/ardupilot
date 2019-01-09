@@ -104,7 +104,9 @@
 // Configuration
 #include "config.h"
 
+#if ADVANCED_FAILSAFE == ENABLED
 #include "afs_plane.h"
+#endif
 
 // Local modules
 #include "defines.h"
@@ -671,7 +673,9 @@ private:
     AP_Avoidance_Plane avoidance_adsb{ahrs, adsb};
 
     // Outback Challenge Failsafe Support
+#if ADVANCED_FAILSAFE == ENABLED
     AP_AdvancedFailsafe_Plane afs {mission, gps};
+#endif
 
     /*
       meta data to support counting the number of circles in a loiter
@@ -960,7 +964,9 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
+#if ADVANCED_FAILSAFE == ENABLED
     void afs_fs_check(void);
+#endif
     void compass_cal_update();
     void update_optical_flow(void);
     void one_second_loop(void);

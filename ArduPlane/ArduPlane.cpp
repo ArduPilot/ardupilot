@@ -48,7 +48,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(read_airspeed,          10,    100),
     SCHED_TASK(update_alt,             10,    200),
     SCHED_TASK(adjust_altitude_target, 10,    200),
+#if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    100),
+#endif
     SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_receive,   300,  500),
     SCHED_TASK_CLASS(GCS,            (GCS*)&plane._gcs,       update_send,      300,  500),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &plane.ServoRelayEvents, update_events,          50,  150),
@@ -244,11 +246,13 @@ void Plane::update_logging2(void)
 /*
   check for AFS failsafe check
  */
+#if ADVANCED_FAILSAFE == ENABLED
 void Plane::afs_fs_check(void)
 {
     // perform AFS failsafe checks
     afs.check(failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
 }
+#endif
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
