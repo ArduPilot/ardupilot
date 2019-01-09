@@ -4,6 +4,7 @@
 
 #include "Plane.h"
 
+#if ADVANCED_FAILSAFE == ENABLED
 // Constructor
 AP_AdvancedFailsafe_Plane::AP_AdvancedFailsafe_Plane(AP_Mission &_mission, const AP_GPS &_gps) :
     AP_AdvancedFailsafe(_mission, _gps)
@@ -91,3 +92,4 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
     }
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }
+#endif // ADVANCED_FAILSAFE
