@@ -48,9 +48,4 @@ private:
     AP_Int16 &_powersave_range;
     float &estimated_terrain_height;
 
-    // return true if we are beyond the power saving range
-    bool out_of_range(void) const {
-        return _powersave_range > 0 && estimated_terrain_height > _powersave_range;
-    }
-
 };
