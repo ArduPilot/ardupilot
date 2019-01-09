@@ -2003,6 +2003,11 @@ switch value'''
         self.progress("Waiting for mode-switch mode %s" % want)
         self.wait_mode(want)
 
+    def start_subtest(self, description):
+        self.progress("-")
+        self.progress("---------- %s  ----------" % description)
+        self.progress("-")
+
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
