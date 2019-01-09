@@ -11,14 +11,14 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 
-AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) : 
+AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
     rc_input_count(0),
     last_rc_input_count(0),
@@ -52,6 +52,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     num_values = MIN(num_values, MAX_RCIN_CHANNELS);
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
+    rc_frame_count++;
     if (!in_failsafe) {
         rc_input_count++;
     }

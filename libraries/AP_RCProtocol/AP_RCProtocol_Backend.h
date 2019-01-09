@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
@@ -19,13 +19,14 @@
 
 #include "AP_RCProtocol.h"
 
-class AP_RCProtocol_Backend
-{
+class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
-    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) = 0;
+    virtual ~AP_RCProtocol_Backend() {}
+    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
+    virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
     bool new_input();
     uint8_t num_channels();
@@ -35,14 +36,29 @@ public:
 
     // allow for backends that need regular polling
     virtual void update(void) {}
+    enum {
+        PARSE_TYPE_SIGREAD,
+        PARSE_TYPE_SERIAL
+    };
 
+    // get number of frames, ignoring failsafe
+    uint32_t get_rc_frame_count(void) const {
+        return rc_frame_count;
+    }
+
+    // get number of frames, honoring failsafe
+    uint32_t get_rc_input_count(void) const {
+        return rc_input_count;
+    }
+    
 protected:
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe);
-    
+
 private:
     AP_RCProtocol &frontend;
-    unsigned int rc_input_count;
-    unsigned int last_rc_input_count;
+    uint32_t rc_input_count;
+    uint32_t last_rc_input_count;
+    uint32_t rc_frame_count;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
