@@ -148,24 +148,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
 
-    // @Param: _DISTMAX_M
-    // @DisplayName: maximum distance (in meters) of sensor
-    // @Description: maximum distance (in meters) of sensor
-    // @Units: m
-    // @Range: 0.00 25.00
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("_DISTMAX_M", 19, AP_Proximity, _distance_max[0], 16.00f),
-
-    // @Param: __DISTMIN_M
-    // @DisplayName: minimum distance (in meters) of sensor
-    // @Description: minimum distance (in meters) of sensor
-    // @Units: m
-    // @Range: 0.00 25.00
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("__DISTMIN_M", 20, AP_Proximity, _distance_min[0], 0.20f),
-
 #if PROXIMITY_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
@@ -189,24 +171,6 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Range: -180 180
     // @User: Standard
     AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
-
-    // @Param: _DISTMAX_M
-    // @DisplayName: maximum distance (in meters) of sensor
-    // @Description: maximum distance (in meters) of sensor
-    // @Units: m
-    // @Range: 0.00 25.00
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("_DISTMAX_M", 21, AP_Proximity, _distance_max[1], 16.00f),
-
-    // @Param: _DISTMIN_M
-    // @DisplayName: minimum distance (in meters) of sensor
-    // @Description: minimum distance (in meters) of sensor
-    // @Units: m
-    // @Range: 0.00 25.00
-    // @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("_DISTMIN_M", 22, AP_Proximity, _distance_min[1], 0.20f),
 #endif
 
     AP_GROUPEND
@@ -285,26 +249,6 @@ int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
     }
 
     return _yaw_correction[instance].get();
-}
-
-// return sensor maximum distance (in meters)
-float AP_Proximity::get_distance_max(uint8_t instance) const
-{
-    if (instance >= PROXIMITY_MAX_INSTANCES) {
-        return 16.0f;
-    }
-
-    return _distance_max[instance].get();
-}
-
-// return sensor minimum distance (in meters)
-float AP_Proximity::get_distance_min(uint8_t instance) const
-{
-    if (instance >= PROXIMITY_MAX_INSTANCES) {
-        return 0.20f;
-    }
-
-    return _distance_min[instance].get();
 }
 
 // return sensor health
