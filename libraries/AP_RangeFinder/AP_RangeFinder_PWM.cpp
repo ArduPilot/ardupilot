@@ -23,8 +23,12 @@ extern const AP_HAL::HAL& hal;
 /*
    The constructor also initialises the rangefinder.
 */
-AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state)
+AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
+                                       AP_Int16 &_powersave_range,
+                                       float &_estimated_terrain_height) :
+    AP_RangeFinder_Backend(_state),
+    powersave_range(_powersave_range),
+    estimated_terrain_height(_estimated_terrain_height)
 {
 }
 
@@ -111,17 +115,55 @@ void AP_RangeFinder_PWM::check_pin()
     }
 }
 
+void AP_RangeFinder_PWM::check_stop_pin()
+{
+    if (state.stop_pin == last_stop_pin) {
+        return;
+    }
+
+    hal.gpio->pinMode(state.stop_pin, HAL_GPIO_OUTPUT);
+
+    last_stop_pin = state.stop_pin;
+}
+
+void AP_RangeFinder_PWM::check_pins()
+{
+    check_pin();
+    check_stop_pin();
+}
+
+
 /*
    update the state of the sensor
 */
 void AP_RangeFinder_PWM::update(void)
 {
     // check if pin has changed and configure interrupt handlers if required:
-    check_pin();
+    check_pins();
 
     if (last_pin <= 0) {
         // disabled (by configuration)
         return;
+    }
+
+    if (state.stop_pin != -1) {
+        const bool oor = out_of_range();
+        if (oor) {
+            if (!was_out_of_range) {
+                // we are above the power saving range. Disable the sensor
+                hal.gpio->write(state.stop_pin, false);
+                set_status(RangeFinder::RangeFinder_NoData);
+                state.distance_cm = 0;
+                state.voltage_mv = 0;
+                was_out_of_range = oor;
+            }
+            return;
+        }
+        // re-enable the sensor:
+        if (!oor && was_out_of_range) {
+            hal.gpio->write(state.stop_pin, true);
+            was_out_of_range = oor;
+        }
     }
 
     if (!get_reading(state.distance_cm)) {
@@ -135,4 +177,10 @@ void AP_RangeFinder_PWM::update(void)
     // update range_valid state based on distance measured
     state.last_reading_ms = AP_HAL::millis();
     update_status();
+}
+
+
+// return true if we are beyond the power saving range
+bool AP_RangeFinder_PWM::out_of_range(void) const {
+    return powersave_range > 0 && estimated_terrain_height > powersave_range;
 }
