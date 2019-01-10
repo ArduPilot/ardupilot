@@ -9,7 +9,7 @@ class AP_RangeFinder_VL53L1X : public AP_RangeFinder_Backend
 
 public:
     // static detection function
-    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev);
 
     // update state
     void update(void) override;
