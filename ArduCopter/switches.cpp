@@ -25,6 +25,14 @@ void Copter::read_control_switch()
     // calculate position of flight mode switch
     int8_t switch_position;
     uint16_t mode_in = RC_Channels::rc_channel(g.flight_mode_chan-1)->get_radio_in();
+
+    // protect against out-of-range mode channel inputs
+    if ((mode_in <= 900) || (mode_in >= 2200)) {
+        // reset switch edge time so any debounce is not fooled
+        control_switch_state.last_edge_time_ms = tnow_ms;
+        return;
+    }
+
     if      (mode_in < 1231) switch_position = 0;
     else if (mode_in < 1361) switch_position = 1;
     else if (mode_in < 1491) switch_position = 2;
