@@ -499,7 +499,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         home_distance_max = 5
         if home_distance > home_distance_max:
             raise NotAchievedException(
-                "Did not get home (%u metres distant > %u)" %
+                "Did not get home (%f metres distant > %f)" %
                 (home_distance, home_distance_max))
         self.mavproxy.send('switch 6\n')
         self.wait_mode('MANUAL')
