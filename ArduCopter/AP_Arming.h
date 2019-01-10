@@ -49,5 +49,4 @@ protected:
 
 private:
 
-    void parameter_checks_pid_warning_message(bool display_failure, const char *error_msg);
 };
