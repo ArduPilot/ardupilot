@@ -65,13 +65,6 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     memset(&_pid_info, 0, sizeof(_pid_info));
 }
 
-// set_dt - set time step in seconds
-void AC_PID::set_dt(float dt)
-{
-    // set dt and calculate the input filter alpha
-    _dt = dt;
-}
-
 // filt_hz - set input filter hz
 void AC_PID::filt_hz(float hz)
 {
@@ -215,13 +208,22 @@ void AC_PID::operator() (float p, float i, float d, float imaxval, float input_f
 }
 
 // calc_filt_alpha - recalculate the input filter alpha
-float AC_PID::get_filt_alpha() const
+float AC_PID::get_filt_alpha()
 {
-    if (is_zero(_filt_hz)) {
-        return 1.0f;
+    if (!is_equal(_dt, _last_filt_alpha_dt) ||
+        !is_equal(_filt_hz.get(), _last_filt_alpha_filt_hz)) {
+        // current cached alpha value is out-of-date
+        if (is_zero(_filt_hz)) {
+            // clamp the alpha value
+            _filt_alpha = 1.0f;
+        } else {
+            // calculate alpha
+            const float rc = 1/(M_2PI*_filt_hz);
+            _filt_alpha = _dt / (_dt + rc);
+        }
+        _last_filt_alpha_filt_hz = _filt_hz;
+        _last_filt_alpha_dt = _dt;
     }
 
-    // calculate alpha
-    float rc = 1/(M_2PI*_filt_hz);
-    return _dt / (_dt + rc);
+    return _filt_alpha;
 }

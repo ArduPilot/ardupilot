@@ -21,7 +21,7 @@ public:
     AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt, float initial_ff = 0);
 
     // set_dt - set time step in seconds
-    void        set_dt(float dt);
+    void        set_dt(float dt) { _dt = dt; }
 
     // set_input_filter_all - set input to PID controller
     //  input is filtered before the PID controllers are run
@@ -62,7 +62,7 @@ public:
     AP_Float   &kD() { return _kd; }
     AP_Float   &filt_hz() { return _filt_hz; }
     float       imax() const { return _imax.get(); }
-    float       get_filt_alpha() const;
+    float       get_filt_alpha();
     float       ff() const { return _ff.get(); }
 
     // set accessors
@@ -107,4 +107,9 @@ protected:
     float           _derivative;            // last derivative for low-pass filter
 
     DataFlash_Class::PID_Info        _pid_info;
+
+private:
+    float _last_filt_alpha_filt_hz;         // filt_hz value used to calculate _filt_alpha
+    float _last_filt_alpha_dt;         // filt_hz value used to calculate _filt_alpha
+    float _filt_alpha;                      // cached filter alpha
 };
