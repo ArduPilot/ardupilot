@@ -1446,6 +1446,135 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_rangefinder(self):
+        ex = None
+        self.context_push()
+        self.progress("Making sure we don't ordinarily get RANGEFINDER")
+        try:
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=5)
+        except Exception as e:
+            print("Caught exception %s" % str(e))
+
+        if m is not None:
+            raise NotAchievedException("Received unexpected RANGEFINDER msg")
+
+        try:
+            self.set_parameter("RNGFND_TYPE", 1)
+            self.set_parameter("RNGFND_MIN_CM", 0)
+            self.set_parameter("RNGFND_MAX_CM", 4000)
+            self.set_parameter("RNGFND_PIN", 0)
+            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RC9_OPTION", 10) # rangefinder
+            self.set_rc(9, 2000)
+
+            self.reboot_sitl()
+
+            self.progress("Making sure we now get RANGEFINDER messages")
+            m = self.mav.recv_match(type='RANGEFINDER',
+                                    blocking=True,
+                                    timeout=10)
+            if m is None:
+                raise NotAchievedException("Did not get expected RANGEFINDER msg")
+
+            self.progress("Checking RangeFinder is marked as enabled in mavlink")
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser not enabled in SYS_STATUS")
+            self.progress("Disabling laser using switch")
+            self.set_rc(9, 1000)
+            self.delay_sim_time(1)
+            self.progress("Checking RangeFinder is marked as disabled in mavlink")
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser enabled in SYS_STATUS")
+
+            self.progress("Re-enabling rangefinder")
+            self.set_rc(9, 2000)
+            self.delay_sim_time(1)
+            m = self.mav.recv_match(type='SYS_STATUS',
+                                    blocking=True,
+                                    timeout=10)
+            flags = m.onboard_control_sensors_enabled
+            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+                raise NotAchievedException("Laser not enabled in SYS_STATUS")
+
+            self.takeoff(10, mode="LOITER")
+
+            m_r = self.mav.recv_match(type='RANGEFINDER',
+                                      blocking=True)
+            m_p = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                      blocking=True)
+
+            if abs(m_r.distance - m_p.relative_alt/1000) > 1:
+                raise NotAchievedException("rangefinder/global position int mismatch")
+
+            self.land()
+
+        except Exception as e:
+            self.progress("Exception caught")
+            ex = e
+        self.land()
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def test_parachute(self):
+
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+
+        self.progress("Testing three-position switch")
+        self.set_parameter("RC9_OPTION", 23) # parachute 3pos
+
+        self.progress("Test manual triggering")
+        self.takeoff(20)
+        self.set_rc(9, 2000)
+        self.mavproxy.expect('BANG')
+        self.set_rc(9, 1000)
+        self.reboot_sitl()
+
+        self.context_push()
+        self.progress("Crashing with 3pos switch in enable position")
+        self.takeoff(40)
+        self.set_rc(9, 1500)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        self.set_parameter("SIM_ENGINE_FAIL", 1)
+        self.mavproxy.expect('BANG')
+        self.set_rc(9, 1000)
+        self.reboot_sitl()
+        self.context_pop();
+
+        self.progress("Crashing with 3pos switch in disable position")
+        loiter_alt = 10
+        self.takeoff(loiter_alt, mode='LOITER')
+        self.set_rc(9, 1100)
+        self.set_parameter("SIM_ENGINE_MUL", 0)
+        self.set_parameter("SIM_ENGINE_FAIL", 1)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + 5:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "BANG" in m.text:
+                self.set_rc(9, 1000)
+                self.reboot_sitl()
+                raise NotAchievedException("Parachute deployed when disabled")
+        self.set_rc(9, 1000)
+        self.reboot_sitl()
+
     def fly_precision_sitl(self):
         """Use SITL PrecLand backend precision messages to land aircraft."""
 
@@ -2549,6 +2678,14 @@ class AutoTestCopter(AutoTest):
             ("Mount",
              "Test Camera/Antenna Mount",
              self.test_mount),
+
+            ("RangeFinder",
+             "Test RangeFinder Basic Functionality",
+             self.test_rangefinder),
+
+            ("Parachute",
+             "Test Parachute Functionality",
+             self.test_parachute),
 
             ("LogDownLoad",
              "Log download",

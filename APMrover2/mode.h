@@ -244,9 +244,6 @@ class ModeAuto : public Mode
 {
 public:
 
-    // constructor
-    ModeAuto(ModeRTL& mode_rtl);
-
     uint32_t mode_number() const override { return AUTO; }
     const char *name4() const override { return "AUTO"; }
 
@@ -284,15 +281,13 @@ protected:
     enum AutoSubMode {
         Auto_WP,                // drive to a given location
         Auto_HeadingAndSpeed,   // turn to a given heading
-        Auto_RTL                // perform RTL within auto mode
+        Auto_RTL,               // perform RTL within auto mode
+        Auto_Loiter             // perform Loiter within auto mode
     } _submode;
 
 private:
 
     bool check_trigger(void);
-
-    // references
-    ModeRTL& _mode_rtl;
 
     // this is set to true when auto has been triggered to start
     bool auto_triggered;
@@ -319,6 +314,8 @@ private:
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_set_reverse(const AP_Mission::Mission_Command& cmd);
+
+    bool start_loiter();
 
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,

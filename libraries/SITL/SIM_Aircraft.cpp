@@ -126,9 +126,9 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     }
 
     memset(&loc, 0, sizeof(loc));
-    loc.lat = static_cast<int32_t>(strtof(lat_s, nullptr) * 1.0e7f);
-    loc.lng = static_cast<int32_t>(strtof(lon_s, nullptr) * 1.0e7f);
-    loc.alt = static_cast<int32_t>(strtof(alt_s, nullptr) * 1.0e2f);
+    loc.lat = static_cast<int32_t>(strtod(lat_s, nullptr) * 1.0e7);
+    loc.lng = static_cast<int32_t>(strtod(lon_s, nullptr) * 1.0e7);
+    loc.alt = static_cast<int32_t>(strtod(alt_s, nullptr) * 1.0e2);
 
     if (loc.lat == 0 && loc.lng == 0) {
         // default to CMAC instead of middle of the ocean. This makes
@@ -764,5 +764,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (gripper_epm && gripper_epm->is_enabled()) {
         gripper_epm->update(input);
         external_payload_mass += gripper_epm->payload_mass();
+    }
+
+
+    // update parachute
+    if (parachute && parachute->is_enabled()) {
+        parachute->update(input);
+        // TODO: add drag to vehicle, presumably proportional to velocity
     }
 }

@@ -42,6 +42,12 @@ bool AP_InertialSensor_SITL::init_sensor(void)
                                               AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, i, 1, DEVTYPE_SITL));
         accel_instance[i] = _imu.register_accel(accel_sample_hz[i],
                                               AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, i, 2, DEVTYPE_SITL));
+        if (enable_fast_sampling(accel_instance[i])) {
+            _set_accel_raw_sample_rate(accel_instance[i], accel_sample_hz[i]*4);
+        }
+        if (enable_fast_sampling(gyro_instance[i])) {
+            _set_gyro_raw_sample_rate(gyro_instance[i], gyro_sample_hz[i]*8);
+        }
     }
 
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
@@ -65,10 +71,21 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
 
     // add accel bias and noise
     Vector3f accel_bias = instance==0?sitl->accel_bias.get():sitl->accel2_bias.get();
-    float xAccel = sitl->state.xAccel + accel_noise * rand_float() + accel_bias.x;
-    float yAccel = sitl->state.yAccel + accel_noise * rand_float() + accel_bias.y;
-    float zAccel = sitl->state.zAccel + accel_noise * rand_float() + accel_bias.z;
-
+    float xAccel = sitl->state.xAccel + accel_bias.x;
+    float yAccel = sitl->state.yAccel + accel_bias.y;
+    float zAccel = sitl->state.zAccel + accel_bias.z;
+    const Vector3f &vibe_freq = sitl->vibe_freq;
+    if (vibe_freq.is_zero()) {
+        xAccel += accel_noise * rand_float();
+        yAccel += accel_noise * rand_float();
+        zAccel += accel_noise * rand_float();
+    } else {
+        float t = AP_HAL::micros() * 1.0e-6;
+        xAccel += sinf(t * 2 * M_PI * vibe_freq.x) * accel_noise;
+        yAccel += sinf(t * 2 * M_PI * vibe_freq.y) * accel_noise;
+        zAccel += sinf(t * 2 * M_PI * vibe_freq.z) * accel_noise;
+    }
+    
     // correct for the acceleration due to the IMU position offset and angular acceleration
     // correct for the centripetal acceleration
     // only apply corrections to first accelerometer
@@ -98,8 +115,11 @@ void AP_InertialSensor_SITL::generate_accel(uint8_t instance)
     Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
 
     _rotate_and_correct_accel(accel_instance[instance], accel);
-    
-    _notify_new_accel_raw_sample(accel_instance[instance], accel, AP_HAL::micros64());
+
+    uint8_t nsamples = enable_fast_sampling(accel_instance[instance])?4:1;
+    for (uint8_t i=0; i<nsamples; i++) {
+        _notify_new_accel_raw_sample(accel_instance[instance], accel);
+    }
 }
 
 /*
@@ -119,9 +139,17 @@ void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
     float q = radians(sitl->state.pitchRate) + gyro_drift();
     float r = radians(sitl->state.yawRate) + gyro_drift();
 
-    p += gyro_noise * rand_float();
-    q += gyro_noise * rand_float();
-    r += gyro_noise * rand_float();
+    const Vector3f &vibe_freq = sitl->vibe_freq;
+    if (vibe_freq.is_zero()) {
+        p += gyro_noise * rand_float();
+        q += gyro_noise * rand_float();
+        r += gyro_noise * rand_float();
+    } else {
+        float t = AP_HAL::micros() * 1.0e-6;
+        p += sinf(t * 2 * M_PI * vibe_freq.x) * gyro_noise;
+        q += sinf(t * 2 * M_PI * vibe_freq.y) * gyro_noise;
+        r += sinf(t * 2 * M_PI * vibe_freq.z) * gyro_noise;
+    }
 
     Vector3f gyro = Vector3f(p, q, r);
 
@@ -133,7 +161,10 @@ void AP_InertialSensor_SITL::generate_gyro(uint8_t instance)
 
     _rotate_and_correct_gyro(gyro_instance[instance], gyro);
     
-    _notify_new_gyro_raw_sample(gyro_instance[instance], gyro, AP_HAL::micros64());
+    uint8_t nsamples = enable_fast_sampling(gyro_instance[instance])?8:1;
+    for (uint8_t i=0; i<nsamples; i++) {
+        _notify_new_gyro_raw_sample(gyro_instance[instance], gyro);
+    }
 }
 
 void AP_InertialSensor_SITL::timer_update(void)

@@ -24,8 +24,8 @@ fi
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
-ARM_ROOT="gcc-arm-none-eabi-4_9-2015q3"
-ARM_TARBALL="$ARM_ROOT-20150921-linux.tar.bz2"
+ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
+ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
 
 # Ardupilot Tools

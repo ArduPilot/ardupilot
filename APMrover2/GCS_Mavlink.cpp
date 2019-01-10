@@ -313,6 +313,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
     if (!hal.scheduler->in_delay_callback() &&
+        !AP_BoardConfig::in_sensor_config_error() &&
         rover.scheduler.time_available_usec() < 200) {
         gcs().set_out_of_time(true);
         return false;
@@ -1202,15 +1203,6 @@ AP_VisualOdom *GCS_MAVLINK_Rover::get_visual_odom() const
 {
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     return &rover.g2.visual_odom;
-#else
-    return nullptr;
-#endif
-}
-
-AP_Rally *GCS_MAVLINK_Rover::get_rally() const
-{
-#if AP_RALLY == ENABLED
-    return &rover.g2.rally;
 #else
     return nullptr;
 #endif

@@ -5,14 +5,15 @@ clone_folder: C:\work\
 init:
 - cmd: git config --global core.autocrlf false
 environment:
-  CYG_ROOT: C:\cygwin64
-  CYG_SETUP: setup-x86_64.exe
+  matrix:
+    - TARGET: cygwin64-gcc
+      BUILD_ENVIRONMENT: cygwin64
+      CYG_ROOT: C:\cygwin64
+
 install:
 - cmd: >-
 
-    curl -o setup-cygwin.exe https://www.cygwin.com/%CYG_SETUP%
-
-    setup-cygwin.exe --quiet-mode --no-shortcuts --only-site -R "%CYG_ROOT%" -P gcc-g++,git,procps,libexpat,python,python-setuptools,cygwin32-gcc-g++
+    C:\cygwin64\setup-x86_64.exe -qgnNdO -l C:\cygwin64\var\cache\setup -R c:\cygwin64 -s http://cygwin.mirror.constant.com -P gcc-g++,git,procps,libexpat,python,python-setuptools,cygwin32-gcc-g++ )
 
     dir %CYG_ROOT%
     dir %CYG_ROOT%\bin
@@ -24,8 +25,6 @@ build_script:
     cd C:\work
     
     mkdir c:\work\sitl
-    
-    cd c:\work
     
     %CYG_ROOT%\bin\sh.exe /cygdrive/c/work/Tools/scripts/build_appveyor.sh
     

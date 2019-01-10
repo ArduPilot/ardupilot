@@ -6,6 +6,7 @@
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
+#include "SIM_Parachute.h"
 
 class DataFlash_Class;
 
@@ -216,6 +217,9 @@ public:
 
     // weight on wheels pin
     AP_Int8 wow_pin;
+
+    // vibration frequencies in Hz on each axis
+    AP_Vector3f vibe_freq;
     
     uint16_t irlock_port;
 
@@ -235,6 +239,8 @@ public:
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
+
+    Parachute parachute_sim;
 };
 
 } // namespace SITL

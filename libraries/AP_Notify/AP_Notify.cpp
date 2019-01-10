@@ -105,6 +105,10 @@ AP_Notify *AP_Notify::_instance;
 
 #endif // BUILD_DEFAULT_LED_TYPE
 
+#ifndef BUZZER_ENABLE_DEFAULT
+#define BUZZER_ENABLE_DEFAULT 1
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
@@ -117,11 +121,10 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
     // @Param: BUZZ_ENABLE
     // @DisplayName: Buzzer enable
-    // @Description: Enable or disable the buzzer. Only for Linux and PX4 based boards.
+    // @Description: Enable or disable the buzzer.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ON),
-
+    AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ENABLE_DEFAULT),
 
     // @Param: LED_OVERRIDE
     // @DisplayName: Setup for MAVLink LED override

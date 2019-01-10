@@ -17,7 +17,6 @@ protected:
     void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg) override;
 
     AP_AdvancedFailsafe *get_advanced_failsafe() const override;
-    AP_Rally *get_rally() const override;
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;

@@ -30,7 +30,6 @@ public:
 protected:
 
     uint32_t telem_delay() const override { return 0; }
-    AP_Rally *get_rally() const override { return nullptr; }
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
 

@@ -1053,6 +1053,7 @@ void Copter::load_parameters(void)
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version
@@ -1240,7 +1241,7 @@ void Copter::convert_lgr_parameters(void)
     snprintf(pname, sizeof(pname), "SERVO%u_TRIM", chan);
     servo_trim = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
-    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan);
+    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan & 0x32);
     servo_reversed = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
     if (!servo_min || !servo_max || !servo_trim || !servo_reversed) {

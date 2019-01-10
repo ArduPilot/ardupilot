@@ -180,14 +180,12 @@ public:
 
 protected:
 
-    // auxillary switch handling:
-    enum aux_switch_pos {
+    // auxillary switch handling (n.b.: we store this as 2-bits!):
+    enum aux_switch_pos_t : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
         HIGH       // indicates auxiliary switch is in the high position (pwm >1800)
     };
-
-    typedef enum aux_switch_pos aux_switch_pos_t;
 
     virtual void init_aux_function(aux_func_t ch_option, aux_switch_pos_t);
     virtual void do_aux_function(aux_func_t ch_option, aux_switch_pos_t);
@@ -238,7 +236,7 @@ private:
     static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
     // pwm value below which the option will be disabled:
     static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
-    aux_switch_pos_t read_3pos_switch() const;
+    bool read_3pos_switch(aux_switch_pos_t &ret) const WARN_IF_UNUSED;
 
     //Documentation of Aux Switch Flags:
     // 0 is low or false, 1 is center or true, 2 is high

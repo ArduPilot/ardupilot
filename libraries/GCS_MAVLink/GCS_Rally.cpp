@@ -19,7 +19,7 @@
 
 void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 {
-    AP_Rally *r = get_rally();
+    AP_Rally *r = AP::rally();
     if (r == nullptr) {
         return;
     }
@@ -58,7 +58,7 @@ void GCS_MAVLINK::handle_rally_point(mavlink_message_t *msg)
 
 void GCS_MAVLINK::handle_rally_fetch_point(mavlink_message_t *msg)
 {
-    AP_Rally *r = get_rally();
+    AP_Rally *r = AP::rally();
     if (r == nullptr) {
         return;
     }

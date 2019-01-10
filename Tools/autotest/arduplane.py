@@ -690,11 +690,6 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
-    def start_subtest(self, description):
-        self.progress("-")
-        self.progress("---------- %s  ----------" % description)
-        self.progress("-")
-
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()

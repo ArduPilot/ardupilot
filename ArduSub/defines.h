@@ -193,8 +193,6 @@ enum LoggingParameters {
 // subsystem specific error codes -- failsafe_thr, batt, gps
 #define ERROR_CODE_FAILSAFE_RESOLVED        0
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 // subsystem specific error codes -- main
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker
