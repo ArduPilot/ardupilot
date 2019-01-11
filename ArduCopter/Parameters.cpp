@@ -1241,7 +1241,7 @@ void Copter::convert_lgr_parameters(void)
     snprintf(pname, sizeof(pname), "SERVO%u_TRIM", chan);
     servo_trim = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
-    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan & 0x32);
+    snprintf(pname, sizeof(pname), "SERVO%u_REVERSED", chan & 0x3F); // Only use the 6 LSBs, avoids a cpp warning
     servo_reversed = (AP_Int16 *)AP_Param::find(pname, &ptype);
 
     if (!servo_min || !servo_max || !servo_trim || !servo_reversed) {
