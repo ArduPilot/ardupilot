@@ -26,6 +26,9 @@ The changes in this release are:
 
  - added DrotekP3Pro builds
 
+ - RC protocol decoding for SRXL, SUMD and ST24 extended to all boards
+   including pixracer and ChibiOS-only boards
+
 Happy flying!
 
 
