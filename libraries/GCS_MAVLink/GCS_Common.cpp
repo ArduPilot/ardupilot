@@ -2650,7 +2650,7 @@ void GCS_MAVLINK::send_vfr_hud()
     AP_AHRS &ahrs = AP::ahrs();
 
     // return values ignored; we send stale data
-    ahrs.get_position(global_position_current_loc);
+    UNUSED_RESULT(ahrs.get_position(global_position_current_loc));
 
     mavlink_msg_vfr_hud_send(
         chan,
@@ -4444,7 +4444,7 @@ void GCS_MAVLINK::send_global_position_int()
 {
     AP_AHRS &ahrs = AP::ahrs();
 
-    ahrs.get_position(global_position_current_loc); // return value ignored; we send stale data
+    UNUSED_RESULT(ahrs.get_position(global_position_current_loc)); // return value ignored; we send stale data
 
     Vector3f vel;
     if (!ahrs.get_velocity_NED(vel)) {
