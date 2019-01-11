@@ -450,3 +450,57 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
 
     return true;
 }
+
+// methods for mavlink SYS_STATUS message (send_extended_status1)
+bool AC_Fence::sys_status_present() const
+{
+    return _enabled;
+}
+
+bool AC_Fence::sys_status_enabled() const
+{
+    if (!sys_status_present()) {
+        return false;
+    }
+    if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
+        return false;
+    }
+    return true;
+}
+
+bool AC_Fence::sys_status_failed() const
+{
+    if (!sys_status_present()) {
+        // not failed if not present; can fail if present but not enabled
+        return false;
+    }
+    if (get_breaches() != 0) {
+        return true;
+    }
+    if (_enabled_fences & AC_FENCE_TYPE_POLYGON) {
+        if (!_boundary_valid) {
+            return true;
+        }
+    }
+    if (_enabled_fences & AC_FENCE_TYPE_CIRCLE) {
+        if (_circle_radius < 0) {
+            return true;
+        }
+    }
+    if (_enabled_fences & AC_FENCE_TYPE_ALT_MAX) {
+        if (_alt_max < 0.0f) {
+            return true;
+        }
+    }
+    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
+        (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+        Vector2f position;
+        if (!_ahrs.get_relative_position_NE_home(position)) {
+            // both these fence types require position
+            return true;
+        }
+    }
+
+    return false;
+}
+
