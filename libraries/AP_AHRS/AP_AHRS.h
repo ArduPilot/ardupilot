@@ -243,7 +243,7 @@ public:
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_position(struct Location &loc) const = 0;
+    virtual bool get_position(struct Location &loc) const WARN_IF_UNUSED = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
