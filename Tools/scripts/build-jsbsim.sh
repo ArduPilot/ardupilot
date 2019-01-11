@@ -14,12 +14,10 @@ else
     cd ~ 
     rm -rf jsbsim
     git clone git://jsbsim.git.sourceforge.net/gitroot/jsbsim/jsbsim
-    sudo apt-get install cmake
     cd jsbsim
     mkdir build
     cd build
     cmake ..
     make -j2
-    sudo make install
 fi
 echo "---------- $0 end ----------"
