@@ -1,5 +1,17 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 3.6.5-rc1 11-Jan-2019
+Changes from 3.6.4
+1) Bug fixes and minor enhancements
+    a) SD Card reliability improvement (BRD_SD_SLOWDOWN param) and allow re-inserting card after boot
+    b) Mode and Auxiliary switch range check to protect during FrSky SBUS failsafe recovery
+    c) Follow mode reports target distance and heading to ground station
+    d) Pixhawk4-mini safety switch and LED fix
+    e) Bebop2 build fix
+2) RC protocol decoding for SRXL, SUMD and ST24 extended to all boards including pixracer and ChibiOS-only boards
+3) DrotekP3 Pro support
+4) Cube Purple support
+------------------------------------------------------------------
 Copter 3.6.4 27-Dec-2018 / 3.6.4-rc1 20-Dec-2018
 Changes from 3.6.3
 1) Bug fixes and minor enhancements
