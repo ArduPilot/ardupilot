@@ -19,6 +19,7 @@
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
 #define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
+#define AC_FENCE_ACTION_LOITER                      2       // Loiter
 
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
@@ -115,6 +116,11 @@ public:
     void handle_msg(mavlink_channel_t chan, mavlink_message_t* msg);
 
     static const struct AP_Param::GroupInfo var_info[];
+    
+    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    bool sys_status_present() const;
+    bool sys_status_enabled() const;
+    bool sys_status_failed() const;
 
 private:
 
