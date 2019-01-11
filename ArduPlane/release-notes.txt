@@ -1,3 +1,34 @@
+Release 3.9.5beta1, 11th January 2019
+-------------------------------------
+
+This is the first beta for the minor release 3.9.5 of plane.
+
+The changes in this release are:
+
+ - fixed orientation of 2nd IMU for OmnibusF7V2
+
+ - fixed LEDs on Pixhawk4 and Pixhawk4-mini
+
+ - fixed safety switch on Pixhawk4-mini
+
+ - improved robustness of microSD support under ChibiOS
+
+ - support insert of a microSD after boot but before logging starts
+   under ChibiOS
+
+ - added BRD_SD_SLOWDOWN parameter to allow microSD cards to be run at
+   a lower clock to improve reliability
+
+ - fixed VTOL takeoff in quadplanes to ignore latitude/longitude in
+   the mission item and always takeoff vertically
+
+ - added CubePurple (also known as PH2Slim) builds
+
+ - added DrotekP3Pro builds
+
+Happy flying!
+
+
 Release 3.9.4, 10th December 2018
 ---------------------------------
 
