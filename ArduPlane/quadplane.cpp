@@ -2123,7 +2123,11 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    plane.set_next_WP(cmd.content.location);
+    // we always use the current location in XY for takeoff.
+    Location loc = cmd.content.location;
+    loc.lat = 0;
+    loc.lng = 0;
+    plane.set_next_WP(loc);
     plane.next_WP_loc.alt = plane.current_loc.alt + cmd.content.location.alt;
     throttle_wait = false;
 
