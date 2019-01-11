@@ -2193,7 +2193,13 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    plane.set_next_WP(cmd.content.location);
+    // we always use the current location in XY for takeoff. The altitude defaults
+    // to relative to current height, but if Q_OPTIONS is set to respect takeoff frame
+    // then it will use normal frame handling for height
+    Location loc = cmd.content.location;
+    loc.lat = 0;
+    loc.lng = 0;
+    plane.set_next_WP(loc);
     if (options & OPTION_RESPECT_TAKEOFF_FRAME) {
         if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything
