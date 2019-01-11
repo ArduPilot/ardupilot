@@ -164,9 +164,11 @@ void sdcard_stop(void)
 
 void sdcard_retry(void)
 {
+#ifdef USE_POSIX
     if (!sdcard_running) {
         sdcard_init();
     }
+#endif
 }
 
 #if HAL_USE_MMC_SPI
