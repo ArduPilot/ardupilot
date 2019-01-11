@@ -115,7 +115,9 @@ void Copter::failsafe_gcs_check()
     } else {
         if (control_mode == AUTO && g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // continue mission
-        } else if (g.failsafe_gcs != FS_GCS_DISABLED) {
+        } else if (g.failsafe_gcs == FS_GCS_ENABLED_LOITER) {
+            set_mode(LOITER, MODE_REASON_GCS_FAILSAFE);
+        } else { // g.failsafe_gcs == FS_GCS_ENABLED_ALWAYS_RTL
             set_mode_RTL_or_land_with_pause(MODE_REASON_GCS_FAILSAFE);
         }
     }
