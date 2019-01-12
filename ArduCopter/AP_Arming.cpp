@@ -233,52 +233,61 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
         // Check for 0 value PID's - some items can / should be 0 and as such are not checked.
         // If the ATC_RAT_*_FF is non zero then the corresponding ATC_RAT_* PIDS can be 0.
-        if (is_zero(copter.pos_control->get_pos_xy_p().kP())) {
+        if (!is_positive(copter.pos_control->get_pos_xy_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "PSC_POSXY_P");
             return false;
-        } else if (is_zero(copter.pos_control->get_pos_z_p().kP())) {
+        } else if (!is_positive(copter.pos_control->get_pos_z_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "PSC_POSZ_P");
             return false;
-        } else if (is_zero(copter.pos_control->get_vel_z_p().kP())) {
+        } else if (!is_positive(copter.pos_control->get_vel_z_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "PSC_VELZ_P");
             return false;
-        } else if (is_zero(copter.pos_control->get_accel_z_pid().kP())) {
+        } else if (!is_positive(copter.pos_control->get_accel_z_pid().kP())) {
             parameter_checks_pid_warning_message(display_failure, "PSC_ACCZ_P");
             return false;
-        } else if (is_zero(copter.pos_control->get_accel_z_pid().kI())) {
+        } else if (!is_positive(copter.pos_control->get_accel_z_pid().kI())) {
             parameter_checks_pid_warning_message(display_failure, "PSC_ACCZ_I");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_roll_pid().kP()) && is_zero(copter.attitude_control->get_rate_roll_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_roll_pid().kP()) && !is_positive(copter.attitude_control->get_rate_roll_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_RLL_P");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_roll_pid().kI()) && is_zero(copter.attitude_control->get_rate_roll_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_roll_pid().kI()) && !is_positive(copter.attitude_control->get_rate_roll_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_RLL_I");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_roll_pid().kD()) && is_zero(copter.attitude_control->get_rate_roll_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_roll_pid().kD()) && !is_positive(copter.attitude_control->get_rate_roll_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_RLL_D");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_pitch_pid().kP()) && is_zero(copter.attitude_control->get_rate_pitch_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_pitch_pid().kP()) && !is_positive(copter.attitude_control->get_rate_pitch_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_PIT_P");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_pitch_pid().kI()) && is_zero(copter.attitude_control->get_rate_pitch_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_pitch_pid().kI()) && !is_positive(copter.attitude_control->get_rate_pitch_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_PIT_I");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_pitch_pid().kD()) && is_zero(copter.attitude_control->get_rate_pitch_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_pitch_pid().kD()) && !is_positive(copter.attitude_control->get_rate_pitch_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_PIT_D");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_yaw_pid().kP()) && is_zero(copter.attitude_control->get_rate_yaw_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_yaw_pid().kP()) && !is_positive(copter.attitude_control->get_rate_yaw_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_YAW_P");
             return false;
-        } else if (is_zero(copter.attitude_control->get_rate_yaw_pid().kI()) && is_zero(copter.attitude_control->get_rate_yaw_pid().ff())) {
+        } else if (!is_positive(copter.attitude_control->get_rate_yaw_pid().kI()) && !is_positive(copter.attitude_control->get_rate_yaw_pid().ff())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_RAT_YAW_I");
             return false;
-        } else if (is_zero(copter.attitude_control->get_angle_pitch_p().kP())) {
+        } else if (is_negative(copter.attitude_control->get_rate_roll_pid().ff())) {
+            parameter_checks_pid_warning_message(display_failure, "ATC_RAT_RLL_FF");
+            return false;
+        } else if (is_negative(copter.attitude_control->get_rate_pitch_pid().ff())) {
+            parameter_checks_pid_warning_message(display_failure, "ATC_RAT_PIT_FF");
+            return false;
+        } else if (is_negative(copter.attitude_control->get_rate_yaw_pid().ff())) {
+            parameter_checks_pid_warning_message(display_failure, "ATC_RAT_YAW_FF");
+            return false;
+        } else if (!is_positive(copter.attitude_control->get_angle_pitch_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_ANG_PIT_P");
             return false;
-        } else if (is_zero(copter.attitude_control->get_angle_roll_p().kP())) {
+        } else if (!is_positive(copter.attitude_control->get_angle_roll_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_ANG_RLL_P");
             return false;
-        } else if (is_zero(copter.attitude_control->get_angle_yaw_p().kP())) {
+        } else if (!is_positive(copter.attitude_control->get_angle_yaw_p().kP())) {
             parameter_checks_pid_warning_message(display_failure, "ATC_ANG_YAW_P");
             return false;
         }
