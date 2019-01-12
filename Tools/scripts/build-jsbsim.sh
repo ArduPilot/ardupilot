@@ -13,7 +13,7 @@ else
     echo "$JSBBINARY does not exist, building it in your home folder:"
     cd ~ 
     rm -rf jsbsim
-    git clone git://jsbsim.git.sourceforge.net/gitroot/jsbsim/jsbsim
+    git clone git://github.com/JSBSim-Team/jsbsim.git
     cd jsbsim
     mkdir build
     cd build
