@@ -7,25 +7,12 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
+#include "AP_MotorsHeli_Swash.h"
 
 // rsc and extgyro function output channels. 
 #define AP_MOTORS_HELI_SINGLE_RSC                              CH_8
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
-
-// servo position defaults
-#define AP_MOTORS_HELI_SINGLE_SERVO1_POS                       -60
-#define AP_MOTORS_HELI_SINGLE_SERVO2_POS                       60
-#define AP_MOTORS_HELI_SINGLE_SERVO3_POS                       180
-
-// swash type definitions
-#define AP_MOTORS_HELI_SINGLE_SWASH_H3                         0
-#define AP_MOTORS_HELI_SINGLE_SWASH_H1                         1
-#define AP_MOTORS_HELI_SINGLE_SWASH_H3_140                     2
-
-// collective control direction definitions
-#define AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_NORMAL      0
-#define AP_MOTORS_HELI_SINGLE_COLLECTIVE_DIRECTION_REVERSED    1
 
 // tail types
 #define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                   0
@@ -53,7 +40,8 @@ public:
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
         _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
-        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC)
+        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
+        _swashplate()
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -116,9 +104,6 @@ protected:
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
 
-    // calculate_roll_pitch_collective_factors - calculate factors based on swash type and servo position
-    void calculate_roll_pitch_collective_factors() override;
-
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;
 
@@ -131,6 +116,8 @@ protected:
     // external objects we depend upon
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
+    AP_MotorsHeli_Swash _swashplate;            // swashplate
+    SwashInt16Param     _swash_H3;              // H3 servo positions for swash
 
     // internal variables
     float _oscillate_angle = 0.0f;              // cyclic oscillation angle, used by servo_test function
@@ -143,14 +130,12 @@ protected:
     float _servo2_out = 0.0f;                   // output value sent to motor
     float _servo3_out = 0.0f;                   // output value sent to motor
     float _servo4_out = 0.0f;                   // output value sent to motor
+    float _servo5_out = 0.0f;                   // output value sent to motor
 
     // parameters
-    AP_Int16        _servo1_pos;                // Angular location of swash servo #1
-    AP_Int16        _servo2_pos;                // Angular location of swash servo #2
-    AP_Int16        _servo3_pos;                // Angular location of swash servo #3
-    AP_Int8         _collective_direction;      // Collective control direction, normal or reversed
+    AP_Int8         _swash_coll_dir;      // Collective control direction, normal or reversed
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
-    AP_Int8         _swash_type;                // Swash Type Setting
+    AP_Int8         _swashplate_type;           // Swash Type Setting
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int16        _ext_gyro_gain_acro;        // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro in ACRO
     AP_Int16        _phase_angle;               // Phase angle correction for rotor head.  If pitching the swash forward induces a roll, this can be correct the problem
@@ -159,7 +144,4 @@ protected:
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
 
     bool            _acro_tail = false;
-    float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
-    float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
-    float           _collectiveFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
 };
