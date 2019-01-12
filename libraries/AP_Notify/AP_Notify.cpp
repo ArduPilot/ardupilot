@@ -63,7 +63,7 @@ AP_Notify *AP_Notify::_instance;
 // ChibiOS and VRBrain boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
       CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_UAVCAN)
 
 // Linux boards    
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
