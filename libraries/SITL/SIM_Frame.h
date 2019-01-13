@@ -55,5 +55,8 @@ public:
     float terminal_rotation_rate;
     float thrust_scale;
     uint8_t motor_offset;
+
+    // calculate current and voltage
+    void current_and_voltage(const Aircraft::sitl_input &input, float &voltage, float &current);
 };
 }

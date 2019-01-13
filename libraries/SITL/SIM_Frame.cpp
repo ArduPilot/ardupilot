@@ -243,3 +243,18 @@ void Frame::calculate_forces(const Aircraft &aircraft,
                            aircraft.rand_normal(0, 1)) * accel_noise * noise_scale;
 }
 
+
+// calculate current and voltage
+void Frame::current_and_voltage(const Aircraft::sitl_input &input, float &voltage, float &current)
+{
+    voltage = 0;
+    current = 0;
+    for (uint8_t i=0; i<num_motors; i++) {
+        float c, v;
+        motors[i].current_and_voltage(input, v, c, motor_offset);
+        current += c;
+        voltage += v;
+    }
+    // use average for voltage, total for current
+    voltage /= num_motors;
+}
