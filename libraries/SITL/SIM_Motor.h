@@ -76,5 +76,9 @@ public:
                           Vector3f &body_thrust); // Z is down
 
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
+
+    // calculate current and voltage
+    void current_and_voltage(const struct sitl_input &input, float &voltage, float &current, uint8_t motor_offset);
 };
+
 }
