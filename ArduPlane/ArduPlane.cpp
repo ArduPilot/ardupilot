@@ -162,6 +162,9 @@ void Plane::ahrs_update()
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
 
+    // check if we have had a yaw reset from the EKF
+    quadplane.check_yaw_reset();
+
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update(G_Dt);
 }
