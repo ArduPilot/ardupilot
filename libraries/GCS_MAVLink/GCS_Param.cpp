@@ -207,6 +207,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
     _queued_parameter_count = AP_Param::count_parameters();
+    _queued_parameter_send_time_ms = AP_HAL::millis(); // avoid initial flooding
 }
 
 void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
