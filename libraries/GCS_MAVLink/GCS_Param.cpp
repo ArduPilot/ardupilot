@@ -140,6 +140,11 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
     switch (packet.req_stream_id) {
     case MAV_DATA_STREAM_ALL:
         for (uint8_t i=0; i<NUM_STREAMS; i++) {
+            if (i == STREAM_PARAMS) {
+                // don't touch parameter streaming rate; it is
+                // considered "internal".
+                continue;
+            }
             if (persist_streamrates()) {
                 streamRates[i].set_and_save_ifchanged(freq);
             } else {
