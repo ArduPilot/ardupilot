@@ -190,8 +190,6 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
 // stop - should be called when the ch7/ch8 switch is switched OFF
 void AC_AutoTune::stop()
 {
-    axes_completed = 0;
-
     // set gains to their original values
     load_gains(GAIN_ORIGINAL);
 
