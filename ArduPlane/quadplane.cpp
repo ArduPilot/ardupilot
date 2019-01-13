@@ -829,6 +829,9 @@ void QuadPlane::init_hover(void)
  */
 void QuadPlane::check_yaw_reset(void)
 {
+    if (!initialised) {
+        return;
+    }
     float yaw_angle_change_rad = 0.0f;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
@@ -1484,8 +1487,6 @@ void QuadPlane::update(void)
         }
         pos_control->relax_alt_hold_controllers(0);
     }
-    
-    check_yaw_reset();
     
     if (!in_vtol_mode()) {
         update_transition();
