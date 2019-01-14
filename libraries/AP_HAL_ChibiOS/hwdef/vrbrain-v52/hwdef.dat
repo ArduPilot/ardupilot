@@ -1,0 +1,166 @@
+# hw definition file for processing by chibios_hwdef.py
+# for VRBRAINv52 hardware
+
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52
+
+# MCU class and specific type
+MCU STM32F4xx STM32F407xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1152
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+# flash size
+FLASH_SIZE_KB 1024
+
+# board voltage
+STM32_VDD 330U
+
+# USB setup
+USB_VENDOR 0x27AC
+USB_PRODUCT 0x1151
+USB_STRING_MANUFACTURER "Laser Navigation"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# only one I2C bus
+I2C_ORDER I2C2 I2C1
+
+# order of UARTs (and USB)
+UART_ORDER OTG1 USART1 USART3 USART2
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+
+
+#PA0 TIM2_CH1 TIM2 GPIO(77) ALARM    # OUT_CH1
+ PA1  TIM2_CH2 TIM2 PWM(1)  GPIO(50) # PWM_CH0
+ PA2  TIM2_CH3 TIM2 PWM(2)  GPIO(51) # PWM_CH1
+ PA3  TIM2_CH4 TIM2 PWM(3)  GPIO(52) # PWM_CH2
+ PA4  SDCARD_CS CS                   # CS_SDCARD
+ PA5  SPI1_SCK SPI1                  # SPI1_SCK
+ PA6  SPI1_MISO SPI1                 # SPI1_MISO
+ PA7  SPI1_MOSI SPI1                 # SPI1_MOSI
+#PA8                                 # EXP_GIRO_EN
+ PA9  VBUS INPUT                     # USB_VBUS
+#P10                                 # USB_ID
+ PA11 OTG_FS_DM OTG1                 # USBM
+ PA12 OTG_FS_DP OTG1                 # USBP
+ PA13 JTMS-SWDIO SWD                 # JTAG_TMS
+ PA14 JTCK-SWCLK SWD                 # JTAG_TCK
+#PA15                                # Not connected
+
+ PB0  TIM3_CH3 TIM3 PWM(5)  GPIO(54) # PWM_CH4
+ PB1  TIM3_CH4 TIM3 PWM(6)  GPIO(55) # PWM_CH5
+#PB2
+ PB3  LED_EXT3  OUTPUT GPIO(5)       # Not connected
+ PB4  LED_EXT4  OUTPUT GPIO(6)       # Not connected
+ PB5  TIM3_CH2 TIM3 PWM(4)  GPIO(53) # PWM_CH3
+ PB6  USART1_TX USART1               # UART1_TX
+ PB7  USART1_RX USART1               # UART1_RX
+ PB8  I2C1_SCL I2C1                  # SCL2/CANRX
+ PB9  I2C1_SDA I2C1                  # SDA2/CANTX
+ PB10 I2C2_SCL I2C2                  # SCL
+ PB11 I2C2_SDA I2C2                  # SDA
+#PB12                                # INT_MAG
+ PB13 SPI2_SCK SPI2                  # SPI2_SCK
+ PB14 SPI2_MISO SPI2                 # SPI2_MISO
+ PB15 SPI2_MOSI SPI2                 # SPI2_MOSI
+
+ PC0  BATT_VOLTAGE_SENS ADC1         # ADC12_VBAT
+ PC1  BATT_CURRENT_SENS ADC1         # ADC12_IBAT
+#PC2                                 # CS_GYRO_IMU
+#PC3                                 # CS_MAG_IMU
+#PC4                                 # SONAR_IN
+ PC5  LED_GREEN OUTPUT GPIO(1)       # CMD_LED_RED
+#PC6                                 # SBUS_TX
+ PC7  TIM8_CH2 TIM8 RCIN FLOAT LOW   # SBUS_RX
+#PC8
+#PC9
+ PC10 SPI3_SCK SPI3                  # SPI3_SCK
+ PC11 SPI3_MISO SPI3                 # SPI3_MISO
+ PC12 SPI3_MOSI SPI3                 # SPI3_MOSI
+#PC13                                # Not connected
+#PC14                                # INT_GYRO_IMU
+#PC15                                # INT_MAG_IMU
+
+#PD0                                 # SIG_CAN_RX
+#PD1                                 # SIG_CAN_TX
+#PD2                                 # CS_EEPROM_IMU
+#PD3                                 # EXP_INT_GYRO
+#PD4                                 # UART3_CTS
+ PD5  USART2_TX USART2               # UART2_TX
+ PD6  USART2_RX USART2               # UART2_RX
+ PD7  SBUS_INV OUTPUT                # SBUS_EN
+ PD8  USART3_TX USART3               # UART3_TX
+ PD9  USART3_RX USART3               # UART3_RX
+#PD10                                # NT_GYRO
+#PD11                                # UART3_RTS
+ PD12 TIM4_CH1 TIM4 PWM(8)  GPIO(57) # PWM_CH7
+ PD13 TIM4_CH2 TIM4 PWM(7)  GPIO(56) # PWM_CH6
+ PD15 LED_RED   OUTPUT GPIO(0)       # CMD_LED_GRN
+ PD14 LED_BLUE  OUTPUT GPIO(2)       # CMD_LED_BLU
+
+ PE0  BARO_CS CS                     # CS_BARO
+#PE1                                 # EXP_EEPROM_WIFI_CS
+#PE2  LED_EXT1  OUTPUT GPIO(3)       # OUT_CH3
+#PE3  LED_EXT2  OUTPUT GPIO(4)       # OUT_CH2
+#PE4                                 # OUT_CH0
+#PE5                                 # PWM_IN4
+#PE6                                 # PWM_IN5
+#PE7                                 # EXP_WIFI_EN
+#PE8                                 # EXP_WIFI_INT
+ PE9  TIM1_CH1 TIM1 PWM(9)  GPIO(58) # PWM_CH8
+ PE10 MPU_CS CS                      # CS_GYRO
+ PE11 TIM1_CH2 TIM1 PWM(10) GPIO(59) # PWM_CH9
+ PE13 TIM1_CH3 TIM1 PWM(11) GPIO(60) # PWM_CH10
+ PE14 TIM1_CH4 TIM1 PWM(12) GPIO(61) # PWM_CH11
+ PE15 FRAM_CS CS                     # CS_EEPROM
+
+# SPI device table. The DEVID values are chosen to match the PX4 port
+# of ArduPilot so users don't need to re-do their accel and compass calibrations
+# when moving to ChibiOS
+SPIDEV ms5611      SPI1 DEVID3  BARO_CS    MODE3  20*MHZ  20*MHZ
+SPIDEV mpu6000     SPI2 DEVID4  MPU_CS     MODE3   2*MHZ   8*MHZ
+SPIDEV ramtron     SPI3 DEVID10 FRAM_CS    MODE3   8*MHZ   8*MHZ
+SPIDEV sdcard      SPI3 DEVID1  SDCARD_CS  MODE0 400*KHZ  25*MHZ
+
+define HAL_CHIBIOS_ARCH_BRAINV52 1
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+define HAL_STORAGE_SIZE   16384
+define STORAGE_FLASH_PAGE 22
+
+# enable RAMTROM parameter storage
+define HAL_WITH_RAMTRON 1
+
+# enable FAT filesystem
+define HAL_OS_FATFS_IO 1
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+define HAL_GPIO_A_LED_PIN 2
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 0
+
+define EXTERNAL_LED_ARMED   3
+define EXTERNAL_LED_GPS     4
+define EXTERNAL_LED_MOTOR1  5
+define EXTERNAL_LED_MOTOR2  6
+
+# battery setup
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# 12 PWM available by default
+define BOARD_PWM_COUNT_DEFAULT 12
+
