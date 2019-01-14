@@ -78,9 +78,6 @@ AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
     if (_uart != nullptr) {
         _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
     }
-    _cnt = 0 ;
-    _sync_error = 0 ;
-    _byte_count = 0;
 }
 
 // detect if a RPLidarA2 proximity sensor is connected by looking for a configured serial port
