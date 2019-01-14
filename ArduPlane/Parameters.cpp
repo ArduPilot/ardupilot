@@ -869,6 +869,30 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
 
+    // @Param: CAL_SERV_FUN_BM
+    // @DisplayName: Servo Function Calibration Selection Bitmask
+    // @Description: Bitmask to select which servo functions channels to enable control surface calibration sweep on start up. 0-off (default), 1-flaps, 2-auto flap, 4-aileron, 8-mount pan, 16-mount tilt, 32-mount roll, 64-mount2 pan, 128-mount2 tilt, 256-mount2 roll, 512-Differential spoiler left, 1024-Differential spoiler right, 2048-elevator, 4096-rudder, 8192-flaperon left, 16384-flaperon right, 32768-ground steering, 65536-gripper, 131072-motor tilt, 262144-tracker yaw, 524288-tracker pitch, 1048576-tilt motor left, 2097152-tilt motor right, 4194304-elevon left, 8388608-elevon right, 16777216-v-tail left, 33554432-v-tailright, 67108864-differential spoiler left, 134217728-Differential spoiler right.
+    // @User: Advanced
+    // @Bitmask: 0:Off,1:Flaps,2:Auto Flaps,4:Aileron,8:Mount Pan,16:Mount Tilt,32:Mount Roll,64:Mount2 Pan,128:Mount2 Tilt,256:Mount2 Roll,512:Differential Spoiler Left,1024:Differential Spoiler Right,2048:Elevator,4096:Rudder,8192:Flaperon Left,16384:Flaperon Right,32768:Ground Steering,65536:Gripper,131072:Motor Tilt,262144:Tracker Yaw,524288:Tracker Pitch,1048576:Tilt Motor Left,2097152:Tilt Motor Right,4194304:Elevon Left,8388608:Elevon Right,16777216:V-Tail Left,33554432:V-Tail Right,67108864:Differential Spoiler Left,134217728:Differential Spoiler Right.
+    GSCALAR(calibration_servo_function_bm,           "CAL_SERV_FUN_BM",   0),
+
+    // @Param: CAL_SERV_FUN_RAT
+    // @DisplayName: Servo Function Calibration Slewrate
+    // @Description: The slew rate in percent per second at which to cycle all marked servo functions for initial calibration or full and free movement check.  Default = 10.
+    // @Range: 0 100
+    // @Units: %/s
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(calibration_servo_function_slewrate,           "CAL_CTRL_SRF_RAT",   10),
+
+    // @Param: CAL_SERV_START
+    // @DisplayName: Servo Calibration Start Option
+    // @Description: Switch to select when the control surface calibration check is conducted.  0 = First arming of the power cycle, 1 = first time the safety switch is pressed, 2 = when first powered on (overrides any safety switches fitted).
+    // @Range: 0 2
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(calibration_servo_function_start,           "CAL_SERV_START",   0),
+
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane
     // @Group: GND_

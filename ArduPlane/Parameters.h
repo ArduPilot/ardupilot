@@ -341,6 +341,11 @@ public:
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
+        
+        // 250: Servo function calibration options
+        k_param_calibration_servo_function_bm = 250,//CtrlSurfCalBM = 250,
+        k_param_calibration_servo_function_slewrate,//CtrlSurfCalSpd,
+        k_param_calibration_servo_function_start,//CtrlSurfCalChk,
 
         k_param_DataFlash = 253, // Logging Group
 
@@ -460,6 +465,11 @@ public:
 #if HIL_SUPPORT
     AP_Int8  hil_mode;
 #endif
+
+    //Control surface calibration 
+    AP_Int32 calibration_servo_function_bm;
+    AP_Int8 calibration_servo_function_slewrate;
+    AP_Int8 calibration_servo_function_start;
 
     AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;
