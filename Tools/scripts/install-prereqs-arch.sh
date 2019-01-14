@@ -19,7 +19,7 @@ ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
 ARM_TARBALL_URL="http://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
 
 # Ardupilot Tools
-ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
+ARDUPILOT_TOOLS="Tools/autotest"
 
 function prompt_user() {
       read -p "$1"
@@ -63,6 +63,11 @@ if ! grep -Fxq "$exportline" ~/.bashrc ; then
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
+fi
+
+# Get the correct ardupilot path if we are running the script inside the repository
+if git rev-parse --show-toplevel 2> /dev/null; then
+    CWD=$(git rev-parse --show-toplevel)
 fi
 
 exportline2="export PATH=$CWD/$ARDUPILOT_TOOLS:\$PATH";
