@@ -212,17 +212,17 @@ void AP_Notify::add_backends(void)
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-                ADD_BACKEND(new AP_ExternalLED()); // despite the name this is a built in set of onboard LED's
+#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
+                ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
-                ADD_BACKEND(new AP_BoardLED());
-  #else
+  #if (CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_VRBRAIN_V45) || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
                 ADD_BACKEND(new VRBoard_LED());
+  #else
+                ADD_BACKEND(new AP_BoardLED());
  #endif // CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
                 ADD_BACKEND(new AP_BoardLED2());
