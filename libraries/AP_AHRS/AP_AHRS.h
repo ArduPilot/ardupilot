@@ -304,6 +304,11 @@ public:
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
     }
 
+    // return the parameter AHRS_WIND_MAX in metres per second
+    uint8_t get_max_wind() const {
+        return _wind_max;
+    }
+
     // return a ground vector estimate in meters/second, in North/East order
     virtual Vector2f groundspeed_vector(void);
 
