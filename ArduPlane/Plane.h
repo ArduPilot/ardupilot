@@ -757,6 +757,40 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt = 0.02f;
 
+    enum Calib_Sent {
+        NOT_STARTED,
+        SENT_MIN,
+        SENT_TRIM,
+        SENT_MAX,
+    };
+
+    enum Calib_Status {
+        CAL_NOT_START,
+        CAL_RUNNING,
+        CAL_COMP,
+    };
+
+    // Marker to show that the servo sweep calibration routine has been started
+    Calib_Status sweep_status = CAL_NOT_START; //sweep_running
+
+    // Marker to store last issued position command in servo sweep calibration functionused in servo calibration in Plane::update_sweep, 1 is servo min, 2 is neutral, 3 is servo max
+    Calib_Sent servo_pos_indicator = NOT_STARTED;
+
+    // Set slew rate during calibration routine
+    uint8_t cal_slewrate = 0;
+
+    //time that control surface sweep started for calibration 
+    uint32_t sweep_start;
+
+    // Used to issue change position command in servo sweep calibration function
+    int16_t cal_servo_pos = 0;
+
+    // Used to store the number of servo functions to be calibrated
+    uint8_t cal_count = 0;
+
+    // collects and stores the servo functions to be calibrated/sweeped
+    SRV_Channel::Aux_servo_function_t calibration_outputs[NUM_SERVO_CHANNELS];
+
     // loop performance monitoring:
     AP::PerfInfo perf_info;
     struct {
@@ -989,6 +1023,8 @@ private:
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
+    void update_sweep();
+    void run_surface_sweep();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
