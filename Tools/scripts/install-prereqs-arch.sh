@@ -26,7 +26,7 @@ ARDUPILOT_TOOLS="ardupilot/Tools/autotest"
 
 function prompt_user() {
       read -p "$1"
-      if [[ $REPLY =~ ^[Yy]$ ]]; then
+      if [[ $REPLY =~ ^[Yy'']$ || $REPLY == '' ]]; then
           return 0
       else
           return 1
