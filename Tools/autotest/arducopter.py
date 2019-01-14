@@ -391,11 +391,11 @@ class AutoTestCopter(AutoTest):
             self.fetch_parameters()
             self.set_parameter("PLND_TYPE", 4)
 
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
 
             self.reboot_sitl()
 
@@ -1098,11 +1098,11 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_FLOW_ENABLE", 1)
             self.set_parameter("FLOW_ENABLE", 1)
 
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12, epsilon=0.01)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12, epsilon=0.01)
 
             self.set_parameter("SIM_GPS_DISABLE", 1)
             self.set_parameter("SIM_TERRAIN", 0)
@@ -1554,11 +1554,11 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
 
         try:
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
             self.set_parameter("RC9_OPTION", 10) # rangefinder
             self.set_rc(9, 2000)
 
@@ -1679,11 +1679,11 @@ class AutoTestCopter(AutoTest):
             self.fetch_parameters()
             self.set_parameter("PLND_TYPE", 4)
 
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
 
             self.reboot_sitl()
 
@@ -2131,11 +2131,11 @@ class AutoTestCopter(AutoTest):
 
         ex = None
         try:
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
             self.set_parameter("GRIP_ENABLE", 1)
             self.set_parameter("GRIP_TYPE", 1)
             self.set_parameter("SIM_GRPS_ENABLE", 1)
@@ -2576,11 +2576,11 @@ class AutoTestCopter(AutoTest):
             # enable companion backend:
             self.set_parameter("PLND_TYPE", 1)
 
-            self.set_parameter("RNGFND_TYPE", 1)
-            self.set_parameter("RNGFND_MIN_CM", 0)
-            self.set_parameter("RNGFND_MAX_CM", 4000)
-            self.set_parameter("RNGFND_PIN", 0)
-            self.set_parameter("RNGFND_SCALING", 12.12)
+            self.set_parameter("RNGFND1_TYPE", 1)
+            self.set_parameter("RNGFND1_MIN_CM", 0)
+            self.set_parameter("RNGFND1_MAX_CM", 4000)
+            self.set_parameter("RNGFND1_PIN", 0)
+            self.set_parameter("RNGFND1_SCALING", 12.12)
 
             # set up a channel switch to enable precision loiter:
             self.set_parameter("RC7_OPTION", 39)
