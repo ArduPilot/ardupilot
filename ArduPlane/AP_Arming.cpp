@@ -81,6 +81,15 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 #endif // CONFIG_HAL_BOARD
 
+    if (plane.g.calibration_servo_function_bm) {
+        // calling control surface sweep routine for calibration/full and free movement check
+        plane.run_surface_sweep();
+        if (plane.sweep_status != plane.CAL_COMP) {
+            check_failed(ARMING_CHECK_NONE, display_failure, "Servo calibration");
+            ret = false;
+        }
+    }
+
     return ret;
 }
 
