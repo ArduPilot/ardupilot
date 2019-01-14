@@ -251,8 +251,13 @@ void AP_Proximity_RPLidarA2::get_readings()
     uint32_t nbytes = _uart->available();
 
     while (nbytes-- > 0) {
-
-        uint8_t c = _uart->read();
+        int16_t readChar = _uart->read();
+        uint8_t c;
+        if (readChar < 0) {
+            continue;
+        } else {
+            c = readChar & 0xff;
+        }
         Debug(2, "UART READ %x <%c>", c, c); //show HEX values
 
         STATE:
