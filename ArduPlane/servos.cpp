@@ -753,6 +753,11 @@ void Plane::servos_output(void)
 {
     SRV_Channels::cork();
 
+    // update arming surface sweep
+    if (sweep_status == CAL_RUNNING) {
+        update_sweep();
+    }
+
     // support twin-engine aircraft
     servos_twin_engine_mix();
 
@@ -844,4 +849,214 @@ void Plane::servos_auto_trim(void)
         g2.servo_channels.save_trim();
     }
     
+}
+
+
+// Function controls when the control surface sweep routine is initiated.
+void Plane::run_surface_sweep(void)
+{
+    //Sweep routine initiated when first armed in a given power cycle.
+    if (plane.g.calibration_servo_function_start == 0) {
+        if (channel_rudder->get_control_in() > 4000) {  //<----- need to add 'or' arm command via mavlink
+            update_sweep();
+        }
+    }
+
+    //Sweep routine initiated when safety switch is first pressed in a given power cycle.
+    if ((plane.g.calibration_servo_function_start == 1) && (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED)) {
+        update_sweep();
+    }
+
+}
+
+
+void Plane::update_sweep(void)
+{
+    uint32_t now = millis();
+
+    // if the sweep is not yet running then initiate it
+    if ((sweep_status == CAL_NOT_START) && (servo_pos_indicator == Plane::NOT_STARTED)) {
+        //Set sweep running flag to true.  This will allow the sweep to continue untill the end.
+        sweep_status = CAL_RUNNING;
+
+        for (uint8_t i=0; i <= NUM_SERVO_CHANNELS; i++) {
+            if (plane.g.calibration_servo_function_bm & 1<<i) {
+                //Set bit count
+                cal_count++;
+            }
+        }
+
+        //index for assigning servo functions
+        uint8_t j = 0;
+
+        if (plane.g.calibration_servo_function_bm & 0x0000001) {
+            calibration_outputs[j] = SRV_Channel::k_flap;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000002) {
+            calibration_outputs[j] = SRV_Channel::k_flap_auto;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000004) {
+            calibration_outputs[j] = SRV_Channel::k_aileron;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000008) {
+            calibration_outputs[j] = SRV_Channel::k_mount_pan;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000010) {
+            calibration_outputs[j] = SRV_Channel::k_mount_tilt;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000020) {
+            calibration_outputs[j] = SRV_Channel::k_mount_roll;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000040) {
+            calibration_outputs[j] = SRV_Channel::k_mount2_pan;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000080) {
+            calibration_outputs[j] = SRV_Channel::k_mount2_tilt;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000100) {
+            calibration_outputs[j] = SRV_Channel::k_mount2_roll;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000200) {
+            calibration_outputs[j] = SRV_Channel::k_dspoilerLeft1;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000400) {
+            calibration_outputs[j] = SRV_Channel::k_dspoilerRight1;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0000800) {
+            calibration_outputs[j] = SRV_Channel::k_elevator;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0001000) {
+            calibration_outputs[j] = SRV_Channel::k_rudder;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0002000) {
+            calibration_outputs[j] = SRV_Channel::k_flaperon_left;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0004000) {
+            calibration_outputs[j] = SRV_Channel::k_flaperon_right;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0008000) {
+            calibration_outputs[j] = SRV_Channel::k_steering;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0010000) {
+            calibration_outputs[j] = SRV_Channel::k_gripper;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0020000) {
+            calibration_outputs[j] = SRV_Channel::k_motor_tilt;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0040000) {
+            calibration_outputs[j] = SRV_Channel::k_tracker_yaw;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0080000) {
+            calibration_outputs[j] = SRV_Channel::k_tracker_pitch;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0100000) {
+            calibration_outputs[j] = SRV_Channel::k_tiltMotorLeft;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0200000) {
+            calibration_outputs[j] = SRV_Channel::k_tiltMotorRight;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0400000) {
+            calibration_outputs[j] = SRV_Channel::k_elevon_left;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x0800000) {
+            calibration_outputs[j] = SRV_Channel::k_elevon_right;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x1000000) {
+            calibration_outputs[j] = SRV_Channel::k_vtail_left;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x2000000) {
+            calibration_outputs[j] = SRV_Channel::k_vtail_right;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x4000000) {
+            calibration_outputs[j] = SRV_Channel::k_dspoilerLeft2;
+            j++;
+        }
+        if (plane.g.calibration_servo_function_bm & 0x8000000) {
+            calibration_outputs[j] = SRV_Channel::k_dspoilerRight2;
+            j++;
+        }
+
+        //Set time for starting the sweep movement
+        sweep_start = now;
+
+        //Set servo position to go to max position
+        cal_servo_pos = SERVO_MAX;
+
+        //position indicator set to SENT_MAX to denote to future loops that the last position command in the sweep was to send it to max
+        servo_pos_indicator = Plane::SENT_MAX;
+
+        //set slew rate based on calibration parameter
+        cal_slewrate = g.calibration_servo_function_slewrate;
+    }
+
+    //The system has started, the servos have been sent to maximum positions, and enough time has passed for them to get there.
+    if ((sweep_status == CAL_RUNNING) && ((now - sweep_start) > (100000/cal_slewrate)) && (servo_pos_indicator == Plane::SENT_MAX)) {
+        //reset the sweep start time
+        sweep_start = now;
+
+        //servo position changed to minimum
+        cal_servo_pos = -SERVO_MAX;
+
+        //servo position indicator updated to reflect that the last command issued was to send the servos to minimum positions
+        servo_pos_indicator = Plane::SENT_MIN;
+        cal_slewrate = g.calibration_servo_function_slewrate;
+    }
+
+    //The system has been started, servos have been sent to minimum positions and enough time has passed for them to get there.
+    if ((sweep_status == CAL_RUNNING) && ((now - sweep_start) > (100000/cal_slewrate)) && (servo_pos_indicator == Plane::SENT_MIN)) {
+         //reset the sweep start time
+         sweep_start = now;
+
+         //servo position changed to neutral
+         cal_servo_pos = 0;
+
+         //servo position indicator updated to reflect that the last command issued was to send the servos to neutral positions
+         servo_pos_indicator = Plane::SENT_TRIM;
+
+         cal_slewrate = g.calibration_servo_function_slewrate;
+    }
+
+    //then control surface calibration sweep has been completed and the sweep will be terminated and slewrate returned to default
+    if ((sweep_status == CAL_RUNNING) && ((now - sweep_start) > (100000/cal_slewrate)) && (servo_pos_indicator == Plane::SENT_TRIM)) {
+        //sweep_status switched off
+        sweep_status = CAL_COMP;
+
+        //Servo slewrate returned to default
+        cal_slewrate = 0;
+
+        //Send calibration complete message
+        gcs().send_text(MAV_SEVERITY_INFO,"Control Surface Calibration Complete");
+    }
+
+    //Set servo positions and slew rates for calibration
+    for (uint8_t i=0; i < cal_count; i++) {
+        SRV_Channels::set_output_scaled(calibration_outputs[i], cal_servo_pos);
+        SRV_Channels::limit_slew_rate(calibration_outputs[i],cal_slewrate, G_Dt);
+    }
 }
