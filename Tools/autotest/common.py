@@ -167,6 +167,7 @@ class AutoTest(ABC):
         self.max_set_rc_timeout = 0
         self.last_wp_load = 0
         self.forced_post_test_sitl_reboots = 0
+        self.skip_list = []
 
     @staticmethod
     def progress(text):
@@ -2008,6 +2009,11 @@ switch value'''
         self.progress("---------- %s  ----------" % description)
         self.progress("-")
 
+    def test_skipped(self, test, reason):
+        (name, desc, func) = test
+        self.progress("##### %s is skipped: %s" % (name, reason))
+        self.skip_list.append((test, reason))
+
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
@@ -2034,13 +2040,24 @@ switch value'''
             self.fail_list.append(["Failed with timeout", None, None])
         self.close()
 
+        if len(self.skip_list):
+            self.progress("Skipped tests:")
+            for skipped in self.skip_list:
+                (test, reason) = skipped
+                (name, desc, func) = test
+                print("  %s (see %s)" % (name, reason))
+
         if len(self.fail_list):
             self.progress("Failing tests:")
             for failure in self.fail_list:
                 (desc, exception, debug_filename) = failure
                 print("  %s (%s) (see %s)" % (desc, exception, debug_filename))
             return False
+
         return True
+
+    def disabled_tests(self):
+        return {}
 
     def tests(self):
         return []
@@ -2052,6 +2069,16 @@ switch value'''
 
     def autotest(self):
         """Autotest used by ArduPilot autotest CI."""
-        ret = self.run_tests(self.tests())
+        all_tests = self.tests()
+        disabled = self.disabled_tests()
+        tests = []
+        for test in all_tests:
+            (name, desc, func) = test
+            if name in disabled:
+                self.test_skipped(test, disabled[name])
+                continue
+            tests.append(test)
+
+        ret = self.run_tests(tests)
         self.post_tests_announcements()
         return ret

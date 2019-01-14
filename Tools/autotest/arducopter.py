@@ -2695,6 +2695,10 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
+    def disabled_tests(self):
+        return {
+            "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
+        }
 
 class AutoTestHeli(AutoTestCopter):
 
