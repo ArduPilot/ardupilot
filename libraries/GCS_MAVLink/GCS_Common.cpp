@@ -264,6 +264,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         return;
     }
 
+    const float sensor_orientation[4] = { 0.0f }; // TODO: populate the Quaternion
     mavlink_msg_distance_sensor_send(
         chan,
         AP_HAL::millis(),                        // time since system boot TODO: take time of measurement
@@ -273,7 +274,10 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         sensor->get_mav_distance_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
         instance,                                // onboard ID of the sensor == instance
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-        0);                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        0,                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        0.0f,                                    // Horizontal Field of View (angle) where the distance measurement is valid
+        0.0f,                                    // Vertical Field of View (angle) where the distance measurement is valiid
+        sensor_orientation);                     // Quaternion of the sensor orientation in vehicle body frame
 }
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
@@ -341,6 +345,7 @@ void GCS_MAVLINK::send_proximity() const
 
     const uint16_t dist_min = (uint16_t)(proximity->distance_min() * 100.0f); // minimum distance the sensor can measure in centimeters
     const uint16_t dist_max = (uint16_t)(proximity->distance_max() * 100.0f); // maximum distance the sensor can measure in centimeters
+    const float sensor_orientation[4] = { 0.0f }; // TODO: populate the Quaternion
     // send horizontal distances
     AP_Proximity::Proximity_Distance_Array dist_array;
     if (proximity->get_horizontal_distances(dist_array)) {
@@ -357,7 +362,10 @@ void GCS_MAVLINK::send_proximity() const
                     MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
                     PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
                     dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                    0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                    0,                                              // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                    0.0f,                                           // Horizontal Field of View (angle) where the distance measurement is valid
+                    0.0f,                                           // Vertical Field of View (angle) where the distance measurement is valid
+                    sensor_orientation);                            // Quaternion of the sensor orientation in vehicle body frame
         }
     }
 
@@ -376,7 +384,10 @@ void GCS_MAVLINK::send_proximity() const
                 MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
                 PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
-                0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                0.0f,                                                     // Horizontal Field of View (angle) where the distance measurement is valid
+                0.0f,                                                     // Vertical Field of View (angle) where the distance measurement is valid
+                sensor_orientation);                                      // Quaternion of the sensor orientation in vehicle body frame
     }
 }
 
