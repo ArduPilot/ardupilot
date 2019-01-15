@@ -245,16 +245,14 @@ void AP_Proximity_RPLidarA2::get_readings()
         return;
     }
     Debug(2, "             CURRENT STATE: %d ", _rp_state);
-    uint32_t nbytes = _uart->available();
+    int32_t nbytes = _uart->available();
 
     while (nbytes-- > 0) {
         int16_t readChar = _uart->read();
-        uint8_t c;
         if (readChar < 0) {
             continue;
-        } else {
-            c = readChar & 0xff;
         }
+        const uint8_t c = readChar;
         Debug(2, "UART READ %x <%c>", c, c); //show HEX values
 
         STATE:
