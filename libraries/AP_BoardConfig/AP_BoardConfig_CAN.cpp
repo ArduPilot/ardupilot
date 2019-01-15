@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include "AP_BoardConfig.h"
 #include "AP_BoardConfig_CAN.h"
 
 #if HAL_WITH_UAVCAN
@@ -39,6 +40,7 @@
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -160,6 +162,13 @@ void AP_BoardConfig_CAN::init()
 
                 AP_Param::load_object_from_eeprom(_drivers[i]._kdecan, AP_KDECAN::var_info);
 #endif
+            } else if (prot_type == Protocol_Type_ToshibaCAN) {
+                _drivers[i]._driver = _drivers[i]._tcan = new AP_ToshibaCAN;
+
+                if (_drivers[i]._driver == nullptr) {
+                    AP_BoardConfig::sensor_config_error("ToshibaCAN init failed");
+                    continue;
+                }
             } else {
                 continue;
             }
