@@ -1,3 +1,18 @@
+Release 3.9.5beta2, 15th January 2019
+-------------------------------------
+
+This is the second beta for the minor release 3.9.5 of plane.
+
+The changes in this release are:
+
+ - fixed EKF yaw reset in quadplanes
+
+ - fixed bug handling corruption of DSM RC protocols
+
+ - fixed internal amber LED on CubeBlack
+
+Happy flying!
+
 Release 3.9.5beta1, 11th January 2019
 -------------------------------------
 
