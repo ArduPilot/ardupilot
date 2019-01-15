@@ -88,6 +88,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
+    // @Param: OBS_DIST
+    // @DisplayName: Obstacle detection distance
+    // @Description: Define dangerous zone from vehicle
+    // @Units: cm
+    // @Range: 60 2000
+    // @User: Standard
+    AP_GROUPINFO("OBS_DIST",     8,     AP_Arming, _obstacle_distance, 60),
+
     // index 4 was VOLT_MIN, moved to AP_BattMonitor
     AP_GROUPEND
 };
