@@ -26,6 +26,7 @@ public:
         Protocol_Type_None = 0,
         Protocol_Type_UAVCAN = 1,
         Protocol_Type_KDECAN = 2,
+        Protocol_Type_ToshibaCAN = 3
     };
 
     void init(void);
@@ -123,6 +124,7 @@ private:
         AP_HAL::CANProtocol* _driver;
         AP_HAL::CANProtocol* _uavcan;
         AP_HAL::CANProtocol* _kdecan;
+        AP_HAL::CANProtocol* _tcan;
     };
 
     Interface _interfaces[MAX_NUMBER_OF_CAN_INTERFACES];

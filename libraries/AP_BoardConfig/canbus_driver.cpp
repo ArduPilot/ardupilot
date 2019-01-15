@@ -20,6 +20,7 @@
   #include <AP_Vehicle/AP_Vehicle.h>
 
   #include <AP_UAVCAN/AP_UAVCAN.h>
+  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -31,8 +32,8 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::Driver::var_info[] = {
     // @Param: PROTOCOL
     // @DisplayName: Enable use of specific protocol over virtual driver
     // @Description: Enabling this option starts selected protocol that will use this virtual driver
-    // @Values{Copter,Plane,Sub}: 0:Disabled,1:UAVCAN,2:KDECAN
-    // @Values: 0:Disabled,1:UAVCAN
+    // @Values{Copter,Plane,Sub}: 0:Disabled,1:UAVCAN,2:KDECAN,3:ToshibaCAN
+    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PROTOCOL", 1, AP_BoardConfig_CAN::Driver, _protocol_type, AP_BoardConfig_CAN::Protocol_Type_UAVCAN),
