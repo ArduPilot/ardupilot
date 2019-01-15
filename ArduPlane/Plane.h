@@ -106,6 +106,7 @@
 
 // Local modules
 #include "defines.h"
+#include "mode.h"
 
 #ifdef ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
@@ -136,7 +137,7 @@ protected:
     void setup_IO_failsafe(void);
 
     // return the AFS mapped control mode
-    enum control_mode afs_mode(void);
+    enum AP_AdvancedFailsafe::control_mode afs_mode(void);
 };
 
 /*
@@ -156,6 +157,30 @@ public:
     friend class GCS_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
+
+    friend class Mode;
+    friend class ModeCircle;
+    friend class ModeStabilize;
+    friend class ModeTraining;
+    friend class ModeAcro;
+    friend class ModeFBWA;
+    friend class ModeFBWB;
+    friend class ModeCruise;
+    friend class ModeAutoTune;
+    friend class ModeAuto;
+    friend class ModeRTL;
+    friend class ModeLoiter;
+    friend class ModeAvoidADSB;
+    friend class ModeGuided;
+    friend class ModeInitializing;
+    friend class ModeManual;
+    friend class ModeQStabilize;
+    friend class ModeQHover;
+    friend class ModeQLoiter;
+    friend class ModeQLand;
+    friend class ModeQRTL;
+    friend class ModeQAcro;
+    friend class ModeQAutotune;
 
     Plane(void);
 
@@ -299,11 +324,34 @@ private:
     AP_OSD osd;
 #endif
     
+    ModeCircle mode_circle;
+    ModeStabilize mode_stabilize;
+    ModeTraining mode_training;
+    ModeAcro mode_acro;
+    ModeFBWA mode_fbwa;
+    ModeFBWB mode_fbwb;
+    ModeCruise mode_cruise;
+    ModeAutoTune mode_autotune;
+    ModeAuto mode_auto;
+    ModeRTL mode_rtl;
+    ModeLoiter mode_loiter;
+    ModeAvoidADSB mode_avoidADSB;
+    ModeGuided mode_guided;
+    ModeInitializing mode_initializing;
+    ModeManual mode_manual;
+    ModeQStabilize mode_qstabilize;
+    ModeQHover mode_qhover;
+    ModeQLoiter mode_qloiter;
+    ModeQLand mode_qland;
+    ModeQRTL mode_qrtl;
+    ModeQAcro mode_qacro;
+    ModeQAutotune mode_qautotune;
+
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
-    enum FlightMode control_mode = INITIALISING;
+    Mode *control_mode = &mode_initializing;
     mode_reason_t control_mode_reason = MODE_REASON_UNKNOWN;
-    enum FlightMode previous_mode = INITIALISING;
+    Mode *previous_mode = &mode_initializing;
     mode_reason_t previous_mode_reason = MODE_REASON_UNKNOWN;
 
     // time of last mode change
@@ -329,7 +377,7 @@ private:
         bool adsb:1;
 
         // saved flight mode
-        enum FlightMode saved_mode;
+        enum Mode::Number saved_mode_number;
 
         // A tracking variable for type of failsafe active
         // Used for failsafe based on loss of RC signal or GCS signal
@@ -904,9 +952,9 @@ private:
     void rpm_update(void);
     void init_ardupilot();
     void startup_ground(void);
-    enum FlightMode get_previous_mode();
-    void set_mode(enum FlightMode mode, mode_reason_t reason);
-    void exit_mode(enum FlightMode mode);
+    bool set_mode(Mode& new_mode, const mode_reason_t reason);
+    bool set_mode_by_number(const Mode::Number new_mode_number, const mode_reason_t reason);
+    Mode *mode_from_mode_num(const enum Mode::Number num);
     void check_long_failsafe();
     void check_short_failsafe();
     void startup_INS_ground(void);
@@ -938,7 +986,7 @@ private:
     void update_logging1(void);
     void update_logging2(void);
     void avoidance_adsb_update(void);
-    void update_flight_mode(void);
+    void update_control_mode(void);
     void stabilize();
     void set_servos_idle(void);
     void set_servos();
@@ -957,7 +1005,6 @@ private:
     void update_is_flying_5Hz(void);
     void crash_detection_update(void);
     bool in_preLaunch_flight_stage(void);
-    void handle_auto_mode(void);
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
@@ -1007,7 +1054,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
-    void notify_flight_mode(enum FlightMode mode);
+    void notify_mode(const Mode& mode);
     void log_init();
     void parachute_check();
 #if PARACHUTE == ENABLED

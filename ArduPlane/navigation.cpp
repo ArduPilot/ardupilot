@@ -108,7 +108,7 @@ void Plane::calc_airspeed_errors()
     ahrs.airspeed_estimate(&airspeed_measured);
 
     // FBW_B/cruise airspeed target
-    if (!failsafe.rc_failsafe && (control_mode == FLY_BY_WIRE_B || control_mode == CRUISE)) {
+    if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
         if (g2.flight_options & FlightOptions::CRUISE_TRIM_AIRSPEED) {
             target_airspeed_cm = aparm.airspeed_cruise_cm;
         } else if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
@@ -141,7 +141,7 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-    } else if ((control_mode == AUTO) &&
+    } else if ((control_mode == &mode_auto) &&
                (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
 							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
 							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
@@ -162,7 +162,7 @@ void Plane::calc_airspeed_errors()
     // above.
     if (auto_throttle_mode &&
     	aparm.min_gndspeed_cm > 0 &&
-    	control_mode != CIRCLE) {
+    	control_mode != &mode_circle) {
         int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -223,10 +223,10 @@ void Plane::update_loiter(uint16_t radius)
             quadplane.guided_start();
         }
     } else if ((loiter.start_time_ms == 0 &&
-                (control_mode == AUTO || control_mode == GUIDED) &&
+                (control_mode == &mode_auto || control_mode == &mode_guided) &&
                 auto_state.crosstrack &&
                 current_loc.get_distance(next_WP_loc) > radius*3) ||
-               (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
+               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
           navigate to it like in auto-mode for normal crosstrack behavior
@@ -245,7 +245,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == GUIDED || control_mode == AVOID_ADSB) {
+            if (control_mode == &mode_guided || control_mode == &mode_avoidADSB) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs().send_mission_item_reached_message(0);
             }

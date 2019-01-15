@@ -19,39 +19,39 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (plane.control_mode) {
-    case MANUAL:
-    case TRAINING:
-    case ACRO:
-    case QACRO:
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::MANUAL:
+    case Mode::Number::TRAINING:
+    case Mode::Number::ACRO:
+    case Mode::Number::QACRO:
         _base_mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
         break;
-    case STABILIZE:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case CRUISE:
-    case QAUTOTUNE:
+    case Mode::Number::STABILIZE:
+    case Mode::Number::FLY_BY_WIRE_A:
+    case Mode::Number::AUTOTUNE:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::QSTABILIZE:
+    case Mode::Number::QHOVER:
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::CRUISE:
+    case Mode::Number::QAUTOTUNE:
         _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
         break;
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case AVOID_ADSB:
-    case GUIDED:
-    case CIRCLE:
-    case QRTL:
+    case Mode::Number::AUTO:
+    case Mode::Number::RTL:
+    case Mode::Number::LOITER:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::QRTL:
         _base_mode = MAV_MODE_FLAG_GUIDED_ENABLED |
                      MAV_MODE_FLAG_STABILIZE_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
         break;
-    case INITIALISING:
+    case Mode::Number::INITIALISING:
         break;
     }
 
@@ -59,12 +59,12 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
     }
 
-    if (plane.control_mode != MANUAL && plane.control_mode != INITIALISING) {
+    if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
         // stabiliser of some form is enabled
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != INITIALISING) {
+    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != &plane.mode_initializing) {
         // all modes except INITIALISING have some form of manual
         // override if stick mixing is enabled
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -77,7 +77,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 #endif
 
     // we are armed if we are not initialising
-    if (plane.control_mode != INITIALISING && plane.arming.is_armed()) {
+    if (plane.control_mode != &plane.mode_initializing && plane.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -89,12 +89,12 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
 
 uint32_t GCS_Plane::custom_mode() const
 {
-    return plane.control_mode;
+    return plane.control_mode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Plane::system_status() const
 {
-    if (plane.control_mode == INITIALISING) {
+    if (plane.control_mode == &plane.mode_initializing) {
         return MAV_STATE_CALIBRATING;
     }
     if (plane.any_failsafe_triggered()) {
@@ -156,7 +156,7 @@ void Plane::send_fence_status(mavlink_channel_t chan)
 
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
-    if (plane.control_mode == MANUAL) {
+    if (plane.control_mode == &plane.mode_manual) {
         return;
     }
     const QuadPlane &quadplane = plane.quadplane;
@@ -171,7 +171,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.z * 1.0e-2f,
             wp_nav_valid ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0,
             wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0,
-            (plane.control_mode != QSTABILIZE) ? quadplane.pos_control->get_alt_error() * 1.0e-2f : 0,
+            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_alt_error() * 1.0e-2f : 0,
             plane.airspeed_error * 100,
             wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
     } else {
@@ -191,7 +191,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
 
 void GCS_MAVLINK_Plane::send_position_target_global_int()
 {
-    if (plane.control_mode == MANUAL) {
+    if (plane.control_mode == &plane.mode_manual) {
         return;
     }
     Location &next_WP_loc = plane.next_WP_loc;
@@ -334,7 +334,7 @@ void GCS_MAVLINK_Plane::send_pid_info(const AP_Logger::PID_Info *pid_info,
  */
 void GCS_MAVLINK_Plane::send_pid_tuning()
 {
-    if (plane.control_mode == MANUAL) {
+    if (plane.control_mode == &plane.mode_manual) {
         // no PIDs should be used in manual
         return;
     }
@@ -655,7 +655,7 @@ bool GCS_MAVLINK_Plane::in_hil_mode() const
  */
 bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-    if (plane.control_mode != GUIDED) {
+    if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
         return false;
     }
@@ -783,8 +783,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 
         // location is valid load and set
         if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-            (plane.control_mode == GUIDED)) {
-            plane.set_mode(GUIDED, MODE_REASON_GCS_COMMAND);
+            (plane.control_mode == &plane.mode_guided)) {
+            plane.set_mode(plane.mode_guided, MODE_REASON_GCS_COMMAND);
             plane.guided_WP_loc = requested_position;
 
             // add home alt if needed
@@ -814,7 +814,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // controlled modes (e.g., MANUAL, TRAINING)
         // this command should be ignored since it comes in from GCS
         // or a companion computer:
-        if (plane.control_mode != GUIDED && plane.control_mode != AUTO && plane.control_mode != AVOID_ADSB) {
+        if ((plane.control_mode != &plane.mode_guided) &&
+            (plane.control_mode != &plane.mode_auto) &&
+            (plane.control_mode != &plane.mode_avoidADSB)) {
             // failed
             return MAV_RESULT_FAILED;
         }
@@ -828,11 +830,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(LOITER, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_loiter, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(RTL, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_rtl, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_TAKEOFF: {
@@ -846,7 +848,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 
     case MAV_CMD_MISSION_START:
-        plane.set_mode(AUTO, MODE_REASON_GCS_COMMAND);
+        plane.set_mode(plane.mode_auto, MODE_REASON_GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_COMPONENT_ARM_DISARM:
@@ -868,7 +870,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.mission.jump_to_landing_sequence()) {
-            plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+            plane.set_mode(plane.mode_auto, MODE_REASON_UNKNOWN);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -1185,7 +1187,8 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in e.g., RTL, CICLE. Specifying a single mode for companion
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
-        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) { // don't screw up failsafes
+        if ((plane.control_mode != &plane.mode_guided) &&
+            (plane.control_mode != &plane.mode_avoidADSB)) { // don't screw up failsafes
             break; 
         }
 
@@ -1270,7 +1273,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         mavlink_msg_set_position_target_local_ned_decode(msg, &packet);
 
         // exit if vehicle is not in Guided mode
-        if (plane.control_mode != GUIDED) {
+        if (plane.control_mode != &plane.mode_guided) {
             break;
         }
 
@@ -1295,7 +1298,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != GUIDED && plane.control_mode != AVOID_ADSB) {
+        if (plane.control_mode != &plane.mode_guided && plane.control_mode != &plane.mode_avoidADSB) {
             //don't screw up failsafes
             break;
         }
@@ -1397,7 +1400,7 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, mavlink_
 {
     plane.auto_state.next_wp_crosstrack = false;
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
-    if (plane.control_mode == AUTO && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
+    if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
 }
@@ -1412,31 +1415,11 @@ AP_AdvancedFailsafe *GCS_MAVLINK_Plane::get_advanced_failsafe() const
  */
 bool GCS_MAVLINK_Plane::set_mode(const uint8_t mode)
 {
-    switch (mode) {
-    case MANUAL:
-    case CIRCLE:
-    case STABILIZE:
-    case TRAINING:
-    case ACRO:
-    case FLY_BY_WIRE_A:
-    case AUTOTUNE:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-    case AVOID_ADSB:
-    case GUIDED:
-    case AUTO:
-    case RTL:
-    case LOITER:
-    case QSTABILIZE:
-    case QHOVER:
-    case QLOITER:
-    case QLAND:
-    case QRTL:
-    case QAUTOTUNE:
-        plane.set_mode((enum FlightMode)mode, MODE_REASON_GCS_COMMAND);
-        return true;
+    Mode *new_mode = plane.mode_from_mode_num((enum Mode::Number)mode);
+    if (new_mode == nullptr) {
+        return false;
     }
-    return false;
+    return plane.set_mode(*new_mode, MODE_REASON_GCS_COMMAND);
 }
 
 uint64_t GCS_MAVLINK_Plane::capabilities() const

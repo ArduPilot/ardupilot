@@ -128,7 +128,7 @@ void Plane::rudder_arm_disarm_check()
     // if not in a manual throttle mode and not in CRUISE or FBWB
     // modes then disallow rudder arming/disarming
     if (auto_throttle_mode &&
-        (control_mode != CRUISE && control_mode != FLY_BY_WIRE_B)) {
+        (control_mode != &mode_cruise && control_mode != &mode_fbwb)) {
         rudder_arm_timer = 0;
         return;      
     }
@@ -189,7 +189,7 @@ void Plane::read_radio()
 
     failsafe.last_valid_rc_ms = millis();
 
-    if (control_mode == TRAINING) {
+    if (control_mode == &mode_training) {
         // in training mode we don't want to use a deadzone, as we
         // want manual pass through when not exceeding attitude limits
         channel_roll->recompute_pwm_no_deadzone();
@@ -218,7 +218,7 @@ void Plane::read_radio()
     quadplane.tailsitter_check_input();
 
     // check for transmitter tuning changes
-    tuning.check_input(control_mode);
+    tuning.check_input(control_mode->mode_number());
 }
 
 int16_t Plane::rudder_input(void)
@@ -230,7 +230,7 @@ int16_t Plane::rudder_input(void)
     }
 
     if ((g2.flight_options & FlightOptions::DIRECT_RUDDER_ONLY) &&
-        !(control_mode == MANUAL || control_mode == STABILIZE || control_mode == ACRO)) {
+        !(control_mode == &mode_manual || control_mode == &mode_stabilize || control_mode == &mode_acro)) {
         // the user does not want any input except in these modes
         return 0;
     }
@@ -258,13 +258,14 @@ void Plane::control_failsafe()
         channel_pitch->set_control_in(0);
         channel_rudder->set_control_in(0);
 
-        switch (control_mode) {
-            case QSTABILIZE:
-            case QHOVER:
-            case QLOITER:
-            case QLAND: // throttle is ignored, but reset anyways
-            case QRTL:  // throttle is ignored, but reset anyways
-            case QAUTOTUNE:
+        switch (control_mode->mode_number()) {
+            case Mode::Number::QSTABILIZE:
+            case Mode::Number::QHOVER:
+            case Mode::Number::QLOITER:
+            case Mode::Number::QLAND: // throttle is ignored, but reset anyways
+            case Mode::Number::QRTL:  // throttle is ignored, but reset anyways
+            case Mode::Number::QACRO:
+            case Mode::Number::QAUTOTUNE:
                 if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DESIRED_GROUND_IDLE) {
                     // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
                     channel_throttle->set_control_in(channel_throttle->get_range() / 2);
