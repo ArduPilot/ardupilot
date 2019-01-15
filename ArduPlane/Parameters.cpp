@@ -582,7 +582,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
     // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Advanced
-    GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
+    GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
