@@ -30,6 +30,7 @@
   #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
+  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -270,6 +271,14 @@ void SRV_Channels::push()
                 ap_kdecan->update();
                 break;
 #endif
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
+                AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
+                if (ap_tcan == nullptr) {
+                    continue;
+                }
+                ap_tcan->update();
+                break;
             }
             case AP_BoardConfig_CAN::Protocol_Type_None:
             default:
