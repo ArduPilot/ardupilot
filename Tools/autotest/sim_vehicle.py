@@ -571,6 +571,8 @@ def start_vehicle(binary, autotest, opts, stuff, loc):
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
     if path is not None:
         cmd.extend(["--defaults", path])
+    if opts.mcast:
+        cmd.extend(["--uartA mcast:"])
 
     run_in_terminal_window(autotest, cmd_name, cmd)
 
@@ -592,7 +594,10 @@ def start_mavproxy(opts, stuff):
     if opts.hil:
         cmd.extend(["--load-module", "HIL"])
     else:
-        cmd.extend(["--master", mavlink_port])
+        if opts.mcast:
+            cmd.extend(["--master", "mcast:"])
+        else:
+            cmd.extend(["--master", mavlink_port])
         if stuff["sitl-port"]:
             cmd.extend(["--sitl", simout_port])
 
@@ -857,6 +862,10 @@ group_sim.add_option("", "--fresh-params",
                      dest='fresh_params',
                      default=False,
                      help="Generate and use local parameter help XML")
+group_sim.add_option("", "--mcast",
+                     action="store_true",
+                     default=False,
+                     help="Use multicasting at default 239.255.145.50:14550")
 group_sim.add_option("", "--osd",
                      action='store_true',
                      dest='OSD',
