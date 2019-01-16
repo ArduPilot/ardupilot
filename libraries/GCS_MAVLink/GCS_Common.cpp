@@ -174,7 +174,7 @@ GCS_MAVLINK::setup_uart(const AP_SerialManager& serial_manager, AP_SerialManager
  * handling code
  */
 void
-GCS_MAVLINK::queued_waypoint_send()
+GCS_MAVLINK::queued_mission_request_send()
 {
     if (initialised &&
         waypoint_receiving &&
@@ -852,7 +852,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
         waypoint_timelast_request = AP_HAL::millis();
         // if we have enough space, then send the next WP immediately
         if (HAVE_PAYLOAD_SPACE(chan, MISSION_ITEM)) {
-            queued_waypoint_send();
+            queued_mission_request_send();
         } else {
             send_message(MSG_NEXT_WAYPOINT);
         }
@@ -3616,7 +3616,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         break;
     case MSG_NEXT_WAYPOINT:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
-        queued_waypoint_send();
+        queued_mission_request_send();
         ret = true;
         break;
     default:
