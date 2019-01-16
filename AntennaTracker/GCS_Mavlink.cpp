@@ -436,7 +436,7 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
             waypoint_receiving = true;
             waypoint_request_i = 0;
             waypoint_request_last = 0;
-            send_message(MSG_NEXT_WAYPOINT);
+            send_message(MSG_NEXT_MISSION_REQUEST);
         }
         break;
     }
