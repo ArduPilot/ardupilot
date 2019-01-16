@@ -37,89 +37,90 @@ STDOUT_SERIAL SD3
 STDOUT_BAUDRATE 57600
 
 
-#PA0 TIM2_CH1 TIM2 GPIO(77) ALARM    # OUT_CH1
- PA1  TIM2_CH2 TIM2 PWM(1)  GPIO(50) # PWM_CH0
- PA2  TIM2_CH3 TIM2 PWM(2)  GPIO(51) # PWM_CH1
- PA3  TIM2_CH4 TIM2 PWM(3)  GPIO(52) # PWM_CH2
- PA4  SDCARD_CS CS                   # CS_SDCARD
- PA5  SPI1_SCK SPI1                  # SPI1_SCK
- PA6  SPI1_MISO SPI1                 # SPI1_MISO
- PA7  SPI1_MOSI SPI1                 # SPI1_MOSI
-#PA8                                 # Not connected
- PA9  VBUS INPUT                     # USB_VBUS
-#P10                                 # USB_ID
- PA11 OTG_FS_DM OTG1                 # USBM
- PA12 OTG_FS_DP OTG1                 # USBP
- PA13 JTMS-SWDIO SWD                 # JTAG_TMS
- PA14 JTCK-SWCLK SWD                 # JTAG_TCK
-#PA15                                # Not connected
+ PA0  BUZZER OUTPUT LOW GPIO(32)
+ PA1  TIM2_CH2 TIM2 PWM(1)  GPIO(50)
+ PA2  TIM2_CH3 TIM2 PWM(2)  GPIO(51)
+ PA3  TIM2_CH4 TIM2 PWM(3)  GPIO(52)
+ PA4  SDCARD_CS CS
+ PA5  SPI1_SCK SPI1
+ PA6  SPI1_MISO SPI1
+ PA7  SPI1_MOSI SPI1
+#PA8
+ PA9  VBUS INPUT
+#P10
+ PA11 OTG_FS_DM OTG1
+ PA12 OTG_FS_DP OTG1
+ PA13 JTMS-SWDIO SWD
+ PA14 JTCK-SWCLK SWD
+#PA15
 
- PB0  TIM3_CH3 TIM3 PWM(5)  GPIO(54) # PWM_CH4
- PB1  TIM3_CH4 TIM3 PWM(6)  GPIO(55) # PWM_CH5
+ PB0  TIM3_CH3 TIM3 PWM(5)  GPIO(54)
+ PB1  TIM3_CH4 TIM3 PWM(6)  GPIO(55)
 #PB2
- PB3  LED_EXT3  OUTPUT GPIO(5)       # Not connected
- PB4  LED_EXT4  OUTPUT GPIO(6)       # Not connected
- PB5  TIM3_CH2 TIM3 PWM(4)  GPIO(53) # PWM_CH3
- PB6  USART1_TX USART1               # UART1_TX
- PB7  USART1_RX USART1               # UART1_RX
- PB8  I2C1_SCL I2C1                  # SCL2/CANRX
- PB9  I2C1_SDA I2C1                  # SDA2/CANTX
- PB10 I2C2_SCL I2C2                  # SCL
- PB11 I2C2_SDA I2C2                  # SDA
-#PB12                                # Not connected
- PB13 SPI2_SCK SPI2                  # SPI2_SCK
- PB14 SPI2_MISO SPI2                 # SPI2_MISO
- PB15 SPI2_MOSI SPI2                 # SPI2_MOSI
+ PB3  LED_EXT3  OUTPUT GPIO(30)
+ PB4  LED_EXT4  OUTPUT GPIO(31)
+ PB5  TIM3_CH2 TIM3 PWM(4)  GPIO(53)
+ PB6  USART1_TX USART1
+ PB7  USART1_RX USART1
+ PB8  I2C1_SCL I2C1
+ PB9  I2C1_SDA I2C1
+ PB10 I2C2_SCL I2C2
+ PB11 I2C2_SDA I2C2
+#PB12
+ PB13 SPI2_SCK SPI2
+ PB14 SPI2_MISO SPI2
+ PB15 SPI2_MOSI SPI2
 
- PC0  BATT_VOLTAGE_SENS ADC1         # ADC12_VBAT
-#PC1                                 # Not connected
-#PC2                                 # Not connected
-#PC3                                 # Not connected
-#PC4                                 # Not connected
- PC5  LED_GREEN OUTPUT GPIO(1)       # CMD_LED_RED
-#PC6                                 # SBUS_TX
- PC7  TIM8_CH2 TIM8 RCIN FLOAT LOW   # SBUS_RX
-#PC8
-#PC9
- PC10 SPI3_SCK SPI3                  # SPI3_SCK
- PC11 SPI3_MISO SPI3                 # SPI3_MISO
- PC12 SPI3_MOSI SPI3                 # SPI3_MOSI
-#PC13                                # Not connected
-#PC14                                # Not connected
-#PC15                                # Not connected
+ PC0  BATT_VOLTAGE_SENS ADC1
+#PC1
+#PC2
+#PC3
+#PC4
+ PC5  LED_GREEN OUTPUT GPIO(25)
+#PC6
+ PC7  TIM8_CH2 TIM8 RCIN FLOAT LOW
+ PC8  RELAY_1   OUTPUT LOW GPIO(33)
+ PC9  RELAY_2   OUTPUT LOW GPIO(34)
+ PC10 SPI3_SCK SPI3
+ PC11 SPI3_MISO SPI3
+ PC12 SPI3_MOSI SPI3
+#PC13
+#PC14
+#PC15
 
-#PD0                                 # Not connected
-#PD1                                 # Not connected
-#PD2                                 # Not connected
-#PD3                                 # UART3_EN
-#PD4                                 # UART3_CTS
- PD5  USART2_TX USART2               # Not connected
- PD6  USART2_RX USART2               # Not connected
- PD7  SBUS_INV OUTPUT                # Not connected
- PD8  USART3_TX USART3               # UART3_TX
- PD9  USART3_RX USART3               # UART3_RX
-#PD10                                # NT_GYRO
-#PD11                                # Not connected
- PD12 TIM4_CH1 TIM4 PWM(8)  GPIO(57) # PWM_CH7
- PD13 TIM4_CH2 TIM4 PWM(7)  GPIO(56) # PWM_CH6
- PD15 LED_RED   OUTPUT GPIO(0)       # CMD_LED_GRN
- PD14 LED_BLUE  OUTPUT GPIO(2)       # CMD_LED_BLU
+#PD0
+#PD1
+#PD2
+#PD3
+#PD4
+ PD5  USART2_TX USART2
+ PD6  USART2_RX USART2
+ PD7  SBUS_INV OUTPUT
+ PD8  USART3_TX USART3
+ PD9  USART3_RX USART3
+#PD10
+#PD11
+ PD12 TIM4_CH1 TIM4 PWM(8)  GPIO(57)
+ PD13 TIM4_CH2 TIM4 PWM(7)  GPIO(56)
+ PD15 LED_RED   OUTPUT GPIO(27)
+ PD14 LED_BLUE  OUTPUT GPIO(26)
 
- PE0  BARO_CS CS                     # CS_BARO
-#PE1                                 # EXP_EEPROM_WIFI_CS
-#PE2  LED_EXT1  OUTPUT GPIO(3)       # OUT_CH3
-#PE3  LED_EXT2  OUTPUT GPIO(4)       # OUT_CH2
-#PE4                                 # Not connected
-#PE5                                 # PWM_IN4
-#PE6                                 # PWM_IN5
-#PE7                                 # EXP_WIFI_EN
-#PE8                                 # EXP_WIFI_INT
- PE9  TIM1_CH1 TIM1 PWM(9)  GPIO(58) # PWM_CH8
- PE10 MPU_CS CS                      # CS_GYRO
- PE11 TIM1_CH2 TIM1 PWM(10) GPIO(59) # PWM_CH9
- PE13 TIM1_CH3 TIM1 PWM(11) GPIO(60) # PWM_CH10
- PE14 TIM1_CH4 TIM1 PWM(12) GPIO(61) # PWM_CH11
-#PE15                                # CS_EEPROM
+ PE0  BARO_CS CS
+#PE1
+ PE2  LED_EXT1  OUTPUT GPIO(29)
+ PE3  LED_EXT2  OUTPUT GPIO(28)
+#PE4
+#PE5  TIM9_CH1 TIM9 PWM(13) GPIO(62)
+#PE6  TIM9_CH2 TIM9 PWM(14) GPIO(63)
+#PE7
+#PE8
+ PE9  TIM1_CH1 TIM1 PWM(9)  GPIO(58)
+ PE10 MPU_CS CS
+ PE11 TIM1_CH2 TIM1 PWM(10) GPIO(59)
+#PE12
+ PE13 TIM1_CH3 TIM1 PWM(11) GPIO(60)
+ PE14 TIM1_CH4 TIM1 PWM(12) GPIO(61)
+#PE15
 
 # SPI device table. The DEVID values are chosen to match the PX4 port
 # of ArduPilot so users don't need to re-do their accel and compass calibrations
@@ -135,10 +136,9 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define HAL_STORAGE_SIZE      15360
-define HAL_USE_EMPTY_STORAGE 1
-#define STORAGE_FLASH_PAGE    2
-# reserve 16k for bootloader and 16k for flash storage
-#FLASH_RESERVE_START_KB 32
+define STORAGE_FLASH_PAGE    2
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
 
 # enable RAMTROM parameter storage
 #define HAL_WITH_RAMTRON 1
@@ -149,14 +149,21 @@ define HAL_OS_FATFS_IO 1
 define HAL_GPIO_LED_ON  0
 define HAL_GPIO_LED_OFF 1
 
-define HAL_GPIO_A_LED_PIN 2
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 0
+define HAL_GPIO_A_LED_PIN  25
+define HAL_GPIO_B_LED_PIN  26
+define HAL_GPIO_C_LED_PIN  27
+define EXTERNAL_LED_GPS    28
+define EXTERNAL_LED_ARMED  29
+define EXTERNAL_LED_MOTOR1 30
+define EXTERNAL_LED_MOTOR2 31
 
-define EXTERNAL_LED_ARMED   3
-define EXTERNAL_LED_GPS     4
-define EXTERNAL_LED_MOTOR1  5
-define EXTERNAL_LED_MOTOR2  6
+define RELAY1_PIN_DEFAULT  33
+define RELAY2_PIN_DEFAULT  34
+#define RELAY3_PIN_DEFAULT  35
+
+define HAL_BUZZER_PIN 32
+define HAL_BUZZER_ON  1
+define HAL_BUZZER_OFF 0
 
 # battery setup
 define HAL_BATT_VOLT_PIN 2
@@ -164,6 +171,8 @@ define HAL_BATT_CURR_PIN -1
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
+define STM32_PWM_USE_ADVANCED TRUE
+
 # 12 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 12
+define BOARD_PWM_COUNT_DEFAULT 14
 
