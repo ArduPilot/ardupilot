@@ -63,7 +63,7 @@ enum ap_message : uint8_t {
     MSG_GPS2_RTK,
     MSG_SYSTEM_TIME,
     MSG_SERVO_OUT,
-    MSG_NEXT_WAYPOINT,
+    MSG_NEXT_MISSION_REQUEST,
     MSG_NEXT_PARAM,
     MSG_FENCE_STATUS,
     MSG_AHRS,
