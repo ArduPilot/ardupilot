@@ -453,7 +453,7 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
 
 void DataFlash_Class::Log_Write_Power(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     uint8_t safety_and_armed = uint8_t(hal.util->safety_switch_state());
     if (hal.util->get_soft_armed()) {
         // encode armed state in bit 3
