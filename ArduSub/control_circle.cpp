@@ -41,7 +41,7 @@ void Sub::circle_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         // To-Do: add some initialisation of position controllers
-        motors.set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors.set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 

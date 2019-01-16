@@ -39,13 +39,6 @@ GCS_MAVLINK::queued_param_send()
         return;
     }
 
-    // send one parameter async reply if pending
-    send_parameter_reply();
-
-    if (_queued_parameter == nullptr) {
-        return;
-    }
-
     uint32_t tnow = AP_HAL::millis();
     uint32_t tstart = AP_HAL::micros();
 
@@ -69,7 +62,18 @@ GCS_MAVLINK::queued_param_send()
         count = 5;
     }
 
-    while (_queued_parameter != nullptr && count--) {
+    // send parameter async replies
+    while (count && send_parameter_reply()) {
+        // do nothing
+        _queued_parameter_send_time_ms = tnow;
+        count--;
+    }
+
+    if (_queued_parameter == nullptr) {
+        return;
+    }
+
+    while (count && _queued_parameter != nullptr) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
@@ -88,6 +92,7 @@ GCS_MAVLINK::queued_param_send()
             // don't use more than 1ms sending blocks of parameters
             break;
         }
+        count--;
     }
     _queued_parameter_send_time_ms = tnow;
 }
@@ -140,6 +145,11 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
     switch (packet.req_stream_id) {
     case MAV_DATA_STREAM_ALL:
         for (uint8_t i=0; i<NUM_STREAMS; i++) {
+            if (i == STREAM_PARAMS) {
+                // don't touch parameter streaming rate; it is
+                // considered "internal".
+                continue;
+            }
             if (persist_streamrates()) {
                 streamRates[i].set_and_save_ifchanged(freq);
             } else {
@@ -207,6 +217,7 @@ void GCS_MAVLINK::handle_param_request_list(mavlink_message_t *msg)
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
     _queued_parameter_count = AP_Param::count_parameters();
+    _queued_parameter_send_time_ms = AP_HAL::millis(); // avoid initial flooding
 }
 
 void GCS_MAVLINK::handle_param_request_read(mavlink_message_t *msg)
@@ -367,13 +378,13 @@ void GCS_MAVLINK::param_io_timer(void)
 /*
   send a reply to a PARAM_REQUEST_READ
  */
-void GCS_MAVLINK::send_parameter_reply(void)
+bool GCS_MAVLINK::send_parameter_reply(void)
 {
     struct pending_param_reply reply;
     
     if (!param_replies.pop(reply)) {
         // nothing to do
-        return;
+        return false;
     }
     
     mavlink_msg_param_value_send(
@@ -383,6 +394,8 @@ void GCS_MAVLINK::send_parameter_reply(void)
         mav_var_type(reply.p_type),
         reply.count,
         reply.param_index);
+
+    return true;
 }
 
 void GCS_MAVLINK::handle_common_param_message(mavlink_message_t *msg)

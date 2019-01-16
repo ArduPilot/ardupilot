@@ -440,7 +440,7 @@ private:
 
     // 3D Location vectors
     // Current location of the vehicle (altitude is relative to home)
-    Location_Class current_loc;
+    Location current_loc;
 
     // IMU variables
     // Integration time (in seconds) for the gyros (DCM algorithm)
@@ -874,6 +874,7 @@ private:
     MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
+    bool is_tradheli() const;
 
     // terrain.cpp
     void terrain_update();

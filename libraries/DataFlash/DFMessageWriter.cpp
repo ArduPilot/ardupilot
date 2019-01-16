@@ -206,7 +206,7 @@ void DFMessageWriter_WriteEntireMission::process() {
         stage = em_blockwriter_stage_write_mission_items;
         FALLTHROUGH;
 
-    case em_blockwriter_stage_write_mission_items:
+    case em_blockwriter_stage_write_mission_items: {
         AP_Mission::Mission_Command cmd;
         while (_mission_number_to_send < _mission->num_commands()) {
             // upon failure to write the mission we will re-read from
@@ -220,6 +220,7 @@ void DFMessageWriter_WriteEntireMission::process() {
         }
         stage = em_blockwriter_stage_done;
         FALLTHROUGH;
+    }
 
     case em_blockwriter_stage_done:
         break;

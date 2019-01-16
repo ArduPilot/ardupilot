@@ -34,14 +34,14 @@ void Plane::set_next_WP(const struct Location &loc)
         // additionally treat zero altitude as current altitude
         if (next_WP_loc.alt == 0) {
             next_WP_loc.alt = current_loc.alt;
-            next_WP_loc.flags.relative_alt = false;
-            next_WP_loc.flags.terrain_alt = false;
+            next_WP_loc.relative_alt = false;
+            next_WP_loc.terrain_alt = false;
         }
     }
 
     // convert relative alt to absolute alt
-    if (next_WP_loc.flags.relative_alt) {
-        next_WP_loc.flags.relative_alt = false;
+    if (next_WP_loc.relative_alt) {
+        next_WP_loc.relative_alt = false;
         next_WP_loc.alt += home.alt;
     }
 
@@ -64,13 +64,11 @@ void Plane::set_next_WP(const struct Location &loc)
 
     setup_glide_slope();
     setup_turn_angle();
-
-    loiter_angle_reset();
 }
 
 void Plane::set_guided_WP(void)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || guided_WP_loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;

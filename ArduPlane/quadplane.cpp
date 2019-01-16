@@ -739,7 +739,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
 
     if (throttle_in <= 0) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         if (is_tailsitter()) {
             // always stabilize with tailsitters so we can do belly takeoffs
             attitude_control->set_throttle_out(0, true, 0);
@@ -829,6 +829,9 @@ void QuadPlane::init_hover(void)
  */
 void QuadPlane::check_yaw_reset(void)
 {
+    if (!initialised) {
+        return;
+    }
     float yaw_angle_change_rad = 0.0f;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
@@ -864,7 +867,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
 void QuadPlane::control_hover(void)
 {
     if (throttle_wait) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control->set_throttle_out_unstabilized(0, true, 0);
         pos_control->relax_alt_hold_controllers(0);
     } else {
@@ -983,7 +986,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 void QuadPlane::control_loiter()
 {
     if (throttle_wait) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control->set_throttle_out_unstabilized(0, true, 0);
         pos_control->relax_alt_hold_controllers(0);
         loiter_nav->clear_pilot_desired_acceleration();
@@ -1485,8 +1488,6 @@ void QuadPlane::update(void)
         pos_control->relax_alt_hold_controllers(0);
     }
     
-    check_yaw_reset();
-    
     if (!in_vtol_mode()) {
         update_transition();
     } else {
@@ -1604,7 +1605,7 @@ void QuadPlane::check_throttle_suppression(void)
     }
     
     // motors should be in the spin when armed state to warn user they could become active
-    motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+    motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
     motors->set_throttle(0);
     last_motors_active_ms = 0;
 }
@@ -2193,7 +2194,13 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    plane.set_next_WP(cmd.content.location);
+    // we always use the current location in XY for takeoff. The altitude defaults
+    // to relative to current height, but if Q_OPTIONS is set to respect takeoff frame
+    // then it will use normal frame handling for height
+    Location loc = cmd.content.location;
+    loc.lat = 0;
+    loc.lng = 0;
+    plane.set_next_WP(loc);
     if (options & OPTION_RESPECT_TAKEOFF_FRAME) {
         if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything

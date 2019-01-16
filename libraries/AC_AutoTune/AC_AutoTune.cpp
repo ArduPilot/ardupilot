@@ -190,8 +190,6 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
 // stop - should be called when the ch7/ch8 switch is switched OFF
 void AC_AutoTune::stop()
 {
-    axes_completed = 0;
-
     // set gains to their original values
     load_gains(GAIN_ORIGINAL);
 
@@ -354,7 +352,7 @@ void AC_AutoTune::run()
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the init() checks
     if (!motors->armed() || !motors->get_interlock()) {
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         attitude_control->set_throttle_out_unstabilized(0.0f, true, 0);
         pos_control->relax_alt_hold_controllers(0.0f);
         return;

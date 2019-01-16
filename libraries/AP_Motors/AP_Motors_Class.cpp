@@ -35,6 +35,7 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _speed_hz(speed_hz),
     _throttle_filter(),
     _spool_desired(DESIRED_SHUT_DOWN),
+    _spool_mode(SHUT_DOWN),
     _air_density_ratio(1.0f)
 {
     _instance = this;
@@ -60,6 +61,13 @@ void AP_Motors::armed(bool arm)
         if (!arm) {
             save_params_on_disarm();
         }
+    }
+};
+
+void AP_Motors::set_desired_spool_state(enum spool_up_down_desired spool)
+{
+    if (_flags.armed || (spool == DESIRED_SHUT_DOWN)) {
+        _spool_desired = spool;
     }
 };
 

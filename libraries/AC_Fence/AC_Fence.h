@@ -59,7 +59,7 @@ public:
     uint8_t check();
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
-    bool check_destination_within_fence(const Location_Class& loc);
+    bool check_destination_within_fence(const Location& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }

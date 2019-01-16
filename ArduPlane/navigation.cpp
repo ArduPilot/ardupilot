@@ -206,7 +206,7 @@ void Plane::update_loiter(uint16_t radius)
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
         radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
-        if (next_WP_loc.flags.loiter_ccw == 1) {
+        if (next_WP_loc.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
             loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;

@@ -161,7 +161,7 @@ void Copter::init_ardupilot()
 
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    Location_Class::set_terrain(&terrain);
+    Location::set_terrain(&terrain);
     wp_nav->set_terrain(&terrain);
 #endif
 
@@ -648,4 +648,13 @@ void Copter::allocate_motors(void)
 
     // upgrade parameters. This must be done after allocating the objects
     convert_pid_parameters();
+}
+
+bool Copter::is_tradheli() const
+{
+#if FRAME_CONFIG == HELI_FRAME
+    return true;
+#else
+    return false;
+#endif
 }

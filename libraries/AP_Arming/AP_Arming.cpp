@@ -14,12 +14,14 @@
  */
 
 #include "AP_Arming.h"
-#include <AP_Notify/AP_Notify.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Notify/AP_Notify.h>
+#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #define AP_ARMING_COMPASS_MAGFIELD_EXPECTED 530
 #define AP_ARMING_COMPASS_MAGFIELD_MIN  185     // 0.35 * 530 milligauss
@@ -254,7 +256,7 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         }
         // get next gyro vector
         const Vector3f &gyro_vec = ins.get_gyro(i);
-        Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+        const Vector3f vec_diff = gyro_vec - prime_gyro_vec;
         // allow for up to 5 degrees/s difference. Pass if it has
         // been OK in last 10 seconds
         if (vec_diff.length() <= radians(5)) {
@@ -349,14 +351,14 @@ bool AP_Arming::compass_checks(bool report)
         }
 
         // check for unreasonable compass offsets
-        Vector3f offsets = _compass.get_offsets();
+        const Vector3f offsets = _compass.get_offsets();
         if (offsets.length() > _compass.get_offsets_max()) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compass offsets too high");
             return false;
         }
 
         // check for unreasonable mag field length
-        float mag_field = _compass.get_field().length();
+        const float mag_field = _compass.get_field().length();
         if (mag_field > AP_ARMING_COMPASS_MAGFIELD_MAX || mag_field < AP_ARMING_COMPASS_MAGFIELD_MIN) {
             check_failed(ARMING_CHECK_COMPASS, report, "Check mag field");
             return false;
@@ -403,7 +405,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        Location gps_loc = gps.location();
+        const Location gps_loc = gps.location();
         Location ahrs_loc;
         if (AP::ahrs().get_position(ahrs_loc)) {
             const float distance = location_diff(gps_loc, ahrs_loc).length();
@@ -415,7 +417,7 @@ bool AP_Arming::gps_checks(bool report)
     }
 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
-        uint8_t first_unconfigured = gps.first_unconfigured_gps();
+        const uint8_t first_unconfigured = gps.first_unconfigured_gps();
         if (first_unconfigured != AP_GPS::GPS_ALL_CONFIGURED) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
@@ -729,6 +731,14 @@ bool AP_Arming::disarm()
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
+#if HAL_HAVE_SAFETY_SWITCH
+    AP_BoardConfig *board_cfg = AP_BoardConfig::get_instance();
+    if ((board_cfg != nullptr) &&
+        (board_cfg->get_safety_button_options() & AP_BoardConfig::BOARD_SAFETY_OPTION_SAFETY_ON_DISARM)) {
+        hal.rcout->force_safety_on();
+    }
+#endif // HAL_HAVE_SAFETY_SWITCH
+
     //TODO: Log motor disarming to the dataflash
     //Can't do this from this class until there is a unified logging library.
 
@@ -743,7 +753,7 @@ AP_Arming::ArmingRequired AP_Arming::arming_required()
 
 // Copter and sub share the same RC input limits
 // Copter checks that min and max have been configured by default, Sub does not
-bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4], const bool check_min_max) const
+bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4]) const
 {
     // set rc-checks to success if RC checks are disabled
     if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {

@@ -23,9 +23,6 @@ Copter::Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
-#if FRAME_CONFIG == HELI_FRAME
-    heli_flags(copter.heli_flags),
-#endif
     ap(copter.ap)
 { };
 
@@ -376,14 +373,18 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
     return true;
 }
 
-void Copter::Mode::zero_throttle_and_relax_ac()
+void Copter::Mode::zero_throttle_and_relax_ac(bool spool_up)
 {
+    if (spool_up) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
+    }
 #if FRAME_CONFIG == HELI_FRAME
     // Helicopters always stabilize roll/pitch/yaw
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 #else
-    motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
     // multicopters do not stabilize roll/pitch/yaw when disarmed
     attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
 #endif
@@ -399,7 +400,7 @@ int32_t Copter::Mode::get_alt_above_ground(void)
         alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
     } else {
         bool navigating = pos_control->is_active_xy();
-        if (!navigating || !copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
+        if (!navigating || !copter.current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
             alt_above_ground = copter.current_loc.alt;
         }
     }

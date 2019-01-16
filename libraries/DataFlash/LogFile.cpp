@@ -453,7 +453,7 @@ bool DataFlash_Backend::Log_Write_Message(const char *message)
 
 void DataFlash_Class::Log_Write_Power(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     uint8_t safety_and_armed = uint8_t(hal.util->safety_switch_state());
     if (hal.util->get_soft_armed()) {
         // encode armed state in bit 3
@@ -1309,7 +1309,7 @@ void DataFlash_Class::Log_Write_Radio(const mavlink_radio_t &packet)
 void DataFlash_Class::Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us)
 {
     int32_t altitude, altitude_rel, altitude_gps;
-    if (current_loc.flags.relative_alt) {
+    if (current_loc.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;
         altitude_rel = current_loc.alt;
     } else {
@@ -1362,8 +1362,8 @@ void DataFlash_Class::Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets)
         roll            : (int16_t)ahrs.roll_sensor,
         control_pitch   : (int16_t)targets.y,
         pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)targets.z,
-        yaw             : (uint16_t)ahrs.yaw_sensor,
+        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
+        yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
         error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
         error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
     };
@@ -1512,43 +1512,6 @@ bool DataFlash_Backend::Log_Write_Mode(uint8_t mode, uint8_t reason)
 // Write ESC status messages
 void DataFlash_Class::Log_Write_ESC(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    static int _esc_status_sub = -1;
-    struct esc_status_s esc_status;
-
-    if (_esc_status_sub == -1) {
-        // subscribe to ORB topic on first call
-        _esc_status_sub = orb_subscribe(ORB_ID(esc_status));
-    }
-
-    // check for new ESC status data
-    bool esc_updated = false;
-    orb_check(_esc_status_sub, &esc_updated);
-    if (esc_updated && (OK == orb_copy(ORB_ID(esc_status), _esc_status_sub, &esc_status))) {
-        if (esc_status.esc_count > 8) {
-            esc_status.esc_count = 8;
-        }
-        uint64_t time_us = AP_HAL::micros64();
-        for (uint8_t i = 0; i < esc_status.esc_count; i++) {
-            // skip logging ESCs with a esc_address of zero, and this
-            // are probably not populated. The Pixhawk itself should
-            // be address zero
-            if (esc_status.esc[i].esc_address != 0) {
-                struct log_Esc pkt = {
-                    LOG_PACKET_HEADER_INIT((uint8_t)(LOG_ESC1_MSG + i)),
-                    time_us     : time_us,
-                    rpm         : (int32_t)(esc_status.esc[i].esc_rpm/10),
-                    voltage     : (uint16_t)(esc_status.esc[i].esc_voltage*100.0f + .5f),
-                    current     : (uint16_t)(esc_status.esc[i].esc_current*100.0f + .5f),
-                    temperature : (int16_t)(esc_status.esc[i].esc_temperature*100.0f + .5f),
-                    current_tot : 0
-                };
-
-                WriteBlock(&pkt, sizeof(pkt));
-            }
-        }
-    }
-#endif // CONFIG_HAL_BOARD
 }
 
 // Write a AIRSPEED packet

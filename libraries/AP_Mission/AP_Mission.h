@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 
@@ -191,7 +192,7 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
-    union PACKED Content {
+    union Content {
         // jump structure
         Jump_Command jump;
 
@@ -256,11 +257,7 @@ public:
         Winch_Command winch;
 
         // location
-        Location location;      // Waypoint location
-
-        // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
-        // if a 16 bit command ID is used
-        uint8_t bytes[12];
+        Location location{};      // Waypoint location
     };
 
     // command structure
@@ -488,6 +485,8 @@ private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
+
+    static bool stored_in_location(uint16_t id);
 
     struct Mission_Flags {
         mission_state state;

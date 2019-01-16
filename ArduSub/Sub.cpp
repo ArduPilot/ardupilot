@@ -41,8 +41,6 @@ Sub::Sub()
           circle_nav(inertial_nav, ahrs_view, pos_control),
           param_loader(var_info)
 {
-    memset(&current_loc, 0, sizeof(current_loc));
-
     // init sensor error logging flags
     sensor_health.baro = true;
     sensor_health.compass = true;

@@ -85,7 +85,7 @@ void AP_MotorsTri::output_to_motors()
             rc_write(AP_MOTORS_MOT_4, get_pwm_output_min());
             rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
             break;
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             rc_write(AP_MOTORS_MOT_1, calc_spin_up_to_pwm());
             rc_write(AP_MOTORS_MOT_2, calc_spin_up_to_pwm());
@@ -323,11 +323,29 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask)
+void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
     // normal multicopter output
-    AP_MotorsMulticopter::output_motor_mask(thrust, mask);
+    AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);
 
     // and override yaw servo
     rc_write(AP_MOTORS_CH_TRI_YAW, _yaw_servo->get_trim());
+}
+
+float AP_MotorsTri::get_roll_factor(uint8_t i)
+{
+    float ret = 0.0f;
+
+    switch (i) {
+        // right motor
+        case AP_MOTORS_MOT_1:
+            ret = -1.0f;
+            break;
+        // left motor
+        case AP_MOTORS_MOT_2:
+            ret = 1.0f;
+            break;
+    }
+
+    return ret;
 }

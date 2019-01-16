@@ -796,7 +796,10 @@ private:
     // the crc of the last created PX4Mixer
     int32_t last_mixer_crc = -1;
 #endif // CONFIG_HAL_BOARD
-    
+
+    // rudder mixing gain for differential thrust (0 - 1)
+    float rudder_dt;
+
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
     void send_fence_status(mavlink_channel_t chan);

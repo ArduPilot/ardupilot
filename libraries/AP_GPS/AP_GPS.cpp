@@ -819,7 +819,6 @@ void AP_GPS::setHIL(uint8_t instance, GPS_Status _status, uint64_t time_epoch_ms
     GPS_State &istate = state[instance];
     istate.status = _status;
     istate.location = _location;
-    istate.location.options = 0;
     istate.velocity = _velocity;
     istate.ground_speed = norm(istate.velocity.x, istate.velocity.y);
     istate.ground_course = wrap_360(degrees(atan2f(istate.velocity.y, istate.velocity.x)));
@@ -1342,7 +1341,7 @@ void AP_GPS::calc_blended_state(void)
     state[GPS_BLENDED_INSTANCE].have_speed_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_horizontal_accuracy = false;
     state[GPS_BLENDED_INSTANCE].have_vertical_accuracy = false;
-    memset(&state[GPS_BLENDED_INSTANCE].location, 0, sizeof(state[GPS_BLENDED_INSTANCE].location));
+    state[GPS_BLENDED_INSTANCE].location = {};
 
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
