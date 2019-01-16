@@ -31,8 +31,7 @@ FLASH_USE_MAX_KB 16
 FLASH_RESERVE_START_KB 0
 
 # the location where the bootloader will put the firmware
-define FLASH_BOOTLOADER_LOAD_KB 16
-#define FLASH_BOOTLOADER_LOAD_KB 32
+define FLASH_BOOTLOADER_LOAD_KB 64
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
