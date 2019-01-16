@@ -851,7 +851,7 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     } else {
         waypoint_timelast_request = AP_HAL::millis();
         // if we have enough space, then send the next WP request immediately
-        if (HAVE_PAYLOAD_SPACE(chan, MISSION_ITEM)) {
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_REQUEST)) {
             queued_mission_request_send();
         } else {
             send_message(MSG_NEXT_MISSION_REQUEST);
