@@ -18,7 +18,6 @@
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_LSM9DS1.h"
 #include "AP_InertialSensor_Invensense.h"
-#include "AP_InertialSensor_PX4.h"
 #include "AP_InertialSensor_SITL.h"
 #include "AP_InertialSensor_RST.h"
 #include "AP_InertialSensor_Revo.h"
@@ -833,10 +832,6 @@ AP_InertialSensor::detect_backends(void)
     default:
         break;
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // also add any PX4 backends (eg. canbus sensors)
-    ADD_BACKEND(AP_InertialSensor_PX4::detect(*this));
-#endif
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI && defined(HAL_INS_DEFAULT_ROTATION)
     ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU9250_NAME), HAL_INS_DEFAULT_ROTATION));
 #elif HAL_INS_DEFAULT == HAL_INS_MPU9250_SPI
