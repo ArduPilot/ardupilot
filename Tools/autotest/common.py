@@ -359,8 +359,12 @@ class AutoTest(ABC):
         while self.mav.recv_match(type='SYSTEM_TIME', blocking=False) is not None:
             count += 1
         tdelta = time.time() - tstart
-        self.progress("Drained %u messages from mav (%f/s)" % (
-            count, count/float(tdelta)))
+        if tdelta == 0:
+            rate = "instantly"
+        else:
+            rate = "%f/s" % (count/float(tdelta),)
+
+        self.progress("Drained %u messages from mav (%s)" % (count, rate))
 
     #################################################
     # SIM UTILITIES
