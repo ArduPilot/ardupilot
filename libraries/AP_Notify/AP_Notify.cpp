@@ -22,7 +22,6 @@
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
 #include "NCP5623.h"
-#include "OreoLED_PX4.h"
 #include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
@@ -260,12 +259,7 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
             case Notify_LED_OreoLED:
-                // OreoLED's are PX4-v3 build only
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
-                if (_oreo_theme) {
-                    ADD_BACKEND(new OreoLED_PX4(_oreo_theme));
-                }
-#elif !HAL_MINIMIZE_FEATURES
+#if !HAL_MINIMIZE_FEATURES
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
