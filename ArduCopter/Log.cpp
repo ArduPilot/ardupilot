@@ -85,7 +85,7 @@ void Copter::Log_Write_EKF_POS()
     DataFlash.Log_Write_EKF(ahrs);
     DataFlash.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE(&DataFlash);
+    sitl.Log_Write_SIMSTATE();
 #endif
     DataFlash.Log_Write_POS(ahrs);
 }
