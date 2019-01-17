@@ -432,6 +432,7 @@ private:
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
         AP_Float max_roll_angle;
+        AP_Int16 motor_mask;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
