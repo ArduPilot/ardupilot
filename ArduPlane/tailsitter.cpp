@@ -14,6 +14,8 @@
  */
 /*
   control code for tailsitters. Enabled by setting Q_FRAME_CLASS=10 
+  or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
+  to a configuration supported by AP_MotorsMatrix
  */
 
 #include "Plane.h"
@@ -23,7 +25,8 @@
  */
 bool QuadPlane::is_tailsitter(void) const
 {
-    return available() && frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER;
+    return available() && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || 
+                           (tailsitter.motor_mask != 0));
 }
 
 /*
@@ -55,8 +58,11 @@ void QuadPlane::tailsitter_output(void)
 
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
+    uint16_t mask = tailsitter.motor_mask;
 
+    // handle forward flight modes and transition to VTOL modes
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
+        // in forward flight: set motor tilt servos and throttles using FW controller
         if (tailsitter.vectored_forward_gain > 0) {
             // thrust vectoring in fixed wing flight
             float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -66,23 +72,38 @@ void QuadPlane::tailsitter_output(void)
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
-        
-        if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying() && hal.util->get_soft_armed()) {
+
+        // get FW controller throttle demand and mask of motors enabled during forward flight
+        float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+        if (hal.util->get_soft_armed()) {
+            if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying()) {
             /*
-              during transitions to vtol mode set the throttle to the
-              hover throttle, and set the altitude controller
+              during transitions to vtol mode set the throttle to
+              hover thrust, center the rudder and set the altitude controller
               integrator to the same throttle level
              */
-            uint8_t throttle = motors->get_throttle_hover() * 100;
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
+            throttle = motors->get_throttle_hover() * 100;
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             pos_control->get_accel_z_pid().set_integrator(throttle*10);
+            
+            if (mask == 0) {
+                // override AP_MotorsTailsitter throttles during back transition
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);            
+            }
+        }
+        if (mask != 0) {
+            // set AP_MotorsMatrix throttles enabled for forward flight
+            motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
+            }
         }
         return;
     }
     
+    // handle VTOL modes
+    // the MultiCopter rate controller has already been run in an earlier call 
+    // to motors_output() from quadplane.update()
     motors_output(false);
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
