@@ -171,7 +171,7 @@ void SITL::simstate_send(mavlink_channel_t chan)
 }
 
 /* report SITL state to DataFlash */
-void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
+void SITL::Log_Write_SIMSTATE()
 {
     float yaw;
 
@@ -195,7 +195,7 @@ void SITL::Log_Write_SIMSTATE(DataFlash_Class *DataFlash)
         q3      : state.quaternion.q3,
         q4      : state.quaternion.q4,
     };
-    DataFlash->WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
