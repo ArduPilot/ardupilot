@@ -49,18 +49,7 @@ AP_Notify *AP_Notify::_instance;
 
 #ifndef BUILD_DEFAULT_LED_TYPE
 // PX4 boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
-    #define HAL_HAVE_PIXRACER_LED
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #else   // All other px4 boards use standard devices
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #endif
-
-// ChibiOS and VRBrain boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
       CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
@@ -278,13 +267,8 @@ void AP_Notify::add_backends(void)
     // Always try and add a display backend
     ADD_BACKEND(new Display());
 
-    // Add noise making devices
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
-    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ADD_BACKEND(new AP_ToneAlarm());
-
 // ChibiOS noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
 #endif
