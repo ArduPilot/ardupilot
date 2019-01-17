@@ -286,7 +286,7 @@ void Plane::one_second_loop()
 
 #if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
-        terrain.log_terrain_data(DataFlash);
+        terrain.log_terrain_data();
     }
 #endif
 
