@@ -226,7 +226,7 @@ public:
 
     void simstate_send(mavlink_channel_t chan);
 
-    void Log_Write_SIMSTATE(DataFlash_Class *dataflash);
+    void Log_Write_SIMSTATE();
 
     // convert a set of roll rates from earth frame to body frame
     static void convert_body_frame(double rollDeg, double pitchDeg,
