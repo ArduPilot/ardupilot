@@ -11,6 +11,9 @@ STM32_ST_USE_TIMER 5
 # order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
 UART_ORDER OTG1 USART1 USART2 UART4 USART6 UART7
 
+# enable TX on USART6 (disabled for fmuv5 with iomcu)
+PG14 USART6_TX USART6 NODMA
+
 # disable the IOMCU UART
 undef IOMCU_UART
 undef UART8_TX
