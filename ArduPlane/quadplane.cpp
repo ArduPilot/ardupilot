@@ -402,6 +402,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
+    // @Param: TAILSIT_MOTMX
+    // @DisplayName: Tailsiter mask
+    // @Description: Bitmask of motors to remain active in forward flight for a 'copter' tailsitter. Non-zero indicates airframe is a tailsitter which pitches forward 90 degrees in forward flight modes.
+    // @User: Standard
+    // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
+    AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
+
     AP_GROUPEND
 };
 
@@ -563,21 +570,36 @@ bool QuadPlane::setup(void)
         break;
     }
 
-    switch (motor_class) {
-    case AP_Motors::MOTOR_FRAME_TRI:
-        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsTri::var_info;
-        break;
-    case AP_Motors::MOTOR_FRAME_TAILSITTER:
-        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsTailsitter::var_info;
+    if (tailsitter.motor_mask == 0) {
+        // this is a normal quadplane
+        switch (motor_class) {
+        case AP_Motors::MOTOR_FRAME_TRI:
+            motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsTri::var_info;
+            break;
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            // this is a duo-motor tailsitter (vectored thrust if tilt.tilt_mask != 0)
+            motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsTailsitter::var_info;
+            rotation = ROTATION_PITCH_90;
+            break;
+        default:
+            motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsMatrix::var_info;
+            break;
+        }
+    } else {
+        // this is a copter tailsitter with motor layout specified by frame_class and frame_type
+        // tilting motors are not supported (tiltrotor control variables are ignored)
+        if (tilt.tilt_mask != 0) {
+            hal.console->printf("Warning tilting motors not supported, setting tilt_mask to zero\n");
+            tilt.tilt_mask.set(0);
+        }
         rotation = ROTATION_PITCH_90;
-        break;
-    default:
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsMatrix::var_info;
-        break;
+        motors = new AP_MotorsMatrixTS(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsMatrixTS::var_info;
     }
+    
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
         hal.console->printf("%s motors\n", strUnableToAllocate);
@@ -644,7 +666,7 @@ bool QuadPlane::setup(void)
     setup_defaults();
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
-    
+
     gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
