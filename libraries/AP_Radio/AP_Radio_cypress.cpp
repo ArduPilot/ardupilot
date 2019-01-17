@@ -3,9 +3,6 @@
 #if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <board_config.h>
-#endif
 #include "AP_Radio_cypress.h"
 #include <utility>
 #include <stdio.h>
@@ -292,15 +289,7 @@ bool AP_Radio_cypress::reset(void)
     /*
       to reset radio hold reset high for 0.5s, then low for 0.5s
      */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_configgpio(CYRF_RESET_PIN);
-    stm32_gpiowrite(CYRF_RESET_PIN, 1);
-    hal.scheduler->delay(500);
-    stm32_gpiowrite(CYRF_RESET_PIN, 0);
-    hal.scheduler->delay(500);
-    // use AUX5 as radio IRQ pin
-    stm32_configgpio(CYRF_IRQ_INPUT);
-#elif defined(HAL_GPIO_RADIO_RESET)
+#if defined(HAL_GPIO_RADIO_RESET)
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 1);
     hal.scheduler->delay(500);
     hal.gpio->write(HAL_GPIO_RADIO_RESET, 0);
@@ -643,9 +632,7 @@ void AP_Radio_cypress::radio_init(void)
     start_receive();
 
     // setup handler for rising edge of IRQ pin
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_gpiosetevent(CYRF_IRQ_INPUT, true, false, false, irq_radio_trampoline);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, AP_HAL::GPIO::INTERRUPT_RISING);
 #endif
 }
@@ -945,9 +932,7 @@ void AP_Radio_cypress::dsm2_start_sync(void)
  */
 void AP_Radio_cypress::setup_timeout(uint32_t timeout_ms)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    hrt_call_after(&wait_call, timeout_ms*1000, (hrt_callout)irq_timeout_trampoline, nullptr);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     chVTSet(&timeout_vt, chTimeMS2I(timeout_ms), trigger_timeout_event, nullptr);
 #endif
 }
@@ -1202,26 +1187,9 @@ void AP_Radio_cypress::irq_timeout(void)
 
 
 /*
-  called on rising edge of radio IRQ pin
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-int AP_Radio_cypress::irq_radio_trampoline(int irq, void *context)
-{
-    radio_instance->irq_handler();
-    return 0;
-}
-#endif
-
-/*
   called on HRT timeout
  */
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-int AP_Radio_cypress::irq_timeout_trampoline(int irq, void *context)
-{
-    radio_instance->irq_timeout();
-    return 0;
-}
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 void AP_Radio_cypress::irq_handler_thd(void *arg)
 {
     _irq_handler_ctx = chThdGetSelfX();
