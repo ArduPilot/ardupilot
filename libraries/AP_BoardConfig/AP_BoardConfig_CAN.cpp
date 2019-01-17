@@ -126,6 +126,7 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
+    reset_slcan_serial();
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
         // Check the driver number assigned to this physical interface
         uint8_t drv_num = _interfaces[i]._driver_number_cache = _interfaces[i]._driver_number;
