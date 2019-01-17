@@ -14,6 +14,8 @@
  */
 /*
   control code for tailsitters. Enabled by setting Q_FRAME_CLASS=10 
+  or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
+  to a configuration supported by AP_MotorsMatrix
  */
 
 #include "Plane.h"
@@ -23,7 +25,8 @@
  */
 bool QuadPlane::is_tailsitter(void) const
 {
-    return available() && frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER;
+    return available() && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || 
+                           (tailsitter.motor_mask != 0));
 }
 
 /*
@@ -55,34 +58,50 @@ void QuadPlane::tailsitter_output(void)
 
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
-
+    uint16_t mask = tailsitter.motor_mask;
+    // handle forward flight modes and transition to VTOL modes
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
+        // in forward flight: set motor tilt servos and throttles using FW controller
         if (tailsitter.vectored_forward_gain > 0) {
             // thrust vectoring in fixed wing flight
             float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
             float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+        
             tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
             tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
         }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
-        
+
+        // get FW controller throttle demand and mask of motors enabled during forward flight
+        float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying() && hal.util->get_soft_armed()) {
             /*
-              during transitions to vtol mode set the throttle to the
-              hover throttle, and set the altitude controller
+              during transitions to vtol mode set the throttle to
+              hover thrust, center the rudder and set the altitude controller
               integrator to the same throttle level
              */
-            uint8_t throttle = motors->get_throttle_hover() * 100;
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
+            throttle = motors->get_throttle_hover() * 100;
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             pos_control->get_accel_z_pid().set_integrator(throttle*10);
+            
+            if (mask == 0) {
+                // override AP_MotorsTailsitter throttles during back transition
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);            
+            }
+        }
+        if (mask != 0) {
+            // set AP_MotorsMatrix throttles enabled for forward flight
+            motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
         }
         return;
     }
     
+    // handle VTOL modes
+    // the MultiCopter rate controller has already been run in an earlier call 
+    // to motors_output() from quadplane.update()
     motors_output(false);
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
@@ -92,6 +111,7 @@ void QuadPlane::tailsitter_output(void)
         tailsitter_speed_scaling();
     }
 
+    
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
@@ -217,7 +237,19 @@ void QuadPlane::tailsitter_speed_scaling(void)
     } else {
         scaling = constrain_float(hover_throttle / throttle, 0, tailsitter.throttle_scale_max);
     }
-
+    
+    // if no airspeed sensor reduce throws at large tilt angles (implies high airspeed)
+    if (!ahrs.airspeed_sensor_enabled()) {
+        // ramp down from 1 to max_atten at tilt angles from 45 to 80 degrees
+        constexpr float max_atten = 0.25f;
+        constexpr float c_trans_angle = cosf(M_PI_4);
+        constexpr float alpha = (1 - max_atten) / (c_trans_angle - cosf(radians(80)));
+        constexpr float beta = 1 - alpha * c_trans_angle;
+        const float c_tilt = ahrs_view->get_rotation_body_to_ned().c.z;
+        if (c_tilt < c_trans_angle) {
+            scaling = constrain_float(beta + alpha * c_tilt, max_atten, 1.0f);
+        }
+    }
     const SRV_Channel::Aux_servo_function_t functions[4] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,

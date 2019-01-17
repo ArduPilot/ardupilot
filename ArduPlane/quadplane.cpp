@@ -402,6 +402,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
 
+    // @Param: TAILSIT_MOTMX
+    // @DisplayName: Tailsiter mask
+    // @Description: Bitmask of motors to remain active in forward flight for a 'copter' tailsitter. Non-zero indicates airframe is a tailsitter which pitches forward 90 degrees in forward flight modes.
+    // @User: Standard
+    // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
+    AP_GROUPINFO("TAILSIT_MOTMX", 9, QuadPlane, tailsitter.motor_mask, 0),
+
     AP_GROUPEND
 };
 
@@ -491,7 +498,7 @@ bool QuadPlane::setup(void)
 
     enum AP_Motors::motor_frame_class motor_class;
     enum Rotation rotation = ROTATION_NONE;
-
+        
     /*
       cope with upgrade from old AP_Motors values for frame_class
      */
@@ -562,21 +569,28 @@ bool QuadPlane::setup(void)
         break;
     }
 
-    switch (motor_class) {
-    case AP_Motors::MOTOR_FRAME_TRI:
-        motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsTri::var_info;
-        break;
-    case AP_Motors::MOTOR_FRAME_TAILSITTER:
-        motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsTailsitter::var_info;
+    if (tailsitter.motor_mask == 0) {
+        switch (motor_class) {
+        case AP_Motors::MOTOR_FRAME_TRI:
+            motors = new AP_MotorsTri(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsTri::var_info;
+            break;
+        case AP_Motors::MOTOR_FRAME_TAILSITTER:
+            motors = new AP_MotorsTailsitter(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsTailsitter::var_info;
+            rotation = ROTATION_PITCH_90;
+            break;
+        default:
+            motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
+            motors_var_info = AP_MotorsMatrix::var_info;
+            break;
+        }
+     } else {
         rotation = ROTATION_PITCH_90;
-        break;
-    default:
-        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
-        motors_var_info = AP_MotorsMatrix::var_info;
-        break;
-    }
+        motors = new AP_MotorsMatrixTS(plane.scheduler.get_loop_rate_hz(), rc_speed);
+        motors_var_info = AP_MotorsMatrixTS::var_info;            
+     }
+    
     const static char *strUnableToAllocate = "Unable to allocate";
     if (!motors) {
         hal.console->printf("%s motors\n", strUnableToAllocate);
@@ -1428,7 +1442,7 @@ void QuadPlane::update_transition(void)
         plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
         plane.nav_roll_cd = 0;
         check_attitude_relax();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd, 
                                                                       plane.nav_pitch_cd,
                                                                       0);
         attitude_control->set_throttle_out(motors->get_throttle_hover(), true, 0);
@@ -1458,12 +1472,11 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
-
+    
     if ((ahrs_view != NULL) && !is_equal(_last_ahrs_trim_pitch, ahrs_trim_pitch.get())) {
         _last_ahrs_trim_pitch = ahrs_trim_pitch.get();
         ahrs_view->set_pitch_trim(_last_ahrs_trim_pitch);
     }
-
     if (plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
