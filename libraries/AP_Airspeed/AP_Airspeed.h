@@ -7,8 +7,13 @@
 #include <AP_Baro/AP_Baro.h>
 
 class AP_Airspeed_Backend;
+class AP_AHRS;
 
 #define AIRSPEED_MAX_SENSORS 2
+
+#define AIRSPEED_BLEND_DIFF_LIMIT 0.4
+#define AIRSPEED_BLEND_ABS_DIFF_LIMIT 5.0
+#define AIRSPEED_BLEND_DECISION_DELAY 10
 
 class Airspeed_Calibration {
 public:
@@ -42,6 +47,11 @@ public:
 
     void init(void);
 
+    enum blend_type {
+        BLEND_NONE=0,
+        BLEND_FULL=1,
+    };
+
     // read the analog source and update airspeed
     void update(bool log);
 
@@ -53,33 +63,71 @@ public:
     float get_airspeed(uint8_t i) const {
         return state[i].airspeed;
     }
-    float get_airspeed(void) const { return get_airspeed(primary); }
+    float get_airspeed(void) const {
+        if (blend_state.active) {
+            return blend_state.airspeed;
+        } else {
+            return get_airspeed(primary);
+        }
+    }
 
     // return the unfiltered airspeed in m/s
     float get_raw_airspeed(uint8_t i) const {
         return state[i].raw_airspeed;
     }
-    float get_raw_airspeed(void) const { return get_raw_airspeed(primary); }
+    float get_raw_airspeed(void) const {
+        if (blend_state.active) {
+            return blend_state.raw_airspeed;
+        } else {
+            return get_raw_airspeed(primary);
+        }
+    }
 
     // return the current airspeed ratio (dimensionless)
     float get_airspeed_ratio(uint8_t i) const {
         return param[i].ratio;
     }
-    float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
+    float get_airspeed_ratio(void) const {
+        if (blend_state.active) {
+            return blend_state.ratio;
+        } else {
+            return get_airspeed_ratio(primary);
+        }
+    }
 
     // get temperature if available
     bool get_temperature(uint8_t i, float &temperature);
-    bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
+    bool get_temperature(float &temperature) {
+        if (blend_state.active) {
+            temperature = blend_state.temperature;
+            return true;
+        } else {
+            return get_temperature(primary, temperature);
+        }
+    }
 
     // set the airspeed ratio (dimensionless)
     void set_airspeed_ratio(uint8_t i, float ratio) {
         param[i].ratio.set(ratio);
     }
-    void set_airspeed_ratio(float ratio) { set_airspeed_ratio(primary, ratio); }
+    void set_airspeed_ratio(float ratio) {
+        if (blend_state.active) {
+            // TODO: What to do?
+            set_airspeed_ratio(primary, ratio);
+        } else {
+            set_airspeed_ratio(primary, ratio);
+        }
+    }
 
     // return true if airspeed is enabled, and airspeed use is set
     bool use(uint8_t i) const;
-    bool use(void) const { return use(primary); }
+    bool use(void) const {
+        if (blend_state.active) {
+            return true;
+        } else {
+            return use(primary);
+        }
+     }
 
     // return true if airspeed is enabled
     bool enabled(uint8_t i) const {
@@ -88,7 +136,13 @@ public:
         }
         return false;
     }
-    bool enabled(void) const { return enabled(primary); }
+    bool enabled(void) const {
+        if (blend_state.active) {
+            return true;
+        } else {
+            return enabled(primary);
+        }
+    }
 
     // used by HIL to set the airspeed
     void set_HIL(float airspeed) {
@@ -99,31 +153,63 @@ public:
     float get_differential_pressure(uint8_t i) const {
         return state[i].last_pressure;
     }
-    float get_differential_pressure(void) const { return get_differential_pressure(primary); }
+    float get_differential_pressure(void) const {
+        if (blend_state.active) {
+            return blend_state.last_pressure;
+        } else {
+            return get_differential_pressure(primary);
+        }
+    }
 
     // return the current calibration offset
     float get_offset(uint8_t i) const {
         return param[i].offset;
     }
-    float get_offset(void) const { return get_offset(primary); }
+    float get_offset(void) const {
+        if (blend_state.active) {
+            return blend_state.offset;
+        } else {
+            return get_offset(primary);
+        }
+    }
 
     // return the current corrected pressure
     float get_corrected_pressure(uint8_t i) const {
         return state[i].corrected_pressure;
     }
-    float get_corrected_pressure(void) const { return get_corrected_pressure(primary); }
+    float get_corrected_pressure(void) const {
+        if (blend_state.active) {
+            return blend_state.corrected_pressure;
+        } else {
+            return get_corrected_pressure(primary);
+        }
+    }
 
     // set the apparent to true airspeed ratio
     void set_EAS2TAS(uint8_t i, float v) {
         state[i].EAS2TAS = v;
     }
-    void set_EAS2TAS(float v) { set_EAS2TAS(primary, v); }
+    void set_EAS2TAS(float v) {
+        if (blend_state.active) {
+            for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
+                set_EAS2TAS(i, v);
+            }
+        } else {
+            set_EAS2TAS(primary, v);
+        }
+    }
 
     // get the apparent to true airspeed ratio
     float get_EAS2TAS(uint8_t i) const {
         return state[i].EAS2TAS;
     }
-    float get_EAS2TAS(void) const { return get_EAS2TAS(primary); }
+    float get_EAS2TAS(void) const {
+        if (blend_state.active) {
+            return blend_state.EAS2TAS;
+        } else {
+            return get_EAS2TAS(primary);
+        }
+    }
 
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
@@ -135,7 +221,13 @@ public:
     bool healthy(uint8_t i) const {
         return state[i].healthy && (fabsf(param[i].offset) > 0 || state[i].use_zero_offset) && enabled(i);
     }
-    bool healthy(void) const { return healthy(primary); }
+    bool healthy(void) const {
+        if (blend_enable == BLEND_FULL) {
+            return blend_state.active;
+        } else {
+            return healthy(primary);
+        }
+    }
 
     // return true if all enabled sensors are healthy
     bool all_healthy(void) const;
@@ -174,7 +266,12 @@ public:
 private:
     static AP_Airspeed *_singleton;
 
+private:
     AP_Int8 primary_sensor;
+
+    // Blended airspeed
+    AP_Int8 blend_enable;
+    AP_Int8 blend_airspeed_min;
     
     struct {
         AP_Float offset;
@@ -188,7 +285,7 @@ private:
         AP_Int8  tube_order;
         AP_Int8  skip_cal;
     } param[AIRSPEED_MAX_SENSORS];
-
+    
     struct airspeed_state {
         float   raw_airspeed;
         float   airspeed;
@@ -197,6 +294,7 @@ private:
         float	corrected_pressure;
         float   EAS2TAS;
         bool	healthy:1;
+        bool	blend_healthy:1;
         bool	hil_set:1;
         float   hil_pressure;
         uint32_t last_update_ms;
@@ -213,8 +311,23 @@ private:
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
+        
+        uint8_t blend_health_decision_delay;
     } state[AIRSPEED_MAX_SENSORS];
-
+    
+    struct blend_state_t {
+        float raw_airspeed;
+        float airspeed;
+        float last_pressure;
+        float corrected_pressure;
+        float EAS2TAS;
+        float temperature;
+        float ratio;
+        float offset;
+        
+        bool active;
+    } blend_state;
+    
     // current primary sensor
     uint8_t primary;
     
@@ -224,6 +337,8 @@ private:
     float get_pressure(uint8_t i);
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
-
+    
+    void process_no_blend(void);
+    
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 };
