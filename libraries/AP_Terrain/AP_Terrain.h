@@ -169,7 +169,7 @@ public:
     /*
       log terrain status to DataFlash
      */
-    void log_terrain_data(DataFlash_Class &dataflash);
+    void log_terrain_data();
 
     /*
       get some statistics for TERRAIN_REPORT

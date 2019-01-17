@@ -340,7 +340,7 @@ void AP_Terrain::update(void)
 /*
   log terrain data to dataflash log
  */
-void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
+void AP_Terrain::log_terrain_data()
 {
     if (!allocate()) {
         return;
@@ -370,7 +370,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
         pending        : pending,
         loaded         : loaded
     };
-    dataflash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*
