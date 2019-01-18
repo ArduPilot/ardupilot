@@ -133,6 +133,37 @@ class AutoTestQuadPlane(AutoTest):
         self.mav.motors_disarmed_wait()
         self.progress("Mission OK")
 
+    def fly_qautotune(self):
+        self.change_mode("QHOVER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1800)
+        self.wait_altitude(30,
+                           40,
+                           relative=True,
+                           timeout=30)
+        self.set_rc(3, 1500)
+        self.change_mode("QAUTOTUNE")
+        tstart = self.get_sim_time()
+        sim_time_expected = 5000
+        deadline = tstart + sim_time_expected
+        while self.get_sim_time_cached() < deadline:
+            now = self.get_sim_time_cached()
+            m = self.mav.recv_match(type='STATUSTEXT',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "AutoTune: Success" in m.text:
+                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+                # near enough for now:
+                self.change_mode("QLAND")
+                self.mavproxy.expect("AutoTune: Saved gains for Roll Pitch Yaw")
+                self.mav.motors_disarmed_wait()
+                return
+        self.mav.motors_disarmed_wait()
+
     def default_mode(self):
         return "FBWA"
 
@@ -145,6 +176,8 @@ class AutoTestQuadPlane(AutoTest):
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             ("ArmFeatures", "Arm features", self.test_arm_feature),
+
+            ("QAutoTune", "Fly QAUTOTUNE mode", self.fly_qautotune),
 
             ("Mission", "Dalby Mission",
              lambda: self.fly_mission(m, f))
