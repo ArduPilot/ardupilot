@@ -17,7 +17,7 @@ else
     cd jsbsim
     mkdir build
     cd build
-    cmake ..
+    cmake -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=native -mtune=native" -DCMAKE_C_FLAGS_RELEASE="-O3 -march=native -mtune=native" -DCMAKE_BUILD_TYPE=Release ..
     make -j2
 fi
 echo "---------- $0 end ----------"
