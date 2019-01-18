@@ -765,11 +765,6 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
-bool GCS_MAVLINK_Plane::should_disable_overrides_on_reboot() const
-{
-    return (plane.quadplane.enable != 0);
-}
-
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
