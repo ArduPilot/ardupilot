@@ -31,10 +31,10 @@
 class AP_Logger_Backend;
 
 enum AP_Logger_Backend_Type {
-    DATAFLASH_BACKEND_NONE = 0,
-    DATAFLASH_BACKEND_FILE = 1,
-    DATAFLASH_BACKEND_MAVLINK = 2,
-    DATAFLASH_BACKEND_BOTH = 3,
+    DATAFLASH_BACKEND_NONE      = 0,
+    DATAFLASH_BACKEND_FILE      = (1<<0),
+    DATAFLASH_BACKEND_MAVLINK   = (1<<1),
+    DATAFLASH_BACKEND_BLOCK     = (1<<2),
 };
 
 // fwd declarations to avoid include errors
@@ -75,7 +75,7 @@ public:
 
     // high level interface
     uint16_t find_last_log() const;
-    void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
+    void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
     uint16_t get_num_logs(void);
 
     void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
@@ -363,7 +363,7 @@ private:
     uint32_t _log_data_remaining;
 
     // start page of log data
-    uint16_t _log_data_page;
+    uint32_t _log_data_page;
 
     GCS_MAVLINK *_log_sending_link;
 

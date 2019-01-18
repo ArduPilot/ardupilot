@@ -672,7 +672,7 @@ uint16_t AP_Logger_File::_log_num_from_list_entry(const uint16_t list_entry)
 /*
   find the number of pages in a log
  */
-void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint16_t & start_page, uint16_t & end_page)
+void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
 {
     const uint16_t log_num = _log_num_from_list_entry(list_entry);
     if (log_num == 0) {
