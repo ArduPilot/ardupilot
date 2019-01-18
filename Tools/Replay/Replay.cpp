@@ -25,7 +25,7 @@
 #endif
 
 #include "LogReader.h"
-#include "AP_LoggerFileReader.h"
+#include "DataFlashFileReader.h"
 #include "Replay.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
