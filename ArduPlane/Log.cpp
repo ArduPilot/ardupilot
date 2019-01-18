@@ -17,12 +17,11 @@ void Plane::Log_Write_Attitude(void)
         targets.z = 0;
     }
     
-    if (quadplane.tailsitter_active()) {
-        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
-
-    } else if (quadplane.in_vtol_mode()) {
+    if (quadplane.tailsitter_active() || quadplane.in_vtol_mode()) {
+        // we need the attitude targets from the AC_AttitudeControl controller, as they
+        // account for the acceleration limits
         targets = quadplane.attitude_control->get_att_target_euler_cd();
-        DataFlash.Log_Write_Attitude(ahrs, targets);
+        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
     } else {
         DataFlash.Log_Write_Attitude(ahrs, targets);
     }
