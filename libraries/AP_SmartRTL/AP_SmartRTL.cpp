@@ -825,7 +825,7 @@ void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
 void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point)
 {
     if (!_example_mode) {
-        DataFlash_Class::instance()->Log_Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
+        AP_Logger::instance()->Log_Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
     }
 }
 

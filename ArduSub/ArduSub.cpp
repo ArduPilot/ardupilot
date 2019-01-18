@@ -49,7 +49,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK_CLASS(DataFlash_Class,     &sub.DataFlash,    periodic_tasks,     400, 300),
+    SCHED_TASK_CLASS(AP_Logger,     &sub.logger,    periodic_tasks,     400, 300),
     SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50),
     SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75),
 #if RPM_ENABLED == ENABLED
@@ -173,7 +173,7 @@ void Sub::update_batt_compass()
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            DataFlash.Log_Write_Compass();
+            logger.Log_Write_Compass();
         }
     }
 }
@@ -185,28 +185,28 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
+        logger.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
         }
     }
     if (should_log(MASK_LOG_MOTBATT)) {
         Log_Write_MotBatt();
     }
     if (should_log(MASK_LOG_RCIN)) {
-        DataFlash.Log_Write_RCIN();
+        logger.Log_Write_RCIN();
     }
     if (should_log(MASK_LOG_RCOUT)) {
-        DataFlash.Log_Write_RCOUT();
+        logger.Log_Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && mode_requires_GPS(control_mode)) {
         pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_Vibration();
+        logger.Log_Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control.control_monitor_log();
@@ -219,18 +219,18 @@ void Sub::twentyfive_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        DataFlash.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
+        logger.Log_Write_Rate(&ahrs_view, motors, attitude_control, pos_control);
         if (should_log(MASK_LOG_PID)) {
-            DataFlash.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            DataFlash.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
+            logger.Log_Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
         }
     }
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU();
+        logger.Log_Write_IMU();
     }
 }
 

@@ -1643,7 +1643,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
     
     motors->output();
     if (motors->armed() && motors->get_throttle() > 0) {
-        plane.DataFlash.Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+        plane.logger.Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
         Log_Write_QControl_Tuning();
         const uint32_t now = AP_HAL::millis();
         if (now - last_ctrl_log_ms > 100) {
@@ -2384,7 +2384,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
     };
-    plane.DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
 
     // write multicopter position control message
     pos_control->write_log();

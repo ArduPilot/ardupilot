@@ -1,5 +1,5 @@
 /* 
-   DataFlash logging - file oriented variant
+   AP_Logger logging - file oriented variant
 
    This uses posix file IO to create log files called logs/NN.bin in the
    given directory
@@ -13,7 +13,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
-#include "DataFlash_File.h"
+#include "AP_Logger_File.h"
 
 #include <AP_Common/AP_Common.h>
 
@@ -52,10 +52,10 @@ extern const AP_HAL::HAL& hal;
 /*
   constructor
  */
-DataFlash_File::DataFlash_File(DataFlash_Class &front,
-                               DFMessageWriter_DFLogStart *writer,
+AP_Logger_File::AP_Logger_File(AP_Logger &front,
+                               LoggerMessageWriter_DFLogStart *writer,
                                const char *log_directory) :
-    DataFlash_Backend(front, writer),
+    AP_Logger_Backend(front, writer),
     _write_fd(-1),
     _read_fd(-1),
     _log_directory(log_directory),
@@ -91,9 +91,9 @@ DataFlash_File::DataFlash_File(DataFlash_Class &front,
 }
 
 
-void DataFlash_File::Init()
+void AP_Logger_File::Init()
 {
-    DataFlash_Backend::Init();
+    AP_Logger_Backend::Init();
     // create the log directory if need be
     int ret;
     struct stat st;
@@ -120,7 +120,7 @@ void DataFlash_File::Init()
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
     while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
-        hal.console->printf("DataFlash_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
+        hal.console->printf("AP_Logger_File: Couldn't set buffer size to=%u\n", (unsigned)bufsize);
         bufsize >>= 1;
     }
 
@@ -129,13 +129,13 @@ void DataFlash_File::Init()
         return;
     }
 
-    hal.console->printf("DataFlash_File: buffer size=%u\n", (unsigned)bufsize);
+    hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&DataFlash_File::_io_timer, void));
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 }
 
-bool DataFlash_File::file_exists(const char *filename) const
+bool AP_Logger_File::file_exists(const char *filename) const
 {
     struct stat st;
     if (stat(filename, &st) == -1) {
@@ -146,7 +146,7 @@ bool DataFlash_File::file_exists(const char *filename) const
     return true;
 }
 
-bool DataFlash_File::log_exists(const uint16_t lognum) const
+bool AP_Logger_File::log_exists(const uint16_t lognum) const
 {
     char *filename = _log_file_name(lognum);
     if (filename == nullptr) {
@@ -157,13 +157,13 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
     return ret;
 }
 
-void DataFlash_File::periodic_1Hz()
+void AP_Logger_File::periodic_1Hz()
 {
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true
             // we register the IO timer callback
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "DataFlash: stuck thread (%s)", last_io_operation);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "AP_Logger: stuck thread (%s)", last_io_operation);
         }
         if (io_thread_warning_decimation_counter++ > 57) {
             io_thread_warning_decimation_counter = 0;
@@ -180,12 +180,12 @@ void DataFlash_File::periodic_1Hz()
     df_stats_log();
 }
 
-void DataFlash_File::periodic_fullrate()
+void AP_Logger_File::periodic_fullrate()
 {
-    DataFlash_Backend::push_log_blocks();
+    AP_Logger_Backend::push_log_blocks();
 }
 
-uint32_t DataFlash_File::bufferspace_available()
+uint32_t AP_Logger_File::bufferspace_available()
 {
     const uint32_t space = _writebuf.space();
     const uint32_t crit = critical_message_reserved_space();
@@ -194,14 +194,14 @@ uint32_t DataFlash_File::bufferspace_available()
 }
 
 // return true for CardInserted() if we successfully initialized
-bool DataFlash_File::CardInserted(void) const
+bool AP_Logger_File::CardInserted(void) const
 {
     return _initialised && !_open_error;
 }
 
 // returns the amount of disk space available in _log_directory (in bytes)
 // returns -1 on error
-int64_t DataFlash_File::disk_space_avail()
+int64_t AP_Logger_File::disk_space_avail()
 {
 #if HAL_OS_POSIX_IO
     struct statfs _stats;
@@ -220,7 +220,7 @@ int64_t DataFlash_File::disk_space_avail()
 // returns the total amount of disk space (in use + available) in
 // _log_directory (in bytes).
 // returns -1 on error
-int64_t DataFlash_File::disk_space()
+int64_t AP_Logger_File::disk_space()
 {
 #if HAL_OS_POSIX_IO
     struct statfs _stats;
@@ -238,7 +238,7 @@ int64_t DataFlash_File::disk_space()
 
 // returns the available space in _log_directory as a percentage
 // returns -1.0f on error
-float DataFlash_File::avail_space_percent()
+float AP_Logger_File::avail_space_percent()
 {
     int64_t avail = disk_space_avail();
     if (avail == -1) {
@@ -254,7 +254,7 @@ float DataFlash_File::avail_space_percent()
 
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
-uint16_t DataFlash_File::find_oldest_log()
+uint16_t AP_Logger_File::find_oldest_log()
 {
     if (_cached_oldest_log != 0) {
         return _cached_oldest_log;
@@ -317,7 +317,7 @@ uint16_t DataFlash_File::find_oldest_log()
     return current_oldest_log;
 }
 
-void DataFlash_File::Prep_MinSpace()
+void AP_Logger_File::Prep_MinSpace()
 {
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
@@ -374,7 +374,7 @@ void DataFlash_File::Prep_MinSpace()
     } while (log_to_remove != first_log_to_remove);
 }
 
-void DataFlash_File::Prep() {
+void AP_Logger_File::Prep() {
     if (!NeedPrep()) {
         return;
     }
@@ -385,7 +385,7 @@ void DataFlash_File::Prep() {
     Prep_MinSpace();
 }
 
-bool DataFlash_File::NeedPrep()
+bool AP_Logger_File::NeedPrep()
 {
     if (!CardInserted()) {
         // should not have been called?!
@@ -404,7 +404,7 @@ bool DataFlash_File::NeedPrep()
   The number in the log filename will *not* be zero-padded.
   Note: Caller must free.
  */
-char *DataFlash_File::_log_file_name_short(const uint16_t log_num) const
+char *AP_Logger_File::_log_file_name_short(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -418,7 +418,7 @@ char *DataFlash_File::_log_file_name_short(const uint16_t log_num) const
   The number in the log filename will be zero-padded.
   Note: Caller must free.
  */
-char *DataFlash_File::_log_file_name_long(const uint16_t log_num) const
+char *AP_Logger_File::_log_file_name_long(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -433,7 +433,7 @@ char *DataFlash_File::_log_file_name_long(const uint16_t log_num) const
   appropirate name, otherwise the long (zero-padded) version is.
   Note: Caller must free.
  */
-char *DataFlash_File::_log_file_name(const uint16_t log_num) const
+char *AP_Logger_File::_log_file_name(const uint16_t log_num) const
 {
     char *filename = _log_file_name_short(log_num);
     if (filename == nullptr) {
@@ -450,7 +450,7 @@ char *DataFlash_File::_log_file_name(const uint16_t log_num) const
   return path name of the lastlog.txt marker file
   Note: Caller must free.
  */
-char *DataFlash_File::_lastlog_file_name(void) const
+char *AP_Logger_File::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
@@ -461,7 +461,7 @@ char *DataFlash_File::_lastlog_file_name(void) const
 
 
 // remove all log files
-void DataFlash_File::EraseAll()
+void AP_Logger_File::EraseAll()
 {
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
@@ -495,7 +495,7 @@ void DataFlash_File::EraseAll()
     }
 }
 
-bool DataFlash_File::WritesOK() const
+bool AP_Logger_File::WritesOK() const
 {
     if (_write_fd == -1) {
         return false;
@@ -507,16 +507,16 @@ bool DataFlash_File::WritesOK() const
 }
 
 
-bool DataFlash_File::StartNewLogOK() const
+bool AP_Logger_File::StartNewLogOK() const
 {
     if (_open_error) {
         return false;
     }
-    return DataFlash_Backend::StartNewLogOK();
+    return AP_Logger_Backend::StartNewLogOK();
 }
 
 /* Write a block of data at current offset */
-bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
@@ -570,7 +570,7 @@ bool DataFlash_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 /*
   find the highest log number
  */
-uint16_t DataFlash_File::find_last_log()
+uint16_t AP_Logger_File::find_last_log()
 {
     unsigned ret = 0;
     char *fname = _lastlog_file_name();
@@ -594,7 +594,7 @@ uint16_t DataFlash_File::find_last_log()
     return ret;
 }
 
-uint32_t DataFlash_File::_get_log_size(const uint16_t log_num)
+uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
@@ -619,7 +619,7 @@ uint32_t DataFlash_File::_get_log_size(const uint16_t log_num)
     return st.st_size;
 }
 
-uint32_t DataFlash_File::_get_log_time(const uint16_t log_num)
+uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
@@ -654,7 +654,7 @@ uint32_t DataFlash_File::_get_log_time(const uint16_t log_num)
   and so on.  Thus the highest list entry number is equal to the
   number of logs.
 */
-uint16_t DataFlash_File::_log_num_from_list_entry(const uint16_t list_entry)
+uint16_t AP_Logger_File::_log_num_from_list_entry(const uint16_t list_entry)
 {
     uint16_t oldest_log = find_oldest_log();
     if (oldest_log == 0) {
@@ -672,7 +672,7 @@ uint16_t DataFlash_File::_log_num_from_list_entry(const uint16_t list_entry)
 /*
   find the number of pages in a log
  */
-void DataFlash_File::get_log_boundaries(const uint16_t list_entry, uint16_t & start_page, uint16_t & end_page)
+void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint16_t & start_page, uint16_t & end_page)
 {
     const uint16_t log_num = _log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -689,7 +689,7 @@ void DataFlash_File::get_log_boundaries(const uint16_t list_entry, uint16_t & st
 /*
   retrieve data from a log file
  */
-int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
+int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
     if (!_initialised || _open_error) {
         return -1;
@@ -771,7 +771,7 @@ int16_t DataFlash_File::get_log_data(const uint16_t list_entry, const uint16_t p
 /*
   find size and date of a log
  */
-void DataFlash_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
+void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
     uint16_t log_num = _log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -790,7 +790,7 @@ void DataFlash_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
-uint16_t DataFlash_File::get_num_logs()
+uint16_t AP_Logger_File::get_num_logs()
 {
     uint16_t ret = 0;
     uint16_t high = find_last_log();
@@ -815,7 +815,7 @@ uint16_t DataFlash_File::get_num_logs()
 /*
   stop logging
  */
-void DataFlash_File::stop_logging(void)
+void AP_Logger_File::stop_logging(void)
 {
     // best-case effort to avoid annoying the IO thread
     const bool have_sem = write_fd_semaphore.take(1);
@@ -831,7 +831,7 @@ void DataFlash_File::stop_logging(void)
     }
 }
 
-void DataFlash_File::PrepForArming()
+void AP_Logger_File::PrepForArming()
 {
     if (logging_started()) {
         return;
@@ -842,7 +842,7 @@ void DataFlash_File::PrepForArming()
 /*
   start writing to a new log file
  */
-uint16_t DataFlash_File::start_new_log(void)
+uint16_t AP_Logger_File::start_new_log(void)
 {
     stop_logging();
 
@@ -943,7 +943,7 @@ uint16_t DataFlash_File::start_new_log(void)
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-void DataFlash_File::flush(void)
+void AP_Logger_File::flush(void)
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
@@ -971,7 +971,7 @@ void DataFlash_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
-void DataFlash_File::_io_timer(void)
+void AP_Logger_File::_io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
@@ -1066,7 +1066,7 @@ void DataFlash_File::_io_timer(void)
 }
 
 // this sensor is enabled if we should be logging at the moment
-bool DataFlash_File::logging_enabled() const
+bool AP_Logger_File::logging_enabled() const
 {
     if (hal.util->get_soft_armed() ||
         _front.log_while_disarmed()) {
@@ -1075,13 +1075,13 @@ bool DataFlash_File::logging_enabled() const
     return false;
 }
 
-bool DataFlash_File::io_thread_alive() const
+bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full second then it is dead
     return (AP_HAL::millis() - _io_timer_heartbeat) < 1000;
 }
 
-bool DataFlash_File::logging_failed() const
+bool AP_Logger_File::logging_failed() const
 {
     if (!_initialised) {
         return true;
@@ -1099,7 +1099,7 @@ bool DataFlash_File::logging_failed() const
 }
 
 
-void DataFlash_File::vehicle_was_disarmed()
+void AP_Logger_File::vehicle_was_disarmed()
 {
     if (_front._params.file_disarm_rot) {
         // rotate our log.  Closing the current one and letting the
@@ -1109,7 +1109,7 @@ void DataFlash_File::vehicle_was_disarmed()
     }
 }
 
-void DataFlash_File::Log_Write_DataFlash_Stats_File(const struct df_stats &_stats)
+void AP_Logger_File::Log_Write_AP_Logger_Stats_File(const struct df_stats &_stats)
 {
     struct log_DSF pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
@@ -1126,7 +1126,7 @@ void DataFlash_File::Log_Write_DataFlash_Stats_File(const struct df_stats &_stat
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void DataFlash_File::df_stats_gather(const uint16_t bytes_written) {
+void AP_Logger_File::df_stats_gather(const uint16_t bytes_written) {
     const uint32_t space_remaining = _writebuf.space();
     if (space_remaining < stats.buf_space_min) {
         stats.buf_space_min = space_remaining;
@@ -1139,13 +1139,13 @@ void DataFlash_File::df_stats_gather(const uint16_t bytes_written) {
     stats.blocks++;
 }
 
-void DataFlash_File::df_stats_clear() {
+void AP_Logger_File::df_stats_clear() {
     memset(&stats, '\0', sizeof(stats));
     stats.buf_space_min = -1;
 }
 
-void DataFlash_File::df_stats_log() {
-    Log_Write_DataFlash_Stats_File(stats);
+void AP_Logger_File::df_stats_log() {
+    Log_Write_AP_Logger_Stats_File(stats);
     df_stats_clear();
 }
 

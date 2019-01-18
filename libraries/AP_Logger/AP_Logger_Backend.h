@@ -1,17 +1,17 @@
 #pragma once
 
-#include "DataFlash.h"
+#include "AP_Logger.h"
 
-class DFMessageWriter_DFLogStart;
+class LoggerMessageWriter_DFLogStart;
 
-class DataFlash_Backend
+class AP_Logger_Backend
 {
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
-    DataFlash_Backend(DataFlash_Class &front,
-                      class DFMessageWriter_DFLogStart *writer);
+    AP_Logger_Backend(AP_Logger &front,
+                      class LoggerMessageWriter_DFLogStart *writer);
 
     vehicle_startup_message_Log_Writer vehicle_message_writer();
 
@@ -56,7 +56,7 @@ public:
     /* stop logging - close output files etc etc.
      *
      * note that this doesn't stop logging from starting up again
-     * immediately - e.g. DataFlash_MAVLink might get another start
+     * immediately - e.g. AP_Logger_MAVLink might get another start
      * packet from a client.
      */
     virtual void stop_logging(void) = 0;
@@ -65,7 +65,7 @@ public:
     void Log_Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only DataFlash_File support this:
+    // currently only AP_Logger_File support this:
     virtual void flush(void) { }
 #endif
 
@@ -125,7 +125,7 @@ public:
 
 protected:
 
-    DataFlash_Class &_front;
+    AP_Logger &_front;
 
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz();
@@ -142,7 +142,7 @@ protected:
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();
 
-    DFMessageWriter_DFLogStart *_startup_messagewriter;
+    LoggerMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
     uint8_t _internal_errors;

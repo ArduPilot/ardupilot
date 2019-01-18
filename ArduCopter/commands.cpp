@@ -89,7 +89,7 @@ bool Copter::set_home(const Location& loc, bool lock)
         if (should_log(MASK_LOG_CMD)) {
             AP_Mission::Mission_Command temp_cmd;
             if (mode_auto.mission.read_cmd_from_storage(0, temp_cmd)) {
-                DataFlash.Log_Write_Mission_Cmd(mode_auto.mission, temp_cmd);
+                logger.Log_Write_Mission_Cmd(mode_auto.mission, temp_cmd);
             }
         }
 #endif

@@ -1,5 +1,5 @@
 /* 
-   DataFlash logging - file oriented variant
+   AP_Logger logging - file oriented variant
 
    This uses posix file IO to create log files called logNN.dat in the
    given directory
@@ -9,14 +9,14 @@
 #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
 
 #include <AP_HAL/utility/RingBuffer.h>
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 
-class DataFlash_File : public DataFlash_Backend
+class AP_Logger_File : public AP_Logger_Backend
 {
 public:
     // constructor
-    DataFlash_File(DataFlash_Class &front,
-                   DFMessageWriter_DFLogStart *,
+    AP_Logger_File(AP_Logger &front,
+                   LoggerMessageWriter_DFLogStart *,
                    const char *log_directory);
 
     // initialisation
@@ -169,7 +169,7 @@ private:
     };
     struct df_stats stats;
 
-    void Log_Write_DataFlash_Stats_File(const struct df_stats &_stats);
+    void Log_Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void df_stats_gather(uint16_t bytes_written);
     void df_stats_log();
     void df_stats_clear();

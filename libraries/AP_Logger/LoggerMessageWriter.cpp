@@ -1,5 +1,5 @@
 #include "AP_Common/AP_FWVersion.h"
-#include "DFMessageWriter.h"
+#include "LoggerMessageWriter.h"
 
 #define FORCE_VERSION_H_INCLUDE
 #include "ap_version.h"
@@ -11,14 +11,14 @@ extern const AP_HAL::HAL& hal;
  * trickle out messages to the log files
  */
 
-void DFMessageWriter::reset()
+void LoggerMessageWriter::reset()
 {
     _finished = false;
 }
 
-void DFMessageWriter_DFLogStart::reset()
+void LoggerMessageWriter_DFLogStart::reset()
 {
-    DFMessageWriter::reset();
+    LoggerMessageWriter::reset();
 
     _fmt_done = false;
     _writesysinfo.reset();
@@ -32,7 +32,7 @@ void DFMessageWriter_DFLogStart::reset()
     ap = AP_Param::first(&token, &type);
 }
 
-void DFMessageWriter_DFLogStart::process()
+void LoggerMessageWriter_DFLogStart::process()
 {
     switch(stage) {
     case ls_blockwriter_stage_init:
@@ -111,7 +111,7 @@ void DFMessageWriter_DFLogStart::process()
     case ls_blockwriter_stage_vehicle_messages:
         // we guarantee 200 bytes of space for the vehicle startup
         // messages.  This allows them to be simple functions rather
-        // than e.g. DFMessageWriter-based state machines
+        // than e.g. LoggerMessageWriter-based state machines
         if (_dataflash_backend->vehicle_message_writer()) {
             if (_dataflash_backend->bufferspace_available() < 200) {
                 return;
@@ -128,13 +128,13 @@ void DFMessageWriter_DFLogStart::process()
     _finished = true;
 }
 
-void DFMessageWriter_WriteSysInfo::reset()
+void LoggerMessageWriter_WriteSysInfo::reset()
 {
-    DFMessageWriter::reset();
+    LoggerMessageWriter::reset();
     stage = ws_blockwriter_stage_init;
 }
 
-void DFMessageWriter_WriteSysInfo::process() {
+void LoggerMessageWriter_WriteSysInfo::process() {
     const AP_FWVersion &fwver = AP::fwversion();
 
     switch(stage) {
@@ -181,7 +181,7 @@ void DFMessageWriter_WriteSysInfo::process() {
     _finished = true;  // all done!
 }
 
-void DFMessageWriter_WriteEntireMission::process() {
+void LoggerMessageWriter_WriteEntireMission::process() {
     const AP_Mission *_mission = AP::mission();
     if (_mission == nullptr) {
         _finished = true;
@@ -229,9 +229,9 @@ void DFMessageWriter_WriteEntireMission::process() {
     _finished = true;
 }
 
-void DFMessageWriter_WriteEntireMission::reset()
+void LoggerMessageWriter_WriteEntireMission::reset()
 {
-    DFMessageWriter::reset();
+    LoggerMessageWriter::reset();
     stage = em_blockwriter_stage_init;
     _mission_number_to_send = 0;
 }

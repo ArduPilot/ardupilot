@@ -383,7 +383,7 @@ void SoloGimbal::update_target(const Vector3f &newTarget)
 
 void SoloGimbal::write_logs()
 {
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash == nullptr) {
         return;
     }

@@ -115,7 +115,7 @@ public:
     }
 
     void broadcast_configuration_failure_reason(void) const override;
-    void Write_DataFlash_Log_Startup_messages() const override;
+    void Write_AP_Logger_Log_Startup_messages() const override;
 
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override;

@@ -1,5 +1,5 @@
 /* ************************************************************ */
-/* Test for DataFlash Log library                               */
+/* Test for AP_Logger Log library                               */
 /* ************************************************************ */
 #pragma once
 
@@ -17,7 +17,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <DataFlash/LogStructure.h>
+#include <AP_Logger/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
@@ -26,11 +26,11 @@
 
 #include <stdint.h>
 
-#include "DFMessageWriter.h"
+#include "LoggerMessageWriter.h"
 
-class DataFlash_Backend;
+class AP_Logger_Backend;
 
-enum DataFlash_Backend_Type {
+enum AP_Logger_Backend_Type {
     DATAFLASH_BACKEND_NONE = 0,
     DATAFLASH_BACKEND_FILE = 1,
     DATAFLASH_BACKEND_MAVLINK = 2,
@@ -41,21 +41,21 @@ enum DataFlash_Backend_Type {
 class AC_AttitudeControl;
 class AC_PosControl;
 
-class DataFlash_Class
+class AP_Logger
 {
-    friend class DataFlash_Backend; // for _num_types
+    friend class AP_Logger_Backend; // for _num_types
 
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
 
-    DataFlash_Class(const AP_Int32 &log_bitmask);
+    AP_Logger(const AP_Int32 &log_bitmask);
 
     /* Do not allow copies */
-    DataFlash_Class(const DataFlash_Class &other) = delete;
-    DataFlash_Class &operator=(const DataFlash_Class&) = delete;
+    AP_Logger(const AP_Logger &other) = delete;
+    AP_Logger &operator=(const AP_Logger&) = delete;
 
     // get singleton instance
-    static DataFlash_Class *instance(void) {
+    static AP_Logger *instance(void) {
         return _instance;
     }
 
@@ -167,7 +167,7 @@ public:
     bool logging_started(void);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only DataFlash_File support this:
+    // currently only AP_Logger_File support this:
     void flush(void);
 #endif
 
@@ -207,7 +207,7 @@ public:
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
     // these methods cover only the first logging backend used -
-    // typically DataFlash_File.
+    // typically AP_Logger_File.
     bool logging_present() const;
     bool logging_enabled() const;
     bool logging_failed() const;
@@ -242,7 +242,7 @@ protected:
 private:
     #define DATAFLASH_MAX_BACKENDS 2
     uint8_t _next_backend;
-    DataFlash_Backend *backends[DATAFLASH_MAX_BACKENDS];
+    AP_Logger_Backend *backends[DATAFLASH_MAX_BACKENDS];
     const AP_Int32 &_log_bitmask;
 
     void internal_error() const;
@@ -305,9 +305,9 @@ private:
                                   uint8_t imu_instance,
                                   enum LogMessages type);
 
-    void backend_starting_new_log(const DataFlash_Backend *backend);
+    void backend_starting_new_log(const AP_Logger_Backend *backend);
 
-    static DataFlash_Class *_instance;
+    static AP_Logger *_instance;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     bool validate_structure(const struct LogStructure *logstructure, int16_t offset);

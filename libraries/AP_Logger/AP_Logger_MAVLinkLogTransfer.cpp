@@ -19,13 +19,13 @@
 
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h> // for LOG_ENTRY
 
 extern const AP_HAL::HAL& hal;
 
 // We avoid doing log messages when timing is critical:
-bool DataFlash_Class::should_handle_log_message()
+bool AP_Logger::should_handle_log_message()
 {
     if (!WritesEnabled()) {
         // this is currently used as a proxy for "in_mavlink_delay"
@@ -40,7 +40,7 @@ bool DataFlash_Class::should_handle_log_message()
 /**
    handle all types of log download requests from the GCS
  */
-void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *msg)
+void AP_Logger::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     if (!should_handle_log_message()) {
         return;
@@ -64,7 +64,7 @@ void DataFlash_Class::handle_log_message(GCS_MAVLINK &link, mavlink_message_t *m
 /**
    handle all types of log download requests from the GCS
  */
-void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *msg)
+void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     if (_log_sending_link != nullptr) {
         link.send_text(MAV_SEVERITY_INFO, "Log download in progress");
@@ -100,7 +100,7 @@ void DataFlash_Class::handle_log_request_list(GCS_MAVLINK &link, mavlink_message
 /**
    handle request for log data
  */
-void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message_t *msg)
+void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     if (_log_sending_link != nullptr) {
         // some GCS (e.g. MAVProxy) attempt to stream request_data
@@ -154,7 +154,7 @@ void DataFlash_Class::handle_log_request_data(GCS_MAVLINK &link, mavlink_message
 /**
    handle request to erase log data
  */
-void DataFlash_Class::handle_log_request_erase(GCS_MAVLINK &link, mavlink_message_t *msg)
+void AP_Logger::handle_log_request_erase(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     // mavlink_log_erase_t packet;
     // mavlink_msg_log_erase_decode(msg, &packet);
@@ -165,7 +165,7 @@ void DataFlash_Class::handle_log_request_erase(GCS_MAVLINK &link, mavlink_messag
 /**
    handle request to stop transfer and resume normal logging
  */
-void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_t *msg)
+void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_t *msg)
 {
     mavlink_log_request_end_t packet;
     mavlink_msg_log_request_end_decode(msg, &packet);
@@ -177,7 +177,7 @@ void DataFlash_Class::handle_log_request_end(GCS_MAVLINK &link, mavlink_message_
 /**
    trigger sending of log messages if there are some pending
  */
-void DataFlash_Class::handle_log_send()
+void AP_Logger::handle_log_send()
 {
     if (_log_sending_link == nullptr) {
         return;
@@ -198,7 +198,7 @@ void DataFlash_Class::handle_log_send()
     }
 }
 
-void DataFlash_Class::handle_log_sending()
+void AP_Logger::handle_log_sending()
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // assume USB speeds in SITL for the purposes of log download
@@ -231,7 +231,7 @@ void DataFlash_Class::handle_log_sending()
 /**
    trigger sending of log messages if there are some pending
  */
-void DataFlash_Class::handle_log_send_listing()
+void AP_Logger::handle_log_send_listing()
 {
     if (!HAVE_PAYLOAD_SPACE(_log_sending_link->get_chan(), LOG_ENTRY)) {
         // no space
@@ -266,7 +266,7 @@ void DataFlash_Class::handle_log_send_listing()
 /**
    trigger sending of log data if there are some pending
  */
-bool DataFlash_Class::handle_log_send_data()
+bool AP_Logger::handle_log_send_data()
 {
     if (!HAVE_PAYLOAD_SPACE(_log_sending_link->get_chan(), LOG_DATA)) {
         // no space

@@ -18,7 +18,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -370,7 +370,7 @@ void AP_Terrain::log_terrain_data()
         pending        : pending,
         loaded         : loaded
     };
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

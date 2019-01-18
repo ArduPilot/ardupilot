@@ -87,7 +87,7 @@ void Plane::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RC)) {
-            DataFlash.Log_Write_RPM(rpm_sensor);
+            logger.Log_Write_RPM(rpm_sensor);
         }
     }
 }
@@ -124,7 +124,7 @@ void Plane::update_sensor_status_flags(void)
     if (have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
     }
-    if (plane.DataFlash.logging_present()) { // primary logging only (usually File)
+    if (plane.logger.logging_present()) { // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -139,7 +139,7 @@ void Plane::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
     }
 
-    if (plane.DataFlash.logging_enabled()) {
+    if (plane.logger.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -248,7 +248,7 @@ void Plane::update_sensor_status_flags(void)
     }
 #endif
 
-    if (plane.DataFlash.logging_failed()) {
+    if (plane.logger.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 

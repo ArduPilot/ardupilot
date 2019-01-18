@@ -1076,8 +1076,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
-    // log to DataFlash
-    DataFlash_Class::instance()->Log_Write(
+    // log to AP_Logger
+    AP_Logger::instance()->Log_Write(
         "TECS",
         "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
         "smnmnnnn----o--",
@@ -1098,7 +1098,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         (double)_TAS_rate_dem,
         (double)logging.SKE_weighting,
         _flags_byte);
-    DataFlash_Class::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta,LF", "Qffff",
+    AP_Logger::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta,LF", "Qffff",
                                            now,
                                            (double)logging.SKE_error,
                                            (double)logging.SPE_error,

@@ -30,7 +30,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1346,7 +1346,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
 
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df && df->logging_enabled()) {
         struct log_Esc pkt = {
             LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC1_MSG+last_telem_esc)),

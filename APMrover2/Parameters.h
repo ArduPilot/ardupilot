@@ -207,7 +207,7 @@ public:
         k_param_button,
         k_param_osd,
 
-        k_param_DataFlash = 253,  // Logging Group
+        k_param_logger = 253,  // Logging Group
 
         // 254,255: reserved
         };

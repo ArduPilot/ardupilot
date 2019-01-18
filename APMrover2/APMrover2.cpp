@@ -83,7 +83,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(compass_save,           0.1,   200),
     SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
+    SCHED_TASK_CLASS(AP_Logger,     &rover.logger,        periodic_tasks, 50,  300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
@@ -139,7 +139,7 @@ void Rover::update_soft_armed()
 {
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    DataFlash.set_vehicle_armed(hal.util->get_soft_armed());
+    logger.set_vehicle_armed(hal.util->get_soft_armed());
 }
 
 // update AHRS system
@@ -177,7 +177,7 @@ void Rover::ahrs_update()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_IMU();
+        logger.Log_Write_IMU();
     }
 }
 
@@ -204,7 +204,7 @@ void Rover::update_compass(void)
         ahrs.set_compass(&compass);
         // update offsets
         if (should_log(MASK_LOG_COMPASS)) {
-            DataFlash.Log_Write_Compass();
+            logger.Log_Write_Compass();
         }
     }
 }
@@ -221,7 +221,7 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
-        DataFlash.Log_Write_Beacon(g2.beacon);
+        logger.Log_Write_Beacon(g2.beacon);
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -229,7 +229,7 @@ void Rover::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_RANGEFINDER)) {
-        DataFlash.Log_Write_Proximity(g2.proximity);
+        logger.Log_Write_Proximity(g2.proximity);
     }
 }
 
@@ -248,7 +248,7 @@ void Rover::update_logging2(void)
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_Vibration();
+        logger.Log_Write_Vibration();
     }
 }
 

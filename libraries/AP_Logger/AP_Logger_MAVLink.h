@@ -1,5 +1,5 @@
 /* 
-   DataFlash logging - MAVLink variant
+   AP_Logger logging - MAVLink variant
 
    - transfers blocks of the open log file to a client using MAVLink
  */
@@ -11,18 +11,18 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 
 extern const AP_HAL::HAL& hal;
 
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
-class DataFlash_MAVLink : public DataFlash_Backend
+class AP_Logger_MAVLink : public AP_Logger_Backend
 {
 public:
     // constructor
-    DataFlash_MAVLink(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
-        DataFlash_Backend(front, writer),
+    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+        AP_Logger_Backend(front, writer),
         _max_blocks_per_send_blocks(8)
         ,_perf_packing(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DM_packing"))
         {
@@ -144,7 +144,7 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Log_Write_DF_MAV(DataFlash_MAVLink &df);
+    void Log_Write_DF_MAV(AP_Logger_MAVLink &df);
 
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();

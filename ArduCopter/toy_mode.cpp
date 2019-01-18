@@ -991,7 +991,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
     if (motor_log_counter++ % 10 == 0) {
-        DataFlash_Class::instance()->Log_Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP_Logger::instance()->Log_Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,
