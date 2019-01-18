@@ -1036,3 +1036,8 @@ bool AP_Logger::Log_Write_ISBD(const uint16_t isb_seqno,
 
     return backends[0]->WriteBlock(&pkt, sizeof(pkt));
 }
+
+AP_Logger &AP::logger()
+{
+    return *AP_Logger::instance();
+}

@@ -385,3 +385,7 @@ private:
     /* end support for retrieving logs via mavlink: */
 
 };
+
+namespace AP {
+    AP_Logger &logger();
+};
