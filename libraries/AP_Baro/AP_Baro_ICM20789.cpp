@@ -343,7 +343,7 @@ void AP_Baro_ICM20789::update()
 {
 #if BARO_ICM20789_DEBUG
     // useful for debugging
-    AP_Logger::instance()->Log_Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
+    AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                            AP_HAL::micros64(),
                                            dd.Traw, dd.Praw, dd.P, dd.T);
 #endif

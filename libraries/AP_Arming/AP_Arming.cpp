@@ -200,11 +200,11 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (AP_Logger::instance()->logging_failed()) {
+        if (AP::logger().logging_failed()) {
             check_failed(ARMING_CHECK_LOGGING, report, "Logging failed");
             return false;
         }
-        if (!AP_Logger::instance()->CardInserted()) {
+        if (!AP::logger().CardInserted()) {
             check_failed(ARMING_CHECK_LOGGING, report, "No SD card");
             return false;
         }

@@ -74,7 +74,7 @@ void Sub::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            logger.Log_Write_RPM(rpm_sensor);
+            logger.Write_RPM(rpm_sensor);
         }
     }
 }

@@ -79,7 +79,7 @@ class AP_UAVCAN_FileEventTracer : public uavcan::dynamic_node_id_server::IEventT
 protected:
     virtual void onEvent(uavcan::dynamic_node_id_server::TraceCode code, uavcan::int64_t argument)
     {
-        AP_Logger::instance()->Log_Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
+        AP::logger().Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
     }
 };
 

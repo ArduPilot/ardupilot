@@ -50,7 +50,7 @@ void Copter::crash_check()
         // log an error in the dataflash
         Log_Write_Error(ERROR_SUBSYSTEM_CRASH_CHECK, ERROR_CODE_CRASH_CHECK_CRASH);
         // keep logging even if disarmed:
-        AP_Logger::instance()->set_force_log_disarmed(true);
+        AP::logger().set_force_log_disarmed(true);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
         // disarm motors

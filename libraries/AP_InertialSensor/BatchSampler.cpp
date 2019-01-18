@@ -199,7 +199,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
             }
             break;
         }
-        if (!dataflash->Log_Write_ISBH(isb_seqnum,
+        if (!dataflash->Write_ISBH(isb_seqnum,
                                        type,
                                        instance,
                                        multiplier,
@@ -212,7 +212,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         isbh_sent = true;
     }
     // pack and send a data packet:
-    if (!dataflash->Log_Write_ISBD(isb_seqnum,
+    if (!dataflash->Write_ISBD(isb_seqnum,
                                    data_read_offset/samples_per_msg,
                                    &data_x[data_read_offset],
                                    &data_y[data_read_offset],

@@ -21,31 +21,31 @@ void Plane::Log_Write_Attitude(void)
         // we need the attitude targets from the AC_AttitudeControl controller, as they
         // account for the acceleration limits
         targets = quadplane.attitude_control->get_att_target_euler_cd();
-        logger.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
+        logger.Write_AttitudeView(*quadplane.ahrs_view, targets);
     } else {
-        logger.Log_Write_Attitude(ahrs, targets);
+        logger.Write_Attitude(ahrs, targets);
     }
     if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
         // log quadplane PIDs separately from fixed wing PIDs
-        logger.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
+        logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
+        logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
     }
 
-    logger.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
-    logger.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
-    logger.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
-    logger.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+    logger.Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+    logger.Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
+    logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    logger.Log_Write_EKF(ahrs);
-    logger.Log_Write_AHRS2(ahrs);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 }
 
 // do logging at loop rate
@@ -204,7 +204,7 @@ void Plane::Log_Write_Sonar()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 
-    logger.Log_Write_RFND(rangefinder);
+    logger.Write_RFND(rangefinder);
 }
 
 struct PACKED log_Arm_Disarm {
@@ -252,10 +252,10 @@ void Plane::Log_Write_AETR()
 
 void Plane::Log_Write_RC(void)
 {
-    logger.Log_Write_RCIN();
-    logger.Log_Write_RCOUT();
+    logger.Write_RCIN();
+    logger.Write_RCOUT();
     if (rssi.enabled()) {
-        logger.Log_Write_RSSI(rssi);
+        logger.Write_RSSI(rssi);
     }
     Log_Write_AETR();
 }
@@ -299,8 +299,8 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    logger.Log_Write_Mode(control_mode, control_mode_reason);
-    logger.Log_Write_Rally(rally);
+    logger.Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Rally(rally);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }

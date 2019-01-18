@@ -53,7 +53,7 @@ void AP_LoggerTest::setup(void)
     log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("AP_Logger Test");
+    dataflash.Write_Message("AP_Logger Test");
 
     // Test
     hal.scheduler->delay(20);

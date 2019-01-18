@@ -249,7 +249,7 @@ void Plane::startup_ground(void)
 
     // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    logger.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -505,7 +505,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     adsb.set_is_auto_mode(auto_navigation_mode);
 
-    logger.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
 
     // update notify with flight mode change
     notify_flight_mode(control_mode);

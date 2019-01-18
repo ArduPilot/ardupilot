@@ -46,7 +46,7 @@ class AP_Logger
     friend class AP_Logger_Backend; // for _num_types
 
 public:
-    FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
+    FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
     AP_Logger(const AP_Int32 &log_bitmask);
 
@@ -78,7 +78,7 @@ public:
     void get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page);
     uint16_t get_num_logs(void);
 
-    void setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer);
+    void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
 
     void PrepForArming();
 
@@ -87,67 +87,67 @@ public:
 
     void StopLogging();
 
-    void Log_Write_Parameter(const char *name, float value);
-    void Log_Write_GPS(uint8_t instance, uint64_t time_us=0);
-    void Log_Write_RFND(const RangeFinder &rangefinder);
-    void Log_Write_IMU();
-    void Log_Write_IMUDT(uint64_t time_us, uint8_t imu_mask);
-    bool Log_Write_ISBH(uint16_t seqno,
+    void Write_Parameter(const char *name, float value);
+    void Write_GPS(uint8_t instance, uint64_t time_us=0);
+    void Write_RFND(const RangeFinder &rangefinder);
+    void Write_IMU();
+    void Write_IMUDT(uint64_t time_us, uint8_t imu_mask);
+    bool Write_ISBH(uint16_t seqno,
                         AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                         uint8_t instance,
                         uint16_t multiplier,
                         uint16_t sample_count,
                         uint64_t sample_us,
                         float sample_rate_hz);
-    bool Log_Write_ISBD(uint16_t isb_seqno,
+    bool Write_ISBD(uint16_t isb_seqno,
                         uint16_t seqno,
                         const int16_t x[32],
                         const int16_t y[32],
                         const int16_t z[32]);
-    void Log_Write_Vibration();
-    void Log_Write_RCIN(void);
-    void Log_Write_RCOUT(void);
-    void Log_Write_RSSI(AP_RSSI &rssi);
-    void Log_Write_Baro(uint64_t time_us=0);
-    void Log_Write_Power(void);
-    void Log_Write_AHRS2(AP_AHRS &ahrs);
-    void Log_Write_POS(AP_AHRS &ahrs);
+    void Write_Vibration();
+    void Write_RCIN(void);
+    void Write_RCOUT(void);
+    void Write_RSSI(AP_RSSI &rssi);
+    void Write_Baro(uint64_t time_us=0);
+    void Write_Power(void);
+    void Write_AHRS2(AP_AHRS &ahrs);
+    void Write_POS(AP_AHRS &ahrs);
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF(AP_AHRS_NavEKF &ahrs);
+    void Write_EKF(AP_AHRS_NavEKF &ahrs);
 #endif
-    void Log_Write_Radio(const mavlink_radio_t &packet);
-    void Log_Write_Message(const char *message);
-    void Log_Write_MessageF(const char *fmt, ...);
-    void Log_Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us=0);
-    void Log_Write_Camera(const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us=0);
-    void Log_Write_Trigger(const AP_AHRS &ahrs, const Location &current_loc);
-    void Log_Write_ESC(void);
-    void Log_Write_Airspeed(AP_Airspeed &airspeed);
-    void Log_Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
-    void Log_Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
-    void Log_Write_Current();
-    void Log_Write_Compass(uint64_t time_us=0);
-    void Log_Write_Mode(uint8_t mode, uint8_t reason);
+    void Write_Radio(const mavlink_radio_t &packet);
+    void Write_Message(const char *message);
+    void Write_MessageF(const char *fmt, ...);
+    void Write_CameraInfo(enum LogMessages msg, const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us=0);
+    void Write_Camera(const AP_AHRS &ahrs, const Location &current_loc, uint64_t timestamp_us=0);
+    void Write_Trigger(const AP_AHRS &ahrs, const Location &current_loc);
+    void Write_ESC(void);
+    void Write_Airspeed(AP_Airspeed &airspeed);
+    void Write_Attitude(AP_AHRS &ahrs, const Vector3f &targets);
+    void Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
+    void Write_Current();
+    void Write_Compass(uint64_t time_us=0);
+    void Write_Mode(uint8_t mode, uint8_t reason);
 
-    void Log_Write_EntireMission(const AP_Mission &mission);
-    void Log_Write_Mission_Cmd(const AP_Mission &mission,
+    void Write_EntireMission(const AP_Mission &mission);
+    void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    void Log_Write_Origin(uint8_t origin_type, const Location &loc);
-    void Log_Write_RPM(const AP_RPM &rpm_sensor);
-    void Log_Write_Rate(const AP_AHRS_View *ahrs,
+    void Write_Origin(uint8_t origin_type, const Location &loc);
+    void Write_RPM(const AP_RPM &rpm_sensor);
+    void Write_Rate(const AP_AHRS_View *ahrs,
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
-    void Log_Write_Rally(const AP_Rally &rally);
-    void Log_Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
-    void Log_Write_AOA_SSA(AP_AHRS &ahrs);
-    void Log_Write_Beacon(AP_Beacon &beacon);
-    void Log_Write_Proximity(AP_Proximity &proximity);
-    void Log_Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
+    void Write_Rally(const AP_Rally &rally);
+    void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
+    void Write_AOA_SSA(AP_AHRS &ahrs);
+    void Write_Beacon(AP_Beacon &beacon);
+    void Write_Proximity(AP_Proximity &proximity);
+    void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
 
-    void Log_Write(const char *name, const char *labels, const char *fmt, ...);
-    void Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
-    void Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list);
+    void Write(const char *name, const char *labels, const char *fmt, ...);
+    void Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
+    void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list);
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
@@ -159,7 +159,7 @@ public:
         float FF;
     };
 
-    void Log_Write_PID(uint8_t msg_type, const PID_Info &info);
+    void Write_PID(uint8_t msg_type, const PID_Info &info);
 
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
@@ -188,7 +188,7 @@ public:
     }
     uint8_t log_replay(void) const { return _params.log_replay; }
     
-    vehicle_startup_message_Log_Writer _vehicle_messages;
+    vehicle_startup_message_Writer _vehicle_messages;
 
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
@@ -248,7 +248,7 @@ private:
     void internal_error() const;
 
     /*
-     * support for dynamic Log_Write; user-supplies name, format,
+     * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.
      */
 
@@ -281,27 +281,27 @@ private:
 
     // calculate the length of a message using fields specified in
     // fmt; includes the message header
-    int16_t Log_Write_calc_msg_len(const char *fmt) const;
+    int16_t Write_calc_msg_len(const char *fmt) const;
 
     bool _armed;
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    void Log_Write_EKF2(AP_AHRS_NavEKF &ahrs);
-    void Log_Write_EKF3(AP_AHRS_NavEKF &ahrs);
+    void Write_EKF2(AP_AHRS_NavEKF &ahrs);
+    void Write_EKF3(AP_AHRS_NavEKF &ahrs);
 #endif
 
-    void Log_Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
-    void Log_Write_IMU_instance(uint64_t time_us,
+    void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
+    void Write_IMU_instance(uint64_t time_us,
                                 uint8_t imu_instance,
                                 enum LogMessages type);
-    void Log_Write_Compass_instance(uint64_t time_us,
+    void Write_Compass_instance(uint64_t time_us,
                                     uint8_t mag_instance,
                                     enum LogMessages type);
-    void Log_Write_Current_instance(uint64_t time_us,
+    void Write_Current_instance(uint64_t time_us,
                                     uint8_t battery_instance,
                                     enum LogMessages type,
                                     enum LogMessages celltype);
-    void Log_Write_IMUDT_instance(uint64_t time_us,
+    void Write_IMUDT_instance(uint64_t time_us,
                                   uint8_t imu_instance,
                                   enum LogMessages type);
 
@@ -325,7 +325,7 @@ private:
     bool seen_ids[256] = { };
 #endif
 
-    void Log_Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
+    void Write_EKF_Timing(const char *name, uint64_t time_us, const struct ekf_timing &timing);
 
     // possibly expensive calls to start log system:
     void Prep();

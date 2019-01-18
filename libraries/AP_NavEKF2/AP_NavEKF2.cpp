@@ -563,24 +563,24 @@ void NavEKF2::check_log_write(void)
         return;
     }
     if (logging.log_compass) {
-        AP_Logger::instance()->Log_Write_Compass(imuSampleTime_us);
+        AP::logger().Write_Compass(imuSampleTime_us);
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        AP_Logger::instance()->Log_Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
+        AP::logger().Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        AP_Logger::instance()->Log_Write_Baro(imuSampleTime_us);
+        AP::logger().Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        AP_Logger::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
+        AP::logger().Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
     // this is an example of an ad-hoc log in EKF
-    // AP_Logger::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
+    // AP::logger().Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 

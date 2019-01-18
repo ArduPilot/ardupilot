@@ -294,7 +294,7 @@ void GCS_MAVLINK::handle_param_set(mavlink_message_t *msg)
 
     AP_Logger *AP_Logger = AP_Logger::instance();
     if (AP_Logger != nullptr) {
-        AP_Logger->Log_Write_Parameter(key, vp->cast_to_float(var_type));
+        AP_Logger->Write_Parameter(key, vp->cast_to_float(var_type));
     }
 }
 
@@ -321,7 +321,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     // also log to AP_Logger
     AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
-        dataflash->Log_Write_Parameter(param_name, param_value);
+        dataflash->Write_Parameter(param_name, param_value);
     }
 }
 

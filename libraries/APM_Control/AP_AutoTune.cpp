@@ -279,7 +279,7 @@ void AP_AutoTune::log_param_change(float v, const char *suffix)
         strncpy(&key[9], suffix, AP_MAX_NAME_SIZE-9);
     }
     key[AP_MAX_NAME_SIZE] = 0;
-    dataflash->Log_Write_Parameter(key, v);
+    dataflash->Write_Parameter(key, v);
 }
 
 /*

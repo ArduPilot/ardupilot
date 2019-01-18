@@ -331,7 +331,7 @@ int16_t AP_Logger_Revo::get_log_data(uint16_t log_num, uint16_t page, uint32_t o
             struct log_Format pkt;
             uint8_t t = offset / sizeof(pkt);
             uint8_t ofs = offset % sizeof(pkt);
-            Log_Fill_Format(structure(t), pkt);
+            Fill_Format(structure(t), pkt);
             uint8_t n = sizeof(pkt) - ofs;
             if (n > len) {
                 n = len;

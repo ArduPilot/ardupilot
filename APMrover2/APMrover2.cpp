@@ -177,7 +177,7 @@ void Rover::ahrs_update()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Log_Write_IMU();
+        logger.Write_IMU();
     }
 }
 
@@ -204,7 +204,7 @@ void Rover::update_compass(void)
         ahrs.set_compass(&compass);
         // update offsets
         if (should_log(MASK_LOG_COMPASS)) {
-            logger.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -221,7 +221,7 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
-        logger.Log_Write_Beacon(g2.beacon);
+        logger.Write_Beacon(g2.beacon);
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -229,7 +229,7 @@ void Rover::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_RANGEFINDER)) {
-        logger.Log_Write_Proximity(g2.proximity);
+        logger.Write_Proximity(g2.proximity);
     }
 }
 
@@ -248,7 +248,7 @@ void Rover::update_logging2(void)
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Log_Write_Vibration();
+        logger.Write_Vibration();
     }
 }
 

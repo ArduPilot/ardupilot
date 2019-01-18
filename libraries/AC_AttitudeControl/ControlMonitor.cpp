@@ -41,7 +41,7 @@ void AC_AttitudeControl::control_monitor_update(void)
  */
 void AC_AttitudeControl::control_monitor_log(void)
 {
-    AP_Logger::instance()->Log_Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
+    AP::logger().Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
                                            AP_HAL::micros64(),
                                            (double)safe_sqrt(_control_monitor.rms_roll_P),
                                            (double)safe_sqrt(_control_monitor.rms_roll_D),

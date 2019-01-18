@@ -1085,7 +1085,7 @@ struct PACKED log_DSTL {
 #define ACC_UNITS "ssnnn"
 #define ACC_MULTS "FF000"
 
-// see "struct sensor" in AP_Baro.h and "Log_Write_Baro":
+// see "struct sensor" in AP_Baro.h and "Write_Baro":
 #define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp"
 #define BARO_FMT   "QffcfIff"
 #define BARO_UNITS "smPOnsmO"
@@ -1101,7 +1101,7 @@ struct PACKED log_DSTL {
 #define GPA_UNITS "smmmn-ss"
 #define GPA_MULTS "FBBBB-CF"
 
-// see "struct GPS_State" and "Log_Write_GPS":
+// see "struct GPS_State" and "Write_GPS":
 #define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,U"
 #define GPS_FMT   "QBIHBcLLefffB"
 #define GPS_UNITS "s---SmDUmnhn-"

@@ -838,7 +838,7 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    AP_Logger::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+    AP::logger().Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
                                            "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
                                            AP_HAL::micros64(),
                                            (double)pos_target.x,

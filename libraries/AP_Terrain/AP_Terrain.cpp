@@ -370,7 +370,7 @@ void AP_Terrain::log_terrain_data()
         pending        : pending,
         loaded         : loaded
     };
-    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

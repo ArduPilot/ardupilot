@@ -169,7 +169,7 @@ private:
     };
     struct df_stats stats;
 
-    void Log_Write_AP_Logger_Stats_File(const struct df_stats &_stats);
+    void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void df_stats_gather(uint16_t bytes_written);
     void df_stats_log();
     void df_stats_clear();

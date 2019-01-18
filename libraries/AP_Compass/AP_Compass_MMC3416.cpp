@@ -224,7 +224,7 @@ void AP_Compass_MMC3416::timer()
         }
 
 #if 0
-        AP_Logger::instance()->Log_Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
+        AP::logger().Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
                                                AP_HAL::micros64(),
                                                (double)new_offset.x,
                                                (double)new_offset.y,

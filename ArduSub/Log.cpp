@@ -55,14 +55,14 @@ void Sub::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    logger.Log_Write_Attitude(ahrs, targets);
+    logger.Write_Attitude(ahrs, targets);
 
-    logger.Log_Write_EKF(ahrs);
-    logger.Log_Write_AHRS2(ahrs);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 }
 
 struct PACKED log_MotBatt {
@@ -309,7 +309,7 @@ const struct LogStructure Sub::log_structure[] = {
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
