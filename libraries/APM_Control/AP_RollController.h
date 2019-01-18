@@ -9,9 +9,9 @@
 
 class AP_RollController {
 public:
-    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
+    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
         : aparm(parms)
-        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash)
+        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms)
         , _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);

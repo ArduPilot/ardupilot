@@ -34,7 +34,7 @@ public:
 
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms);
 
     // called when autotune mode is entered
     void start(void);
@@ -58,8 +58,6 @@ private:
     ATType type;
 
 	const AP_Vehicle::FixedWing &aparm;
-
-    DataFlash_Class &dataflash;
 
     // did we saturate surfaces?
     bool saturated_surfaces:1;
