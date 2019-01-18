@@ -27,7 +27,7 @@ void Copter::read_rangefinder(void)
 
     if (rangefinder.num_sensors() > 0 &&
         should_log(MASK_LOG_CTUN)) {
-        logger.Log_Write_RFND(rangefinder);
+        logger.Write_RFND(rangefinder);
     }
 
     rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
@@ -79,7 +79,7 @@ void Copter::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            logger.Log_Write_RPM(rpm_sensor);
+            logger.Write_RPM(rpm_sensor);
         }
     }
 #endif
@@ -418,7 +418,7 @@ void Copter::update_visual_odom()
                                 visual_odom_last_update_ms,
                                 g2.visual_odom.get_pos_offset());
         // log sensor data
-        logger.Log_Write_VisualOdom(time_delta_sec,
+        logger.Write_VisualOdom(time_delta_sec,
                                        g2.visual_odom.get_angle_delta(),
                                        g2.visual_odom.get_position_delta(),
                                        g2.visual_odom.get_confidence());

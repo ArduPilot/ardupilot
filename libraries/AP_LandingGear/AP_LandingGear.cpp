@@ -250,7 +250,7 @@ void AP_LandingGear::update(float height_above_ground_m)
 // log weight on wheels state
 void AP_LandingGear::log_wow_state(LG_WOW_State state)
 {
-    AP_Logger::instance()->Log_Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
+    AP::logger().Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
                                            AP_HAL::micros64(),
                                            (int8_t)gear_state_current, (int8_t)state);
 }

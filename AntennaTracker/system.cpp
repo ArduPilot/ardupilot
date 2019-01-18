@@ -77,7 +77,7 @@ void Tracker::init_tracker()
     barometer.calibrate();
 
     // initialise AP_Logger library
-    logger.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
@@ -207,7 +207,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
     }
 
 	// log mode change
-	logger.Log_Write_Mode(control_mode, reason);
+	logger.Write_Mode(control_mode, reason);
 }
 
 /*

@@ -1109,7 +1109,7 @@ void AP_Logger_File::vehicle_was_disarmed()
     }
 }
 
-void AP_Logger_File::Log_Write_AP_Logger_Stats_File(const struct df_stats &_stats)
+void AP_Logger_File::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
 {
     struct log_DSF pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
@@ -1145,7 +1145,7 @@ void AP_Logger_File::df_stats_clear() {
 }
 
 void AP_Logger_File::df_stats_log() {
-    Log_Write_AP_Logger_Stats_File(stats);
+    Write_AP_Logger_Stats_File(stats);
     df_stats_clear();
 }
 

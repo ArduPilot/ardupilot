@@ -104,7 +104,7 @@ void CompassLearn::update(void)
     }
 
     if (sample_available) {
-        AP_Logger::instance()->Log_Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
+        AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
                                                (double)best_offsets.y,

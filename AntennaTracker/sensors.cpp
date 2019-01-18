@@ -17,7 +17,7 @@ void Tracker::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS)) {
-            logger.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }

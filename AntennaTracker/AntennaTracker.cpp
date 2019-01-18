@@ -123,16 +123,16 @@ void Tracker::one_second_loop()
 void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
-        logger.Log_Write_IMU();
+        logger.Write_IMU();
     }
     if (should_log(MASK_LOG_ATTITUDE)) {
         Log_Write_Attitude();
     }
     if (should_log(MASK_LOG_RCIN)) {
-        logger.Log_Write_RCIN();
+        logger.Write_RCIN();
     }
     if (should_log(MASK_LOG_RCOUT)) {
-        logger.Log_Write_RCOUT();
+        logger.Write_RCOUT();
     }
 }
 

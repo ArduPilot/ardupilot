@@ -10,13 +10,13 @@ void Tracker::Log_Write_Attitude()
     Vector3f targets;
     targets.y = nav_status.pitch * 100.0f;
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
-    logger.Log_Write_Attitude(ahrs, targets);
-    logger.Log_Write_EKF(ahrs);
-    logger.Log_Write_AHRS2(ahrs);
+    logger.Write_Attitude(ahrs, targets);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 }
 
 struct PACKED log_Vehicle_Baro {
@@ -78,7 +78,7 @@ const struct LogStructure Tracker::log_structure[] = {
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
-    logger.Log_Write_Mode(control_mode, MODE_REASON_INITIALISED);
+    logger.Write_Mode(control_mode, MODE_REASON_INITIALISED);
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 

@@ -483,13 +483,13 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     // log ekf origin if set
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        df->Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        df->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
     // log ahrs home if set
     if (home_is_set()) {
-        df->Log_Write_Origin(LogOriginType::ahrs_home, _home);
+        df->Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 

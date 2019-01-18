@@ -260,7 +260,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         COG:temp.COG
     };
 
-    AP_Logger::instance()->WriteBlock(&header, sizeof(header));
+    AP::logger().WriteBlock(&header, sizeof(header));
 }
 
 bool

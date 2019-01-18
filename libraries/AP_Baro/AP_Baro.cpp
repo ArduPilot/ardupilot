@@ -816,7 +816,7 @@ void AP_Baro::update(void)
 
     // logging
     if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
-        AP_Logger::instance()->Log_Write_Baro();
+        AP::logger().Write_Baro();
     }
 }
 

@@ -449,7 +449,7 @@ void AP_Landing_Deepstall::Log(void) const {
         I                : pid_info.I,
         D                : pid_info.D,
     };
-    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 // termination handling, expected to set the servo outputs

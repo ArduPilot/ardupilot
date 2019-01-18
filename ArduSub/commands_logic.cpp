@@ -9,7 +9,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: logging when new commands start/end
     if (should_log(MASK_LOG_CMD)) {
-        logger.Log_Write_Mission_Cmd(mission, cmd);
+        logger.Write_Mission_Cmd(mission, cmd);
     }
 
     const Location &target_loc = cmd.content.location;

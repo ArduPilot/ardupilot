@@ -185,7 +185,7 @@ void Rover::startup_ground(void)
 
     // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    logger.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -262,7 +262,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     old_mode.exit();
 
     control_mode_reason = reason;
-    logger.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
 
     notify_mode(control_mode);
     return true;
