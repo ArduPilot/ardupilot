@@ -28,12 +28,6 @@
 #include "GCS.h"
 
 #include <stdio.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <drivers/drv_pwm_output.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
@@ -2407,25 +2401,6 @@ void GCS_MAVLINK::zero_rc_outputs()
     SRV_Channels::push();
 }
 
-void GCS_MAVLINK::disable_overrides()
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    int px4io_fd = open("/dev/px4io", 0);
-    if (px4io_fd < 0) {
-        return;
-    }
-    // disable OVERRIDES so we don't run the mixer while
-    // rebooting
-    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-        hal.console->printf("SET_OVERRIDE_OK failed\n");
-    }
-    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
-    }
-    close(px4io_fd);
-#endif
-}
-
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2441,10 +2416,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    if (should_disable_overrides_on_reboot()) {
-        // disable overrides while rebooting
-        disable_overrides();
-    }
     if (should_zero_rc_outputs_on_reboot()) {
         zero_rc_outputs();
     }
