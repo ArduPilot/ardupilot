@@ -289,7 +289,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     }
 
     // check that the structure is of an appropriate length to take fields
-    const int16_t msg_len = Log_Write_calc_msg_len(logstructure->format);
+    const int16_t msg_len = Write_calc_msg_len(logstructure->format);
     if (msg_len != logstructure->msg_len) {
         Debug("Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
         passed = false;
@@ -429,7 +429,7 @@ bool AP_Logger::logging_failed() const
     return false;
 }
 
-void AP_Logger::Log_Write_MessageF(const char *fmt, ...)
+void AP_Logger::Write_MessageF(const char *fmt, ...)
 {
     char msg[65] {}; // sizeof(log_Message.msg) + null-termination
 
@@ -438,7 +438,7 @@ void AP_Logger::Log_Write_MessageF(const char *fmt, ...)
     hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
 
-    Log_Write_Message(msg);
+    Write_Message(msg);
 }
 
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
@@ -493,7 +493,7 @@ void AP_Logger::PrepForArming()
     FOR_EACH_BACKEND(PrepForArming());
 }
 
-void AP_Logger::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
+void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
 {
     _vehicle_messages = writer;
 }
@@ -622,30 +622,30 @@ void AP_Logger::flush(void) {
 #endif
 
 
-void AP_Logger::Log_Write_EntireMission(const AP_Mission &mission)
+void AP_Logger::Write_EntireMission(const AP_Mission &mission)
 {
-    FOR_EACH_BACKEND(Log_Write_EntireMission(mission));
+    FOR_EACH_BACKEND(Write_EntireMission(mission));
 }
 
-void AP_Logger::Log_Write_Message(const char *message)
+void AP_Logger::Write_Message(const char *message)
 {
-    FOR_EACH_BACKEND(Log_Write_Message(message));
+    FOR_EACH_BACKEND(Write_Message(message));
 }
 
-void AP_Logger::Log_Write_Mode(uint8_t mode, uint8_t reason)
+void AP_Logger::Write_Mode(uint8_t mode, uint8_t reason)
 {
-    FOR_EACH_BACKEND(Log_Write_Mode(mode, reason));
+    FOR_EACH_BACKEND(Write_Mode(mode, reason));
 }
 
-void AP_Logger::Log_Write_Parameter(const char *name, float value)
+void AP_Logger::Write_Parameter(const char *name, float value)
 {
-    FOR_EACH_BACKEND(Log_Write_Parameter(name, value));
+    FOR_EACH_BACKEND(Write_Parameter(name, value));
 }
 
-void AP_Logger::Log_Write_Mission_Cmd(const AP_Mission &mission,
+void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
                                             const AP_Mission::Mission_Command &cmd)
 {
-    FOR_EACH_BACKEND(Log_Write_Mission_Cmd(mission, cmd));
+    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
 }
 
 uint32_t AP_Logger::num_dropped() const
@@ -665,26 +665,26 @@ void AP_Logger::internal_error() const {
 #endif
 }
 
-/* Log_Write support */
-void AP_Logger::Log_Write(const char *name, const char *labels, const char *fmt, ...)
+/* Write support */
+void AP_Logger::Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
 
     va_start(arg_list, fmt);
-    Log_WriteV(name, labels, nullptr, nullptr, fmt, arg_list);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list);
     va_end(arg_list);
 }
 
-void AP_Logger::Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+void AP_Logger::Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
 {
     va_list arg_list;
 
     va_start(arg_list, fmt);
-    Log_WriteV(name, labels, units, mults, fmt, arg_list);
+    WriteV(name, labels, units, mults, fmt, arg_list);
     va_end(arg_list);
 }
 
-void AP_Logger::Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
 {
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
@@ -696,14 +696,14 @@ void AP_Logger::Log_WriteV(const char *name, const char *labels, const char *uni
 
     for (uint8_t i=0; i<_next_backend; i++) {
         if (!(f->sent_mask & (1U<<i))) {
-            if (!backends[i]->Log_Write_Emit_FMT(f->msg_type)) {
+            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
                 continue;
             }
             f->sent_mask |= (1U<<i);
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Log_Write(f->msg_type, arg_copy);
+        backends[i]->Write(f->msg_type, arg_copy);
         va_end(arg_copy);
     }
 }
@@ -750,7 +750,7 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
         passed = false;
     }
     if (!passed) {
-        Debug("Format definition must be consistent for every call of Log_Write");
+        Debug("Format definition must be consistent for every call of Write");
         abort();
     }
 }
@@ -786,7 +786,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     f->units = units;
     f->mults = mults;
 
-    int16_t tmp = Log_Write_calc_msg_len(fmt);
+    int16_t tmp = Write_calc_msg_len(fmt);
     if (tmp == -1) {
         free(f);
         return nullptr;
@@ -937,7 +937,7 @@ bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, cons
  * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
  * Tools/Replay/MsgHandler.cpp */
-int16_t AP_Logger::Log_Write_calc_msg_len(const char *fmt) const
+int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 {
     uint8_t len =  LOG_PACKET_HEADER_LEN;
     for (uint8_t i=0; i<strlen(fmt); i++) {
@@ -972,12 +972,12 @@ int16_t AP_Logger::Log_Write_calc_msg_len(const char *fmt) const
     return len;
 }
 
-/* End of Log_Write support */
+/* End of Write support */
 
 #undef FOR_EACH_BACKEND
 
 // Write information about a series of IMU readings to log:
-bool AP_Logger::Log_Write_ISBH(const uint16_t seqno,
+bool AP_Logger::Write_ISBH(const uint16_t seqno,
                                      const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                                      const uint8_t sensor_instance,
                                      const uint16_t mult,
@@ -1010,7 +1010,7 @@ bool AP_Logger::Log_Write_ISBH(const uint16_t seqno,
 
 
 // Write a series of IMU readings to log:
-bool AP_Logger::Log_Write_ISBD(const uint16_t isb_seqno,
+bool AP_Logger::Write_ISBD(const uint16_t isb_seqno,
                                      const uint16_t seqno,
                                      const int16_t x[32],
                                      const int16_t y[32],

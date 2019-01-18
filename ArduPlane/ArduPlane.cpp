@@ -148,7 +148,7 @@ void Plane::ahrs_update()
     ahrs.update();
 
     if (should_log(MASK_LOG_IMU)) {
-        logger.Log_Write_IMU();
+        logger.Write_IMU();
     }
 
     // calculate a scaled roll limit based on current pitch
@@ -195,7 +195,7 @@ void Plane::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            logger.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -210,10 +210,10 @@ void Plane::update_logging1(void)
     }
 
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        logger.Log_Write_IMU();
+        logger.Write_IMU();
 
     if (should_log(MASK_LOG_ATTITUDE_MED))
-        logger.Log_Write_AOA_SSA(ahrs);
+        logger.Write_AOA_SSA(ahrs);
 }
 
 /*
@@ -231,7 +231,7 @@ void Plane::update_logging2(void)
         Log_Write_RC();
 
     if (should_log(MASK_LOG_IMU))
-        logger.Log_Write_Vibration();
+        logger.Write_Vibration();
 }
 
 

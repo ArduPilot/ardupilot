@@ -430,7 +430,7 @@ void AP_Airspeed::update(bool log)
     if (log) {
         AP_Logger *_dataflash = AP_Logger::instance();
         if (_dataflash != nullptr) {
-            _dataflash->Log_Write_Airspeed(*this);
+            _dataflash->Write_Airspeed(*this);
         }
     }
 

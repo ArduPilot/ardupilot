@@ -144,7 +144,7 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Log_Write_DF_MAV(AP_Logger_MAVLink &df);
+    void Write_DF_MAV(AP_Logger_MAVLink &df);
 
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block();

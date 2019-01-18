@@ -28,26 +28,26 @@ void Rover::Log_Write_Attitude()
     float desired_pitch_cd = degrees(g2.attitude_control.get_desired_pitch()) * 100.0f;
     const Vector3f targets(0.0f, desired_pitch_cd, 0.0f);
 
-    logger.Log_Write_Attitude(ahrs, targets);
+    logger.Write_Attitude(ahrs, targets);
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    logger.Log_Write_EKF(ahrs);
-    logger.Log_Write_AHRS2(ahrs);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #endif
-    logger.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 
     // log steering rate controller
-    logger.Log_Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
-    logger.Log_Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
+    logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
+    logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
 
     // log pitch control for balance bots
     if (is_balancebot()) {
-        logger.Log_Write_PID(LOG_PIDP_MSG, g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info());
+        logger.Write_PID(LOG_PIDP_MSG, g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info());
     }
 
     // log heel to sail control for sailboats
     if (g2.motors.has_sail()) {
-        logger.Log_Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
+        logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
@@ -75,7 +75,7 @@ void Rover::Log_Write_Depth()
     }
     rangefinder_last_reading_ms = reading_ms;
 
-    logger.Log_Write("DPTH", "TimeUS,Lat,Lng,Depth",
+    logger.Write("DPTH", "TimeUS,Lat,Lng,Depth",
                         "sDUm", "FGG0", "QLLf",
                         AP_HAL::micros64(),
                         loc.lat,
@@ -175,7 +175,7 @@ void Rover::Log_Write_Sail()
         wind_speed_true = g2.windvane.get_true_wind_speed();
         wind_speed_apparent = g2.windvane.get_apparent_wind_speed();
     }
-    logger.Log_Write("SAIL", "TimeUS,WindDirAbs,WindDirApp,WindSpdTrue,WindSpdApp,SailOut,VMG",
+    logger.Write("SAIL", "TimeUS,WindDirAbs,WindDirApp,WindSpdTrue,WindSpdApp,SailOut,VMG",
                         "shhnn%n", "F000000", "Qffffff",
                         AP_HAL::micros64(),
                         (double)wind_dir_abs,
@@ -300,10 +300,10 @@ void Rover::Log_Write_Rangefinder()
 
 void Rover::Log_Write_RC(void)
 {
-    logger.Log_Write_RCIN();
-    logger.Log_Write_RCOUT();
+    logger.Write_RCIN();
+    logger.Write_RCOUT();
     if (rssi.enabled()) {
-        logger.Log_Write_RSSI(rssi);
+        logger.Write_RSSI(rssi);
     }
 }
 
@@ -343,7 +343,7 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    logger.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }

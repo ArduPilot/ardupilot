@@ -318,7 +318,7 @@ void AP_Logger_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
-void AP_Logger_MAVLink::Log_Write_DF_MAV(AP_Logger_MAVLink &df)
+void AP_Logger_MAVLink::Write_DF_MAV(AP_Logger_MAVLink &df)
 {
     if (df.stats.collection_count == 0) {
         return;
@@ -352,7 +352,7 @@ void AP_Logger_MAVLink::stats_log()
     if (stats.collection_count == 0) {
         return;
     }
-    Log_Write_DF_MAV(*this);
+    Write_DF_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d E:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            dropped,

@@ -58,7 +58,7 @@ void Rover::update_visual_odom()
                                 visual_odom_last_update_ms,
                                 g2.visual_odom.get_pos_offset());
         // log sensor data
-        logger.Log_Write_VisualOdom(time_delta_sec,
+        logger.Write_VisualOdom(time_delta_sec,
                                        g2.visual_odom.get_angle_delta(),
                                        g2.visual_odom.get_position_delta(),
                                        g2.visual_odom.get_confidence());

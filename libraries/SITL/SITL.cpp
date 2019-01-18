@@ -195,7 +195,7 @@ void SITL::Log_Write_SIMSTATE()
         q3      : state.quaternion.q3,
         q4      : state.quaternion.q4,
     };
-    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

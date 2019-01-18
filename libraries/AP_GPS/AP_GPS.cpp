@@ -657,7 +657,7 @@ void AP_GPS::update_instance(uint8_t instance)
     if (data_should_be_logged &&
         should_df_log() &&
         !AP::ahrs().have_ekf_logging()) {
-        AP_Logger::instance()->Log_Write_GPS(instance);
+        AP::logger().Write_GPS(instance);
     }
 
     if (state[instance].status >= GPS_OK_FIX_3D) {

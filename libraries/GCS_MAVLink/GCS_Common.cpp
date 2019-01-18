@@ -726,7 +726,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &datafla
 
     //log rssi, noise, etc if logging Performance monitoring data
     if (log_radio) {
-        dataflash.Log_Write_Radio(packet);
+        dataflash.Write_Radio(packet);
     }
 }
 
@@ -1173,7 +1173,7 @@ void GCS_MAVLINK::update_send()
 {
     if (!hal.scheduler->in_delay_callback()) {
         // AP_Logger will not send log data if we are armed.
-        AP_Logger::instance()->handle_log_send();
+        AP::logger().handle_log_send();
     }
 
     if (!deferred_messages_initialised) {
@@ -1843,7 +1843,7 @@ void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const cha
 {
     AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
-        dataflash->Log_Write_Message(text);
+        dataflash->Write_Message(text);
     }
 
     // add statustext message to FrSky lib queue
@@ -2518,7 +2518,7 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
 #endif
         AP_Logger *df = AP_Logger::instance();
         if (df != nullptr) {
-            AP_Logger::instance()->Log_Write(
+            AP::logger().Write(
                 "TSYN",
                 "TimeUS,SysID,RTT",
                 "s-s",
@@ -2589,7 +2589,7 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
-    df->Log_Write_Message(text);
+    df->Write_Message(text);
 }
 
 
@@ -2796,7 +2796,7 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    AP_Logger::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+    AP::logger().Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
                                            "ssmmmddh", "FF000000", "QQffffff",
                                            (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
@@ -2891,7 +2891,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        AP_Logger::instance()->handle_mavlink_msg(*this, msg);
+        AP::logger().handle_mavlink_msg(*this, msg);
         break;
 
 
@@ -3030,7 +3030,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, *_mission)) {
-            AP_Logger::instance()->Log_Write_EntireMission(*_mission);
+            AP::logger().Write_EntireMission(*_mission);
         }
         break;
     }

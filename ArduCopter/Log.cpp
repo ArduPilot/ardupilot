@@ -69,25 +69,25 @@ void Copter::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control->get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    logger.Log_Write_Attitude(ahrs, targets);
-    logger.Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+    logger.Write_Attitude(ahrs, targets);
+    logger.Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
     if (should_log(MASK_LOG_PID)) {
-        logger.Log_Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Log_Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
+        logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
+        logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
+        logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
     }
 }
 
 // Write an EKF and POS packet
 void Copter::Log_Write_EKF_POS()
 {
-    logger.Log_Write_EKF(ahrs);
-    logger.Log_Write_AHRS2(ahrs);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 }
 
 struct PACKED log_MotBatt {
@@ -453,10 +453,10 @@ const struct LogStructure Copter::log_structure[] = {
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Log_Write_MessageF("Frame: %s", get_frame_string());
-    logger.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_MessageF("Frame: %s", get_frame_string());
+    logger.Write_Mode(control_mode, control_mode_reason);
 #if AC_RALLY
-    logger.Log_Write_Rally(rally);
+    logger.Write_Rally(rally);
 #endif
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();

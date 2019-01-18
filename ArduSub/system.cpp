@@ -187,7 +187,7 @@ void Sub::init_ardupilot()
 
     // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    logger.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
     startup_INS_ground();

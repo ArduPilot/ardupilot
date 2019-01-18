@@ -42,7 +42,7 @@ const struct MultiplierStructure *AP_Logger_Backend::multiplier(uint8_t num) con
     return _front.multiplier(num);
 }
 
-AP_Logger_Backend::vehicle_startup_message_Log_Writer AP_Logger_Backend::vehicle_message_writer() {
+AP_Logger_Backend::vehicle_startup_message_Writer AP_Logger_Backend::vehicle_message_writer() {
     return _front._vehicle_messages;
 }
 
@@ -138,11 +138,11 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
 }
 
 /*
- * support for Log_Write():
+ * support for Write():
  */
 
 
-bool AP_Logger_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
+bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
     // get log structure from front end:
     char ls_name[LS_NAME_SIZE] = {};
@@ -168,17 +168,17 @@ bool AP_Logger_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
         return false;
     }
 
-    if (!Log_Write_Format(&logstruct)) {
+    if (!Write_Format(&logstruct)) {
         return false;
     }
-    if (!Log_Write_Format_Units(&logstruct)) {
+    if (!Write_Format_Units(&logstruct)) {
         return false;
     }
 
     return true;
 }
 
-bool AP_Logger_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
+bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
 {
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
@@ -405,7 +405,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
     return true;
 }
 
-bool AP_Logger_Backend::Log_Write_MessageF(const char *fmt, ...)
+bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
 {
     char msg[65] {}; // sizeof(log_Message.msg) + null-termination
 
@@ -414,5 +414,5 @@ bool AP_Logger_Backend::Log_Write_MessageF(const char *fmt, ...)
     hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
 
-    return Log_Write_Message(msg);
+    return Write_Message(msg);
 }

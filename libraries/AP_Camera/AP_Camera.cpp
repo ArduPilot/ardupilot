@@ -397,11 +397,11 @@ void AP_Camera::log_picture()
     if (!using_feedback_pin()) {
         gcs().send_message(MSG_CAMERA_FEEDBACK);
         if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Camera(ahrs, current_loc);
+            df->Write_Camera(ahrs, current_loc);
         }
     } else {
         if (df->should_log(log_camera_bit)) {
-            df->Log_Write_Trigger(ahrs, current_loc);
+            df->Write_Trigger(ahrs, current_loc);
         }
     }
 }
@@ -442,7 +442,7 @@ void AP_Camera::update_trigger()
             if (df->should_log(log_camera_bit)) {
                 uint32_t tdiff = AP_HAL::micros() - timestamp32;
                 uint64_t timestamp = AP_HAL::micros64();
-                df->Log_Write_Camera(ahrs, current_loc, timestamp - tdiff);
+                df->Write_Camera(ahrs, current_loc, timestamp - tdiff);
             }
         }
     }

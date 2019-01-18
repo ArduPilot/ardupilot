@@ -239,8 +239,8 @@ AP_BattMonitor::read()
 
     AP_Logger *df = AP_Logger::instance();
     if (df->should_log(_log_battery_bit)) {
-        df->Log_Write_Current();
-        df->Log_Write_Power();
+        df->Write_Current();
+        df->Write_Power();
     }
 
     check_failsafes();

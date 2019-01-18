@@ -614,13 +614,13 @@ void Replay::set_signal_handlers(void)
 void Replay::write_ekf_logs(void)
 {
     if (!LogReader::in_list("EKF", nottypes)) {
-        _vehicle.dataflash.Log_Write_EKF(_vehicle.ahrs);
+        _vehicle.dataflash.Write_EKF(_vehicle.ahrs);
     }
     if (!LogReader::in_list("AHRS2", nottypes)) {
-        _vehicle.dataflash.Log_Write_AHRS2(_vehicle.ahrs);
+        _vehicle.dataflash.Write_AHRS2(_vehicle.ahrs);
     }
     if (!LogReader::in_list("POS", nottypes)) {
-        _vehicle.dataflash.Log_Write_POS(_vehicle.ahrs);
+        _vehicle.dataflash.Write_POS(_vehicle.ahrs);
     }
 }
 
@@ -728,7 +728,7 @@ void Replay::log_check_generate(void)
     _vehicle.EKF2.getVelNED(-1,velocity);
     _vehicle.EKF2.getLLH(loc);
 
-    _vehicle.dataflash.Log_Write(
+    _vehicle.dataflash.Write(
         "CHEK",
         "TimeUS,Roll,Pitch,Yaw,Lat,Lng,Alt,VN,VE,VD",
         "sdddDUmnnn",

@@ -312,7 +312,7 @@ void Copter::update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            logger.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -339,27 +339,27 @@ void Copter::ten_hz_logging_loop()
         Log_Write_MotBatt();
     }
     if (should_log(MASK_LOG_RCIN)) {
-        logger.Log_Write_RCIN();
+        logger.Write_RCIN();
         if (rssi.enabled()) {
-            logger.Log_Write_RSSI(rssi);
+            logger.Write_RSSI(rssi);
         }
     }
     if (should_log(MASK_LOG_RCOUT)) {
-        logger.Log_Write_RCOUT();
+        logger.Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        logger.Log_Write_Vibration();
+        logger.Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
 #if PROXIMITY_ENABLED == ENABLED
-        logger.Log_Write_Proximity(g2.proximity);  // Write proximity sensor distances
+        logger.Write_Proximity(g2.proximity);  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        logger.Log_Write_Beacon(g2.beacon);
+        logger.Write_Beacon(g2.beacon);
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
@@ -382,7 +382,7 @@ void Copter::twentyfive_hz_logging()
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        logger.Log_Write_IMU();
+        logger.Write_IMU();
     }
 #endif
 

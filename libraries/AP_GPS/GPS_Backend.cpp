@@ -167,7 +167,7 @@ void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
-    AP_Logger::instance()->Log_Write_Message(buffer);
+    AP::logger().Write_Message(buffer);
 }
 
 bool AP_GPS_Backend::should_df_log() const

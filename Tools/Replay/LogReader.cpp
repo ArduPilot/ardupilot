@@ -214,7 +214,7 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         if (already_mapped) {
             continue;
         }
-        if (AP_Logger::instance()->msg_type_in_use(n)) {
+        if (AP::logger().msg_type_in_use(n)) {
             continue;
         }
         mapped_msgid[intype] = n;

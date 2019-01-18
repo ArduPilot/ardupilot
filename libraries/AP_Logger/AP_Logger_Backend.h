@@ -8,12 +8,12 @@ class AP_Logger_Backend
 {
 
 public:
-    FUNCTOR_TYPEDEF(vehicle_startup_message_Log_Writer, void);
+    FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
     AP_Logger_Backend(AP_Logger &front,
                       class LoggerMessageWriter_DFLogStart *writer);
 
-    vehicle_startup_message_Log_Writer vehicle_message_writer();
+    vehicle_startup_message_Writer vehicle_message_writer();
 
     void internal_error();
 
@@ -61,8 +61,8 @@ public:
      */
     virtual void stop_logging(void) = 0;
 
-    void Log_Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
-    void Log_Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
+    void Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
+    void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
@@ -85,15 +85,15 @@ public:
     uint8_t num_multipliers() const;
     const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
-    void Log_Write_EntireMission(const AP_Mission &mission);
-    bool Log_Write_Format(const struct LogStructure *structure);
-    bool Log_Write_Message(const char *message);
-    bool Log_Write_MessageF(const char *fmt, ...);
-    bool Log_Write_Mission_Cmd(const AP_Mission &mission,
+    void Write_EntireMission(const AP_Mission &mission);
+    bool Write_Format(const struct LogStructure *structure);
+    bool Write_Message(const char *message);
+    bool Write_MessageF(const char *fmt, ...);
+    bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Log_Write_Mode(uint8_t mode, uint8_t reason = 0);
-    bool Log_Write_Parameter(const char *name, float value);
-    bool Log_Write_Parameter(const AP_Param *ap,
+    bool Write_Mode(uint8_t mode, uint8_t reason = 0);
+    bool Write_Parameter(const char *name, float value);
+    bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
                              enum ap_var_type type);
 
@@ -102,15 +102,15 @@ public:
     }
 
     /*
-     * Log_Write support
+     * Write support
      */
     // write a FMT message out (if it hasn't been done already).
     // Returns true if the FMT message has ever been written.
-    bool Log_Write_Emit_FMT(uint8_t msg_type);
+    bool Write_Emit_FMT(uint8_t msg_type);
 
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
-    bool Log_Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
+    bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
 
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const = 0;
@@ -118,9 +118,9 @@ public:
 
     virtual void vehicle_was_disarmed() { };
 
-    bool Log_Write_Unit(const struct UnitStructure *s);
-    bool Log_Write_Multiplier(const struct MultiplierStructure *s);
-    bool Log_Write_Format_Units(const struct LogStructure *structure);
+    bool Write_Unit(const struct UnitStructure *s);
+    bool Write_Multiplier(const struct MultiplierStructure *s);
+    bool Write_Format_Units(const struct LogStructure *structure);
 
 
 protected:

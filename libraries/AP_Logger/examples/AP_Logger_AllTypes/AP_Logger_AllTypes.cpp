@@ -166,7 +166,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
 
-    dataflash.Log_Write("TYP3", TYP1_LBL, TYP1_FMT,
+    dataflash.Write("TYP3", TYP1_LBL, TYP1_FMT,
                         AP_HAL::micros64(),
                         -17, // int8_t
                         42,  // uint8_t
@@ -183,7 +183,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                         "ABCDEFGHIJKLMNOPABCDEFGHIJKLMNOPABCDEFGHIJKLMNOPABCDEFGHIJKLMNOP"
         );
 
-    dataflash.Log_Write("TYP4", TYP2_LBL, TYP2_FMT,
+    dataflash.Write("TYP4", TYP2_LBL, TYP2_FMT,
                         AP_HAL::micros64(),
                         -9823, // int16_t * 100
                         5436,  // uint16_t * 100
@@ -196,7 +196,7 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
         );
 
     // emit a message which contains NaNs:
-    dataflash.Log_Write("NANS", "f,d,bf,bd", "fdfd",  dataflash.quiet_nanf(), dataflash.quiet_nan(), NAN, NAN);
+    dataflash.Write("NANS", "f,d,bf,bd", "fdfd",  dataflash.quiet_nanf(), dataflash.quiet_nan(), NAN, NAN);
 
     flush_dataflash(dataflash);
 
@@ -210,7 +210,7 @@ void AP_LoggerTest_AllTypes::setup(void)
     log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("AP_Logger Test");
+    dataflash.Write_Message("AP_Logger Test");
 
     // Test
     hal.scheduler->delay(20);
