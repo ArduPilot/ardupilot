@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #if AP_MODULE_SUPPORTED
 #include <AP_Module/AP_Module.h>
 #include <stdio.h>
@@ -216,7 +216,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
 {
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -348,7 +348,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t inst
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -465,7 +465,7 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
         // tracker does not set a bit
         return false;
     }
-    const DataFlash_Class *instance = DataFlash_Class::instance();
+    const AP_Logger *instance = AP_Logger::instance();
     if (instance == nullptr) {
         return false;
     }

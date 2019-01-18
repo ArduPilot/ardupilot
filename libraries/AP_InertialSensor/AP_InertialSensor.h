@@ -32,10 +32,10 @@ class AuxiliaryBus;
 class AP_AHRS;
 
 /*
-  forward declare DataFlash class. We can't include DataFlash.h
+  forward declare AP_Logger class. We can't include logger.h
   because of mutual dependencies
  */
-class DataFlash_Class;
+class AP_Logger;
 
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
@@ -304,7 +304,7 @@ public:
         AP_Int8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 
-        // Parameters controlling pushing data to DataFlash:
+        // Parameters controlling pushing data to AP_Logger:
         // Each DF message is ~ 108 bytes in size, so we use about 1kB/s of
         // logging bandwidth with a 100ms interval.  If we are taking
         // 1024 samples then we need to send 32 packets, so it will

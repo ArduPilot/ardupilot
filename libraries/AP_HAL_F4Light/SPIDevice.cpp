@@ -254,7 +254,7 @@ bool SPIDevice::transfer(const uint8_t *out, uint32_t send_len, uint8_t *recv, u
         _recv_len     = recv_len;
 
 
-#define MIN_DMA_BYTES 1 // 4 // write to 2-byte register not uses DMA, 4-byte command to DataFlash will
+#define MIN_DMA_BYTES 1 // 4 // write to 2-byte register not uses DMA, 4-byte command to AP_Logger will
 //#define MIN_DMA_BYTES 32 // for debug
 
         switch(_desc.mode){

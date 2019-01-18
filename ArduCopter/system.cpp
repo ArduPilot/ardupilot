@@ -239,8 +239,8 @@ void Copter::init_ardupilot()
     g2.smart_rtl.init();
 #endif
 
-    // initialise DataFlash library
-    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
+    // initialise AP_Logger library
+    logger.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&copter, &Copter::Log_Write_Vehicle_Startup_Messages, void));
 
     // initialise rc channels including setting mode
     rc().init();
@@ -408,8 +408,8 @@ void Copter::update_auto_armed()
 bool Copter::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    ap.logging_started = DataFlash.logging_started();
-    return DataFlash.should_log(mask);
+    ap.logging_started = logger.logging_started();
+    return logger.should_log(mask);
 #else
     return false;
 #endif

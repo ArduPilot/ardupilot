@@ -358,7 +358,7 @@ public:
         k_param_rpm_sensor,
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
-        k_param_DataFlash = 253, // 253 - Logging Group
+        k_param_logger = 253, // 253 - Logging Group
 
         // 254,255: reserved
 

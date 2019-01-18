@@ -1,62 +1,62 @@
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 
-#include "DFMessageWriter.h"
+#include "LoggerMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
 
-DataFlash_Backend::DataFlash_Backend(DataFlash_Class &front,
-                                     class DFMessageWriter_DFLogStart *writer) :
+AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
+                                     class LoggerMessageWriter_DFLogStart *writer) :
     _front(front),
     _startup_messagewriter(writer)
 {
     writer->set_dataflash_backend(this);
 }
 
-uint8_t DataFlash_Backend::num_types() const
+uint8_t AP_Logger_Backend::num_types() const
 {
     return _front._num_types;
 }
 
-const struct LogStructure *DataFlash_Backend::structure(uint8_t num) const
+const struct LogStructure *AP_Logger_Backend::structure(uint8_t num) const
 {
     return _front.structure(num);
 }
 
-uint8_t DataFlash_Backend::num_units() const
+uint8_t AP_Logger_Backend::num_units() const
 {
     return _front._num_units;
 }
 
-const struct UnitStructure *DataFlash_Backend::unit(uint8_t num) const
+const struct UnitStructure *AP_Logger_Backend::unit(uint8_t num) const
 {
     return _front.unit(num);
 }
 
-uint8_t DataFlash_Backend::num_multipliers() const
+uint8_t AP_Logger_Backend::num_multipliers() const
 {
     return _front._num_multipliers;
 }
 
-const struct MultiplierStructure *DataFlash_Backend::multiplier(uint8_t num) const
+const struct MultiplierStructure *AP_Logger_Backend::multiplier(uint8_t num) const
 {
     return _front.multiplier(num);
 }
 
-DataFlash_Backend::vehicle_startup_message_Log_Writer DataFlash_Backend::vehicle_message_writer() {
+AP_Logger_Backend::vehicle_startup_message_Log_Writer AP_Logger_Backend::vehicle_message_writer() {
     return _front._vehicle_messages;
 }
 
-void DataFlash_Backend::periodic_10Hz(const uint32_t now)
+void AP_Logger_Backend::periodic_10Hz(const uint32_t now)
 {
 }
-void DataFlash_Backend::periodic_1Hz()
+void AP_Logger_Backend::periodic_1Hz()
 {
 }
-void DataFlash_Backend::periodic_fullrate()
+void AP_Logger_Backend::periodic_fullrate()
 {
 }
 
-void DataFlash_Backend::periodic_tasks()
+void AP_Logger_Backend::periodic_tasks()
 {
     uint32_t now = AP_HAL::millis();
     if (now - _last_periodic_1Hz > 1000) {
@@ -70,13 +70,13 @@ void DataFlash_Backend::periodic_tasks()
     periodic_fullrate();
 }
 
-void DataFlash_Backend::start_new_log_reset_variables()
+void AP_Logger_Backend::start_new_log_reset_variables()
 {
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
 }
 
-void DataFlash_Backend::internal_error() {
+void AP_Logger_Backend::internal_error() {
     _internal_errors++;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     abort();
@@ -84,14 +84,14 @@ void DataFlash_Backend::internal_error() {
 }
 
 // this method can be overridden to do extra things with your buffer.
-// for example, in DataFlash_MAVLink we may push messages into the UART.
-void DataFlash_Backend::push_log_blocks() {
+// for example, in AP_Logger_MAVLink we may push messages into the UART.
+void AP_Logger_Backend::push_log_blocks() {
     WriteMoreStartupMessages();
 }
 
 // returns true if all format messages have been written, and thus it is OK
 // for other messages to go out to the log
-bool DataFlash_Backend::WriteBlockCheckStartupMessages()
+bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     return true;
@@ -125,7 +125,7 @@ bool DataFlash_Backend::WriteBlockCheckStartupMessages()
 }
 
 // source more messages from the startup message writer:
-void DataFlash_Backend::WriteMoreStartupMessages()
+void AP_Logger_Backend::WriteMoreStartupMessages()
 {
 
     if (_startup_messagewriter->finished()) {
@@ -142,7 +142,7 @@ void DataFlash_Backend::WriteMoreStartupMessages()
  */
 
 
-bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
+bool AP_Logger_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
 {
     // get log structure from front end:
     char ls_name[LS_NAME_SIZE] = {};
@@ -178,14 +178,14 @@ bool DataFlash_Backend::Log_Write_Emit_FMT(uint8_t msg_type)
     return true;
 }
 
-bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
+bool AP_Logger_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
 {
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
     // abstraction we could do WriteBytes() here instead?
     const char *fmt  = nullptr;
     uint8_t msg_len;
-    DataFlash_Class::log_write_fmt *f;
+    AP_Logger::log_write_fmt *f;
     for (f = _front.log_write_fmts; f; f=f->next) {
         if (f->msg_type == msg_type) {
             fmt = f->fmt;
@@ -295,7 +295,7 @@ bool DataFlash_Backend::Log_Write(const uint8_t msg_type, va_list arg_list, bool
     return WritePrioritisedBlock(buffer, msg_len, is_critical);
 }
 
-bool DataFlash_Backend::StartNewLogOK() const
+bool AP_Logger_Backend::StartNewLogOK() const
 {
     if (logging_started()) {
         return false;
@@ -313,7 +313,7 @@ bool DataFlash_Backend::StartNewLogOK() const
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-void DataFlash_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
+void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
                                                        uint16_t size)
 {
     // just check the first few packets to avoid too much overhead
@@ -338,7 +338,7 @@ void DataFlash_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
     uint8_t type_len;
     const struct LogStructure *s = _front.structure_for_msg_type(type);
     if (s == nullptr) {
-        const struct DataFlash_Class::log_write_fmt *t = _front.log_write_fmt_for_msg_type(type);
+        const struct AP_Logger::log_write_fmt *t = _front.log_write_fmt_for_msg_type(type);
         if (t == nullptr) {
             AP_HAL::panic("No structure for msg_type=%u", type);
         }
@@ -355,7 +355,7 @@ void DataFlash_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 }
 #endif
 
-bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_WritePrioritisedBlock(pBuffer, size);
@@ -372,7 +372,7 @@ bool DataFlash_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
-bool DataFlash_Backend::ShouldLog(bool is_critical)
+bool AP_Logger_Backend::ShouldLog(bool is_critical)
 {
     if (!_front.WritesEnabled()) {
         return false;
@@ -405,7 +405,7 @@ bool DataFlash_Backend::ShouldLog(bool is_critical)
     return true;
 }
 
-bool DataFlash_Backend::Log_Write_MessageF(const char *fmt, ...)
+bool AP_Logger_Backend::Log_Write_MessageF(const char *fmt, ...)
 {
     char msg[65] {}; // sizeof(log_Message.msg) + null-termination
 

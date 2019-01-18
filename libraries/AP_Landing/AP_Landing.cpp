@@ -363,7 +363,7 @@ bool AP_Landing::override_servos(void) {
 
 // returns a PID_Info object if there is one available for the selected landing
 // type, otherwise returns a nullptr, indicating no data to be logged/sent
-const DataFlash_Class::PID_Info* AP_Landing::get_pid_info(void) const
+const AP_Logger::PID_Info* AP_Landing::get_pid_info(void) const
 {
     switch (type) {
     case TYPE_DEEPSTALL:

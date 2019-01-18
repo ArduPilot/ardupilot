@@ -183,9 +183,9 @@ void Rover::startup_ground(void)
     // initialise mission library
     mode_auto.mission.init();
 
-    // initialise DataFlash library
+    // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Log_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -262,7 +262,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     old_mode.exit();
 
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
 
     notify_mode(control_mode);
     return true;
@@ -308,7 +308,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    return DataFlash.should_log(mask);
+    return logger.should_log(mask);
 }
 
 /*

@@ -690,7 +690,7 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(msg, &packet);
@@ -1172,8 +1172,8 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index()
 void GCS_MAVLINK::update_send()
 {
     if (!hal.scheduler->in_delay_callback()) {
-        // DataFlash_Class will not send log data if we are armed.
-        DataFlash_Class::instance()->handle_log_send();
+        // AP_Logger will not send log data if we are armed.
+        AP_Logger::instance()->handle_log_send();
     }
 
     if (!deferred_messages_initialised) {
@@ -1841,7 +1841,7 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
         dataflash->Log_Write_Message(text);
     }
@@ -2516,9 +2516,9 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
                         msg->sysid,
                         round_trip_time_us*0.001f);
 #endif
-        DataFlash_Class *df = DataFlash_Class::instance();
+        AP_Logger *df = AP_Logger::instance();
         if (df != nullptr) {
-            DataFlash_Class::instance()->Log_Write(
+            AP_Logger::instance()->Log_Write(
                 "TSYN",
                 "TimeUS,SysID,RTT",
                 "s-s",
@@ -2567,7 +2567,7 @@ void GCS_MAVLINK::send_timesync()
 
 void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 {
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df == nullptr) {
         return;
     }
@@ -2796,7 +2796,7 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+    AP_Logger::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
                                            "ssmmmddh", "FF000000", "QQffffff",
                                            (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
@@ -2891,7 +2891,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
+        AP_Logger::instance()->handle_mavlink_msg(*this, msg);
         break;
 
 
@@ -3030,7 +3030,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, *_mission)) {
-            DataFlash_Class::instance()->Log_Write_EntireMission(*_mission);
+            AP_Logger::instance()->Log_Write_EntireMission(*_mission);
         }
         break;
     }

@@ -423,13 +423,13 @@ bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
     return true;
 }
 
-const DataFlash_Class::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
+const AP_Logger::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
 }
 
 void AP_Landing_Deepstall::Log(void) const {
-    const DataFlash_Class::PID_Info& pid_info = ds_PID.get_pid_info();
+    const AP_Logger::PID_Info& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
         time_us          : AP_HAL::micros64(),
@@ -449,7 +449,7 @@ void AP_Landing_Deepstall::Log(void) const {
         I                : pid_info.I,
         D                : pid_info.D,
     };
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 // termination handling, expected to set the servo outputs

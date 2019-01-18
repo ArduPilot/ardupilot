@@ -28,7 +28,7 @@ Rover::Rover(void) :
     channel_throttle(nullptr),
     channel_aux(nullptr),
     channel_lateral(nullptr),
-    DataFlash{g.log_bitmask},
+    logger{g.log_bitmask},
     modes(&g.mode1),
     nav_controller(&L1_controller),
     control_mode(&mode_initializing),

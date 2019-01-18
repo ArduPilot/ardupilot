@@ -22,7 +22,7 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -260,7 +260,7 @@ AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
         COG:temp.COG
     };
 
-    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
+    AP_Logger::instance()->WriteBlock(&header, sizeof(header));
 }
 
 bool

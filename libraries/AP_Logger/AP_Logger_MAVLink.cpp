@@ -1,8 +1,8 @@
 /* 
-   DataFlash Remote(via MAVLink) logging
+   AP_Logger Remote(via MAVLink) logging
 */
 
-#include "DataFlash_MAVLink.h"
+#include "AP_Logger_MAVLink.h"
 
 #if DATAFLASH_MAVLINK_SUPPORT
 
@@ -23,9 +23,9 @@ extern const AP_HAL::HAL& hal;
 
 
 // initialisation
-void DataFlash_MAVLink::Init()
+void AP_Logger_MAVLink::Init()
 {
-    DataFlash_Backend::Init();
+    AP_Logger_Backend::Init();
 
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
@@ -46,21 +46,21 @@ void DataFlash_MAVLink::Init()
     _initialised = true;
 }
 
-bool DataFlash_MAVLink::logging_failed() const
+bool AP_Logger_MAVLink::logging_failed() const
 {
     return !_sending_to_client;
 }
 
-uint32_t DataFlash_MAVLink::bufferspace_available() {
+uint32_t AP_Logger_MAVLink::bufferspace_available() {
     return (_blockcount_free * 200 + remaining_space_in_current_block());
 }
 
-uint8_t DataFlash_MAVLink::remaining_space_in_current_block() {
+uint8_t AP_Logger_MAVLink::remaining_space_in_current_block() {
     // note that _current_block *could* be NULL ATM.
     return (MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN - _latest_block_len);
 }
 
-void DataFlash_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *block)
+void AP_Logger_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *block)
 {
     if (queue.youngest != nullptr) {
         queue.youngest->next = block;
@@ -70,7 +70,7 @@ void DataFlash_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *
     queue.youngest = block;
 }
 
-struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::dequeue_seqno(DataFlash_MAVLink::dm_block_queue_t &queue, uint32_t seqno)
+struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::dequeue_seqno(AP_Logger_MAVLink::dm_block_queue_t &queue, uint32_t seqno)
 {
     struct dm_block *prev = nullptr;
     for (struct dm_block *block=queue.oldest; block != nullptr; block=block->next) {
@@ -96,7 +96,7 @@ struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::dequeue_seqno(DataFlash_M
     return nullptr;
 }
 
-bool DataFlash_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &queue)
+bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &queue)
 {
     struct dm_block *block = dequeue_seqno(queue, seqno);
     if (block != nullptr) {
@@ -109,7 +109,7 @@ bool DataFlash_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
 }
     
 
-bool DataFlash_MAVLink::WritesOK() const
+bool AP_Logger_MAVLink::WritesOK() const
 {
     if (!_sending_to_client) {
         return false;
@@ -120,7 +120,7 @@ bool DataFlash_MAVLink::WritesOK() const
 /* Write a block of data at current offset */
 
 // DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
-bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
     if (!semaphore.take_nonblocking()) {
         _dropped++;
@@ -172,9 +172,9 @@ bool DataFlash_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
 }
 
 //Get a free block
-struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::next_block()
+struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::next_block()
 {
-    DataFlash_MAVLink::dm_block *ret = _blocks_free;
+    AP_Logger_MAVLink::dm_block *ret = _blocks_free;
     if (ret != nullptr) {
         _blocks_free = ret->next;
         _blockcount_free--;
@@ -186,7 +186,7 @@ struct DataFlash_MAVLink::dm_block *DataFlash_MAVLink::next_block()
     return ret;
 }
 
-void DataFlash_MAVLink::free_all_blocks()
+void AP_Logger_MAVLink::free_all_blocks()
 {
     _blocks_free = nullptr;
     _current_block = nullptr;
@@ -213,7 +213,7 @@ void DataFlash_MAVLink::free_all_blocks()
     _latest_block_len = 0;
 }
 
-void DataFlash_MAVLink::stop_logging()
+void AP_Logger_MAVLink::stop_logging()
 {
     if (_sending_to_client) {
         _sending_to_client = false;
@@ -221,7 +221,7 @@ void DataFlash_MAVLink::stop_logging()
     }
 }
 
-void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
+void AP_Logger_MAVLink::handle_ack(mavlink_channel_t chan,
                                    mavlink_message_t* msg,
                                    uint32_t seqno)
 {
@@ -267,7 +267,7 @@ void DataFlash_MAVLink::handle_ack(mavlink_channel_t chan,
     }
 }
 
-void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
+void AP_Logger_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
                                                     mavlink_message_t* msg)
 {
     mavlink_remote_log_block_status_t packet;
@@ -283,7 +283,7 @@ void DataFlash_MAVLink::remote_log_block_status_msg(mavlink_channel_t chan,
     semaphore.give();
 }
 
-void DataFlash_MAVLink::handle_retry(uint32_t seqno)
+void AP_Logger_MAVLink::handle_retry(uint32_t seqno)
 {
     if (!_initialised || !_sending_to_client) {
         return;
@@ -296,13 +296,13 @@ void DataFlash_MAVLink::handle_retry(uint32_t seqno)
     }
 }
 
-void DataFlash_MAVLink::stats_init() {
+void AP_Logger_MAVLink::stats_init() {
     _dropped = 0;
     _internal_errors = 0;
     stats.resends = 0;
     stats_reset();
 }
-void DataFlash_MAVLink::stats_reset() {
+void AP_Logger_MAVLink::stats_reset() {
     stats.state_free = 0;
     stats.state_free_min = -1; // unsigned wrap
     stats.state_free_max = 0;
@@ -318,7 +318,7 @@ void DataFlash_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
-void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
+void AP_Logger_MAVLink::Log_Write_DF_MAV(AP_Logger_MAVLink &df)
 {
     if (df.stats.collection_count == 0) {
         return;
@@ -344,7 +344,7 @@ void DataFlash_MAVLink::Log_Write_DF_MAV(DataFlash_MAVLink &df)
     WriteBlock(&pkt,sizeof(pkt));
 }
 
-void DataFlash_MAVLink::stats_log()
+void AP_Logger_MAVLink::stats_log()
 {
     if (!_initialised) {
         return;
@@ -376,7 +376,7 @@ void DataFlash_MAVLink::stats_log()
     stats_reset();
 }
 
-uint8_t DataFlash_MAVLink::stack_size(struct dm_block *stack)
+uint8_t AP_Logger_MAVLink::stack_size(struct dm_block *stack)
 {
     uint8_t ret = 0;
     for (struct dm_block *block=stack; block != nullptr; block=block->next) {
@@ -384,12 +384,12 @@ uint8_t DataFlash_MAVLink::stack_size(struct dm_block *stack)
     }
     return ret;
 }
-uint8_t DataFlash_MAVLink::queue_size(dm_block_queue_t queue)
+uint8_t AP_Logger_MAVLink::queue_size(dm_block_queue_t queue)
 {
     return stack_size(queue.oldest);
 }
 
-void DataFlash_MAVLink::stats_collect()
+void AP_Logger_MAVLink::stats_collect()
 {
     if (!_initialised) {
         return;
@@ -443,7 +443,7 @@ void DataFlash_MAVLink::stats_collect()
 /* while we "successfully" send log blocks from a queue, move them to
  * the sent list. DO NOT call this for blocks already sent!
 */
-bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
+bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
 {
     uint8_t sent_count = 0;
     while (queue.oldest != nullptr) {
@@ -454,7 +454,7 @@ bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
             return false;
         }
         queue.sent_count++;
-        struct DataFlash_MAVLink::dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
+        struct AP_Logger_MAVLink::dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
@@ -464,13 +464,13 @@ bool DataFlash_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
     return true;
 }
 
-void DataFlash_MAVLink::push_log_blocks()
+void AP_Logger_MAVLink::push_log_blocks()
 {
     if (!_initialised || !_sending_to_client) {
         return;
     }
 
-    DataFlash_Backend::WriteMoreStartupMessages();
+    AP_Logger_Backend::WriteMoreStartupMessages();
 
     if (!semaphore.take_nonblocking()) {
         return;
@@ -488,7 +488,7 @@ void DataFlash_MAVLink::push_log_blocks()
     semaphore.give();
 }
 
-void DataFlash_MAVLink::do_resends(uint32_t now)
+void AP_Logger_MAVLink::do_resends(uint32_t now)
 {
     if (!_initialised || !_sending_to_client) {
         return;
@@ -521,12 +521,12 @@ void DataFlash_MAVLink::do_resends(uint32_t now)
 // NOTE: any functions called from these periodic functions MUST
 // handle locking of the blocks structures by taking the semaphore
 // appropriately!
-void DataFlash_MAVLink::periodic_10Hz(const uint32_t now)
+void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
 {
     do_resends(now);
     stats_collect();
 }
-void DataFlash_MAVLink::periodic_1Hz()
+void AP_Logger_MAVLink::periodic_1Hz()
 {
     if (_sending_to_client &&
         _last_response_time + 10000 < _last_send_time) {
@@ -538,13 +538,13 @@ void DataFlash_MAVLink::periodic_1Hz()
     stats_log();
 }
 
-void DataFlash_MAVLink::periodic_fullrate()
+void AP_Logger_MAVLink::periodic_fullrate()
 {
     push_log_blocks();
 }
 
 //TODO: handle full txspace properly
-bool DataFlash_MAVLink::send_log_block(struct dm_block &block)
+bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 {
     mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
     if (!_initialised) {

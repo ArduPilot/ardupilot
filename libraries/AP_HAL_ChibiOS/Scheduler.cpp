@@ -29,7 +29,7 @@
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
@@ -238,7 +238,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
 
 #ifndef NO_DATAFLASH
     //stop logging
-    DataFlash_Class::instance()->StopLogging();
+    AP_Logger::instance()->StopLogging();
 
     // stop sdcard driver, if active
     sdcard_stop();

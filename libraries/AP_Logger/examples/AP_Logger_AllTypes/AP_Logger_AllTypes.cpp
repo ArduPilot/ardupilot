@@ -3,7 +3,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
@@ -83,7 +83,7 @@ static const struct LogStructure log_structure[] = {
 
 static uint16_t log_num;
 
-class DataFlashTest_AllTypes : public AP_HAL::HAL::Callbacks {
+class AP_LoggerTest_AllTypes : public AP_HAL::HAL::Callbacks {
 public:
     void setup();
     void loop();
@@ -91,30 +91,30 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{log_bitmask};
+    AP_Logger dataflash{log_bitmask};
     void print_mode(AP_HAL::BetterStream *port, uint8_t mode);
 
     void Log_Write_TypeMessages();
     void Log_Write_TypeMessages_Log_Write();
 
-    void flush_dataflash(DataFlash_Class &dataflash);
+    void flush_dataflash(AP_Logger &dataflash);
 };
 
-void DataFlashTest_AllTypes::flush_dataflash(DataFlash_Class &_dataflash)
+void AP_LoggerTest_AllTypes::flush_dataflash(AP_Logger &_dataflash)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     _dataflash.flush();
 #else
     // flush is not available on e.g. px4 as it would be a somewhat
     // dangerous operation, but if we wait long enough (at time of
-    // writing, 2 seconds, see DataFlash_File::_io_timer) the data
+    // writing, 2 seconds, see AP_Logger_File::_io_timer) the data
     // will go out.
     hal.scheduler->delay(3000);
 #endif
 }
 
 
-void DataFlashTest_AllTypes::Log_Write_TypeMessages()
+void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
 {
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
@@ -161,7 +161,7 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages()
     dataflash.StopLogging();
 }
 
-void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
+void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
 {
     log_num = dataflash.find_last_log();
     hal.console->printf("Using log number for Log_Write %u\n", log_num);
@@ -203,14 +203,14 @@ void DataFlashTest_AllTypes::Log_Write_TypeMessages_Log_Write()
     dataflash.StopLogging();
 }
 
-void DataFlashTest_AllTypes::setup(void)
+void AP_LoggerTest_AllTypes::setup(void)
 {
     hal.console->printf("Dataflash All Types 1.0\n");
 
     log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("DataFlash Test");
+    dataflash.Log_Write_Message("AP_Logger Test");
 
     // Test
     hal.scheduler->delay(20);
@@ -221,7 +221,7 @@ void DataFlashTest_AllTypes::setup(void)
     hal.console->printf("tests done\n");
 }
 
-void DataFlashTest_AllTypes::loop(void)
+void AP_LoggerTest_AllTypes::loop(void)
 {
     hal.console->printf("all done\n");
     hal.scheduler->delay(1000);
@@ -233,6 +233,6 @@ const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
 GCS_Dummy _gcs;
 
 
-static DataFlashTest_AllTypes dataflashtest;
+static AP_LoggerTest_AllTypes dataflashtest;
 
 AP_HAL_MAIN_CALLBACKS(&dataflashtest);

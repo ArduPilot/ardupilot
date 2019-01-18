@@ -19,7 +19,7 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_NOVA.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 

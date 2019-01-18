@@ -27,7 +27,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "pthread.h"
 #include <AP_HAL/utility/replace.h>
 

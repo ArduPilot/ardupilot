@@ -9,7 +9,7 @@
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
 
-class DataFlash_Class;
+class AP_Logger;
 
 namespace SITL {
 

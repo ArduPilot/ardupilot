@@ -29,10 +29,10 @@ FRESULT SdFatFs::init(Sd2Card *card) {
 	return res;
     }
     
-#if defined(BOARD_DATAFLASH_FATFS) // in DataFlash
+#if defined(BOARD_DATAFLASH_FATFS) // in AP_Logger
     // always reformat internal flash
 
-    printf("Formatting DataFlash to FAT..."); 
+    printf("Formatting AP_Logger to FAT..."); 
 
 #else
     // reformat SD card in case of filesystem error
@@ -56,7 +56,7 @@ FRESULT SdFatFs::init(Sd2Card *card) {
 
 
 FRESULT SdFatFs::format(const char *filepath, Sd2Card *card){
-#if defined(BOARD_DATAFLASH_FATFS) // in DataFlash
+#if defined(BOARD_DATAFLASH_FATFS) // in AP_Logger
 
     _card->ioctl(CTRL_FORMAT,0); // clear chip
 

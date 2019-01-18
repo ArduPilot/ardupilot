@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
 
     // @Param: BAT_LGIN
     // @DisplayName: logging interval
-    // @Description: Interval between pushing samples to the DataFlash log
+    // @Description: Interval between pushing samples to the AP_Logger log
     // @Units: ms
     // @Increment: 10
     AP_GROUPINFO("BAT_LGIN", 4, AP_InertialSensor::BatchSampler, push_interval_ms,   20),
@@ -173,10 +173,10 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
         return;
     }
     if (AP_HAL::millis() - last_sent_ms < (uint16_t)push_interval_ms) {
-        // avoid flooding DataFlash's buffer
+        // avoid flooding AP_Logger's buffer
         return;
     }
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash == nullptr) {
         // should not have been called
         return;
@@ -250,7 +250,7 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
     if (data_write_offset >= _required_count) {
         return false;
     }
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash == nullptr) {
         return false;
     }

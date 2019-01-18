@@ -185,9 +185,9 @@ void Sub::init_ardupilot()
     // initialise mission library
     mission.init();
 
-    // initialise DataFlash library
+    // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
+    logger.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
     startup_INS_ground();
@@ -289,8 +289,8 @@ bool Sub::optflow_position_ok()
 bool Sub::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    ap.logging_started = DataFlash.logging_started();
-    return DataFlash.should_log(mask);
+    ap.logging_started = logger.logging_started();
+    return logger.should_log(mask);
 #else
     return false;
 #endif
