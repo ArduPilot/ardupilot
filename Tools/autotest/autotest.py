@@ -302,6 +302,7 @@ def run_specific_test(step, *args, **kwargs):
     tester_class_map = {
         "fly.ArduCopter": arducopter.AutoTestCopter,
         "fly.ArduPlane": arduplane.AutoTestPlane,
+        "fly.QuadPlane": quadplane.AutoTestQuadPlane,
         "drive.APMrover2": apmrover2.AutoTestRover,
         "drive.BalanceBot": balancebot.AutoTestBalanceBot,
         "fly.CopterAVC": arducopter.AutoTestHeli,
