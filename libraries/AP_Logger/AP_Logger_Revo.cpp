@@ -59,7 +59,7 @@ void AP_Logger_Revo::StartWrite(uint16_t PageAdr)
 void AP_Logger_Revo::FinishWrite(void)
 {
     // Write Buffer to flash, NO WAIT
-    BufferToPage(df_BufferNum, df_PageAdr, 0);      
+    BufferToPage(df_BufferNum, df_PageAdr);
     df_PageAdr++;
     // If we reach the end of the memory, start from the beginning    
     if (df_PageAdr > df_NumPages) {
@@ -596,7 +596,7 @@ void AP_Logger_Revo::PageToBuffer(unsigned char BufferNum, uint16_t pageNum)
     cs_release();
 }
 
-void AP_Logger_Revo::BufferToPage (unsigned char BufferNum, uint16_t pageNum, unsigned char wait)
+void AP_Logger_Revo::BufferToPage (unsigned char BufferNum, uint16_t pageNum)
 {    
     uint32_t PageAdr = pageNum * DF_PAGE_SIZE;
 
@@ -614,9 +614,6 @@ void AP_Logger_Revo::BufferToPage (unsigned char BufferNum, uint16_t pageNum, un
     _spi->transfer(buffer[BufferNum], DF_PAGE_SIZE, NULL, 0);
 
     cs_release();
-
-    if(wait)   WaitReady();
-
 }
 
 void AP_Logger_Revo::BufferWrite (unsigned char BufferNum, uint16_t IntPageAdr, unsigned char Data)

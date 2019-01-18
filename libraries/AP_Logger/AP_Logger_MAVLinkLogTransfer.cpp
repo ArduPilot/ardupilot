@@ -131,7 +131,7 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, mavlink_message_t *ms
         _log_num_data = packet.id;
         _log_data_size = size;
 
-        uint16_t end;
+        uint32_t end;
         get_log_boundaries(packet.id, _log_data_page, end);
     }
 

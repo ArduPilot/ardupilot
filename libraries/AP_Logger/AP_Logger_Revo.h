@@ -48,13 +48,12 @@ class AP_Logger_Revo : public AP_Logger_Backend
 private:
     //Methods
     void              BufferWrite (uint8_t BufferNum, uint16_t IntPageAdr, uint8_t Data);
-    void              BufferToPage (uint8_t BufferNum, uint16_t PageAdr, uint8_t wait);
+    void              BufferToPage (uint8_t BufferNum, uint16_t PageAdr);
     void              PageToBuffer(uint8_t BufferNum, uint16_t PageAdr);
     void              WaitReady();
     uint8_t           ReadStatusReg();
     uint16_t          PageSize() { return df_PageSize; }
     void              PageErase (uint16_t PageAdr);
-    void              BlockErase (uint16_t BlockAdr);
     void              ChipErase();
 
     void              Flash_Jedec_WriteEnable();
