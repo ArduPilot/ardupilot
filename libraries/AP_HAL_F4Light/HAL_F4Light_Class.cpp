@@ -294,7 +294,7 @@ void HAL_F4Light::run(int argc,char* const argv[], Callbacks* callbacks) const
         printf("\nEnabling SD at %ldms\n", AP_HAL::millis());            
         SD.begin(F4Light::SPIDeviceManager::_get_device(BOARD_SDCARD_NAME));
 #elif defined(BOARD_DATAFLASH_FATFS)
-        printf("\nEnabling DataFlash as SD at %ldms\n", AP_HAL::millis());            
+        printf("\nEnabling AP_Logger as SD at %ldms\n", AP_HAL::millis());            
         SD.begin(F4Light::SPIDeviceManager::_get_device(HAL_DATAFLASH_NAME));
 #endif
 

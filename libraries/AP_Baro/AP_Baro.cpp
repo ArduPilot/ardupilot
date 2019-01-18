@@ -734,7 +734,7 @@ void AP_Baro::_probe_i2c_barometers(void)
 
 bool AP_Baro::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::instance();
     if (instance == nullptr) {
         return false;
     }
@@ -816,7 +816,7 @@ void AP_Baro::update(void)
 
     // logging
     if (should_df_log() && !AP::ahrs().have_ekf_logging()) {
-        DataFlash_Class::instance()->Log_Write_Baro();
+        AP_Logger::instance()->Log_Write_Baro();
     }
 }
 

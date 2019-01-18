@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------
-  Low level SD card and DataFlash include file
+  Low level SD card and AP_Logger include file
 /-----------------------------------------------------------------------*/
 
 #ifndef _SD_DEFINED

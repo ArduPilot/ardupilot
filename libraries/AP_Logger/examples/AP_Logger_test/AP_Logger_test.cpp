@@ -1,10 +1,10 @@
 /*
- * Example of DataFlash library.
+ * Example of AP_Logger library.
  * originally based on code by Jordi MuÒoz and Jose Julio
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
@@ -32,7 +32,7 @@ static const struct LogStructure log_structure[] = {
 
 static uint16_t log_num;
 
-class DataFlashTest {
+class AP_LoggerTest {
 public:
     void setup();
     void loop();
@@ -40,20 +40,20 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    DataFlash_Class dataflash{log_bitmask};
+    AP_Logger dataflash{log_bitmask};
 
 };
 
-static DataFlashTest dataflashtest;
+static AP_LoggerTest dataflashtest;
 
-void DataFlashTest::setup(void)
+void AP_LoggerTest::setup(void)
 {
     hal.console->printf("Dataflash Log Test 1.0\n");
 
     log_bitmask = (uint32_t)-1;
     dataflash.Init(log_structure, ARRAY_SIZE(log_structure));
     dataflash.set_vehicle_armed(true);
-    dataflash.Log_Write_Message("DataFlash Test");
+    dataflash.Log_Write_Message("AP_Logger Test");
 
     // Test
     hal.scheduler->delay(20);
@@ -95,7 +95,7 @@ void DataFlashTest::setup(void)
     hal.scheduler->delay(100);
 }
 
-void DataFlashTest::loop(void)
+void AP_LoggerTest::loop(void)
 {
     hal.console->printf("\nTest complete.\n");
     hal.scheduler->delay(20000);

@@ -12,7 +12,7 @@
 #endif
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -237,7 +237,7 @@ AP_BattMonitor::read()
         }
     }
 
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df->should_log(_log_battery_bit)) {
         df->Log_Write_Current();
         df->Log_Write_Power();

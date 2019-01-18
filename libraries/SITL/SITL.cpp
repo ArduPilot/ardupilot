@@ -22,7 +22,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -170,7 +170,7 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               state.longitude*1.0e7);
 }
 
-/* report SITL state to DataFlash */
+/* report SITL state to AP_Logger */
 void SITL::Log_Write_SIMSTATE()
 {
     float yaw;
@@ -195,7 +195,7 @@ void SITL::Log_Write_SIMSTATE()
         q3      : state.quaternion.q3,
         q4      : state.quaternion.q4,
     };
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP_Logger::instance()->WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

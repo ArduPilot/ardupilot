@@ -38,7 +38,7 @@ void Variometer::update(const float polar_K, const float polar_B, const float po
         _prev_update_time = AP_HAL::micros64();
         new_data = true;
 
-        DataFlash_Class::instance()->Log_Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
+        AP_Logger::instance()->Log_Write("VAR", "TimeUS,aspd_raw,aspd_filt,alt,roll,raw,filt", "Qffffff",
                                                AP_HAL::micros64(),
                                                (double)aspd,
                                                (double)_aspd_filt,

@@ -2,7 +2,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 enum gmb_param_state_t {
     GMB_PARAMSTATE_NOT_YET_READ=0, // parameter has yet to be initialized

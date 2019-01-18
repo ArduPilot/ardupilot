@@ -200,11 +200,11 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (DataFlash_Class::instance()->logging_failed()) {
+        if (AP_Logger::instance()->logging_failed()) {
             check_failed(ARMING_CHECK_LOGGING, report, "Logging failed");
             return false;
         }
-        if (!DataFlash_Class::instance()->CardInserted()) {
+        if (!AP_Logger::instance()->CardInserted()) {
             check_failed(ARMING_CHECK_LOGGING, report, "No SD card");
             return false;
         }
@@ -720,11 +720,11 @@ bool AP_Arming::arm_checks(ArmingMethod method)
         }
     }
     
-    // note that this will prepare DataFlash to start logging
+    // note that this will prepare AP_Logger to start logging
     // so should be the last check to be done before arming
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        DataFlash_Class *df = DataFlash_Class::instance();
+        AP_Logger *df = AP_Logger::instance();
         df->PrepForArming();
         if (!df->logging_started()) {
             check_failed(ARMING_CHECK_LOGGING, true, "Logging not started");

@@ -17,7 +17,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // log when new commands start
     if (rover.should_log(MASK_LOG_CMD)) {
-        rover.DataFlash.Log_Write_Mission_Cmd(mission, cmd);
+        rover.logger.Log_Write_Mission_Cmd(mission, cmd);
     }
 
     gcs().send_text(MAV_SEVERITY_INFO, "Executing %s(ID=%i)",

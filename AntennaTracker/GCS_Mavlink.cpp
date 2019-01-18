@@ -580,7 +580,7 @@ void Tracker::mavlink_delay_cb()
         return;
     }
 
-    DataFlash.EnableWrites(false);
+    logger.EnableWrites(false);
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
@@ -598,7 +598,7 @@ void Tracker::mavlink_delay_cb()
         last_5s = tnow;
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    DataFlash.EnableWrites(true);
+    logger.EnableWrites(true);
 }
 
 /*

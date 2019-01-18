@@ -66,7 +66,7 @@
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <APM_Control/AR_AttitudeControl.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library
 #include <Filter/Butter.h>                          // Filter library - butterworth filter
 #include <Filter/Filter.h>                          // Filter library
@@ -163,7 +163,7 @@ private:
     RC_Channel *channel_aux;
     RC_Channel *channel_lateral;
 
-    DataFlash_Class DataFlash;
+    AP_Logger logger;
 
     // sensor drivers
     AP_GPS gps;

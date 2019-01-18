@@ -1,12 +1,12 @@
 /* ************************************************************ */
-/* DataFlash_Revo Log library                                 */
+/* AP_Logger_Revo Log library                                 */
 /* ************************************************************ */
 #pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
 
 #include <AP_HAL/AP_HAL.h>
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 #include <AP_HAL_F4Light/AP_HAL_F4Light.h>
 #include <AP_HAL_F4Light/GPIO.h>
 
@@ -43,7 +43,7 @@
 using namespace F4Light;
 
 
-class DataFlash_Revo : public DataFlash_Backend
+class AP_Logger_Revo : public AP_Logger_Backend
 {
 private:
     //Methods
@@ -97,7 +97,7 @@ private:
         uint16_t FilePage;
     };
 
-    // DataFlash Log variables...
+    // AP_Logger Log variables...
     uint8_t df_BufferNum;
     uint8_t df_Read_BufferNum;
     uint16_t df_BufferIdx;
@@ -150,8 +150,8 @@ protected:
 
 
 public:
-    DataFlash_Revo(DataFlash_Class &front, DFMessageWriter_DFLogStart *writer) :
-        DataFlash_Backend(front, writer) { }
+    AP_Logger_Revo(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+        AP_Logger_Backend(front, writer) { }
         
     void        Init() override;
     void        ReadManufacturerID();

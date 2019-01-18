@@ -1,17 +1,17 @@
-#include "DataFlash.h"
+#include "AP_Logger.h"
 
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 
-#include "DataFlash_File.h"
-#include "DataFlash_File_sd.h"
-#include "DataFlash_MAVLink.h"
+#include "AP_Logger_File.h"
+#include "AP_Logger_File_sd.h"
+#include "AP_Logger_MAVLink.h"
 #include <GCS_MAVLink/GCS.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-#include "DataFlash_Revo.h"
+#include "AP_Logger_Revo.h"
 #endif
 
 
-DataFlash_Class *DataFlash_Class::_instance;
+AP_Logger *AP_Logger::_instance;
 
 extern const AP_HAL::HAL& hal;
 
@@ -23,65 +23,65 @@ extern const AP_HAL::HAL& hal;
 #define HAL_DATAFLASH_MAV_BUFSIZE  8
 #endif 
 
-const AP_Param::GroupInfo DataFlash_Class::var_info[] = {
+const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
-    // @DisplayName: DataFlash Backend Storage type
+    // @DisplayName: AP_Logger Backend Storage type
     // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
     // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
     // @User: Standard
-    AP_GROUPINFO("_BACKEND_TYPE",  0, DataFlash_Class, _params.backend_types,       DATAFLASH_BACKEND_FILE),
+    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       DATAFLASH_BACKEND_FILE),
 
     // @Param: _FILE_BUFSIZE
-    // @DisplayName: Maximum DataFlash File Backend buffer size (in kilobytes)
-    // @Description: The DataFlash_File backend uses a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
+    // @DisplayName: Maximum AP_Logger File Backend buffer size (in kilobytes)
+    // @Description: The AP_Logger_File backend uses a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
     // @User: Standard
-    AP_GROUPINFO("_FILE_BUFSIZE",  1, DataFlash_Class, _params.file_bufsize,       HAL_DATAFLASH_FILE_BUFSIZE),
+    AP_GROUPINFO("_FILE_BUFSIZE",  1, AP_Logger, _params.file_bufsize,       HAL_DATAFLASH_FILE_BUFSIZE),
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
     // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. This can make for very large logfiles but can help a lot when tracking down startup issues
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("_DISARMED",  2, DataFlash_Class, _params.log_disarmed,       0),
+    AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
     // @Description: If LOG_REPLAY is set to 1 then the EKF2 state estimator will log detailed information needed for diagnosing problems with the Kalman filter. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("_REPLAY",  3, DataFlash_Class, _params.log_replay,       0),
+    AP_GROUPINFO("_REPLAY",  3, AP_Logger, _params.log_replay,       0),
 
     // @Param: _FILE_DSRMROT
     // @DisplayName: Stop logging to current file on disarm
     // @Description: When set, the current log file is closed when the vehicle is disarmed.  If LOG_DISARMED is set then a fresh log will be opened.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("_FILE_DSRMROT",  4, DataFlash_Class, _params.file_disarm_rot,       0),
+    AP_GROUPINFO("_FILE_DSRMROT",  4, AP_Logger, _params.file_disarm_rot,       0),
 
     // @Param: _MAV_BUFSIZE
-    // @DisplayName: Maximum DataFlash MAVLink Backend buffer size
-    // @Description: Maximum amount of memory to allocate to DataFlash-over-mavlink
+    // @DisplayName: Maximum AP_Logger MAVLink Backend buffer size
+    // @Description: Maximum amount of memory to allocate to AP_Logger-over-mavlink
     // @User: Advanced
     // @Units: kB
-    AP_GROUPINFO("_MAV_BUFSIZE",  5, DataFlash_Class, _params.mav_bufsize,       HAL_DATAFLASH_MAV_BUFSIZE),
+    AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_DATAFLASH_MAV_BUFSIZE),
 
     AP_GROUPEND
 };
 
 #define streq(x, y) (!strcmp(x, y))
 
-DataFlash_Class::DataFlash_Class(const AP_Int32 &log_bitmask)
+AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     : _log_bitmask(log_bitmask)
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_instance != nullptr) {
-        AP_HAL::panic("DataFlash must be singleton");
+        AP_HAL::panic("AP_Logger must be singleton");
     }
 
     _instance = this;
 }
 
-void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Preparing log system");
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -99,15 +99,15 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
  #if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
-        DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart();
+        LoggerMessageWriter_DFLogStart *message_writer =
+            new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new DataFlash_File(*this,
+            backends[_next_backend] = new AP_Logger_File(*this,
                                                          message_writer,
                                                          HAL_BOARD_LOG_DIRECTORY);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_File");
+            hal.console->printf("Unable to open AP_Logger_File");
         } else {
             _next_backend++;
         }
@@ -117,19 +117,19 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
     if (_params.backend_types == DATAFLASH_BACKEND_FILE ||
         _params.backend_types == DATAFLASH_BACKEND_BOTH) {
 
-        DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart();
+        LoggerMessageWriter_DFLogStart *message_writer =
+            new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
 
   #if defined(BOARD_SDCARD_NAME) || defined(BOARD_DATAFLASH_FATFS)
-            backends[_next_backend] = new DataFlash_File(*this, message_writer, HAL_BOARD_LOG_DIRECTORY);
+            backends[_next_backend] = new AP_Logger_File(*this, message_writer, HAL_BOARD_LOG_DIRECTORY);
   #else
-            backends[_next_backend] = new DataFlash_Revo(*this, message_writer); // restore dataflash logs
+            backends[_next_backend] = new AP_Logger_Revo(*this, message_writer); // restore dataflash logs
   #endif
         }
 
         if (backends[_next_backend] == nullptr) {
-            printf("Unable to open DataFlash_Revo");
+            printf("Unable to open AP_Logger_Revo");
         } else {
             _next_backend++;
         }
@@ -144,14 +144,14 @@ void DataFlash_Class::Init(const struct LogStructure *structures, uint8_t num_ty
             AP_HAL::panic("Too many backends");
             return;
         }
-        DFMessageWriter_DFLogStart *message_writer =
-            new DFMessageWriter_DFLogStart();
+        LoggerMessageWriter_DFLogStart *message_writer =
+            new LoggerMessageWriter_DFLogStart();
         if (message_writer != nullptr)  {
-            backends[_next_backend] = new DataFlash_MAVLink(*this,
+            backends[_next_backend] = new AP_Logger_MAVLink(*this,
                                                             message_writer);
         }
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open DataFlash_MAVLink");
+            hal.console->printf("Unable to open AP_Logger_MAVLink");
         } else {
             _next_backend++;
         }
@@ -190,7 +190,7 @@ static uint8_t count_commas(const char *string)
 }
 
 /// return a unit name given its ID
-const char* DataFlash_Class::unit_name(const uint8_t unit_id)
+const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
     for(uint8_t i=0; i<unit_id; i++) {
         if (_units[i].ID == unit_id) {
@@ -201,7 +201,7 @@ const char* DataFlash_Class::unit_name(const uint8_t unit_id)
 }
 
 /// return a multiplier value given its ID
-double DataFlash_Class::multiplier_name(const uint8_t multiplier_id)
+double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
     for(uint8_t i=0; i<multiplier_id; i++) {
         if (_multipliers[i].ID == multiplier_id) {
@@ -213,14 +213,14 @@ double DataFlash_Class::multiplier_name(const uint8_t multiplier_id)
 }
 
 /// pretty-print field information from a log structure
-void DataFlash_Class::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
+void AP_Logger::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
     ::fprintf(stderr, "  %s (%s)*(%f)\n", label, unit_name(logstructure->units[fieldnum]), multiplier_name(logstructure->multipliers[fieldnum]));
 }
 
 /// pretty-print log structures
 /// @note structures MUST be well-formed
-void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
+void AP_Logger::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
 #if DEBUG_LOG_STRUCTURES
     for (uint16_t i=0; i<num_types; i++) {
@@ -249,7 +249,7 @@ void DataFlash_Class::dump_structures(const struct LogStructure *logstructures, 
 #endif
 }
 
-bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
+bool AP_Logger::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
 {
     bool passed = true;
 
@@ -343,7 +343,7 @@ bool DataFlash_Class::validate_structure(const struct LogStructure *logstructure
     return passed;
 }
 
-void DataFlash_Class::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
+void AP_Logger::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
     Debug("Validating structures");
     bool passed = true;
@@ -394,16 +394,16 @@ void DataFlash_Class::validate_structures(const struct LogStructure *logstructur
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-const struct LogStructure *DataFlash_Class::structure(uint16_t num) const
+const struct LogStructure *AP_Logger::structure(uint16_t num) const
 {
     return &_structures[num];
 }
 
-bool DataFlash_Class::logging_present() const
+bool AP_Logger::logging_present() const
 {
     return _next_backend != 0;
 }
-bool DataFlash_Class::logging_enabled() const
+bool AP_Logger::logging_enabled() const
 {
     if (_next_backend == 0) {
         return false;
@@ -415,7 +415,7 @@ bool DataFlash_Class::logging_enabled() const
     }
     return false;
 }
-bool DataFlash_Class::logging_failed() const
+bool AP_Logger::logging_failed() const
 {
     if (_next_backend < 1) {
         // we should not have been called!
@@ -429,7 +429,7 @@ bool DataFlash_Class::logging_failed() const
     return false;
 }
 
-void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
+void AP_Logger::Log_Write_MessageF(const char *fmt, ...)
 {
     char msg[65] {}; // sizeof(log_Message.msg) + null-termination
 
@@ -441,7 +441,7 @@ void DataFlash_Class::Log_Write_MessageF(const char *fmt, ...)
     Log_Write_Message(msg);
 }
 
-void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
+void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i] == backend) { // pointer comparison!
@@ -454,7 +454,7 @@ void DataFlash_Class::backend_starting_new_log(const DataFlash_Backend *backend)
     }
 }
 
-bool DataFlash_Class::should_log(const uint32_t mask) const
+bool AP_Logger::should_log(const uint32_t mask) const
 {
     if (!(mask & _log_bitmask)) {
         return false;
@@ -471,12 +471,12 @@ bool DataFlash_Class::should_log(const uint32_t mask) const
     return true;
 }
 
-const struct UnitStructure *DataFlash_Class::unit(uint16_t num) const
+const struct UnitStructure *AP_Logger::unit(uint16_t num) const
 {
     return &_units[num];
 }
 
-const struct MultiplierStructure *DataFlash_Class::multiplier(uint16_t num) const
+const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
 {
     return &log_Multipliers[num];
 }
@@ -488,17 +488,17 @@ const struct MultiplierStructure *DataFlash_Class::multiplier(uint16_t num) cons
         }                                         \
     } while (0)
 
-void DataFlash_Class::PrepForArming()
+void AP_Logger::PrepForArming()
 {
     FOR_EACH_BACKEND(PrepForArming());
 }
 
-void DataFlash_Class::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
+void AP_Logger::setVehicle_Startup_Log_Writer(vehicle_startup_message_Log_Writer writer)
 {
     _vehicle_messages = writer;
 }
 
-void DataFlash_Class::set_vehicle_armed(const bool armed_state)
+void AP_Logger::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
         // no change in status
@@ -515,24 +515,24 @@ void DataFlash_Class::set_vehicle_armed(const bool armed_state)
 
 
 // start functions pass straight through to backend:
-void DataFlash_Class::WriteBlock(const void *pBuffer, uint16_t size) {
+void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
-void DataFlash_Class::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 
-void DataFlash_Class::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
     FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
 // change me to "DoTimeConsumingPreparations"?
-void DataFlash_Class::EraseAll() {
+void AP_Logger::EraseAll() {
     FOR_EACH_BACKEND(EraseAll());
 }
 // change me to "LoggingAvailable"?
-bool DataFlash_Class::CardInserted(void) {
+bool AP_Logger::CardInserted(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->CardInserted()) {
             return true;
@@ -541,40 +541,40 @@ bool DataFlash_Class::CardInserted(void) {
     return false;
 }
 
-void DataFlash_Class::Prep() {
+void AP_Logger::Prep() {
     FOR_EACH_BACKEND(Prep());
 }
 
-void DataFlash_Class::StopLogging()
+void AP_Logger::StopLogging()
 {
     FOR_EACH_BACKEND(stop_logging());
 }
 
-uint16_t DataFlash_Class::find_last_log() const {
+uint16_t AP_Logger::find_last_log() const {
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->find_last_log();
 }
-void DataFlash_Class::get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) {
+void AP_Logger::get_log_boundaries(uint16_t log_num, uint16_t & start_page, uint16_t & end_page) {
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_boundaries(log_num, start_page, end_page);
 }
-void DataFlash_Class::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
+void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_info(log_num, size, time_utc);
 }
-int16_t DataFlash_Class::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
+int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->get_log_data(log_num, page, offset, len, data);
 }
-uint16_t DataFlash_Class::get_num_logs(void) {
+uint16_t AP_Logger::get_num_logs(void) {
     if (_next_backend == 0) {
         return 0;
     }
@@ -582,7 +582,7 @@ uint16_t DataFlash_Class::get_num_logs(void) {
 }
 
 /* we're started if any of the backends are started */
-bool DataFlash_Class::logging_started(void) {
+bool AP_Logger::logging_started(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -591,7 +591,7 @@ bool DataFlash_Class::logging_started(void) {
     return false;
 }
 
-void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
+void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* msg)
 {
     switch (msg->msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
@@ -609,46 +609,46 @@ void DataFlash_Class::handle_mavlink_msg(GCS_MAVLINK &link, mavlink_message_t* m
     }
 }
 
-void DataFlash_Class::periodic_tasks() {
+void AP_Logger::periodic_tasks() {
     handle_log_send();
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only DataFlash_File support this:
-void DataFlash_Class::flush(void) {
+    // currently only AP_Logger_File support this:
+void AP_Logger::flush(void) {
      FOR_EACH_BACKEND(flush());
 }
 #endif
 
 
-void DataFlash_Class::Log_Write_EntireMission(const AP_Mission &mission)
+void AP_Logger::Log_Write_EntireMission(const AP_Mission &mission)
 {
     FOR_EACH_BACKEND(Log_Write_EntireMission(mission));
 }
 
-void DataFlash_Class::Log_Write_Message(const char *message)
+void AP_Logger::Log_Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Log_Write_Message(message));
 }
 
-void DataFlash_Class::Log_Write_Mode(uint8_t mode, uint8_t reason)
+void AP_Logger::Log_Write_Mode(uint8_t mode, uint8_t reason)
 {
     FOR_EACH_BACKEND(Log_Write_Mode(mode, reason));
 }
 
-void DataFlash_Class::Log_Write_Parameter(const char *name, float value)
+void AP_Logger::Log_Write_Parameter(const char *name, float value)
 {
     FOR_EACH_BACKEND(Log_Write_Parameter(name, value));
 }
 
-void DataFlash_Class::Log_Write_Mission_Cmd(const AP_Mission &mission,
+void AP_Logger::Log_Write_Mission_Cmd(const AP_Mission &mission,
                                             const AP_Mission::Mission_Command &cmd)
 {
     FOR_EACH_BACKEND(Log_Write_Mission_Cmd(mission, cmd));
 }
 
-uint32_t DataFlash_Class::num_dropped() const
+uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
         return 0;
@@ -659,14 +659,14 @@ uint32_t DataFlash_Class::num_dropped() const
 
 // end functions pass straight through to backend
 
-void DataFlash_Class::internal_error() const {
+void AP_Logger::internal_error() const {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    AP_HAL::panic("Internal DataFlash error");
+    AP_HAL::panic("Internal AP_Logger error");
 #endif
 }
 
 /* Log_Write support */
-void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *fmt, ...)
+void AP_Logger::Log_Write(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
 
@@ -675,7 +675,7 @@ void DataFlash_Class::Log_Write(const char *name, const char *labels, const char
     va_end(arg_list);
 }
 
-void DataFlash_Class::Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+void AP_Logger::Log_Write(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
 {
     va_list arg_list;
 
@@ -684,7 +684,7 @@ void DataFlash_Class::Log_Write(const char *name, const char *labels, const char
     va_end(arg_list);
 }
 
-void DataFlash_Class::Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
+void AP_Logger::Log_WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list)
 {
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
@@ -710,7 +710,7 @@ void DataFlash_Class::Log_WriteV(const char *name, const char *labels, const cha
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-void DataFlash_Class::assert_same_fmt_for_name(const DataFlash_Class::log_write_fmt *f,
+void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
                                                const char *name,
                                                const char *labels,
                                                const char *units,
@@ -756,7 +756,7 @@ void DataFlash_Class::assert_same_fmt_for_name(const DataFlash_Class::log_write_
 }
 #endif
 
-DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
+AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -832,7 +832,7 @@ DataFlash_Class::log_write_fmt *DataFlash_Class::msg_fmt_for_name(const char *na
     return f;
 }
 
-const struct LogStructure *DataFlash_Class::structure_for_msg_type(const uint8_t msg_type)
+const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type)
 {
     for (uint16_t i=0; i<_num_types;i++) {
         const struct LogStructure *s = structure(i);
@@ -844,7 +844,7 @@ const struct LogStructure *DataFlash_Class::structure_for_msg_type(const uint8_t
     return nullptr;
 }
 
-const struct DataFlash_Class::log_write_fmt *DataFlash_Class::log_write_fmt_for_msg_type(const uint8_t msg_type) const
+const struct AP_Logger::log_write_fmt *AP_Logger::log_write_fmt_for_msg_type(const uint8_t msg_type) const
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -857,7 +857,7 @@ const struct DataFlash_Class::log_write_fmt *DataFlash_Class::log_write_fmt_for_
 
 
 // returns true if the msg_type is already taken
-bool DataFlash_Class::msg_type_in_use(const uint8_t msg_type) const
+bool AP_Logger::msg_type_in_use(const uint8_t msg_type) const
 {
     // check static list of messages (e.g. from LOG_BASE_STRUCTURES)
     // check the write format types to see if we've used this one
@@ -878,7 +878,7 @@ bool DataFlash_Class::msg_type_in_use(const uint8_t msg_type) const
 }
 
 // find a free message type
-int16_t DataFlash_Class::find_free_msg_type() const
+int16_t AP_Logger::find_free_msg_type() const
 {
     // avoid using 255 here; perhaps we want to use it to extend things later
     for (uint16_t msg_type=254; msg_type>0; msg_type--) { // more likely to be free at end
@@ -893,7 +893,7 @@ int16_t DataFlash_Class::find_free_msg_type() const
  * It is assumed that logstruct's char* variables are valid strings of
  * maximum lengths for those fields (given in LogStructure.h e.g. LS_NAME_SIZE)
  */
-bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
+bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
     // find log structure information corresponding to msg_type:
     struct log_write_fmt *f;
@@ -937,7 +937,7 @@ bool DataFlash_Class::fill_log_write_logstructure(struct LogStructure &logstruct
  * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
  * Tools/Replay/MsgHandler.cpp */
-int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
+int16_t AP_Logger::Log_Write_calc_msg_len(const char *fmt) const
 {
     uint8_t len =  LOG_PACKET_HEADER_LEN;
     for (uint8_t i=0; i<strlen(fmt); i++) {
@@ -977,7 +977,7 @@ int16_t DataFlash_Class::Log_Write_calc_msg_len(const char *fmt) const
 #undef FOR_EACH_BACKEND
 
 // Write information about a series of IMU readings to log:
-bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
+bool AP_Logger::Log_Write_ISBH(const uint16_t seqno,
                                      const AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                                      const uint8_t sensor_instance,
                                      const uint16_t mult,
@@ -1010,7 +1010,7 @@ bool DataFlash_Class::Log_Write_ISBH(const uint16_t seqno,
 
 
 // Write a series of IMU readings to log:
-bool DataFlash_Class::Log_Write_ISBD(const uint16_t isb_seqno,
+bool AP_Logger::Log_Write_ISBD(const uint16_t isb_seqno,
                                      const uint16_t seqno,
                                      const int16_t x[32],
                                      const int16_t y[32],

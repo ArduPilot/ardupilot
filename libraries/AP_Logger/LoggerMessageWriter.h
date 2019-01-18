@@ -1,27 +1,27 @@
 #pragma once
 
-#include "DataFlash_Backend.h"
+#include "AP_Logger_Backend.h"
 
 #include <AP_Mission/AP_Mission.h>
 
-class DFMessageWriter {
+class LoggerMessageWriter {
 public:
 
     virtual void reset() = 0;
     virtual void process() = 0;
     virtual bool finished() { return _finished; }
 
-    virtual void set_dataflash_backend(class DataFlash_Backend *backend) {
+    virtual void set_dataflash_backend(class AP_Logger_Backend *backend) {
         _dataflash_backend = backend;
     }
 
 protected:
     bool _finished = false;
-    DataFlash_Backend *_dataflash_backend = nullptr;
+    AP_Logger_Backend *_dataflash_backend = nullptr;
 };
 
 
-class DFMessageWriter_WriteSysInfo : public DFMessageWriter {
+class LoggerMessageWriter_WriteSysInfo : public LoggerMessageWriter {
 public:
 
     void reset() override;
@@ -37,7 +37,7 @@ private:
     write_sysinfo_blockwriter_stage stage = ws_blockwriter_stage_init;
 };
 
-class DFMessageWriter_WriteEntireMission : public DFMessageWriter {
+class LoggerMessageWriter_WriteEntireMission : public LoggerMessageWriter {
 public:
 
     void reset() override;
@@ -55,16 +55,16 @@ private:
     entire_mission_blockwriter_stage stage = em_blockwriter_stage_init;
 };
 
-class DFMessageWriter_DFLogStart : public DFMessageWriter {
+class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
-    DFMessageWriter_DFLogStart() :
+    LoggerMessageWriter_DFLogStart() :
         _writesysinfo(),
         _writeentiremission()
         {
         }
 
-    virtual void set_dataflash_backend(class DataFlash_Backend *backend) override {
-        DFMessageWriter::set_dataflash_backend(backend);
+    virtual void set_dataflash_backend(class AP_Logger_Backend *backend) override {
+        LoggerMessageWriter::set_dataflash_backend(backend);
         _writesysinfo.set_dataflash_backend(backend);
         _writeentiremission.set_dataflash_backend(backend);
     }
@@ -103,6 +103,6 @@ private:
     enum ap_var_type type;
 
 
-    DFMessageWriter_WriteSysInfo _writesysinfo;
-    DFMessageWriter_WriteEntireMission _writeentiremission;
+    LoggerMessageWriter_WriteSysInfo _writesysinfo;
+    LoggerMessageWriter_WriteEntireMission _writeentiremission;
 };

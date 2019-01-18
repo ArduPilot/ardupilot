@@ -2,7 +2,7 @@
 
 #if LOGGING_ENABLED == ENABLED
 
-// Code to Write and Read packets from DataFlash log memory
+// Code to Write and Read packets from AP_Logger log memory
 
 // Write an attitude packet
 void Tracker::Log_Write_Attitude()
@@ -10,13 +10,13 @@ void Tracker::Log_Write_Attitude()
     Vector3f targets;
     targets.y = nav_status.pitch * 100.0f;
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
-    DataFlash.Log_Write_Attitude(ahrs, targets);
-    DataFlash.Log_Write_EKF(ahrs);
-    DataFlash.Log_Write_AHRS2(ahrs);
+    logger.Log_Write_Attitude(ahrs, targets);
+    logger.Log_Write_EKF(ahrs);
+    logger.Log_Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    DataFlash.Log_Write_POS(ahrs);
+    logger.Log_Write_POS(ahrs);
 }
 
 struct PACKED log_Vehicle_Baro {
@@ -35,7 +35,7 @@ void Tracker::Log_Write_Vehicle_Baro(float pressure, float altitude)
         press           : pressure,
         alt_diff        : altitude
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Vehicle_Pos {
@@ -62,11 +62,11 @@ void Tracker::Log_Write_Vehicle_Pos(int32_t lat, int32_t lng, int32_t alt, const
         vehicle_vel_y   : vel.y,
         vehicle_vel_z   : vel.z,
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // type and unit information can be found in
-// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
 const struct LogStructure Tracker::log_structure[] = {
     LOG_COMMON_STRUCTURES,
@@ -78,13 +78,13 @@ const struct LogStructure Tracker::log_structure[] = {
 
 void Tracker::Log_Write_Vehicle_Startup_Messages()
 {
-    DataFlash.Log_Write_Mode(control_mode, MODE_REASON_INITIALISED);
-    gps.Write_DataFlash_Log_Startup_messages();
+    logger.Log_Write_Mode(control_mode, MODE_REASON_INITIALISED);
+    gps.Write_AP_Logger_Log_Startup_messages();
 }
 
 void Tracker::log_init(void)
 {
-    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
+    logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
 #else // LOGGING_ENABLED

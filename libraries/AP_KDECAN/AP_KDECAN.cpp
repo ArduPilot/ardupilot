@@ -600,7 +600,7 @@ void AP_KDECAN::update()
         debug_can(2, "KDECAN: failed to get PWM semaphore on write\n\r");
     }
 
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
 
     if (df == nullptr || !df->should_log(0xFFFFFFFF)) {
         return;

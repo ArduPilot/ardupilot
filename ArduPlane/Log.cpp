@@ -21,31 +21,31 @@ void Plane::Log_Write_Attitude(void)
         // we need the attitude targets from the AC_AttitudeControl controller, as they
         // account for the acceleration limits
         targets = quadplane.attitude_control->get_att_target_euler_cd();
-        DataFlash.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
+        logger.Log_Write_AttitudeView(*quadplane.ahrs_view, targets);
     } else {
-        DataFlash.Log_Write_Attitude(ahrs, targets);
+        logger.Log_Write_Attitude(ahrs, targets);
     }
     if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
         // log quadplane PIDs separately from fixed wing PIDs
-        DataFlash.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        DataFlash.Log_Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+        logger.Log_Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
+        logger.Log_Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
+        logger.Log_Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
+        logger.Log_Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
     }
 
-    DataFlash.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
-    DataFlash.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    logger.Log_Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
+    logger.Log_Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
+    logger.Log_Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
+    logger.Log_Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
 
 #if AP_AHRS_NAVEKF_AVAILABLE
-    DataFlash.Log_Write_EKF(ahrs);
-    DataFlash.Log_Write_AHRS2(ahrs);
+    logger.Log_Write_EKF(ahrs);
+    logger.Log_Write_AHRS2(ahrs);
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    DataFlash.Log_Write_POS(ahrs);
+    logger.Log_Write_POS(ahrs);
 }
 
 // do logging at loop rate
@@ -72,7 +72,7 @@ void Plane::Log_Write_Startup(uint8_t type)
         startup_type    : type,
         command_total   : mission.num_commands()
     };
-    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+    logger.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Control_Tuning {
@@ -106,7 +106,7 @@ void Plane::Log_Write_Control_Tuning()
         throttle_dem    : (int16_t)SpdHgt_Controller->get_throttle_demand(),
         airspeed_estimate : est_airspeed
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Nav_Tuning {
@@ -143,7 +143,7 @@ void Plane::Log_Write_Nav_Tuning()
         target_alt          : next_WP_loc.alt,
         target_airspeed     : target_airspeed_cm,
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Status {
@@ -174,7 +174,7 @@ void Plane::Log_Write_Status()
         ,impact      : crash_state.impact_detected
         };
 
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Sonar {
@@ -202,9 +202,9 @@ void Plane::Log_Write_Sonar()
         count       : rangefinder_state.in_range_count,
         correction  : rangefinder_state.correction
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 
-    DataFlash.Log_Write_RFND(rangefinder);
+    logger.Log_Write_RFND(rangefinder);
 }
 
 struct PACKED log_Arm_Disarm {
@@ -221,7 +221,7 @@ void Plane::Log_Arm_Disarm() {
         arm_state               : arming.is_armed(),
         arm_checks              : arming.get_enabled_checks()      
     };
-    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+    logger.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 
@@ -247,21 +247,21 @@ void Plane::Log_Write_AETR()
         ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
         };
 
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 void Plane::Log_Write_RC(void)
 {
-    DataFlash.Log_Write_RCIN();
-    DataFlash.Log_Write_RCOUT();
+    logger.Log_Write_RCIN();
+    logger.Log_Write_RCOUT();
     if (rssi.enabled()) {
-        DataFlash.Log_Write_RSSI(rssi);
+        logger.Log_Write_RSSI(rssi);
     }
     Log_Write_AETR();
 }
 
 // type and unit information can be found in
-// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
@@ -297,12 +297,12 @@ const struct LogStructure Plane::log_structure[] = {
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
-    // only 200(?) bytes are guaranteed by DataFlash
+    // only 200(?) bytes are guaranteed by AP_Logger
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
-    DataFlash.Log_Write_Rally(rally);
+    logger.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Log_Write_Rally(rally);
     ahrs.Log_Write_Home_And_Origin();
-    gps.Write_DataFlash_Log_Startup_messages();
+    gps.Write_AP_Logger_Log_Startup_messages();
 }
 
 /*
@@ -310,7 +310,7 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
  */
 void Plane::log_init(void)
 {
-    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
+    logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
 #else // LOGGING_ENABLED

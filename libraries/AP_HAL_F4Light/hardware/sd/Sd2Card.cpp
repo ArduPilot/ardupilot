@@ -247,13 +247,13 @@ uint8_t Sd2Card::init(AP_HAL::OwnPtr<F4Light::SPIDevice> spi) {
     GPIO::_write(DF_RESET,1);
 
     if (!_spi) {
-        printf("DataFlash SPIDeviceDriver not found\n");
+        printf("AP_Logger SPIDeviceDriver not found\n");
         return false;
     }
 
     _spi_sem = _spi->get_semaphore();
     if (!_spi_sem) {
-        printf("DataFlash SPIDeviceDriver semaphore is null\n");
+        printf("AP_Logger SPIDeviceDriver semaphore is null\n");
         return false;
     }
 
@@ -270,8 +270,8 @@ uint8_t Sd2Card::init(AP_HAL::OwnPtr<F4Light::SPIDevice> spi) {
     DSTATUS ret;
     ret = disk_initialize(0);    
 
-    printf("\nDataFlash initialize: status %d size %ldMb\n", ret, sectorCount()/2048UL);
-    gcs().send_text(MAV_SEVERITY_INFO, "\nDataFlash initialize: status %d size %ldMb\n", ret, sectorCount()/2048UL);
+    printf("\nAP_Logger initialize: status %d size %ldMb\n", ret, sectorCount()/2048UL);
+    gcs().send_text(MAV_SEVERITY_INFO, "\nAP_Logger initialize: status %d size %ldMb\n", ret, sectorCount()/2048UL);
 
     return ret == RES_OK;
 }

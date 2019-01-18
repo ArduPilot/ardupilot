@@ -36,7 +36,7 @@ using namespace F4Light;
 #endif
 
 class AuxiliaryBus;
-class DataFlash_Class;
+class AP_Logger;
 
 class AP_InertialSensor_Backend
 {

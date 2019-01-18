@@ -25,7 +25,7 @@
 #endif
 
 #include "LogReader.h"
-#include "DataFlashFileReader.h"
+#include "AP_LoggerFileReader.h"
 #include "Replay.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -74,8 +74,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     GOBJECT(compass, "COMPASS_", Compass),
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(dataflash, "LOG", DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(dataflash, "LOG", AP_Logger),
     
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
@@ -326,7 +326,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
     }
 }
 
-class IMUCounter : public DataFlashFileReader {
+class IMUCounter : public AP_LoggerFileReader {
 public:
     IMUCounter() {}
     bool handle_log_format_msg(const struct log_Format &f);
