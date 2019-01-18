@@ -76,6 +76,7 @@ void SLCANRouter::timer()
     }
     if (AP_HAL::millis() - _last_active_time > (_slcan_rt_timeout * 1000) && _slcan_rt_timeout != 0) {
         chSysLock();
+        _port->lock_port(0, 0);
         _thread_suspended = true;
         chSysUnlock();
     }
@@ -113,7 +114,6 @@ void SLCANRouter::slcan2can_router_trampoline(void)
         chSysLock();
         _s2c_thd_ref = nullptr;        
         if (_thread_suspended) {
-            _port->lock_port(0, 0);
             chThdSuspendS(&_s2c_thd_ref);
         }
         chSysUnlock();
@@ -134,7 +134,6 @@ void SLCANRouter::can2slcan_router_trampoline(void)
         chSysLock();
         _c2s_thd_ref = nullptr;
         if (_thread_suspended) {
-            _port->lock_port(0, 0);
             chThdSuspendS(&_c2s_thd_ref);
         }
         chSysUnlock();
