@@ -70,7 +70,7 @@ AP_KDECAN *AP_KDECAN::get_kdecan(uint8_t driver_index)
     return static_cast<AP_KDECAN*>(AP::can().get_driver(driver_index));
 }
 
-void AP_KDECAN::init(uint8_t driver_index)
+void AP_KDECAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
 
