@@ -49,6 +49,10 @@ extern const AP_HAL::HAL& hal;
 #define MAX_LOG_FILES 500U
 #define DATAFLASH_PAGE_SIZE 1024UL
 
+#ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
+#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
+#endif
+
 /*
   constructor
  */
@@ -60,28 +64,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
     _read_fd(-1),
     _log_directory(log_directory),
     _writebuf(0),
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // V1 gets IO errors with larger than 512 byte writes
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V45)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRHERO_V10)
-    _writebuf_chunk(512),
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54)
-    _writebuf_chunk(512),
-#else
-    _writebuf_chunk(4096),
-#endif
+    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE),
     _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
     _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
     _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
@@ -1006,7 +989,7 @@ void AP_Logger_File::_io_timer(void)
 
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
-        // be kind to the FAT PX4 filesystem
+        // be kind to the filesystem layer
         nbytes = _writebuf_chunk;
     }
 
