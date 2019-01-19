@@ -791,11 +791,6 @@ private:
     AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // the crc of the last created PX4Mixer
-    int32_t last_mixer_crc = -1;
-#endif // CONFIG_HAL_BOARD
 
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
@@ -927,7 +922,6 @@ private:
     bool mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel);
     bool mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
     bool mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan);
-    bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out_main();

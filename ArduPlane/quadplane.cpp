@@ -631,11 +631,6 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_failsafe_pwm(func, thr_min_pwm);
     }
 
-#if HAVE_PX4_MIXER
-    // redo failsafe mixing on px4
-    plane.setup_failsafe_mixing();
-#endif
-    
     transition_state = TRANSITION_DONE;
 
     if (tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
