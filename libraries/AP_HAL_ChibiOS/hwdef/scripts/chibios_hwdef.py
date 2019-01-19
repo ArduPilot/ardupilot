@@ -1166,24 +1166,10 @@ def write_ROMFS(outdir):
         romfs_list.append((k, romfs[k]))
     env_vars['ROMFS_FILES'] = romfs_list
 
-def write_prototype_file():
-    '''write the prototype file for apj generation'''
-    pf = open(os.path.join(outdir, "apj.prototype"), "w")
-    pf.write('''{
-    "board_id": %s, 
-    "magic": "PX4FWv1", 
-    "description": "Firmware for the %s board", 
-    "image": "", 
-    "build_time": 0, 
-    "summary": "PX4FMUv3",
-    "version": "0.1",
-    "image_size": 0,
-    "git_identity": "",
-    "board_revision": 0
-}
-''' % (get_config('APJ_BOARD_ID'),
-       get_config('APJ_BOARD_TYPE', default=mcu_type)))
-
+def setup_apj_IDs():
+    '''setup the APJ board IDs'''
+    env_vars['APJ_BOARD_ID'] = get_config('APJ_BOARD_ID')
+    env_vars['APJ_BOARD_TYPE'] = get_config('APJ_BOARD_TYPE', default=mcu_type)
 
 def write_peripheral_enable(f):
     '''write peripheral enable lines'''
@@ -1240,7 +1226,7 @@ def write_hwdef_header(outfilename):
     write_GPIO_config(f)
 
     write_peripheral_enable(f)
-    write_prototype_file()
+    setup_apj_IDs()
 
     dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                   dma_exclude=get_dma_exclude(periph_list),
