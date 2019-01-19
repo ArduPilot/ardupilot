@@ -99,16 +99,16 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     AP_GROUPINFO("COL_CTRL_DIR2", 20, AP_MotorsHeli_Dual, _swash2_coll_dir, (int8_t)COLLECTIVE_DIRECTION_NORMAL),
 
     // @Param: SWASH1_TYPE
-    // @DisplayName: Swash Type for swashplate 1
-    // @Description: Swash Type Setting
-    // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
+    // @DisplayName: Swashplate Type for swashplate 1
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic, 1:H1 non-CPPM, 2:H3_140, 3:H3_120, 4:H4_90, 5:H4_45
     // @User: Standard
     AP_GROUPINFO("SWASH1_TYPE", 21, AP_MotorsHeli_Dual, _swashplate1_type, (int8_t)SWASHPLATE_TYPE_H3),
 
     // @Param: SWASH2_TYPE
-    // @DisplayName: Swash Type for swashplate 2
-    // @Description: Swash Type Setting
-    // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
+    // @DisplayName: Swashplate Type for swashplate 2
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic, 1:H1 non-CPPM, 2:H3_140, 3:H3_120, 4:H4_90, 5:H4_45
     // @User: Standard
     AP_GROUPINFO("SWASH2_TYPE", 22, AP_MotorsHeli_Dual, _swashplate2_type, (int8_t)SWASHPLATE_TYPE_H3),
 
