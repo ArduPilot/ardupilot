@@ -28,9 +28,6 @@ extern const AP_HAL::HAL& hal;
 #ifdef HAL_SERIAL5_PROTOCOL
 #define SERIAL5_PROTOCOL HAL_SERIAL5_PROTOCOL
 #define SERIAL5_BAUD HAL_SERIAL5_BAUD
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-#define SERIAL5_PROTOCOL SerialProtocol_MAVLink
-#define SERIAL5_BAUD 921600
 #else
 #define SERIAL5_PROTOCOL SerialProtocol_None
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
@@ -272,13 +269,6 @@ void AP_SerialManager::init()
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
-        if (i == 5 && state[i].protocol != SerialProtocol_None) {
-            // tell nsh to exit to free up this uart
-            g_nsh_should_exit = true;
-        }
-#endif
-        
         if (state[i].uart != nullptr) {
 
             // see if special options have been requested
@@ -459,8 +449,9 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
 }
 
 /*
- *  map from a 16 bit EEPROM baud rate to a real baud rate.
- *  For PX4 we can do 1.5MBit, although 921600 is more reliable.
+ *  map from a 16 bit EEPROM baud rate to a real baud rate.  For
+ *  stm32-based boards we can do 1.5MBit, although 921600 is more
+ *  reliable.
  */
 uint32_t AP_SerialManager::map_baudrate(int32_t rate) const
 {
