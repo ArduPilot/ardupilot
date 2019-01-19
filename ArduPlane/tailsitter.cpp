@@ -141,6 +141,7 @@ void QuadPlane::tailsitter_output(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
 
+
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
         RC_Channels::get_radio_in(tailsitter.input_mask_chan-1) > 1700) {

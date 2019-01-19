@@ -221,7 +221,7 @@ void QuadPlane::tiltrotor_update(void)
   transitioning to fixed wing flight, in order to gain airspeed,
   whereas when transitioning to VTOL flight we want to lean to towards
   lower fwd throttle. So we raise the throttle on the tilted motors
-  when transitioning to fixed wing, and lower throttle on tilted
+  when transitioning to fixed wing, and lower throttle on non-tilted
   motors when transitioning to VTOL
  */
 void QuadPlane::tilt_compensate_down(float *thrust, uint8_t num_motors)
