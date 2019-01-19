@@ -33,7 +33,7 @@ public:
     static AP_ToshibaCAN *get_tcan(uint8_t driver_index);
 
     // initialise ToshibaCAN bus
-    void init(uint8_t driver_index) override;
+    void init(uint8_t driver_index, bool enable_filters) override;
 
     // called from SRV_Channels
     void update();
