@@ -34,9 +34,9 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO),
 
     // @Param: SWASH_TYPE
-    // @DisplayName: Swash Type
-    // @Description: Swash Type Setting
-    // @Values: 0:H3 CCPM Adjustable, 1:H1 Straight Swash, 2:H3_140 CCPM
+    // @DisplayName: Swashplate Type
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Values: 0:H3 Generic, 1:H1 non-CPPM, 2:H3_140, 3:H3_120, 4:H4_90, 5:H4_45
     // @User: Standard
     AP_GROUPINFO("SWASH_TYPE", 5, AP_MotorsHeli_Single, _swashplate_type, (int8_t)SWASHPLATE_TYPE_H3),
 
