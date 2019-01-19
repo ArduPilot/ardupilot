@@ -40,6 +40,10 @@
 
 #pragma once
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
+
 #include <uavcan_stm32/build_config.hpp>
 
 #include <uavcan/uavcan.hpp>
@@ -322,3 +326,4 @@ constexpr unsigned long FMR_FINIT =           (1U << 0); /* Bit 0:  Filter Init 
 #if UAVCAN_CPP_VERSION < UAVCAN_CPP11
 # undef constexpr
 #endif
+#endif //HAL_WITH_UAVCAN

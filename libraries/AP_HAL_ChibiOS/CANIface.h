@@ -40,6 +40,10 @@
 
 #pragma once
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
+
 #include "CANThread.h"
 #include "CANIface.h"
 #include "bxcan.hpp"
@@ -440,3 +444,5 @@ public:
 }
 
 #include "CANSerialRouter.h"
+
+#endif //HAL_WITH_UAVCAN

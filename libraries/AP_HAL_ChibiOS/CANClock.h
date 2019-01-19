@@ -40,6 +40,9 @@
 
 #pragma once
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
 #include <uavcan/driver/system_clock.hpp>
 
 namespace ChibiOS_CAN {
@@ -159,3 +162,4 @@ public:
 };
 
 }
+#endif //HAL_WITH_UAVCAN

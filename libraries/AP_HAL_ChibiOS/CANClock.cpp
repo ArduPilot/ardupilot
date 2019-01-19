@@ -38,6 +38,9 @@
  * Modified for Ardupilot by Siddharth Bharat Purohit
  */
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
 #include "CANClock.h"
 #include "CANThread.h"
 #include "CANInternal.h"
@@ -406,3 +409,4 @@ UAVCAN_STM32_IRQ_HANDLER(TIMX_IRQHandler)
 }
 
 #endif
+#endif //HAL_WITH_UAVCAN

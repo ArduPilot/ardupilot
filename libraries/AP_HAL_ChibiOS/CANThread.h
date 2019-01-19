@@ -40,6 +40,10 @@
 
 #pragma once
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
+
 # include <ch.hpp>
 
 #include <uavcan/uavcan.hpp>
@@ -89,3 +93,5 @@ public:
 };
 
 }
+
+#endif //HAL_WITH_UAVCAN
