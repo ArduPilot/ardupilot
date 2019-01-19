@@ -40,6 +40,10 @@
 
 #pragma once
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
+
 #include <hal.h>
 #include <ch.h>
 /**
@@ -97,3 +101,5 @@ namespace clock {
 uint64_t getUtcUSecFromCanInterrupt();
 }
 }
+
+#endif //HAL_WITH_UAVCAN

@@ -38,6 +38,9 @@
  * Code by Siddharth Bharat Purohit
  */
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
 #include <cassert>
 #include <cstring>
 #include "CANIface.h"
@@ -1242,3 +1245,5 @@ UAVCAN_STM32_IRQ_HANDLER(CAN2_RX1_IRQHandler)
 # endif
 
 } // extern "C"
+
+#endif //HAL_WITH_UAVCAN

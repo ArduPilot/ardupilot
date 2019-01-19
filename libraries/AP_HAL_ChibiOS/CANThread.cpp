@@ -38,6 +38,9 @@
  * Modified for Ardupilot by Siddharth Bharat Purohit
  */
 
+#include "AP_HAL_ChibiOS.h"
+
+#if HAL_WITH_UAVCAN
 #include "CANThread.h"
 #include "CANClock.h"
 #include "CANIface.h"
@@ -115,3 +118,5 @@ void Mutex::unlock()
 }
 
 }
+
+#endif //HAL_WITH_UAVCAN
