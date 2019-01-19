@@ -65,7 +65,7 @@ AP_ToshibaCAN *AP_ToshibaCAN::get_tcan(uint8_t driver_index)
 }
 
 // initialise ToshibaCAN bus
-void AP_ToshibaCAN::init(uint8_t driver_index)
+void AP_ToshibaCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
 
