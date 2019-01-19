@@ -77,6 +77,7 @@ void SLCANRouter::timer()
     if (AP_HAL::millis() - _last_active_time > (_slcan_rt_timeout * 1000) && _slcan_rt_timeout != 0) {
         chSysLock();
         _port->lock_port(0, 0);
+        _port->flush();
         _thread_suspended = true;
         chSysUnlock();
     }
@@ -115,6 +116,7 @@ void SLCANRouter::slcan2can_router_trampoline(void)
         _s2c_thd_ref = nullptr;        
         if (_thread_suspended) {
             chThdSuspendS(&_s2c_thd_ref);
+            _port->flush();
         }
         chSysUnlock();
         _slcan_if.reader();
