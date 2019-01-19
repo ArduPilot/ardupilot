@@ -38,6 +38,8 @@ protected:
 
     void handle_mount_message(const mavlink_message_t* msg) override;
 
+    void send_attitude() const override;
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

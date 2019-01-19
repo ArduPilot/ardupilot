@@ -420,7 +420,8 @@ void Copter::set_default_frame_class()
 {
     if (FRAME_CONFIG == HELI_FRAME &&
         g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
-        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD) {
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_MONO) {
         g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
     }
 }
@@ -441,6 +442,7 @@ MAV_TYPE Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_HELI:
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
+        case AP_Motors::MOTOR_FRAME_HELI_MONO:
             return MAV_TYPE_HELICOPTER;
         case AP_Motors::MOTOR_FRAME_TRI:
             return MAV_TYPE_TRICOPTER;
@@ -475,6 +477,8 @@ const char* Copter::get_frame_string()
             return "HELI_DUAL";
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
             return "HELI_QUAD";
+        case AP_Motors::MOTOR_FRAME_HELI_MONO:
+            return "HELI_MONO";
         case AP_Motors::MOTOR_FRAME_TRI:
             return "TRI";
         case AP_Motors::MOTOR_FRAME_SINGLE:
@@ -496,6 +500,20 @@ const char* Copter::get_frame_string()
  */
 void Copter::allocate_motors(void)
 {
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+        default:
+            ahrs_view = ahrs.create_view(ROTATION_NONE);
+            break;
+#if FRAME_CONFIG == HELI_FRAME
+        case AP_Motors::MOTOR_FRAME_HELI_MONO:
+            ahrs_view = ahrs.create_view(ROTATION_NONE, 0.0f, true);
+            break;
+#endif
+    }
+    if (ahrs_view == nullptr) {
+        AP_HAL::panic("Unable to allocate AP_AHRS_View");
+    }
+
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -537,7 +555,13 @@ void Copter::allocate_motors(void)
             motors_var_info = AP_MotorsHeli_Quad::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
-            
+
+        case AP_Motors::MOTOR_FRAME_HELI_MONO:
+            motors = new AP_MotorsHeli_Mono(*ahrs_view, copter.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsHeli_Mono::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
+            break;
+
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
             motors = new AP_MotorsHeli_Single(copter.scheduler.get_loop_rate_hz());
@@ -551,10 +575,6 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
-    ahrs_view = ahrs.create_view(ROTATION_NONE);
-    if (ahrs_view == nullptr) {
-        AP_HAL::panic("Unable to allocate AP_AHRS_View");
-    }
 
     const struct AP_Param::GroupInfo *ac_var_info;
 
