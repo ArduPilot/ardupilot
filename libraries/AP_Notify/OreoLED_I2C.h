@@ -88,7 +88,7 @@ private:
         OREOLED_PARAM_ENUM_COUNT
     };
 
-    // update_timer - called by scheduler and updates PX4 driver with commands
+    // update_timer - called by scheduler and updates driver with commands
     void update_timer(void);
 
     // set_rgb - set color as a combination of red, green and blue values for one or all LEDs, pattern defaults to solid color
