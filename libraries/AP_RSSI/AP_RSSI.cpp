@@ -21,12 +21,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#ifdef CONFIG_ARCH_BOARD_PX4FMU_V4
-#define BOARD_RSSI_DEFAULT 1
-#define BOARD_RSSI_ANA_PIN 11
-#define BOARD_RSSI_ANA_PIN_HIGH 3.3f
-#endif
-
 #ifndef BOARD_RSSI_DEFAULT
 #define BOARD_RSSI_DEFAULT 0
 #endif
