@@ -43,7 +43,7 @@ public:
     // Return KDECAN from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_KDECAN *get_kdecan(uint8_t driver_index);
 
-    void init(uint8_t driver_index) override;
+    void init(uint8_t driver_index, bool enable_filters) override;
 
     // called from SRV_Channels
     void update();
