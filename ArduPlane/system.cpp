@@ -51,20 +51,6 @@ void Plane::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     set_control_channels();
-    
-#if HAVE_PX4_MIXER
-    if (!quadplane.enable) {
-        // this must be before BoardConfig.init() so if
-        // BRD_SAFETYENABLE==0 then we don't have safety off yet. For
-        // quadplanes we wait till AP_Motors is initialised
-        for (uint8_t tries=0; tries<10; tries++) {
-            if (setup_failsafe_mixing()) {
-                break;
-            }
-            hal.scheduler->delay(10);
-        }
-    }
-#endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
