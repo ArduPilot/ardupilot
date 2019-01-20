@@ -769,7 +769,14 @@ void Plane::servos_output(void)
     if (g2.manual_rc_mask.get() != 0 && control_mode == MANUAL) {
         SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
     }
-    
+
+    // check for e - stop
+    if (plane.motor_emergency_stop) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
+    }
+
     SRV_Channels::calc_pwm();
 
     SRV_Channels::output_ch_all();
