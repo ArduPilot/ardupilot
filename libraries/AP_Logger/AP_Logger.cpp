@@ -3,27 +3,30 @@
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
-#include "AP_Logger_File_sd.h"
 #include "AP_Logger_SITL.h"
 #include "AP_Logger_DataFlash.h"
 #include "AP_Logger_MAVLink.h"
 #include <GCS_MAVLink/GCS.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-#include "AP_Logger_Revo.h"
-#endif
-
 
 AP_Logger *AP_Logger::_instance;
 
 extern const AP_HAL::HAL& hal;
 
-#ifndef HAL_DATAFLASH_FILE_BUFSIZE 
-#define HAL_DATAFLASH_FILE_BUFSIZE  16
+#ifndef HAL_LOGGING_FILE_BUFSIZE
+#define HAL_LOGGING_FILE_BUFSIZE  16
 #endif 
 
-#ifndef HAL_DATAFLASH_MAV_BUFSIZE 
-#define HAL_DATAFLASH_MAV_BUFSIZE  8
+#ifndef HAL_LOGGING_MAV_BUFSIZE
+#define HAL_LOGGING_MAV_BUFSIZE  8
 #endif 
+
+#ifndef HAL_LOGGING_BACKENDS_DEFAULT
+# ifdef HAL_LOGGING_DATAFLASH
+#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_BLOCK
+# else
+#  define HAL_LOGGING_BACKENDS_DEFAULT DATAFLASH_BACKEND_FILE
+# endif
+#endif
 
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
@@ -32,13 +35,13 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
-    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       DATAFLASH_BACKEND_FILE),
+    AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       HAL_LOGGING_BACKENDS_DEFAULT),
 
     // @Param: _FILE_BUFSIZE
     // @DisplayName: Maximum AP_Logger File Backend buffer size (in kilobytes)
     // @Description: The AP_Logger_File backend uses a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
     // @User: Standard
-    AP_GROUPINFO("_FILE_BUFSIZE",  1, AP_Logger, _params.file_bufsize,       HAL_DATAFLASH_FILE_BUFSIZE),
+    AP_GROUPINFO("_FILE_BUFSIZE",  1, AP_Logger, _params.file_bufsize,       HAL_LOGGING_FILE_BUFSIZE),
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
@@ -66,7 +69,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Maximum amount of memory to allocate to AP_Logger-over-mavlink
     // @User: Advanced
     // @Units: kB
-    AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_DATAFLASH_MAV_BUFSIZE),
+    AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_LOGGING_MAV_BUFSIZE),
 
     AP_GROUPEND
 };

@@ -14,10 +14,7 @@
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
-#include "AP_Logger_File_sd.h"
 #include "AP_Logger_MAVLink.h"
-#include "AP_Logger_Revo.h"
-#include "AP_Logger_File_sd.h"
 #include "LoggerMessageWriter.h"
 
 extern const AP_HAL::HAL& hal;
