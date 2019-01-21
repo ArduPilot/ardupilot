@@ -91,7 +91,7 @@ public:
     
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
-    
+
 protected:
 
     // run spool logic
@@ -117,10 +117,10 @@ protected:
 
     // convert actuator output (0~1) range to pwm range
     int16_t             output_to_pwm(float _actuator_output);
-    
+
     // converts desired thrust to linearized actuator output in a range of 0~1
     float               thrust_to_actuator(float thrust_in);
-    
+
     // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
     void                set_actuator_with_slew(float& actuator_output, float input);
 
@@ -170,7 +170,7 @@ protected:
 
     // scaling for booster motor throttle
     AP_Float            _boost_scale;
-    
+
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
     int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
@@ -189,7 +189,7 @@ protected:
 
     // vehicle supplied callback for thrust compensation. Used for tiltrotors and tiltwings
     thrust_compensation_fn_t _thrust_compensation_callback;
-    
+
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
 };
