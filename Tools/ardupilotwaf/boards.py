@@ -338,6 +338,9 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
+        if cfg.options.sitl_flash_storage:
+            env.CXXFLAGS += ['-DSTORAGE_USE_FLASH=1']
+
         if cfg.env.DEST_OS == 'cygwin':
             env.LIB += [
                 'winmm',
