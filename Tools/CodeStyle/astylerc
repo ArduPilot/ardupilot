@@ -7,4 +7,10 @@ min-conditional-indent=0
 suffix=none
 lineend=linux
 pad-header
-
+pad-oper
+pad-comma
+add-braces
+convert-tabs
+keep-one-line-blocks
+keep-one-line-statements
+attach-inlines
