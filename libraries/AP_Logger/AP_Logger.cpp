@@ -31,8 +31,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
-    // @Description: 0 for None, 1 for File, 2 for dataflash mavlink, 3 for both file and dataflash
-    // @Values: 0:None,1:File,2:MAVLink,3:BothFileAndMAVLink
+    // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       HAL_LOGGING_BACKENDS_DEFAULT),
