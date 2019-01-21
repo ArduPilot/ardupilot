@@ -90,10 +90,10 @@ void AP_MotorsTailsitter::output_to_motors()
             SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, get_pwm_output_min());
             break;
         case GROUND_IDLE:
-            throttle_pwm = output_to_pwm(actuator_spin_up());
-            set_actuator_with_slew(_actuator[1], actuator_spin_up());
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(actuator_spin_up()));
-            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(actuator_spin_up()));
+            throttle_pwm = output_to_pwm(actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, output_to_pwm(actuator_spin_up_to_ground_idle()));
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, output_to_pwm(actuator_spin_up_to_ground_idle()));
             break;
         case SPOOL_UP:
         case THROTTLE_UNLIMITED:

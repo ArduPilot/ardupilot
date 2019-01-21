@@ -87,9 +87,9 @@ void AP_MotorsTri::output_to_motors()
             break;
         case GROUND_IDLE:
             // sends output to motors when armed but not flying
-            set_actuator_with_slew(_actuator[1], actuator_spin_up());
-            set_actuator_with_slew(_actuator[2], actuator_spin_up());
-            set_actuator_with_slew(_actuator[4], actuator_spin_up());
+            set_actuator_with_slew(_actuator[1], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[2], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[4], actuator_spin_up_to_ground_idle());
             rc_write(AP_MOTORS_MOT_1, output_to_pwm(_actuator[1]));
             rc_write(AP_MOTORS_MOT_2, output_to_pwm(_actuator[2]));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[4]));
