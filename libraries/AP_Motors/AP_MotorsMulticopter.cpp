@@ -193,7 +193,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("SLEW_UP_TIME",   40, AP_MotorsMulticopter,  _slew_up_time, AP_MOTORS_SLEW_TIME_DEFAULT),
-    
+
     // @Param: SLEW_DN_TIME
     // @DisplayName: Output slew time for decreasing throttle
     // @Description: Time in seconds to slew output from full to zero.  For medium size copter such as a Solo, a value of 0.275 is a good starting point.  This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
@@ -416,17 +416,17 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
     MOT_SLEW_UP_TIME and MOT_SLEW_DN_TIME are constrained to 0.0~0.5 for sanity.
     If spool mode is shutdown, no slew limit is applied to allow immediate disarming of motors.
     */
-    
+
     // Output limits with no slew time applied
     float output_slew_limit_up = 1.0f;
     float output_slew_limit_dn = 0.0f;
-    
+
     // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_up_time)) {
         float output_delta_up_max = 1.0f/(constrain_float(_slew_up_time,0.0f,0.5f) * _loop_rate);
         output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
     }
-    
+
     // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_dn_time)) {
         float output_delta_dn_max = 1.0f/(constrain_float(_slew_dn_time,0.0f,0.5f) * _loop_rate);
