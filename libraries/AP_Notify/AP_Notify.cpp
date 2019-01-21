@@ -79,10 +79,6 @@ AP_Notify *AP_Notify::_instance;
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
 
-// F4Light
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_External)
-
 // All other builds
 #else
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
@@ -293,9 +289,6 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new AP_ToneAlarm());
   #endif
 
-// F4Light noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    ADD_BACKEND(new Buzzer());
 #endif // Noise makers
 
 }
