@@ -281,7 +281,7 @@ protected:
     AC_Avoid                *_avoid = nullptr;
 
     // parameters
-    AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
+    AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
@@ -303,6 +303,7 @@ protected:
     float       _track_speed;           // speed in cm/s along track
     float       _track_leash_length;    // leash length along track
     float       _slow_down_dist;        // vehicle should begin to slow down once it is within this distance from the destination
+    float       _max_wp_speed_cms;      // maximum horizontal speed in cm/s used during missions
 
     // spline variables
     float       _spline_time;           // current spline time between origin and destination
