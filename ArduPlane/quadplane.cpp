@@ -1423,7 +1423,7 @@ void QuadPlane::update_transition(void)
         // millisecond. Assume we want to get to the transition angle
         // in half the transition time
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
-        uint32_t dt = now - transition_low_airspeed_ms;
+        uint32_t dt = now - transition_start_ms;
         plane.nav_pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
         plane.nav_roll_cd = 0;
         check_attitude_relax();
