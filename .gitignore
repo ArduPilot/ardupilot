@@ -98,3 +98,10 @@ config.mk
 *.apj
 .gdbinit
 /.vscode
+Parameters.html
+Parameters.md
+Parameters.rst
+Parameters.wiki
+apm.pdef.xml
+parameters.edn
+

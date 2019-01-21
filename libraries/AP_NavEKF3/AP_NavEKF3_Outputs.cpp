@@ -320,8 +320,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
     if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
         loc.alt = origin.alt - posD*100;
-        loc.flags.relative_alt = 0;
-        loc.flags.terrain_alt = 0;
+        loc.relative_alt = 0;
+        loc.terrain_alt = 0;
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
@@ -350,8 +350,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
         if ((gps.status() >= AP_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location();
             loc = gpsloc;
-            loc.flags.relative_alt = 0;
-            loc.flags.terrain_alt = 0;
+            loc.relative_alt = 0;
+            loc.terrain_alt = 0;
         }
         return false;
     }

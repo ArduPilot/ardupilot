@@ -659,7 +659,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     if (!_ahrs.get_velocity_NED(velocity)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
         if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
-            if (labs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
+            if (fabsf(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
                 speed = AP::gps().ground_speed();
             } else {
                 speed = -AP::gps().ground_speed();

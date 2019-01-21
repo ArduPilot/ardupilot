@@ -7,6 +7,7 @@ import os
 import pexpect
 
 from apmrover2 import AutoTestRover
+from common import AutoTest
 
 from pymavlink import mavutil
 
@@ -38,76 +39,62 @@ class AutoTestBalanceBot(AutoTestRover):
                                                  params,
                                                  gdbserver,
                                                  **kwargs)
+        self.log_name = "BalanceBot"
+
+    def vehicleinfo_key(self):
+        return "APMrover2"
 
     def init(self):
         if self.frame is None:
             self.frame = 'balancebot'
         super(AutoTestBalanceBot, self).init()
 
-    def drive_mission_balancebot1(self):
-        self.drive_mission(os.path.join(testdir, "balancebot1.txt"))
+    def test_do_set_mode_via_command_long(self):
+        self.do_set_mode_via_command_long("HOLD")
+        self.do_set_mode_via_command_long("MANUAL")
 
-    def autotest(self):
-        """Autotest APMrover2 in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
-        self.progress("Started simulator")
+    def set_rc_default(self):
+        super(AutoTestBalanceBot, self).set_rc_default()
+        self.set_rc(3, 1500)
 
-        self.fail_list = []
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s" %
-                          self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.set_rc(8, 1800)
-            self.progress("Waiting for GPS fix")
-            self.mav.wait_gps_fix()
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
-            self.mavproxy.send('switch 6\n')  # Manual mode
-            self.wait_mode('MANUAL')
+    def tests(self):
+        '''return list of all tests'''
 
-            self.progress("Waiting reading for arm")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+        '''note that while AutoTestBalanceBot inherits from Rover we don't
+inherit Rover's tests!'''
+        ret = AutoTest.tests(self)
 
-            self.run_test("Drive an RTL Mission", self.drive_rtl_mission)
+        ret.extend([
 
-            self.run_test("Drive Mission %s" % "balancebot1.txt",
-                          self.drive_mission_balancebot1)
+            ("DriveRTL",
+             "Drive an RTL Mission",
+             self.drive_rtl_mission),
 
-            self.run_test("Disarm Vehicle", self.disarm_vehicle)
+            ("DriveMission",
+             "Drive Mission %s" % "balancebot1.txt",
+             lambda: self.drive_mission("balancebot1.txt")),
 
-            self.run_test("Get Banner", self.do_get_banner)
+            ("GetBanner", "Get Banner", self.do_get_banner),
 
-            self.run_test("Get Capabilities",
-                          self.do_get_autopilot_capabilities)
+            ("GetCapabilities",
+             "Get Capabilities",
+             self.do_get_autopilot_capabilities),
 
-            self.run_test("Set mode via MAV_COMMAND_DO_SET_MODE",
-                          lambda: self.do_set_mode_via_command_long("HOLD"))
+            ("DO_SET_MODE",
+             "Set mode via MAV_COMMAND_DO_SET_MODE",
+             self.test_do_set_mode_via_command_long),
 
-            self.run_test("Test ServoRelayEvents",
-                          self.test_servorelayevents)
+            ("ServoRelayEvents",
+             "Test ServoRelayEvents",
+             self.test_servorelayevents),
 
-            self.run_test("Download logs", lambda:
-                          self.log_download(
-                              self.buildlogs_path("APMrover2-log.bin")))
-    #        if not drive_left_circuit(self):
-    #            self.progress("Failed left circuit")
-    #            failed = True
-    #        if not drive_RTL(self):
-    #            self.progress("Failed RTL")
-    #            failed = True
+            ("DownLoadLogs", "Download logs", lambda:
+             self.log_download(
+                 self.buildlogs_path("APMrover2-log.bin"),
+                 upload_logs=len(self.fail_list) > 0)),
+            ])
+        return ret
 
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append(("*timeout*", None))
+    def default_mode(self):
+        return 'MANUAL'
 
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED STEPS: %s" % self.fail_list)
-            return False
-        return True

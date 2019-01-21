@@ -154,7 +154,7 @@ void AP_WheelEncoder::init(void)
         return;
     }
     for (uint8_t i=0; i<WHEELENCODER_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         switch ((WheelEncoder_Type)_type[i].get()) {
         case WheelEncoder_TYPE_QUADRATURE:
             drivers[i] = new AP_WheelEncoder_Quadrature(*this, i, state[i]);
@@ -269,7 +269,7 @@ float AP_WheelEncoder::get_rate(uint8_t instance) const
     }
 
     // calculate delta_angle (in radians) per second
-    return M_2PI * (state[instance].dist_count_change / _counts_per_revolution[instance]) / (state[instance].dt_ms / 1000.0f);
+    return M_2PI * (state[instance].dist_count_change / ((float)_counts_per_revolution[instance])) / (state[instance].dt_ms * 1e-3f);
 }
 
 // get the total number of sensor reading from the encoder

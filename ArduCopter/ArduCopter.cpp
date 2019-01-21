@@ -69,7 +69,6 @@
  *
  *  Code commit statistics can be found here: https://github.com/ArduPilot/ardupilot/graphs/contributors
  *  Wiki: http://copter.ardupilot.org/
- *  Requires modified version of Arduino, which can be found here: http://ardupilot.com/downloads/?category=6
  *
  */
 
@@ -87,10 +86,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(throttle_loop,         50,     75),
     SCHED_TASK(update_GPS,            50,    200),
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    SCHED_TASK_CLASS(OpticalFlow,          &copter.optflow,             update,         200, 160),
 #endif
     SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_all,          10,     50),
+    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&copter.g2.rc_channels,      read_aux_all,    10,     50),
     SCHED_TASK(arm_motors_check,      10,     50),
 #if TOY_MODE_ENABLED == ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50),
@@ -136,10 +135,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK(landinggear_update,    10,     75),
     SCHED_TASK(lost_vehicle_check,    10,     50),
-    SCHED_TASK(gcs_update,           400,    180),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, 400, 180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
-    SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    400, 550),
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75),
 #endif
@@ -149,7 +147,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
-    SCHED_TASK_CLASS(DataFlash_Class,      &copter.DataFlash,           periodic_tasks, 400, 300),
+    SCHED_TASK_CLASS(AP_Logger,      &copter.logger,           periodic_tasks, 400, 300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &copter.ins,                 periodic,       400,  50),
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75),
@@ -197,12 +195,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
 };
-
-void Copter::read_aux_all()
-{
-    copter.g2.rc_channels.read_aux_all();
-}
-
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
@@ -320,7 +312,7 @@ void Copter::update_batt_compass(void)
         compass.read();
         // log compass information
         if (should_log(MASK_LOG_COMPASS) && !ahrs.have_ekf_logging()) {
-            DataFlash.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -347,27 +339,27 @@ void Copter::ten_hz_logging_loop()
         Log_Write_MotBatt();
     }
     if (should_log(MASK_LOG_RCIN)) {
-        DataFlash.Log_Write_RCIN();
+        logger.Write_RCIN();
         if (rssi.enabled()) {
-            DataFlash.Log_Write_RSSI(rssi);
+            logger.Write_RSSI(rssi);
         }
     }
     if (should_log(MASK_LOG_RCOUT)) {
-        DataFlash.Log_Write_RCOUT();
+        logger.Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_Vibration();
+        logger.Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
 #if PROXIMITY_ENABLED == ENABLED
-        DataFlash.Log_Write_Proximity(g2.proximity);  // Write proximity sensor distances
+        logger.Write_Proximity(g2.proximity);  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        DataFlash.Log_Write_Beacon(g2.beacon);
+        logger.Write_Beacon(g2.beacon);
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
@@ -390,7 +382,7 @@ void Copter::twentyfive_hz_logging()
 
     // log IMU data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_IMU) && !should_log(MASK_LOG_IMU_RAW)) {
-        DataFlash.Log_Write_IMU();
+        logger.Write_IMU();
     }
 #endif
 
@@ -564,7 +556,7 @@ void Copter::read_AHRS(void)
     //-----------------------------------------------
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before ahrs update
-    gcs_update();
+    gcs().update();
 #endif
 
     // we tell AHRS to skip INS update as we have already done it in fast_loop()
@@ -590,7 +582,7 @@ void Copter::publish_osd_info()
     nav_info.wp_distance = flightmode->wp_distance() * 1.0e-2f;
     nav_info.wp_bearing = flightmode->wp_bearing();
     nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
-    nav_info.wp_number = mission.get_current_nav_index();
+    nav_info.wp_number = mode_auto.mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
 }
 #endif

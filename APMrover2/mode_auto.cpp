@@ -1,16 +1,10 @@
 #include "mode.h"
 #include "Rover.h"
 
-// constructor
-ModeAuto::ModeAuto(ModeRTL& mode_rtl) :
-    _mode_rtl(mode_rtl)
-{
-}
-
 bool ModeAuto::_enter()
 {
     // fail to enter auto if no mission commands
-    if (mission.num_commands() == 0) {
+    if (mission.num_commands() <= 1) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "No Mission. Can't set AUTO.");
         return false;
     }
@@ -50,13 +44,19 @@ void ModeAuto::update()
                 _reached_destination = true;
             }
             // determine if we should keep navigating
-            if (!_reached_destination || (rover.is_boat() && !near_wp)) {
+            if (!_reached_destination) {
                 // continue driving towards destination
                 calc_steering_to_waypoint(_reached_destination ? rover.current_loc : _origin, _destination, _reversed);
-                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, false);
+                calc_throttle(calc_reduced_speed_for_turn_or_distance(_reversed ? -_desired_speed : _desired_speed), true, true);
             } else {
-                // we have reached the destination so stop
-                stop_vehicle();
+                // we have reached the destination so stay here
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
@@ -66,17 +66,28 @@ void ModeAuto::update()
             if (!_reached_heading) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(_desired_speed, true, false);
+                calc_throttle(_desired_speed, true, true);
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
-                stop_vehicle();
+                // we have reached the destination so stay here
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
             }
             break;
         }
 
         case Auto_RTL:
-            _mode_rtl.update();
+            rover.mode_rtl.update();
+            break;
+        
+        case Auto_Loiter:
+            rover.mode_loiter.update();
             break;
     }
 }
@@ -85,7 +96,7 @@ void ModeAuto::update()
 float ModeAuto::get_distance_to_destination() const
 {
     if (_submode == Auto_RTL) {
-        return _mode_rtl.get_distance_to_destination();
+        return rover.mode_rtl.get_distance_to_destination();
     }
     return _distance_to_destination;
 }
@@ -106,7 +117,7 @@ bool ModeAuto::reached_destination()
         return _reached_destination;
     }
     if (_submode == Auto_RTL) {
-        return _mode_rtl.reached_destination();
+        return rover.mode_rtl.reached_destination();
     }
     // we should never reach here but just in case, return true to allow missions to continue
     return true;
@@ -135,7 +146,7 @@ bool ModeAuto::reached_heading()
 // start RTL (within auto)
 void ModeAuto::start_RTL()
 {
-    if (_mode_rtl.enter()) {
+    if (rover.mode_rtl.enter()) {
         _submode = Auto_RTL;
     }
 }
@@ -193,4 +204,13 @@ void ModeAuto::calc_throttle(float target_speed, bool nudge_allowed, bool avoida
         return;
     }
     Mode::calc_throttle(target_speed, nudge_allowed, avoidance_enabled);
+}
+
+bool ModeAuto::start_loiter()
+{
+    if (rover.mode_loiter.enter()) {
+        _submode = Auto_Loiter;
+        return true;
+    }
+    return false;
 }

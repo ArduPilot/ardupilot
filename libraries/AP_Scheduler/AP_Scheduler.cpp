@@ -23,7 +23,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include <stdio.h>
@@ -279,7 +279,7 @@ void AP_Scheduler::update_logging()
         perf_info.update_logging();
     }
     if (_log_performance_bit != (uint32_t)-1 &&
-        DataFlash_Class::instance()->should_log(_log_performance_bit)) {
+        AP::logger().should_log(_log_performance_bit)) {
         Log_Write_Performance();
     }
     perf_info.set_loop_rate(get_loop_rate_hz());
@@ -298,7 +298,7 @@ void AP_Scheduler::Log_Write_Performance()
         mem_avail        : hal.util->available_memory(),
         load             : (uint16_t)(load_average() * 1000)
     };
-    DataFlash_Class::instance()->WriteCriticalBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 namespace AP {

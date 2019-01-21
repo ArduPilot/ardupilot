@@ -6,12 +6,12 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_Int32 log_bitmask;
-DataFlash_Class DataFlash{log_bitmask};
+AP_Logger AP_Logger{log_bitmask};
 
 class SchedTest {
 public:

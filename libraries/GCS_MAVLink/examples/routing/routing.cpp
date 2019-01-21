@@ -20,6 +20,8 @@ const AP_FWVersion AP_FWVersion::fwver
     fw_string: "routing example"
 };
 
+const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+
 class GCS_MAVLINK_routing : public GCS_MAVLINK
 {
 
@@ -28,8 +30,6 @@ public:
 protected:
 
     uint32_t telem_delay() const override { return 0; }
-    AP_Mission *get_mission() override { return nullptr; }
-    AP_Rally *get_rally() const override { return nullptr; }
     uint8_t sysid_my_gcs() const override { return 1; }
     bool set_mode(uint8_t mode) override { return false; };
 

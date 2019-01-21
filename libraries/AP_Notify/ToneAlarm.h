@@ -1,5 +1,5 @@
 /*
- *  ToneAlarm PX4 driver
+ *  ToneAlarm driver
  */
 /*
  *   This program is free software: you can redistribute it and/or modify
@@ -30,10 +30,10 @@ public:
     bool init(void) override;
 
     /// update - updates led according to timed_updated.  Should be called at 50Hz
-    void update();
+    void update() override;
 
     // handle a PLAY_TUNE message
-    void handle_play_tune(mavlink_message_t *msg);
+    void handle_play_tune(mavlink_message_t *msg) override;
 
 private:
     /// play_tune - play one of the pre-defined tunes

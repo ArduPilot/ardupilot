@@ -34,7 +34,7 @@ public:
     Submarine(const char *home_str, const char *frame_str);
 
     /* update model by one time step */
-    void update(const struct sitl_input &input);
+    void update(const struct sitl_input &input) override;
 
     /* static object creator */
     static Aircraft *create(const char *home_str, const char *frame_str) {
@@ -45,9 +45,7 @@ public:
 protected:
     const float water_density = 1023.6; // (kg/m^3) At a temperature of 25 °C, salinity of 35 g/kg and 1 atm pressure
 
-    const class FrameConfig {
-    public:
-        FrameConfig() = default;
+    const struct {
         float length = 0.457; // x direction (meters)
         float width  = 0.338; // y direction (meters)
         float height = 0.254; // z direction (meters)
@@ -55,7 +53,7 @@ protected:
         float net_bouyancy = 2.0; // (N)
 
         float bouyancy_acceleration = GRAVITY_MSS + net_bouyancy/weight;
-    } frame_proprietary;
+    } frame_property;
 
     bool on_ground() const override;
 

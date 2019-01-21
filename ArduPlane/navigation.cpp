@@ -109,11 +109,13 @@ void Plane::calc_airspeed_errors()
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == FLY_BY_WIRE_B || control_mode == CRUISE)) {
-        if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
+        if (g2.flight_options & FlightOptions::CRUISE_TRIM_AIRSPEED) {
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        } else if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
             float control_min = 0.0f;
             float control_mid = 0.0f;
             const float control_max = channel_throttle->get_range();
-            const float control_in = channel_throttle->get_control_in();
+            const float control_in = get_throttle_input();
             switch (channel_throttle->get_type()) {
                 case RC_Channel::RC_CHANNEL_TYPE_ANGLE:
                     control_min = -control_max;
@@ -133,13 +135,23 @@ void Plane::calc_airspeed_errors()
             }
         } else {
             target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
-                                  channel_throttle->get_control_in()) + ((int32_t)aparm.airspeed_min * 100);
+                                  get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-
+    } else if ((control_mode == AUTO) &&
+               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        if (is_positive(land_airspeed)) {
+            target_airspeed_cm = SpdHgt_Controller->get_land_airspeed() * 100;
+        } else {
+            // fallover to normal airspeed
+            target_airspeed_cm = aparm.airspeed_cruise_cm;
+        }
     } else {
         // Normal airspeed target
         target_airspeed_cm = aparm.airspeed_cruise_cm;
@@ -173,19 +185,19 @@ void Plane::calc_airspeed_errors()
 
 void Plane::calc_gndspeed_undershoot()
 {
- 	// Use the component of ground speed in the forward direction
-	// This prevents flyaway if wind takes plane backwards
+    // Use the component of ground speed in the forward direction
+    // This prevents flyaway if wind takes plane backwards
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	    Vector2f gndVel = ahrs.groundspeed_vector();
-		const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-		Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+	      Vector2f gndVel = ahrs.groundspeed_vector();
+        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
         if (!yawVect.is_zero()) {
             yawVect.normalize();
             float gndSpdFwd = yawVect * gndVel;
             groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
     } else {
-    	groundspeed_undershoot = 0;
+        groundspeed_undershoot = 0;
     }
 }
 
@@ -194,7 +206,7 @@ void Plane::update_loiter(uint16_t radius)
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
         radius = (abs(aparm.loiter_radius) <= 1) ? LOITER_RADIUS_DEFAULT : abs(aparm.loiter_radius);
-        if (next_WP_loc.flags.loiter_ccw == 1) {
+        if (next_WP_loc.loiter_ccw == 1) {
             loiter.direction = -1;
         } else {
             loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;

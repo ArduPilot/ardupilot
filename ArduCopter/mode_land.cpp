@@ -27,9 +27,8 @@ bool Copter::ModeLand::init(bool ignore_checks)
         pos_control->set_alt_target_to_current_alt();
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
     }
-    
-    land_start_time = millis();
 
+    land_start_time = millis();
     land_pause = false;
 
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
@@ -44,7 +43,7 @@ void Copter::ModeLand::run()
 {
     if (land_with_gps) {
         gps_run();
-    }else{
+    } else {
         nogps_run();
     }
 }
@@ -66,15 +65,15 @@ void Copter::ModeLand::gps_run()
         }
         return;
     }
-    
+
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-    
+
     // pause before beginning land descent
-    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+    if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
     }
-    
+
     land_run_horizontal_control();
     land_run_vertical_control(land_pause);
 }
@@ -114,7 +113,7 @@ void Copter::ModeLand::nogps_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
         attitude_control->set_throttle_out(0,false,g.throttle_filt);
 #else
-        motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+        motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         // multicopters do not stabilize roll/pitch/yaw when disarmed
         attitude_control->set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
@@ -133,7 +132,7 @@ void Copter::ModeLand::nogps_run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // pause before beginning land descent
-    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+    if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
         land_pause = false;
     }
 

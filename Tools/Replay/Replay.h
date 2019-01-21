@@ -23,11 +23,10 @@
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_Declination/AP_Declination.h>
 #include <Filter/Filter.h>
-#include <AP_Buffer/AP_Buffer.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Notify/AP_Notify.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -68,7 +67,9 @@ public:
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
-    DataFlash_Class dataflash{unused};
+    struct LogStructure log_structure[256] = {
+    };
+    AP_Logger dataflash{unused};
 
 private:
     Parameters g;
@@ -118,14 +119,21 @@ private:
     SITL::SITL sitl;
 #endif
 
-    LogReader logreader{_vehicle.ahrs, _vehicle.ins, _vehicle.compass, _vehicle.gps, _vehicle.airspeed, _vehicle.dataflash, nottypes};
+    LogReader logreader{_vehicle.ahrs,
+            _vehicle.ins,
+            _vehicle.compass,
+            _vehicle.gps,
+            _vehicle.airspeed,
+            _vehicle.dataflash,
+            _vehicle.log_structure,
+            0,
+            nottypes};
 
     FILE *ekf1f;
     FILE *ekf2f;
     FILE *ekf3f;
     FILE *ekf4f;
 
-    bool done_parameters;
     bool done_baro_init;
     bool done_home_init;
     int32_t arm_time_ms = -1;
@@ -161,6 +169,7 @@ private:
 
     void set_ins_update_rate(uint16_t update_rate);
     void inhibit_gyro_cal();
+    void force_log_disarmed();
 
     void usage(void);
     void set_user_parameters(void);
@@ -178,10 +187,8 @@ private:
     void flush_and_exit();
 
     FILE *xfopen(const char *f, const char *mode);
-};
 
-enum {
-    LOG_CHEK_MSG=100
+    bool seen_non_fmt;
 };
 
 /*

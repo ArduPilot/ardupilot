@@ -300,13 +300,13 @@ void AP_ADSB::determine_furthest_aircraft(void)
 /*
  * Convert/Extract a Location from a vehicle
  */
-Location_Class AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
+Location AP_ADSB::get_location(const adsb_vehicle_t &vehicle) const
 {
-    Location_Class loc = Location_Class(
+    Location loc = Location(
         vehicle.info.lat,
         vehicle.info.lon,
         vehicle.info.altitude * 0.1f,
-        Location_Class::ALT_FRAME_ABSOLUTE);
+        Location::ALT_FRAME_ABSOLUTE);
 
     return loc;
 }
@@ -362,7 +362,7 @@ void AP_ADSB::handle_vehicle(const mavlink_message_t* packet)
     uint16_t index = in_state.list_size + 1; // initialize with invalid index
     adsb_vehicle_t vehicle {};
     mavlink_msg_adsb_vehicle_decode(packet, &vehicle.info);
-    Location_Class vehicle_loc = Location_Class(AP_ADSB::get_location(vehicle));
+    const Location vehicle_loc = AP_ADSB::get_location(vehicle);
     bool my_loc_is_zero = _my_loc.is_zero();
     float my_loc_distance_to_vehicle = _my_loc.get_distance(vehicle_loc);
     bool out_of_range = in_state.list_radius > 0 && !my_loc_is_zero && my_loc_distance_to_vehicle > in_state.list_radius;
@@ -640,7 +640,7 @@ uint8_t AP_ADSB::get_encoded_callsign_null_char()
 
     // using the above logic, we must always assign the squawk. once we get configured
     // externally then get_encoded_callsign_null_char() stops getting called
-    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal));
+    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
     memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
     encoded_null |= 0x40;
 
@@ -740,7 +740,7 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
 
  Note gps.time is the number of seconds since UTC midnight
 */
-uint32_t AP_ADSB::genICAO(const Location_Class &loc)
+uint32_t AP_ADSB::genICAO(const Location &loc)
 {
     // gps_time is not seconds since UTC midnight, but it is an equivalent random number
     // TODO: use UTC time instead of GPS time

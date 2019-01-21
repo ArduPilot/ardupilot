@@ -145,6 +145,7 @@ enum AutoMode {
     Auto_Spline,
     Auto_NavGuided,
     Auto_Loiter,
+    Auto_LoiterToAlt,
     Auto_NavPayloadPlace,
 };
 
@@ -231,6 +232,7 @@ enum PayloadPlaceStateType {
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
+    DevOptionVFR_HUDRelativeAlt = 2,
 };
 
 //  Logging parameters
@@ -238,7 +240,6 @@ enum LoggingParameters {
      TYPE_AIRSTART_MSG,
      TYPE_GROUNDSTART_MSG,
      LOG_CONTROL_TUNING_MSG,
-     LOG_OPTFLOW_MSG,
      LOG_EVENT_MSG,
      LOG_ERROR_MSG,
      LOG_DATA_INT16_MSG,
@@ -246,8 +247,6 @@ enum LoggingParameters {
      LOG_DATA_INT32_MSG,
      LOG_DATA_UINT32_MSG,
      LOG_DATA_FLOAT_MSG,
-     LOG_AUTOTUNE_MSG,
-     LOG_AUTOTUNEDETAILS_MSG,
      LOG_MOTBATT_MSG,
      LOG_PARAMTUNE_MSG,
      LOG_HELI_MSG,
@@ -334,12 +333,13 @@ enum LoggingParameters {
 #define DATA_WINCH_RATE_CONTROL             70
 #define DATA_ZIGZAG_STORE_A                 71
 #define DATA_ZIGZAG_STORE_B                 72
+#define DATA_LAND_REPO_ACTIVE               73
 
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_RADIO               2
 #define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4
+#define ERROR_SUBSYSTEM_OPTFLOW             4   // not used
 #define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
 #define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
 #define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
@@ -349,7 +349,7 @@ enum LoggingParameters {
 #define ERROR_SUBSYSTEM_GPS                 11
 #define ERROR_SUBSYSTEM_CRASH_CHECK         12
 #define ERROR_SUBSYSTEM_FLIP                13
-#define ERROR_SUBSYSTEM_AUTOTUNE            14
+#define ERROR_SUBSYSTEM_AUTOTUNE            14  // not used
 #define ERROR_SUBSYSTEM_PARACHUTE           15
 #define ERROR_SUBSYSTEM_EKFCHECK            16
 #define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
@@ -370,8 +370,6 @@ enum LoggingParameters {
 // subsystem specific error codes -- failsafe_thr, batt, gps
 #define ERROR_CODE_FAILSAFE_RESOLVED        0
 #define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
 // subsystem specific error codes -- main
 #define ERROR_CODE_MAIN_INS_DELAY           1
 // subsystem specific error codes -- crash checker

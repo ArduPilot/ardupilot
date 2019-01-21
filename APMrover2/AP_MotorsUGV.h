@@ -16,6 +16,10 @@ public:
         PWM_TYPE_ONESHOT125 = 2,
         PWM_TYPE_BRUSHED_WITH_RELAY = 3,
         PWM_TYPE_BRUSHED_BIPOLAR = 4,
+        PWM_TYPE_DSHOT150 = 5,
+        PWM_TYPE_DSHOT300 = 6,
+        PWM_TYPE_DSHOT600 = 7,
+        PWM_TYPE_DSHOT1200 = 8
      };
 
     enum motor_test_order {
@@ -23,7 +27,8 @@ public:
         MOTOR_TEST_STEERING = 2,
         MOTOR_TEST_THROTTLE_LEFT = 3,
         MOTOR_TEST_THROTTLE_RIGHT = 4,
-        MOTOR_TEST_MAINSAIL = 5
+        MOTOR_TEST_MAINSAIL = 5,
+        MOTOR_TEST_LAST
     };
 
     // supported custom motor configurations

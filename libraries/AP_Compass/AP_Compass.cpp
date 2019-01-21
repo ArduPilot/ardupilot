@@ -11,6 +11,7 @@
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_HIL.h"
 #include "AP_Compass_HMC5843.h"
+#include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
@@ -23,6 +24,7 @@
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass.h"
+#include "Compass_learn.h"
 
 extern AP_HAL::HAL& hal;
 
@@ -33,7 +35,7 @@ extern AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_COMPASS_OFFSETS_MAX_DEFAULT
-#define AP_COMPASS_OFFSETS_MAX_DEFAULT 850
+#define AP_COMPASS_OFFSETS_MAX_DEFAULT 1250
 #endif
 
 #ifndef HAL_COMPASS_FILTER_DEFAULT
@@ -258,18 +260,21 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID",  15, Compass, _state[0].dev_id, 0),
 
     // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID2", 16, Compass, _state[1].dev_id, 0),
 
     // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
+    // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("DEV_ID3", 17, Compass, _state[2].dev_id, 0),
 
@@ -435,7 +440,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883,14:MAG3110,15:IST8308
     // @User: Advanced
     AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
 
@@ -679,6 +684,12 @@ void Compass::_probe_external_i2c_compasses(void)
             ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8310_I2C_ADDR),
                                                                   all_external, default_rotation));
         }
+    }
+
+    // external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_IST8308, AP_Compass_IST8308::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IST8308_I2C_ADDR),
+                                                              true, ROTATION_NONE));
     }
 #endif // HAL_MINIMIZE_FEATURES
 }
@@ -967,6 +978,13 @@ Compass::read(void)
     uint32_t time = AP_HAL::millis();
     for (uint8_t i=0; i < COMPASS_MAX_INSTANCES; i++) {
         _state[i].healthy = (time - _state[i].last_update_ms < 500);
+    }
+    if (_learn == LEARN_INFLIGHT && !learn_allocated) {
+        learn_allocated = true;
+        learn = new CompassLearn(*this);
+    }
+    if (_learn == LEARN_INFLIGHT && learn != nullptr) {
+        learn->update();
     }
     return healthy();
 }

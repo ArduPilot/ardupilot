@@ -1019,7 +1019,7 @@ AltFunction_map = {
 	"PH9:I2C3_SMBA"     	:	4,
 	"PH9:LCD_R3"        	:	14,
 	"PH9:TIM12_CH2"     	:	9,
-	"PI0:TIMTIM5_CH4"     	:	2,
+	"PI0:TIM5_CH4"     	:	2,
 	"PI0:SPI2_NSS"     	:	5,
 	"PI0:I2S2_WS"     	:	5,
 	"PI0:FMC_D24"     	:	12,

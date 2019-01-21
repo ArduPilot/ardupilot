@@ -8,14 +8,12 @@
 
 class CompassLearn {
 public:
-    CompassLearn(AP_AHRS &ahrs, Compass &compass);
+    CompassLearn(Compass &compass);
 
     // called on each compass read
     void update(void);
 
 private:
-    // reference to AHRS library. Needed for attitude, position and compass
-    const AP_AHRS &ahrs;
     Compass &compass;
     bool have_earth_field;
 
@@ -53,6 +51,7 @@ private:
     float best_yaw_deg;
     float worst_error;
     bool converged;
+    uint8_t primary_mag;
 
     void io_timer(void);
     void process_sample(const struct sample &s);

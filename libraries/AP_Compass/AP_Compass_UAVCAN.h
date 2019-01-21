@@ -33,9 +33,6 @@ private:
     uint8_t  _instance;
     bool _initialized;
 
-    Vector3f _sum;
-    uint32_t _count;
-
     AP_UAVCAN* _ap_uavcan;
     uint8_t _node_id;
     uint8_t _sensor_id;

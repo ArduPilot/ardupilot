@@ -10,6 +10,7 @@ def build(bld):
             'APM_Control',
             'AP_AdvancedFailsafe',
             'AP_ADSB',
+            'AP_Buffer',
             'AP_Avoidance',
             'AP_Arming',
             'AP_Camera',
@@ -25,7 +26,6 @@ def build(bld):
             'AP_Motors',
             'AC_PID',
             'AC_Fence',
-            'AC_Avoidance',
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
@@ -33,6 +33,8 @@ def build(bld):
             'AP_Soaring',
             'AP_Devo_Telem',
             'AP_OSD',
+            'AC_AutoTune',
+            'AP_KDECAN',
         ],
     )
 

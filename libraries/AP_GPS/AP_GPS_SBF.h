@@ -32,10 +32,10 @@ class AP_GPS_SBF : public AP_GPS_Backend
 public:
     AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
+    AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
     // Methods
-    bool read();
+    bool read() override;
 
     const char *name() const override { return "SBF"; }
 

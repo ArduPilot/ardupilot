@@ -27,7 +27,7 @@ void Copter::read_rangefinder(void)
 
     if (rangefinder.num_sensors() > 0 &&
         should_log(MASK_LOG_CTUN)) {
-        DataFlash.Log_Write_RFND(rangefinder);
+        logger.Write_RFND(rangefinder);
     }
 
     rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
@@ -79,7 +79,7 @@ void Copter::rpm_update(void)
     rpm_sensor.update();
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
         if (should_log(MASK_LOG_RCIN)) {
-            DataFlash.Log_Write_RPM(rpm_sensor);
+            logger.Write_RPM(rpm_sensor);
         }
     }
 #endif
@@ -121,38 +121,9 @@ void Copter::init_optflow()
 {
 #if OPTFLOW == ENABLED
     // initialise optical flow sensor
-    optflow.init();
+    optflow.init(MASK_LOG_OPTFLOW);
 #endif      // OPTFLOW == ENABLED
 }
-
-// called at 200hz
-#if OPTFLOW == ENABLED
-void Copter::update_optical_flow(void)
-{
-    static uint32_t last_of_update = 0;
-
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-
-    // read from sensor
-    optflow.update();
-
-    // write to log and send to EKF if new data has arrived
-    if (optflow.last_update() != last_of_update) {
-        last_of_update = optflow.last_update();
-        uint8_t flowQuality = optflow.quality();
-        Vector2f flowRate = optflow.flowRate();
-        Vector2f bodyRate = optflow.bodyRate();
-        const Vector3f &posOffset = optflow.get_pos_offset();
-        ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
-        if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
-        }
-    }
-}
-#endif  // OPTFLOW == ENABLED
 
 void Copter::compass_cal_update()
 {
@@ -245,7 +216,7 @@ void Copter::update_sensor_status_flags(void)
     if (ap.rc_receiver_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
-    if (copter.DataFlash.logging_present()) { // primary logging only (usually File)
+    if (copter.logger.logging_present()) { // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 #if PROXIMITY_ENABLED == ENABLED
@@ -306,7 +277,7 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     }
 
-    if (copter.DataFlash.logging_enabled()) {
+    if (copter.logger.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -367,7 +338,7 @@ void Copter::update_sensor_status_flags(void)
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
 
-    if (copter.DataFlash.logging_failed()) {
+    if (copter.logger.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
 
@@ -397,7 +368,7 @@ void Copter::update_sensor_status_flags(void)
 #if RANGEFINDER_ENABLED == ENABLED
     if (rangefinder_state.enabled) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        if (!rangefinder_state.alt_healthy) {
+        if (!rangefinder.has_data_orient(ROTATION_PITCH_270)) {
             control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_LASER_POSITION;
         }
     }
@@ -447,7 +418,7 @@ void Copter::update_visual_odom()
                                 visual_odom_last_update_ms,
                                 g2.visual_odom.get_pos_offset());
         // log sensor data
-        DataFlash.Log_Write_VisualOdom(time_delta_sec,
+        logger.Write_VisualOdom(time_delta_sec,
                                        g2.visual_odom.get_angle_delta(),
                                        g2.visual_odom.get_position_delta(),
                                        g2.visual_odom.get_confidence());

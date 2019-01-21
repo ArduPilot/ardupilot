@@ -15,8 +15,6 @@ bool Copter::ModeAcro::init(bool ignore_checks)
            (get_pilot_desired_throttle(channel_throttle->get_control_in(), copter.g2.acro_thr_mid) > copter.get_non_takeoff_throttle())) {
        return false;
    }
-   // set target altitude to zero for reporting
-   pos_control->set_alt_target(0);
 
    return true;
 }

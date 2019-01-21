@@ -38,11 +38,10 @@
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>         // ArduPilot Mega DCM Library
 #include <Filter/Filter.h>                     // Filter library
-#include <AP_Buffer/AP_Buffer.h>      // APM FIFO Buffer
 
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AC_PID/AC_PID.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -99,7 +98,7 @@ private:
 
     uint32_t start_time_ms = 0;
 
-    DataFlash_Class DataFlash;
+    AP_Logger logger;
 
     AP_GPS gps;
 
@@ -223,11 +222,8 @@ private:
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
 
     // GCS_Mavlink.cpp
-    void send_extended_status1(mavlink_channel_t chan);
+    void send_sys_status(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
-    void gcs_data_stream_send(void);
-    void gcs_update(void);
-    void gcs_retry_deferred(void);
 
     // Log.cpp
     void Log_Write_Attitude();

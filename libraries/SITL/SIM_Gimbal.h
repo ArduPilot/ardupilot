@@ -102,7 +102,12 @@ private:
         uint8_t seq;
     } mavlink;
 
+    uint32_t param_send_last_ms;
+    uint8_t param_send_idx;
+
     void send_report(void);
+    void param_send(const struct gimbal_param *p);
+    struct gimbal_param *param_find(const char *name);
 };
 
 }  // namespace SITL

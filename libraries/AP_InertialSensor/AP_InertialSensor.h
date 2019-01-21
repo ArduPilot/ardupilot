@@ -32,10 +32,10 @@ class AuxiliaryBus;
 class AP_AHRS;
 
 /*
-  forward declare DataFlash class. We can't include DataFlash.h
+  forward declare AP_Logger class. We can't include logger.h
   because of mutual dependencies
  */
-class DataFlash_Class;
+class AP_Logger;
 
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
@@ -304,7 +304,7 @@ public:
         AP_Int8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 
-        // Parameters controlling pushing data to DataFlash:
+        // Parameters controlling pushing data to AP_Logger:
         // Each DF message is ~ 108 bytes in size, so we use about 1kB/s of
         // logging bandwidth with a 100ms interval.  If we are taking
         // 1024 samples then we need to send 32 packets, so it will
@@ -423,9 +423,6 @@ private:
     // multipliers for data supplied via sensor-rate logging:
     uint16_t _accel_raw_sampling_multiplier[INS_MAX_INSTANCES];
     uint16_t _gyro_raw_sampling_multiplier[INS_MAX_INSTANCES];
-
-    // product id
-    AP_Int16 _old_product_id;
 
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
@@ -562,11 +559,11 @@ private:
     AccelCalibrator *_accel_calibrator;
 
     //save accelerometer bias and scale factors
-    void _acal_save_calibrations();
-    void _acal_event_failure();
+    void _acal_save_calibrations() override;
+    void _acal_event_failure() override;
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
-    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) override { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
 
     float _trim_pitch;
     float _trim_roll;

@@ -1,0 +1,37 @@
+version: 1.0.{build}
+image: Visual Studio 2017 Preview
+clone_depth: 1
+clone_folder: C:\work\
+init:
+- cmd: git config --global core.autocrlf false
+environment:
+  matrix:
+    - TARGET: cygwin64-gcc
+      BUILD_ENVIRONMENT: cygwin64
+      CYG_ROOT: C:\cygwin64
+
+install:
+- cmd: >-
+
+    C:\cygwin64\setup-x86_64.exe -qgnNdO -l C:\cygwin64\var\cache\setup -R c:\cygwin64 -s http://cygwin.mirror.constant.com -P gcc-g++,git,procps,libexpat,python,python-setuptools,cygwin32-gcc-g++ )
+
+    dir %CYG_ROOT%
+    dir %CYG_ROOT%\bin
+
+    %CYG_ROOT%\bin\bash.exe -l -c "/usr/bin/easy_install-2.7 future"
+
+build_script:
+- cmd: >-
+    cd C:\work
+    
+    mkdir c:\work\sitl
+    
+    %CYG_ROOT%\bin\sh.exe /cygdrive/c/work/Tools/scripts/build_appveyor.sh
+    
+    cd c:\work\sitl
+    
+    7z a C:\work\sitl.zip *
+test: off
+artifacts:
+- path: sitl.zip
+  name: sitl

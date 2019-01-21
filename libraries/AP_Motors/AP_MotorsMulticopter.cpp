@@ -137,7 +137,9 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: HOVER_LEARN
     // @DisplayName: Hover Value Learning
     // @Description: Enable/Disable automatic learning of hover throttle
-    // @Values: 0:Disabled, 1:Learn, 2:LearnAndSave
+    // @Values{Copter}: 0:Disabled, 1:Learn, 2:LearnAndSave
+    // @Values{Sub}: 0:Disabled
+    // @Values{Plane}: 0:Disabled
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 22, AP_MotorsMulticopter, _throttle_hover_learn, HOVER_LEARN_AND_SAVE),
 
@@ -168,7 +170,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: BOOST_SCALE
     // @DisplayName: Motor boost scale
-    // @Description: This is a scaling factor for vehicles with a vertical booster motor used for extra lift. It is used with electric multicopters that have an internal combusion booster motor for longer endurance. The output to the BoostThrottle servo function is set to the current motor thottle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
+    // @Description: Booster motor output scaling factor vs main throttle.  The output to the BoostThrottle servo will be the main throttle times this scaling factor. A higher scaling factor will put more of the load on the booster motor. A value of 1 will set the BoostThrottle equal to the main throttle.
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Advanced
@@ -189,7 +191,6 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 // Constructor
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
     AP_Motors(loop_rate, speed_hz),
-    _spool_mode(SHUT_DOWN),
     _lift_max(1.0f),
     _throttle_limit(1.0f)
 {
@@ -404,6 +405,12 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
     _throttle_radio_min = radio_min;
     _throttle_radio_max = radio_max;
 
+    if (_pwm_type >= PWM_TYPE_DSHOT150 && _pwm_type <= PWM_TYPE_DSHOT1200) {
+        // force PWM range for DShot ESCs
+        _pwm_min.set(1000);
+        _pwm_max.set(2000);
+    }
+
     hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());
 }
 
@@ -449,7 +456,7 @@ void AP_MotorsMulticopter::output_logic()
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DESIRED_SHUT_DOWN) {
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
                 break;
             }
 
@@ -462,8 +469,8 @@ void AP_MotorsMulticopter::output_logic()
             _thrust_boost_ratio = 0.0f;
             break;
 
-        case SPIN_WHEN_ARMED: {
-            // Motors should be stationary or at spin when armed.
+        case GROUND_IDLE: {
+            // Motors should be stationary or at ground idle.
             // Servos should be moving to correct the current attitude.
 
             // set limits flags
@@ -488,7 +495,7 @@ void AP_MotorsMulticopter::output_logic()
                     _spin_up_ratio = 1.0f;
                     _spool_mode = SPOOL_UP;
                 }
-            } else {    // _spool_desired == SPIN_WHEN_ARMED
+            } else {    // _spool_desired == GROUND_IDLE
                 float spin_up_armed_ratio = 0.0f;
                 if (_spin_min > 0.0f) {
                     spin_up_armed_ratio = _spin_arm / _spin_min;
@@ -589,7 +596,7 @@ void AP_MotorsMulticopter::output_logic()
             if (_throttle_thrust_max >= get_current_limit_max_throttle()) {
                 _throttle_thrust_max = get_current_limit_max_throttle();
             } else if (is_zero(_throttle_thrust_max)) {
-                _spool_mode = SPIN_WHEN_ARMED;
+                _spool_mode = GROUND_IDLE;
             }
 
             _thrust_boost_ratio = MAX(0.0, _thrust_boost_ratio-1.0f/(_spool_up_time*_loop_rate));
@@ -609,19 +616,29 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
                 rc_write(i, pwm_out);
             }
         }
+        // send pwm output to channels used by bicopter
+        SRV_Channels::set_output_pwm(SRV_Channel::k_throttleRight, pwm_out);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_throttleLeft, pwm_out);
     }
 }
 
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             int16_t motor_out;
             if (mask & (1U<<i)) {
-                motor_out = calc_thrust_to_pwm(thrust);
+                /*
+                    apply rudder mixing differential thrust
+                    copter frame roll is plane frame yaw as this only
+                    apples to either tilted motors or tailsitters
+                */
+                float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
+
+                motor_out = calc_thrust_to_pwm(thrust + diff_thrust);
             } else {
                 motor_out = get_pwm_output_min();
             }

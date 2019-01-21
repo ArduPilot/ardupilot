@@ -59,7 +59,7 @@ static ChibiOS::SPIDeviceManager spiDeviceManager;
 static Empty::SPIDeviceManager spiDeviceManager;
 #endif
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 static ChibiOS::AnalogIn analogIn;
 #else
 static Empty::AnalogIn analogIn;
@@ -170,9 +170,6 @@ static void main_loop()
     ChibiOS::SPIDevice::test_clock_freq();
 #endif 
 
-    //Setup SD Card and Initialise FATFS bindings
-    sdcard_init();
-
     hal.uartB->begin(38400);
     hal.uartC->begin(57600);
     hal.analogin->init();
@@ -208,9 +205,11 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
+#ifndef HAL_DISABLE_LOOP_DELAY
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(250);
         }
+#endif
     }
     thread_running = false;
 }

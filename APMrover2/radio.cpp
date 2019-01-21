@@ -111,27 +111,27 @@ void Rover::read_radio()
 {
     if (!rc().read_input()) {
         // check if we lost RC link
-        control_failsafe(channel_throttle->get_radio_in());
+        radio_failsafe_check(channel_throttle->get_radio_in());
         return;
     }
 
     failsafe.last_valid_rc_ms = AP_HAL::millis();
     // check that RC value are valid
-    control_failsafe(channel_throttle->get_radio_in());
+    radio_failsafe_check(channel_throttle->get_radio_in());
 
     // check if we try to do RC arm/disarm
     rudder_arm_disarm_check();
 }
 
-void Rover::control_failsafe(uint16_t pwm)
+void Rover::radio_failsafe_check(uint16_t pwm)
 {
     if (!g.fs_throttle_enabled) {
-        // no throttle failsafe
+        // radio failsafe disabled
         return;
     }
 
     bool failed = pwm < static_cast<uint16_t>(g.fs_throttle_value);
-    if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 2000) {
+    if (AP_HAL::millis() - failsafe.last_valid_rc_ms > 200) {
         failed = true;
     }
     failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);

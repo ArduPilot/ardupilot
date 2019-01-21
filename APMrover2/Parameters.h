@@ -142,6 +142,8 @@ public:
         k_param_fs_throttle_value,
         k_param_fs_gcs_enabled,
         k_param_fs_crash_check,
+        k_param_fs_ekf_action,
+        k_param_fs_ekf_thresh,  // 187
 
         // obstacle control
         k_param_sonar_enabled = 190,  // deprecated, can be removed
@@ -205,7 +207,7 @@ public:
         k_param_button,
         k_param_osd,
 
-        k_param_DataFlash = 253,  // Logging Group
+        k_param_logger = 253,  // Logging Group
 
         // 254,255: reserved
         };
@@ -249,6 +251,8 @@ public:
     AP_Int16    fs_throttle_value;
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
+    AP_Int8     fs_ekf_action;
+    AP_Float    fs_ekf_thresh;
 
     // obstacle avoidance control
     AP_Int16    rangefinder_trigger_cm;
@@ -377,9 +381,16 @@ public:
     AP_Float sail_angle_max;
     AP_Float sail_angle_ideal;
     AP_Float sail_heel_angle_max;
+    AP_Float sail_no_go;
 
     // windvane
     AP_WindVane windvane;
+
+    // Airspeed
+    AP_Airspeed airspeed;
+
+    // mission behave
+    AP_Int8 mis_done_behave;
 };
 
 extern const AP_Param::Info var_info[];

@@ -139,7 +139,7 @@ void Copter::ModePosHold::run()
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (!motors->armed() || !ap.auto_armed || !motors->get_interlock()) {
         loiter_nav->init_target();
-        zero_throttle_and_relax_ac();
+        zero_throttle_and_relax_ac(copter.is_tradheli() && motors->get_interlock());
         pos_control->relax_alt_hold_controllers(0.0f);
         return;
     }
@@ -184,12 +184,17 @@ void Copter::ModePosHold::run()
 
     // if landed initialise loiter targets, set throttle to zero and exit
     if (ap.land_complete) {
+#if FRAME_CONFIG == HELI_FRAME
+        // helicopters do not spool down when landed.  Only when commanded to go to ground idle by pilot.
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+#else
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
+#endif
         loiter_nav->init_target();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();

@@ -22,6 +22,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
@@ -197,6 +198,12 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPEND
 };
 
+/*
+  this scaling factor converts from the old system where we used a
+  0 to 4095 raw ADC value for 0-5V to the new system which gets the
+  voltage in volts directly from the ADC driver
+ */
+#define SCALING_OLD_CALIBRATION 819 // 4095/5
 
 AP_Airspeed::AP_Airspeed()
 {
@@ -210,14 +217,6 @@ AP_Airspeed::AP_Airspeed()
     }
     _singleton = this;
 }
-
-
-/*
-  this scaling factor converts from the old system where we used a
-  0 to 4095 raw ADC value for 0-5V to the new system which gets the
-  voltage in volts directly from the ADC driver
- */
-#define SCALING_OLD_CALIBRATION 819 // 4095/5
 
 void AP_Airspeed::init()
 {
@@ -415,7 +414,7 @@ void AP_Airspeed::read(uint8_t i)
 }
 
 // read all airspeed sensors
-void AP_Airspeed::read(void)
+void AP_Airspeed::update(bool log)
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         read(i);
@@ -427,6 +426,13 @@ void AP_Airspeed::read(void)
         gcs().send_named_float("AS2", get_airspeed(1));
     }
 #endif
+
+    if (log) {
+        AP_Logger *_dataflash = AP_Logger::instance();
+        if (_dataflash != nullptr) {
+            _dataflash->Write_Airspeed(*this);
+        }
+    }
 
     // setup primary
     if (healthy(primary_sensor.get())) {

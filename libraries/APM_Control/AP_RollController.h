@@ -4,14 +4,14 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_AutoTune.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Math/AP_Math.h>
 
 class AP_RollController {
 public:
-    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, DataFlash_Class &_dataflash)
+    AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
         : aparm(parms)
-        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms, _dataflash)
+        , autotune(gains, AP_AutoTune::AUTOTUNE_ROLL, parms)
         , _ahrs(ahrs)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -29,7 +29,7 @@ public:
     void autotune_start(void) { autotune.start(); }
     void autotune_restore(void) { autotune.stop(); }
 
-    const       DataFlash_Class::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const       AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
 	static const struct AP_Param::GroupInfo var_info[];
 
@@ -52,7 +52,7 @@ private:
 	uint32_t _last_t;
 	float _last_out;
 
-    DataFlash_Class::PID_Info _pid_info;
+    AP_Logger::PID_Info _pid_info;
 
 	int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator);
 

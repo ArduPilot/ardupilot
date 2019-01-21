@@ -239,6 +239,9 @@ def start_SITL(binary,
         log_file = valgrind_log_filepath(binary=binary, model=model)
         cmd.extend([
             'valgrind',
+            # adding this option allows valgrind to cope with the overload
+            # of operator new
+            "--soname-synonyms=somalloc=nouserintercepts",
             '--vgdb-prefix=%s' % vgdb_prefix,
             '-q',
             '--log-file=%s' % log_file])

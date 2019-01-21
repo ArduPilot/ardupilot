@@ -23,6 +23,7 @@
 #ifdef WITH_SITL_OSD
 
 #include "AP_OSD_SITL.h"
+#include <AP_Common/Semaphore.h>
 #include <AP_HAL/Util.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>

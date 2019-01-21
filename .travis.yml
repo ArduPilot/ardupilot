@@ -58,9 +58,9 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v2 revo-bootloader iofirmware"
+      env: CI_BUILD_TARGET="revo-bootloader iofirmware"
     - compiler: "gcc"
-      env: CI_BUILD_TARGET="px4-v4 revo-mini"
+      env: CI_BUILD_TARGET="revo-mini"
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="sitltest-copter"
@@ -69,4 +69,4 @@ matrix:
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
     - if: type != cron
       compiler: "clang"
-      env: CI_BUILD_TARGET="sitltest-rover"
+      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""

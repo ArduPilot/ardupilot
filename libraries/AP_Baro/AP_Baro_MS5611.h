@@ -29,7 +29,7 @@
 class AP_Baro_MS56XX : public AP_Baro_Backend
 {
 public:
-    void update();
+    void update() override;
 
     enum MS56XX_TYPE {
         BARO_MS5611 = 0,

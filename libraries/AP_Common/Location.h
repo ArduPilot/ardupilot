@@ -14,9 +14,20 @@
 class AP_AHRS_NavEKF;
 class AP_Terrain;
 
-class Location_Class : public Location
+class Location
 {
 public:
+
+    uint8_t relative_alt : 1;           // 1 if altitude is relative to home
+    uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
+    uint8_t terrain_alt  : 1;           // this altitude is above terrain
+    uint8_t origin_alt   : 1;           // this altitude is above ekf origin
+    uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
+
+    // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
+    int32_t alt;
+    int32_t lat;
+    int32_t lng;
 
     /// enumeration of possible altitude types
     enum ALT_FRAME {
@@ -27,15 +38,11 @@ public:
     };
 
     /// constructors
-    Location_Class();
-    Location_Class(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame);
-    Location_Class(const Location& loc);
-    Location_Class(const Vector3f &ekf_offset_neu);
+    Location();
+    Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, ALT_FRAME frame);
+    Location(const Vector3f &ekf_offset_neu);
 
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
-
-    // operators
-    Location_Class& operator=(const struct Location &loc);
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, ALT_FRAME frame);
@@ -66,9 +73,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     void offset(float ofs_north, float ofs_east);
 
-    bool is_zero(void) { return (lat == 0 && lng == 0 && alt == 0 && options == 0); }
+    bool is_zero(void) const;
 
-    void zero(void) { lat = lng = alt = 0; options = 0; }
+    void zero(void);
 
 private:
     static AP_Terrain *_terrain;

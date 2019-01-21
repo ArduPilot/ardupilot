@@ -17,7 +17,7 @@ void Tracker::update_compass(void)
     if (g.compass_enabled && compass.read()) {
         ahrs.set_compass(&compass);
         if (should_log(MASK_LOG_COMPASS)) {
-            DataFlash.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -103,7 +103,7 @@ void Tracker::update_sensor_status_flags()
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
     }
-    if (DataFlash.logging_present()) {  // primary logging only (usually File)
+    if (logger.logging_present()) {  // primary logging only (usually File)
         control_sensors_present |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -112,7 +112,7 @@ void Tracker::update_sensor_status_flags()
                                                          ~MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS &
                                                          ~MAV_SYS_STATUS_SENSOR_BATTERY);
 
-    if (DataFlash.logging_enabled()) {
+    if (logger.logging_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_LOGGING;
     }
 
@@ -143,7 +143,7 @@ void Tracker::update_sensor_status_flags()
         // AHRS subsystem is unhealthy
         control_sensors_health &= ~MAV_SYS_STATUS_AHRS;
     }
-    if (DataFlash.logging_failed()) {
+    if (logger.logging_failed()) {
         control_sensors_health &= ~MAV_SYS_STATUS_LOGGING;
     }
     if (!battery.healthy() || battery.has_failsafed()) {

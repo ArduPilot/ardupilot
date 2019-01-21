@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -286,6 +286,9 @@ void AC_PosControl::set_alt_target_with_slew(float alt_cm, float dt)
             _pos_target.z += climb_rate_cms*dt;
             _vel_desired.z = climb_rate_cms;    // recorded for reporting purposes
         }
+    } else {
+        // recorded for reporting purposes
+        _vel_desired.z = 0.0f;
     }
 
     // do not let target get too far from current altitude
@@ -741,7 +744,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 /// get_distance_to_target - get horizontal distance to target position in cm
 float AC_PosControl::get_distance_to_target() const
 {
-    return _distance_to_target;
+    return norm(_pos_error.x, _pos_error.y);
 }
 
 /// get_bearing_to_target - get bearing to target position in centi-degrees
@@ -835,7 +838,7 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-    DataFlash_Class::instance()->Log_Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
+    AP::logger().Write("PSC", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
                                            "smmmmnnnnoooo", "FBBBBBBBBBBBB", "Qffffffffffff",
                                            AP_HAL::micros64(),
                                            (double)pos_target.x,
@@ -1016,7 +1019,6 @@ void AC_PosControl::run_xy_controller(float dt)
             _pos_target.x = curr_pos.x + _pos_error.x;
             _pos_target.y = curr_pos.y + _pos_error.y;
         }
-        _distance_to_target = norm(_pos_error.x, _pos_error.y);
 
         _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
     }

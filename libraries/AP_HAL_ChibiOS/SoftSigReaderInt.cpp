@@ -93,20 +93,20 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
 void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel)
 {
     eicuchannel_t channel = get_pair_channel(aux_channel);
-    uint16_t value1 = eicup->tim->CCR[channel];
-    uint16_t value2 = eicup->tim->CCR[aux_channel];
+    pulse_t pulse;
+    pulse.w0 = eicup->tim->CCR[channel];
+    pulse.w1 = eicup->tim->CCR[aux_channel];
     
-    _instance->sigbuf.push(value1);
-    _instance->sigbuf.push(value2);
-    
+    _instance->sigbuf.push(pulse);
+
     //check for missed interrupt 
     uint32_t mask = (STM32_TIM_SR_CC1OF << channel) | (STM32_TIM_SR_CC1OF << aux_channel);
     if ((eicup->tim->SR & mask) != 0) {
         //we have missed some pulses
         //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)
-        _instance->sigbuf.push(value2);
-        //second 0 width pulse to keep polarity right
-        _instance->sigbuf.push(value2);
+        pulse.w0 = 0;
+        pulse.w1 = 0;
+        _instance->sigbuf.push(pulse);
         //reset overcapture mask
         eicup->tim->SR &= ~mask;
     }
@@ -114,12 +114,12 @@ void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel
 
 bool SoftSigReaderInt::read(uint32_t &widths0, uint32_t &widths1)
 {
-    uint16_t p0, p1;
     if (sigbuf.available() >= 2) {
-        if (sigbuf.pop(p0) && sigbuf.pop(p1)) {
-            widths0 = uint16_t(p0 - last_value);
-            widths1 = uint16_t(p1 - p0);
-            last_value = p1;
+        pulse_t pulse;
+        if (sigbuf.pop(pulse)) {
+            widths0 = uint16_t(pulse.w0 - last_value);
+            widths1 = uint16_t(pulse.w1 - pulse.w0);
+            last_value = pulse.w1;
             return true;
         }
     }

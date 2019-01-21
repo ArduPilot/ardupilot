@@ -31,7 +31,7 @@ class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
 	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read();
+    bool read() override;
 
 	static bool _detect(struct SIRF_detect_state &state, uint8_t data);
 

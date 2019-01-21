@@ -11,6 +11,7 @@
 
 #include "ch.h"
 #include "iofirmware/ioprotocol.h"
+#include <AP_RCMapper/AP_RCMapper.h>
 
 class AP_IOMCU {
 public:
@@ -64,6 +65,12 @@ public:
      */
     bool check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_channels);
 
+    // Do DSM receiver binding
+    void bind_dsm(uint8_t mode);
+
+    // get the name of the RC protocol
+    const char *get_rc_protocol(void);
+
     /*
       get servo rail voltage
      */
@@ -83,9 +90,19 @@ public:
     // set to oneshot mode
     void set_oneshot_mode(void);
 
+    // set to brushed mode
+    void set_brushed_mode(void);
+    
     // check if IO is healthy
     bool healthy(void);
 
+    // shutdown IO protocol (for reboot)
+    void shutdown();
+
+    // setup for FMU failsafe mixing
+    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
+                      float mixing_gain, uint16_t manual_rc_mask);
+    
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -111,6 +128,8 @@ private:
     // IOMCU thread
     thread_t *thread_ctx;
 
+    eventmask_t initial_event_mask;
+
     // time when we last read various pages
     uint32_t last_status_read_ms;
     uint32_t last_rc_read_ms;
@@ -132,12 +151,18 @@ private:
     void discard_input(void);
     void event_failed(uint8_t event);
     void update_safety_options(void);
-    
+
+    // CONFIG page
+    struct page_config config;
+
     // PAGE_STATUS values
     struct page_reg_status reg_status;
 
     // PAGE_RAW_RCIN values
     struct page_rc_input rc_input;
+
+    // MIXER values
+    struct page_mixing mixing;
     
     // output pwm values
     struct {
@@ -171,8 +196,14 @@ private:
     uint32_t last_servo_out_us;
 
     bool corked;
+    bool do_shutdown;
+    bool done_shutdown;
 
     bool crc_is_ok;
+    bool initialised;
+    bool is_chibios_backend;
+
+    uint32_t protocol_fail_count;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";

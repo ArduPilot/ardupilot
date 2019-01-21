@@ -51,6 +51,10 @@ AP_RangeFinder_MaxsonarI2CXL::AP_RangeFinder_MaxsonarI2CXL(RangeFinder::RangeFin
 AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeFinder_State &_state,
                                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
+
     AP_RangeFinder_MaxsonarI2CXL *sensor
         = new AP_RangeFinder_MaxsonarI2CXL(_state, std::move(dev));
     if (!sensor) {

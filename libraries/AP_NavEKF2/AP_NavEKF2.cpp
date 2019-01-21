@@ -4,7 +4,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <new>
 
 /*
@@ -164,7 +164,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: POSNE_M_NSE
     // @DisplayName: GPS horizontal position measurement noise (m)
-    // @Description: This sets the GPS horizontal position observation noise. Increasing it reduces the weighting of GPS horizontal position measurements.
+    // @Description: This sets the GPS horizontal position or external navigation system position observation noise. Increasing it reduces the weighting of GPS horizontal position or external navigation system position measurements.
     // @Range: 0.1 10.0
     // @Increment: 0.1
     // @User: Advanced
@@ -368,7 +368,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.00001 0.001
+    // @Range: 0.00001 0.005
     // @User: Advanced
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF2, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
@@ -563,24 +563,24 @@ void NavEKF2::check_log_write(void)
         return;
     }
     if (logging.log_compass) {
-        DataFlash_Class::instance()->Log_Write_Compass(imuSampleTime_us);
+        AP::logger().Write_Compass(imuSampleTime_us);
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
+        AP::logger().Write_GPS(AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
+        AP::logger().Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
+        AP::logger().Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
     // this is an example of an ad-hoc log in EKF
-    // DataFlash_Class::instance()->Log_Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
+    // AP::logger().Write("NKA", "TimeUS,X", "Qf", AP_HAL::micros64(), (double)2.4f);
 }
 
 
@@ -601,7 +601,7 @@ bool NavEKF2::InitialiseFilter(void)
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // see if we will be doing logging
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
         logging.enabled = dataflash->log_replay();
     }
@@ -663,7 +663,7 @@ bool NavEKF2::InitialiseFilter(void)
 
     // zero the structs used capture reset events
     memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
-    memset(&pos_reset_data, 0, sizeof(pos_reset_data));
+    memset((void *)&pos_reset_data, 0, sizeof(pos_reset_data));
     memset(&pos_down_reset_data, 0, sizeof(pos_down_reset_data));
 
     check_log_write();

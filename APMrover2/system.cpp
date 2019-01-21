@@ -27,6 +27,8 @@ void Rover::init_ardupilot()
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
 
+    init_capabilities();
+
     //
     // Check the EEPROM format version before loading any parameters from EEPROM.
     //
@@ -36,8 +38,6 @@ void Rover::init_ardupilot()
     // initialise stats module
     g2.stats.init();
 #endif
-
-    gcs().set_dataflash(&DataFlash);
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -63,6 +63,8 @@ void Rover::init_ardupilot()
     battery.init();
 
     rssi.init();
+
+    g2.airspeed.init();
 
     g2.windvane.init();
 
@@ -140,8 +142,6 @@ void Rover::init_ardupilot()
     // initialize SmartRTL
     g2.smart_rtl.init();
 
-    init_capabilities();
-
     startup_ground();
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
@@ -181,12 +181,11 @@ void Rover::startup_ground(void)
     startup_INS_ground();
 
     // initialise mission library
-    mission.init();
+    mode_auto.mission.init();
 
-    // initialise DataFlash library
+    // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.set_mission(&mission);
-    DataFlash.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -263,7 +262,7 @@ bool Rover::set_mode(Mode &new_mode, mode_reason_t reason)
     old_mode.exit();
 
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode->mode_number(), control_mode_reason);
+    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
 
     notify_mode(control_mode);
     return true;
@@ -309,7 +308,7 @@ uint8_t Rover::check_digital_pin(uint8_t pin)
  */
 bool Rover::should_log(uint32_t mask)
 {
-    return DataFlash.should_log(mask);
+    return logger.should_log(mask);
 }
 
 /*
@@ -354,7 +353,7 @@ bool Rover::disarm_motors(void)
     }
     if (control_mode != &mode_auto) {
         // reset the mission on disarm if we are not in auto
-        mission.reset();
+        mode_auto.mission.reset();
     }
 
     // only log if disarming was successful

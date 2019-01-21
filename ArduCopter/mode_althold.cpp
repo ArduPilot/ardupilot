@@ -65,7 +65,6 @@ void Copter::ModeAltHold::run()
 #if FRAME_CONFIG == HELI_FRAME    
         // force descent rate and call position controller
         pos_control->set_alt_target_from_climb_rate(-abs(g.land_speed), G_Dt, false);
-        heli_flags.init_targets_on_arming=true;
         if (ap.land_complete_maybe) {
             pos_control->relax_alt_hold_controllers(0.0f);
         }
@@ -76,11 +75,6 @@ void Copter::ModeAltHold::run()
         break;
 
     case AltHold_Takeoff:
-#if FRAME_CONFIG == HELI_FRAME    
-        if (heli_flags.init_targets_on_arming) {
-            heli_flags.init_targets_on_arming=false;
-        }
-#endif
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
@@ -109,22 +103,22 @@ void Copter::ModeAltHold::run()
         break;
 
     case AltHold_Landed:
+
+#if FRAME_CONFIG == HELI_FRAME    
+        // helicopters do not spool down when landed.  Only when commanded to go to ground idle by pilot.
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+
+        if (motors->init_targets_on_arming()) {
+            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->set_yaw_target_to_current_heading();
+        }
+#else
         // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
         if (target_climb_rate < 0.0f) {
-            motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
+            motors->set_desired_spool_state(AP_Motors::DESIRED_GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
         }
-
-#if FRAME_CONFIG == HELI_FRAME    
-        if (heli_flags.init_targets_on_arming) {
-            attitude_control->reset_rate_controller_I_terms();
-            attitude_control->set_yaw_target_to_current_heading();
-            if (motors->get_interlock()) {
-                heli_flags.init_targets_on_arming=false;
-            }
-        }
-#else
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
 #endif

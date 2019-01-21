@@ -29,11 +29,11 @@ class AP_GPS_MAV : public AP_GPS_Backend {
 public:
     AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read();
+    bool read() override;
 
     static bool _detect(struct MAV_detect_state &state, uint8_t data);
 
-    void handle_msg(const mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t *msg) override;
 
     const char *name() const override { return "MAV"; }
 

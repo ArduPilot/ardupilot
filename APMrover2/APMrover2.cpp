@@ -60,11 +60,10 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(update_mission,         50,    200),
     SCHED_TASK(update_logging1,        10,    200),
     SCHED_TASK(update_logging2,        10,    200),
-    SCHED_TASK(gcs_retry_deferred,     50,    500),
-    SCHED_TASK(gcs_update,             50,    500),
-    SCHED_TASK(gcs_data_stream_send,   50,   1000),
-    SCHED_TASK(read_mode_switch,        7,    200),
-    SCHED_TASK(read_aux_all,           10,    200),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update_receive,                    400,    500),
+    SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update_send,                       400,   1000),
+    SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_mode_switch,        7,    200),
+    SCHED_TASK_CLASS(RC_Channels,         (RC_Channels*)&rover.g2.rc_channels, read_aux_all,           10,    200),
     SCHED_TASK_CLASS(AP_BattMonitor,      &rover.battery,          read,           10,  300),
     SCHED_TASK_CLASS(AP_ServoRelayEvents, &rover.ServoRelayEvents, update_events,  50,  200),
 #if MOUNT == ENABLED
@@ -75,6 +74,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200),
     SCHED_TASK(fence_check,            10,    200),
+    SCHED_TASK(ekf_check,              10,    100),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200),
     SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300),
     SCHED_TASK(one_second_loop,         1,   1500),
@@ -83,7 +83,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(compass_save,           0.1,   200),
     SCHED_TASK(accel_cal_update,       10,    200),
 #if LOGGING_ENABLED == ENABLED
-    SCHED_TASK_CLASS(DataFlash_Class,     &rover.DataFlash,        periodic_tasks, 50,  300),
+    SCHED_TASK_CLASS(AP_Logger,     &rover.logger,        periodic_tasks, 50,  300),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &rover.ins,              periodic,      400,  200),
     SCHED_TASK_CLASS(AP_Scheduler,        &rover.scheduler,        update_logging, 0.1, 200),
@@ -96,17 +96,8 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
+    SCHED_TASK(read_airspeed,          10,    100),
 };
-
-void Rover::read_mode_switch()
-{
-    rover.g2.rc_channels.read_mode_switch();
-}
-
-void Rover::read_aux_all()
-{
-    rover.g2.rc_channels.read_aux_all();
-}
 
 constexpr int8_t Rover::_failsafe_priorities[7];
 
@@ -148,7 +139,7 @@ void Rover::update_soft_armed()
 {
     hal.util->set_soft_armed(arming.is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-    DataFlash.set_vehicle_armed(hal.util->get_soft_armed());
+    logger.set_vehicle_armed(hal.util->get_soft_armed());
 }
 
 // update AHRS system
@@ -158,7 +149,7 @@ void Rover::ahrs_update()
 
 #if HIL_MODE != HIL_MODE_DISABLED
     // update hil before AHRS update
-    gcs_update();
+    gcs().update();
 #endif
 
     // AHRS may use movement to calculate heading
@@ -186,7 +177,7 @@ void Rover::ahrs_update()
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_IMU();
+        logger.Write_IMU();
     }
 }
 
@@ -195,9 +186,13 @@ void Rover::ahrs_update()
  */
 void Rover::gcs_failsafe_check(void)
 {
-    if (g.fs_gcs_enabled) {
-        failsafe_trigger(FAILSAFE_EVENT_GCS, last_heartbeat_ms != 0 && (millis() - last_heartbeat_ms) > 2000);
+    if (!g.fs_gcs_enabled) {
+        // gcs failsafe disabled
+        return;
     }
+
+    // check for updates from GCS within 2 seconds
+    failsafe_trigger(FAILSAFE_EVENT_GCS, failsafe.last_heartbeat_ms != 0 && (millis() - failsafe.last_heartbeat_ms) > 2000);
 }
 
 /*
@@ -209,7 +204,7 @@ void Rover::update_compass(void)
         ahrs.set_compass(&compass);
         // update offsets
         if (should_log(MASK_LOG_COMPASS)) {
-            DataFlash.Log_Write_Compass();
+            logger.Write_Compass();
         }
     }
 }
@@ -226,12 +221,15 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
-        DataFlash.Log_Write_Beacon(g2.beacon);
-        Log_Write_Proximity();
+        logger.Write_Beacon(g2.beacon);
     }
 
     if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
+    }
+
+    if (should_log(MASK_LOG_RANGEFINDER)) {
+        logger.Write_Proximity(g2.proximity);
     }
 }
 
@@ -250,7 +248,7 @@ void Rover::update_logging2(void)
     }
 
     if (should_log(MASK_LOG_IMU)) {
-        DataFlash.Log_Write_Vibration();
+        logger.Write_Vibration();
     }
 }
 
@@ -302,6 +300,10 @@ void Rover::one_second_loop(void)
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
     update_sensor_status_flags();
+
+    // need to set "likely flying" when armed to allow for compass
+    // learning to run
+    ahrs.set_likely_flying(hal.util->get_soft_armed());
 }
 
 void Rover::update_GPS(void)

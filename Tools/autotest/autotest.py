@@ -9,6 +9,7 @@ import fnmatch
 import glob
 import optparse
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -115,24 +116,9 @@ def build_binaries():
     return True
 
 
-def build_devrelease():
-    """Run the build_devrelease.sh script."""
-    print("Running build_devrelease.sh")
-    # copy the script as it changes git branch, which can change the
-    # script while running
-    orig = util.reltopdir('Tools/scripts/build_devrelease.sh')
-    copy = util.reltopdir('./build_devrelease.sh')
-    shutil.copy2(orig, copy)
-
-    if util.run_cmd(copy, directory=util.reltopdir('.')) != 0:
-        print("Failed build_devrelease.sh")
-        return False
-    return True
-
-
 def build_examples():
     """Build examples."""
-    for target in 'fmuv2', 'px4-v2', 'navio', 'linux':
+    for target in 'fmuv2', 'Pixhawk1', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
             util.build_examples(target)
@@ -264,7 +250,8 @@ __bin_names = {
     "CopterAVC": "arducopter-heli",
     "QuadPlane": "arduplane",
     "ArduSub": "ardusub",
-    "balancebot": "ardurover"
+    "balancebot": "ardurover",
+    "BalanceBot": "ardurover",
 }
 
 
@@ -292,6 +279,43 @@ def binary_path(step, debug=False):
 
     return binary
 
+def split_specific_test_step(step):
+    print('step=%s' % str(step))
+    m = re.match("((fly|drive|dive)[.][^.]+)[.](.*)", step)
+    if m is None:
+        return None
+    return ( (m.group(1), m.group(3)) )
+
+def find_specific_test_to_run(step):
+    t = split_specific_test_step(step)
+    if t is None:
+        return None
+    (testname, test) = t
+    return "%s.%s" % (testname, test)
+
+def run_specific_test(step, *args, **kwargs):
+    t = split_specific_test_step(step)
+    if t is None:
+        return []
+    (testname, test) = t
+
+    tester_class_map = {
+        "fly.ArduCopter": arducopter.AutoTestCopter,
+        "fly.ArduPlane": arduplane.AutoTestPlane,
+        "drive.APMrover2": apmrover2.AutoTestRover,
+        "drive.BalanceBot": balancebot.AutoTestBalanceBot,
+        "fly.CopterAVC": arducopter.AutoTestHeli,
+    }
+    tester_class = tester_class_map[testname]
+    tester = tester_class(*args, **kwargs)
+
+    print("Got %s" % str(tester))
+    for a in tester.tests():
+        print("Got %s" % (a[0]))
+        if a[0] == test:
+            return tester.run_tests([a])
+    print("Failed to find test %s on %s" % (test, testname))
+    sys.exit(1)
 
 def run_step(step):
     """Run one step."""
@@ -356,8 +380,8 @@ def run_step(step):
         return tester.autotest()
 
     if step == 'fly.CopterAVC':
-        tester = arducopter.AutoTestCopter(binary, **fly_opts)
-        return tester.autotest_heli()
+        tester = arducopter.AutoTestHeli(binary, **fly_opts)
+        return tester.autotest()
 
     if step == 'fly.ArduPlane':
         tester = arduplane.AutoTestPlane(binary, **fly_opts)
@@ -383,14 +407,18 @@ def run_step(step):
         tester = ardusub.AutoTestSub(binary, **fly_opts)
         return tester.autotest()
 
+    specific_test_to_run = find_specific_test_to_run(step)
+    if specific_test_to_run is not None:
+        return run_specific_test(specific_test_to_run,
+                                 binary,
+                                 frame=opts.frame,
+                                 **fly_opts)
+
     if step == 'build.All':
         return build_all()
 
     if step == 'build.Binaries':
         return build_binaries()
-
-    if step == 'build.DevRelease':
-        return build_devrelease()
 
     if step == 'build.examples':
         return build_examples()
@@ -522,6 +550,8 @@ def check_logs(step):
         vehicle = step[4:]
     elif step.startswith('drive.'):
         vehicle = step[6:]
+    elif step.startswith('dive.'):
+        vehicle = step[5:]
     else:
         return
     logs = glob.glob("logs/*.BIN")
@@ -675,7 +705,6 @@ if __name__ == "__main__":
         'prerequisites',
         'build.All',
         'build.Binaries',
-        # 'build.DevRelease',
         'build.Parameters',
 
         'build.unit_tests',
@@ -738,6 +767,10 @@ if __name__ == "__main__":
         for a in args:
             matches = [step for step in steps
                        if fnmatch.fnmatch(step.lower(), a.lower())]
+            x = find_specific_test_to_run(a)
+            if x is not None:
+                matches.append(x)
+
             if not len(matches):
                 print("No steps matched {}".format(a))
                 sys.exit(1)

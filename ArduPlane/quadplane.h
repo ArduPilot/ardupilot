@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
@@ -8,6 +10,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "qautotune.h"
 
 /*
   QuadPlane specific functionality
@@ -19,7 +22,8 @@ public:
     friend class AP_Tuning_Plane;
     friend class GCS_MAVLINK_Plane;
     friend class AP_AdvancedFailsafe_Plane;
-    
+    friend class QAutoTune;
+
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
     // var_info for holding Parameter information
@@ -112,20 +116,22 @@ public:
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;
+
+    // return true if the user has set ENABLE
+    bool enabled(void) const { return enable != 0; }
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
+        float    throttle_in;
         float    angle_boost;
         float    throttle_out;
+        float    throttle_hover;
         float    desired_alt;
         float    inav_alt;
-        int16_t  desired_climb_rate;
+        int32_t  baro_alt;
+        int16_t  target_climb_rate;
         int16_t  climb_rate;
-        float    dvx;
-        float    dvy;
-        float    dax;
-        float    day;
         float    throttle_mix;
     };
         
@@ -219,7 +225,6 @@ private:
     void run_z_controller(void);
 
     void setup_defaults(void);
-    void setup_defaults_table(const struct defaults_struct *defaults, uint8_t count);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
     float stopping_distance(void);
@@ -228,7 +233,16 @@ private:
 
     // transition deceleration, m/s/s
     AP_Float transition_decel;
-    
+
+    // transition failure milliseconds
+    AP_Int16 transition_failure;
+
+    // Quadplane trim, degrees
+    AP_Float ahrs_trim_pitch;
+
+    // fw landing approach radius
+    AP_Float fw_land_approach_radius;
+
     AP_Int16 rc_speed;
 
     // min and max PWM for throttle
@@ -296,6 +310,7 @@ private:
     
     // timer start for transition
     uint32_t transition_start_ms;
+    uint32_t transition_low_airspeed_ms;
 
     Location last_auto_target;
 
@@ -408,6 +423,7 @@ private:
         AP_Float vectored_hover_gain;
         AP_Float vectored_hover_power;
         AP_Float throttle_scale_max;
+        AP_Float max_roll_angle;
     } tailsitter;
 
     // the attitude view of the VTOL attitude controller
@@ -454,6 +470,7 @@ private:
         OPTION_ALLOW_FW_TAKEOFF=(1<<1),
         OPTION_ALLOW_FW_LAND=(1<<2),
         OPTION_RESPECT_TAKEOFF_FRAME=(1<<3),
+        OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
     };
 
     /*
@@ -465,7 +482,12 @@ private:
       return true if current mission item is a vtol landing
      */
     bool is_vtol_land(uint16_t id) const;
-    
+
+#if QAUTOTUNE_ENABLED
+    // qautotune mode
+    QAutoTune qautotune;
+#endif
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

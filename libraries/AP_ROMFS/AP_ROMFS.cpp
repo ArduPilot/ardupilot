@@ -42,7 +42,8 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 /*
   find a compressed file and uncompress it. Space for decompressed
   data comes from malloc. Caller must be careful to free the resulting
-  data after use.
+  data after use. The next byte after the file data is guaranteed to
+  be null
 */
 uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
@@ -56,10 +57,13 @@ uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
     const uint8_t *p = &compressed_data[compressed_size-4];
     uint32_t decompressed_size = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
     
-    uint8_t *decompressed_data = (uint8_t *)malloc(decompressed_size);
+    uint8_t *decompressed_data = (uint8_t *)malloc(decompressed_size + 1);
     if (!decompressed_data) {
         return nullptr;
     }
+
+    // explicitly null terimnate the data
+    decompressed_data[decompressed_size] = 0;
 
     TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
     if (!d) {

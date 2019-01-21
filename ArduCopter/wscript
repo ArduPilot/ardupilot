@@ -8,10 +8,10 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AP_ADSB',
+            'AP_Buffer',
             'AC_AttitudeControl',
             'AC_InputManager',
             'AC_Fence',
-            'AC_Avoidance',
             'AC_PID',
             'AC_PrecLand',
             'AC_Sprayer',
@@ -19,7 +19,6 @@ def build(bld):
             'AP_Camera',
             'AP_IRLock',
             'AP_InertialNav',
-            'AP_LandingGear',
             'AP_Motors',
             'AP_Parachute',
             'AP_RCMapper',
@@ -34,6 +33,8 @@ def build(bld):
             'AP_Follow',
             'AP_Devo_Telem',
             'AP_OSD',
+            'AC_AutoTune',
+            'AP_KDECAN',
         ],
     )
 

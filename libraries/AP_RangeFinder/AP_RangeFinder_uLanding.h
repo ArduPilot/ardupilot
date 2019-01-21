@@ -16,7 +16,7 @@ public:
     static bool detect(AP_SerialManager &serial_manager, uint8_t serial_instance);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 protected:
 

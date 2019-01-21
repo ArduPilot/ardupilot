@@ -17,10 +17,10 @@ public:
     static bool detect();
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // Get update from mavlink
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(mavlink_message_t *msg) override;
 
 protected:
 

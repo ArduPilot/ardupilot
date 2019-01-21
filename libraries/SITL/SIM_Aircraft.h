@@ -26,6 +26,7 @@
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
+#include "SIM_Parachute.h"
 
 namespace SITL {
 
@@ -109,6 +110,7 @@ public:
     }
 
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
+    void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
 
@@ -142,6 +144,12 @@ protected:
     float rcin[8];
     float range = -1.0f;                 // rangefinder detection in m
 
+    struct {
+        // data from simulated laser scanner, if available
+        struct vector3f_array points;
+        struct float_array ranges;
+    } scanner;
+    
     // Wind Turbulence simulated Data
     float turbulence_azimuth = 0.0f;
     float turbulence_horizontal_speed = 0.0f;  // m/s
@@ -252,6 +260,7 @@ private:
     Sprayer *sprayer;
     Gripper_Servo *gripper;
     Gripper_EPM *gripper_epm;
+    Parachute *parachute;
 };
 
 } // namespace SITL

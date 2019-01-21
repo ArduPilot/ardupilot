@@ -12,6 +12,9 @@ MCU STM32F7xx STM32F777xx
 # AP_HAL/AP_HAL_Boards.h as well
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 
+# Set Proper Sensor Orientation
+define BOARD_TYPE_DEFAULT 20
+
 # now we need to specify the APJ_BOARD_ID. This is the ID that the
 # bootloader presents to GCS software so it knows if this firmware is
 # suitable for the board. Please see

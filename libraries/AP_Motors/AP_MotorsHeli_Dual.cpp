@@ -475,17 +475,16 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
         limit.throttle_upper = true;
     }
 
-    // Set rear collective to midpoint if required
-    float collective2_out = collective_out;
-    if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
-        collective2_out = _collective2_mid_pct;
-    }
-
-
     // ensure not below landed/landing collective
     if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
         collective_out = _land_collective_min*0.001f;
         limit.throttle_lower = true;
+    }
+
+    // Set rear collective to midpoint if required
+    float collective2_out = collective_out;
+    if (_servo_mode == SERVO_CONTROL_MODE_MANUAL_CENTER) {
+        collective2_out = _collective2_mid_pct;
     }
 
     // scale collective pitch for front swashplate (servos 1,2,3)
@@ -507,23 +506,51 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     _rotor.set_collective(fabsf(collective_out));
 
     // swashplate servos
-    float servo_out[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
-    
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        servo_out[i] = (_rollFactor[i] * roll_out + _pitchFactor[i] * pitch_out + _yawFactor[i] * yaw_out)*0.45f + _collectiveFactor[i] * collective_out_scaled;
-    }
+    _servo_out[CH_1] = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
+    _servo_out[CH_2] = (_rollFactor[CH_2] * roll_out + _pitchFactor[CH_2] * pitch_out + _yawFactor[CH_2] * yaw_out)*0.45f + _collectiveFactor[CH_2] * collective_out_scaled;
+    _servo_out[CH_3] = (_rollFactor[CH_3] * roll_out + _pitchFactor[CH_3] * pitch_out + _yawFactor[CH_3] * yaw_out)*0.45f + _collectiveFactor[CH_3] * collective_out_scaled;
+
+    _servo_out[CH_4] = (_rollFactor[CH_4] * roll_out + _pitchFactor[CH_4] * pitch_out + _yawFactor[CH_4] * yaw_out)*0.45f + _collectiveFactor[CH_4] * collective2_out_scaled;
+    _servo_out[CH_5] = (_rollFactor[CH_5] * roll_out + _pitchFactor[CH_5] * pitch_out + _yawFactor[CH_5] * yaw_out)*0.45f + _collectiveFactor[CH_5] * collective2_out_scaled;
+    _servo_out[CH_6] = (_rollFactor[CH_6] * roll_out + _pitchFactor[CH_6] * pitch_out + _yawFactor[CH_6] * yaw_out)*0.45f + _collectiveFactor[CH_6] * collective2_out_scaled;
 
     // rescale from -1..1, so we can use the pwm calc that includes trim
     for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        servo_out[i] = 2*servo_out[i] - 1;
-    }
-
-    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        rc_write_swash(i, servo_out[i]);
+        _servo_out[i] = 2*_servo_out[i] - 1;
     }
 }
 
+void AP_MotorsHeli_Dual::output_to_motors()
+{
+    if (!_flags.initialised_ok) {
+        return;
+    }
+    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        rc_write_swash(i, _servo_out[i]);
+    }
+
+    switch (_spool_mode) {
+        case SHUT_DOWN:
+            // sends minimum values out to the motors
+            update_motor_control(ROTOR_CONTROL_STOP);
+            break;
+        case GROUND_IDLE:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
+        case SPOOL_UP:
+        case THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            update_motor_control(ROTOR_CONTROL_ACTIVE);
+            break;
+        case SPOOL_DOWN:
+            // sends idle output to motors and wait for rotor to stop
+            update_motor_control(ROTOR_CONTROL_IDLE);
+            break;
+
+    }
+}
 
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Dual::servo_test()

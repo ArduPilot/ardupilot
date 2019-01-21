@@ -2,14 +2,27 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/Location.h>
 
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
+#include "SIM_Parachute.h"
 
-class DataFlash_Class;
+class AP_Logger;
 
 namespace SITL {
+
+struct vector3f_array {
+    uint16_t length;
+    Vector3f *data;
+};
+
+struct float_array {
+    uint16_t length;
+    float *data;
+};
+    
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -33,6 +46,12 @@ struct sitl_fdm {
     double range;           // rangefinder value
     Vector3f bodyMagField;  // Truth XYZ magnetic field vector in body-frame. Includes motor interference. Units are milli-Gauss.
     Vector3f angAccel; // Angular acceleration in degrees/s/s about the XYZ body axes
+
+    struct {
+        // data from simulated laser scanner, if available
+        struct vector3f_array points;
+        struct float_array ranges;
+    } scanner;
 };
 
 // number of rc output channels
@@ -197,11 +216,17 @@ public:
     // differential pressure sensor tube order
     AP_Int8 arspd_signflip;
 
+    // weight on wheels pin
+    AP_Int8 wow_pin;
+
+    // vibration frequencies in Hz on each axis
+    AP_Vector3f vibe_freq;
+    
     uint16_t irlock_port;
 
     void simstate_send(mavlink_channel_t chan);
 
-    void Log_Write_SIMSTATE(DataFlash_Class *dataflash);
+    void Log_Write_SIMSTATE();
 
     // convert a set of roll rates from earth frame to body frame
     static void convert_body_frame(double rollDeg, double pitchDeg,
@@ -215,6 +240,8 @@ public:
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
+
+    Parachute parachute_sim;
 };
 
 } // namespace SITL

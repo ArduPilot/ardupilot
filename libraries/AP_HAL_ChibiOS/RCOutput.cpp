@@ -682,6 +682,11 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
         iomcu.set_freq(io_fast_channel_mask, 1);
         return iomcu.set_oneshot_mode();
     }
+    if (mode == MODE_PWM_BRUSHED &&
+        (mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
+        return iomcu.set_brushed_mode();
+    }
 #endif
 }
 
@@ -917,14 +922,31 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
                 pwm = safe_pwm[chan+chan_offset];
             }
             
-            pwm = constrain_int16(pwm, _esc_pwm_min, _esc_pwm_max);
-            uint16_t value = 2000UL * uint32_t(pwm - _esc_pwm_min) / uint32_t(_esc_pwm_max - _esc_pwm_min);
-            //uint32_t value = (chan+1) * 3;
+            const uint16_t chan_mask = (1U<<chan);
+            if (pwm == 0) {
+                // no output
+                continue;
+            }
+
+            pwm = constrain_int16(pwm, 1000, 2000);
+            uint16_t value = 2 * (pwm - 1000);
+
+            if (chan_mask & (reversible_mask>>chan_offset)) {
+                // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
+                if (value < 1000) {
+                    value = 2000 - value;
+                } else if (value > 1000) {
+                    value = value - 1000;
+                } else {
+                    // mid-throttle is off
+                    value = 0;
+                }
+            }
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
             }
-            uint16_t chan_mask = (1U<<chan);
+
             bool request_telemetry = (telem_request_mask & chan_mask)?true:false;
             uint16_t packet = create_dshot_packet(value, request_telemetry);
             if (request_telemetry) {

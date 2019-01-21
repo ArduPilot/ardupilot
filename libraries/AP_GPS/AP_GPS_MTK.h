@@ -31,7 +31,7 @@ class AP_GPS_MTK : public AP_GPS_Backend {
 public:
     AP_GPS_MTK(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    bool read(void);
+    bool read(void) override;
 
     static bool _detect(struct MTK_detect_state &state, uint8_t data);
     static void send_init_blob(uint8_t instance, AP_GPS &gps);

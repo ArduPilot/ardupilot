@@ -65,7 +65,8 @@ enum FlightMode {
     QHOVER        = 18,
     QLOITER       = 19,
     QLAND         = 20,
-    QRTL          = 21
+    QRTL          = 21,
+    QAUTOTUNE	  = 22
 };
 
 enum mode_reason_t {
@@ -84,7 +85,8 @@ enum mode_reason_t {
     MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING,
     MODE_REASON_SOARING_THERMAL_DETECTED,
     MODE_REASON_SOARING_IN_THERMAL,
-    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED
+    MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED,
+    MODE_REASON_VTOL_FAILED_TRANSITION,
 };
 
 // type of stick mixing enabled
@@ -123,6 +125,7 @@ enum tuning_pid_bits {
     TUNING_BITS_YAW   = (1 <<  2),
     TUNING_BITS_STEER = (1 <<  3),
     TUNING_BITS_LAND  = (1 <<  4),
+    TUNING_BITS_ACCZ  = (1 <<  5),
     TUNING_BITS_END // dummy just used for static checking
 };
 
@@ -139,7 +142,6 @@ enum log_messages {
     LOG_SONAR_MSG,
     LOG_ARM_DISARM_MSG,
     LOG_STATUS_MSG,
-    LOG_OPTFLOW_MSG,
     LOG_QTUN_MSG,
     LOG_PARAMTUNE_MSG,
     LOG_THERMAL_MSG,
@@ -201,4 +203,6 @@ enum {
 enum FlightOptions {
     DIRECT_RUDDER_ONLY   = (1 << 0),
     CRUISE_TRIM_THROTTLE = (1 << 1),
+    DISABLE_TOFF_ATTITUDE_CHK = (1 << 2),
+    CRUISE_TRIM_AIRSPEED = (1 << 3),
 };

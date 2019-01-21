@@ -22,8 +22,14 @@
 #define MIN_RCIN_CHANNELS  5
 
 class AP_RCProtocol_Backend;
+
 class AP_RCProtocol {
 public:
+    AP_RCProtocol() {
+        instance = this;
+    }
+    ~AP_RCProtocol();
+
     enum rcprotocol_t {
         PPM = 0,
         SBUS,
@@ -40,7 +46,18 @@ public:
         return _valid_serial_prot;
     }
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
-    void process_byte(uint8_t byte);
+    void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
+    void process_byte(uint8_t byte, uint32_t baudrate);
+
+    void disable_for_pulses(enum rcprotocol_t protocol) {
+        _disabled_for_pulses |= (1U<<(uint8_t)protocol);
+    }
+
+    // for protocols without strong CRCs we require 3 good frames to lock on
+    bool requires_3_frames(enum rcprotocol_t p) {
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM);
+    }
+    
     enum rcprotocol_t protocol_detected()
     {
         return _detected_protocol;
@@ -50,12 +67,33 @@ public:
     bool new_input();
     void start_bind(void);
 
+    // return protocol name as a string
+    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
+
+    // return protocol name as a string
+    const char *protocol_name(void) const;
+
+    // return protocol name as a string
+    enum rcprotocol_t protocol_detected(void) const {
+        return _detected_protocol;
+    }
+    
+    // access to singleton
+    static AP_RCProtocol *get_instance(void) {
+        return instance;
+    }
+
 private:
     enum rcprotocol_t _detected_protocol = NONE;
+    uint16_t _disabled_for_pulses;
+    bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input = false;
     uint32_t _last_input_ms;
     bool _valid_serial_prot = false;
+    uint8_t _good_frames[NONE];
+
+    static AP_RCProtocol *instance;
 };
 
 #include "AP_RCProtocol_Backend.h"

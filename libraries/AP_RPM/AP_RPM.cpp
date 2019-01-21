@@ -14,7 +14,6 @@
  */
 
 #include "AP_RPM.h"
-#include "RPM_PX4_PWM.h"
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 
@@ -107,16 +106,10 @@ void AP_RPM::init(void)
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
         uint8_t type = _type[i];
 
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) || ((CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN) && (!defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) && !defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)))
-        if (type == RPM_TYPE_PX4_PWM) {
-            drivers[i] = new AP_RPM_PX4_PWM(*this, i, state[i]);
-        }
-#else
         if (type == RPM_TYPE_PX4_PWM) {
             // on non-PX4 treat PX4-pin as AUXPIN option, for upgrade
             type = RPM_TYPE_PIN;
         }
-#endif
         if (type == RPM_TYPE_PIN) {
             drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
         }

@@ -89,7 +89,7 @@ void AP_MotorsMatrix::output_to_motors()
             }
             break;
         }
-        case SPIN_WHEN_ARMED:
+        case GROUND_IDLE:
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
@@ -545,6 +545,14 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_2, 0, -160, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3);
                     add_motor(AP_MOTORS_MOT_3, -60, -60, 0, 4);
                     add_motor(AP_MOTORS_MOT_4, 0, 160, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    success = true;
+                    break;
+                case MOTOR_FRAME_TYPE_PLUSREV:
+                    // plus with reversed motor directions
+                    add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 2);
+                    add_motor(AP_MOTORS_MOT_2, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW, 4);
+                    add_motor(AP_MOTORS_MOT_3,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,1);
+                    add_motor(AP_MOTORS_MOT_4, 180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,3);
                     success = true;
                     break;
                 default:

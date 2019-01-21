@@ -71,7 +71,7 @@ MAV_STATE GCS_MAVLINK_Tracker::system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void Tracker::send_extended_status1(mavlink_channel_t chan)
+void Tracker::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
     int8_t battery_remaining = -1;
@@ -135,9 +135,9 @@ bool GCS_MAVLINK_Tracker::try_send_message(enum ap_message id)
         tracker.send_nav_controller_output(chan);
         break;
 
-    case MSG_EXTENDED_STATUS1:
+    case MSG_SYS_STATUS:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        tracker.send_extended_status1(chan);
+        tracker.send_sys_status(chan);
         break;
 
     default:
@@ -235,13 +235,18 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 };
 
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
-    MSG_RAW_IMU1,  // RAW_IMU, SCALED_IMU2, SCALED_IMU3
-    MSG_RAW_IMU2,  // SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3
-    MSG_RAW_IMU3  // SENSOR_OFFSETS
+    MSG_RAW_IMU,
+    MSG_SCALED_IMU2,
+    MSG_SCALED_IMU3,
+    MSG_SCALED_PRESSURE,
+    MSG_SCALED_PRESSURE2,
+    MSG_SCALED_PRESSURE3,
+    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
-    MSG_EXTENDED_STATUS1, // SYS_STATUS, POWER_STATUS
-    MSG_EXTENDED_STATUS2, // MEMINFO
+    MSG_SYS_STATUS,
+    MSG_POWER_STATUS,
+    MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
@@ -264,9 +269,14 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
-    MSG_SIMSTATE, // SIMSTATE, AHRS2
+    MSG_SIMSTATE,
+    MSG_AHRS2,
+    MSG_AHRS3,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+};
+static const ap_message STREAM_PARAMS_msgs[] = {
+    MSG_NEXT_PARAM
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -277,6 +287,7 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
     MAV_STREAM_ENTRY(STREAM_EXTRA1),
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
+    MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
@@ -439,28 +450,31 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 
         mavlink_msg_mission_item_decode(msg, &packet);
 
-        struct Location tell_command = {};
+        struct Location tell_command;
 
         switch (packet.frame)
         {
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
         {
-            tell_command.lat = 1.0e7f*packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f*packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z*1.0e2f;                                     // in as m converted to cm
-            tell_command.options = 0;                                     // absolute altitude
+            tell_command = Location{
+                int32_t(1.0e7f*packet.x), // in as DD converted to * t7
+                int32_t(1.0e7f*packet.y), // in as DD converted to * t7
+                int32_t(packet.z*1.0e2f), // in as m converted to cm
+                Location::ALT_FRAME_ABSOLUTE
+            };
             break;
         }
 
 #ifdef MAV_FRAME_LOCAL_NED
         case MAV_FRAME_LOCAL_NED:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = -packet.z*1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            tell_command = Location{
+                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(-packet.z*1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 #endif
@@ -468,21 +482,24 @@ void GCS_MAVLINK_Tracker::handleMessage(mavlink_message_t* msg)
 #ifdef MAV_FRAME_LOCAL
         case MAV_FRAME_LOCAL:                         // local (relative to home position)
         {
-            tell_command.lat = 1.0e7f*ToDeg(packet.x/
-                                           (RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat;
-            tell_command.lng = 1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng;
-            tell_command.alt = packet.z*1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;
+            tell_command = {
+                int32_t(1.0e7f*ToDeg(packet.x/(RADIUS_OF_EARTH*cosf(ToRad(home.lat/1.0e7f)))) + home.lat),
+                int32_t(1.0e7f*ToDeg(packet.y/RADIUS_OF_EARTH) + home.lng),
+                int32_t(packet.z*1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 #endif
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:                         // absolute lat/lng, relative altitude
         {
-            tell_command.lat = 1.0e7f * packet.x;                                     // in as DD converted to * t7
-            tell_command.lng = 1.0e7f * packet.y;                                     // in as DD converted to * t7
-            tell_command.alt = packet.z * 1.0e2f;
-            tell_command.options = MASK_OPTIONS_RELATIVE_ALT;                                     // store altitude relative!! Always!!
+            tell_command = {
+                int32_t(1.0e7f * packet.x), // in as DD converted to * t7
+                int32_t(1.0e7f * packet.y), // in as DD converted to * t7
+                int32_t(packet.z * 1.0e2f),
+                Location::ALT_FRAME_ABOVE_HOME
+            };
             break;
         }
 
@@ -563,49 +580,25 @@ void Tracker::mavlink_delay_cb()
         return;
     }
 
-    DataFlash.EnableWrites(false);
+    logger.EnableWrites(false);
 
     uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_EXTENDED_STATUS1);
+        gcs().send_message(MSG_SYS_STATUS);
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
-        gcs_update();
-        gcs_data_stream_send();
+        gcs().update_receive();
+        gcs().update_send();
         notify.update();
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
-    DataFlash.EnableWrites(true);
-}
-
-/*
- *  send data streams in the given rate range on both links
- */
-void Tracker::gcs_data_stream_send(void)
-{
-    gcs().data_stream_send();
-}
-
-/*
- *  look for incoming commands on the GCS links
- */
-void Tracker::gcs_update(void)
-{
-    gcs().update();
-}
-
-/**
-   retry any deferred messages
- */
-void Tracker::gcs_retry_deferred(void)
-{
-    gcs().retry_deferred();
+    logger.EnableWrites(true);
 }
 
 /*

@@ -70,6 +70,7 @@ private:
     
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
+    AP_Int32 channel_reversible_mask;
     AP_Int8 channel_auto;
     AP_Int8 run_test;
     AP_Int16 timeout_sec;
@@ -77,6 +78,7 @@ private:
     AP_Int8 debug_level;
     AP_Int8 output_type;
     AP_Int8 control_port;
+    AP_Int8 motor_poles;
     
     enum mspState {
         MSP_IDLE=0,

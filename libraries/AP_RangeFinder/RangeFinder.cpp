@@ -18,7 +18,6 @@
 #include "AP_RangeFinder_PulsedLightLRF.h"
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 #include "AP_RangeFinder_MaxsonarSerialLV.h"
-#include "AP_RangeFinder_PX4_PWM.h"
 #include "AP_RangeFinder_BBB_PRU.h"
 #include "AP_RangeFinder_LightWareI2C.h"
 #include "AP_RangeFinder_LightWareSerial.h"
@@ -32,9 +31,11 @@
 #include "AP_RangeFinder_uLanding.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
 #include "AP_RangeFinder_VL53L0X.h"
+#include "AP_RangeFinder_VL53L1X.h"
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
+#include "AP_RangeFinder_PWM.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -44,14 +45,14 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
     // @User: Standard
     AP_GROUPINFO("_TYPE",    0, RangeFinder, state[0].type, 0),
 
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
-    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
+    // @Description: Pin that rangefinder is connected to, analogue pins for analogue sensors, GPIO pins for PWM sensors. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 50:GPIO1,51:GPIO2,52:GPIO3,53:GPIO4,54:GPIO5,55:GPIO6
     // @User: Standard
     AP_GROUPINFO("_PIN",     1, RangeFinder, state[0].pin, -1),
 
@@ -145,18 +146,21 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the first rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: _POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the first rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: _POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the first rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("_POS", 49, RangeFinder, state[0].pos_offset, 0.0f),
 
@@ -175,13 +179,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
     // @User: Advanced
     AP_GROUPINFO("2_TYPE",    12, RangeFinder, state[1].type, 0),
 
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Description: Pin that rangefinder is connected to, analogue pins for analogue sensors, GPIO pins for PWM sensors. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("2_PIN",     13, RangeFinder, state[1].pin, -1),
@@ -268,18 +272,21 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the second rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 2_POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the second rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 2_POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the second rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("2_POS", 50, RangeFinder, state[1].pos_offset, 0.0f),
 
@@ -300,13 +307,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
     // @User: Advanced
     AP_GROUPINFO("3_TYPE",    25, RangeFinder, state[2].type, 0),
 
     // @Param: 3_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Description: Pin that rangefinder is connected to, analogue pins for analogue sensors, GPIO pins for PWM sensors. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("3_PIN",     26, RangeFinder, state[2].pin, -1),
@@ -393,18 +400,21 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the third rangefinder in body frame. Positive X is forward of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 3_POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the third rangefinder in body frame. Positive Y is to the right of the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 3_POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the third rangefinder in body frame. Positive Z is down from the origin. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("3_POS", 51, RangeFinder, state[2].pos_offset, 0.0f),
 
@@ -425,13 +435,13 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 4_TYPE
     // @DisplayName: Fourth Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
     // @User: Advanced
     AP_GROUPINFO("4_TYPE",    37, RangeFinder, state[3].type, 0),
 
     // @Param: 4_PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog pin that rangefinder is connected to. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
+    // @Description: Pin that rangefinder is connected to, analogue pins for analogue sensors, GPIO pins for PWM sensors. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port
     // @User: Advanced
     AP_GROUPINFO("4_PIN",     38, RangeFinder, state[3].pin, -1),
@@ -518,18 +528,21 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @DisplayName:  X position offset
     // @Description: X position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 4_POS_Y
     // @DisplayName: Y position offset
     // @Description: Y position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
 
     // @Param: 4_POS_Z
     // @DisplayName: Z position offset
     // @Description: Z position of the fourth rangefinder in body frame. Use the zero range datum point if supplied.
     // @Units: m
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("4_POS", 52, RangeFinder, state[3].pos_offset, 0.0f),
 
@@ -551,8 +564,6 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 const AP_Param::GroupInfo *RangeFinder::backend_var_info[RANGEFINDER_MAX_INSTANCES];
 
 RangeFinder::RangeFinder(AP_SerialManager &_serial_manager, enum Rotation orientation_default) :
-    num_instances(0),
-    estimated_terrain_height(0),
     serial_manager(_serial_manager)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -643,6 +654,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     switch (_type) {
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
+    case RangeFinder_TYPE_PLI2CV3HP:
         if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, state[instance], _type))) {
             _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, state[instance], _type));
         }
@@ -680,14 +692,22 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_VL53L0X:
         if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
                                                          hal.i2c_mgr->get_device(1, 0x29)))) {
-            _add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
-                                                        hal.i2c_mgr->get_device(0, 0x29)));
+            if (!_add_backend(AP_RangeFinder_VL53L0X::detect(state[instance],
+                                                             hal.i2c_mgr->get_device(0, 0x29)))) {
+                if (!_add_backend(AP_RangeFinder_VL53L1X::detect(state[instance],
+                                                                 hal.i2c_mgr->get_device(1, 0x29)))) {
+                    _add_backend(AP_RangeFinder_VL53L1X::detect(state[instance],
+                                                                hal.i2c_mgr->get_device(0, 0x29)));
+                }
+            }
         }
         break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     case RangeFinder_TYPE_PX4_PWM:
-        if (AP_RangeFinder_PX4_PWM::detect()) {
-            drivers[instance] = new AP_RangeFinder_PX4_PWM(state[instance], _powersave_range, estimated_terrain_height);
+        // to ease moving from PX4 to ChibiOS we'll lie a little about
+        // the backend driver...
+        if (AP_RangeFinder_PWM::detect()) {
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance], _powersave_range, estimated_terrain_height);
         }
         break;
 #endif
@@ -755,6 +775,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_BenewakeTFmini:
         if (AP_RangeFinder_Benewake::detect(serial_manager, serial_instance)) {
             drivers[instance] = new AP_RangeFinder_Benewake(state[instance], serial_manager, serial_instance++, AP_RangeFinder_Benewake::BENEWAKE_TFmini);
+        }
+        break;
+    case RangeFinder_TYPE_PWM:
+        if (AP_RangeFinder_PWM::detect()) {
+            drivers[instance] = new AP_RangeFinder_PWM(state[instance], _powersave_range, estimated_terrain_height);
         }
         break;
     default:

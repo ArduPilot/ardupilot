@@ -54,6 +54,8 @@ class AutoTestQuadPlane(AutoTest):
         if self.frame is None:
             self.frame = 'quadplane'
 
+        self.mavproxy_logfile = self.open_mavproxy_logfile()
+
         defaults_file = os.path.join(testdir, 'default_params/quadplane.parm')
         self.sitl = util.start_SITL(self.binary,
                                     wipe=True,
@@ -111,11 +113,12 @@ class AutoTestQuadPlane(AutoTest):
     def fly_mission(self, filename, fence, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        self.mavproxy.send('wp load %s\n' % filename)
-        self.mavproxy.expect('Flight plan received')
+        self.load_mission(filename)
         self.mavproxy.send('fence load %s\n' % fence)
         self.mavproxy.send('wp list\n')
         self.mavproxy.expect('Requesting [0-9]+ waypoints')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
         self.mavproxy.send('mode AUTO\n')
         self.wait_mode('AUTO')
         self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
@@ -130,45 +133,20 @@ class AutoTestQuadPlane(AutoTest):
         self.mav.motors_disarmed_wait()
         self.progress("Mission OK")
 
-    def autotest(self):
-        """Autotest QuadPlane in SITL."""
-        self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
+    def default_mode(self):
+        return "FBWA"
 
-        self.fail_list = []
+    def tests(self):
+        '''return list of all tests'''
+        m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
+        f = os.path.join(testdir,
+                         "ArduPlane-Missions/Dalby-OBC2016-fence.txt")
 
-        try:
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.mav.wait_heartbeat()
-            self.progress("Waiting for GPS fix")
-            self.mav.recv_match(condition='VFR_HUD.alt>10', blocking=True)
-            self.mav.wait_gps_fix()
-            while self.mav.location().alt < 10:
-                self.mav.wait_gps_fix()
-            self.homeloc = self.mav.location()
-            self.progress("Home location: %s" % self.homeloc)
+        ret = super(AutoTestQuadPlane, self).tests()
+        ret.extend([
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            # wait for EKF and GPS checks to pass
-            self.progress("Waiting reading for arm")
-            self.wait_ready_to_arm()
-
-            self.run_test("Arm features", self.test_arm_feature)
-            self.arm_vehicle()
-
-            m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
-            f = os.path.join(testdir,
-                             "ArduPlane-Missions/Dalby-OBC2016-fence.txt")
-
-            self.run_test("Mission", lambda: self.fly_mission(m, f))
-        except pexpect.TIMEOUT:
-            self.progress("Failed with timeout")
-            self.fail_list.append("Failed with timeout")
-
-        self.close()
-
-        if len(self.fail_list):
-            self.progress("FAILED: %s" % self.fail_list)
-            return False
-        return True
+            ("Mission", "Dalby Mission",
+             lambda: self.fly_mission(m, f))
+        ])
+        return ret

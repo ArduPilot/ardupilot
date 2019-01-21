@@ -206,6 +206,10 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Path: AP_OSD_Setting.cpp
     AP_SUBGROUPINFO(bat2used, "BAT2USED", 40, AP_OSD_Screen, AP_OSD_Setting),
     
+    // @Group: ASPD2
+    // @Path: AP_OSD_Setting.cpp
+    AP_SUBGROUPINFO(aspd2, "ASPD2", 41, AP_OSD_Screen, AP_OSD_Setting),
+    
     AP_GROUPEND
 };
 
@@ -470,8 +474,9 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    int nsat = gps.num_sats();
-    backend->write(x, y, nsat < osd->warn_nsat, "%c%c%2d", SYM_SAT_L, SYM_SAT_R, nsat);
+    uint8_t nsat = gps.num_sats();
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    backend->write(x, y, flash, "%c%c%2u", SYM_SAT_L, SYM_SAT_R, nsat);
 }
 
 void AP_OSD_Screen::draw_batused(uint8_t x, uint8_t y)
@@ -752,9 +757,7 @@ void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
         if (!blheli->get_telem_data(0, td)) {
             return;
         }
-
-        int esc_rpm = td.rpm * 14;   // hard-wired assumption for now that motor has 14 poles, so multiply eRPM * 14 to get motor RPM.
-        backend->write(x, y, false, "%5d%c", esc_rpm, SYM_RPM);
+        backend->write(x, y, false, "%5d%c", td.rpm, SYM_RPM);
     }
 }
 
@@ -768,7 +771,7 @@ void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
             return;
         }
 
-        float esc_amps = td.current;
+        float esc_amps = td.current * 0.01;
         backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
     }
 }
@@ -967,6 +970,20 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
     }
 }
 
+void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (!airspeed) {
+        return;
+    }
+    float asp2 = airspeed->get_airspeed(1);
+    if (airspeed != nullptr && airspeed->healthy(1)) {
+        backend->write(x, y, false, "%c%4d%c", SYM_ASPD, (int)u_scale(SPEED, asp2), u_icon(SPEED));
+    } else {
+        backend->write(x, y, false, "%c ---%c", SYM_ASPD, u_icon(SPEED));
+    }
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 void AP_OSD_Screen::draw(void)
@@ -994,6 +1011,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(fltmode);
     DRAW_SETTING(gspeed);
     DRAW_SETTING(aspeed);
+    DRAW_SETTING(aspd2);
     DRAW_SETTING(vspeed);
     DRAW_SETTING(throttle);
     DRAW_SETTING(heading);

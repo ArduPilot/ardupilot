@@ -375,11 +375,11 @@ bool Vector3<T>::operator !=(const Vector3<T> &v) const
 template <typename T>
 float Vector3<T>::angle(const Vector3<T> &v2) const
 {
-    float len = this->length() * v2.length();
+    const float len = this->length() * v2.length();
     if (len <= 0) {
         return 0.0f;
     }
-    float cosv = ((*this)*v2) / len;
+    const float cosv = ((*this)*v2) / len;
     if (fabsf(cosv) >= 1) {
         return 0.0f;
     }
@@ -410,24 +410,24 @@ template <typename T>
 float Vector3<T>::distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const
 {
     // triangle side lengths
-    float a = (*this-seg_start).length();
-    float b = (seg_start-seg_end).length();
-    float c = (seg_end-*this).length();
+    const float a = (*this-seg_start).length();
+    const float b = (seg_start-seg_end).length();
+    const float c = (seg_end-*this).length();
 
     // protect against divide by zero later
-    if (fabsf(b) < FLT_EPSILON) {
+    if (::is_zero(b)) {
         return 0.0f;
     }
 
     // semiperimeter of triangle
-    float s = (a+b+c) * 0.5f;
+    const float s = (a+b+c) * 0.5f;
 
     float area_squared = s*(s-a)*(s-b)*(s-c);
     // area must be constrained above 0 because a triangle could have 3 points could be on a line and float rounding could push this under 0
     if (area_squared < 0.0f) {
         area_squared = 0.0f;
     }
-    float area = safe_sqrt(area_squared);
+    const float area = safe_sqrt(area_squared);
     return 2.0f*area/b;
 }
 

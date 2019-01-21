@@ -3,8 +3,14 @@
 #define HAL_BOARD_NAME "PX4"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
 #define HAL_OS_POSIX_IO 1
-#define HAL_BOARD_LOG_DIRECTORY "/fs/microsd/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/fs/microsd/APM/TERRAIN"
+
+// put all storage of files under /fs/microsd/APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/fs/microsd/APM"
+#endif
+
+#define HAL_BOARD_LOG_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/LOGS"
+#define HAL_BOARD_TERRAIN_DIRECTORY HAL_BOARD_STORAGE_DIRECTORY "/TERRAIN"
 #define HAL_PARAM_DEFAULTS_PATH "/etc/defaults.parm"
 #define HAL_INS_DEFAULT HAL_INS_PX4
 #define HAL_BARO_DEFAULT HAL_BARO_PX4
@@ -15,6 +21,7 @@
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V1
 #define HAL_STORAGE_SIZE            8192
+#define HAL_MINIMIZE_FEATURES       1
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V3)
 // check for V3 before V2 as V3 also defines V2
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_PX4_V3
@@ -117,6 +124,10 @@
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #endif
 
+#ifndef HAL_HAVE_SERVO_VOLTAGE
+#define HAL_HAVE_SERVO_VOLTAGE 1
+#endif
+
 #ifndef HAL_PX4_HAVE_MTD_SUPPORT
 #define HAL_PX4_HAVE_MTD_SUPPORT 1
 #endif
@@ -148,4 +159,3 @@
 #include <AP_HAL_PX4/Semaphores.h>
 #define HAL_Semaphore PX4::Semaphore
 #define HAL_Semaphore_Recursive PX4::Semaphore_Recursive
-

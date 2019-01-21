@@ -4,6 +4,7 @@
 #include "AP_Mission.h"
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -49,9 +50,6 @@ void AP_Mission::init()
     // check_eeprom_version - checks version of missions stored in eeprom matches this library
     // command list will be cleared if they do not match
     check_eeprom_version();
-
-    // changes in Content size break the storage
-    static_assert(sizeof(union Content) == 12, "AP_Mission: Content must be 12 bytes");
 
     // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
     if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
@@ -235,7 +233,7 @@ void AP_Mission::update()
         }
     }else{
         // run the active nav command
-        if (_cmd_verify_fn(_nav_cmd)) {
+        if (verify_command(_nav_cmd)) {
             // market _nav_cmd as complete (it will be started on the next iteration)
             _flags.nav_cmd_loaded = false;
             // immediately advance to the next mission command
@@ -251,11 +249,49 @@ void AP_Mission::update()
     if (!_flags.do_cmd_loaded) {
         advance_current_do_cmd();
     }else{
-        // run the active do command
-        if (_cmd_verify_fn(_do_cmd)) {
-            // market _nav_cmd as complete (it will be started on the next iteration)
+        // check the active do command
+        if (verify_command(_do_cmd)) {
+            // mark _do_cmd as complete
             _flags.do_cmd_loaded = false;
         }
+    }
+}
+
+bool AP_Mission::verify_command(const Mission_Command& cmd)
+{
+    switch (cmd.id) {
+        // do-commands always return true for verify:
+    case MAV_CMD_DO_GRIPPER:
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        return true;
+    default:
+        return _cmd_verify_fn(cmd);
+    }
+}
+
+bool AP_Mission::start_command(const Mission_Command& cmd)
+{
+    switch (cmd.id) {
+    case MAV_CMD_DO_GRIPPER:
+        return start_command_do_gripper(cmd);
+    case MAV_CMD_DO_SET_SERVO:
+    case MAV_CMD_DO_SET_RELAY:
+    case MAV_CMD_DO_REPEAT_SERVO:
+    case MAV_CMD_DO_REPEAT_RELAY:
+        return start_command_do_servorelayevents(cmd);
+    case MAV_CMD_DO_CONTROL_VIDEO:
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        return start_command_camera(cmd);
+    default:
+        return _cmd_start_fn(cmd);
     }
 }
 
@@ -426,6 +462,41 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     return true;
 }
 
+struct PACKED Packed_Location_Option_Flags {
+    uint8_t relative_alt : 1;           // 1 if altitude is relative to home
+    uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
+    uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
+    uint8_t terrain_alt  : 1;           // this altitude is above terrain
+    uint8_t origin_alt   : 1;           // this altitude is above ekf origin
+    uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
+};
+
+struct PACKED PackedLocation {
+    union {
+        Packed_Location_Option_Flags flags;                    ///< options bitmask (1<<0 = relative altitude)
+        uint8_t options;                                /// allows writing all flags to eeprom as one byte
+    };
+    // by making alt 24 bit we can make p1 in a command 16 bit,
+    // allowing an accurate angle in centi-degrees. This keeps the
+    // storage cost per mission item at 15 bytes, and allows mission
+    // altitudes of up to +/- 83km
+    int32_t alt:24;                                     ///< param 2 - Altitude in centimeters (meters * 100) see LOCATION_ALT_MAX_M
+    int32_t lat;                                        ///< param 3 - Latitude * 10**7
+    int32_t lng;                                        ///< param 4 - Longitude * 10**7
+};
+
+union PackedContent {
+    // location
+    PackedLocation location;      // Waypoint location
+
+    // raw bytes, for reading/writing to eeprom. Note that only 10
+    // bytes are available if a 16 bit command ID is used
+    uint8_t bytes[12];
+
+};
+
+assert_storage_size<PackedContent, 12> assert_storage_size_PackedContent;
+
 /// load_cmd_from_storage - load command from storage
 ///     true is return if successful
 bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const
@@ -442,22 +513,41 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.index = 0;
         cmd.id = MAV_CMD_NAV_WAYPOINT;
         cmd.p1 = 0;
-        cmd.content.location = _ahrs.get_home();
+        cmd.content.location = AP::ahrs().get_home();
     }else{
         // Find out proper location in memory by using the start_byte position + the index
         // we can load a command, we don't process it yet
         // read WP position
         uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
+        PackedContent packed_content;
+
         uint8_t b1 = _storage.read_byte(pos_in_storage);
         if (b1 == 0) {
             cmd.id = _storage.read_uint16(pos_in_storage+1);
             cmd.p1 = _storage.read_uint16(pos_in_storage+3);
-            _storage.read_block(cmd.content.bytes, pos_in_storage+5, 10);
+            _storage.read_block(packed_content.bytes, pos_in_storage+5, 10);
         } else {
             cmd.id = b1;
             cmd.p1 = _storage.read_uint16(pos_in_storage+1);
-            _storage.read_block(cmd.content.bytes, pos_in_storage+3, 12);
+            _storage.read_block(packed_content.bytes, pos_in_storage+3, 12);
+        }
+
+        if (stored_in_location(cmd.id)) {
+            // Location is not PACKED; field-wise copy it:
+            cmd.content.location.relative_alt = packed_content.location.flags.relative_alt;
+            cmd.content.location.loiter_ccw = packed_content.location.flags.loiter_ccw;
+            cmd.content.location.terrain_alt = packed_content.location.flags.terrain_alt;
+            cmd.content.location.origin_alt = packed_content.location.flags.origin_alt;
+            cmd.content.location.loiter_xtrack = packed_content.location.flags.loiter_xtrack;
+            cmd.content.location.alt = packed_content.location.alt;
+            cmd.content.location.lat = packed_content.location.lat;
+            cmd.content.location.lng = packed_content.location.lng;
+        } else {
+            // all other options in Content are assumed to be packed:
+            static_assert(sizeof(cmd.content) >= 12,
+                          "content is big enough to take bytes");
+            memcpy(&cmd.content, packed_content.bytes, 12);
         }
 
         // set command's index to it's position in eeprom
@@ -466,6 +556,31 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
     // return success
     return true;
+}
+
+bool AP_Mission::stored_in_location(uint16_t id)
+{
+    switch (id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LAND:
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_GO_AROUND:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return true;
+    default:
+        return false;
+    }
 }
 
 /// write_cmd_to_storage - write a command to storage
@@ -480,19 +595,35 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, Mission_Command& cmd)
         return false;
     }
 
+    PackedContent packed;
+    if (stored_in_location(cmd.id)) {
+        // Location is not PACKED; field-wise copy it:
+        packed.location.flags.relative_alt = cmd.content.location.relative_alt;
+        packed.location.flags.loiter_ccw = cmd.content.location.loiter_ccw;
+        packed.location.flags.terrain_alt = cmd.content.location.terrain_alt;
+        packed.location.flags.origin_alt = cmd.content.location.origin_alt;
+        packed.location.flags.loiter_xtrack = cmd.content.location.loiter_xtrack;
+        packed.location.alt = cmd.content.location.alt;
+        packed.location.lat = cmd.content.location.lat;
+        packed.location.lng = cmd.content.location.lng;
+    } else {
+        // all other options in Content are assumed to be packed:
+        memcpy(packed.bytes, &cmd.content.jump, sizeof(packed.bytes));
+    }
+
     // calculate where in storage the command should be placed
     uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
     if (cmd.id < 256) {
         _storage.write_byte(pos_in_storage, cmd.id);
         _storage.write_uint16(pos_in_storage+1, cmd.p1);
-        _storage.write_block(pos_in_storage+3, cmd.content.bytes, 12);
+        _storage.write_block(pos_in_storage+3, packed.bytes, 12);
     } else {
         // if the command ID is above 256 we store a 0 followed by the 16 bit command ID
         _storage.write_byte(pos_in_storage, 0);
         _storage.write_uint16(pos_in_storage+1, cmd.id);
         _storage.write_uint16(pos_in_storage+3, cmd.p1);
-        _storage.write_block(pos_in_storage+5, cmd.content.bytes, 10);
+        _storage.write_block(pos_in_storage+5, packed.bytes, 10);
     }
 
     // remember when the mission last changed
@@ -508,7 +639,7 @@ void AP_Mission::write_home_to_storage()
 {
     Mission_Command home_cmd = {};
     home_cmd.id = MAV_CMD_NAV_WAYPOINT;
-    home_cmd.content.location = _ahrs.get_home();
+    home_cmd.content.location = AP::ahrs().get_home();
     write_cmd_to_storage(0,home_cmd);
 }
 
@@ -558,13 +689,10 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
 MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
 {
-    bool copy_location = false;
-    bool copy_alt = false;
-
     // command's position in mission list and mavlink id
     cmd.index = packet.seq;
     cmd.id = packet.command;
-    cmd.content.location.options = 0;
+    cmd.content.location = {};
 
     MAV_MISSION_RESULT param_check = sanity_check_params(packet);
     if (param_check != MAV_MISSION_ACCEPTED) {
@@ -580,7 +708,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
     {
-        copy_location = true;
         /*
           the 15 byte limit means we can't fit both delay and radius
           in the cmd structure. When we expand the mission structure
@@ -604,45 +731,39 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
-        copy_location = true;
         cmd.p1 = fabsf(packet.param3);                  // store radius as 16bit since no other params are competing for space
-        cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);    // -1 = counter clockwise, +1 = clockwise
+        cmd.content.location.loiter_ccw = (packet.param3 < 0);    // -1 = counter clockwise, +1 = clockwise
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
     {
-        copy_location = true;
         uint16_t num_turns = packet.param1;              // param 1 is number of times to circle is held in low p1
         uint16_t radius_m = fabsf(packet.param3);        // param 3 is radius in meters is held in high p1
         cmd.p1 = (radius_m<<8) | (num_turns & 0x00FF);   // store radius in high byte of p1, num turns in low byte of p1
-        cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
-        cmd.content.location.flags.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.location.loiter_ccw = (packet.param3 < 0);
+        cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
     }
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
-        copy_location = true;
         cmd.p1 = packet.param1;                         // loiter time in seconds uses all 16 bits, 8bit seconds is too small. No room for radius.
-        cmd.content.location.flags.loiter_ccw = (packet.param3 < 0);
-        cmd.content.location.flags.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.location.loiter_ccw = (packet.param3 < 0);
+        cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
         break;
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
-        copy_location = true;
         cmd.p1 = packet.param1;                         // abort target altitude(m)  (plane only)
-        cmd.content.location.flags.loiter_ccw = is_negative(packet.param4); // yaw direction, (plane deepstall only)
+        cmd.content.location.loiter_ccw = is_negative(packet.param4); // yaw direction, (plane deepstall only)
         break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
-        copy_location = true;                           // only altitude is used
         cmd.p1 = packet.param1;                         // minimum pitch (plane only)
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
-        copy_location = true;                           // lat/lng used for heading lock
         cmd.p1 = packet.param1;                         // Climb/Descend
                         // 0 = Neutral, cmd complete at +/- 5 of indicated alt.
                         // 1 = Climb, cmd complete at or above indicated alt.
@@ -650,14 +771,12 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
-        copy_location = true;
         cmd.p1 = fabsf(packet.param2);                  // param2 is radius in meters
-        cmd.content.location.flags.loiter_ccw = (packet.param2 < 0);
-        cmd.content.location.flags.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        cmd.content.location.loiter_ccw = (packet.param2 < 0);
+        cmd.content.location.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
-        copy_location = true;
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
         break;
 
@@ -703,7 +822,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_SET_HOME:
-        copy_location = true;
         cmd.p1 = packet.param1;                         // p1=0 means use current location, p=1 means use provided location
         break;
 
@@ -731,11 +849,12 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
-        copy_location = true;
+        break;
+
+    case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
-        copy_location = true;
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
@@ -803,11 +922,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
-        copy_location = true;
         break;
 
     case MAV_CMD_NAV_VTOL_LAND:
-        copy_location = true;
         break;
 
     case MAV_CMD_DO_VTOL_TRANSITION:
@@ -826,7 +943,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         cmd.p1 = packet.param1*100; // copy max-descend parameter (m->cm)
-        copy_location = true;
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
@@ -848,25 +964,21 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     }
 
     // copy location from mavlink to command
-    if (copy_location || copy_alt) {
+    if (stored_in_location(cmd.id)) {
 
         // sanity check location
-        if (copy_location) {
-            if (!check_lat(packet.x)) {
-                return MAV_MISSION_INVALID_PARAM5_X;
-            }
-            if (!check_lng(packet.y)) {
-                return MAV_MISSION_INVALID_PARAM6_Y;
-            }
+        if (!check_lat(packet.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(packet.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
         }
         if (isnan(packet.z) || fabsf(packet.z) >= LOCATION_ALT_MAX_M) {
             return MAV_MISSION_INVALID_PARAM7;
         }
 
-        if (copy_location) {
-            cmd.content.location.lat = packet.x;
-            cmd.content.location.lng = packet.y;
-        }
+        cmd.content.location.lat = packet.x;
+        cmd.content.location.lng = packet.y;
 
         cmd.content.location.alt = packet.z * 100.0f;       // convert packet's alt (m) to cmd alt (cm)
 
@@ -874,20 +986,20 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
         case MAV_FRAME_MISSION:
         case MAV_FRAME_GLOBAL:
-            cmd.content.location.flags.relative_alt = 0;
+            cmd.content.location.relative_alt = 0;
             break;
 
         case MAV_FRAME_GLOBAL_RELATIVE_ALT:
-            cmd.content.location.flags.relative_alt = 1;
+            cmd.content.location.relative_alt = 1;
             break;
 
 #if AP_TERRAIN_AVAILABLE
         case MAV_FRAME_GLOBAL_TERRAIN_ALT:
             // we mark it as a relative altitude, as it doesn't have
             // home alt added
-            cmd.content.location.flags.relative_alt = 1;
+            cmd.content.location.relative_alt = 1;
             // mark altitude as above terrain, not above home
-            cmd.content.location.flags.terrain_alt = 1;
+            cmd.content.location.terrain_alt = 1;
             break;
 #endif
 
@@ -1018,9 +1130,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_com
 //  return true on success, false on failure
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
-    bool copy_location = false;
-    bool copy_alt = false;
-
     // command's position in mission list and mavlink id
     packet.seq = cmd.index;
     packet.command = cmd.id;
@@ -1040,7 +1149,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         return false;
         
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
-        copy_location = true;
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         // acceptance radius in meters
 
@@ -1053,50 +1161,44 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_LOITER_UNLIM:                      // MAV ID: 17
-        copy_location = true;
         packet.param3 = (float)cmd.p1;
-        if (cmd.content.location.flags.loiter_ccw) {
+        if (cmd.content.location.loiter_ccw) {
             packet.param3 *= -1;
         }
         break;
 
     case MAV_CMD_NAV_LOITER_TURNS:                      // MAV ID: 18
-        copy_location = true;
         packet.param1 = LOWBYTE(cmd.p1);                // number of times to circle is held in low byte of p1
         packet.param3 = HIGHBYTE(cmd.p1);               // radius is held in high byte of p1
-        if (cmd.content.location.flags.loiter_ccw) {
+        if (cmd.content.location.loiter_ccw) {
             packet.param3 = -packet.param3;
         }
-        packet.param4 = cmd.content.location.flags.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_LOITER_TIME:                       // MAV ID: 19
-        copy_location = true;
         packet.param1 = cmd.p1;                         // loiter time in seconds
-        if (cmd.content.location.flags.loiter_ccw) {
+        if (cmd.content.location.loiter_ccw) {
             packet.param3 = -1;
         } else {
             packet.param3 = 1;
         }
-        packet.param4 = cmd.content.location.flags.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:                  // MAV ID: 20
         break;
 
     case MAV_CMD_NAV_LAND:                              // MAV ID: 21
-        copy_location = true;
         packet.param1 = cmd.p1;                        // abort target altitude(m)  (plane only)
-        packet.param4 = cmd.content.location.flags.loiter_ccw ? -1 : 1; // yaw direction, (plane deepstall only)
+        packet.param4 = cmd.content.location.loiter_ccw ? -1 : 1; // yaw direction, (plane deepstall only)
         break;
 
     case MAV_CMD_NAV_TAKEOFF:                           // MAV ID: 22
-        copy_location = true;                           // only altitude is used
         packet.param1 = cmd.p1;                         // minimum pitch (plane only)
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:           // MAV ID: 30
-        copy_location = true;                           // lat/lng used for heading lock
         packet.param1 = cmd.p1;                         // Climb/Descend
                         // 0 = Neutral, cmd complete at +/- 5 of indicated alt.
                         // 1 = Climb, cmd complete at or above indicated alt.
@@ -1104,16 +1206,14 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:                     // MAV ID: 31
-        copy_location = true;
         packet.param2 = cmd.p1;                        // loiter radius(m)
-        if (cmd.content.location.flags.loiter_ccw) {
+        if (cmd.content.location.loiter_ccw) {
             packet.param2 = -packet.param2;
         }
-        packet.param4 = cmd.content.location.flags.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        packet.param4 = cmd.content.location.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
-        copy_location = true;
         packet.param1 = cmd.p1;                         // delay at waypoint in seconds
         break;
 
@@ -1159,7 +1259,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_SET_HOME:                           // MAV ID: 179
-        copy_location = true;
         packet.param1 = cmd.p1;                         // p1=0 means use current location, p=1 means use provided location
         break;
 
@@ -1187,11 +1286,12 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
-        copy_location = true;
+        break;
+
+    case MAV_CMD_DO_GO_AROUND:                          // MAV ID: 191
         break;
 
     case MAV_CMD_DO_SET_ROI:                            // MAV ID: 201
-        copy_location = true;
         packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
@@ -1263,11 +1363,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
-        copy_location = true;
         break;
 
     case MAV_CMD_NAV_VTOL_LAND:
-        copy_location = true;
         break;
 
     case MAV_CMD_DO_VTOL_TRANSITION:
@@ -1281,7 +1379,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;        
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        copy_location = true;
         packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
         break;
 
@@ -1304,21 +1401,20 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     }
 
     // copy location from mavlink to command
-    if (copy_location) {
+    if (stored_in_location(cmd.id)) {
         packet.x = cmd.content.location.lat;
         packet.y = cmd.content.location.lng;
-    }
-    if (copy_location || copy_alt) {
+
         packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
-        if (cmd.content.location.flags.relative_alt) {
+        if (cmd.content.location.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         }else{
             packet.frame = MAV_FRAME_GLOBAL;
         }
 #if AP_TERRAIN_AVAILABLE
-        if (cmd.content.location.flags.terrain_alt) {
+        if (cmd.content.location.terrain_alt) {
             // this is a above-terrain altitude
-            if (!cmd.content.location.flags.relative_alt) {
+            if (!cmd.content.location.relative_alt) {
                 // refuse to return non-relative terrain mission
                 // items. Internally we do have these, and they
                 // have home.alt added, but we should never be
@@ -1332,7 +1428,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         }
 #else
         // don't ever return terrain mission items if no terrain support
-        if (cmd.content.location.flags.terrain_alt) {
+        if (cmd.content.location.terrain_alt) {
             return false;
         }
 #endif
@@ -1411,7 +1507,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             }
             // set current navigation command and start it
             _nav_cmd = cmd;
-            if (_cmd_start_fn(_nav_cmd)) {
+            if (start_command(_nav_cmd)) {
                 _flags.nav_cmd_loaded = true;
             }
         }else{
@@ -1419,7 +1515,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
             if (!_flags.do_cmd_loaded) {
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
-                _cmd_start_fn(_do_cmd);
+                start_command(_do_cmd);
             } else {
                 // protect against endless loops of do-commands
                 if (max_loops-- == 0) {
@@ -1473,7 +1569,7 @@ void AP_Mission::advance_current_do_cmd()
         // set current do command and start it
         _do_cmd = cmd;
         _flags.do_cmd_loaded = true;
-        _cmd_start_fn(_do_cmd);
+        start_command(_do_cmd);
     }else{
         // set flag to stop unnecessarily searching for do commands
         _flags.do_cmd_all_done = true;
@@ -1677,7 +1773,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
 {
     struct Location current_loc;
 
-    if (!_ahrs.get_position(current_loc)) {
+    if (!AP::ahrs().get_position(current_loc)) {
         return 0;
     }
 
@@ -1685,7 +1781,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
     float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
-    for (uint16_t i = 0; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -1722,6 +1818,45 @@ bool AP_Mission::jump_to_landing_sequence(void)
     }
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+    return false;
+}
+
+// jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+bool AP_Mission::jump_to_abort_landing_sequence(void)
+{
+    struct Location current_loc;
+
+    uint16_t abort_index = 0;
+    if (AP::ahrs().get_position(current_loc)) {
+        float min_distance = FLT_MAX;
+
+        for (uint16_t i = 1; i < num_commands(); i++) {
+            Mission_Command tmp;
+            if (!read_cmd_from_storage(i, tmp)) {
+                continue;
+            }
+            if (tmp.id == MAV_CMD_DO_GO_AROUND) {
+                float tmp_distance = get_distance(tmp.content.location, current_loc);
+                if (tmp_distance < min_distance) {
+                    min_distance = tmp_distance;
+                    abort_index = i;
+                }
+            }
+        }
+    }
+
+    if (abort_index != 0 && set_current_cmd(abort_index)) {
+
+        //if the mission has ended it has to be restarted
+        if (state() == AP_Mission::MISSION_STOPPED) {
+            resume();
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Landing abort sequence start");
+        return true;
+    }
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
 
@@ -1768,6 +1903,20 @@ const char *AP_Mission::Mission_Command::type() const {
     default:
         return "?";
     }
+}
+
+bool AP_Mission::contains_item(MAV_CMD command) const
+{
+    for (int i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == command) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // singleton instance

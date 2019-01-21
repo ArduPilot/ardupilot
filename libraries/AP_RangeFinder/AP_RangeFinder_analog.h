@@ -13,7 +13,7 @@ public:
     static bool detect(RangeFinder::RangeFinder_State &_state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 protected:
 

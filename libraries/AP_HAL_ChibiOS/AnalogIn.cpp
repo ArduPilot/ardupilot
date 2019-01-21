@@ -19,7 +19,7 @@
 #include "hal.h"
 #include <AP_Common/Semaphore.h>
 
-#if HAL_USE_ADC == TRUE
+#if HAL_USE_ADC == TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
 
 #include "AnalogIn.h"
 

@@ -25,7 +25,7 @@
 *          18-12-2003
 *          06-06-2004
 *
-* © 2003, This code is provided "as is" and you can use it freely as long as
+* Copyright 2003, This code is provided "as is" and you can use it freely as long as
 * credit is given to Bill Perone in the application it is used in
 *
 * Notes:
@@ -218,9 +218,9 @@ public:
 
     // distance from the tip of this vector to another vector squared (so as to avoid the sqrt calculation)
     float distance_squared(const Vector3<T> &v) const {
-        float dist_x = x-v.x;
-        float dist_y = y-v.y;
-        float dist_z = z-v.z;
+        const float dist_x = x-v.x;
+        const float dist_y = y-v.y;
+        const float dist_z = z-v.z;
         return (dist_x*dist_x + dist_y*dist_y + dist_z*dist_z);
     }
 
@@ -233,11 +233,11 @@ public:
     // zero vector - that should be checked for.
     static Vector3<T> perpendicular(const Vector3<T> &p1, const Vector3<T> &v1)
     {
-        T d = p1 * v1;
+        const T d = p1 * v1;
         if (fabsf(d) < FLT_EPSILON) {
             return p1;
         }
-        Vector3<T> parallel = (v1 * d) / v1.length_squared();
+        const Vector3<T> parallel = (v1 * d) / v1.length_squared();
         Vector3<T> perpendicular = p1 - parallel;
 
         return perpendicular;

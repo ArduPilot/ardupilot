@@ -18,7 +18,7 @@ public:
     AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 

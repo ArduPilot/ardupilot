@@ -4,7 +4,7 @@
 
 #include "AP_Mount_SoloGimbal.h"
 #include "SoloGimbal.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -12,7 +12,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _gimbal(frontend._ahrs)
+    _gimbal()
 {}
 
 // init - performs any required initialisation for this instance
@@ -99,8 +99,8 @@ void AP_Mount_SoloGimbal::set_mode(enum MAV_MOUNT_MODE mode)
     _state._mode = mode;
 }
 
-// status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_SoloGimbal::status_msg(mavlink_channel_t chan)
+// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+void AP_Mount_SoloGimbal::send_mount_status(mavlink_channel_t chan)
 {
     if (_gimbal.aligned()) {
         mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100);
@@ -113,12 +113,12 @@ void AP_Mount_SoloGimbal::status_msg(mavlink_channel_t chan)
 /*
   handle a GIMBAL_REPORT message
  */
-void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, mavlink_message_t *msg)
+void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t *msg)
 {
     _gimbal.update_target(_angle_ef_target_rad);
     _gimbal.receive_feedback(chan,msg);
 
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df == nullptr) {
         return;
     }
@@ -133,7 +133,7 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, mavlink_m
     }
 }
 
-void AP_Mount_SoloGimbal::handle_param_value(mavlink_message_t *msg)
+void AP_Mount_SoloGimbal::handle_param_value(const mavlink_message_t *msg)
 {
     _gimbal.handle_param_value(msg);
 }
@@ -141,7 +141,7 @@ void AP_Mount_SoloGimbal::handle_param_value(mavlink_message_t *msg)
 /*
   handle a GIMBAL_REPORT message
  */
-void AP_Mount_SoloGimbal::handle_gimbal_torque_report(mavlink_channel_t chan, mavlink_message_t *msg)
+void AP_Mount_SoloGimbal::handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t *msg)
 {
     _gimbal.disable_torque_report();
 }

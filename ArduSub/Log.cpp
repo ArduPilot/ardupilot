@@ -2,48 +2,8 @@
 
 #if LOGGING_ENABLED == ENABLED
 
-// Code to Write and Read packets from DataFlash log memory
+// Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
-
-void Sub::do_erase_logs()
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Erasing logs");
-    DataFlash.EraseAll();
-    gcs().send_text(MAV_SEVERITY_INFO, "Log erase complete");
-}
-
-struct PACKED log_Optflow {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t surface_quality;
-    float flow_x;
-    float flow_y;
-    float body_x;
-    float body_y;
-};
-
-// Write an optical flow packet
-void Sub::Log_Write_Optflow()
-{
-#if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-    struct log_Optflow pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_us         : AP_HAL::micros64(),
-        surface_quality : optflow.quality(),
-        flow_x          : flowRate.x,
-        flow_y          : flowRate.y,
-        body_x          : bodyRate.x,
-        body_y          : bodyRate.y
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
-#endif     // OPTFLOW == ENABLED
-}
 
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
@@ -87,7 +47,7 @@ void Sub::Log_Write_Control_Tuning()
         target_climb_rate   : (int16_t)pos_control.get_vel_target_z(),
         climb_rate          : climb_rate
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write an attitude packet
@@ -95,14 +55,14 @@ void Sub::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    DataFlash.Log_Write_Attitude(ahrs, targets);
+    logger.Write_Attitude(ahrs, targets);
 
-    DataFlash.Log_Write_EKF(ahrs);
-    DataFlash.Log_Write_AHRS2(ahrs);
+    logger.Write_EKF(ahrs);
+    logger.Write_AHRS2(ahrs);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE(&DataFlash);
+    sitl.Log_Write_SIMSTATE();
 #endif
-    DataFlash.Log_Write_POS(ahrs);
+    logger.Write_POS(ahrs);
 }
 
 struct PACKED log_MotBatt {
@@ -125,7 +85,7 @@ void Sub::Log_Write_MotBatt()
         bat_res         : (float)(battery.get_resistance()),
         th_limit        : (float)(motors.get_throttle_limit())
     };
-    DataFlash.WriteBlock(&pkt_mot, sizeof(pkt_mot));
+    logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
 struct PACKED log_Event {
@@ -143,7 +103,7 @@ void Sub::Log_Write_Event(uint8_t id)
             time_us  : AP_HAL::micros64(),
             id       : id
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -165,7 +125,7 @@ void Sub::Log_Write_Data(uint8_t id, int16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -187,7 +147,7 @@ void Sub::Log_Write_Data(uint8_t id, uint16_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -208,7 +168,7 @@ void Sub::Log_Write_Data(uint8_t id, int32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -229,7 +189,7 @@ void Sub::Log_Write_Data(uint8_t id, uint32_t value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -251,7 +211,7 @@ void Sub::Log_Write_Data(uint8_t id, float value)
             id          : id,
             data_value  : value
         };
-        DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -271,7 +231,7 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code)
         sub_system    : sub_system,
         error_code    : error_code,
     };
-    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
+    logger.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 // logs when baro or compass becomes unhealthy
@@ -316,16 +276,14 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
         vel_target_y    : vel_target.y,
         vel_target_z    : vel_target.z
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // type and unit information can be found in
-// libraries/DataFlash/Logstructure.h; search for "log_Units" for
+// libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
@@ -350,21 +308,20 @@ const struct LogStructure Sub::log_structure[] = {
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
-    // only 200(?) bytes are guaranteed by DataFlash
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    // only 200(?) bytes are guaranteed by AP_Logger
+    logger.Write_Mode(control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
-    gps.Write_DataFlash_Log_Startup_messages();
+    gps.Write_AP_Logger_Log_Startup_messages();
 }
 
 
 void Sub::log_init()
 {
-    DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
+    logger.Init(log_structure, ARRAY_SIZE(log_structure));
 }
 
 #else // LOGGING_ENABLED
 
-void Sub::do_erase_logs(void) {}
 void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
@@ -379,10 +336,6 @@ void Sub::Log_Write_Error(uint8_t sub_system, uint8_t error_code) {}
 void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Sub::Log_Write_Vehicle_Startup_Messages() {}
-
-#if OPTFLOW == ENABLED
-void Sub::Log_Write_Optflow() {}
-#endif
 
 void Sub::log_init(void) {}
 

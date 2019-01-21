@@ -28,6 +28,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QSTABILIZE:
     case QLOITER:
     case QHOVER:
+    case QAUTOTUNE:
         failsafe.saved_mode = control_mode;
         failsafe.saved_mode_set = true;
         set_mode(QLAND, reason);
@@ -90,6 +91,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case QSTABILIZE:
     case QHOVER:
     case QLOITER:
+    case QAUTOTUNE:
         set_mode(QLAND, reason);
         break;
         
@@ -141,17 +143,23 @@ void Plane::failsafe_long_off_event(mode_reason_t reason)
 void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
     switch ((Failsafe_Action)action) {
+        case Failsafe_Action_QLand:
+            if (quadplane.available()) {
+                plane.set_mode(QLAND, MODE_REASON_BATTERY_FAILSAFE);
+                break;
+            }
+            FALLTHROUGH;
         case Failsafe_Action_Land:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND) {
                 // never stop a landing if we were already committed
                 if (plane.mission.jump_to_landing_sequence()) {
-                    plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+                    plane.set_mode(AUTO, MODE_REASON_BATTERY_FAILSAFE);
                     break;
                  }
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND || control_mode == QLAND ) {
                 // never stop a landing if we were already committed
                 set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
@@ -167,9 +175,4 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             // and ensure all appropriate flags are going off to the user
             break;
     }
-}
-
-void Plane::update_events(void)
-{
-    ServoRelayEvents.update_events();
 }

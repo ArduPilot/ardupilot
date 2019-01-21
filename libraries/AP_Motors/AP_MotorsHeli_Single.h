@@ -66,6 +66,9 @@ public:
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
+    // output_to_motors - sends values out to the motors
+    void output_to_motors() override;
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
 
@@ -136,6 +139,10 @@ protected:
     float _roll_test = 0.0f;                    // over-ride for roll output, used by servo_test function
     float _pitch_test = 0.0f;                   // over-ride for pitch output, used by servo_test function
     float _yaw_test = 0.0f;                     // over-ride for yaw output, used by servo_test function
+    float _servo1_out = 0.0f;                   // output value sent to motor
+    float _servo2_out = 0.0f;                   // output value sent to motor
+    float _servo3_out = 0.0f;                   // output value sent to motor
+    float _servo4_out = 0.0f;                   // output value sent to motor
 
     // parameters
     AP_Int16        _servo1_pos;                // Angular location of swash servo #1

@@ -56,6 +56,9 @@ public:
 
     uint32_t available_memory(void) override;
 
+    bool get_system_id(char buf[40]) override;
+    bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
+    
     /*
      * Write a string as specified by @fmt to the file in @path. Note this
      * should not be used on hot path since it will open, write and close the

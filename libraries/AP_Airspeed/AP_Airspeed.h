@@ -43,7 +43,7 @@ public:
     void init(void);
 
     // read the analog source and update airspeed
-    void read(void);
+    void update(bool log);
 
     // calibrate the airspeed. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used

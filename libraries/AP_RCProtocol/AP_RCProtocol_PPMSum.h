@@ -18,8 +18,6 @@
 
 #include "AP_RCProtocol.h"
 
-#define MAX_PPM_CHANNELS 16
-
 class AP_RCProtocol_PPMSum : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_PPMSum(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}

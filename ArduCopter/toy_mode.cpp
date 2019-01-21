@@ -709,7 +709,7 @@ void ToyMode::trim_update(void)
         int16_t new_value = 1000UL * (throttle_trim - ch_min) / (ch_max - ch_min);
         if (new_value != throttle_mid) {
             throttle_mid = new_value;
-            gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: thr mid %d\n",
+            gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: thr mid %d",
                                              throttle_mid);
         }
     }
@@ -773,7 +773,7 @@ void ToyMode::trim_update(void)
         }
     }
 
-    gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: trim %u %u %u %u\n",
+    gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: trim %u %u %u %u",
                                      chan[0], chan[1], chan[2], chan[3]);
 }
 
@@ -792,7 +792,7 @@ void ToyMode::action_arm(void)
         copter.channel_yaw->get_control_in() == 0;
 
     if (!sticks_centered) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: sticks not centered\n");
+        gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: sticks not centered");
         return;
     }
 
@@ -991,7 +991,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
     if (motor_log_counter++ % 10 == 0) {
-        DataFlash_Class::instance()->Log_Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,

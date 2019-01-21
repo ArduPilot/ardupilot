@@ -2,8 +2,9 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Build, Logs, Options, Utils
+from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils
 from waflib.Configure import conf
+from waflib.Scripting import run_command
 from waflib.TaskGen import before_method, feature
 import os.path, os
 from collections import OrderedDict
@@ -24,7 +25,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Baro',
     'AP_BattMonitor',
     'AP_BoardConfig',
-    'AP_Buffer',
     'AP_Common',
     'AP_Compass',
     'AP_Declination',
@@ -45,7 +45,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_SerialManager',
     'AP_Terrain',
     'AP_Vehicle',
-    'DataFlash',
+    'AP_Logger',
     'Filter',
     'GCS_MAVLink',
     'RC_Channel',
@@ -76,6 +76,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Gripper',
     'AP_RTC',
     'AC_Sprayer',
+    'AC_Avoidance',
+    'AP_LandingGear',
+    'AP_RobotisServo',
+    'AP_ToshibaCAN',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -89,6 +93,86 @@ IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
 ]
+
+
+def ap_autoconfigure(execute_method):
+    """
+    Decorator that enables context commands to run *configure* as needed.
+    """
+    def execute(self):
+        """
+        Wraps :py:func:`waflib.Context.Context.execute` on the context class
+        """
+        if not Configure.autoconfig:
+            return execute_method(self)
+
+        # Disable autoconfig so waf's version doesn't run (and don't end up on loop of bad configure)
+        Configure.autoconfig = False
+
+        if self.variant == '':
+            raise Errors.WafError('The project is badly configured: run "waf configure" again!')
+
+        env = ConfigSet.ConfigSet()
+        do_config = False
+
+        try:
+            p = os.path.join(Context.out_dir, Build.CACHE_DIR, self.variant + Build.CACHE_SUFFIX)
+            env.load(p)
+        except EnvironmentError:
+            raise Errors.WafError('The project is not configured for board {0}: run "waf configure --board {0} [...]" first!'.format(self.variant))
+
+        lock_env = ConfigSet.ConfigSet()
+
+        try:
+            lock_env.load(os.path.join(Context.top_dir, Options.lockfile))
+        except EnvironmentError:
+            Logs.warn('Configuring the project')
+            do_config = True
+        else:
+            if lock_env.run_dir != Context.run_dir:
+                do_config = True
+            else:
+                h = 0
+
+                for f in env.CONFIGURE_FILES:
+                    try:
+                        h = Utils.h_list((h, Utils.readf(f, 'rb')))
+                    except EnvironmentError:
+                        do_config = True
+                        break
+                else:
+                    do_config = h != env.CONFIGURE_HASH
+
+        if do_config:
+            cmd = lock_env.config_cmd or 'configure'
+            tmp = Options.options.__dict__
+
+            if env.OPTIONS and sorted(env.OPTIONS.keys()) == sorted(tmp.keys()):
+                Options.options.__dict__ = env.OPTIONS
+            else:
+                raise Errors.WafError('The project configure options have changed: run "waf configure" again!')
+
+            try:
+                run_command(cmd)
+            finally:
+                Options.options.__dict__ = tmp
+
+            run_command(self.cmd)
+        else:
+            return execute_method(self)
+
+    return execute
+
+def ap_configure_post_recurse():
+    post_recurse_orig = Configure.ConfigurationContext.post_recurse
+
+    def post_recurse(self, node):
+        post_recurse_orig(self, node)
+
+        self.all_envs[self.variant].CONFIGURE_FILES = self.files
+        self.all_envs[self.variant].CONFIGURE_HASH = self.hash
+
+    return post_recurse
 
 @conf
 def ap_get_all_libraries(bld):
@@ -166,6 +250,9 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
+    if 'use' in kw and bld.env.STATIC_LINKING:
+        # ensure we link against vehicle library
+        tg.env.STLIB += [kw['use']]
 
     for group in program_groups:
         _grouped_programs.setdefault(group, []).append(tg)

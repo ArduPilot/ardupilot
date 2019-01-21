@@ -22,7 +22,7 @@
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
 #include "NCP5623.h"
-#include "OreoLED_PX4.h"
+#include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
@@ -48,20 +48,7 @@ AP_Notify *AP_Notify::_instance;
                   Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
 
 #ifndef BUILD_DEFAULT_LED_TYPE
-// PX4 boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
-    #define HAL_HAVE_PIXRACER_LED
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #else   // All other px4 boards use standard devices
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #endif
-
-// ChibiOS and VRBrain boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
-      CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards    
@@ -104,6 +91,10 @@ AP_Notify *AP_Notify::_instance;
 
 #endif // BUILD_DEFAULT_LED_TYPE
 
+#ifndef BUZZER_ENABLE_DEFAULT
+#define BUZZER_ENABLE_DEFAULT 1
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
@@ -116,11 +107,10 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
     // @Param: BUZZ_ENABLE
     // @DisplayName: Buzzer enable
-    // @Description: Enable or disable the buzzer. Only for Linux and PX4 based boards.
+    // @Description: Enable or disable the buzzer.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ON),
-
+    AP_GROUPINFO("BUZZ_ENABLE", 1, AP_Notify, _buzzer_enable, BUZZER_ENABLE_DEFAULT),
 
     // @Param: LED_OVERRIDE
     // @DisplayName: Setup for MAVLink LED override
@@ -136,14 +126,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
+#if !HAL_MINIMIZE_FEATURES
     // @Param: OREO_THEME
     // @DisplayName: OreoLED Theme
     // @Description: Enable/Disable Solo Oreo LED driver, 0 to disable, 1 for Aircraft theme, 2 for Rover theme
     // @Values: 0:Disabled,1:Aircraft,2:Rover
     // @User: Advanced
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_PX4 && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3
+#endif
 
 #if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_PIN
@@ -220,18 +210,18 @@ void AP_Notify::add_backends(void)
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-                ADD_BACKEND(new AP_ExternalLED()); // despite the name this is a built in set of onboard LED's
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
+                ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
+#endif // CONFIG_HAL_BOARD_SUBTYPE == various CHIBIOS-VRBRAINs
 
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
-                ADD_BACKEND(new AP_BoardLED());
-  #else
+  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
                 ADD_BACKEND(new VRBoard_LED());
- #endif // CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
+  #else
+                ADD_BACKEND(new AP_BoardLED());
+  #endif
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
                 ADD_BACKEND(new AP_BoardLED2());
 #endif
@@ -256,12 +246,11 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
             case Notify_LED_OreoLED:
-                // OreoLED's are PX4-v3 build only
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
+#if !HAL_MINIMIZE_FEATURES
                 if (_oreo_theme) {
-                    ADD_BACKEND(new OreoLED_PX4(_oreo_theme));
+                    ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
-#endif // (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
+#endif
                 break;
             case Notify_LED_UAVCAN:
 #if HAL_WITH_UAVCAN
@@ -276,13 +265,8 @@ void AP_Notify::add_backends(void)
     // Always try and add a display backend
     ADD_BACKEND(new Display());
 
-    // Add noise making devices
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
-    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ADD_BACKEND(new AP_ToneAlarm());
-
 // ChibiOS noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
 #endif

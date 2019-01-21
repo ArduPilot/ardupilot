@@ -52,6 +52,7 @@ public:
         MOTOR_FRAME_TYPE_H = 3,
         MOTOR_FRAME_TYPE_VTAIL = 4,
         MOTOR_FRAME_TYPE_ATAIL = 5,
+        MOTOR_FRAME_TYPE_PLUSREV = 6, // plus with reversed motor direction
         MOTOR_FRAME_TYPE_Y6B = 10,
         MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
     };
@@ -100,17 +101,29 @@ public:
     bool                get_thrust_boost() const { return _thrust_boost; }
     virtual uint8_t     get_lost_motor() const { return 0; }
 
-    // spool up states
+    // desired spool states
     enum spool_up_down_desired {
         DESIRED_SHUT_DOWN = 0,              // all motors stop
-        DESIRED_SPIN_WHEN_ARMED = 1,        // all motors at spin when armed
+        DESIRED_GROUND_IDLE = 1,            // all motors at ground idle
         DESIRED_THROTTLE_UNLIMITED = 2,     // motors are no longer constrained by start up procedure
     };
 
-    virtual void set_desired_spool_state(enum spool_up_down_desired spool) { _spool_desired = spool; };
+    void set_desired_spool_state(enum spool_up_down_desired spool);
 
     enum spool_up_down_desired get_desired_spool_state(void) const { return _spool_desired; }
-    
+
+    // spool states
+    enum spool_up_down_mode {
+        SHUT_DOWN = 0,                      // all motors stop
+        GROUND_IDLE = 1,                    // all motors at ground idle
+        SPOOL_UP = 2,                       // increasing maximum throttle while stabilizing
+        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
+        SPOOL_DOWN = 4,                     // decreasing maximum throttle while stabilizing
+    };
+
+    // get_spool_mode - get current spool mode
+    enum spool_up_down_mode  get_spool_mode(void) const { return _spool_mode; }
+
     // set_density_ratio - sets air density as a proportion of sea level density
     void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
 
@@ -155,6 +168,10 @@ public:
 
     // set loop rate. Used to support loop rate as a parameter
     void                set_loop_rate(uint16_t loop_rate) { _loop_rate = loop_rate; }
+
+    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // using copter motors for forward flight
+    virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
 
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
@@ -202,6 +219,7 @@ protected:
     float               _throttle_avg_max;          // last throttle input from set_throttle_avg_max
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     spool_up_down_desired _spool_desired;           // desired spool state
+    spool_up_down_mode  _spool_mode;                // current spool mode
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude

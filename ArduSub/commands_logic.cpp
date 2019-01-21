@@ -9,10 +9,10 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: logging when new commands start/end
     if (should_log(MASK_LOG_CMD)) {
-        DataFlash.Log_Write_Mission_Cmd(mission, cmd);
+        logger.Write_Mission_Cmd(mission, cmd);
     }
 
-    Location_Class target_loc(cmd.content.location);
+    const Location &target_loc = cmd.content.location;
 
     // target alt must be negative (underwater)
     if (target_loc.alt > 0.0f) {
@@ -21,7 +21,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
     }
 
     // only tested/supported alt frame so far is ALT_FRAME_ABOVE_HOME, where Home alt is always water's surface ie zero depth
-    if (target_loc.get_alt_frame() != Location_Class::ALT_FRAME_ABOVE_HOME) {
+    if (target_loc.get_alt_frame() != Location::ALT_FRAME_ABOVE_HOME) {
         gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT_FRAME %d", (int8_t)target_loc.get_alt_frame());
         return false;
     }
@@ -95,24 +95,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
-    case MAV_CMD_DO_SET_SERVO:
-        ServoRelayEvents.do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
-        break;
-
-    case MAV_CMD_DO_SET_RELAY:
-        ServoRelayEvents.do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
-        break;
-
-    case MAV_CMD_DO_REPEAT_SERVO:
-        ServoRelayEvents.do_repeat_servo(cmd.content.repeat_servo.channel, cmd.content.repeat_servo.pwm,
-                                         cmd.content.repeat_servo.repeat_count, cmd.content.repeat_servo.cycle_time * 1000.0f);
-        break;
-
-    case MAV_CMD_DO_REPEAT_RELAY:
-        ServoRelayEvents.do_repeat_relay(cmd.content.repeat_relay.num, cmd.content.repeat_relay.repeat_count,
-                                         cmd.content.repeat_relay.cycle_time * 1000.0f);
-        break;
-
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the vehicle and camera at a region of interest (ROI)
         do_roi(cmd);
@@ -122,29 +104,6 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-
-#if CAMERA == ENABLED
-    case MAV_CMD_DO_CONTROL_VIDEO:                      // Control on-board camera capturing. |Camera ID (-1 for all)| Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw| Transmission mode: 0: video stream, >0: single images every n seconds (decimal)| Recording: 0: disabled, 1: enabled compressed, 2: enabled raw| Empty| Empty| Empty|
-        break;
-
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // Mission command to configure an on-board camera controller system. |Modes: P, TV, AV, M, Etc| Shutter speed: Divisor number for one second| Aperture: F stop number| ISO number e.g. 80, 100, 200, Etc| Exposure type enumerator| Command Identity| Main engine cut-off time before camera trigger in seconds/10 (0 means no cut-off)|
-        do_digicam_configure(cmd);
-        break;
-
-    case MAV_CMD_DO_DIGICAM_CONTROL:                    // Mission command to control an on-board camera controller system. |Session control e.g. show/hide lens| Zoom's absolute position| Zooming step value to offset zoom from the current position| Focus Locking, Unlocking or Re-locking| Shooting Command| Command Identity| Empty|
-        do_digicam_control(cmd);
-        break;
-
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera.set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-        break;
-#endif
-
-#if GRIPPER_ENABLED == ENABLED
-    case MAV_CMD_DO_GRIPPER:                            // Mission command to control gripper
-        do_gripper(cmd);
-        break;
-#endif
 
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
@@ -234,17 +193,10 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
         // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_SET_SERVO:
-    case MAV_CMD_DO_SET_RELAY:
-    case MAV_CMD_DO_REPEAT_SERVO:
-    case MAV_CMD_DO_REPEAT_RELAY:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_CONTROL_VIDEO:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-    case MAV_CMD_DO_GRIPPER:
     case MAV_CMD_DO_GUIDED_LIMITS:
         return true;
 
@@ -275,7 +227,7 @@ void Sub::exit_mission()
 // do_nav_wp - initiate move to next waypoint
 void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
     // use current lat, lon if zero
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         target_loc.lat = current_loc.lat;
@@ -310,7 +262,7 @@ void Sub::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 // do_surface - initiate surface procedure
 void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_location;
+    Location target_location;
 
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
@@ -319,24 +271,24 @@ void Sub::do_surface(const AP_Mission::Mission_Command& cmd)
 
         // calculate and set desired location below surface target
         // convert to location class
-        target_location = Location_Class(cmd.content.location);
+        target_location = Location(cmd.content.location);
 
         // decide if we will use terrain following
         int32_t curr_terr_alt_cm, target_terr_alt_cm;
-        if (current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
-                target_location.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
+        if (current_loc.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, curr_terr_alt_cm) &&
+                target_location.get_alt_cm(Location::ALT_FRAME_ABOVE_TERRAIN, target_terr_alt_cm)) {
             // if using terrain, set target altitude to current altitude above terrain
-            target_location.set_alt_cm(curr_terr_alt_cm, Location_Class::ALT_FRAME_ABOVE_TERRAIN);
+            target_location.set_alt_cm(curr_terr_alt_cm, Location::ALT_FRAME_ABOVE_TERRAIN);
         } else {
             // set target altitude to current altitude above home
-            target_location.set_alt_cm(current_loc.alt, Location_Class::ALT_FRAME_ABOVE_HOME);
+            target_location.set_alt_cm(current_loc.alt, Location::ALT_FRAME_ABOVE_HOME);
         }
     } else {
         // set surface state to ascend
         auto_surface_state = AUTO_SURFACE_STATE_ASCEND;
 
         // Set waypoint destination to current location at zero depth
-        target_location = Location_Class(current_loc.lat, current_loc.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
+        target_location = Location(current_loc.lat, current_loc.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
     }
 
     // Go to wp location
@@ -353,14 +305,14 @@ void Sub::do_RTL()
 void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     // convert back to location
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
 
     // use current location if not provided
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
         wp_nav.get_wp_stopping_point_xy(temp_pos);
-        Location_Class temp_loc(temp_pos);
+        const Location temp_loc(temp_pos);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
@@ -390,7 +342,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class circle_center(cmd.content.location);
+    Location circle_center(cmd.content.location);
 
     // default lat/lon to current position if not provided
     // To-Do: use stopping point or position_controller's target instead of current location to avoid jerk?
@@ -434,7 +386,7 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 // do_spline_wp - initiate move to next waypoint
 void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location_Class target_loc(cmd.content.location);
+    Location target_loc(cmd.content.location);
     // use current lat, lon if zero
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         target_loc.lat = current_loc.lat;
@@ -474,7 +426,7 @@ void Sub::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // if there is no delay at the end of this segment get next nav command
-    Location_Class next_loc;
+    Location next_loc;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
         next_loc = temp_cmd.content.location;
         // default lat, lon to first waypoint's lat, lon
@@ -533,27 +485,6 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
 }
 
-#if GRIPPER_ENABLED == ENABLED
-// do_gripper - control gripper
-void Sub::do_gripper(const AP_Mission::Mission_Command& cmd)
-{
-    // Note: we ignore the gripper num parameter because we only support one gripper
-    switch (cmd.content.gripper.action) {
-    case GRIPPER_ACTION_RELEASE:
-        g2.gripper.release();
-        Log_Write_Event(DATA_GRIPPER_RELEASE);
-        break;
-    case GRIPPER_ACTION_GRAB:
-        g2.gripper.grab();
-        Log_Write_Event(DATA_GRIPPER_GRAB);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-}
-#endif
-
 #if NAV_GUIDED == ENABLED
 // do_guided_limits - pass guided limits to guided controller
 void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
@@ -605,7 +536,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             if (wp_nav.reached_wp_destination()) {
                 // Set target to current xy and zero depth
                 // TODO get xy target from current wp destination, because current location may be acceptance-radius away from original destination
-                Location_Class target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location_Class::ALT_FRAME_ABOVE_HOME);
+                Location target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location::ALT_FRAME_ABOVE_HOME);
 
                 auto_wp_start(target_location);
 
@@ -809,20 +740,16 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_WAYPOINT: {
         // set wp_nav's destination
-        Location_Class dest(cmd.content.location);
-        return guided_set_destination(dest);
-        break;
+        return guided_set_destination(cmd.content.location);
     }
 
     case MAV_CMD_CONDITION_YAW:
         do_yaw(cmd);
         return true;
-        break;
 
     default:
         // reject unrecognised command
         return false;
-        break;
     }
 
     return true;
@@ -854,32 +781,6 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 {
     set_auto_yaw_roi(cmd.content.location);
 }
-
-#if CAMERA == ENABLED
-// do_digicam_configure Send Digicam Configure message with the camera library
-void Sub::do_digicam_configure(const AP_Mission::Mission_Command& cmd)
-{
-    camera.configure(cmd.content.digicam_configure.shooting_mode,
-                     cmd.content.digicam_configure.shutter_speed,
-                     cmd.content.digicam_configure.aperture,
-                     cmd.content.digicam_configure.ISO,
-                     cmd.content.digicam_configure.exposure_type,
-                     cmd.content.digicam_configure.cmd_id,
-                     cmd.content.digicam_configure.engine_cutoff_time);
-}
-
-// do_digicam_control Send Digicam Control message with the camera library
-void Sub::do_digicam_control(const AP_Mission::Mission_Command& cmd)
-{
-    camera.control(cmd.content.digicam_control.session,
-                   cmd.content.digicam_control.zoom_pos,
-                   cmd.content.digicam_control.zoom_step,
-                   cmd.content.digicam_control.focus_lock,
-                   cmd.content.digicam_control.shooting_cmd,
-                   cmd.content.digicam_control.cmd_id);
-}
-
-#endif
 
 // point the camera to a specified angle
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)

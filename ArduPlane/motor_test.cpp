@@ -55,7 +55,7 @@ void QuadPlane::motor_test_output()
         break;
 
     case MOTOR_TEST_THROTTLE_PILOT:
-        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)plane.channel_throttle->get_control_in()*0.01f;
+        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)plane.get_throttle_input()*0.01f;
         break;
 
     default:

@@ -128,7 +128,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MINACC
     // @DisplayName: Takeoff throttle min acceleration
-    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15.
+    // @Description: Minimum forward acceleration in m/s/s before arming the ground speed check in auto-takeoff. This is meant to be used for hand launches. Setting this value to 0 disables the acceleration test which means the ground speed check will always be armed which could allow GPS velocity jumps to start the engine. For hand launches and bungee launches this should be set to around 15. Also see TKOFF_ACCEL_CNT paramter for control of full "shake to arm".
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
@@ -459,8 +459,8 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(throttle_passthru_stabilize,"THR_PASS_STAB",   0),
 
     // @Param: THR_FAILSAFE
-    // @DisplayName: Throttle Failsafe Enable
-    // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
+    // @DisplayName: Throttle and RC Failsafe Enable
+    // @Description: This enables failsafe on loss of RC input. How this is detected depends on the type of RC receiver being used. For older radios an input below the THR_FS_VALUE is used to trigger failsafe. For newer radios the failsafe trigger is part of the protocol between the autopilot and receiver.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(throttle_fs_enabled,    "THR_FAILSAFE",   1),
@@ -468,7 +468,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on channel 3 below which throttle failsafe triggers
+    // @Description: The PWM level on the throttle input channel below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
     // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
@@ -492,7 +492,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe even can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause an change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change is FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
+    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe even can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause an change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
     // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA,3:Disable
     // @User: Standard
     GSCALAR(fs_action_short,        "FS_SHORT_ACTN",  FS_ACTION_SHORT_BESTGUESS),
@@ -524,7 +524,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_GCS_ENABL
     // @DisplayName: GCS failsafe enable
-    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are two possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
+    // @Description: Enable ground control station telemetry failsafe. Failsafe will trigger after FS_LONG_TIMEOUT seconds of no MAVLink heartbeat messages. There are three possible enabled settings. Seeing FS_GCS_ENABL to 1 means that GCS failsafe will be triggered when the aircraft has not received a MAVLink HEARTBEAT message. Setting FS_GCS_ENABL to 2 means that GCS failsafe will be triggered on either a loss of HEARTBEAT messages, or a RADIO_STATUS message from a MAVLink enabled 3DR radio indicating that the ground station is not receiving status updates from the aircraft, which is indicated by the RADIO_STATUS.remrssi field being zero (this may happen if you have a one way link due to asymmetric noise on the ground station and aircraft radios).Setting FS_GCS_ENABL to 3 means that GCS failsafe will be triggered by Heartbeat(like option one), but only in AUTO mode. WARNING: Enabling this option opens up the possibility of your plane going into failsafe mode and running the motor on the ground it it loses contact with your ground station. If this option is enabled on an electric plane then you should enable ARMING_REQUIRED.
     // @Values: 0:Disabled,1:Heartbeat,2:HeartbeatAndREMRSSI,3:HeartbeatAndAUTO
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
@@ -538,49 +538,49 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
 
@@ -807,7 +807,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-#if HAVE_PX4_MIXER
+#if HAL_WITH_IO_MCU
     // @Param: OVERRIDE_CHAN
     // @DisplayName: PX4IO override channel
     // @Description: If set to a non-zero value then this is an RC input channel number to use for giving PX4IO manual control in case the main FMU microcontroller on a PX4 or Pixhawk fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the PX4IO microcontroller will directly control the servos. Note that PX4IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get PX4IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
@@ -1018,8 +1018,8 @@ const AP_Param::Info Plane::var_info[] = {
 #endif
 
     // @Group: LOG
-    // @Path: ../libraries/DataFlash/DataFlash.cpp
-    GOBJECT(DataFlash,           "LOG",  DataFlash_Class),
+    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
+    GOBJECT(logger,           "LOG",  AP_Logger),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -1173,7 +1173,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual Stabilize Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1182,6 +1182,35 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 14, ParametersG2, AP_Scripting),
 #endif
 
+    // @Param: TKOFF_ACCEL_CNT
+    // @DisplayName: Takeoff throttle acceleration count
+    // @Description: This is the number of acceleration events to require for arming with TKOFF_THR_MINACC. The default is 1, which means a single forward acceleration above TKOFF_THR_MINACC will arm. By setting this higher than 1 you can require more forward/backward movements to arm.
+    // @Range: 1 10
+    // @User: User
+    AP_GROUPINFO("TKOFF_ACCEL_CNT", 15, ParametersG2, takeoff_throttle_accel_count, 1),
+
+#if LANDING_GEAR_ENABLED == ENABLED
+    // @Group: LGR_
+    // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
+    AP_SUBGROUPINFO(landing_gear, "LGR_", 16, ParametersG2, AP_LandingGear),
+#endif
+
+    // @Param: DSPOILER_CROW_W1
+    // @DisplayName: Differential spoiler crow flaps inner weight
+    // @Description: This is amount of deflection applied to the two inner surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 25.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_CROW_W1", 17, ParametersG2, crow_flap_weight1, 0),
+
+    // @Param: DSPOILER_CROW_W2
+    // @DisplayName: Differential spoiler crow flaps outer weight
+    // @Description: This is amount of deflection applied to the two outer  surfaces for differential spoilers for flaps to give crow flaps. It is a number from 0 to 100. At zero no crow flaps are applied. A recommended starting value is 45.
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DSPOILER_CROW_W2", 18, ParametersG2, crow_flap_weight2, 0),
+    
     AP_GROUPEND
 };
 
@@ -1208,23 +1237,6 @@ ParametersG2::ParametersG2(void) :
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_pidServoRoll, 0, AP_PARAM_FLOAT, "RLL2SRV_P" },
-    { Parameters::k_param_pidServoRoll, 1, AP_PARAM_FLOAT, "RLL2SRV_I" },
-    { Parameters::k_param_pidServoRoll, 2, AP_PARAM_FLOAT, "RLL2SRV_D" },
-    { Parameters::k_param_pidServoRoll, 3, AP_PARAM_FLOAT, "RLL2SRV_IMAX" },
-
-    { Parameters::k_param_pidServoPitch, 0, AP_PARAM_FLOAT, "PTCH2SRV_P" },
-    { Parameters::k_param_pidServoPitch, 1, AP_PARAM_FLOAT, "PTCH2SRV_I" },
-    { Parameters::k_param_pidServoPitch, 2, AP_PARAM_FLOAT, "PTCH2SRV_D" },
-    { Parameters::k_param_pidServoPitch, 3, AP_PARAM_FLOAT, "PTCH2SRV_IMAX" },
-
-    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
-    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
-    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
-    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
-    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
-    { Parameters::k_param_curr_amp_offset,    0,      AP_PARAM_FLOAT, "BATT_AMP_OFFSET" },
-    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
@@ -1262,8 +1274,8 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_land_flap_percent,  0,      AP_PARAM_INT8,  "LAND_FLAP_PERCENT" },
 
     // battery failsafes
-    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_FLOAT, "BATT_FS_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_FS_LOW_MAH" },
+    { Parameters::k_param_fs_batt_voltage,    0,      AP_PARAM_FLOAT, "BATT_LOW_VOLT" },
+    { Parameters::k_param_fs_batt_mah,        0,      AP_PARAM_FLOAT, "BATT_LOW_MAH" },
 
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
 };
@@ -1279,6 +1291,7 @@ void Plane::load_parameters(void)
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
+        StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version

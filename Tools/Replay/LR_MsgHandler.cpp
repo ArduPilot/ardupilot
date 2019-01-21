@@ -5,7 +5,7 @@
 extern const AP_HAL::HAL& hal;
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
-                             DataFlash_Class &_dataflash,
+                             AP_Logger &_dataflash,
                              uint64_t &_last_timestamp_usec) :
     dataflash(_dataflash), last_timestamp_usec(_last_timestamp_usec),
     MsgHandler(_f) {
@@ -383,7 +383,8 @@ bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
     const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
                                    "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE"};
+                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE",
+                                   "LOG_DISARMED"};
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
@@ -405,8 +406,8 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     } else {
         // older logs can have a lot of FMT and PARM messages up the
         // front which don't have timestamps.  Since in Replay we run
-        // DataFlash's IO only when stop_clock is called, we can
-        // overflow DataFlash's ringbuffer.  This should force us to
+        // AP_Logger's IO only when stop_clock is called, we can
+        // overflow AP_Logger's ringbuffer.  This should force us to
         // do IO:
         hal.scheduler->stop_clock(last_timestamp_usec);
     }

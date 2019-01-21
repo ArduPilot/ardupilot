@@ -1,5 +1,33 @@
-APMrover2 Release Notes:
+Rover Release Notes:
 ========================
+Rover 3.5.0-rc1 12-Nov-2018
+Changes from 3.4.2:
+1) ChibiOS provides improved performance and support for many new boards including:
+   a) F4BY 
+   b) TauLabs Sparky2
+   c) Furious FPV F-35 lightening and Wing FC-10
+   d) Holybro KakuteF4
+   e) Mateksys F405-Wing
+   f) Omnibus F4 Pro, NanoV6 and F7
+   g) SpeedyBee F4
+2) BalanceBot support
+3) Sailboat support
+4) OmniPlus, OmniX frame support (vehicles can move laterally using 4 thrusters or wheels)
+5) Auxiliary Switches expanded to many channels (see RCx_OPTION parameters)
+6) External position estimates accepted from ROS and Vicon systems
+7) Mode changes:
+   a) Follow mode (allows following another vehicle if connected via telemetry)
+   b) Simple mode (pilot controls direction regardless of vehicle's heading)
+   c) Loiter can be configured to always drive towards target (i.e. does not reverse) (see LOIT_TYPE parameter)
+   d) Guided, RTL, SmartRTL will reverse towards target if DO_SET_REVERSE command received (via telemetry or as mission command)
+8) Bug fixes and small enhancements:
+   a) RC and GCS failsafe timeout shortened
+   b) Object avoidance fix to include all sectors from proximity sensor (aka 360 lidar)
+   c) Safety switch ability to arm/disarm vehicle now configurable (see BRD_SAFETYOPTION parameter)
+   d) Onboard OSD support (for ChibiOS-only boards)
+   e) Gripper support
+   f) Sprayer support
+--------------------------------
 Rover 3.4.2 30-Jul-2018 / 3.4.2-rc1 23-Jul-2018
 Changes from 3.4.1:
 1) bug fix to pivot turn logic during missions

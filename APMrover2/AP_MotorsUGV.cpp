@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Param: PWM_TYPE
     // @DisplayName: Motor Output PWM type
     // @Description: This selects the output PWM type as regular PWM, OneShot, Brushed motor support using PWM (duty cycle) with separated direction signal, Brushed motor support with separate throttle and direction PWM (duty cyle)
-    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar
+    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
@@ -356,7 +356,7 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
 {
     // check if the motor_seq is valid
-    if (motor_seq > MOTOR_TEST_THROTTLE_RIGHT) {
+    if (motor_seq >= MOTOR_TEST_LAST) {
         return false;
     }
     pct = constrain_float(pct, -100.0f, 100.0f);
@@ -404,7 +404,7 @@ bool AP_MotorsUGV::output_test_pct(motor_test_order motor_seq, float pct)
             }
             break;
         }
-        default:
+        case MOTOR_TEST_LAST:
             return false;
     }
     SRV_Channels::calc_pwm();
@@ -537,7 +537,7 @@ void AP_MotorsUGV::setup_pwm_type()
     for (uint8_t i=0; i<_motors_num; i++) {
         motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
     }
-    
+
     switch (_pwm_type) {
     case PWM_TYPE_ONESHOT:
         hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
@@ -549,6 +549,18 @@ void AP_MotorsUGV::setup_pwm_type()
     case PWM_TYPE_BRUSHED_BIPOLAR:
         hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(motor_mask, uint16_t(_pwm_freq * 1000));
+        break;
+    case PWM_TYPE_DSHOT150:
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
+        break;
+    case PWM_TYPE_DSHOT300:
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
+        break;
+    case PWM_TYPE_DSHOT600:
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
+        break;
+    case PWM_TYPE_DSHOT1200:
+        hal.rcout->set_output_mode(motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
     default:
         // do nothing

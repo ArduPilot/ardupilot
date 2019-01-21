@@ -211,7 +211,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
       beyond the configured roll limit, reducing to zero at 90
       degrees
     */
-    float roll_wrapped = fabsf(_ahrs.roll_sensor);
+    float roll_wrapped = labs(_ahrs.roll_sensor);
     if (roll_wrapped > 9000) {
         roll_wrapped = 18000 - roll_wrapped;
     }

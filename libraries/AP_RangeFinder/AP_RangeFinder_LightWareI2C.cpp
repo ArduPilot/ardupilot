@@ -37,6 +37,10 @@ AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinde
 */
 AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
 {
+    if (!dev) {
+        return nullptr;
+    }
+
     AP_RangeFinder_LightWareI2C *sensor
         = new AP_RangeFinder_LightWareI2C(_state, std::move(dev));
 

@@ -27,7 +27,7 @@ public:
     static bool detect();
 
     // update state
-    void update(void);
+    void update(void) override;
 
 protected:
 
