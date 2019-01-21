@@ -199,6 +199,7 @@ void Scheduler::_run_io_procs()
     hal.uartE->_timer_tick();
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
+    hal.storage->_timer_tick();
 
     check_thread_stacks();
 }
