@@ -294,6 +294,9 @@ def do_build_waf(opts, frame_options):
     if opts.OSD:
         cmd_configure.append("--enable-sfml")
 
+    if opts.flash_storage:
+        cmd_configure.append("--sitl-flash-storage")
+        
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -907,6 +910,9 @@ group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
                      help="Specify path of swarminit.txt for shifting spawn location")
+group_sim.add_option("--flash-storage",
+                     action='store_true',
+                     help="enable use of flash storage emulation")
 parser.add_option_group(group_sim)
 
 
