@@ -211,12 +211,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
 #endif
 
-#if defined(HAL_NEEDS_PARAM_HELPER)
-    // @Group: ""
-    // @Path: ../libraries/AP_Param_Helper/AP_Param_Helper.cpp
-    AP_SUBGROUPINFO(param_helper, "", 12, AP_BoardConfig, AP_Param_Helper),
-#endif
-
 #if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
