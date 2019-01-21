@@ -87,7 +87,7 @@ void AP_MotorsMatrix::output_to_motors()
             // sends output to motors when armed but not flying
             for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    set_actuator_with_slew(_actuator[i], actuator_spin_up());
+                    set_actuator_with_slew(_actuator[i], actuator_spin_up_to_ground_idle());
                 }
             }
             break;

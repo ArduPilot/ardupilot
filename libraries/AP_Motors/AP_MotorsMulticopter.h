@@ -124,8 +124,8 @@ protected:
     // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
     void                set_actuator_with_slew(float& actuator_output, float input);
 
-    // gradually increase actuator output maximum limit
-    float               actuator_spin_up() const;
+    // gradually increase actuator output to ground idle
+    float               actuator_spin_up_to_ground_idle() const;
 
     // apply any thrust compensation for the frame
     virtual void        thrust_compensation(void) {}

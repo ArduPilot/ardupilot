@@ -437,8 +437,8 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
     actuator_output = constrain_float(input, output_slew_limit_dn, output_slew_limit_up);
 }
 
-// gradually increase actuator output maximum limit
-float AP_MotorsMulticopter::actuator_spin_up() const
+// gradually increase actuator output to spin_min
+float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
 {
     return constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
 }

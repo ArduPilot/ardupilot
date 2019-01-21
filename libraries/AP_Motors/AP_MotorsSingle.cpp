@@ -86,8 +86,8 @@ void AP_MotorsSingle::output_to_motors()
             for (uint8_t i=0; i<NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1+i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
             }
-            set_actuator_with_slew(_actuator[5], actuator_spin_up());
-            set_actuator_with_slew(_actuator[6], actuator_spin_up());
+            set_actuator_with_slew(_actuator[5], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[6], actuator_spin_up_to_ground_idle());
             rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[5]));
             rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[6]));
             break;
