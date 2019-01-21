@@ -1,4 +1,4 @@
-style=stroustrup
+style=1tbs
 add-brackets
 indent=spaces=4
 indent-col1-comments
@@ -7,3 +7,10 @@ suffix=none
 lineend=linux
 unpad-paren
 pad-header
+pad-oper
+pad-comma
+add-braces
+convert-tabs
+keep-one-line-blocks
+keep-one-line-statements
+attach-inlines
