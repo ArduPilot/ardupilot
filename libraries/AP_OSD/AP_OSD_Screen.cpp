@@ -497,10 +497,14 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
             strncpy(buffer, notify->get_text(), sizeof(buffer));
             int16_t len = strnlen(buffer, sizeof(buffer));
 
-            //converted to uppercase,
-            //because we do not have small letter chars inside used font
             for (int16_t i=0; i<len; i++) {
+                //converted to uppercase,
+                //because we do not have small letter chars inside used font
                 buffer[i] = toupper(buffer[i]);
+                //normalize whitespace
+                if (isspace(buffer[i])) {
+                    buffer[i] = ' ';
+                }
             }
 
             int16_t start_position = 0;
