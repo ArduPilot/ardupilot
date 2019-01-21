@@ -177,9 +177,9 @@ void SoloGimbal_Parameters::handle_param_value(const mavlink_message_t *msg)
     mavlink_param_value_t packet;
     mavlink_msg_param_value_decode(msg, &packet);
 
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
-        dataflash->Log_Write_Parameter(packet.param_id, packet.param_value);
+        dataflash->Write_Parameter(packet.param_id, packet.param_value);
     }
 
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {

@@ -661,7 +661,7 @@ void AC_AutoTune::control_attitude()
 
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
-        DataFlash_Class::instance()->Log_Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+        AP::logger().Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
         log_pids();
         break;
     }
@@ -1696,7 +1696,7 @@ void AC_AutoTune::get_poshold_attitude(int32_t &roll_cd_out, int32_t &pitch_cd_o
 // Write an Autotune data packet
 void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
 {
-    DataFlash_Class::instance()->Log_Write(
+    AP::logger().Write(
         "ATUN",
         "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt",
         "s--ddd---o",
@@ -1717,7 +1717,7 @@ void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float mea
 // Write an Autotune data packet
 void AC_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
 {
-    DataFlash_Class::instance()->Log_Write(
+    AP::logger().Write(
         "ATDE",
         "TimeUS,Angle,Rate",
         "sdk",

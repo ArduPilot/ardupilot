@@ -157,7 +157,7 @@ bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do
     }
 
     // let dataflash know that we're armed (it may open logs e.g.)
-    DataFlash_Class::instance()->set_vehicle_armed(true);
+    AP::logger().set_vehicle_armed(true);
 
     // disable cpu failsafe because initialising everything takes a while
     failsafe_disable();
@@ -219,7 +219,7 @@ bool Copter::init_arm_motors(const AP_Arming::ArmingMethod method, const bool do
     Log_Write_Event(DATA_ARMED);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
 
     // reenable failsafe
     failsafe_enable();
@@ -285,7 +285,7 @@ void Copter::init_disarm_motors()
     mode_auto.mission.reset();
 #endif
 
-    DataFlash_Class::instance()->set_vehicle_armed(false);
+    AP::logger().set_vehicle_armed(false);
 
     // disable gps velocity based centrefugal force compensation
     ahrs.set_correct_centrifugal(false);

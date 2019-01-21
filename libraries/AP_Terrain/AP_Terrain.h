@@ -16,7 +16,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #if (HAL_OS_POSIX_IO || HAL_OS_FATFS_IO) && defined(HAL_BOARD_TERRAIN_DIRECTORY)
 #define AP_TERRAIN_AVAILABLE 1
@@ -167,9 +167,9 @@ public:
     float lookahead(float bearing, float distance, float climb_ratio);
 
     /*
-      log terrain status to DataFlash
+      log terrain status to AP_Logger
      */
-    void log_terrain_data(DataFlash_Class &dataflash);
+    void log_terrain_data();
 
     /*
       get some statistics for TERRAIN_REPORT

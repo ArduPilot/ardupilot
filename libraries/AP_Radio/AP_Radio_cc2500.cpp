@@ -282,9 +282,7 @@ void AP_Radio_cc2500::radio_init(void)
     hal.scheduler->delay_microseconds(10*1000);
     
     // setup handler for rising edge of IRQ pin
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    stm32_gpiosetevent(CYRF_IRQ_INPUT, true, false, false, irq_radio_trampoline);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     hal.gpio->attach_interrupt(HAL_GPIO_RADIO_IRQ, trigger_irq_radio_event, AP_HAL::GPIO::INTERRUPT_RISING);
 #endif
 

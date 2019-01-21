@@ -185,6 +185,24 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX",  39, AP_MotorsMulticopter,  _batt_idx, 0),
 
+    // @Param: SLEW_UP_TIME
+    // @DisplayName: Output slew time for increasing throttle
+    // @Description: Time in seconds to slew output from zero to full.  For medium size copter such as a Solo, a value of 0.25 is a good starting point.  This is used to limit the rate at which output can change. Range is constrained between 0 and 0.5.
+    // @Range: 0 .5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_UP_TIME",   40, AP_MotorsMulticopter,  _slew_up_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+
+    // @Param: SLEW_DN_TIME
+    // @DisplayName: Output slew time for decreasing throttle
+    // @Description: Time in seconds to slew output from full to zero.  For medium size copter such as a Solo, a value of 0.275 is a good starting point.  This is used to limit the rate at which output can change.  Range is constrained between 0 and 0.5.
+    // @Range: 0 .5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_DN_TIME",   41, AP_MotorsMulticopter,  _slew_dn_time, AP_MOTORS_SLEW_TIME_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -363,17 +381,69 @@ float AP_MotorsMulticopter::get_compensation_gain() const
     return ret;
 }
 
-int16_t AP_MotorsMulticopter::calc_thrust_to_pwm(float thrust_in) const
+// convert actuator output (0~1) range to pwm range
+int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
-    thrust_in = constrain_float(thrust_in, 0.0f, 1.0f);
-    return get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * (_spin_min + (_spin_max-_spin_min)*apply_thrust_curve_and_volt_scaling(thrust_in));
+    float pwm_output;
+    if (_spool_mode == SHUT_DOWN) {
+        // in shutdown mode, use PWM 0 or minimum PWM
+        if (_disarm_disable_pwm && _disarm_safety_timer == 0 && !armed()) {
+            pwm_output = 0;
+        } else {
+            pwm_output = get_pwm_output_min();
+        }
+    } else {
+        // in all other spool modes, covert to desired PWM
+        pwm_output = get_pwm_output_min() + (get_pwm_output_max()-get_pwm_output_min()) * actuator;
+    }
+
+    return pwm_output;
 }
 
-int16_t AP_MotorsMulticopter::calc_spin_up_to_pwm() const
+// converts desired thrust to linearized actuator output in a range of 0~1
+float AP_MotorsMulticopter::thrust_to_actuator(float thrust_in)
 {
-    return get_pwm_output_min() + constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min * (get_pwm_output_max()-get_pwm_output_min());
+    thrust_in = constrain_float(thrust_in, 0.0f, 1.0f);
+    return _spin_min + (_spin_max-_spin_min)*apply_thrust_curve_and_volt_scaling(thrust_in);
 }
-// get minimum or maximum pwm value that can be output to motors
+
+// adds slew rate limiting to actuator output
+void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float input)
+{
+    /*
+    If MOT_SLEW_UP_TIME is 0 (default), no slew limit is applied to increasing output.
+    If MOT_SLEW_DN_TIME is 0 (default), no slew limit is applied to decreasing output.
+    MOT_SLEW_UP_TIME and MOT_SLEW_DN_TIME are constrained to 0.0~0.5 for sanity.
+    If spool mode is shutdown, no slew limit is applied to allow immediate disarming of motors.
+    */
+
+    // Output limits with no slew time applied
+    float output_slew_limit_up = 1.0f;
+    float output_slew_limit_dn = 0.0f;
+
+    // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
+    if (is_positive(_slew_up_time)) {
+        float output_delta_up_max = 1.0f/(constrain_float(_slew_up_time,0.0f,0.5f) * _loop_rate);
+        output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
+    }
+
+    // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
+    if (is_positive(_slew_dn_time)) {
+        float output_delta_dn_max = 1.0f/(constrain_float(_slew_dn_time,0.0f,0.5f) * _loop_rate);
+        output_slew_limit_dn = constrain_float(actuator_output - output_delta_dn_max, 0.0f, 1.0f);
+    }
+
+    // Constrain change in output to within the above limits
+    actuator_output = constrain_float(input, output_slew_limit_dn, output_slew_limit_up);
+}
+
+// gradually increase actuator output to spin_min
+float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
+{
+    return constrain_float(_spin_up_ratio, 0.0f, 1.0f) * _spin_min;
+}
+
+// get minimum pwm value that can be output to motors
 int16_t AP_MotorsMulticopter::get_pwm_output_min() const
 {
     // return _pwm_min if both PWM_MIN and PWM_MAX parameters are defined and valid
@@ -629,7 +699,6 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
 {
     for (uint8_t i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            int16_t motor_out;
             if (mask & (1U<<i)) {
                 /*
                     apply rudder mixing differential thrust
@@ -637,12 +706,11 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                     apples to either tilted motors or tailsitters
                 */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
-
-                motor_out = calc_thrust_to_pwm(thrust + diff_thrust);
+                set_actuator_with_slew(_actuator[i], thrust_to_actuator(thrust + diff_thrust));
+                rc_write(i, output_to_pwm(_actuator[i]));
             } else {
-                motor_out = get_pwm_output_min();
+                rc_write(i, get_pwm_output_min());
             }
-            rc_write(i, motor_out);
         }
     }
 }

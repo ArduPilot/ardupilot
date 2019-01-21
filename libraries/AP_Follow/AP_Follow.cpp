@@ -307,7 +307,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         }
 
         // log lead's estimated vs reported position
-        DataFlash_Class::instance()->Log_Write("FOLL",
+        AP::logger().Write("FOLL",
                                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
                                                "sDUmnnnDUm",    // units
                                                "F--B000--B",    // mults

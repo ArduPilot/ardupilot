@@ -17,7 +17,7 @@
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -475,7 +475,7 @@ Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
 // log ahrs home and EKF origin to dataflash
 void AP_AHRS::Log_Write_Home_And_Origin()
 {
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df == nullptr) {
         return;
     }
@@ -483,13 +483,13 @@ void AP_AHRS::Log_Write_Home_And_Origin()
     // log ekf origin if set
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        df->Log_Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        df->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
     // log ahrs home if set
     if (home_is_set()) {
-        df->Log_Write_Origin(LogOriginType::ahrs_home, _home);
+        df->Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 

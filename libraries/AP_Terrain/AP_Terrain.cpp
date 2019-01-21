@@ -18,7 +18,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
@@ -340,7 +340,7 @@ void AP_Terrain::update(void)
 /*
   log terrain data to dataflash log
  */
-void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
+void AP_Terrain::log_terrain_data()
 {
     if (!allocate()) {
         return;
@@ -370,7 +370,7 @@ void AP_Terrain::log_terrain_data(DataFlash_Class &dataflash)
         pending        : pending,
         loaded         : loaded
     };
-    dataflash.WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 /*

@@ -28,12 +28,6 @@
 #include "GCS.h"
 
 #include <stdio.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <drivers/drv_pwm_output.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#endif
 
 #if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
@@ -42,6 +36,16 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
+#endif
+
+#if HAL_WITH_UAVCAN
+  #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_Common/AP_Common.h>
+
+  // To be replaced with macro saying if KDECAN library is included
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    #include <AP_KDECAN/AP_KDECAN.h>
+  #endif
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -273,7 +277,10 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         sensor->get_mav_distance_sensor_type(),  // type from MAV_DISTANCE_SENSOR enum
         instance,                                // onboard ID of the sensor == instance
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-        0);                                      // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        0,                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
+        0,                                       // horizontal FOV
+        0,                                       // vertical FOV
+        (const float *)nullptr);                 // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
 }
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
@@ -357,7 +364,8 @@ void GCS_MAVLINK::send_proximity() const
                     MAV_DISTANCE_SENSOR_LASER,                      // type from MAV_DISTANCE_SENSOR enum
                     PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
                     dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
-                    0);                                             // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                    0,                                              // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                    0, 0, nullptr);
         }
     }
 
@@ -376,7 +384,8 @@ void GCS_MAVLINK::send_proximity() const
                 MAV_DISTANCE_SENSOR_LASER,                                // type from MAV_DISTANCE_SENSOR enum
                 PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
-                0);                                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
+                0, 0, nullptr);
     }
 }
 
@@ -681,7 +690,7 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
-void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &dataflash, bool log_radio)
+void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio)
 {
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(msg, &packet);
@@ -717,7 +726,7 @@ void GCS_MAVLINK::handle_radio_status(mavlink_message_t *msg, DataFlash_Class &d
 
     //log rssi, noise, etc if logging Performance monitoring data
     if (log_radio) {
-        dataflash.Log_Write_Radio(packet);
+        dataflash.Write_Radio(packet);
     }
 }
 
@@ -1163,8 +1172,8 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index()
 void GCS_MAVLINK::update_send()
 {
     if (!hal.scheduler->in_delay_callback()) {
-        // DataFlash_Class will not send log data if we are armed.
-        DataFlash_Class::instance()->handle_log_send();
+        // AP_Logger will not send log data if we are armed.
+        AP::logger().handle_log_send();
     }
 
     if (!deferred_messages_initialised) {
@@ -1832,9 +1841,9 @@ void GCS_MAVLINK::send_ahrs()
 */
 void GCS::send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text)
 {
-    DataFlash_Class *dataflash = DataFlash_Class::instance();
+    AP_Logger *dataflash = AP_Logger::instance();
     if (dataflash != nullptr) {
-        dataflash->Log_Write_Message(text);
+        dataflash->Write_Message(text);
     }
 
     // add statustext message to FrSky lib queue
@@ -2392,25 +2401,6 @@ void GCS_MAVLINK::zero_rc_outputs()
     SRV_Channels::push();
 }
 
-void GCS_MAVLINK::disable_overrides()
-{
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    int px4io_fd = open("/dev/px4io", 0);
-    if (px4io_fd < 0) {
-        return;
-    }
-    // disable OVERRIDES so we don't run the mixer while
-    // rebooting
-    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_OK, 0) != 0) {
-        hal.console->printf("SET_OVERRIDE_OK failed\n");
-    }
-    if (ioctl(px4io_fd, PWM_SERVO_SET_OVERRIDE_IMMEDIATE, 0) != 0) {
-        hal.console->printf("SET_OVERRIDE_IMMEDIATE failed\n");
-    }
-    close(px4io_fd);
-#endif
-}
-
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2426,10 +2416,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    if (should_disable_overrides_on_reboot()) {
-        // disable overrides while rebooting
-        disable_overrides();
-    }
     if (should_zero_rc_outputs_on_reboot()) {
         zero_rc_outputs();
     }
@@ -2530,9 +2516,9 @@ void GCS_MAVLINK::handle_timesync(mavlink_message_t *msg)
                         msg->sysid,
                         round_trip_time_us*0.001f);
 #endif
-        DataFlash_Class *df = DataFlash_Class::instance();
+        AP_Logger *df = AP_Logger::instance();
         if (df != nullptr) {
-            DataFlash_Class::instance()->Log_Write(
+            AP::logger().Write(
                 "TSYN",
                 "TimeUS,SysID,RTT",
                 "s-s",
@@ -2581,7 +2567,7 @@ void GCS_MAVLINK::send_timesync()
 
 void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 {
-    DataFlash_Class *df = DataFlash_Class::instance();
+    AP_Logger *df = AP_Logger::instance();
     if (df == nullptr) {
         return;
     }
@@ -2603,7 +2589,7 @@ void GCS_MAVLINK::handle_statustext(mavlink_message_t *msg)
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
-    df->Log_Write_Message(text);
+    df->Write_Message(text);
 }
 
 
@@ -2810,7 +2796,7 @@ void GCS_MAVLINK::log_vision_position_estimate_data(const uint64_t usec,
                                                     const float pitch,
                                                     const float yaw)
 {
-    DataFlash_Class::instance()->Log_Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
+    AP::logger().Write("VISP", "TimeUS,RemTimeUS,PX,PY,PZ,Roll,Pitch,Yaw",
                                            "ssmmmddh", "FF000000", "QQffffff",
                                            (uint64_t)AP_HAL::micros64(),
                                            (uint64_t)usec,
@@ -2905,7 +2891,7 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        DataFlash_Class::instance()->handle_mavlink_msg(*this, msg);
+        AP::logger().handle_mavlink_msg(*this, msg);
         break;
 
 
@@ -3044,7 +3030,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, *_mission)) {
-            DataFlash_Class::instance()->Log_Write_EntireMission(*_mission);
+            AP::logger().Write_EntireMission(*_mission);
         }
         break;
     }
@@ -3243,6 +3229,55 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_comma
     return _handle_command_preflight_calibration(packet);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
+{
+#if HAL_WITH_UAVCAN
+    if (hal.util->get_soft_armed()) {
+        // *preflight*, remember?
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    bool start_stop = is_equal(packet.param1,1.0f) ? true : false;
+    bool result = true;
+    bool can_exists = false;
+    uint8_t num_drivers = AP::can().get_num_drivers();
+
+    for (uint8_t i = 0; i < num_drivers; i++) {
+        switch (AP::can().get_protocol_type(i)) {
+            case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+
+                if (ap_kdecan != nullptr) {
+                    can_exists = true;
+                    result = ap_kdecan->run_enumeration(start_stop) && result;
+                }
+                break;
+#else
+                UNUSED_RESULT(start_stop); // prevent unused variable error
+#endif
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+            case AP_BoardConfig_CAN::Protocol_Type_None:
+            default:
+                break;
+        }
+    }
+
+    MAV_RESULT ack = MAV_RESULT_DENIED;
+    if (can_exists) {
+        ack = result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    }
+
+    return ack;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
+}
+
+
+
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
     return AP::compass().handle_mag_cal_command(packet);
@@ -3392,6 +3427,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
+        break;
+
+    case MAV_CMD_PREFLIGHT_UAVCAN:
+        result = handle_command_preflight_can(packet);
         break;
 
     case MAV_CMD_FLASH_BOOTLOADER:
@@ -3880,6 +3919,28 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         AP_BLHeli *blheli = AP_BLHeli::get_singleton();
         if (blheli) {
             blheli->send_esc_telemetry_mavlink(uint8_t(chan));
+        }
+#endif
+#if HAL_WITH_UAVCAN
+        uint8_t num_drivers = AP::can().get_num_drivers();
+
+        for (uint8_t i = 0; i < num_drivers; i++) {
+            switch (AP::can().get_protocol_type(i)) {
+                case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                    AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+                    if (ap_kdecan != nullptr) {
+                        ap_kdecan->send_mavlink(uint8_t(chan));
+                    }
+                    break;
+#endif
+                }
+                case AP_BoardConfig_CAN::Protocol_Type_UAVCAN:
+                case AP_BoardConfig_CAN::Protocol_Type_None:
+                default:
+                    break;
+            }
         }
 #endif
         break;

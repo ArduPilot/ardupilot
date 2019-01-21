@@ -21,7 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"
 #include <AP_HAL/Util.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \
@@ -499,7 +499,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         pkt.aPower     = _buffer.mon_hw_68.aPower;
         pkt.agcCnt     = _buffer.mon_hw_68.agcCnt;
     }
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
@@ -517,7 +517,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
         ofsQ      : _buffer.mon_hw2.ofsQ,
         magQ      : _buffer.mon_hw2.magQ,
     };
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 #if UBLOX_RXM_RAW_LOGGING
@@ -543,7 +543,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
             cno        : raw.svinfo[i].cno,
             lli        : raw.svinfo[i].lli
         };
-        DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
 }
 
@@ -564,7 +564,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
         numMeas    : raw.numMeas,
         recStat    : raw.recStat
     };
-    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
+    AP::logger().WriteBlock(&header, sizeof(header));
 
     for (uint8_t i=0; i<raw.numMeas; i++) {
         struct log_GPS_RAWS pkt = {
@@ -583,7 +583,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
             doStdev    : raw.svinfo[i].doStdev,
             trkStat    : raw.svinfo[i].trkStat
         };
-        DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
 }
 #endif // UBLOX_RXM_RAW_LOGGING
@@ -1375,12 +1375,12 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     return true;
 }
 
-void AP_GPS_UBLOX::Write_DataFlash_Log_Startup_messages() const
+void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 {
-    AP_GPS_Backend::Write_DataFlash_Log_Startup_messages();
+    AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 
     if (_have_version) {
-        DataFlash_Class::instance()->Log_Write_MessageF("u-blox %d HW: %s SW: %s",
+        AP::logger().Write_MessageF("u-blox %d HW: %s SW: %s",
                                            state.instance+1,
                                            _version.hwVersion,
                                            _version.swVersion);

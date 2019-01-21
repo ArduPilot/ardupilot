@@ -180,7 +180,7 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
  */
 void Rover::send_pid_tuning(mavlink_channel_t chan)
 {
-    const DataFlash_Class::PID_Info *pid_info;
+    const AP_Logger::PID_Info *pid_info;
     // steering PID
     if (g.gcs_pid_mask & 1) {
         pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
@@ -1130,7 +1130,7 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
         {
-            handle_radio_status(msg, rover.DataFlash, rover.should_log(MASK_LOG_PM));
+            handle_radio_status(msg, rover.logger, rover.should_log(MASK_LOG_PM));
             break;
         }
 
@@ -1168,7 +1168,7 @@ void Rover::mavlink_delay_cb()
     }
 
     // don't allow potentially expensive logging calls:
-    DataFlash.EnableWrites(false);
+    logger.EnableWrites(false);
 
     const uint32_t tnow = millis();
     if (tnow - last_1hz > 1000) {
@@ -1187,7 +1187,7 @@ void Rover::mavlink_delay_cb()
         gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
     }
 
-    DataFlash.EnableWrites(true);
+    logger.EnableWrites(true);
 }
 
 AP_AdvancedFailsafe *GCS_MAVLINK_Rover::get_advanced_failsafe() const

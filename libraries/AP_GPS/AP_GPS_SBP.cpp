@@ -22,7 +22,7 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_SBP.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -404,7 +404,7 @@ AP_GPS_SBP::logging_log_full_update()
         last_iar_num_hypotheses    : last_iar_num_hypotheses,
     };
 
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
 
 void
@@ -438,7 +438,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
         msg_len         : msg_len,
     };
     memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
-    DataFlash_Class::instance()->WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 
     for (uint8_t i = 0; i < pages - 1; i++) {
         struct log_SbpRAWM pkt2 = {
@@ -451,7 +451,7 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
             msg_len         : msg_len,
         };
         memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
-        DataFlash_Class::instance()->WriteBlock(&pkt2, sizeof(pkt2));
+        AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
     }
 };
 

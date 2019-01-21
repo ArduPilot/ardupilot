@@ -22,7 +22,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <utility>
 #include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
@@ -428,9 +428,9 @@ void AP_Airspeed::update(bool log)
 #endif
 
     if (log) {
-        DataFlash_Class *_dataflash = DataFlash_Class::instance();
+        AP_Logger *_dataflash = AP_Logger::instance();
         if (_dataflash != nullptr) {
-            _dataflash->Log_Write_Airspeed(*this);
+            _dataflash->Write_Airspeed(*this);
         }
     }
 

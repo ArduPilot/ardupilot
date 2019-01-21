@@ -76,8 +76,8 @@ void Tracker::init_tracker()
 
     barometer.calibrate();
 
-    // initialise DataFlash library
-    DataFlash.setVehicle_Startup_Log_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
+    // initialise AP_Logger library
+    logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&tracker, &Tracker::Log_Write_Vehicle_Startup_Messages, void));
 
     // set serial ports non-blocking
     serial_manager.set_blocking_writes_all(false);
@@ -163,13 +163,13 @@ void Tracker::set_home(struct Location temp)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
-    DataFlash.set_vehicle_armed(true);
+    logger.set_vehicle_armed(true);
 }
 
 void Tracker::disarm_servos()
 {
     hal.util->set_soft_armed(false);
-    DataFlash.set_vehicle_armed(false);
+    logger.set_vehicle_armed(false);
 }
 
 /*
@@ -207,7 +207,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
     }
 
 	// log mode change
-	DataFlash.Log_Write_Mode(control_mode, reason);
+	logger.Write_Mode(control_mode, reason);
 }
 
 /*
@@ -215,7 +215,7 @@ void Tracker::set_mode(enum ControlMode mode, mode_reason_t reason)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!DataFlash.should_log(mask)) {
+    if (!logger.should_log(mask)) {
         return false;
     }
     return true;

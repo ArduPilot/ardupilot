@@ -24,15 +24,15 @@ void AC_AttitudeControl::control_monitor_filter_pid(float value, float &rms)
  */
 void AC_AttitudeControl::control_monitor_update(void)
 {
-    const DataFlash_Class::PID_Info &iroll  = get_rate_roll_pid().get_pid_info();
+    const AP_Logger::PID_Info &iroll  = get_rate_roll_pid().get_pid_info();
     control_monitor_filter_pid(iroll.P + iroll.FF,  _control_monitor.rms_roll_P);
     control_monitor_filter_pid(iroll.D,             _control_monitor.rms_roll_D);
 
-    const DataFlash_Class::PID_Info &ipitch = get_rate_pitch_pid().get_pid_info();
+    const AP_Logger::PID_Info &ipitch = get_rate_pitch_pid().get_pid_info();
     control_monitor_filter_pid(ipitch.P + iroll.FF,  _control_monitor.rms_pitch_P);
     control_monitor_filter_pid(ipitch.D,             _control_monitor.rms_pitch_D);
 
-    const DataFlash_Class::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
+    const AP_Logger::PID_Info &iyaw   = get_rate_yaw_pid().get_pid_info();
     control_monitor_filter_pid(iyaw.P + iyaw.D + iyaw.FF,  _control_monitor.rms_yaw);
 }
 
@@ -41,7 +41,7 @@ void AC_AttitudeControl::control_monitor_update(void)
  */
 void AC_AttitudeControl::control_monitor_log(void)
 {
-    DataFlash_Class::instance()->Log_Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
+    AP::logger().Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
                                            AP_HAL::micros64(),
                                            (double)safe_sqrt(_control_monitor.rms_roll_P),
                                            (double)safe_sqrt(_control_monitor.rms_roll_D),

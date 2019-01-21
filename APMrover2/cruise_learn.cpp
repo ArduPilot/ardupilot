@@ -63,7 +63,7 @@ void Rover::cruise_learn_complete()
 // logging for cruise learn
 void Rover::log_write_cruise_learn()
 {
-    DataFlash_Class::instance()->Log_Write("CRSE", "TimeUS,State,Speed,Throttle", "Qbff",
+    AP::logger().Write("CRSE", "TimeUS,State,Speed,Throttle", "Qbff",
                                             AP_HAL::micros64,
                                             cruise_learn.learn_start_ms > 0,
                                             cruise_learn.speed_filt.get(),

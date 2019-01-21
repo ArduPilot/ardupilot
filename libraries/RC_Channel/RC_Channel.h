@@ -84,7 +84,7 @@ public:
     bool       has_override() const;
 
     // get control input with zero deadzone
-    int16_t     get_control_in_zero_dz(void) const;
+    int16_t    get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
     void       set_radio_min(int16_t val) { radio_min = val;}

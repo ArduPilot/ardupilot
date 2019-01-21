@@ -28,15 +28,8 @@
 
 #include "AP_InertialSensor.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-#include <AP_HAL_F4Light/AP_HAL_F4Light.h>
-#include <AP_HAL_F4Light/GPIO.h>
-#include <AP_HAL_F4Light/Scheduler.h>
-using namespace F4Light;
-#endif
-
 class AuxiliaryBus;
-class DataFlash_Class;
+class AP_Logger;
 
 class AP_InertialSensor_Backend
 {

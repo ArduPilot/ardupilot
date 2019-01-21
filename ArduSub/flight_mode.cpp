@@ -70,7 +70,7 @@ bool Sub::set_mode(control_mode_t mode, mode_reason_t reason)
 
         control_mode = mode;
         control_mode_reason = reason;
-        DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+        logger.Write_Mode(control_mode, control_mode_reason);
 
         // update notify object
         notify_flight_mode(control_mode);

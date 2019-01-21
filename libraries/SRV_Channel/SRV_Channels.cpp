@@ -23,8 +23,14 @@
 #include "SRV_Channel.h"
 
 #if HAL_WITH_UAVCAN
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+  #include <AP_UAVCAN/AP_UAVCAN.h>
+
+  // To be replaced with macro saying if KDECAN library is included
+  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    #include <AP_KDECAN/AP_KDECAN.h>
+  #endif
+  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -243,14 +249,41 @@ void SRV_Channels::push()
 #endif
 
 #if HAL_WITH_UAVCAN
-    // push outputs to UAVCAN
+    // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-        if (ap_uavcan == nullptr) {
-            continue;
+        switch (AP::can().get_protocol_type(i)) {
+            case AP_BoardConfig_CAN::Protocol_Type_UAVCAN: {
+                AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+                if (ap_uavcan == nullptr) {
+                    continue;
+                }
+                ap_uavcan->SRV_push_servos();
+                break;
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+                if (ap_kdecan == nullptr) {
+                    continue;
+                }
+                ap_kdecan->update();
+                break;
+#endif
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_ToshibaCAN: {
+                AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
+                if (ap_tcan == nullptr) {
+                    continue;
+                }
+                ap_tcan->update();
+                break;
+            }
+            case AP_BoardConfig_CAN::Protocol_Type_None:
+            default:
+                break;
         }
-        ap_uavcan->SRV_push_servos();
     }
 #endif // HAL_WITH_UAVCAN
 }

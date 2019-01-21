@@ -74,13 +74,6 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-#if HAVE_PX4_MIXER
-    if (plane.last_mixer_crc == -1) {
-        check_failed(ARMING_CHECK_NONE, display_failure, "Mixer error");
-        ret = false;
-    }
-#endif // CONFIG_HAL_BOARD
-
     return ret;
 }
 

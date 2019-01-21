@@ -51,20 +51,6 @@ void Plane::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     set_control_channels();
-    
-#if HAVE_PX4_MIXER
-    if (!quadplane.enable) {
-        // this must be before BoardConfig.init() so if
-        // BRD_SAFETYENABLE==0 then we don't have safety off yet. For
-        // quadplanes we wait till AP_Motors is initialised
-        for (uint8_t tries=0; tries<10; tries++) {
-            if (setup_failsafe_mixing()) {
-                break;
-            }
-            hal.scheduler->delay(10);
-        }
-    }
-#endif
 
     mavlink_system.sysid = g.sysid_this_mav;
 
@@ -247,9 +233,9 @@ void Plane::startup_ground(void)
     // initialise mission library
     mission.init();
 
-    // initialise DataFlash library
+    // initialise AP_Logger library
 #if LOGGING_ENABLED == ENABLED
-    DataFlash.setVehicle_Startup_Log_Writer(
+    logger.setVehicle_Startup_Writer(
         FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
         );
 #endif
@@ -505,7 +491,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     adsb.set_is_auto_mode(auto_navigation_mode);
 
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode(control_mode, control_mode_reason);
 
     // update notify with flight mode change
     notify_flight_mode(control_mode);
@@ -735,7 +721,7 @@ void Plane::notify_flight_mode(enum FlightMode mode)
 bool Plane::should_log(uint32_t mask)
 {
 #if LOGGING_ENABLED == ENABLED
-    return DataFlash.should_log(mask);
+    return logger.should_log(mask);
 #else
     return false;
 #endif

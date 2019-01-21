@@ -154,7 +154,7 @@ void AP_WheelEncoder::init(void)
         return;
     }
     for (uint8_t i=0; i<WHEELENCODER_MAX_INSTANCES; i++) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4  || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         switch ((WheelEncoder_Type)_type[i].get()) {
         case WheelEncoder_TYPE_QUADRATURE:
             drivers[i] = new AP_WheelEncoder_Quadrature(*this, i, state[i]);

@@ -3,7 +3,7 @@
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -250,7 +250,7 @@ void AP_LandingGear::update(float height_above_ground_m)
 // log weight on wheels state
 void AP_LandingGear::log_wow_state(LG_WOW_State state)
 {
-    DataFlash_Class::instance()->Log_Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
+    AP::logger().Write("LGR", "TimeUS,LandingGear,WeightOnWheels", "Qbb",
                                            AP_HAL::micros64(),
                                            (int8_t)gear_state_current, (int8_t)state);
 }

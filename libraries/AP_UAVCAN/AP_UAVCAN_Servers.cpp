@@ -32,7 +32,7 @@
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
 #include <AP_Common/AP_Common.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #if HAL_OS_POSIX_IO
 #include <unistd.h>
@@ -79,7 +79,7 @@ class AP_UAVCAN_FileEventTracer : public uavcan::dynamic_node_id_server::IEventT
 protected:
     virtual void onEvent(uavcan::dynamic_node_id_server::TraceCode code, uavcan::int64_t argument)
     {
-        DataFlash_Class::instance()->Log_Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
+        AP::logger().Write("UCEV", "TimeUS,code,arg", "s--", "F--", "Qhq", AP_HAL::micros64(), code, argument);
     }
 };
 

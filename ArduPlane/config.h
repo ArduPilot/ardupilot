@@ -352,12 +352,6 @@
  #endif
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 && !defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-# define HAVE_PX4_MIXER 1
-#else
-# define HAVE_PX4_MIXER 0
-#endif
-
 #ifndef STATS_ENABLED
  # define STATS_ENABLED ENABLED
 #endif

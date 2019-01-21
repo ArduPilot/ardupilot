@@ -5,7 +5,7 @@
 #include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_PX4Flow.h"
 #include "AP_OpticalFlow_CXOF.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -156,7 +156,7 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
 
 void OpticalFlow::Log_Write_Optflow()
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::instance();
     if (instance == nullptr) {
         return;
     }

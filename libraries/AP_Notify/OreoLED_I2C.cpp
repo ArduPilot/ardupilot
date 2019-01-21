@@ -425,7 +425,7 @@ void OreoLED_I2C::boot_leds(void)
     }
 }
 
-// update_timer - called by scheduler and updates PX4 driver with commands
+// update_timer - called by scheduler and updates driver with commands
 void OreoLED_I2C::update_timer(void)
 {
     WITH_SEMAPHORE(_sem);
@@ -440,7 +440,7 @@ void OreoLED_I2C::update_timer(void)
         boot_leds();
     }
 
-    // send a sync every 4.1s. The PX4 driver uses 4ms, but using
+    // send a sync every 4.1s. The driver uses 4ms, but using
     // exactly 4ms does not work. It seems that the oreoled firmware
     // relies on the inaccuracy of the NuttX scheduling for this to
     // work, and exactly 4ms from ChibiOS causes syncronisation to

@@ -21,7 +21,7 @@
 #include <utility>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -224,7 +224,7 @@ void AP_Compass_MMC3416::timer()
         }
 
 #if 0
-        DataFlash_Class::instance()->Log_Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
+        AP::logger().Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
                                                AP_HAL::micros64(),
                                                (double)new_offset.x,
                                                (double)new_offset.y,

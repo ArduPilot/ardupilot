@@ -22,7 +22,6 @@
 #include "ExternalLED.h"
 #include "PCA9685LED_I2C.h"
 #include "NCP5623.h"
-#include "OreoLED_PX4.h"
 #include "OreoLED_I2C.h"
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
@@ -49,20 +48,7 @@ AP_Notify *AP_Notify::_instance;
                   Notify_LED_NCP5623_I2C_Internal | Notify_LED_NCP5623_I2C_External)
 
 #ifndef BUILD_DEFAULT_LED_TYPE
-// PX4 boards
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3 // Has enough memory for Oreo LEDs
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS | Notify_LED_OreoLED)
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
-    #define HAL_HAVE_PIXRACER_LED
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #else   // All other px4 boards use standard devices
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
-  #endif
-
-// ChibiOS and VRBrain boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || \
-      CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
   #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards    
@@ -92,10 +78,6 @@ AP_Notify *AP_Notify::_instance;
   #else // other linux
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
   #endif
-
-// F4Light
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | Notify_LED_ToshibaLED_I2C_External)
 
 // All other builds
 #else
@@ -224,18 +206,18 @@ void AP_Notify::add_backends(void)
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-                ADD_BACKEND(new AP_ExternalLED()); // despite the name this is a built in set of onboard LED's
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
+                ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
+#endif // CONFIG_HAL_BOARD_SUBTYPE == various CHIBIOS-VRBRAINs
 
 #if defined(HAL_HAVE_PIXRACER_LED)
                 ADD_BACKEND(new PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
-                ADD_BACKEND(new AP_BoardLED());
-  #else
+  #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52 || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51
                 ADD_BACKEND(new VRBoard_LED());
- #endif // CONFIG_HAL_BOARD != HAL_BOARD_VRBRAIN || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_VRBRAIN_V45
+  #else
+                ADD_BACKEND(new AP_BoardLED());
+  #endif
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
                 ADD_BACKEND(new AP_BoardLED2());
 #endif
@@ -260,12 +242,7 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
             case Notify_LED_OreoLED:
-                // OreoLED's are PX4-v3 build only
-#if (CONFIG_HAL_BOARD == HAL_BOARD_PX4) && (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V3)
-                if (_oreo_theme) {
-                    ADD_BACKEND(new OreoLED_PX4(_oreo_theme));
-                }
-#elif !HAL_MINIMIZE_FEATURES
+#if !HAL_MINIMIZE_FEATURES
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
@@ -284,13 +261,8 @@ void AP_Notify::add_backends(void)
     // Always try and add a display backend
     ADD_BACKEND(new Display());
 
-    // Add noise making devices
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || \
-    CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    ADD_BACKEND(new AP_ToneAlarm());
-
 // ChibiOS noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifdef HAL_BUZZER_PIN
     ADD_BACKEND(new Buzzer());
 #endif
@@ -317,9 +289,6 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(new AP_ToneAlarm());
   #endif
 
-// F4Light noise makers
-#elif CONFIG_HAL_BOARD == HAL_BOARD_F4LIGHT
-    ADD_BACKEND(new Buzzer());
 #endif // Noise makers
 
 }

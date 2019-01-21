@@ -561,7 +561,7 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 
 bool AP_GPS::should_df_log() const
 {
-    DataFlash_Class *instance = DataFlash_Class::instance();
+    AP_Logger *instance = AP_Logger::instance();
     if (instance == nullptr) {
         return false;
     }
@@ -657,7 +657,7 @@ void AP_GPS::update_instance(uint8_t instance)
     if (data_should_be_logged &&
         should_df_log() &&
         !AP::ahrs().have_ekf_logging()) {
-        DataFlash_Class::instance()->Log_Write_GPS(instance);
+        AP::logger().Write_GPS(instance);
     }
 
     if (state[instance].status >= GPS_OK_FIX_3D) {
@@ -1086,13 +1086,13 @@ void AP_GPS::handle_gps_rtcm_data(const mavlink_message_t *msg)
     }
 }
 
-void AP_GPS::Write_DataFlash_Log_Startup_messages()
+void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
     for (uint8_t instance=0; instance<num_instances; instance++) {
         if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
             continue;
         }
-        drivers[instance]->Write_DataFlash_Log_Startup_messages();
+        drivers[instance]->Write_AP_Logger_Log_Startup_messages();
     }
 }
 

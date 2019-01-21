@@ -58,7 +58,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>   // Serial manager library
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Declination/AP_Declination.h> // ArduPilot Mega Declination Helper Library
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>       // main loop scheduler
 #include <AP_Scheduler/PerfInfo.h>                  // loop perf monitoring
 
@@ -196,7 +196,7 @@ private:
     // notification object for LEDs, buzzers etc (parameter set to false disables external leds)
     AP_Notify notify;
 
-    DataFlash_Class DataFlash;
+    AP_Logger logger;
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;
@@ -232,8 +232,8 @@ private:
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
-    AP_RollController rollController{ahrs, aparm, DataFlash};
-    AP_PitchController pitchController{ahrs, aparm, DataFlash};
+    AP_RollController rollController{ahrs, aparm};
+    AP_PitchController pitchController{ahrs, aparm};
     AP_YawController yawController{ahrs, aparm};
     AP_SteerController steerController{ahrs};
 
@@ -791,11 +791,6 @@ private:
     AP_Tuning_Plane tuning;
 
     static const struct LogStructure log_structure[];
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    // the crc of the last created PX4Mixer
-    int32_t last_mixer_crc = -1;
-#endif // CONFIG_HAL_BOARD
 
     // rudder mixing gain for differential thrust (0 - 1)
     float rudder_dt;
@@ -808,7 +803,7 @@ private:
     void send_nav_controller_output(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
     void send_wind(mavlink_channel_t chan);
-    void send_pid_info(const mavlink_channel_t chan, const DataFlash_Class::PID_Info *pid_info, const uint8_t axis, const float achieved);
+    void send_pid_info(const mavlink_channel_t chan, const AP_Logger::PID_Info *pid_info, const uint8_t axis, const float achieved);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_rpm(mavlink_channel_t chan);
 
@@ -927,7 +922,6 @@ private:
     bool mix_two_channels(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan1, uint8_t in_chan2, bool left_channel);
     bool mix_passthrough(char *&buf, uint16_t &buf_size, uint8_t out_chan, uint8_t in_chan);
     bool mix_trim_channel(char *&buf, uint16_t &buf_size, uint8_t out_chan);
-    bool setup_failsafe_mixing(void);
     void set_control_channels(void);
     void init_rc_in();
     void init_rc_out_main();

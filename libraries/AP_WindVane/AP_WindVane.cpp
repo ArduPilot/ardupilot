@@ -20,9 +20,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <Filter/Filter.h>
 #include <utility>
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4 || CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-#include <board_config.h>
-#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif

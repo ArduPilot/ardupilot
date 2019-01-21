@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include "AP_BoardConfig.h"
 #include "AP_BoardConfig_CAN.h"
 
 #if HAL_WITH_UAVCAN
@@ -35,7 +36,11 @@
 #include <AP_HAL_ChibiOS/CAN.h>
 #endif
 
+#include <AP_Vehicle/AP_Vehicle.h>
+
 #include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -137,17 +142,38 @@ void AP_BoardConfig_CAN::init()
             printf("can_mgr %d initialized well\n\r", i + 1);
 
             if (prot_type == Protocol_Type_UAVCAN) {
-                _drivers[i]._driver = new AP_UAVCAN;
+                _drivers[i]._driver = _drivers[i]._uavcan =  new AP_UAVCAN;
 
                 if (_drivers[i]._driver == nullptr) {
                     AP_HAL::panic("Failed to allocate uavcan %d\n\r", i + 1);
                     continue;
                 }
 
-                AP_Param::load_object_from_eeprom(_drivers[i]._driver, AP_UAVCAN::var_info);
+                AP_Param::load_object_from_eeprom(_drivers[i]._uavcan, AP_UAVCAN::var_info);
+            } else if (prot_type == Protocol_Type_KDECAN) {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                _drivers[i]._driver = _drivers[i]._kdecan =  new AP_KDECAN;
 
-                _drivers[i]._driver->init(i);
+                 if (_drivers[i]._driver == nullptr) {
+                    AP_HAL::panic("Failed to allocate KDECAN %d\n\r", i + 1);
+                    continue;
+                }
+
+                AP_Param::load_object_from_eeprom(_drivers[i]._kdecan, AP_KDECAN::var_info);
+#endif
+            } else if (prot_type == Protocol_Type_ToshibaCAN) {
+                _drivers[i]._driver = _drivers[i]._tcan = new AP_ToshibaCAN;
+
+                if (_drivers[i]._driver == nullptr) {
+                    AP_BoardConfig::sensor_config_error("ToshibaCAN init failed");
+                    continue;
+                }
+            } else {
+                continue;
             }
+
+            _drivers[i]._driver->init(i);
         }
     }
 }
