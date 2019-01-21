@@ -73,7 +73,8 @@ public:
     /// wp_and_spline_init - initialise straight line and spline waypoint controllers
     ///     updates target roll, pitch targets and I terms based on vehicle lean angles
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-    void wp_and_spline_init();
+    ///     if no wp_speed is passed, it use the default speed from _wp_speed_cms (WPNAV_SPEED) that can be modified by set_speed_xy(like do_set_speed)
+    void wp_and_spline_init(float wp_speed=0);
 
     /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
     void set_speed_xy(float speed_cms);

@@ -132,13 +132,17 @@ void AC_WPNav::update_brake()
 /// wp_and_spline_init - initialise straight line and spline waypoint controllers
 ///     updates target roll, pitch targets and I terms based on vehicle lean angles
 ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-void AC_WPNav::wp_and_spline_init()
+void AC_WPNav::wp_and_spline_init(float wp_speed)
 {
     // check _wp_accel_cmss is reasonable
     if (_wp_accel_cmss <= 0) {
         _wp_accel_cmss.set_and_save(WPNAV_ACCELERATION);
     }
-
+    if (!is_zero(wp_speed)) {
+        _max_wp_speed_cms = wp_speed;
+    } else {
+        _max_wp_speed_cms = _wp_speed_cms;
+    }
     // initialise position controller
     _pos_control.set_desired_accel_xy(0.0f,0.0f);
     _pos_control.init_xy_controller();
