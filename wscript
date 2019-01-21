@@ -178,6 +178,11 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SFML graphics library")
 
+    g.add_option('--sitl-flash-storage',
+        action='store_true',
+        default=False,
+        help='Configure for building SITL with flash storage emulation.')
+    
     g.add_option('--static',
         action='store_true',
         default=False,
