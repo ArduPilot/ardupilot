@@ -585,9 +585,16 @@ def write_mcu_config(f):
         cortex = "cortex-m3"        
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
         build_info['MCU'] = cortex
+    elif mcu_series == "STM32F7xx":
+        cortex = "cortex-m7"
+        env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
+        build_info['MCU'] = cortex
+        if not args.bootloader:
+            env_vars['CPU_FLAGS'].append('-u_printf_float')
+            build_info['ENV_UDEFS'] = "-DCHPRINTF_USE_FLOAT=1"
     else:
         cortex = "cortex-m4"
-        env_vars['CPU_FLAGS'] = [ "-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
+        env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
         if not args.bootloader:
             env_vars['CPU_FLAGS'].append('-u_printf_float')

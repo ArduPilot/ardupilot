@@ -6,7 +6,8 @@ these tables are generated from the STM32 datasheet for the STM32F777x
 # additional build information for ChibiOS
 build = {
     "CHIBIOS_STARTUP_MK"  : "os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f7xx.mk",
-    "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F7xx/platform.mk"
+    "CHIBIOS_PLATFORM_MK" : "os/hal/ports/STM32/STM32F7xx/platform.mk",
+    "USE_FPU_OPT" : "-mfloat-abi=hard -mfpu=mfpu=fpv5-d16 -fsingle-precision-constant",
     }
 
 pincount = {
