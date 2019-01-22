@@ -84,27 +84,7 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
-    // @Param: SLCAN_RT
-    // @DisplayName: SLCAN Route
-    // @Description: CAN Driver ID to be routed to SLCAN, 0 means no routing
-    // @Range: 0 3
-    // @User: Advanced
-    AP_GROUPINFO("SLCAN_RT", 7, AP_BoardConfig_CAN, _slcan_rt, 1),
-
-    // @Param: SLCAN_SR
-    // @DisplayName: SLCAN Serial Port
-    // @Description: Serial Port ID to be used for temporary SLCAN iface, -1 means no temporary serial
-    // @Range: 0 5
-    // @User: Advanced
-    AP_GROUPINFO("SLCAN_SR", 8, AP_BoardConfig_CAN, _slcan_sr, -1),
-
-
-    // @Param: SLCAN_TO
-    // @DisplayName: SLCAN Timeout
-    // @Description: Duration of inactivity after which SLCAN in seconds
-    // @Range: 0 255
-    // @User: Advanced
-    AP_GROUPINFO("SLCAN_TO", 9, AP_BoardConfig_CAN, _slcan_to, 0),
+    AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
 
     AP_GROUPEND
 };
@@ -147,7 +127,7 @@ void AP_BoardConfig_CAN::init()
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
                 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-                    if (_slcan_rt == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
+                    if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
                         slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
                     }
@@ -201,7 +181,7 @@ void AP_BoardConfig_CAN::init()
             } else {
                 continue;
             }
-            if (_slcan_rt == 0) {
+            if (_slcan._can_port == 0) {
                 _drivers[i]._driver->init(i, true);
             } else {
                 _drivers[i]._driver->init(i, false);
