@@ -204,9 +204,9 @@ void RangeFinder::convert_params(void) {
             {16, 4, 1}, //16, FUNCTION 2
             {17, 5, 1}, //17, MIN_CM 2
             {18, 6, 1}, //18, MAX_CM 2
-            {19, 7, 2}, //19, STOP_PIN 2
-            {20, 8, 3}, //20, SETTLE 2
-            {21, 9, 3}, //21, RMETRIC 2
+            {19, 7, 1}, //19, STOP_PIN 2
+            {20, 8, 1}, //20, SETTLE 2
+            {21, 9, 1}, //21, RMETRIC 2
             //{, 10, 1}, //PWRRNG 2 (previously existed only once for all sensors)
             {22, 11, 1}, //22, GNDCLEAR 2
             {24, 12, 1}, //24, ADDR 2
