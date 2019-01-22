@@ -103,7 +103,7 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @User: Advanced
     // @Range: 0.0 120.0
     // @Units: s
-    AP_GROUPINFO("_OVERRIDE_TIME", 32, RC_Channels, _override_timeout, 3.0),
+    AP_GROUPINFO("_OVERRIDE_TIME", 32, RC_Channels, _override_timeout, -1),
     
     AP_GROUPEND
 };
