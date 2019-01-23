@@ -1752,6 +1752,21 @@ class AutoTest(ABC):
             raise NotAchievedException("Rate not achieved (got %f want %u)" %
                                        (new_measured_rate, expected_rate))
 
+        # make sure get_message_interval works:
+        self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
+                           (self.victim_message_id))
+        m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
+        want = set_interval
+        if set_interval == 0:
+            want = self.rate_to_interval_us(expected_rate)
+
+        if m.interval_us != want:
+            raise NotAchievedException("Did not read same interval back from autopilot: want=%d got=%d)" %
+            (want, m.interval_us))
+        m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
+        if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+            raise NotAchievedException("Expected ACCEPTED for reading message interval")
+
     def test_set_message_interval(self):
         self.victim_message = 'VFR_HUD'
         self.victim_message_id = mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD
@@ -1799,6 +1814,15 @@ class AutoTest(ABC):
             if abs(rate - want_rate) > 2:
                 raise NotAchievedException("Did not get expected rate")
 
+            non_existant_id = 145
+            self.mavproxy.send("long GET_MESSAGE_INTERVAL %u\n" %
+                               (non_existant_id))
+            m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
+            if m.interval_us != 0:
+                raise NotAchievedException("Supposed to get 0 back for unsupported stream")
+            m = self.mav.recv_match(type='COMMAND_ACK', blocking=True)
+            if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                raise NotAchievedException("Getting rate of unsupported message is still a success")
 
             sr = self.sitl_streamrate()
             self.mavproxy.send("set streamrate %u\n" % sr)
