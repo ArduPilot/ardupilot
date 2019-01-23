@@ -153,30 +153,15 @@ void Plane::send_fence_status(mavlink_channel_t chan)
 #endif
 
 
-void Plane::send_sys_status(mavlink_channel_t chan)
+void GCS_MAVLINK_Plane::get_sensor_status_flags(uint32_t &present,
+                                                uint32_t &enabled,
+                                                uint32_t &health)
 {
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
+    plane.update_sensor_status_flags();
 
-    if (battery.has_current() && battery.healthy()) {
-        battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
-    }
-
-    update_sensor_status_flags();
-    
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        (uint16_t)(scheduler.load_average() * 1000),
-        battery.voltage() * 1000, // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0, // comm drops %,
-        0, // comm drops in pkts,
-        0, 0, 0, 0);
+    present = plane.control_sensors_present;
+    enabled = plane.control_sensors_enabled;
+    health = plane.control_sensors_health;
 }
 
 void Plane::send_nav_controller_output(mavlink_channel_t chan)
@@ -434,11 +419,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     }
 
     switch (id) {
-
-    case MSG_SYS_STATUS:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        plane.send_sys_status(chan);
-        break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
         if (plane.control_mode != MANUAL) {
