@@ -84,12 +84,10 @@ MAV_STATE GCS_MAVLINK_Sub::system_status() const
     return MAV_STATE_STANDBY;
 }
 
-NOINLINE void Sub::send_sys_status(mavlink_channel_t chan)
+void Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
+                                  uint32_t &control_sensors_enabled,
+                                  uint32_t &control_sensors_health)
 {
-    uint32_t control_sensors_present;
-    uint32_t control_sensors_enabled;
-    uint32_t control_sensors_health;
-
     // default sensors present
     control_sensors_present = MAVLINK_SENSOR_PRESENT_DEFAULT;
 
@@ -174,15 +172,6 @@ NOINLINE void Sub::send_sys_status(mavlink_channel_t chan)
         control_sensors_health &= ~MAV_SYS_STATUS_SENSOR_BATTERY;
     }
 
-    int16_t battery_current = -1;
-    int8_t battery_remaining = -1;
-
-    if (battery.has_current() && battery.healthy()) {
-        // percent remaining is not necessarily accurate at the moment
-        //battery_remaining = battery.capacity_remaining_pct();
-        battery_current = battery.current_amps() * 100;
-    }
-
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     switch (terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
@@ -215,20 +204,13 @@ NOINLINE void Sub::send_sys_status(mavlink_channel_t chan)
         control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
         control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
     }
+}
 
-    mavlink_msg_sys_status_send(
-        chan,
-        control_sensors_present,
-        control_sensors_enabled,
-        control_sensors_health,
-        (uint16_t)(scheduler.load_average() * 1000),
-        battery.voltage() * 1000, // mV
-        battery_current,        // in 10mA units
-        battery_remaining,      // in %
-        0, // comm drops %,
-        0, // comm drops in pkts,
-        0, 0, 0, 0);
-
+void GCS_MAVLINK_Sub::get_sensor_status_flags(uint32_t &control_sensors_present,
+                                              uint32_t &control_sensors_enabled,
+                                              uint32_t &control_sensors_health)
+{
+    return sub.get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
 }
 
 void NOINLINE Sub::send_nav_controller_output(mavlink_channel_t chan)
@@ -397,16 +379,6 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_NAMED_FLOAT:
         send_info();
-        break;
-
-    case MSG_SYS_STATUS:
-        // send extended status only once vehicle has been initialised
-        // to avoid unnecessary errors being reported to user
-        if (!vehicle_initialised()) {
-            return true;
-        }
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
-        sub.send_sys_status(chan);
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
