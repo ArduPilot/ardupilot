@@ -1,5 +1,6 @@
 #!/bin/sh
-if [[ "$OSTYPE" == "darwin"* ]]; then
+
+if [ $(uname) = "Darwin" ]; then
     DIR=$(dirname $(greadlink -f $0))
 else
     DIR=$(dirname $(readlink -f $0))
