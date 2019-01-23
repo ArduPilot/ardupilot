@@ -805,8 +805,6 @@ private:
     // mavlink routing object
     static MAVLink_routing routing;
 
-    static const AP_SerialManager *serialmanager_p;
-
     struct pending_param_request {
         mavlink_channel_t chan;
         int16_t param_index;
