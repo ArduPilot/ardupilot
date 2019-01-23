@@ -533,7 +533,12 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoX21-777",
                 "F35Lightning",
                 "speedybeef4",
-                "DrotekP3Pro"]
+                "DrotekP3Pro",
+                "VRBrain-v51",
+                "VRBrain-v52",
+                "VRUBrain-v51",
+                "VRCore-v10",
+                "VRBrain-v54"]
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
