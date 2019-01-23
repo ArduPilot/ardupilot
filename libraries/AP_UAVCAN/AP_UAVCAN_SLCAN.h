@@ -126,7 +126,7 @@ class CAN: public AP_HAL::CAN {
 public:
 
     CAN(uint8_t self_index, uint8_t rx_queue_capacity):
-    self_index_(self_index), rx_queue_(rx_queue_capacity), _port_initialised(false) 
+        self_index_(self_index), rx_queue_(rx_queue_capacity), _port_initialised(false)
     {
         UAVCAN_ASSERT(self_index_ < CAN_STM32_NUM_IFACES);
     }
@@ -145,7 +145,8 @@ public:
         if (init(bitrate, OperatingMode::NormalMode, nullptr) == 0) {
             bitrate_ = bitrate;
             initialized_ = true;
-        } else {
+        }
+        else {
             initialized_ = false;
         }
         return initialized_;
@@ -157,18 +158,24 @@ public:
 
     void reset() override;
 
-    int32_t tx_pending() override {
+    int32_t tx_pending() override
+    {
         return _port->tx_pending() ? 0:-1;
     }
 
-    int32_t available() override {
+    int32_t available() override
+    {
         return _port->available() ? 0:-1;
     }
 
-    bool is_initialized() override {
+    bool is_initialized() override
+    {
         return initialized_;
     }
-    bool closed() { return _close; }
+    bool closed()
+    {
+        return _close;
+    }
     bool pending_frame_sent();
 
     bool isRxBufferEmpty(void);
@@ -189,7 +196,7 @@ class CANManager: public AP_HAL::CANManager, public uavcan::ICanDriver {
 public:
     CANManager()
         :  AP_HAL::CANManager(this), initialized_(false), driver_(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE)
-        { }
+    { }
 
     /**
      * Whether at least one iface had at least one successful IO since previous call of this method.
@@ -212,7 +219,10 @@ public:
     bool is_initialized() override;
     void initialized(bool val) override;
 
-    virtual CAN* getIface(uint8_t iface_index) override { return &driver_; }
+    virtual CAN* getIface(uint8_t iface_index) override
+    {
+        return &driver_;
+    }
 
     virtual uint8_t getNumIfaces() const override
     {
