@@ -31,6 +31,8 @@ protected:
 
     bool vehicle_initialised() const override;
 
+    void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;
