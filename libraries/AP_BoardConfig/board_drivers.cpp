@@ -155,6 +155,8 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
 
+#define INV2REG_WHOAMI 0x00
+#define INV2_WHOAMI_ICM20948 0xEA
 /*
   validation of the board type
  */
@@ -170,8 +172,10 @@ void AP_BoardConfig::validate_board_type(void)
         (spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
          spi_check_register("icm20608", MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
+         spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
+        (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
+         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
@@ -211,8 +215,10 @@ void AP_BoardConfig::board_autodetect(void)
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20608) ||
-         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
-        spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) {
+         spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
+         spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
+        (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
+         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Detected PIXHAWK2\n");
