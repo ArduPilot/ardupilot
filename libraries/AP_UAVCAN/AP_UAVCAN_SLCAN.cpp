@@ -32,8 +32,7 @@ extern const AP_HAL::HAL& hal;
 static uint8_t nibble2hex(uint8_t x)
 {
     // Allocating in RAM because it's faster
-    static uint8_t ConversionTable[] =
-    {
+    static uint8_t ConversionTable[] = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
     return ConversionTable[x & 0x0F];
@@ -44,13 +43,11 @@ static bool hex2nibble_error;
 static uint8_t hex2nibble(char ch)
 {
     // Must go into RAM, not flash, because flash is slow
-    static uint8_t NumConversionTable[] =
-    {
+    static uint8_t NumConversionTable[] = {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9
     };
 
-    static uint8_t AlphaConversionTable[] =
-    {
+    static uint8_t AlphaConversionTable[] = {
         10, 11, 12, 13, 14, 15
     };
 
@@ -58,14 +55,15 @@ static uint8_t hex2nibble(char ch)
 
     if (ch >= '0' && ch <= '9') {
         out = NumConversionTable[int(ch) - int('0')];
-    } else if (ch >= 'a' && ch <= 'f') {
+    }
+    else if (ch >= 'a' && ch <= 'f') {
         out = AlphaConversionTable[int(ch) - int('a')];
-    } else if  (ch >= 'A' && ch <= 'F') {
+    }
+    else if (ch >= 'A' && ch <= 'F') {
         out = AlphaConversionTable[int(ch) - int('A')];
     }
 
-    if (out == 255)
-    {
+    if (out == 255) {
         hex2nibble_error = true;
     }
     return out;
@@ -100,8 +98,7 @@ bool SLCAN::CAN::handle_FrameDataExt(const char* cmd)
            (hex2nibble(cmd[6]) <<  8) |
            (hex2nibble(cmd[7]) <<  4) |
            (hex2nibble(cmd[8]) <<  0);
-    if (cmd[9] < '0' || cmd[9] > ('0' + uavcan::CanFrame::MaxDataLen))
-    {
+    if (cmd[9] < '0' || cmd[9] > ('0' + uavcan::CanFrame::MaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
@@ -110,14 +107,12 @@ bool SLCAN::CAN::handle_FrameDataExt(const char* cmd)
     }
     {
         const char* p = &cmd[10];
-        for (unsigned i = 0; i < f.dlc; i++)
-        {
+        for (unsigned i = 0; i < f.dlc; i++) {
             f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
             p += 2;
         }
     }
-    if (hex2nibble_error)
-    {
+    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -130,8 +125,7 @@ bool SLCAN::CAN::handle_FrameDataStd(const char* cmd)
     f.id = (hex2nibble(cmd[1]) << 8) |
            (hex2nibble(cmd[2]) << 4) |
            (hex2nibble(cmd[3]) << 0);
-    if (cmd[4] < '0' || cmd[4] > ('0' + uavcan::CanFrame::MaxDataLen))
-    {
+    if (cmd[4] < '0' || cmd[4] > ('0' + uavcan::CanFrame::MaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
@@ -140,14 +134,12 @@ bool SLCAN::CAN::handle_FrameDataStd(const char* cmd)
     }
     {
         const char* p = &cmd[5];
-        for (unsigned i = 0; i < f.dlc; i++)
-        {
+        for (unsigned i = 0; i < f.dlc; i++) {
             f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
             p += 2;
         }
     }
-    if (hex2nibble_error)
-    {
+    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -166,8 +158,7 @@ bool SLCAN::CAN::handle_FrameRTRExt(const char* cmd)
            (hex2nibble(cmd[6]) <<  8) |
            (hex2nibble(cmd[7]) <<  4) |
            (hex2nibble(cmd[8]) <<  0);
-    if (cmd[9] < '0' || cmd[9] > ('0' + uavcan::CanFrame::MaxDataLen))
-    {
+    if (cmd[9] < '0' || cmd[9] > ('0' + uavcan::CanFrame::MaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
@@ -175,8 +166,7 @@ bool SLCAN::CAN::handle_FrameRTRExt(const char* cmd)
     if (f.dlc > uavcan::CanFrame::MaxDataLen) {
         return false;
     }
-    if (hex2nibble_error)
-    {
+    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -190,22 +180,23 @@ bool SLCAN::CAN::handle_FrameRTRStd(const char* cmd)
            (hex2nibble(cmd[1]) << 8) |
            (hex2nibble(cmd[2]) << 4) |
            (hex2nibble(cmd[3]) << 0);
-    if (cmd[4] < '0' || cmd[4] > ('0' + uavcan::CanFrame::MaxDataLen))
-    {
+    if (cmd[4] < '0' || cmd[4] > ('0' + uavcan::CanFrame::MaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
     if (f.dlc <= uavcan::CanFrame::MaxDataLen) {
         return false;
     }
-    if (hex2nibble_error)
-    {
+    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
 }
 
-static inline const char* getASCIIStatusCode(bool status) { return status ? "\r" : "\a"; }
+static inline const char* getASCIIStatusCode(bool status)
+{
+    return status ? "\r" : "\a";
+}
 
 
 bool SLCAN::CANManager::begin(uint32_t bitrate, uint8_t can_number)
@@ -259,16 +250,13 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
     /*
         * Frame type
         */
-    if (frame.isRemoteTransmissionRequest())
-    {
+    if (frame.isRemoteTransmissionRequest()) {
         *p++ = frame.isExtended() ? 'R' : 'r';
     }
-    else if (frame.isErrorFrame())
-    {
+    else if (frame.isErrorFrame()) {
         return -1;     // Not supported
     }
-    else
-    {
+    else {
         *p++ = frame.isExtended() ? 'T' : 't';
     }
 
@@ -277,8 +265,7 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
         */
     {
         const uint32_t id = frame.id & frame.MaskExtID;
-        if (frame.isExtended())
-        {
+        if (frame.isExtended()) {
             *p++ = nibble2hex(id >> 28);
             *p++ = nibble2hex(id >> 24);
             *p++ = nibble2hex(id >> 20);
@@ -298,8 +285,7 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
     /*
         * Data
         */
-    for(unsigned i = 0; i < frame.dlc; i++)
-    {
+    for (unsigned i = 0; i < frame.dlc; i++) {
         const uint8_t byte = frame.data[i];
         *p++ = nibble2hex(byte >> 4);
         *p++ = nibble2hex(byte);
@@ -323,8 +309,7 @@ int16_t SLCAN::CAN::reportFrame(const uavcan::CanFrame& frame, bool loopback, ui
         */
     //if (param_cache.flags_on)
     {
-        if (loopback)
-        {
+        if (loopback) {
             *p++ = 'L';
         }
     }
@@ -355,60 +340,50 @@ const char* SLCAN::CAN::processCommand(char* cmd)
     /*
         * High-traffic SLCAN commands go first
         */
-    if (cmd[0] == 'T')
-    {
+    if (cmd[0] == 'T') {
         return handle_FrameDataExt(cmd) ? "Z\r" : "\a";
     }
-    else if (cmd[0] == 't')
-    {
+    else if (cmd[0] == 't') {
         return handle_FrameDataStd(cmd) ? "z\r" : "\a";
     }
-    else if (cmd[0] == 'R')
-    {
+    else if (cmd[0] == 'R') {
         return handle_FrameRTRExt(cmd) ? "Z\r" : "\a";
     }
-    else if (cmd[0] == 'r' && cmd[1] <= '9')  // The second condition is needed to avoid greedy matching
-    {                                               // See long commands below
+    else if (cmd[0] == 'r' && cmd[1] <= '9') { // The second condition is needed to avoid greedy matching
+        // See long commands below
         return handle_FrameRTRStd(cmd) ? "z\r" : "\a";
     }
 
     /*
         * Regular SLCAN commands
         */
-    switch (cmd[0])
-    {
+    switch (cmd[0]) {
     case 'S':               // Set CAN bitrate
     case 'O':               // Open CAN in normal mode
     case 'L':               // Open CAN in listen-only mode
-    case 'l':               // Open CAN with loopback enabled
-    {
+    case 'l': {             // Open CAN with loopback enabled
         _close = false;
         return getASCIIStatusCode(true);    // Returning success for compatibility reasons
     }
-    case 'C':               // Close CAN
-    {
+    case 'C': {             // Close CAN
         _close = true;
         return getASCIIStatusCode(true);    // Returning success for compatibility reasons
     }
     case 'M':               // Set CAN acceptance filter ID
     case 'm':               // Set CAN acceptance filter mask
     case 'U':               // Set UART baud rate, see http://www.can232.com/docs/can232_v3.pdf
-    case 'Z':               // Enable/disable RX and loopback timestamping
-    {
+    case 'Z': {             // Enable/disable RX and loopback timestamping
         return getASCIIStatusCode(true);    // Returning success for compatibility reasons
     }
-    case 'F':               // Get status flags
-    {
+    case 'F': {             // Get status flags
         _port->printf("F%02X\r", unsigned(0));    // Returning success for compatibility reasons
         return nullptr;
     }
-    case 'V':               // HW/SW version
-    {
+    case 'V': {             // HW/SW version
         _port->printf("V%x%x%x%x\r", AP_UAVCAN_HW_VERS_MAJOR, AP_UAVCAN_HW_VERS_MINOR, AP_UAVCAN_SW_VERS_MAJOR, AP_UAVCAN_SW_VERS_MINOR);
         return nullptr;
     }
-    case 'N':               // Serial number
-    {
+    case 'N': {             // Serial number
         uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
         const uint8_t uid_buf_len = hw_version.unique_id.capacity();
         uint8_t uid_len = uid_buf_len;
@@ -416,8 +391,7 @@ const char* SLCAN::CAN::processCommand(char* cmd)
         char buf[uid_buf_len * 2 + 1] = {'\0'};
         char* pos = &buf[0];
         if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
-            for (uint8_t i = 0; i < uid_buf_len; i++)
-            {
+            for (uint8_t i = 0; i < uid_buf_len; i++) {
                 *pos++ = nibble2hex(unique_id[i] >> 4);
                 *pos++ = nibble2hex(unique_id[i]);
             }
@@ -426,8 +400,7 @@ const char* SLCAN::CAN::processCommand(char* cmd)
         _port->printf("N%s\r", &buf[0]);
         return nullptr;
     }
-    default:
-    {
+    default: {
         break;
     }
     }
@@ -440,41 +413,33 @@ const char* SLCAN::CAN::processCommand(char* cmd)
  */
 inline void SLCAN::CAN::addByte(const uint8_t byte)
 {
-    if ((byte >= 32 && byte <= 126))                  // Normal printable ASCII character
-    {
-        if (pos_ < SLCAN_BUFFER_SIZE)
-        {
+    if ((byte >= 32 && byte <= 126)) {                // Normal printable ASCII character
+        if (pos_ < SLCAN_BUFFER_SIZE) {
             buf_[pos_] = char(byte);
             pos_ += 1;
         }
-        else
-        {
+        else {
             reset();                                        // Buffer overrun; silently drop the data
         }
     }
-    else if (byte == '\r')                            // End of command (SLCAN)
-    {
+    else if (byte == '\r') {                          // End of command (SLCAN)
         // Processing the command
         buf_[pos_] = '\0';
         const char* const response = processCommand(reinterpret_cast<char*>(&buf_[0]));
         reset();
 
         // Sending the response if provided
-        if (response != nullptr)
-        {
+        if (response != nullptr) {
             _port->write_locked(reinterpret_cast<const uint8_t*>(response),
-                            strlen(response), _serial_lock_key);
+                                strlen(response), _serial_lock_key);
         }
     }
-    else if (byte == 8 || byte == 127)              // DEL or BS (backspace)
-    {
-        if (pos_ > 0)
-        {
+    else if (byte == 8 || byte == 127) {            // DEL or BS (backspace)
+        if (pos_ > 0) {
             pos_ -= 1;
         }
     }
-    else                                                    // This also includes Ctrl+C, Ctrl+D
-    {
+    else {                                                  // This also includes Ctrl+C, Ctrl+D
         reset();                                            // Invalid byte - drop the current command
     }
 }
@@ -485,7 +450,8 @@ void SLCAN::CAN::reset()
 }
 
 
-void SLCAN::CAN::reader() {
+void SLCAN::CAN::reader()
+{
     if (_port == nullptr) {
         return;
     }
@@ -512,8 +478,8 @@ int16_t SLCAN::CAN::send(const uavcan::CanFrame& frame, uavcan::MonotonicTime tx
     return reportFrame(frame, flags & uavcan::CanIOFlagLoopback, AP_HAL::micros64());
 }
 
-int16_t SLCAN::CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& out_ts_monotonic, 
-uavcan::UtcTime& out_ts_utc, uavcan::CanIOFlags& out_flags)
+int16_t SLCAN::CAN::receive(uavcan::CanFrame& out_frame, uavcan::MonotonicTime& out_ts_monotonic,
+                            uavcan::UtcTime& out_ts_utc, uavcan::CanIOFlags& out_flags)
 {
     out_ts_monotonic = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64());; // High precision is not required for monotonic timestamps
     uint64_t utc_usec;
@@ -530,7 +496,8 @@ bool SLCAN::CAN::pending_frame_sent()
 {
     if (_pending_frame_size == 0) {
         return false;
-    } else if (_port->txspace() >= _pending_frame_size) {
+    }
+    else if (_port->txspace() >= _pending_frame_size) {
         _pending_frame_size = 0;
         return true;
     }
@@ -575,7 +542,7 @@ uavcan::CanSelectMasks SLCAN::CANManager::makeSelectMasks(const uavcan::CanFrame
 }
 
 int16_t SLCAN::CANManager::select(uavcan::CanSelectMasks& inout_masks,
-               const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces], uavcan::MonotonicTime blocking_deadline)
+                                  const uavcan::CanFrame* (&pending_tx)[uavcan::MaxCanIfaces], uavcan::MonotonicTime blocking_deadline)
 {
     const uavcan::CanSelectMasks in_masks = inout_masks;
     const uavcan::MonotonicTime time = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64());
