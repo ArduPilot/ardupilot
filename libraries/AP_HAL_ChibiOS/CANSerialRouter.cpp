@@ -38,13 +38,11 @@ void SLCANRouter::init(ChibiOS_CAN::CanIface* can_if, ChibiOS_CAN::BusEvent* upd
 
 void SLCANRouter::run()
 {
-    if (!_slcan_if.is_initialized()) {
-        _port = AP_SerialManager::get_instance()->get_serial_by_id(AP::can().get_slcan_serial());
-        if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
-            return;
-        }
-        _slcan_rt_timeout = AP::can().get_slcan_timeout();
+    _port = AP_SerialManager::get_instance()->get_serial_by_id(AP::can().get_slcan_serial());
+    if (_slcan_if.init(921600, SLCAN::CAN::OperatingMode::NormalMode, _port) < 0) {
+        return;
     }
+    _slcan_rt_timeout = AP::can().get_slcan_timeout();
     if (!_thread_started) {
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::can2slcan_router_trampoline, void), "C2SRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::slcan2can_router_trampoline, void), "S2CRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
