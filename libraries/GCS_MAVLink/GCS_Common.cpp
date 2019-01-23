@@ -872,8 +872,6 @@ mission_ack:
     return mission_is_complete;
 }
 
-ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const
-{
     // MSG_NEXT_MISSION_REQUEST doesn't correspond to a mavlink message directly.
     // It is used to request the next waypoint after receiving one.
 
@@ -886,7 +884,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
     static const struct {
         uint32_t mavlink_id;
         ap_message msg_id;
-    } map[] {
+    } mavlink_id_to_ap_message_map[] {
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
@@ -944,9 +942,11 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
             };
 
-    for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
-        if (map[i].mavlink_id == mavlink_id) {
-            return map[i].msg_id;
+ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(mavlink_id_to_ap_message_map); i++) {
+        if (mavlink_id_to_ap_message_map[i].mavlink_id == mavlink_id) {
+            return mavlink_id_to_ap_message_map[i].msg_id;
         }
     }
     return MSG_LAST;
@@ -1177,6 +1177,7 @@ void GCS_MAVLINK::update_send()
     }
 
     if (!deferred_messages_initialised) {
+        set_ap_message_interval(MSG_MESSAGE_INTERVALS, 250);
         initialise_message_intervals_from_streamrates();
         deferred_messages_initialised = true;
     }
@@ -2322,6 +2323,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
     }
 
     mavlink_msg_message_interval_send(chan, mavlink_id, interval_ms * 1000);
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_get_message_intervals(const mavlink_command_long_t &packet)
+{
+    _getting_message_intervals.ofs = 0;
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -3520,6 +3527,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_get_message_interval(packet);
         break;
 
+    case MAV_CMD_GET_MESSAGE_INTERVALS:
+        result = handle_command_get_message_intervals(packet);
+        break;
+
     case MAV_CMD_DO_SET_SERVO:
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_SET_RELAY:
@@ -3760,6 +3771,51 @@ void GCS_MAVLINK::send_mount_status() const
     mount->send_mount_status(chan);
 }
 
+void GCS_MAVLINK::send_message_intervals()
+{
+    if (_getting_message_intervals.ofs < 0) {
+        return;
+    }
+    constexpr uint8_t map_size = ARRAY_SIZE(mavlink_id_to_ap_message_map);
+    static_assert(map_size < 127, "we assumed we can use -1 as a flag value...");
+    const uint8_t msg_array_len = MAVLINK_MSG_MESSAGE_INTERVALS_FIELD_INTERVALS_LEN;
+    if ((uint8_t)_getting_message_intervals.ofs >= map_size) {
+        // finished...
+        _getting_message_intervals.ofs = -1;
+        return;
+    }
+    uint32_t ids[msg_array_len]{};
+    float intervals[msg_array_len]{};
+    uint8_t pack_ofs = 0;
+    while ((uint8_t)_getting_message_intervals.ofs < map_size) {
+        ids[pack_ofs] = mavlink_id_to_ap_message_map[_getting_message_intervals.ofs].mavlink_id;
+        uint16_t interval_ms;
+        if (!get_ap_message_interval(mavlink_id_to_ap_message_map[_getting_message_intervals.ofs].msg_id, interval_ms)) {
+            // not streaming this message at the moment...
+            intervals[pack_ofs] = -1.0f;
+        } else if (interval_ms == 0) {
+            intervals[pack_ofs] = -1.0f;
+        } else {
+            intervals[pack_ofs] = interval_ms * 1000;
+        }
+        _getting_message_intervals.ofs++;
+        pack_ofs++;
+        if (pack_ofs >= msg_array_len) {
+            break;
+        }
+    }
+
+    const uint8_t seq = _getting_message_intervals.ofs / msg_array_len;
+    const uint8_t seq_max = ((map_size + msg_array_len-1) / msg_array_len) - 1;
+    mavlink_msg_message_intervals_send(
+        chan,
+        seq,
+        seq_max,
+        pack_ofs,
+        ids,
+        intervals);
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -3878,6 +3934,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_MOUNT_STATUS:
         CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
         send_mount_status();
+        break;
+
+    case MSG_MESSAGE_INTERVALS:
+        CHECK_PAYLOAD_SIZE(MESSAGE_INTERVALS);
+        send_message_intervals();
         break;
 
     case MSG_OPTICAL_FLOW:

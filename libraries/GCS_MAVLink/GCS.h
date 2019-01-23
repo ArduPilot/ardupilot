@@ -65,6 +65,7 @@ enum ap_message : uint8_t {
     MSG_SERVO_OUT,
     MSG_NEXT_MISSION_REQUEST,
     MSG_NEXT_PARAM,
+    MSG_MESSAGE_INTERVALS,
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
@@ -347,7 +348,12 @@ protected:
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_message_interval(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_get_message_intervals(const mavlink_command_long_t &packet);
     bool get_ap_message_interval(ap_message id, uint16_t &interval_ms) const;
+
+    struct {
+        int8_t ofs = -1; // offset into map of next interval to send; -1 means not sending
+    } _getting_message_intervals;
 
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
@@ -411,6 +417,7 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(mavlink_message_t *msg);
+    void send_message_intervals();
 
     virtual bool vehicle_initialised() const { return true; }
 
@@ -492,9 +499,10 @@ private:
         const ap_message id;
         uint16_t interval_ms;
         uint16_t last_sent_ms; // from AP_HAL::millis16()
-    } deferred_message[2] = {
+    } deferred_message[3] = {
         { MSG_HEARTBEAT, },
         { MSG_NEXT_PARAM, },
+        { MSG_MESSAGE_INTERVALS, },
     };
     // returns index of id in deferred_message[] or -1 if not present
     int8_t get_deferred_message_index(const ap_message id) const;
