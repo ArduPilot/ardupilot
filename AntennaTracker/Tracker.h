@@ -222,7 +222,6 @@ private:
     bool servo_test_set_servo(uint8_t servo_num, uint16_t pwm);
 
     // GCS_Mavlink.cpp
-    void send_sys_status(mavlink_channel_t chan);
     void send_nav_controller_output(mavlink_channel_t chan);
 
     // Log.cpp
