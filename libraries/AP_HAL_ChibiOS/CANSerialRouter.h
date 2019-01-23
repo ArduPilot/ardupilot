@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Siddharth Bharat Purohit
  */
 
@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_WITH_UAVCAN 
+#if HAL_WITH_UAVCAN
 #include "CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 
@@ -37,8 +37,7 @@ struct CanRouteItem {
     }
 };
 
-class SLCANRouter
-{
+class SLCANRouter {
     ChibiOS_CAN::CanIface* _can_if;
     SLCAN::CAN _slcan_if;
     ObjectBuffer<CanRouteItem> _can_tx_queue;
@@ -56,7 +55,7 @@ class SLCANRouter
     AP_HAL::UARTDriver* _port;
 
 public:
-    SLCANRouter() : _slcan_if(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE), _can_tx_queue(SLCAN_ROUTER_QUEUE_SIZE), _slcan_tx_queue(SLCAN_ROUTER_QUEUE_SIZE) 
+    SLCANRouter() : _slcan_if(SLCAN_DRIVER_INDEX, SLCAN_RX_QUEUE_SIZE), _can_tx_queue(SLCAN_ROUTER_QUEUE_SIZE), _slcan_tx_queue(SLCAN_ROUTER_QUEUE_SIZE)
     {
         if (_singleton  == nullptr) {
             _singleton = this;
@@ -68,11 +67,12 @@ public:
     void slcan2can_router_trampoline(void);
     void can2slcan_router_trampoline(void);
     void run(void);
-    static SLCANRouter* instance() { 
+    static SLCANRouter* instance()
+    {
         if (_singleton == nullptr) {
             _singleton = new SLCANRouter;
         }
-        return _singleton; 
+        return _singleton;
     }
 };
 
