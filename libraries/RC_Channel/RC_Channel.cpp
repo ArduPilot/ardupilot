@@ -316,8 +316,7 @@ bool RC_Channel::in_trim_dz()
 void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_us)
 {
     last_override_time = timestamp_us != 0 ? timestamp_us : AP_HAL::millis();
-    if(v == UINT16_MAX)
-    {
+    if (v == UINT16_MAX) {
       return;
     }
     override_value = v;
