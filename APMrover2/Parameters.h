@@ -108,7 +108,7 @@ public:
         k_param_speed_cruise,
         k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,
+        k_param_ch7_option,         // unused
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
