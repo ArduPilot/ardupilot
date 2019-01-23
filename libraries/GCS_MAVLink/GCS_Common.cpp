@@ -3696,6 +3696,45 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+
+void GCS_MAVLINK::send_sys_status()
+{
+    // send extended status only once vehicle has been initialised
+    // to avoid unnecessary errors being reported to user
+    if (!vehicle_initialised()) {
+        return;
+    }
+
+    int16_t battery_current = -1;
+    int8_t battery_remaining = -1;
+
+    const AP_BattMonitor &battery = AP::battery();
+
+    if (battery.has_current() && battery.healthy()) {
+        battery_remaining = battery.capacity_remaining_pct();
+        battery_current = battery.current_amps() * 100;
+    }
+
+    uint32_t control_sensors_present;
+    uint32_t control_sensors_enabled;
+    uint32_t control_sensors_health;
+
+    get_sensor_status_flags(control_sensors_present, control_sensors_enabled, control_sensors_health);
+
+    mavlink_msg_sys_status_send(
+        chan,
+        control_sensors_present,
+        control_sensors_enabled,
+        control_sensors_health,
+        static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
+        battery.voltage() * 1000,  // mV
+        battery_current,        // in 10mA units
+        battery_remaining,      // in %
+        0,  // comm drops %,
+        0,  // comm drops in pkts,
+        0, 0, 0, 0);
+}
+
 void GCS_MAVLINK::send_attitude() const
 {
     const AP_AHRS &ahrs = AP::ahrs();
@@ -3953,6 +3992,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
+        break;
+
+    case MSG_SYS_STATUS:
+        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+        send_sys_status();
         break;
 
     case MSG_AHRS2:
