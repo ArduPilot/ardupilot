@@ -805,6 +805,17 @@ void Rover::load_parameters(void)
     // set a more reasonable default NAVL1_PERIOD for rovers
     L1_controller.set_default_period(NAVL1_PERIOD);
 
+    // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
+    const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
+    AP_Int8 ch7_opt_old;
+    if (AP_Param::find_old_parameter(&ch7_option_info, &ch7_opt_old)) {
+        const uint8_t ch7_opt_map[] = {0,7,50,41,51,52,53,54,16,4,42,55,56};
+        const uint8_t ch7_opt_old_val = (uint8_t)ch7_opt_old.get();
+        if (ch7_opt_old_val < ARRAY_SIZE(ch7_opt_map)) {
+            AP_Param::set_default_by_name(ch7_option_info.new_name, ch7_opt_map[ch7_opt_old_val]);
+        }
+    }
+
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
     AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
