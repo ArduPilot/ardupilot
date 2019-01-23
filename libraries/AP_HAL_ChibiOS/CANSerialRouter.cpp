@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Siddharth Bharat Purohit
  */
 
@@ -48,7 +48,8 @@ void SLCANRouter::run()
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&SLCANRouter::slcan2can_router_trampoline, void), "S2CRouter", 512, AP_HAL::Scheduler::PRIORITY_CAN, 0);
         _thread_started = true;
         _thread_suspended = false;
-    } else if (_thread_suspended) { //wake up threads
+    }
+    else if (_thread_suspended) {   //wake up threads
         chSysLock();
         if (_c2s_thd_ref && _s2c_thd_ref) {
             chThdResumeS(&_c2s_thd_ref, MSG_OK);
@@ -109,9 +110,9 @@ void SLCANRouter::route_frame_to_can(const uavcan::CanFrame& frame, uint64_t tim
 void SLCANRouter::slcan2can_router_trampoline(void)
 {
     CanRouteItem it;
-    while(true) {
+    while (true) {
         chSysLock();
-        _s2c_thd_ref = nullptr;        
+        _s2c_thd_ref = nullptr;
         if (_thread_suspended) {
             chThdSuspendS(&_s2c_thd_ref);
             _port->flush();
@@ -130,7 +131,7 @@ void SLCANRouter::slcan2can_router_trampoline(void)
 void SLCANRouter::can2slcan_router_trampoline(void)
 {
     CanRouteItem it;
-    while(true) {
+    while (true) {
         chSysLock();
         _c2s_thd_ref = nullptr;
         if (_thread_suspended) {
