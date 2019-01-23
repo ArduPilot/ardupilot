@@ -420,8 +420,13 @@ protected:
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_message_interval(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_get_message_intervals(const mavlink_command_long_t &packet);
     bool get_ap_message_interval(ap_message id, uint16_t &interval_ms) const;
     MAV_RESULT handle_command_request_message(const mavlink_command_long_t &packet);
+
+    struct {
+        int8_t ofs = -1; // offset into map of next interval to send; -1 means not sending
+    } _getting_message_intervals;
 
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
@@ -495,6 +500,7 @@ protected:
     bool try_send_mission_message(enum ap_message id);
     void send_hwstatus();
     void handle_data_packet(const mavlink_message_t &msg);
+    void send_message_intervals();
 
     // these two methods are called after current_loc is updated:
     virtual int32_t global_position_int_alt() const;
@@ -587,9 +593,10 @@ private:
         const ap_message id;
         uint16_t interval_ms;
         uint16_t last_sent_ms; // from AP_HAL::millis16()
-    } deferred_message[2] = {
+    } deferred_message[3] = {
         { MSG_HEARTBEAT, },
         { MSG_NEXT_PARAM, },
+        { MSG_MESSAGE_INTERVALS, },
     };
     // returns index of id in deferred_message[] or -1 if not present
     int8_t get_deferred_message_index(const ap_message id) const;
