@@ -105,7 +105,9 @@ bool SLCAN::CAN::handle_FrameDataExt(const char* cmd)
         return false;
     }
     f.dlc = cmd[9] - '0';
-    assert(f.dlc <= uavcan::CanFrame::MaxDataLen);
+    if (f.dlc > uavcan::CanFrame::MaxDataLen) {
+        return false;
+    }
     {
         const char* p = &cmd[10];
         for (unsigned i = 0; i < f.dlc; i++)
@@ -133,7 +135,9 @@ bool SLCAN::CAN::handle_FrameDataStd(const char* cmd)
         return false;
     }
     f.dlc = cmd[4] - '0';
-    assert(f.dlc <= uavcan::CanFrame::MaxDataLen);
+    if (f.dlc > uavcan::CanFrame::MaxDataLen) {
+        return false;
+    }
     {
         const char* p = &cmd[5];
         for (unsigned i = 0; i < f.dlc; i++)
