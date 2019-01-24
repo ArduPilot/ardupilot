@@ -92,7 +92,7 @@ void Sub::guided_posvel_control_start()
     pos_control.init_xy_controller();
 
     // set speed and acceleration from wpnav's speed and acceleration
-    pos_control.set_max_speed_xy(wp_nav.get_speed_xy());
+    pos_control.set_max_speed_xy(wp_nav.get_default_speed_xy());
     pos_control.set_max_accel_xy(wp_nav.get_wp_acceleration());
 
     const Vector3f& curr_pos = inertial_nav.get_position();
@@ -103,7 +103,7 @@ void Sub::guided_posvel_control_start()
     pos_control.set_desired_velocity_xy(curr_vel.x, curr_vel.y);
 
     // set vertical speed and acceleration
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // pilot always controls yaw
@@ -117,7 +117,7 @@ void Sub::guided_angle_control_start()
     guided_mode = Guided_Angle;
 
     // set vertical speed and acceleration
-    pos_control.set_max_speed_z(wp_nav.get_speed_down(), wp_nav.get_speed_up());
+    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
     pos_control.set_max_accel_z(wp_nav.get_accel_z());
 
     // initialise position and desired velocity
@@ -490,7 +490,7 @@ void Sub::guided_angle_control_run()
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
-    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_speed_down()), wp_nav.get_speed_up());
+    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_default_speed_down()), wp_nav.get_default_speed_up());
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
