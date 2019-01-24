@@ -942,6 +942,8 @@ protected:
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
+    void start_send_thread(void);
+    
 private:
 
     static GCS *_singleton;
@@ -1003,6 +1005,9 @@ private:
     // GCS::update_send is called so we don't starve later links of
     // time in which they are permitted to send messages.
     uint8_t first_backend_to_send;
+
+    // thread for sending mavlink streams
+    void send_thread(void);
 };
 
 GCS &gcs();
