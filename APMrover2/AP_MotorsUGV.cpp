@@ -116,9 +116,9 @@ void AP_MotorsUGV::init()
     // set safety output
     setup_safety_output();
 
-    // setup motors for custom configs
+    // setup for omni vehicles
     if (rover.get_frame_type() != FRAME_TYPE_UNDEFINED) {
-        setup_motors();
+        setup_omni();
     }
 }
 
@@ -163,7 +163,7 @@ void AP_MotorsUGV::setup_servo_output()
     SRV_Channels::set_angle(SRV_Channel::k_throttleLeft,  1000);
     SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 1000);
 
-    // custom config motors set in power percent so -100 ... 100
+    // omni motors set in power percent so -100 ... 100
     for (uint8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         SRV_Channels::set_angle(function, 100);
@@ -173,12 +173,12 @@ void AP_MotorsUGV::setup_servo_output()
     SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
 }
 
-// config for frames with vectored motors and custom motor configurations
-void AP_MotorsUGV::setup_motors()
+// setup for frames with omni motors
+void AP_MotorsUGV::setup_omni()
 {
     // remove existing motors
     for (int8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-        clear_motors(i);
+        clear_omni_motors(i);
     }
 
     // hard coded factor configuration
@@ -190,31 +190,31 @@ void AP_MotorsUGV::setup_motors()
 
     case FRAME_TYPE_OMNI3:
         _motors_num = 3;
-        add_motor(0, 1.0f, 1.0f, -1.0f);
-        add_motor(1, 0.0f, 1.0f, 1.0f);
-        add_motor(2, 1.0f, 1.0f, 1.0f);
+        add_omni_motor(0, 1.0f, 1.0f, -1.0f);
+        add_omni_motor(1, 0.0f, 1.0f, 1.0f);
+        add_omni_motor(2, 1.0f, 1.0f, 1.0f);
         break;
 
     case FRAME_TYPE_OMNIX:
         _motors_num = 4,
-        add_motor(0, 1.0f, -1.0f, -1.0f);
-        add_motor(1, 1.0f, -1.0f, 1.0f);
-        add_motor(2, 1.0f, 1.0f, -1.0f);
-        add_motor(3, 1.0f, 1.0f, 1.0f);
+        add_omni_motor(0, 1.0f, -1.0f, -1.0f);
+        add_omni_motor(1, 1.0f, -1.0f, 1.0f);
+        add_omni_motor(2, 1.0f, 1.0f, -1.0f);
+        add_omni_motor(3, 1.0f, 1.0f, 1.0f);
         break;
 
     case FRAME_TYPE_OMNIPLUS:
         _motors_num = 4;
-        add_motor(0, 0.0f, 1.0f, 1.0f);
-        add_motor(1, 1.0f, 0.0f, 0.0f);
-        add_motor(2, 0.0f, -1.0f, 1.0f);
-        add_motor(3, 1.0f, 0.0f, 0.0f);
+        add_omni_motor(0, 0.0f, 1.0f, 1.0f);
+        add_omni_motor(1, 1.0f, 0.0f, 0.0f);
+        add_omni_motor(2, 0.0f, -1.0f, 1.0f);
+        add_omni_motor(3, 1.0f, 0.0f, 0.0f);
         break;
     }
 }
 
-// add motor using separate throttle, steering and lateral factors for frames with custom motor configurations
-void AP_MotorsUGV::add_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor)
+// add omni motor using separate throttle, steering and lateral factors
+void AP_MotorsUGV::add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor)
 {
     // ensure valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
@@ -224,12 +224,12 @@ void AP_MotorsUGV::add_motor(int8_t motor_num, float throttle_factor, float stee
         _steering_factor[motor_num] = steering_factor;
         _lateral_factor[motor_num] = lateral_factor;
 
-        add_motor_num(motor_num);
+        add_omni_motor_num(motor_num);
     }
 }
 
-// add a motor and set up default output function
-void AP_MotorsUGV::add_motor_num(int8_t motor_num)
+// add an omni motor and set up default output function
+void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
 {
     // ensure a valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
@@ -242,8 +242,8 @@ void AP_MotorsUGV::add_motor_num(int8_t motor_num)
     }
 }
 
-// disable motor and remove all throttle, steering and lateral factor for this motor
-void AP_MotorsUGV::clear_motors(int8_t motor_num)
+// disable omni motor and remove all throttle, steering and lateral factor for this motor
+void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
 {
     // ensure valid motor number is provided
     if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
@@ -338,8 +338,8 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
     // output for skid steering style frames
     output_skid_steering(armed, _steering, _throttle, dt);
 
-    // output for frames with vectored and custom motor configurations
-    output_custom_config(armed, _steering, _throttle, _lateral);
+    // output for omni frames
+    output_omni(armed, _steering, _throttle, _lateral);
 
     // output to mainsail
     output_mainsail();
@@ -501,7 +501,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         }
         return false;
     }
-    // check if one of custom config motors hasn't been configured
+    // check all omni motor outputs have been configured
     for (uint8_t i=0; i<_motors_num; i++)
     {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
@@ -672,8 +672,8 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
 }
 
-// output for custom configurations
-void AP_MotorsUGV::output_custom_config(bool armed, float steering, float throttle, float lateral)
+// output for omni frames
+void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)
 {
     // exit immediately if the frame type is set to UNDEFINED
     if (rover.get_frame_type() == FRAME_TYPE_UNDEFINED) {
