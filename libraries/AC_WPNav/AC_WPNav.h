@@ -78,17 +78,18 @@ public:
     /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
-    /// set_speed_z - allows main code to pass target vertical velocity for wp navigation
-    void set_speed_z(float speed_down_cms, float speed_up_cms);
+    /// set current target climb or descent rate during wp navigation
+    void set_speed_up(float speed_up_cms);
+    void set_speed_down(float speed_down_cms);
 
     /// get default target horizontal velocity during wp navigation
     float get_default_speed_xy() const { return _wp_speed_cms; }
 
-    /// get_speed_up - returns target climb speed in cm/s during missions
-    float get_speed_up() const { return _wp_speed_up_cms; }
+    /// get default target climb speed in cm/s during missions
+    float get_default_speed_up() const { return _wp_speed_up_cms; }
 
-    /// get_speed_down - returns target descent speed in cm/s during missions.  Note: always positive
-    float get_speed_down() const { return _wp_speed_down_cms; }
+    /// get default target descent rate in cm/s during missions.  Note: always positive
+    float get_default_speed_down() const { return _wp_speed_down_cms; }
 
     /// get_speed_z - returns target descent speed in cm/s during missions.  Note: always positive
     float get_accel_z() const { return _wp_accel_z_cmss; }
@@ -282,8 +283,8 @@ protected:
 
     // parameters
     AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
-    AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
-    AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
+    AP_Float    _wp_speed_up_cms;       // default maximum climb rate in cm/s
+    AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions
