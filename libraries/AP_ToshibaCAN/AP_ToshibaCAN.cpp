@@ -31,24 +31,24 @@ extern const AP_HAL::HAL& hal;
 #define debug_can(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
 
 // data format for messages from flight controller
-static const uint8_t COMMAND_STOP = 0x0;
-static const uint8_t COMMAND_LOCK = 0x10;
-static const uint8_t COMMAND_REQUEST_DATA = 0x20;
-static const uint8_t COMMAND_MOTOR3 = 0x3B;
-static const uint8_t COMMAND_MOTOR2 = 0x3D;
-static const uint8_t COMMAND_MOTOR1 = 0x3F;
+#define COMMAND_STOP         0x0   // not used
+#define COMMAND_LOCK         0x10
+#define COMMAND_REQUEST_DATA 0x20  // not used
+#define COMMAND_MOTOR3       0x3B
+#define COMMAND_MOTOR2       0x3D
+#define COMMAND_MOTOR1       0x3F
 
 // data format for messages from ESC
-static const uint8_t MOTOR_DATA1 = 0x40;
-static const uint8_t MOTOR_DATA2 = 0x50;
-static const uint8_t MOTOR_DATA3 = 0x60;
-static const uint8_t MOTOR_DATA5 = 0x80;
+#define MOTOR_DATA1 0x40  // not used
+#define MOTOR_DATA2 0x50  // not used
+#define MOTOR_DATA3 0x60  // not used
+#define MOTOR_DATA5 0x80  // not used
 
 // processing definitions
-static const uint16_t TOSHIBACAN_OUTPUT_MIN = 6300;
-static const uint16_t TOSHIBACAN_OUTPUT_MAX = 32000;
-static const uint16_t TOSHIBACAN_SEND_TIMEOUT_US = 500;
-static const uint8_t CAN_IFACE_INDEX = 0;
+#define TOSHIBACAN_OUTPUT_MIN      6300
+#define TOSHIBACAN_OUTPUT_MAX      32000
+#define TOSHIBACAN_SEND_TIMEOUT_US 500
+#define CAN_IFACE_INDEX            0
 
 AP_ToshibaCAN::AP_ToshibaCAN()
 {
@@ -129,7 +129,8 @@ void AP_ToshibaCAN::loop()
         }
 
         // prepare commands and frames
-        if (send_stage == 0) {
+        switch (_send_stage) {
+        case 0: {
             motor_lock_cmd_t unlock_cmd = {};
             motor_rotation_cmd_t mot_rot_cmd1;
             motor_rotation_cmd_t mot_rot_cmd2;
@@ -179,46 +180,47 @@ void AP_ToshibaCAN::loop()
             mot_rot_frame3 = {((uint8_t)COMMAND_MOTOR3 & uavcan::CanFrame::MaskStdID), mot_rot_cmd3.data, sizeof(mot_rot_cmd3.data)};
 
             // advance to next stage
-            send_stage++;
+            _send_stage++;
+            FALLTHROUGH;
         }
-
         // send unlock command
-        if (send_stage == 1) {
+        case 1:
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(unlock_frame, timeout)) {
                 continue;
             }
-            send_stage++;
-        }
-
+            _send_stage++;
+            FALLTHROUGH;
         // send output to motor bank3
-        if (send_stage == 2) {
+        case 2:
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame3, timeout)) {
                 continue;
             }
-            send_stage++;
-        }
-
+            _send_stage++;
+            FALLTHROUGH;
         // send output to motor bank2
-        if (send_stage == 3) {
+        case 3:
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame2, timeout)) {
                 continue;
             }
-            send_stage++;
-        }
-
+            _send_stage++;
+            FALLTHROUGH;
         // send output to motor bank1
-        if (send_stage == 4) {
+        case 4:
             timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + timeout_us);
             if (!write_frame(mot_rot_frame1, timeout)) {
                 continue;
             }
+            break;
+
+        default:
+            break;
         }
 
         // success!
-        send_stage = 0;
+        _send_stage = 0;
 
         // record success so we don't send this frame again
         update_count_sent = update_count_buffered;

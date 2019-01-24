@@ -58,7 +58,7 @@ private:
     uint16_t update_count;          // counter increments each time main thread updates outputs
     uint16_t update_count_buffered; // counter when outputs copied to buffer before before sending to ESCs
     uint16_t update_count_sent;     // counter of outputs successfully sent
-    uint8_t send_stage;             // stage of sending algorithm (each stage sends one frame to ESCs)
+    uint8_t _send_stage;             // stage of sending algorithm (each stage sends one frame to ESCs)
 
     // structure for sending motor lock command to ESC
     union motor_lock_cmd_t {
