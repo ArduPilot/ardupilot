@@ -164,8 +164,8 @@ define HAL_BUZZER_ON  1
 define HAL_BUZZER_OFF 0
 
 # battery setup
-define HAL_BATT_VOLT_PIN 2
-define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
