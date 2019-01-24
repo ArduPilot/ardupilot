@@ -281,7 +281,7 @@ protected:
     AC_Avoid                *_avoid = nullptr;
 
     // parameters
-    AP_Float    _wp_speed_cms;          // maximum horizontal speed in cm/s during missions
+    AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
     AP_Float    _wp_speed_up_cms;       // climb speed target in cm/s
     AP_Float    _wp_speed_down_cms;     // descent speed target in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
