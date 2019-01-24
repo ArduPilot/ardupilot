@@ -170,12 +170,18 @@ void AC_WPNav::set_speed_xy(float speed_cms)
     }
 }
 
-/// set_speed_z - allows main code to pass target vertical velocity for wp navigation
-void AC_WPNav::set_speed_z(float speed_down_cms, float speed_up_cms)
+/// set current target climb rate during wp navigation
+void AC_WPNav::set_speed_up(float speed_up_cms)
 {
-    _wp_speed_down_cms = speed_down_cms;
-    _wp_speed_up_cms = speed_up_cms;
-    _pos_control.set_max_speed_z(_wp_speed_down_cms, _wp_speed_up_cms);
+    _pos_control.set_max_speed_z(_pos_control.get_max_speed_down(), speed_up_cms);
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
+}
+
+/// set current target descent rate during wp navigation
+void AC_WPNav::set_speed_down(float speed_down_cms)
+{
+    _pos_control.set_max_speed_z(speed_down_cms, _pos_control.get_max_speed_up());
     // flag that wp leash must be recalculated
     _flags.recalc_wp_leash = true;
 }
@@ -559,10 +565,10 @@ void AC_WPNav::calculate_wp_leash_length()
     float speed_z;
     float leash_z;
     if (_pos_delta_unit.z >= 0.0f) {
-        speed_z = _wp_speed_up_cms;
+        speed_z = _pos_control.get_max_speed_up();
         leash_z = _pos_control.get_leash_up_z();
     }else{
-        speed_z = _wp_speed_down_cms;
+        speed_z = fabsf(_pos_control.get_max_speed_down());
         leash_z = _pos_control.get_leash_down_z();
     }
 
