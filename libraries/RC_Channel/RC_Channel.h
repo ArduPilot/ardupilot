@@ -24,7 +24,7 @@ public:
     };
 
     enum InputIgnore {
-        RC_IGNORE_RECEIVER  = (1 << 0), // RC reciever modules
+        RC_IGNORE_RECEIVER  = (1 << 0), // RC receiver modules
         RC_IGNORE_OVERRIDES = (1 << 1), // MAVLink overrides
     };
 
@@ -315,7 +315,7 @@ public:
     static int16_t get_receiver_rssi(void);                            // returns [0, 255] for receiver RSSI (0 is no link) if present, otherwise -1
     bool read_input(void);                                             // returns true if new input has been read in
     static void clear_overrides(void);                                 // clears any active overrides
-    static bool receiver_bind(const int dsmMode);                      // puts the reciever in bind mode if present, returns true if success
+    static bool receiver_bind(const int dsmMode);                      // puts the receiver in bind mode if present, returns true if success
     static void set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms = 0); // set a channels override value
     static bool has_active_overrides(void);                            // returns true if there are overrides applied that are valid
 
