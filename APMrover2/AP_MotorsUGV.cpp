@@ -173,87 +173,6 @@ void AP_MotorsUGV::setup_servo_output()
     SRV_Channels::set_range(SRV_Channel::k_mainsail_sheet, 100);
 }
 
-// setup for frames with omni motors
-void AP_MotorsUGV::setup_omni()
-{
-    // remove existing motors
-    for (int8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
-        clear_omni_motors(i);
-    }
-
-    // hard coded factor configuration
-    switch (rover.get_frame_type()) {
-
-    //   FRAME TYPE NAME
-    case FRAME_TYPE_UNDEFINED:
-        break;
-
-    case FRAME_TYPE_OMNI3:
-        _motors_num = 3;
-        add_omni_motor(0, 1.0f, 1.0f, -1.0f);
-        add_omni_motor(1, 0.0f, 1.0f, 1.0f);
-        add_omni_motor(2, 1.0f, 1.0f, 1.0f);
-        break;
-
-    case FRAME_TYPE_OMNIX:
-        _motors_num = 4,
-        add_omni_motor(0, 1.0f, -1.0f, -1.0f);
-        add_omni_motor(1, 1.0f, -1.0f, 1.0f);
-        add_omni_motor(2, 1.0f, 1.0f, -1.0f);
-        add_omni_motor(3, 1.0f, 1.0f, 1.0f);
-        break;
-
-    case FRAME_TYPE_OMNIPLUS:
-        _motors_num = 4;
-        add_omni_motor(0, 0.0f, 1.0f, 1.0f);
-        add_omni_motor(1, 1.0f, 0.0f, 0.0f);
-        add_omni_motor(2, 0.0f, -1.0f, 1.0f);
-        add_omni_motor(3, 1.0f, 0.0f, 0.0f);
-        break;
-    }
-}
-
-// add omni motor using separate throttle, steering and lateral factors
-void AP_MotorsUGV::add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor)
-{
-    // ensure valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-
-        // set throttle, steering and lateral factors
-        _throttle_factor[motor_num] = throttle_factor;
-        _steering_factor[motor_num] = steering_factor;
-        _lateral_factor[motor_num] = lateral_factor;
-
-        add_omni_motor_num(motor_num);
-    }
-}
-
-// add an omni motor and set up default output function
-void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
-{
-    // ensure a valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-        uint8_t chan;
-        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
-        SRV_Channels::set_aux_channel_default(function, motor_num);
-        if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
-        }
-    }
-}
-
-// disable omni motor and remove all throttle, steering and lateral factor for this motor
-void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
-{
-    // ensure valid motor number is provided
-    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
-        // disable the motor and set factors to zero
-        _throttle_factor[motor_num] = 0;
-        _steering_factor[motor_num] = 0;
-        _lateral_factor[motor_num] = 0;
-    }
-}
-
 // set steering as a value from -4500 to +4500
 //   apply_scaling should be set to false for manual modes where
 //   no scaling by speed or angle should be performed
@@ -565,6 +484,87 @@ void AP_MotorsUGV::setup_pwm_type()
     default:
         // do nothing
         break;
+    }
+}
+
+// setup for frames with omni motors
+void AP_MotorsUGV::setup_omni()
+{
+    // remove existing motors
+    for (int8_t i=0; i<AP_MOTORS_NUM_MOTORS_MAX; i++) {
+        clear_omni_motors(i);
+    }
+
+    // hard coded factor configuration
+    switch (rover.get_frame_type()) {
+
+    //   FRAME TYPE NAME
+    case FRAME_TYPE_UNDEFINED:
+        break;
+
+    case FRAME_TYPE_OMNI3:
+        _motors_num = 3;
+        add_omni_motor(0, 1.0f, 1.0f, -1.0f);
+        add_omni_motor(1, 0.0f, 1.0f, 1.0f);
+        add_omni_motor(2, 1.0f, 1.0f, 1.0f);
+        break;
+
+    case FRAME_TYPE_OMNIX:
+        _motors_num = 4,
+        add_omni_motor(0, 1.0f, -1.0f, -1.0f);
+        add_omni_motor(1, 1.0f, -1.0f, 1.0f);
+        add_omni_motor(2, 1.0f, 1.0f, -1.0f);
+        add_omni_motor(3, 1.0f, 1.0f, 1.0f);
+        break;
+
+    case FRAME_TYPE_OMNIPLUS:
+        _motors_num = 4;
+        add_omni_motor(0, 0.0f, 1.0f, 1.0f);
+        add_omni_motor(1, 1.0f, 0.0f, 0.0f);
+        add_omni_motor(2, 0.0f, -1.0f, 1.0f);
+        add_omni_motor(3, 1.0f, 0.0f, 0.0f);
+        break;
+    }
+}
+
+// add omni motor using separate throttle, steering and lateral factors
+void AP_MotorsUGV::add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor)
+{
+    // ensure valid motor number is provided
+    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
+
+        // set throttle, steering and lateral factors
+        _throttle_factor[motor_num] = throttle_factor;
+        _steering_factor[motor_num] = steering_factor;
+        _lateral_factor[motor_num] = lateral_factor;
+
+        add_omni_motor_num(motor_num);
+    }
+}
+
+// add an omni motor and set up default output function
+void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
+{
+    // ensure a valid motor number is provided
+    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
+        uint8_t chan;
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
+        SRV_Channels::set_aux_channel_default(function, motor_num);
+        if (!SRV_Channels::find_channel(function, chan)) {
+            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+        }
+    }
+}
+
+// disable omni motor and remove all throttle, steering and lateral factor for this motor
+void AP_MotorsUGV::clear_omni_motors(int8_t motor_num)
+{
+    // ensure valid motor number is provided
+    if (motor_num >= 0 && motor_num < AP_MOTORS_NUM_MOTORS_MAX) {
+        // disable the motor and set factors to zero
+        _throttle_factor[motor_num] = 0;
+        _steering_factor[motor_num] = 0;
+        _lateral_factor[motor_num] = 0;
     }
 }
 

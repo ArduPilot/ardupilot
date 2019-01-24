@@ -51,18 +51,6 @@ public:
     // setup servo output ranges
     void setup_servo_output();
 
-    // setup for frames with omni motors
-    void setup_omni();
-
-    // add omni motor using separate throttle, steering and lateral factors
-    void add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
-
-    // add a motor and set up output function
-    void add_omni_motor_num(int8_t motor_num);
-
-    // disable omni motor and remove all throttle, steering and lateral factor for this motor
-    void clear_omni_motors(int8_t motor_num);
-
     // get or set steering as a value from -4500 to +4500
     //   apply_scaling should be set to false for manual modes where
     //   no scaling by speed or angle should e performed
@@ -127,6 +115,18 @@ protected:
 
     // setup pwm output type
     void setup_pwm_type();
+
+    // setup for frames with omni motors
+    void setup_omni();
+
+    // add omni motor using separate throttle, steering and lateral factors
+    void add_omni_motor(int8_t motor_num, float throttle_factor, float steering_factor, float lateral_factor);
+
+    // add a motor and set up output function
+    void add_omni_motor_num(int8_t motor_num);
+
+    // disable omni motor and remove all throttle, steering and lateral factor for this motor
+    void clear_omni_motors(int8_t motor_num);
 
     // output to regular steering and throttle channels
     void output_regular(bool armed, float ground_speed, float steering, float throttle);
