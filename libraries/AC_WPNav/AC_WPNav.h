@@ -75,14 +75,14 @@ public:
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
     void wp_and_spline_init();
 
-    /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
+    /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
 
     /// set_speed_z - allows main code to pass target vertical velocity for wp navigation
     void set_speed_z(float speed_down_cms, float speed_up_cms);
 
-    /// get_speed_xy - allows main code to retrieve target horizontal velocity for wp navigation
-    float get_speed_xy() const { return _wp_speed_cms; }
+    /// get default target horizontal velocity during wp navigation
+    float get_default_speed_xy() const { return _wp_speed_cms; }
 
     /// get_speed_up - returns target climb speed in cm/s during missions
     float get_speed_up() const { return _wp_speed_up_cms; }
