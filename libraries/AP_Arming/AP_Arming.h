@@ -2,7 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
@@ -86,7 +86,7 @@ protected:
     AP_Int32                 _required_mission_items;
 
     // internal members
-    bool                    armed:1;
+    bool                    armed;
     uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
     uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
 
