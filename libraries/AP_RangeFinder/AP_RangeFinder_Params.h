@@ -16,6 +16,7 @@ public:
     AP_Int8  type;
     AP_Int8  pin;
     AP_Int8  ratiometric;
+    AP_Int16 powersave_range;
     AP_Int8  stop_pin;
     AP_Int16 settle_time_ms;
     AP_Float scaling;

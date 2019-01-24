@@ -100,8 +100,6 @@ public:
     };
 
     static const struct AP_Param::GroupInfo *backend_var_info[RANGEFINDER_MAX_INSTANCES];
-    
-    AP_Int16 _powersave_range;
 
     // parameters for each instance
     static const struct AP_Param::GroupInfo var_info[];

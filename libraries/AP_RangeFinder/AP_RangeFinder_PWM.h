@@ -23,7 +23,6 @@ public:
     // constructor
     AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
                        AP_RangeFinder_Params &_params,
-                       AP_Int16 &_powersave_range,
                        float &_estimated_terrain_height);
 
     // destructor
@@ -59,7 +58,6 @@ private:
     void check_pins();
     uint8_t last_stop_pin = -1;
 
-    AP_Int16 &powersave_range;
     float &estimated_terrain_height;
 
     // return true if we are beyond the power saving range

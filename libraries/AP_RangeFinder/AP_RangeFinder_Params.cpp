@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 	// @Units: m
 	// @Range: 0 32767
 	// @User: Standard
-	AP_GROUPINFO("PWRRNG", 11, RangeFinder, _powersave_range, 0),
+	AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
 
     // @Param: GNDCLEAR
     // @DisplayName: Distance (in cm) from the range finder to the ground

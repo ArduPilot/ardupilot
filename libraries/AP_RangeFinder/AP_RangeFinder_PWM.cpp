@@ -25,10 +25,8 @@ extern const AP_HAL::HAL& hal;
 */
 AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
                                        AP_RangeFinder_Params &_params,
-                                       AP_Int16 &_powersave_range,
                                        float &_estimated_terrain_height) :
     AP_RangeFinder_Backend(_state, _params),
-    powersave_range(_powersave_range),
     estimated_terrain_height(_estimated_terrain_height)
 {
 }
@@ -183,5 +181,5 @@ void AP_RangeFinder_PWM::update(void)
 
 // return true if we are beyond the power saving range
 bool AP_RangeFinder_PWM::out_of_range(void) const {
-    return powersave_range > 0 && estimated_terrain_height > powersave_range;
+    return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
