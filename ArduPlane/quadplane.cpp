@@ -970,7 +970,7 @@ bool QuadPlane::is_flying_vtol(void) const
  */
 float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 {
-    float ret = linear_interpolate(land_speed_cms, wp_nav->get_speed_down(),
+    float ret = linear_interpolate(land_speed_cms, wp_nav->get_default_speed_down(),
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
     return ret;
@@ -1146,7 +1146,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(float)plane.aparm.pitch_limit_max_cd);
         climb_rate *= plane.get_throttle_input();
     }
-    climb_rate = constrain_float(climb_rate, -wp_nav->get_speed_down(), wp_nav->get_speed_up());
+    climb_rate = constrain_float(climb_rate, -wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
 
     // bring in the demanded climb rate over 2 seconds
     const uint32_t ramp_up_time_ms = 2000;
@@ -1859,7 +1859,7 @@ void QuadPlane::vtol_position_controller(void)
             // approach
 
             // max_speed will control how fast we will fly. It will always decrease
-            poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_speed_xy() * 0.01);
+            poscontrol.max_speed = MAX(speed_towards_target, wp_nav->get_default_speed_xy() * 0.01);
             poscontrol.speed_scale = poscontrol.max_speed / MAX(distance, 1);
         }
 
@@ -2081,7 +2081,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   plane.nav_pitch_cd,
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
-    pos_control->set_alt_target_from_climb_rate(wp_nav->get_speed_up(), plane.G_Dt, true);
+    pos_control->set_alt_target_from_climb_rate(wp_nav->get_default_speed_up(), plane.G_Dt, true);
     run_z_controller();
 }
 
@@ -2440,7 +2440,7 @@ int8_t QuadPlane::forward_throttle_pct(void)
     // add in a component from our current pitch demand. This tends to
     // move us to zero pitch. Assume that LIM_PITCH would give us the
     // WP nav speed.
-    fwd_vel_error -= (wp_nav->get_speed_xy() * 0.01f) * plane.nav_pitch_cd / (float)plane.aparm.pitch_limit_max_cd;
+    fwd_vel_error -= (wp_nav->get_default_speed_xy() * 0.01f) * plane.nav_pitch_cd / (float)plane.aparm.pitch_limit_max_cd;
 
     if (should_relax() && vel_ned.length() < 1) {
         // we may be landed
