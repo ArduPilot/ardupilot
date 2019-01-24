@@ -125,6 +125,9 @@ void Rover::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
+    // start sending MAVLink stream data
+    gcs().start_send_thread();
+
     // flag that initialisation has completed
     initialised = true;
 }
