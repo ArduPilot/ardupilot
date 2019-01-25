@@ -34,7 +34,7 @@ ARDUPILOT_TOOLS="Tools/autotest"
 
 exportline="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline" ~/.profile 2>/dev/null || {
-    read -p "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [Y/n]?" -n 1 -r
+    read -p "Add $ARDUPILOT_ROOT/$ARDUPILOT_TOOLS to your PATH [N/y]?" -n 1 -r
     if [[ $REPLY =~ ^[Yy]$ ]] ; then
         echo $exportline >> ~/.profile
         eval $exportline
