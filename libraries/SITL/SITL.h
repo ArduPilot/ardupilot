@@ -167,6 +167,7 @@ public:
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
     AP_Int8  odom_enable; // enable visual odomotry data
+    AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
 
     // wind control
     enum WindType {
