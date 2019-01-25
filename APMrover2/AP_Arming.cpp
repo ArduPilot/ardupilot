@@ -71,6 +71,13 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
+    if (SRV_Channels::get_emergency_stop()) {
+        if (report) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"PreArm: Motors Emergency Stopped");
+        }
+        return false;
+    }
+
     return (AP_Arming::pre_arm_checks(report)
             & rover.g2.motors.pre_arm_check(report)
             & fence_checks(report)
