@@ -102,7 +102,7 @@ void Copter::auto_disarm_check()
 #endif
 
     // always allow auto disarm if using interlock switch or motors are Emergency Stopped
-    if ((ap.using_interlock && !motors->get_interlock()) || ap.motor_emergency_stop) {
+    if ((ap.using_interlock && !motors->get_interlock()) || SRV_Channels::get_emergency_stop()) {
 #if FRAME_CONFIG != HELI_FRAME
         // use a shorter delay if using throttle interlock switch or Emergency Stop, because it is less
         // obvious the copter is armed as the motors will not be spinning
@@ -330,7 +330,7 @@ void Copter::motors_output()
     if (ap.motor_test) {
         motor_test_output();
     } else {
-        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !ap.motor_emergency_stop;
+        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
         if (!motors->get_interlock() && interlock) {
             motors->set_interlock(true);
             Log_Write_Event(DATA_MOTORS_INTERLOCK_ENABLED);
