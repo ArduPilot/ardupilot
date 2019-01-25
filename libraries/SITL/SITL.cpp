@@ -141,6 +141,9 @@ const AP_Param::GroupInfo SITL::var_info2[] = {
     // @Path: ./SIM_Parachute.cpp
     AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SITL, Parachute),
 
+    // vibration frequencies on each axis
+    AP_GROUPINFO("BAUDLIMIT_EN",   28, SITL,  telem_baudlimit_enable, 0),
+
     AP_GROUPEND
 };
     
