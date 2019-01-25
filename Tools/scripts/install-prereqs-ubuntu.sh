@@ -66,6 +66,9 @@ if $QUIET; then
     APT_GET="$APT_GET -qq"
 fi
 
+if ! dpkg-query -l "lsb-release"; then
+    $APT_GET install lsb-release
+fi
 # possibly grab a newer cmake for older ubuntu releases
 read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)
 if [ "$UBUNTU_CODENAME" = "precise" ]; then
