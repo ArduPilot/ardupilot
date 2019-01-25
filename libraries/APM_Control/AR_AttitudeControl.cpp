@@ -748,3 +748,11 @@ float AR_AttitudeControl::get_stopping_distance(float speed) const
     // assume linear deceleration
     return 0.5f * sq(speed) / accel_max;
 }
+
+// relax I terms of throttle and steering controllers
+void AR_AttitudeControl::relax_I()
+{
+    _steer_rate_pid.reset_I();
+    _throttle_speed_pid.reset_I();
+    _pitch_to_throttle_pid.reset_I();
+}
