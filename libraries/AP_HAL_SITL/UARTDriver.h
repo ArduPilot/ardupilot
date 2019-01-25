@@ -123,6 +123,7 @@ private:
     bool _is_udp;
     bool _packetise;
     uint16_t _mc_myport;
+    uint32_t last_tick_us;
 };
 
 #endif
