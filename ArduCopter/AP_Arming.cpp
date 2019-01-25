@@ -565,9 +565,9 @@ bool AP_Arming_Copter::arm_checks(bool display_failure, AP_Arming::ArmingMethod 
     // if we are not using Emergency Stop switch option, force Estop false to ensure motors
     // can run normally
     if (!rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP)){
-        copter.set_motor_emergency_stop(false);
+        SRV_Channels::set_emergency_stop(false);
         // if we are using motor Estop switch, it must not be in Estop position
-    } else if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP) && copter.ap.motor_emergency_stop){
+    } else if (rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_ESTOP) && SRV_Channels::get_emergency_stop()){
         gcs().send_text(MAV_SEVERITY_CRITICAL,"Arm: Motor Emergency Stopped");
         return false;
     }
