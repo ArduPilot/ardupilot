@@ -1249,6 +1249,10 @@ bool QuadPlane::assistance_needed(float aspeed)
  */
 void QuadPlane::update_transition(void)
 {
+    if (tailsitter.motor_mask != 0) {
+        motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
+    }
+
     if (plane.control_mode == MANUAL ||
         plane.control_mode == ACRO ||
         plane.control_mode == TRAINING) {
@@ -1263,7 +1267,7 @@ void QuadPlane::update_transition(void)
         assisted_flight = false;
         return;
     }
-
+    
     const uint32_t now = millis();
 
     if (!hal.util->get_soft_armed()) {
