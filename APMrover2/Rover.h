@@ -336,6 +336,7 @@ private:
 
     // last wheel encoder update times
     float wheel_encoder_last_angle_rad[WHEELENCODER_MAX_INSTANCES];     // distance in radians at time of last update to EKF
+    float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // distance in meters at time of last update to EKF (for reporting to GCS)
     uint32_t wheel_encoder_last_update_ms[WHEELENCODER_MAX_INSTANCES];  // system time of last ping from each encoder
     uint32_t wheel_encoder_last_ekf_update_ms;                          // system time of last encoder data push to EKF
     float wheel_encoder_rpm[WHEELENCODER_MAX_INSTANCES];                // for reporting to GCS
@@ -443,6 +444,7 @@ private:
     void send_servo_out(mavlink_channel_t chan);
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
+    void send_wheel_encoder_distance(mavlink_channel_t chan);
     void send_fence_status(mavlink_channel_t chan);
 
     // Log.cpp
