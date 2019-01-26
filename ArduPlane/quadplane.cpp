@@ -1434,9 +1434,6 @@ void QuadPlane::update(void)
 
         assisted_flight = false;
         
-        // give full authority to attitude control
-        attitude_control->set_throttle_mix_max();
-
         // run low level rate controllers
         run_rate_controller();
 
@@ -2634,4 +2631,55 @@ float QuadPlane::stopping_distance(void)
     // varies with pitch, but it gives something for the user to
     // control the transition distance in a reasonable way
     return plane.ahrs.groundspeed_vector().length_squared() / (2 * transition_decel);
+}
+
+#define LAND_CHECK_ANGLE_ERROR_DEG  30.0f       // maximum angle error to be considered landing
+#define LAND_CHECK_LARGE_ANGLE_CD   1500.0f     // maximum angle target to be considered landing
+#define LAND_CHECK_ACCEL_MOVING     3.0f        // maximum acceleration after subtracting gravity
+
+void QuadPlane::update_throttle_thr_mix(void)
+{
+    // transition will directly manage the mix
+    if (in_transition()) {
+      return;
+    }
+
+    // if disarmed or landed prioritise throttle
+    if(!motors->armed()) {
+        attitude_control->set_throttle_mix_min();
+        return;
+    }
+
+    if (plane.control_mode == QSTABILIZE) {
+        // manual throttle
+        if (plane.channel_throttle->get_control_in() <= 0) {
+            attitude_control->set_throttle_mix_min();
+        } else {
+            attitude_control->set_throttle_mix_man();
+        }
+    } else {
+        // autopilot controlled throttle
+
+        // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
+        const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
+        bool large_angle_request = (norm(angle_target.x, angle_target.y) > LAND_CHECK_LARGE_ANGLE_CD);
+
+        // check for large external disturbance - angle error over 30 degrees
+        const float angle_error = attitude_control->get_att_error_angle_deg();
+        bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
+
+        // check for large acceleration - falling or high turbulence
+        Vector3f accel_ef = plane.ahrs.get_accel_ef_blended();
+        accel_ef.z += GRAVITY_MSS;
+        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
+
+        // check for requested decent
+        bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
+
+        if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+            attitude_control->set_throttle_mix_max();
+        } else {
+            attitude_control->set_throttle_mix_min();
+        }
+    }
 }
