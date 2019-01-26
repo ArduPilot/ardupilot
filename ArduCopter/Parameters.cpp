@@ -1194,6 +1194,7 @@ void Copter::convert_pid_parameters(void)
         { "PSC_VELXY_D", 0.0f },
         { "PSC_VELXY_I", 0.5f },
         { "PSC_VELXY_P", 1.0f },
+        { "RC8_OPTION", 32 },
     };
     AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
 #endif
