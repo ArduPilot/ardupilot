@@ -139,17 +139,17 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
-
-    float rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)RC_Channels::rc_channel(CH_8)->get_control_in()) * 0.001f;
-
+    float rsc_control_deglitched = 0.0f;
+    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::aux_func::MOTOR_INTERLOCK);
+    if (rc_ptr != nullptr) {
+        rsc_control_deglitched = rotor_speed_deglitch_filter.apply((float)rc_ptr->get_control_in()) * 0.001f;
+    }
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
             // pass through pilot desired rotor speed if control input is higher than 10, creating a deadband at the bottom
-            if (rsc_control_deglitched > 0.01f) {
-                ap.motor_interlock_switch = true;
+            if (motors->get_interlock()) {
                 motors->set_desired_rotor_speed(rsc_control_deglitched);
             } else {
-                ap.motor_interlock_switch = false;
                 motors->set_desired_rotor_speed(0.0f);
             }
             break;
@@ -158,11 +158,9 @@ void Copter::heli_update_rotor_speed_targets()
         case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
             // pass setpoint through as desired rotor speed, this is almost pointless as the Setpoint serves no function in this mode
             // other than being used to create a crude estimate of rotor speed
-            if (rsc_control_deglitched > 0.0f) {
-                ap.motor_interlock_switch = true;
+            if (motors->get_interlock()) {
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{
-                ap.motor_interlock_switch = false;
                 motors->set_desired_rotor_speed(0.0f);
             }
             break;
