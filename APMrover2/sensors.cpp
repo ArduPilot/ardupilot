@@ -99,6 +99,9 @@ void Rover::update_wheel_encoder()
         const float delta_angle = curr_angle_rad - wheel_encoder_last_angle_rad[i];
         wheel_encoder_last_angle_rad[i] = curr_angle_rad;
 
+        // save cumulative distances at current time (in meters)
+        wheel_encoder_last_distance_m[i] = g2.wheel_encoder.get_distance(i);
+
         // calculate delta time
         float delta_time;
         const uint32_t latest_sensor_update_ms = g2.wheel_encoder.get_last_reading_ms(i);
