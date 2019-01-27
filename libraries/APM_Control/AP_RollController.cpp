@@ -161,6 +161,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     _pid_info.P = desired_rate * kp_ff * scaler;
     _pid_info.FF = desired_rate * k_ff * scaler;
     _pid_info.desired = desired_rate;
+    _pid_info.actual = achieved_rate;
 
 	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
 
