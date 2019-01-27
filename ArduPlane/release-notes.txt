@@ -1,24 +1,8 @@
-Release 3.9.5beta2, 15th January 2019
--------------------------------------
+Release 3.9.5, 27th January 2019
+--------------------------------
 
-This is the second beta for the minor release 3.9.5 of plane.
-
-The changes in this release are:
-
- - fixed EKF yaw reset in quadplanes
-
- - fixed bug handling corruption of DSM RC protocols
-
- - fixed internal amber LED on CubeBlack
-
-Happy flying!
-
-Release 3.9.5beta1, 11th January 2019
--------------------------------------
-
-This is the first beta for the minor release 3.9.5 of plane.
-
-The changes in this release are:
+This is a minor update over the 3.9.4 release. This release includes
+the following changes:
 
  - fixed orientation of 2nd IMU for OmnibusF7V2
 
@@ -43,6 +27,14 @@ The changes in this release are:
 
  - RC protocol decoding for SRXL, SUMD and ST24 extended to all boards
    including pixracer and ChibiOS-only boards
+
+ - fixed CAN on Pixhawk4
+
+ - fixed EKF yaw reset in quadplanes
+
+ - fixed bug handling corruption of DSM RC protocols
+
+ - fixed internal amber LED on CubeBlack
 
 Happy flying!
 
