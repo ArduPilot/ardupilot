@@ -443,7 +443,8 @@ void Copter::set_default_frame_class()
 {
     if (FRAME_CONFIG == HELI_FRAME &&
         g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_DUAL &&
-        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD) {
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_QUAD &&
+        g2.frame_class.get() != AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
         g2.frame_class.set(AP_Motors::MOTOR_FRAME_HELI);
     }
 }
@@ -464,6 +465,8 @@ uint8_t Copter::get_frame_mav_type()
         case AP_Motors::MOTOR_FRAME_HELI:
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
+            return MAV_TYPE_HELICOPTER;
+        case AP_Motors::MOTOR_FRAME_HELI_COMPOUND:
             return MAV_TYPE_HELICOPTER;
         case AP_Motors::MOTOR_FRAME_TRI:
             return MAV_TYPE_TRICOPTER;
@@ -498,6 +501,8 @@ const char* Copter::get_frame_string()
             return "HELI_DUAL";
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
             return "HELI_QUAD";
+        case AP_Motors::MOTOR_FRAME_HELI_COMPOUND:
+            return "HELI_COMPOUND";
         case AP_Motors::MOTOR_FRAME_TRI:
             return "TRI";
         case AP_Motors::MOTOR_FRAME_SINGLE:
@@ -558,6 +563,12 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
             motors = new AP_MotorsHeli_Quad(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsHeli_Quad::var_info;
+            AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
+            break;
+
+        case AP_Motors::MOTOR_FRAME_HELI_COMPOUND:
+            motors = new AP_MotorsHeli_Compound(copter.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsHeli_Compound::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
             
