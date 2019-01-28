@@ -97,6 +97,9 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const override;
+
+    // set_boost - engage the booster
+    void set_boost(float boost_in) override { _boost_in = boost_in;}
     
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -159,4 +162,8 @@ protected:
     float           _rollFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
     float           _pitchFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS];
+
+private:
+    float _boost_in;
+
 };

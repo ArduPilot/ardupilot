@@ -130,6 +130,9 @@ public:
 
     float get_throttle_hover() const { return 0.5f; }
 
+    // pilot input for boost for compound heli
+    virtual void        set_boost(float boost_in) {}
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

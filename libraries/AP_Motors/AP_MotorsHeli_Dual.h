@@ -87,6 +87,9 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
+    // set_boost - engage the booster
+    void set_boost(float boost_in) override { _boost_in = boost_in;}
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -144,6 +147,10 @@ protected:
     float           _pitchFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
     float           _collectiveFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
     float           _yawFactor[AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS];
+
+private:
+    float _boost_in;
+
 };
 
 #endif  // AP_MotorsHeli_Dual
