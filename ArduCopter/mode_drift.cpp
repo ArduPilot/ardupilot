@@ -64,6 +64,13 @@ void Copter::ModeDrift::run()
     // get pilot's desired throttle
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
+#if FRAME_CONFIG == HELI_FRAME
+    //get pilot desired boost
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        motors->set_boost((float)RC_Channels::rc_channel(CH_7)->get_control_in() * 0.001f);
+    }
+#endif
+
     // Grab inertial velocity
     const Vector3f& vel = inertial_nav.get_velocity();
 

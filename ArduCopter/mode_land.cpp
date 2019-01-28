@@ -9,6 +9,12 @@ static bool land_pause;
 // land_init - initialise land controller
 bool Copter::ModeLand::init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    //keep compound-heli from using this mode
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        return false;
+    }
+#endif
     // check if we have GPS and decide which LAND we're going to do
     land_with_gps = _copter.position_ok();
     if (land_with_gps) {

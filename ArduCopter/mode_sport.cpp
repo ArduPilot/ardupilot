@@ -67,6 +67,13 @@ void Copter::ModeSport::run()
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
+#if FRAME_CONFIG == HELI_FRAME
+    //get pilot desired boost
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        motors->set_boost((float)RC_Channels::rc_channel(CH_7)->get_control_in() * 0.001f);
+    }
+#endif
+
     // get pilot desired climb rate
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);

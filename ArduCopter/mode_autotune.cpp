@@ -97,6 +97,13 @@ bool Copter::ModeAutoTune::init(bool ignore_checks)
 {
     bool success = true;
 
+#if FRAME_CONFIG == HELI_FRAME
+    //keep compound-heli from using this mode
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        return false;
+    }
+#endif
+    
     switch (mode) {
         case FAILED:
             // autotune has been run but failed so reset state to uninitialized

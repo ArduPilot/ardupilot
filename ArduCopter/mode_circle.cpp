@@ -47,6 +47,13 @@ void Copter::ModeCircle::run()
         return;
     }
 
+#if FRAME_CONFIG == HELI_FRAME
+    //get pilot desired boost
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        motors->set_boost((float)RC_Channels::rc_channel(CH_7)->get_control_in() * 0.001f);
+    }
+#endif
+
     // process pilot inputs
     if (!_copter.failsafe.radio) {
         // get pilot's desired yaw rate

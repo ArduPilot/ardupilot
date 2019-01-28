@@ -10,6 +10,13 @@
 // rtl_init - initialise rtl controller
 bool Copter::ModeRTL::init(bool ignore_checks)
 {
+#if FRAME_CONFIG == HELI_FRAME
+    //keep compound-heli from using this mode
+    if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_COMPOUND) {
+        return false;
+    }
+#endif
+    
     if (_copter.position_ok() || ignore_checks) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
