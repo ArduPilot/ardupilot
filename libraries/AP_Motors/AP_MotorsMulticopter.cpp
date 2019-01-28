@@ -707,7 +707,9 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                 */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
                 set_actuator_with_slew(_actuator[i], thrust_to_actuator(thrust + diff_thrust));
-                rc_write(i, output_to_pwm(_actuator[i]));
+                int16_t pwm_output = get_pwm_output_min() + 
+                        (get_pwm_output_max()-get_pwm_output_min()) * _actuator[i];
+                rc_write(i, pwm_output);
             } else {
                 rc_write(i, get_pwm_output_min());
             }
