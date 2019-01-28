@@ -291,7 +291,7 @@ void Rover::send_wheel_encoder_distance(mavlink_channel_t chan)
 {
     // send wheel encoder data using wheel_distance message
     if (g2.wheel_encoder.num_sensors() > 0) {
-        double distances[16] {};
+        double distances[MAVLINK_MSG_WHEEL_DISTANCE_FIELD_DISTANCE_LEN] {};
         for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
             distances[i] = wheel_encoder_last_distance_m[i];
         }
