@@ -431,21 +431,31 @@ void GCS_MAVLINK::send_ahrs3()
 #endif
 }
 
-/*
-  handle a MISSION_REQUEST_LIST mavlink packet
- */
+// handle a request for the number of items we have stored for a mission type:
 void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg)
 {
     // decode
     mavlink_mission_request_list_t packet;
     mavlink_msg_mission_request_list_decode(msg, &packet);
 
-    // reply with number of commands in the mission.  The GCS will then request each command separately
-    mavlink_msg_mission_count_send(chan,msg->sysid, msg->compid, mission.num_commands(),
-                                   MAV_MISSION_TYPE_MISSION);
+    uint16_t count;
+    switch (packet.mission_type) {
+    case MAV_MISSION_TYPE_MISSION:
+        count = mission.num_commands();
+        waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+        break;
+    default:
+        // should we be sending a MISSION_ACK here with a failure code?
+        return;
+    }
 
-    // set variables to help handle the expected sending of commands to the GCS
-    waypoint_receiving = false;             // record that we are sending commands (i.e. not receiving)
+    // reply with number of commands in the mission.  The GCS will
+    // then request each command separately
+    mavlink_msg_mission_count_send(chan,
+                                   msg->sysid,
+                                   msg->compid,
+                                   count,
+                                   packet.mission_type);
 }
 
 /*
