@@ -24,7 +24,14 @@ void Copter::crash_check()
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (control_mode == ACRO || control_mode == FLIP) {
+    if (0
+#if MODE_ACRO_ENABLED == ENABLED
+        || control_mode == ACRO
+#endif
+#if MODE_FLIP_ENABLED == ENABLED
+        || control_mode == FLIP
+#endif
+    ) {
         crash_counter = 0;
         return;
     }
@@ -154,7 +161,14 @@ void Copter::parachute_check()
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (control_mode == ACRO || control_mode == FLIP) {
+    if (0
+#if MODE_ACRO_ENABLED == ENABLED
+        || control_mode == ACRO
+#endif
+#if MODE_FLIP_ENABLED == ENABLED
+        || control_mode == FLIP
+#endif
+    ) {
         control_loss_count = 0;
         return;
     }
@@ -224,7 +238,7 @@ void Copter::parachute_release()
 }
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
-//   checks if the vehicle is landed 
+//   checks if the vehicle is landed
 void Copter::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled

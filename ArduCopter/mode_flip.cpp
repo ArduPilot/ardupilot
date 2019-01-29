@@ -51,7 +51,11 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     }
 
     // if in acro or stabilize ensure throttle is above zero
-    if (ap.throttle_zero && (copter.control_mode == ACRO || copter.control_mode == STABILIZE)) {
+    if (ap.throttle_zero && (copter.control_mode == STABILIZE
+#if MODE_ACRO_ENABLED == ENABLED
+        || copter.control_mode == ACRO
+#endif
+        )) {
         return false;
     }
 
