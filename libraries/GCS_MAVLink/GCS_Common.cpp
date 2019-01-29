@@ -489,11 +489,7 @@ void GCS_MAVLINK::handle_mission_request_int(mavlink_message_t *msg)
             goto mission_item_send_failed;
         }
 
-        /*
-          avoid the _send() function to save memory, as it avoids
-          the stack usage of the _send() function by using the already
-          declared ret_packet above
-         */
+        // we already have a filled structure, use it in place of _send:
         _mav_finalize_message_chan_send(chan, 
                                         MAVLINK_MSG_ID_MISSION_ITEM_INT,
                                         (const char *)&ret_packet,
@@ -570,11 +566,7 @@ void GCS_MAVLINK::handle_mission_request(mavlink_message_t *msg)
             goto mission_item_send_failed;
         }
 
-        /*
-          avoid the _send() function to save memory, as it avoids
-          the stack usage of the _send() function by using the already
-          declared ret_packet above
-         */
+        // we already have a filled structure, use it in place of _send:
         _mav_finalize_message_chan_send(chan, 
                                         MAVLINK_MSG_ID_MISSION_ITEM,
                                         (const char *)&ret_packet,
