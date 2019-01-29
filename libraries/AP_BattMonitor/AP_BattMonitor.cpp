@@ -477,7 +477,7 @@ void AP_BattMonitor::checkPoweringOff(void)
 
             // Send a Mavlink broadcast announcing the shutdown
             mavlink_message_t msg;
-            mavlink_command_long_t cmd_msg;
+            mavlink_command_long_t cmd_msg{};
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
             mavlink_msg_command_long_encode(mavlink_system.sysid, MAV_COMP_ID_ALL, &msg, &cmd_msg);
