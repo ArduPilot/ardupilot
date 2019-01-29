@@ -10,6 +10,15 @@ class AP_Airspeed_Backend;
 
 #define AIRSPEED_MAX_SENSORS 2
 
+// Bitmask for airspeed options
+#define AP_AIRSPEED_OPTIONS_DEFAULT                             0       // No options on by default
+#define AP_AIRSPEED_OPTIONS_FAILURE_MASK_DISABLE                (1<<0)  // If set then use airspeed failure check
+#define AP_AIRSPEED_OPTIONS_FAILURE_MASK_REENABLE               (1<<1)  // If set then automatically enable the airspeed sensor use when healthy again.
+#define AP_AIRSPEED_OPTIONS_FAILURE_SAMPLE_PERIOD_MS            200     // Check the status every 200ms
+#define AP_AIRSPEED_OPTIONS_FAILURE_DISABLE_PROB_THRESH_CRIT    0.1f
+#define AP_AIRSPEED_OPTIONS_FAILURE_DISABLE_PROB_THRESH_WARN    0.5f
+#define AP_AIRSPEED_OPTIONS_FAILURE_RE_ENABLE_PROB_THRESH_OK    0.9f
+
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -175,6 +184,7 @@ private:
     static AP_Airspeed *_singleton;
 
     AP_Int8 primary_sensor;
+    AP_Int32 _options;    // bitmask options for airspeed
     
     struct {
         AP_Float offset;
@@ -213,6 +223,13 @@ private:
         Airspeed_Calibration calibration;
         float last_saved_ratio;
         uint8_t counter;
+
+        struct {
+            uint32_t last_check_ms;
+            float health_probability;
+            int8_t param_use_backup;
+            bool has_warned;
+        } failures;
     } state[AIRSPEED_MAX_SENSORS];
 
     // current primary sensor
@@ -224,6 +241,7 @@ private:
     float get_pressure(uint8_t i);
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
+    void check_sensor_failures(uint8_t i);
 
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 };
