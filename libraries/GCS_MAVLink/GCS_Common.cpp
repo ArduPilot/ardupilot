@@ -469,8 +469,7 @@ void GCS_MAVLINK::handle_mission_request_int(mavlink_message_t *msg)
         mavlink_mission_request_int_t packet;
         mavlink_msg_mission_request_int_decode(msg, &packet);
 
-        mavlink_mission_item_int_t ret_packet;
-        memset(&ret_packet, 0, sizeof(ret_packet));
+        mavlink_mission_item_int_t ret_packet{};
 
         ret_packet.target_system = msg->sysid;
         ret_packet.target_component = msg->compid;
@@ -551,8 +550,7 @@ void GCS_MAVLINK::handle_mission_request(mavlink_message_t *msg)
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
 
-        mavlink_mission_item_t ret_packet;
-        memset(&ret_packet, 0, sizeof(ret_packet));
+        mavlink_mission_item_t ret_packet{};
 
         ret_packet.target_system = msg->sysid;
         ret_packet.target_component = msg->compid;
