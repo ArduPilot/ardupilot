@@ -21,12 +21,13 @@
  */
 
 #include "AP_AHRS.h"
+#define BUFFER_LENGTH 1000
 
 class AP_AHRS_View
 {
 public:
     // Constructor
-    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim_deg=0);
+    AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim_deg=0, bool unspin = false);
 
     // update state
     void update(bool skip_ins_update=false);
@@ -164,13 +165,22 @@ public:
     float get_error_yaw(void) const {
         return ahrs.get_error_yaw();
     }
-    
+
+    // set the change in virtual yaw angle
+    void set_yaw_rate(float yaw_rate_in) const {
+        // convert from cd/s to rad/s
+        yaw_rate = radians(yaw_rate_in * 0.01f);
+    }
+
     float roll;
     float pitch;
     float yaw;
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
+
+    float rpm;
+    float rotation_angle;
 
 private:
     const enum Rotation rotation;
@@ -190,4 +200,23 @@ private:
     } trig;
 
     float y_angle;
+
+    // Un-spinning algorithm for all rotating vehicles
+    void unspin_update();
+    bool _unspin;
+    mutable float yaw_rate;
+    uint16_t start_index;
+    uint16_t end_index;
+    float true_yaw;
+    float vitual_forward;
+    float virtual_roll[BUFFER_LENGTH];
+    float virtual_pitch[BUFFER_LENGTH];
+    float roll_int[BUFFER_LENGTH];
+    float pitch_int[BUFFER_LENGTH];
+    float yaw_diff[BUFFER_LENGTH];
+    uint64_t time[BUFFER_LENGTH];
+    float virtual_roll_rate[BUFFER_LENGTH];
+    float virtual_pitch_rate[BUFFER_LENGTH];
+    float roll_rate_int[BUFFER_LENGTH];
+    float pitch_rate_int[BUFFER_LENGTH];
 };

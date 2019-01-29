@@ -177,13 +177,27 @@ int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
  */
 void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
 {
-#if RPM_ENABLED == ENABLED
+#if RPM_ENABLED == ENABLED || FRAME_CONFIG == HELI_FRAME
+    float rpm_1 = 0.0f;
+    float rpm_2 = 0.0f;
+
+    #if RPM_ENABLED == ENABLED
     if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        mavlink_msg_rpm_send(
-            chan,
-            rpm_sensor.get_rpm(0),
-            rpm_sensor.get_rpm(1));
+        rpm_1 = rpm_sensor.get_rpm(0);
+        rpm_2 = rpm_sensor.get_rpm(1);
     }
+    #endif
+
+    // for Monocopters
+    if ((AP_Motors::motor_frame_class)copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_MONO) {
+        rpm_2 = rpm_1;
+        rpm_1 = copter.ahrs_view->rpm;
+    }
+
+    mavlink_msg_rpm_send(
+    chan,
+    rpm_1,
+    rpm_2);
 #endif
 }
 
@@ -238,6 +252,33 @@ void GCS_MAVLINK_Copter::send_pid_tuning()
                                     pid_info.I*0.01f,
                                     pid_info.D*0.01f);
     }
+}
+
+void GCS_MAVLINK_Copter::send_attitude() const
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    float r = ahrs.roll;
+    float p = ahrs.pitch;
+    float y = ahrs.yaw;
+
+    // for a all rotating frame we must send the ahrs view roll, pitch and yaw
+    if ((AP_Motors::motor_frame_class)copter.g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI_MONO) {
+        r = copter.ahrs_view->roll;
+        p = copter.ahrs_view->pitch;
+        y = copter.ahrs_view->yaw;
+    }
+
+    const Vector3f omega = ahrs.get_gyro();
+    mavlink_msg_attitude_send(
+        chan,
+        AP_HAL::millis(),
+        r,
+        p,
+        y,
+        omega.x,
+        omega.y,
+        omega.z);
 }
 
 uint8_t GCS_MAVLINK_Copter::sysid_my_gcs() const
