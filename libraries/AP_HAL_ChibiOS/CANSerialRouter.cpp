@@ -17,7 +17,7 @@
 
 #include "CANSerialRouter.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 SLCANRouter* SLCANRouter::_singleton = nullptr;
