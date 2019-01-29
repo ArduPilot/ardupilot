@@ -84,8 +84,9 @@ const AP_Param::GroupInfo AP_BoardConfig_CAN::var_info[] = {
     AP_SUBGROUPINFO(_drivers[2], "D3_", 6, AP_BoardConfig_CAN, AP_BoardConfig_CAN::Driver),
 #endif
 
+#if !HAL_MINIMIZE_FEATURES
     AP_SUBGROUPINFO(_slcan, "SLCAN_", 7, AP_BoardConfig_CAN, AP_BoardConfig_CAN::SLCAN_Interface),
-
+#endif
     AP_GROUPEND
 };
 
@@ -106,7 +107,9 @@ void AP_BoardConfig_CAN::init()
 {
     // Create all drivers that we need
     bool initret = true;
+ #if !HAL_MINIMIZE_FEATURES
     reset_slcan_serial();
+#endif
     for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_INTERFACES; i++) {
         // Check the driver number assigned to this physical interface
         uint8_t drv_num = _interfaces[i]._driver_number_cache = _interfaces[i]._driver_number;
@@ -126,7 +129,7 @@ void AP_BoardConfig_CAN::init()
             // For this now existing driver (manager), start the physical interface
             if (hal.can_mgr[drv_num - 1] != nullptr) {
                 initret = initret && hal.can_mgr[drv_num - 1]->begin(_interfaces[i]._bitrate, i);
-                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+                #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !HAL_MINIMIZE_FEATURES
                     if (_slcan._can_port == (i+1) && hal.can_mgr[drv_num - 1] != nullptr ) {
                         ChibiOS_CAN::CanDriver* drv = (ChibiOS_CAN::CanDriver*)hal.can_mgr[drv_num - 1]->get_driver();
                         slcan_router().init(drv->getIface(i), drv->getUpdateEvent());
@@ -181,11 +184,13 @@ void AP_BoardConfig_CAN::init()
             } else {
                 continue;
             }
+#if !HAL_MINIMIZE_FEATURES
             if (_slcan._can_port == 0) {
                 _drivers[i]._driver->init(i, true);
             } else {
                 _drivers[i]._driver->init(i, false);
             }
+#endif
         }
     }
 }
