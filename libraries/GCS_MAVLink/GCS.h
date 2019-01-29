@@ -316,11 +316,12 @@ protected:
     void handle_command_int(mavlink_message_t* msg);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
 
-    bool handle_mission_request_int_mission(const mavlink_mission_request_int_t &packet, mavlink_mission_item_int_t &ret_packet);
+    MAV_MISSION_RESULT handle_mission_request_int_mission(const mavlink_mission_request_int_t &packet, mavlink_mission_item_int_t &ret_packet);
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
-    bool handle_mission_request_mission(const mavlink_message_t *msg,
-                                        const mavlink_mission_request_t &packet,
-                                        mavlink_mission_item_t &ret_packet);
+    MAV_MISSION_RESULT handle_mission_request_mission(
+        const mavlink_message_t *msg,
+        const mavlink_mission_request_t &packet,
+        mavlink_mission_item_t &ret_packet);
     void handle_mission_request(mavlink_message_t *msg);
     void handle_mission_request_int(mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
