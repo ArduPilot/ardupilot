@@ -318,6 +318,7 @@ protected:
 
     void handle_mission_request_list(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_request(AP_Mission &mission, mavlink_message_t *msg);
+    void handle_mission_request_int(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_clear_all(AP_Mission &mission, mavlink_message_t *msg);
     virtual void handle_mission_set_current(AP_Mission &mission, mavlink_message_t *msg);
     void handle_mission_count(AP_Mission &mission, mavlink_message_t *msg);

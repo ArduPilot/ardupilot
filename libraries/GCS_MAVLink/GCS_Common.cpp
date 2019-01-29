@@ -461,11 +461,10 @@ void GCS_MAVLINK::handle_mission_request_list(AP_Mission &mission, mavlink_messa
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg)
+void GCS_MAVLINK::handle_mission_request_int(AP_Mission &mission, mavlink_message_t *msg)
 {
     AP_Mission::Mission_Command cmd;
 
-    if (msg->msgid == MAVLINK_MSG_ID_MISSION_REQUEST_INT) {  
         // decode
         mavlink_mission_request_int_t packet;
         mavlink_msg_mission_request_int_decode(msg, &packet);
@@ -507,10 +506,21 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
                                         MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_INT_CRC);
-    } else {
+        return;
+
+mission_item_send_failed:
+    // send failure message
+    mavlink_msg_mission_ack_send(chan, msg->sysid, msg->compid, MAV_MISSION_ERROR,
+                                 MAV_MISSION_TYPE_MISSION);
+}
+
+void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t *msg)
+{
         // decode
         mavlink_mission_request_t packet;
         mavlink_msg_mission_request_decode(msg, &packet);
+
+        AP_Mission::Mission_Command cmd;
 
         if (packet.seq != 0 && // always allow HOME to be read
             packet.seq >= mission.num_commands()) {
@@ -557,9 +567,8 @@ void GCS_MAVLINK::handle_mission_request(AP_Mission &mission, mavlink_message_t 
                                         MAVLINK_MSG_ID_MISSION_ITEM_MIN_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_LEN,
                                         MAVLINK_MSG_ID_MISSION_ITEM_CRC);
-    }
 
-    return;
+        return;
 
 mission_item_send_failed:
     // send failure message
@@ -3048,11 +3057,11 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
 
     // read an individual command from EEPROM and send it to the GCS
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
-    case MAVLINK_MSG_ID_MISSION_REQUEST:     // MAV ID: 40, 51
-    {
+        handle_mission_request_int(*_mission, msg);
+        break;
+    case MAVLINK_MSG_ID_MISSION_REQUEST:
         handle_mission_request(*_mission, msg);
         break;
-    }
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
