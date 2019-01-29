@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES
 #include "CAN.h"
 #include <AP_UAVCAN/AP_UAVCAN_SLCAN.h>
 
