@@ -252,7 +252,7 @@ void RangeFinder::convert_params(void) {
             //{60, 7, 3}, //60, backend 4
     };
 
-    char param_name[17];
+    char param_name[17] = {0};
     AP_Param::ConversionInfo info;
     info.new_name = param_name;
 
@@ -276,7 +276,7 @@ void RangeFinder::convert_params(void) {
         info.old_group_element = conversionTable[i].old_element;
         info.type = (ap_var_type)AP_RangeFinder_Params::var_info[destination_index].type;
 
-        hal.util->snprintf(param_name, 17, "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
+        hal.util->snprintf(param_name, 16, "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
 
         AP_Param::convert_old_parameter(&info, 1.0f, 0);
     }
