@@ -1,5 +1,9 @@
 Rover Release Notes:
 ========================
+Rover 3.5.0-rc3 30-Jan-2019
+Changes from 3.5.0-rc2
+1) Fix build issue affecting fmuv2
+--------------------------------
 Rover 3.5.0-rc2 24-Jan-2019
 Changes from 3.5.0-rc1
 1) ChibiOS fixes and enhancements to many boards including Pixhawk4
