@@ -10,15 +10,6 @@ class AP_Airspeed_Backend;
 
 #define AIRSPEED_MAX_SENSORS 2
 
-// Bitmask for airspeed options
-#define AP_AIRSPEED_OPTIONS_DEFAULT                             0       // No options on by default
-#define AP_AIRSPEED_OPTIONS_FAILURE_MASK_DISABLE                (1<<0)  // If set then use airspeed failure check
-#define AP_AIRSPEED_OPTIONS_FAILURE_MASK_REENABLE               (1<<1)  // If set then automatically enable the airspeed sensor use when healthy again.
-#define AP_AIRSPEED_OPTIONS_FAILURE_SAMPLE_PERIOD_MS            200     // Check the status every 200ms
-#define AP_AIRSPEED_OPTIONS_FAILURE_DISABLE_PROB_THRESH_CRIT    0.1f
-#define AP_AIRSPEED_OPTIONS_FAILURE_DISABLE_PROB_THRESH_WARN    0.5f
-#define AP_AIRSPEED_OPTIONS_FAILURE_RE_ENABLE_PROB_THRESH_OK    0.9f
-
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -163,6 +154,11 @@ public:
                             PITOT_TUBE_ORDER_NEGATIVE = 1,
                             PITOT_TUBE_ORDER_AUTO     = 2 };
 
+    enum OptionsMask {
+        ON_FAILURE_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
+        ON_FAILURE_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
+    };
+
     enum airspeed_type {
         TYPE_NONE=0,
         TYPE_I2C_MS4525=1,
@@ -241,6 +237,8 @@ private:
     float get_pressure(uint8_t i);
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
+
+    void check_sensor_failures();
     void check_sensor_failures(uint8_t i);
 
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
