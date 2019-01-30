@@ -429,7 +429,7 @@ bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
     return WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger_Backend::Write_EntireMission(const AP_Mission &mission)
+void AP_Logger_Backend::Write_EntireMission()
 {
     LoggerMessageWriter_WriteEntireMission writer;
     writer.set_dataflash_backend(this);

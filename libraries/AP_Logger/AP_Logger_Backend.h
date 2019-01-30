@@ -85,7 +85,7 @@ public:
     uint8_t num_multipliers() const;
     const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
-    void Write_EntireMission(const AP_Mission &mission);
+    void Write_EntireMission();
     bool Write_Format(const struct LogStructure *structure);
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
