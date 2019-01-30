@@ -78,6 +78,26 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
     return true; 
 }
 
+void AP_Rally::truncate(uint8_t num)
+{
+    if (num > _rally_point_total_count) {
+        // we never make the space larger this way
+        return;
+    }
+    _rally_point_total_count.set_and_save_ifchanged(num);
+}
+
+bool AP_Rally::append(const RallyLocation &loc)
+{
+    const uint8_t current_total = get_rally_total();
+    _rally_point_total_count.set_and_save_ifchanged(current_total + 1);
+    if (!set_rally_point_with_index(current_total, loc)) {
+        _rally_point_total_count.set_and_save_ifchanged(current_total);
+        return false;
+    }
+    return true;
+}
+
 // save a rally point to EEPROM - this assumes that the RALLY_TOTAL param has been incremented beforehand, which is the case in Mission Planner
 bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyLoc)
 {
