@@ -223,11 +223,17 @@ class AutoTest(ABC):
 
     def apply_defaultfile_parameters(self):
         """Apply parameter file."""
+        return self.apply_defaultfile_parameters_for_vehicleinfo_key(self.vehicleinfo_key(), self.frame);
+
+    def apply_defaultfile_parameters_for_vehicleinfo_key_and_frame(
+            self,
+            vehicleinfo_key,
+            frame):
         # setup test parameters
         vinfo = vehicleinfo.VehicleInfo()
         if self.params is None:
-            frames = vinfo.options[self.vehicleinfo_key()]["frames"]
-            self.params = frames[self.frame]["default_params_filename"]
+            frames = vinfo.options[vehicleinfo_key]["frames"]
+            self.params = frames[frame]["default_params_filename"]
         if not isinstance(self.params, list):
             self.params = [self.params]
         for x in self.params:
