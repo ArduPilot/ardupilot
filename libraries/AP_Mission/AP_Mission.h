@@ -381,7 +381,7 @@ public:
     /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
     ///     replacing the current active command will have no effect until the command is restarted
     ///     returns true if successfully replaced, false on failure
-    bool replace_cmd(uint16_t index, Mission_Command& cmd);
+    bool replace_cmd(uint16_t index, const Mission_Command& cmd);
 
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
@@ -433,7 +433,7 @@ public:
     /// write_cmd_to_storage - write a command to storage
     ///     cmd.index is used to calculate the storage location
     ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, Mission_Command& cmd);
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
