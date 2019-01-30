@@ -472,7 +472,7 @@ bool AC_PosControl::is_active_z() const
 void AC_PosControl::update_z_controller()
 {
     // check time since last cast
-    uint64_t now_us = AP_HAL::micros64();
+    const uint64_t now_us = AP_HAL::micros64();
     if (now_us - _last_update_z_us > POSCONTROL_ACTIVE_TIMEOUT_US) {
         _flags.reset_rate_to_accel_z = true;
         _flags.reset_accel_to_throttle = true;
@@ -802,7 +802,7 @@ void AC_PosControl::init_xy_controller()
 void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
 {
     // compute dt
-    uint64_t now_us = AP_HAL::micros64();
+    const uint64_t now_us = AP_HAL::micros64();
     float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
@@ -828,7 +828,7 @@ void AC_PosControl::update_xy_controller(float ekfNavVelGainScaler)
 
 float AC_PosControl::time_since_last_xy_update() const
 {
-    uint64_t now_us = AP_HAL::micros64();
+    const uint64_t now_us = AP_HAL::micros64();
     return (now_us - _last_update_xy_us) * 1.0e-6f;
 }
 
@@ -899,7 +899,7 @@ void AC_PosControl::init_vel_controller_xyz()
 void AC_PosControl::update_vel_controller_xy(float ekfNavVelGainScaler)
 {
     // capture time since last iteration
-    uint64_t now_us = AP_HAL::micros64();
+    const uint64_t now_us = AP_HAL::micros64();
     float dt = (now_us - _last_update_xy_us) * 1.0e-6f;
 
     // sanity check dt
