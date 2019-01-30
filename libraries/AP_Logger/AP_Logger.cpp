@@ -641,9 +641,9 @@ void AP_Logger::flush(void) {
 #endif
 
 
-void AP_Logger::Write_EntireMission(const AP_Mission &mission)
+void AP_Logger::Write_EntireMission()
 {
-    FOR_EACH_BACKEND(Write_EntireMission(mission));
+    FOR_EACH_BACKEND(Write_EntireMission());
 }
 
 void AP_Logger::Write_Message(const char *message)
