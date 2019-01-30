@@ -3031,7 +3031,7 @@ void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
     {
         if (handle_mission_item(msg, *_mission)) {
-            AP::logger().Write_EntireMission(*_mission);
+            AP::logger().Write_EntireMission();
         }
         break;
     }
