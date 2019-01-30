@@ -403,6 +403,15 @@ bool AP_MotorsMatrix::output_test_num(uint8_t output_channel, int16_t pwm)
     return true;
 }
 
+// disable torque-based yaw control by zeroing all yaw factors
+void AP_MotorsMatrix::disable_yaw_torque()
+{
+    for (int i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        // set yaw factors to zero
+        _yaw_factor[i] = 0;
+    }
+}
+
 // add_motor
 void AP_MotorsMatrix::add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order)
 {

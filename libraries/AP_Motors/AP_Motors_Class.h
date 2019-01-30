@@ -172,6 +172,9 @@ public:
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     virtual float       get_roll_factor(uint8_t i) { return 0.0f; }
+    
+    // disable use of motor torque for yaw control
+    virtual void        disable_yaw_torque() {}
 
     enum pwm_type { PWM_TYPE_NORMAL     = 0,
                     PWM_TYPE_ONESHOT    = 1,
