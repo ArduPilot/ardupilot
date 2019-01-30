@@ -498,6 +498,9 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     // reset steering integrator on mode change
     steerController.reset_I();    
+
+    // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
+    control_failsafe();
 }
 
 // exit_mode - perform any cleanup required when leaving a flight mode

@@ -259,7 +259,24 @@ void Plane::control_failsafe()
         channel_roll->set_control_in(0);
         channel_pitch->set_control_in(0);
         channel_rudder->set_control_in(0);
-        channel_throttle->set_control_in(0);
+
+        switch (control_mode) {
+            case QSTABILIZE:
+            case QHOVER:
+            case QLOITER:
+            case QLAND: // throttle is ignored, but reset anyways
+            case QRTL:  // throttle is ignored, but reset anyways
+            case QAUTOTUNE:
+                if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DESIRED_GROUND_IDLE) {
+                    // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
+                    channel_throttle->set_control_in(channel_throttle->get_range() / 2);
+                    break;
+                }
+                FALLTHROUGH;
+            default:
+                channel_throttle->set_control_in(0);
+                break;
+        }
     }
 
     if(g.throttle_fs_enabled == 0)
