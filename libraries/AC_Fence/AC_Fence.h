@@ -36,7 +36,7 @@
 class AC_Fence
 {
 public:
-    AC_Fence(const AP_AHRS_NavEKF &ahrs);
+    AC_Fence();
 
     /* Do not allow copies */
     AC_Fence(const AC_Fence &other) = delete;
@@ -140,9 +140,6 @@ private:
 
     /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
     bool load_polygon_from_eeprom(bool force_reload = false);
-
-    // pointers to other objects we depend upon
-    const AP_AHRS_NavEKF& _ahrs;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
