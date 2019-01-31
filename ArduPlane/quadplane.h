@@ -10,17 +10,8 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "config.h"
 #include "qautotune.h"
-
-// Jonathan L Clark, for some reason config.h which contains these values is not being linked
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
-#define PRECISION_LANDING ENABLED
 
 /*
   QuadPlane specific functionality
@@ -127,10 +118,6 @@ public:
     
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
-
-    // precision loiter functions
-    bool do_precision_loiter(void);
-    void precision_loiter_xy(void);
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;

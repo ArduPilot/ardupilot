@@ -162,6 +162,7 @@ public:
     friend class GCS_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
+    friend class AC_PrecLand;
 
     Plane(void);
 
@@ -169,11 +170,11 @@ public:
     void setup() override;
     void loop() override;
 
+private:
+
 #if PRECISION_LANDING == ENABLED
     AC_PrecLand precland;
 #endif
-
-private:
 
     // key aircraft parameters passed to multiple libraries
     AP_Vehicle::FixedWing aparm;
@@ -1061,7 +1062,6 @@ private:
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
 #endif
-    void do_precision_loiter(const AP_Mission::Mission_Command& cmd);
     
     // precision_landing.cpp
     void init_precland();

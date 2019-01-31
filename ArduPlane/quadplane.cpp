@@ -976,44 +976,6 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     return ret;
 }
 
-#if PRECISION_LANDING == ENABLED
-bool QuadPlane::do_precision_loiter()
-{
-    if (!_precision_loiter_enabled) {
-        return false;
-    }
-    if (check_land_complete(true)) // Was (if (ap.land_complete_maybe))
-    {
-        return false;
-    }
-    // if the pilot *really* wants to move the vehicle, let them....
-    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
-        return false;
-    }
-    if (!plane.precland.target_acquired()) {
-        return false; // we don't have a good vector
-    }
-    return true;
-}
-
-void QuadPlane::precision_loiter_xy()
-{
-    loiter_nav->clear_pilot_desired_acceleration();
-    Vector2f target_pos, target_vel_rel;
-    if (!plane.precland.get_target_position_cm(target_pos)) {
-        target_pos.x = inertial_nav.get_position().x;
-        target_pos.y = inertial_nav.get_position().y;
-    }
-    if (!plane.precland.get_target_velocity_relative_cms(target_vel_rel)) {
-        target_vel_rel.x = -inertial_nav.get_velocity().x;
-        target_vel_rel.y = -inertial_nav.get_velocity().y;
-    }
-    pos_control->set_xy_target(target_pos.x, target_pos.y);
-    pos_control->override_vehicle_velocity_xy(-target_vel_rel);
-}
-#endif
-
-
 // run quadplane loiter controller
 void QuadPlane::control_loiter()
 {
