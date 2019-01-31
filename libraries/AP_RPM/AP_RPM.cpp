@@ -132,9 +132,11 @@ void AP_RPM::update(void)
     for (uint8_t i=0; i<num_instances; i++) {
         if (drivers[i] != nullptr) {
             if (_type[i] == RPM_TYPE_NONE) {
-                // allow user to disable a RPM sensor at runtime
+                // allow user to disable an RPM sensor at runtime and force it to re-learn the quality if re-enabled.
+                state[i].signal_quality = 0;
                 continue;
             }
+
             drivers[i]->update();
         }
     }
@@ -145,7 +147,7 @@ void AP_RPM::update(void)
  */
 bool AP_RPM::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances) {
+    if (instance >= num_instances || _type[instance] == RPM_TYPE_NONE) {
         return false;
     }
 
