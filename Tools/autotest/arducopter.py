@@ -1640,6 +1640,29 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_PARA_ENABLE", 1)
         self.set_parameter("SIM_PARA_PIN", 9)
 
+        self.progress("Test triggering parachute in mission")
+        self.load_mission("copter_parachute_mission.txt")
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1600)
+        self.mavproxy.expect('BANG')
+        self.reboot_sitl()
+
+        self.progress("Test triggering with mavlink message")
+        self.takeoff(20)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     2, # release
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+        self.mavproxy.expect('BANG')
+        self.reboot_sitl()
+
         self.progress("Testing three-position switch")
         self.set_parameter("RC9_OPTION", 23) # parachute 3pos
 

@@ -700,6 +700,22 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_parachute(self):
+        self.set_rc(9, 1000)
+        self.set_parameter("CHUTE_ENABLED", 1)
+        self.set_parameter("CHUTE_TYPE", 10)
+        self.set_parameter("SERVO9_FUNCTION", 27)
+        self.set_parameter("SIM_PARA_ENABLE", 1)
+        self.set_parameter("SIM_PARA_PIN", 9)
+
+        self.load_mission("plane-parachute-mission.txt")
+        self.mavproxy.send("wp set 1\n")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.mavproxy.expect("BANG")
+        self.reboot_sitl()
+
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()
@@ -771,6 +787,8 @@ class AutoTestPlane(AutoTest):
             ("TestGripperMission",
              "Test Gripper mission items",
              self.test_gripper_mission),
+
+            ("Parachute", "Test Parachute", self.test_parachute),
 
             ("LogDownLoad",
              "Log download",
