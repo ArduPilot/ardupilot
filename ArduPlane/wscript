@@ -25,7 +25,6 @@ def build(bld):
             'AC_AttitudeControl',
             'AP_Motors',
             'AC_PID',
-            'AC_Fence',
             'AP_Stats',
             'AP_Landing',
             'AP_Beacon',
