@@ -439,6 +439,7 @@ private:
         bool launchTimerStarted;
         uint8_t accel_event_counter;
         uint32_t accel_event_ms;
+        uint32_t start_time_ms;
     } takeoff_state;
     
     // ground steering controller state

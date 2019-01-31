@@ -546,6 +546,25 @@ bool Plane::verify_takeoff()
         nav_controller->update_level_flight();        
     }
 
+    // check for optional takeoff timeout
+    if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
+        const float ground_speed = gps.ground_speed();
+        const float takeoff_min_ground_speed = 4;
+        if (!hal.util->get_soft_armed()) {
+            return false;
+        }
+        if (ground_speed >= takeoff_min_ground_speed) {
+            takeoff_state.start_time_ms = 0;
+        } else {
+            uint32_t now = AP_HAL::millis();
+            if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout at %.1f m/s", ground_speed);
+                plane.disarm_motors();
+                mission.reset();
+            }
+        }
+    }
+
     // see if we have reached takeoff altitude
     int32_t relative_alt_cm = adjusted_relative_altitude_cm();
     if (relative_alt_cm > auto_state.takeoff_altitude_rel_cm) {
