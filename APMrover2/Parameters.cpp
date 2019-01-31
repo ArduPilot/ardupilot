@@ -711,7 +711,6 @@ ParametersG2::ParametersG2(void)
     wheel_rate_control(wheel_encoder),
     attitude_control(rover.ahrs),
     smart_rtl(),
-    fence(rover.ahrs),
     proximity(rover.serial_manager),
     avoid(rover.ahrs, fence, rover.g2.proximity, &rover.g2.beacon),
     follow(),
