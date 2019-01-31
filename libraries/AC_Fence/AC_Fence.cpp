@@ -80,8 +80,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 };
 
 /// Default constructor.
-AC_Fence::AC_Fence(const AP_AHRS_NavEKF& ahrs) :
-    _ahrs(ahrs)
+AC_Fence::AC_Fence()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -157,11 +156,11 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     }
 
     // if we have horizontal limits enabled, check we can get a
-    // relative position from the EKF
+    // relative position from the AHRS
     if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
         (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
-        if (!_ahrs.get_relative_position_NE_home(position)) {
+        if (AP::ahrs().get_relative_position_NE_home(position)) {
             fail_msg = "fence requires position";
             return false;
         }
@@ -191,7 +190,7 @@ bool AC_Fence::check_fence_alt_max()
         return false;
     }
 
-    _ahrs.get_relative_position_D_home(_curr_alt);
+    AP::ahrs().get_relative_position_D_home(_curr_alt);
     _curr_alt = -_curr_alt; // translate Down to Up
 
     // check if we are over the altitude fence
@@ -250,7 +249,7 @@ bool AC_Fence::check_fence_polygon()
 
     // check if vehicle is outside the polygon fence
     Vector2f position;
-    if (!_ahrs.get_relative_position_NE_origin(position)) {
+    if (!AP::ahrs().get_relative_position_NE_origin(position)) {
         // we have no idea where we are; can't breach the fence
         return false;
     }
@@ -283,7 +282,7 @@ bool AC_Fence::check_fence_circle()
     }
 
     Vector2f home;
-    if (_ahrs.get_relative_position_NE_home(home)) {
+    if (AP::ahrs().get_relative_position_NE_home(home)) {
         // we (may) remain breached if we can't update home
         _home_distance = home.length();
     }
@@ -374,7 +373,7 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
 
     // Circular fence check
     if ((get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
-        if ((get_distance_cm(_ahrs.get_home(), loc) * 0.01f) > _circle_radius) {
+        if ((get_distance_cm(AP::ahrs().get_home(), loc) * 0.01f) > _circle_radius) {
             return false;
         }
     }
@@ -540,11 +539,11 @@ bool AC_Fence::load_polygon_from_eeprom(bool force_reload)
 
     // get current location from EKF
     Location temp_loc;
-    if (!_ahrs.get_location(temp_loc)) {
+    if (!AP::ahrs_navekf().get_location(temp_loc)) {
         return false;
     }
     struct Location ekf_origin {};
-    _ahrs.get_origin(ekf_origin);
+    AP::ahrs().get_origin(ekf_origin);
 
     // sanity check total
     _total = constrain_int16(_total, 0, _poly_loader.max_points());
@@ -612,7 +611,7 @@ bool AC_Fence::sys_status_failed() const
     if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
         (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
-        if (!_ahrs.get_relative_position_NE_home(position)) {
+        if (!AP::ahrs().get_relative_position_NE_home(position)) {
             // both these fence types require position
             return true;
         }
