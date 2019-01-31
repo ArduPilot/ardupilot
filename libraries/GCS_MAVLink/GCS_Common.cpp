@@ -3829,6 +3829,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_meminfo();
         break;
 
+    case MSG_FENCE_STATUS:
+        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+        send_fence_status();
+        break;
+
     case MSG_RANGEFINDER:
         CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder();
