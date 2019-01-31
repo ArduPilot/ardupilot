@@ -492,7 +492,7 @@ private:
 
     // AC_Fence library to reduce fly-aways
 #if AC_FENCE == ENABLED
-    AC_Fence fence{ahrs};
+    AC_Fence fence;
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
