@@ -99,6 +99,7 @@ public:
         DEVTYPE_INS_ICM20689 = 0x28,
         DEVTYPE_INS_BMI055   = 0x29,
         DEVTYPE_SITL         = 0x2A,
+        DEVTYPE_INS_BMI088   = 0x2B,
     };
 
 protected:
