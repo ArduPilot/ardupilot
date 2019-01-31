@@ -118,14 +118,6 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         0.0f); // yaw_rate
 }
 
-#if AC_FENCE == ENABLED
-NOINLINE void Copter::send_fence_status(mavlink_channel_t chan)
-{
-    fence_send_mavlink_status(chan);
-}
-#endif
-
-
 NOINLINE void Copter::send_sys_status(mavlink_channel_t chan)
 {
     int16_t battery_current = -1;
@@ -303,13 +295,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         copter.terrain.send_request(chan);
-#endif
-        break;
-
-    case MSG_FENCE_STATUS:
-#if AC_FENCE == ENABLED
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        copter.send_fence_status(chan);
 #endif
         break;
 
