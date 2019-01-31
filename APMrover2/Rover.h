@@ -436,7 +436,6 @@ private:
 
     // fence.cpp
     void fence_check();
-    void fence_send_mavlink_status(mavlink_channel_t chan);
 
     // GCS_Mavlink.cpp
     void send_sys_status(mavlink_channel_t chan);
@@ -445,7 +444,6 @@ private:
     void send_pid_tuning(mavlink_channel_t chan);
     void send_wheel_encoder(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
-    void send_fence_status(mavlink_channel_t chan);
 
     // Log.cpp
     void Log_Write_Arm_Disarm();

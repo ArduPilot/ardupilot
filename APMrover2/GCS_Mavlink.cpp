@@ -274,11 +274,6 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Rover::send_fence_status(mavlink_channel_t chan)
-{
-    fence_send_mavlink_status(chan);
-}
-
 void Rover::send_wheel_encoder(mavlink_channel_t chan)
 {
     // send wheel encoder data using rpm message
@@ -361,11 +356,6 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
     case MSG_WHEEL_DISTANCE:
         CHECK_PAYLOAD_SIZE(WHEEL_DISTANCE);
         rover.send_wheel_encoder_distance(chan);
-        break;
-
-    case MSG_FENCE_STATUS:
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        rover.send_fence_status(chan);
         break;
 
     case MSG_WIND:
