@@ -116,7 +116,11 @@ public:
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
 
+    // get singleton instance
+    static AC_Fence *get_singleton() { return _singleton; }
+
 private:
+    static AC_Fence *_singleton;
 
     /// check_fence_alt_max - true if alt fence has been newly breached
     bool check_fence_alt_max();
@@ -181,4 +185,8 @@ private:
     bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
     bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom
     bool            _boundary_valid = false;        // true if boundary forms a closed polygon
+};
+
+namespace AP {
+    AC_Fence *fence();
 };
