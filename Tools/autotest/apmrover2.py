@@ -660,6 +660,71 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_rc_override_cancel(self):
+        self.change_mode('MANUAL')
+        self.wait_ready_to_arm()
+        self.set_throttle_zero()
+        self.arm_vehicle()
+        # start moving forward a little:
+        normal_rc_throttle = 1700
+        throttle_override = 1900
+
+        self.progress("Establishing baseline RC input")
+        self.mavproxy.send('rc 3 %u\n' % normal_rc_throttle)
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not get rc change")
+            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
+            if m.chan3_raw == normal_rc_throttle:
+                break
+
+        self.progress("Set override with RC_CHANNELS_OVERRIDE")
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not override")
+            self.progress("Sending throttle of %u" % (throttle_override,))
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                65535, # chan1_raw
+                65535, # chan2_raw
+                throttle_override, # chan3_raw
+                65535, # chan4_raw
+                65535, # chan5_raw
+                65535, # chan6_raw
+                65535, # chan7_raw
+                65535) # chan8_raw
+
+            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
+            self.progress("chan3=%f want=%f" % (m.chan3_raw, throttle_override))
+            if m.chan3_raw == throttle_override:
+                break
+
+        self.progress("disabling override and making sure we revert to RC input in good time")
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > 0.5:
+                raise AutoTestTimeoutException("Did not cancel override")
+            self.progress("Sending cancel of throttle override")
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                65535, # chan1_raw
+                65535, # chan2_raw
+                0,     # chan3_raw
+                65535, # chan4_raw
+                65535, # chan5_raw
+                65535, # chan6_raw
+                65535, # chan7_raw
+                65535) # chan8_raw
+
+            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
+            self.progress("chan3=%f want=%f" % (m.chan3_raw, normal_rc_throttle))
+            if m.chan3_raw == normal_rc_throttle:
+                break
+
     def test_rc_overrides(self):
         self.context_push()
         ex = None
@@ -921,6 +986,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              self.test_servorelayevents),
 
             ("RCOverrides", "Test RC overrides", self.test_rc_overrides),
+
+            ("RCOverridesCancel", "Test RC overrides Cancel", self.test_rc_override_cancel),
 
             ("Sprayer", "Test Sprayer", self.test_sprayer),
 
