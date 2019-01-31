@@ -1562,6 +1562,21 @@ class AutoTest(ABC):
             raise NotAchievedException("home position not updated")
         return m
 
+    def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                break
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            if m.groundspeed > want+tolerance:
+                raise NotAchievedException("Too fast (%f > %f)" %
+                                           (m.groundspeed, want))
+            if m.groundspeed < want-tolerance:
+                raise NotAchievedException("Too slow (%f < %f)" %
+                                           (m.groundspeed, want))
+            self.progress("GroundSpeed OK (got=%f) (want=%f)" %
+                          (m.groundspeed, want))
+
     def test_arm_feature(self):
         """Common feature to test."""
         self.context_push()
