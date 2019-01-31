@@ -138,7 +138,7 @@ public:
                         const AP_Motors &motors,
                         const AC_AttitudeControl &attitude_control,
                         const AC_PosControl &pos_control);
-    void Write_Rally(const AP_Rally &rally);
+    void Write_Rally();
     void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Write_AOA_SSA(AP_AHRS &ahrs);
     void Write_Beacon(AP_Beacon &beacon);
