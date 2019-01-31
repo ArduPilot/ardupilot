@@ -82,6 +82,12 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 /// Default constructor.
 AC_Fence::AC_Fence()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Fence must be singleton");
+    }
+#endif
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -618,4 +624,16 @@ bool AC_Fence::sys_status_failed() const
     }
 
     return false;
+}
+
+// singleton instance
+AC_Fence *AC_Fence::_singleton;
+
+namespace AP {
+
+AC_Fence *fence()
+{
+    return AC_Fence::get_singleton();
+}
+
 }
