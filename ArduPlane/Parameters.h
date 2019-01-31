@@ -343,6 +343,7 @@ public:
         k_param_dspoiler_rud_rate,
 
         k_param_logger = 253, // Logging Group
+        k_param_precland = 256,
 
         // 254,255: reserved
     };

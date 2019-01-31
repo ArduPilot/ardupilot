@@ -12,6 +12,16 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include "qautotune.h"
 
+// Jonathan L Clark, for some reason config.h which contains these values is not being linked
+#define ENABLED                 1
+#define DISABLED                0
+
+// this avoids a very common config error
+#define ENABLE ENABLED
+#define DISABLE DISABLED
+
+#define PRECISION_LANDING ENABLED
+
 /*
   QuadPlane specific functionality
  */
@@ -29,6 +39,10 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
 
     void control_run(void);
     void control_auto(const Location &loc);
@@ -113,6 +127,10 @@ public:
     
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
+
+    // precision loiter functions
+    bool do_precision_loiter(void);
+    void precision_loiter_xy(void);
 
     // return true if the wp_nav controller is being updated
     bool using_wp_nav(void) const;
@@ -199,7 +217,7 @@ private:
     void init_loiter(void);
     void init_land(void);
     void control_loiter(void);
-    void check_land_complete(void);
+    bool check_land_complete(bool check_only);
 
     void init_qrtl(void);
     void control_qrtl(void);
@@ -228,6 +246,10 @@ private:
 
     // calculate a stopping distance for fixed-wing to vtol transitions
     float stopping_distance(void);
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+#endif
     
     AP_Int16 transition_time_ms;
 

@@ -154,6 +154,11 @@ void Plane::init_ardupilot()
     camera_mount.init(serial_manager);
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // initialise precision landing
+    init_precland();
+#endif
+
 #if LANDING_GEAR_ENABLED == ENABLED
     // initialise landing gear position
     g2.landing_gear.init();

@@ -920,6 +920,23 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
     }
 }
 
+void Plane::do_precision_loiter(const AP_Mission::Mission_Command& cmd)
+{
+#if PRECISION_LANDING == ENABLED && MODE_LOITER_ENABLED == ENABLED
+    switch (cmd.p1) {
+        case HIGH:
+            plane.mode_loiter.set_precision_loiter_enabled(true);
+            break;
+        case MIDDLE:
+            // nothing
+            break;
+        case LOW:
+            plane.mode_loiter.set_precision_loiter_enabled(false);
+            break;
+        }
+#endif
+}
+
 #if PARACHUTE == ENABLED
 // do_parachute - configure or release parachute
 void Plane::do_parachute(const AP_Mission::Mission_Command& cmd)

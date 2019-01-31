@@ -976,6 +976,43 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
     return ret;
 }
 
+#if PRECISION_LANDING == ENABLED
+bool QuadPlane::do_precision_loiter()
+{
+    if (!_precision_loiter_enabled) {
+        return false;
+    }
+    if (check_land_complete(true)) // Was (if (ap.land_complete_maybe))
+    {
+        return false;
+    }
+    // if the pilot *really* wants to move the vehicle, let them....
+    if (loiter_nav->get_pilot_desired_acceleration().length() > 50.0f) {
+        return false;
+    }
+    if (!plane.precland.target_acquired()) {
+        return false; // we don't have a good vector
+    }
+    return true;
+}
+
+void QuadPlane::precision_loiter_xy()
+{
+    loiter_nav->clear_pilot_desired_acceleration();
+    Vector2f target_pos, target_vel_rel;
+    if (!plane.precland.get_target_position_cm(target_pos)) {
+        target_pos.x = inertial_nav.get_position().x;
+        target_pos.y = inertial_nav.get_position().y;
+    }
+    if (!plane.precland.get_target_velocity_relative_cms(target_vel_rel)) {
+        target_vel_rel.x = -inertial_nav.get_velocity().x;
+        target_vel_rel.y = -inertial_nav.get_velocity().y;
+    }
+    pos_control->set_xy_target(target_pos.x, target_pos.y);
+    pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+}
+#endif
+
 
 // run quadplane loiter controller
 void QuadPlane::control_loiter()
@@ -988,6 +1025,18 @@ void QuadPlane::control_loiter()
         loiter_nav->init_target();
         return;
     }
+
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand &precland = plane.precland;
+
+    const bool navigating = pos_control->is_active_xy();
+    bool doing_precision_landing = precland.target_acquired() && navigating;
+#else
+    bool doing_precision_landing = false;
+#endif
+    const float precland_acceptable_error = 15.0f;
+    const float precland_min_descent_speed = 10.0f;
+    float cmb_rate = 0;
 
     check_attitude_relax();
 
@@ -1017,6 +1066,24 @@ void QuadPlane::control_loiter()
     // run loiter controller
     loiter_nav->update();
 
+#if PRECISION_LANDING == ENABLED
+    // Precision landing x/y control
+    if (plane.control_mode == QLAND && doing_precision_landing) 
+    {
+        Vector2f target_pos, target_vel_rel;
+        if (!precland.get_target_position_cm(target_pos)) {
+            target_pos.x = inertial_nav.get_position().x;
+            target_pos.y = inertial_nav.get_position().y;
+        }
+        if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
+            target_vel_rel.x = -inertial_nav.get_velocity().x;
+            target_vel_rel.y = -inertial_nav.get_velocity().y;
+        }
+        pos_control->set_xy_target(target_pos.x, target_pos.y);
+        pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+    }
+#endif
+
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
@@ -1040,16 +1107,27 @@ void QuadPlane::control_loiter()
 
     if (plane.control_mode == QLAND) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (height_above_ground < land_final_alt && poscontrol.state < QPOS_LAND_FINAL) {
-            poscontrol.state = QPOS_LAND_FINAL;
-            // cut IC engine if enabled
-            if (land_icengine_cut != 0) {
-                plane.g2.ice_control.engine_control(0, 0, 0);
-            }
+        if (doing_precision_landing)
+        {
+            float max_descent_speed = abs(land_speed_cms)/2.0f;
+            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
+
         }
-        float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
-        pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
-        check_land_complete();
+        else
+        {
+            if (height_above_ground < land_final_alt && poscontrol.state < QPOS_LAND_FINAL) {
+                poscontrol.state = QPOS_LAND_FINAL;
+                // cut IC engine if enabled
+                if (land_icengine_cut != 0) {
+                   plane.g2.ice_control.engine_control(0, 0, 0);
+                }
+            }
+            float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
+            pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
+        }
+        check_land_complete(false);
     } else if (plane.control_mode == GUIDED && guided_takeoff) {
         pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
     } else {
@@ -1832,9 +1910,22 @@ void QuadPlane::vtol_position_controller(void)
         return;
     }
 
+    //bool doing_precision_landing = precland.target_acquired();
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand &precland = plane.precland;
+
+    const bool navigating = pos_control->is_active_xy();
+    bool doing_precision_landing = precland.target_acquired() && navigating;
+#else
+    bool doing_precision_landing = false;
+#endif
+
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
+    const float precland_acceptable_error = 15.0f;
+    const float precland_min_descent_speed = 10.0f;
+    float cmb_rate = 0;
 
     check_attitude_relax();
 
@@ -1946,6 +2037,7 @@ void QuadPlane::vtol_position_controller(void)
         FALLTHROUGH;
 
     case QPOS_LAND_FINAL:
+    {
 
         // set position controller desired velocity and acceleration to zero
         pos_control->set_desired_velocity_xy(0.0f,0.0f);
@@ -1954,6 +2046,24 @@ void QuadPlane::vtol_position_controller(void)
         // set position control target and update
         pos_control->set_xy_target(poscontrol.target.x, poscontrol.target.y);
         pos_control->update_xy_controller();
+
+#if PRECISION_LANDING == ENABLED
+        // run precision landing
+        if (doing_precision_landing) 
+        {
+            Vector2f target_pos, target_vel_rel;
+            if (!precland.get_target_position_cm(target_pos)) {
+                target_pos.x = inertial_nav.get_position().x;
+                target_pos.y = inertial_nav.get_position().y;
+            }
+            if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
+                target_vel_rel.x = -inertial_nav.get_velocity().x;
+                target_vel_rel.y = -inertial_nav.get_velocity().y;
+            }
+            pos_control->set_xy_target(target_pos.x, target_pos.y);
+            pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+        }
+#endif
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll();
@@ -1964,6 +2074,7 @@ void QuadPlane::vtol_position_controller(void)
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
+    }
 
     case QPOS_LAND_COMPLETE:
         // nothing to do
@@ -2006,15 +2117,34 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_LAND_DESCEND: {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
-                                                    plane.G_Dt, true);
+        if (doing_precision_landing && plane.rangefinder_alt_ok() && height_above_ground > 35.0f && height_above_ground < 200.0f) {
+            float max_descent_speed = abs(land_speed_cms)/2.0f;
+            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
+        }
+        else
+        {
+            pos_control->set_alt_target_from_climb_rate(-landing_descent_rate_cms(height_above_ground),
+                                                         plane.G_Dt, true);
+        }
         break;
     }
 
-    case QPOS_LAND_FINAL:
-        pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
+    case QPOS_LAND_FINAL: {
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        if (doing_precision_landing && plane.rangefinder_alt_ok() && height_above_ground > 35.0f && height_above_ground < 200.0f) {
+            float max_descent_speed = abs(land_speed_cms)/2.0f;
+            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+            pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, plane.G_Dt, true);
+        }
+        else
+        {
+            pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
+        }
         break;
-        
+    }   
     case QPOS_LAND_COMPLETE:
         break;
     }
@@ -2278,18 +2408,19 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 /*
   check if a landing is complete
  */
-void QuadPlane::check_land_complete(void)
+bool QuadPlane::check_land_complete(bool check_only)
 {
+    bool landed = false;
     if (poscontrol.state != QPOS_LAND_FINAL) {
         // only apply to final landing phase
-        return;
+        return landed;
     }
     const uint32_t now = AP_HAL::millis();
     bool might_be_landed =  (landing_detect.lower_limit_start_ms != 0 &&
                              now - landing_detect.lower_limit_start_ms > 1000);
     if (!might_be_landed) {
         landing_detect.land_start_ms = 0;
-        return;
+        return landed;
     }
     float height = inertial_nav.get_altitude()*0.01f;
     if (landing_detect.land_start_ms == 0) {
@@ -2302,22 +2433,28 @@ void QuadPlane::check_land_complete(void)
     if (fabsf(height - landing_detect.vpos_start_m) > 0.2) {
         // height has changed, call off landing detection
         landing_detect.land_start_ms = 0;
-        return;
+        return landed;
     }
            
     if ((now - landing_detect.land_start_ms) < 4000 ||
         (now - landing_detect.lower_limit_start_ms) < 5000) {
         // not landed yet
-        return;
+        return landed;
     }
-    landing_detect.land_start_ms = 0;
-    // motors have been at zero for 5s, and we have had less than 0.3m
-    // change in altitude for last 4s. We are landed.
-    plane.disarm_motors();
-    poscontrol.state = QPOS_LAND_COMPLETE;
-    gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
-    // reload target airspeed which could have been modified by the mission
-    plane.aparm.airspeed_cruise_cm.load();
+    landed = true; // At this point we know we have landed
+
+    if (!check_only)
+    {
+       landing_detect.land_start_ms = 0;
+       // motors have been at zero for 5s, and we have had less than 0.3m
+       // change in altitude for last 4s. We are landed.
+       plane.disarm_motors();
+       poscontrol.state = QPOS_LAND_COMPLETE;
+       gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
+       // reload target airspeed which could have been modified by the mission
+       plane.aparm.airspeed_cruise_cm.load();
+    }
+    return landed;
 }
 
 /*
@@ -2351,7 +2488,7 @@ bool QuadPlane::verify_vtol_land(void)
         gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
-    check_land_complete();
+    check_land_complete(false);
     return false;
 }
 

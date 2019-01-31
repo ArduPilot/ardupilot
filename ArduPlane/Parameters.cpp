@@ -906,6 +906,12 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: PLND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    GOBJECT(precland, "PLND_", AC_PrecLand),
+#endif
+
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/RangeFinder.cpp
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),

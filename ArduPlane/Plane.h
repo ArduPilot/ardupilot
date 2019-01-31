@@ -121,6 +121,11 @@
 #include <SITL/SITL.h>
 #endif
 
+#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#include <AP_IRLock/AP_IRLock.h>
+#endif
+
 /*
   a plane specific AP_AdvancedFailsafe class
  */
@@ -163,6 +168,10 @@ public:
     // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
+
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
 
 private:
 
@@ -824,6 +833,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AOA_SSA();
     void Log_Write_AETR();
+    void Log_Write_Precland();
 
     void load_parameters(void);
     void convert_mixers(void);
@@ -927,6 +937,7 @@ private:
     bool trim_radio();
     bool rc_failsafe_active(void) const;
     void read_rangefinder(void);
+    bool rangefinder_alt_ok(void);
     void read_airspeed(void);
     void rpm_update(void);
     void init_ardupilot();
@@ -1050,6 +1061,11 @@ private:
 #if SOARING_ENABLED == ENABLED
     void update_soaring();
 #endif
+    void do_precision_loiter(const AP_Mission::Mission_Command& cmd);
+    
+    // precision_landing.cpp
+    void init_precland();
+    void update_precland();
 
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
