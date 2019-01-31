@@ -183,6 +183,7 @@ public:
     // common send functions
     void send_heartbeat(void) const;
     void send_meminfo(void);
+    void send_fence_status() const;
     void send_power_status(void);
     void send_battery_status(const AP_BattMonitor &battery,
                              const uint8_t instance) const;
