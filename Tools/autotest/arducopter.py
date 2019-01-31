@@ -1294,9 +1294,6 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def fly_mission(self):
-        """Fly a mission from a file."""
-
     def fly_vision_position(self):
         """Disable GPS navigation, enable Vicon input."""
         # scribble down a location we can set origin to:
@@ -1383,6 +1380,49 @@ class AutoTestCopter(AutoTest):
 
         if ex is not None:
             raise ex
+
+    def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                break
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            if m.groundspeed > want+tolerance:
+                raise NotAchievedException("Too fast (%f > %f)" %
+                                           (m.groundspeed, want))
+            if m.groundspeed < want-tolerance:
+                raise NotAchievedException("Too slow (%f < %f)" %
+                                           (m.groundspeed, want))
+            self.progress("GroundSpeed OK (got=%f) (want=%f)" %
+                          (m.groundspeed, want))
+
+    def fly_rtl_speed(self):
+        """Test RTL Speed parameters"""
+        rtl_speed_ms = 7
+        wpnav_speed_ms = 4
+        wpnav_accel_mss = 3
+        tolerance = 0.5
+        self.load_mission("copter_rtl_speed.txt")
+        self.set_parameter('WPNAV_ACCEL', wpnav_accel_mss * 100)
+        self.set_parameter('RTL_SPEED', rtl_speed_ms * 100)
+        self.set_parameter('WPNAV_SPEED', wpnav_speed_ms * 100)
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1600)
+        self.wait_altitude(19, 25, relative=True)
+        self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
+        self.monitor_groundspeed(wpnav_speed_ms, timeout=20)
+        self.change_mode('RTL')
+        self.wait_groundspeed(rtl_speed_ms-tolerance, rtl_speed_ms+tolerance)
+        self.monitor_groundspeed(rtl_speed_ms, timeout=5)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(0-tolerance, 0+tolerance)
+        self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
+        self.monitor_groundspeed(wpnav_speed_ms, timeout=5)
+        self.change_mode('RTL')
+        self.mav.motors_disarmed_wait()
 
     def fly_nav_delay(self):
         """Fly a simple mission that has a delay in it."""
@@ -2674,6 +2714,10 @@ class AutoTestCopter(AutoTest):
             ("VisionPosition",
              "Fly Vision Position",
              self.fly_vision_position),
+
+            ("RTLSpeed",
+             "Fly RTL Speed",
+             self.fly_rtl_speed),
 
             ("Mount",
              "Test Camera/Antenna Mount",
