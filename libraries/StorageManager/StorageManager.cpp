@@ -21,7 +21,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "StorageManager.h"
-
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,38 +35,13 @@ extern const AP_HAL::HAL& hal;
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_default[STORAGE_NUM_AREAS] = {
-    { StorageParam,   0,     1280}, // 0x500 parameter bytes
-    { StorageMission, 1280,  2506},
-    { StorageRally,   3786,   150}, // 10 rally points
-    { StorageFence,   3936,   160}, // 20 fence points
-#if STORAGE_NUM_AREAS >= 8
-    { StorageParam,   4096,  1280},
-    { StorageRally,   5376,   300},
-    { StorageFence,   5676,   256},
-    { StorageMission, 5932,  2132}, 
-    { StorageKeys,    8064,    64}, 
-    { StorageBindInfo,8128,    56}, 
-#endif
-#if STORAGE_NUM_AREAS == 11
-    // optimised for lots of parameters for 15k boards with OSD
-    { StorageParam,    8192,  7168},
-#endif
-#if STORAGE_NUM_AREAS >= 12
-    { StorageParam,    8192,  1280},
-    { StorageRally,    9472,   300},
-    { StorageFence,    9772,   256},
-    { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
-#endif
-};
-
-
+const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 /*
   layout for copter.
   On PX4v1 this gives 303 waypoints, 26 rally points and 38 fence points
   On Pixhawk this gives 718 waypoints, 46 rally points and 70 fence points
  */
-const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     1536}, // 0x600 param bytes
     { StorageMission, 1536,  2422},
     { StorageRally,   3958,    90}, // 6 rally points
@@ -76,7 +51,7 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132},
-    { StorageKeys,    8064,    64}, 
+    { StorageKeys,    8064,    64},
     { StorageBindInfo,8128,    56},
 #endif
 #if STORAGE_NUM_AREAS == 11
@@ -89,10 +64,31 @@ const StorageManager::StorageArea StorageManager::layout_copter[STORAGE_NUM_AREA
     { StorageFence,    9772,   256},
     { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
 #endif
+#else
+    { StorageParam,   0,     1280}, // 0x500 parameter bytes
+    { StorageMission, 1280,  2506},
+    { StorageRally,   3786,   150}, // 10 rally points
+    { StorageFence,   3936,   160}, // 20 fence points
+#if STORAGE_NUM_AREAS >= 8
+    { StorageParam,   4096,  1280},
+    { StorageRally,   5376,   300},
+    { StorageFence,   5676,   256},
+    { StorageMission, 5932,  2132},
+    { StorageKeys,    8064,    64},
+    { StorageBindInfo,8128,    56},
+#endif
+#if STORAGE_NUM_AREAS == 11
+    // optimised for lots of parameters for 15k boards with OSD
+    { StorageParam,    8192,  7168},
+#endif
+#if STORAGE_NUM_AREAS >= 12
+    { StorageParam,    8192,  1280},
+    { StorageRally,    9472,   300},
+    { StorageFence,    9772,   256},
+    { StorageMission, 10028,  6228}, // leave 128 byte gap for expansion
+#endif
+#endif
 };
-
-// setup default layout
-const StorageManager::StorageArea *StorageManager::layout = layout_default;
 
 /*
   erase all storage
@@ -122,6 +118,7 @@ void StorageManager::erase(void)
 StorageAccess::StorageAccess(StorageManager::StorageType _type) : 
     type(_type) 
 {
+    static_assert(ARRAY_SIZE(StorageManager::layout) == STORAGE_NUM_AREAS, "error");
     // calculate available bytes
     total_size = 0;
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
