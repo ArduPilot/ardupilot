@@ -98,6 +98,11 @@ enum Log_Event : uint8_t {
     DATA_ZIGZAG_STORE_A = 71,
     DATA_ZIGZAG_STORE_B = 72,
     DATA_LAND_REPO_ACTIVE = 73,
+
+    DATA_SURFACED = 163,
+    DATA_NOT_SURFACED = 164,
+    DATA_BOTTOMED = 165,
+    DATA_NOT_BOTTOMED = 166,
 };
 
 // fwd declarations to avoid include errors
