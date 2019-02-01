@@ -136,30 +136,6 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
 
-// DATA - event logging
-#define DATA_AP_STATE                       7
-// 8 was DATA_SYSTEM_TIME_SET
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-#define DATA_LOST_GPS                       19
-#define DATA_SET_HOME                       25
-#define DATA_SAVE_TRIM                      38
-#define DATA_SAVEWP_ADD_WP                  39
-#define DATA_FENCE_ENABLE                   41
-#define DATA_FENCE_DISABLE                  42
-#define DATA_ACRO_TRAINER_DISABLED          43
-#define DATA_ACRO_TRAINER_LEVELING          44
-#define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_GRIPPER_GRAB                   46
-#define DATA_GRIPPER_RELEASE                47
-#define DATA_EKF_ALT_RESET                  60
-#define DATA_SURFACE_CANCELLED_BY_PILOT     61
-#define DATA_EKF_YAW_RESET                  62
-#define DATA_SURFACED                       63
-#define DATA_NOT_SURFACED                   64
-#define DATA_BOTTOMED                       65
-#define DATA_NOT_BOTTOMED                   66
-
 // Error message sub systems and error codes
 #define ERROR_SUBSYSTEM_MAIN                1
 #define ERROR_SUBSYSTEM_INPUT               2
