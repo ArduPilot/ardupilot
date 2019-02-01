@@ -23,7 +23,7 @@
 bool Copter::ModeAuto::init(bool ignore_checks)
 {
     if (mission.num_commands() > 1 || ignore_checks) {
-        _mode = Auto_Loiter;
+        _submode = SubMode::Loiter;
 
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && ap.land_complete && !mission.starts_with_takeoff_cmd()) {
@@ -57,48 +57,48 @@ bool Copter::ModeAuto::init(bool ignore_checks)
 void Copter::ModeAuto::run()
 {
     // call the correct auto controller
-    switch (_mode) {
+    switch (_submode) {
 
-    case Auto_TakeOff:
+    case SubMode::TakeOff:
         takeoff_run();
         break;
 
-    case Auto_WP:
-    case Auto_CircleMoveToEdge:
+    case SubMode::WP:
+    case SubMode::CircleMoveToEdge:
         wp_run();
         break;
 
-    case Auto_Land:
+    case SubMode::Land:
         land_run();
         break;
 
-    case Auto_RTL:
+    case SubMode::RTL:
         rtl_run();
         break;
 
-    case Auto_Circle:
+    case SubMode::Circle:
         circle_run();
         break;
 
-    case Auto_Spline:
+    case SubMode::Spline:
         spline_run();
         break;
 
-    case Auto_NavGuided:
+    case SubMode::NavGuided:
 #if NAV_GUIDED == ENABLED
         nav_guided_run();
 #endif
         break;
 
-    case Auto_Loiter:
+    case SubMode::Loiter:
         loiter_run();
         break;
 
-    case Auto_LoiterToAlt:
+    case SubMode::LoiterToAlt:
         loiter_to_alt_run();
         break;
 
-    case Auto_NavPayloadPlace:
+    case SubMode::NavPayloadPlace:
         payload_place_run();
         break;
     }
@@ -112,7 +112,7 @@ bool Copter::ModeAuto::loiter_start()
     if (!copter.position_ok()) {
         return false;
     }
-    _mode = Auto_Loiter;
+    _submode = SubMode::Loiter;
 
     // calculate stopping point
     Vector3f stopping_point;
@@ -130,7 +130,7 @@ bool Copter::ModeAuto::loiter_start()
 // auto_rtl_start - initialises RTL in AUTO flight mode
 void Copter::ModeAuto::rtl_start()
 {
-    _mode = Auto_RTL;
+    _submode = SubMode::RTL;
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
     copter.mode_rtl.init(true);
@@ -139,7 +139,7 @@ void Copter::ModeAuto::rtl_start()
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 {
-    _mode = Auto_TakeOff;
+    _submode = SubMode::TakeOff;
 
     Location dest(dest_loc);
 
@@ -185,7 +185,7 @@ void Copter::ModeAuto::takeoff_start(const Location& dest_loc)
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Copter::ModeAuto::wp_start(const Vector3f& destination)
 {
-    _mode = Auto_WP;
+    _submode = SubMode::WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
     wp_nav->set_wp_destination(destination, false);
@@ -200,7 +200,7 @@ void Copter::ModeAuto::wp_start(const Vector3f& destination)
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
 void Copter::ModeAuto::wp_start(const Location& dest_loc)
 {
-    _mode = Auto_WP;
+    _submode = SubMode::WP;
 
     // send target to waypoint controller
     if (!wp_nav->set_wp_destination(dest_loc)) {
@@ -230,7 +230,7 @@ void Copter::ModeAuto::land_start()
 // auto_land_start - initialises controller to implement a landing
 void Copter::ModeAuto::land_start(const Vector3f& destination)
 {
-    _mode = Auto_Land;
+    _submode = SubMode::Land;
 
     // initialise loiter target destination
     loiter_nav->init_target(destination);
@@ -271,7 +271,7 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location &circle_center, fl
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
         // set the state to move to the edge of the circle
-        _mode = Auto_CircleMoveToEdge;
+        _submode = SubMode::CircleMoveToEdge;
 
         // convert circle_edge_neu to Location
         Location circle_edge(circle_edge_neu);
@@ -307,7 +307,7 @@ void Copter::ModeAuto::circle_movetoedge_start(const Location &circle_center, fl
 //   assumes that circle_nav object has already been initialised with circle center and radius
 void Copter::ModeAuto::circle_start()
 {
-    _mode = Auto_Circle;
+    _submode = SubMode::Circle;
 
     // initialise circle controller
     copter.circle_nav->init(copter.circle_nav->get_center());
@@ -319,7 +319,7 @@ void Copter::ModeAuto::spline_start(const Location& destination, bool stopped_at
                                AC_WPNav::spline_segment_end_type seg_end_type, 
                                const Location& next_destination)
 {
-    _mode = Auto_Spline;
+    _submode = SubMode::Spline;
 
     // initialise wpnav
     if (!wp_nav->set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
@@ -339,7 +339,7 @@ void Copter::ModeAuto::spline_start(const Location& destination, bool stopped_at
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void Copter::ModeAuto::nav_guided_start()
 {
-    _mode = Auto_NavGuided;
+    _submode = SubMode::NavGuided;
 
     // call regular guided flight mode initialisation
     copter.mode_guided.init(true);
@@ -369,10 +369,10 @@ bool Copter::ModeAuto::is_taking_off() const
 
 bool Copter::ModeAuto::landing_gear_should_be_deployed() const
 {
-    switch(_mode) {
-    case Auto_Land:
+    switch(_submode) {
+    case SubMode::Land:
         return true;
-    case Auto_RTL:
+    case SubMode::RTL:
         return copter.mode_rtl.landing_gear_should_be_deployed();
     default:
         return false;
@@ -545,7 +545,7 @@ void Copter::ModeAuto::exit_mission()
 bool Copter::ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 {
     // only process guided waypoint if we are in guided mode
-    if (copter.control_mode != GUIDED && !(copter.control_mode == AUTO && mode() == Auto_NavGuided)) {
+    if (copter.control_mode != GUIDED && !(copter.control_mode == AUTO && submode() == SubMode::NavGuided)) {
         return false;
     }
 
@@ -583,10 +583,10 @@ int32_t Copter::ModeAuto::wp_bearing() const
 
 bool Copter::ModeAuto::get_wp(Location& destination)
 {
-    switch (_mode) {
-    case Auto_NavGuided:
+    switch (_submode) {
+    case SubMode::NavGuided:
         return copter.mode_guided.get_wp(destination);
-    case Auto_WP:
+    case SubMode::WP:
         return wp_nav->get_wp_destination(destination);
     default:
         return false;
@@ -915,7 +915,7 @@ void Copter::ModeAuto::loiter_to_alt_run()
 
     if (!loiter_to_alt.loiter_start_done) {
         loiter_nav->init_target();
-        _mode = Auto_LoiterToAlt;
+        _submode = SubMode::LoiterToAlt;
         loiter_to_alt.loiter_start_done = true;
     }
     const float alt_error_cm = copter.current_loc.alt - loiter_to_alt.alt;
@@ -949,8 +949,8 @@ void Copter::ModeAuto::loiter_to_alt_run()
 // auto_payload_place_start - initialises controller to implement placement of a load
 void Copter::ModeAuto::payload_place_start(const Vector3f& destination)
 {
-    _mode = Auto_NavPayloadPlace;
-    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+    _submode = SubMode::NavPayloadPlace;
+    nav_payload_place.state = PayloadPlaceState::Calibrating_Hover_Start;
 
     // initialise loiter target destination
     loiter_nav->init_target(destination);
@@ -981,20 +981,20 @@ void Copter::ModeAuto::payload_place_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
     switch (nav_payload_place.state) {
-    case PayloadPlaceStateType_FlyToLocation:
+    case PayloadPlaceState::FlyToLocation:
         return wp_run();
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
-    case PayloadPlaceStateType_Calibrating_Hover:
+    case PayloadPlaceState::Calibrating_Hover_Start:
+    case PayloadPlaceState::Calibrating_Hover:
         return payload_place_run_loiter();
-    case PayloadPlaceStateType_Descending_Start:
-    case PayloadPlaceStateType_Descending:
+    case PayloadPlaceState::Descending_Start:
+    case PayloadPlaceState::Descending:
         return payload_place_run_descend();
-    case PayloadPlaceStateType_Releasing_Start:
-    case PayloadPlaceStateType_Releasing:
-    case PayloadPlaceStateType_Released:
-    case PayloadPlaceStateType_Ascending_Start:
-    case PayloadPlaceStateType_Ascending:
-    case PayloadPlaceStateType_Done:
+    case PayloadPlaceState::Releasing_Start:
+    case PayloadPlaceState::Releasing:
+    case PayloadPlaceState::Released:
+    case PayloadPlaceState::Ascending_Start:
+    case PayloadPlaceState::Ascending:
+    case PayloadPlaceState::Done:
         return payload_place_run_loiter();
     }
 }
@@ -1231,7 +1231,7 @@ void Copter::ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     // re-use loiter unlimited
     do_loiter_unlimited(cmd);
-    _mode = Auto_LoiterToAlt;
+    _submode = SubMode::LoiterToAlt;
 
     // if we aren't navigating to a location then we have to adjust
     // altitude for current location
@@ -1464,13 +1464,13 @@ void Copter::ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
+        nav_payload_place.state = PayloadPlaceState::FlyToLocation;
 
         const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+        nav_payload_place.state = PayloadPlaceState::Calibrating_Hover_Start;
 
         // initialise placing controller
         payload_place_start();
@@ -1556,39 +1556,39 @@ bool Copter::ModeAuto::verify_payload_place()
     // if we discover we've landed then immediately release the load:
     if (ap.land_complete) {
         switch (nav_payload_place.state) {
-        case PayloadPlaceStateType_FlyToLocation:
-        case PayloadPlaceStateType_Calibrating_Hover_Start:
-        case PayloadPlaceStateType_Calibrating_Hover:
-        case PayloadPlaceStateType_Descending_Start:
-        case PayloadPlaceStateType_Descending:
+        case PayloadPlaceState::FlyToLocation:
+        case PayloadPlaceState::Calibrating_Hover_Start:
+        case PayloadPlaceState::Calibrating_Hover:
+        case PayloadPlaceState::Descending_Start:
+        case PayloadPlaceState::Descending:
             gcs().send_text(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
-            nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
+            nav_payload_place.state = PayloadPlaceState::Releasing_Start;
             break;
-        case PayloadPlaceStateType_Releasing_Start:
-        case PayloadPlaceStateType_Releasing:
-        case PayloadPlaceStateType_Released:
-        case PayloadPlaceStateType_Ascending_Start:
-        case PayloadPlaceStateType_Ascending:
-        case PayloadPlaceStateType_Done:
+        case PayloadPlaceState::Releasing_Start:
+        case PayloadPlaceState::Releasing:
+        case PayloadPlaceState::Released:
+        case PayloadPlaceState::Ascending_Start:
+        case PayloadPlaceState::Ascending:
+        case PayloadPlaceState::Done:
             break;
         }
     }
 
     switch (nav_payload_place.state) {
-    case PayloadPlaceStateType_FlyToLocation:
+    case PayloadPlaceState::FlyToLocation:
         if (!copter.wp_nav->reached_wp_destination()) {
             return false;
         }
         payload_place_start();
         return false;
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
+    case PayloadPlaceState::Calibrating_Hover_Start:
         // hover for 1 second to get an idea of what our hover
         // throttle looks like
         debug("Calibrate start");
         nav_payload_place.hover_start_timestamp = now;
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
+        nav_payload_place.state = PayloadPlaceState::Calibrating_Hover;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Calibrating_Hover: {
+    case PayloadPlaceState::Calibrating_Hover: {
         if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
             // still calibrating...
             debug("Calibrate Timer: %d", now - nav_payload_place.hover_start_timestamp);
@@ -1598,21 +1598,21 @@ bool Copter::ModeAuto::verify_payload_place()
         nav_payload_place.hover_throttle_level = current_throttle_level;
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
         gcs().send_text(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
-        nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
+        nav_payload_place.state = PayloadPlaceState::Descending_Start;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Descending_Start:
+    case PayloadPlaceState::Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
         nav_payload_place.descend_throttle_level = 0;
-        nav_payload_place.state = PayloadPlaceStateType_Descending;
+        nav_payload_place.state = PayloadPlaceState::Descending;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Descending:
+    case PayloadPlaceState::Descending:
         // make sure we don't descend too far:
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
             nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()  > nav_payload_place.descend_max) {
-            nav_payload_place.state = PayloadPlaceStateType_Ascending;
+            nav_payload_place.state = PayloadPlaceState::Ascending;
             gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
         }
@@ -1639,49 +1639,49 @@ bool Copter::ModeAuto::verify_payload_place()
             debug("Place Timer: %d", now - nav_payload_place.place_start_timestamp);
             return false;
         }
-        nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
+        nav_payload_place.state = PayloadPlaceState::Releasing_Start;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Releasing_Start:
+    case PayloadPlaceState::Releasing_Start:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Releasing the gripper");
             g2.gripper.release();
         } else {
             gcs().send_text(MAV_SEVERITY_INFO, "Gripper not valid");
-            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+            nav_payload_place.state = PayloadPlaceState::Ascending_Start;
             break;
         }
 #else
         gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
 #endif
-        nav_payload_place.state = PayloadPlaceStateType_Releasing;
+        nav_payload_place.state = PayloadPlaceState::Releasing;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Releasing:
+    case PayloadPlaceState::Releasing:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
 #endif
-        nav_payload_place.state = PayloadPlaceStateType_Released;
+        nav_payload_place.state = PayloadPlaceState::Released;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Released: {
-        nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+    case PayloadPlaceState::Released: {
+        nav_payload_place.state = PayloadPlaceState::Ascending_Start;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending_Start: {
+    case PayloadPlaceState::Ascending_Start: {
         Location target_loc = inertial_nav.get_position();
         target_loc.alt = nav_payload_place.descend_start_altitude;
         wp_start(target_loc);
-        nav_payload_place.state = PayloadPlaceStateType_Ascending;
+        nav_payload_place.state = PayloadPlaceState::Ascending;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending:
+    case PayloadPlaceState::Ascending:
         if (!copter.wp_nav->reached_wp_destination()) {
             return false;
         }
-        nav_payload_place.state = PayloadPlaceStateType_Done;
+        nav_payload_place.state = PayloadPlaceState::Done;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Done:
+    case PayloadPlaceState::Done:
         return true;
     default:
         // this should never happen
@@ -1736,7 +1736,7 @@ bool Copter::ModeAuto::verify_loiter_to_alt()
 // returns true with RTL has completed successfully
 bool Copter::ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && (copter.mode_rtl.state() == RTL_FinalDescent || copter.mode_rtl.state() == RTL_Land));
+    return copter.mode_rtl.reached_home();
 }
 
 /********************************************************************************/
@@ -1806,7 +1806,7 @@ bool Copter::ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool Copter::ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
-    if (mode() == Auto_CircleMoveToEdge) {
+    if (submode() == SubMode::CircleMoveToEdge) {
         if (copter.wp_nav->reached_wp_destination()) {
             Vector3f circle_center;
             if (!cmd.content.location.get_vector_from_origin_NEU(circle_center)) {

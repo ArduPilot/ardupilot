@@ -21,6 +21,13 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeAltHold::run()
 {
+    enum AltHoldModeState {
+        AltHold_MotorStopped,
+        AltHold_Takeoff,
+        AltHold_Flying,
+        AltHold_Landed
+    };
+
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
 

@@ -26,6 +26,13 @@ bool Copter::ModeSport::init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::ModeSport::run()
 {
+    enum SportModeState {
+        Sport_MotorStopped,
+        Sport_Takeoff,
+        Sport_Flying,
+        Sport_Landed
+    };
+
     SportModeState sport_state;
     float takeoff_climb_rate = 0.0f;
 

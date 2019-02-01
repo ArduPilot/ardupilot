@@ -74,6 +74,13 @@ void Copter::ModeLoiter::precision_loiter_xy()
 // should be called at 100hz or more
 void Copter::ModeLoiter::run()
 {
+    enum LoiterModeState {
+        Loiter_MotorStopped,
+        Loiter_Takeoff,
+        Loiter_Flying,
+        Loiter_Landed
+    };
+
     LoiterModeState loiter_state;
 
     float target_roll, target_pitch;

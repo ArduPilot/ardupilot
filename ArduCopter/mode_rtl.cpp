@@ -31,6 +31,13 @@ void Copter::ModeRTL::restart_without_terrain()
     }
 }
 
+bool Copter::ModeRTL::reached_home() const
+{
+    return (state_complete() &&
+            (state() == RTL_FinalDescent ||
+             state() == RTL_Land));
+}
+
 // rtl_run - runs the return-to-launch controller
 // should be called at 100hz or more
 void Copter::ModeRTL::run(bool disarm_on_land)

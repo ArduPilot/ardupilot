@@ -283,10 +283,7 @@ public:
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
-    bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
-
-    // Auto
-    AutoMode mode() const { return _mode; }
+    bool in_guided_mode() const override { return submode() == SubMode::NavGuided; }
 
     bool loiter_start();
     void rtl_start();
@@ -319,6 +316,22 @@ public:
         FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&Copter::ModeAuto::exit_mission, void)};
+
+    enum class SubMode : uint8_t {
+        TakeOff,
+        WP,
+        Land,
+        RTL,
+        CircleMoveToEdge,
+        Circle,
+        Spline,
+        NavGuided,
+        Loiter,
+        LoiterToAlt,
+        NavPayloadPlace,
+    };
+    // Auto
+    SubMode submode() const { return _submode; }
 
 protected:
 
@@ -356,7 +369,7 @@ private:
     void payload_place_run_descend();
     void payload_place_run_release();
 
-    AutoMode _mode = Auto_TakeOff;   // controls which auto controller is run
+    SubMode _submode = SubMode::TakeOff;   // controls which auto controller is run
 
     Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
 
@@ -427,10 +440,27 @@ private:
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
 
+    enum LandStateType : uint8_t {
+        LandStateType_FlyToLocation = 0,
+        LandStateType_Descending = 1
+    };
     LandStateType land_state = LandStateType_FlyToLocation; // records state of land (flying to location, descending)
 
+    enum class PayloadPlaceState : uint8_t {
+        FlyToLocation,
+        Calibrating_Hover_Start,
+        Calibrating_Hover,
+        Descending_Start,
+        Descending,
+        Releasing_Start,
+        Releasing,
+        Released,
+        Ascending_Start,
+        Ascending,
+        Done,
+    };
     struct {
-        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
+        PayloadPlaceState state = PayloadPlaceState::Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
         uint32_t hover_start_timestamp; // milliseconds
         float hover_throttle_level;
         uint32_t descend_start_timestamp; // milliseconds
@@ -640,7 +670,7 @@ protected:
 private:
 
     // FlowHold states
-    enum FlowHoldModeState {
+    enum FlowHoldModeState : uint8_t {
         FlowHold_MotorStopped,
         FlowHold_Takeoff,
         FlowHold_Flying,
@@ -728,8 +758,6 @@ public:
 
     bool do_user_takeoff_start(float final_alt_above_home) override;
 
-    GuidedMode mode() const { return guided_mode; }
-
     void angle_control_start();
     void angle_control_run();
 
@@ -743,6 +771,15 @@ protected:
     float crosstrack_error() const override;
 
 private:
+
+    enum GuidedMode : uint8_t {
+        Guided_TakeOff,
+        Guided_WP,
+        Guided_Velocity,
+        Guided_PosVel,
+        Guided_Angle,
+    };
+    GuidedMode mode() const { return guided_mode; }
 
     void pos_control_start();
     void vel_control_start();
@@ -905,8 +942,6 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return true; }
 
-    RTLState state() { return _state; }
-
     // this should probably not be exposed
     bool state_complete() { return _state_complete; }
 
@@ -914,6 +949,16 @@ public:
     bool landing_gear_should_be_deployed() const override;
 
     void restart_without_terrain();
+    bool reached_home() const;
+
+    enum RTLState : uint8_t {
+        RTL_InitialClimb,
+        RTL_ReturnHome,
+        RTL_LoiterAtHome,
+        RTL_FinalDescent,
+        RTL_Land
+    };
+    RTLState state() const { return _state; }
 
 protected:
 
@@ -932,6 +977,8 @@ protected:
     void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
 
 private:
+
+    bool state_complete() const { return _state_complete; }
 
     void climb_start();
     void return_start();
@@ -992,6 +1039,14 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
+
+    enum SmartRTLState : uint8_t {
+        SmartRTL_WaitForPathCleanup,
+        SmartRTL_PathFollow,
+        SmartRTL_PreLandPosition,
+        SmartRTL_Descend,
+        SmartRTL_Land
+    };
     SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
 
 };
@@ -1080,7 +1135,7 @@ public:
     bool is_autopilot() const override { return false; }
 
     // Throw types
-    enum ThrowModeType {
+    enum ThrowModeType : uint8_t {
         ThrowType_Upward = 0,
         ThrowType_Drop = 1
     };
@@ -1098,7 +1153,7 @@ private:
     bool throw_attitude_good();
 
     // Throw stages
-    enum ThrowModeStage {
+    enum ThrowModeStage : uint8_t {
         Throw_Disarmed,
         Throw_Detecting,
         Throw_Uprighting,
@@ -1203,7 +1258,7 @@ private:
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
 
-    enum zigzag_state {
+    enum zigzag_state : uint8_t {
         STORING_POINTS, // storing points A and B, pilot has manual control
         AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
         MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
