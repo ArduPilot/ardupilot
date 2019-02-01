@@ -19,8 +19,6 @@ bool Copter::ModeHoldUltra::init(bool ignore_checks)
 	
 	// Hie könnte man einen 1kHz timer einschalten:
 	// hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_update));
-	
-
     return true;
 }
 

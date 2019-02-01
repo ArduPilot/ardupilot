@@ -46,6 +46,7 @@
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
 //#define DEVO_TELEM_ENABLED DISABLED               // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 //#define MODE_HOLD_ULTRA_ENABLED DISABLED          // disable indoor hold with ultrasonic
+//#define MODE_RECT_ENABLED DISABLED          		// disable rect mode support
 
 
 // features below are disabled by default on all boards

@@ -1220,3 +1220,48 @@ protected:
 
     // uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
+
+class ModeRect : public Mode {        
+
+public:
+
+    // inherit constructor
+    using Copter::Mode::Mode;
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+    // save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
+    void save_or_move_to_destination(uint8_t dest_num);
+
+    // return manual control to the pilot
+    void return_to_manual_control();
+
+protected:
+
+    const char *name() const override { return "RECTANGLE"; }
+    const char *name4() const override { return "RECT"; }
+
+private:
+
+    void auto_control();
+    void manual_control();
+    bool reached_destination();
+    bool calculate_next_dest(uint8_t position_num, Vector3f& next_dest) const;
+
+    Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
+    Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+
+    enum zigzag_state {
+        STORING_POINTS, // storing points A and B, pilot has manual control
+        AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
+        MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
+    } stage;
+
+    uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
+};

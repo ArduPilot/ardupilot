@@ -54,7 +54,8 @@ enum control_mode_t {
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
     ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
-	HOLD_ULTRA  =  25 // Holds the position with 4-Ultrasonic-Sensors for Alt and Side (for inside fly)
+	HOLD_ULTRA  =  25 	// Holds the position with 4-Ultrasonic-Sensors for alt and side (for inside fly)
+	RECT =         26	// RECT mode is able to fly in a UP-DOWN manner from left to right
 };
 
 enum mode_reason_t {

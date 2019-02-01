@@ -166,6 +166,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_RECT_ENABLED == ENABLED
+        case RECT:
+            ret = &mode_rect;
+            break;
+#endif
+
         default:
             break;
     }

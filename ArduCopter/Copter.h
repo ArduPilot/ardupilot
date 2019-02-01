@@ -969,9 +969,11 @@ private:
 #if MODE_ZIGZAG_ENABLED == ENABLED
     ModeZigZag mode_zigzag;
 #endif
-
 #if MODE_HOLD_ULTRA_ENABLED == ENABLED
     ModeHoldUltra mode_hold_ultra;
+#endif
+#if MODE_RECT_ENABLED == ENABLED
+    ModeRect mode_rect;
 #endif
 
     // mode.cpp
