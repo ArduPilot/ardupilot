@@ -95,8 +95,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
  */
 void StorageManager::erase(void)
 {
-    uint8_t blk[16];
-    memset(blk, 0, sizeof(blk));
+    uint8_t blk[16]{0};
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = area.length;
