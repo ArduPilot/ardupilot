@@ -158,6 +158,11 @@ struct PACKED log_DSF {
     uint32_t buf_space_avg;
 };
 
+struct PACKED log_Event {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t id;
+};
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1460,6 +1465,8 @@ Format characters in the format string for binary log messages
       "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" }, \
+    { LOG_EVENT_MSG, sizeof(log_Event), \
+      "EV",   "QB",           "TimeUS,Id", "s-", "F-" }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
       "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
 // #endif
@@ -1616,6 +1623,7 @@ enum LogMessages : uint8_t {
     LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
+    LOG_EVENT_MSG,
     _LOG_LAST_MSG_
 };
 
