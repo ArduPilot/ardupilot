@@ -209,10 +209,6 @@ void Copter::parachute_check()
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
 void Copter::parachute_release()
 {
-    // send message to gcs and dataflash
-    gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
-    Log_Write_Event(DATA_PARACHUTE_RELEASED);
-
     // disarm motors
     init_disarm_motors();
 

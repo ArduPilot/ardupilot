@@ -485,12 +485,6 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 #endif //AC_FENCE == ENABLED
         break;
 
-#if PARACHUTE == ENABLED
-    case MAV_CMD_DO_PARACHUTE:                          // Mission command to configure or release parachute
-        do_parachute(cmd);
-        break;
-#endif
-
 #if NAV_GUIDED == ENABLED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
         do_guided_limits(cmd);
@@ -679,7 +673,6 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
-    case MAV_CMD_DO_PARACHUTE:  // assume parachute was released successfully
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
@@ -1392,29 +1385,6 @@ void Copter::ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
-
-#if PARACHUTE == ENABLED
-// do_parachute - configure or release parachute
-void Copter::ModeAuto::do_parachute(const AP_Mission::Mission_Command& cmd)
-{
-    switch (cmd.p1) {
-        case PARACHUTE_DISABLE:
-            copter.parachute.enabled(false);
-            Log_Write_Event(DATA_PARACHUTE_DISABLED);
-            break;
-        case PARACHUTE_ENABLE:
-            copter.parachute.enabled(true);
-            Log_Write_Event(DATA_PARACHUTE_ENABLED);
-            break;
-        case PARACHUTE_RELEASE:
-            copter.parachute_release();
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-#endif
 
 #if WINCH_ENABLED == ENABLED
 // control winch based on mission command
