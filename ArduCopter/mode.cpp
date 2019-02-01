@@ -160,6 +160,12 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             break;
 #endif
 
+#if MODE_HOLD_ULTRA_ENABLED == ENABLED
+        case HOLD_ULTRA:
+            ret = &mode_hold_ultra;
+            break;
+#endif
+
         default:
             break;
     }

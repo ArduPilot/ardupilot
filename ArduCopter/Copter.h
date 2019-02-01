@@ -970,6 +970,10 @@ private:
     ModeZigZag mode_zigzag;
 #endif
 
+#if MODE_HOLD_ULTRA_ENABLED == ENABLED
+    ModeHoldUltra mode_hold_ultra;
+#endif
+
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
