@@ -105,3 +105,6 @@ Parameters.wiki
 apm.pdef.xml
 parameters.edn
 
+ArduCopter/afs_copter.cpp
+ArduCopter/mode.h.bak
+ArduCopter/defines.h.bak

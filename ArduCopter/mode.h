@@ -1191,3 +1191,32 @@ private:
 
     uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
 };
+
+class ModeHoldUltra : public ModeGuided {
+
+public:
+
+    // inherit constructor
+    using Copter::ModeGuided::Mode;
+
+	// Init und run werden überschrieben:
+    bool init(bool ignore_checks) override;
+    void run() override;
+
+	// Punkte, die erforderlich sind
+	// z.B. dass Ultraschall da ist
+    bool requires_GPS() const override { return false; } // Ronny auf false gesetzt
+	bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "HOLD-ULTRA"; }
+    const char *name4() const override { return "HU"; }
+    // uint32_t wp_distance() const override;
+    // int32_t wp_bearing() const override;
+    // bool get_wp(Location &loc) override;
+
+    // uint32_t last_log_ms;   // system time of last time desired velocity was logging
+};
