@@ -207,8 +207,9 @@ void Mode::set_desired_location(const struct Location& destination, float next_l
     if (!is_equal(next_leg_bearing_cd, MODE_NEXT_HEADING_UNKNOWN)) {
         const float curr_leg_bearing_cd = get_bearing_cd(_origin, _destination);
         const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
-        if (is_zero(turn_angle_cd)) {
-            // if not turning can continue at full speed
+        if (fabsf(turn_angle_cd) < 10.0f) {
+            // if turning less than 0.1 degrees vehicle can continue at full speed
+            // we use 0.1 degrees instead of zero to avoid divide by zero in calcs below
             _desired_speed_final = _desired_speed;
         } else if (rover.use_pivot_steering_at_next_WP(turn_angle_cd)) {
             // pivoting so we will stop
