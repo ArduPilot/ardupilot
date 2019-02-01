@@ -88,23 +88,10 @@ void Sub::Log_Write_MotBatt()
     logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
-struct PACKED log_Event {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t id;
-};
-
 // Wrote an event packet
-void Sub::Log_Write_Event(uint8_t id)
+void Sub::Log_Write_Event(Log_Event id)
 {
-    if (should_log(MASK_LOG_ANY)) {
-        struct log_Event pkt = {
-            LOG_PACKET_HEADER_INIT(LOG_EVENT_MSG),
-            time_us  : AP_HAL::micros64(),
-            id       : id
-        };
-        logger.WriteCriticalBlock(&pkt, sizeof(pkt));
-    }
+    logger.Write_Event(id);
 }
 
 struct PACKED log_Data_Int16t {
@@ -326,7 +313,7 @@ void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
-void Sub::Log_Write_Event(uint8_t id) {}
+void Sub::Log_Write_Event(Log_Event id) {}
 void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
 void Sub::Log_Write_Data(uint8_t id, int16_t value) {}
