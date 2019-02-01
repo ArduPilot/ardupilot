@@ -593,9 +593,9 @@ GCS_Copter &Copter::Mode::gcs()
     return copter.gcs();
 }
 
-void Copter::Mode::Log_Write_Event(uint8_t id)
+void Copter::Mode::Log_Write_Event(Log_Event id)
 {
-    return copter.Log_Write_Event(id);
+    return copter.logger.Write_Event(id);
 }
 
 void Copter::Mode::set_throttle_takeoff()
