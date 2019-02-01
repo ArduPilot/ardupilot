@@ -189,7 +189,7 @@ protected:
     bool set_mode(control_mode_t mode, mode_reason_t reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
-    void Log_Write_Event(uint8_t id);
+    void Log_Write_Event(Log_Event id);
     void set_throttle_takeoff(void);
     float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
