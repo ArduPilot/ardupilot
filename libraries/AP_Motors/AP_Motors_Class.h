@@ -54,7 +54,10 @@ public:
         MOTOR_FRAME_TYPE_ATAIL = 5,
         MOTOR_FRAME_TYPE_PLUSREV = 6, // plus with reversed motor direction
         MOTOR_FRAME_TYPE_Y6B = 10,
-        MOTOR_FRAME_TYPE_Y6F = 11 // for FireFlyY6
+        MOTOR_FRAME_TYPE_Y6F = 11, // for FireFlyY6
+        MOTOR_FRAME_TYPE_BF_X = 12, // X frame, betaflight ordering
+        MOTOR_FRAME_TYPE_DJI_X = 13, // X frame, DJI ordering
+        MOTOR_FRAME_TYPE_CW_X = 14, // X frame, clockwise ordering
     };
 
     // Constructor
