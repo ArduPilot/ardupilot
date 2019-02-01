@@ -23,6 +23,7 @@
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MAG3110.h"
+#include "AP_Compass_RM3100.h"
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 
