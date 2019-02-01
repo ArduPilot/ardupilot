@@ -25,6 +25,23 @@
 
 extern const AP_HAL::HAL& hal;
 
+
+/*
+  use just one area per storage type for boards with 4k of
+  storage. Use larger areas for other boards
+ */
+#if HAL_STORAGE_SIZE >= 16384
+#define STORAGE_NUM_AREAS 14
+#elif HAL_STORAGE_SIZE >= 15360
+#define STORAGE_NUM_AREAS 11
+#elif HAL_STORAGE_SIZE >= 8192
+#define STORAGE_NUM_AREAS 10
+#elif HAL_STORAGE_SIZE >= 4096
+#define STORAGE_NUM_AREAS 4
+#else
+#error "Unsupported storage size"
+#endif
+
 /*
   the layouts below are carefully designed to ensure backwards
   compatibility with older firmwares
@@ -35,7 +52,7 @@ extern const AP_HAL::HAL& hal;
   On PX4v1 this gives 309 waypoints, 30 rally points and 52 fence points
   On Pixhawk this gives 724 waypoints, 50 rally points and 84 fence points
  */
-const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
+const StorageManager::StorageArea StorageManager::layout[] = {
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 /*
   layout for copter.

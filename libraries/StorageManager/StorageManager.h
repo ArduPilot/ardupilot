@@ -22,21 +22,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-/*
-  use just one area per storage type for boards with 4k of
-  storage. Use larger areas for other boards
- */
-#if HAL_STORAGE_SIZE >= 16384
-#define STORAGE_NUM_AREAS 14
-#elif HAL_STORAGE_SIZE >= 15360
-#define STORAGE_NUM_AREAS 11
-#elif HAL_STORAGE_SIZE >= 8192
-#define STORAGE_NUM_AREAS 10
-#elif HAL_STORAGE_SIZE >= 4096
-#define STORAGE_NUM_AREAS 4
-#else
-#error "Unsupported storage size"
-#endif
 
 /*
   The StorageManager holds the layout of non-volatile storeage
@@ -64,7 +49,7 @@ private:
     };
 
     // available layouts
-    static const StorageArea layout[STORAGE_NUM_AREAS];
+    static const StorageArea layout[];
 
 };
 
