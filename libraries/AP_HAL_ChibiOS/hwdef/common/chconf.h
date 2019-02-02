@@ -406,7 +406,7 @@
  * @note    The default is @p TRUE.
  */
 #if !defined(CH_CFG_USE_PIPES)
-#define CH_CFG_USE_PIPES                    TRUE
+#define CH_CFG_USE_PIPES                    FALSE
 #endif
 
 /**
@@ -490,7 +490,7 @@
  * @brief   Enables factory for Pipes.
  */
 #if !defined(CH_CFG_FACTORY_PIPES) || defined(__DOXYGEN__)
-#define CH_CFG_FACTORY_PIPES                TRUE
+#define CH_CFG_FACTORY_PIPES                FALSE
 #endif
 
 /** @} */
