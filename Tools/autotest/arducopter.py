@@ -143,7 +143,8 @@ class AutoTestCopter(AutoTest):
                 alt_min=30,
                 takeoff_throttle=1700,
                 require_absolute=True,
-                mode="STABILIZE"):
+                mode="STABILIZE",
+                timeout=30):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
         self.change_mode(mode)
@@ -153,18 +154,19 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1000)
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
-        self.wait_for_alt(alt_min=alt_min)
+        self.wait_for_alt(alt_min=alt_min, timeout=timeout)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def wait_for_alt(self, alt_min=30):
+    def wait_for_alt(self, alt_min=30, timeout=30):
         """Wait for altitude to be reached."""
         m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         alt = m.relative_alt / 1000.0 # mm -> m
         if alt < alt_min:
             self.wait_altitude(alt_min - 1,
                                (alt_min + 5),
-                               relative=True)
+                               relative=True,
+                               timeout=timeout)
 
     def land(self, timeout=60):
         """Land the quad."""
@@ -1020,6 +1022,72 @@ class AutoTestCopter(AutoTest):
         self.progress("CIRCLE OK for %u seconds" % holdtime)
 
         self.do_RTL()
+
+    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10):
+        '''wait for an attitude (degrees)'''
+        if desroll is None and despitch is None:
+            raise ValueError("despitch or desroll must be supplied")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 2:
+                raise AutoTestTimeoutException("Failed to achieve attitude")
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+            roll_deg = math.degrees(m.roll)
+            pitch_deg = math.degrees(m.pitch)
+            self.progress("wait_att: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (roll_deg, desroll, pitch_deg, despitch))
+            if desroll is not None and abs(roll_deg - desroll) > tolerance:
+                continue
+            if despitch is not None and abs(pitch_deg - despitch) > tolerance:
+                continue
+            return
+
+    def fly_flip(self):
+        ex = None
+        try:
+            self.mavproxy.send("set streamrate -1\n")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
+
+            self.takeoff(20)
+            self.hover()
+            old_speedup = self.get_parameter("SIM_SPEEDUP")
+            self.set_parameter('SIM_SPEEDUP', 1)
+            self.progress("Flipping in roll")
+            self.set_rc(1, 1700)
+            self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
+            self.wait_attitude(despitch=0, desroll=45, tolerance=30)
+            self.wait_attitude(despitch=0, desroll=90, tolerance=30)
+            self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
+            self.progress("Waiting for level")
+            self.set_rc(1, 1500) # can't change quickly enough!
+            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+
+            self.progress("Regaining altitude")
+            self.change_mode('STABILIZE')
+            self.set_rc(3, 1800)
+            self.wait_for_alt(20)
+            self.hover()
+
+            self.progress("Flipping in pitch")
+            self.set_rc(2, 1700)
+            self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
+            self.wait_attitude(despitch=45, desroll=0, tolerance=30)
+            # can't check roll here as it flips from 0 to -180..
+            self.wait_attitude(despitch=90, tolerance=30)
+            self.wait_attitude(despitch=-45, tolerance=30)
+            self.progress("Waiting for level")
+            self.set_rc(1, 1500) # can't change quickly enough!
+            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+            self.set_parameter('SIM_SPEEDUP', old_speedup)
+            self.change_mode('RTL')
+            self.mav.motors_disarmed_wait()
+        except Exception as e:
+            ex = e
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
+        sr = self.sitl_streamrate()
+        self.mavproxy.send("set streamrate %u\n" % sr)
+        if ex is not None:
+            raise ex
 
     # fly_optical_flow_limits - test EKF navigation limiting
     def fly_optical_flow_limits(self):
@@ -2684,6 +2752,10 @@ class AutoTestCopter(AutoTest):
             ("MotorFail",
              "Fly motor failure test",
              self.fly_motor_fail),
+
+            ("Flip",
+             "Fly Flip Mode",
+             self.fly_flip),
 
             ("CopterMission",
              "Fly copter mission",
