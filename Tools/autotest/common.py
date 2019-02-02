@@ -1791,6 +1791,21 @@ class AutoTest(ABC):
     def rate_to_interval_us(self, rate):
         return 1/float(rate)*1000000.0
 
+    def set_message_rate_hz(self, id, rate_hz):
+        '''set a message rate in Hz; 0 for original, -1 to disable'''
+        if rate_hz == 0 or rate_hz == -1:
+            set_interval = rate_hz
+        else:
+            set_interval = self.rate_to_interval_us(rate_hz)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                     id,
+                     set_interval,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+
     def test_rate(self, desc, in_rate, expected_rate):
         self.progress("###### %s" % desc)
         self.progress("Setting rate to %u" % in_rate)
