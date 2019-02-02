@@ -483,7 +483,10 @@ def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
     f.write('#define %s_MCUCONF\n' % get_config('MCU'))
-    f.write('#define %s\n\n' % get_config('MCU', 1))
+    mcu_subtype = get_config('MCU', 1)
+    if mcu_subtype.endswith('xx'):
+        f.write('#define %s_MCUCONF\n\n' % mcu_subtype[:-2])
+    f.write('#define %s\n\n' % mcu_subtype)
     f.write('// crystal frequency\n')
     f.write('#define STM32_HSECLK %sU\n\n' % get_config('OSCILLATOR_HZ'))
     f.write('// UART used for stdout (printf)\n')
