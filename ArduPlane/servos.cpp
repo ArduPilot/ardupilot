@@ -22,7 +22,7 @@
 /*****************************************
 * Throttle slew limit
 *****************************************/
-void Plane::throttle_slew_limit(void)
+void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
     if (control_mode==AUTO) {
@@ -34,9 +34,7 @@ void Plane::throttle_slew_limit(void)
     }
     // if slew limit rate is set to zero then do not slew limit
     if (slewrate) {                   
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttle, slewrate, G_Dt);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleLeft, slewrate, G_Dt);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_throttleRight, slewrate, G_Dt);
+        SRV_Channels::limit_slew_rate(func, slewrate, G_Dt);
     }
 }
 
@@ -590,6 +588,8 @@ void Plane::servos_twin_engine_mix(void)
     } else {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
+        throttle_slew_limit(SRV_Channel::k_throttleLeft);
+        throttle_slew_limit(SRV_Channel::k_throttleRight);
     }
 }
 
@@ -675,7 +675,7 @@ void Plane::set_servos(void)
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
          *  control is automatic */
-        throttle_slew_limit();
+        throttle_slew_limit(SRV_Channel::k_throttle);
     }
 
     if (!arming.is_armed()) {
