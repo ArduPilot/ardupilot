@@ -185,11 +185,9 @@ void AnalogSource::_add_value(float v, float vcc5V)
 /*
   callback from ADC driver when sample buffer is filled
  */
-void AnalogIn::adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n)
+void AnalogIn::adccallback(ADCDriver *adcp)
 {
-    if (buffer != samples) {
-        return;
-    }
+    const adcsample_t *buffer = samples;
     for (uint8_t i = 0; i < ADC_DMA_BUF_DEPTH; i++) {
         for (uint8_t j = 0; j < ADC_GRP1_NUM_CHANNELS; j++) { 
             sample_sum[j] += *buffer++;

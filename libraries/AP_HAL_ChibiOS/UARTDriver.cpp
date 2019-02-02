@@ -226,13 +226,13 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             //setup Rx DMA
             if(!_device_initialised) {
                 if(sdef.dma_rx) {
-                    rxdma = STM32_DMA_STREAM(sdef.dma_rx_stream_id);
+                    osalDbgAssert(rxdma == nullptr, "double DMA allocation");
                     chSysLock();
-                    bool dma_allocated = dmaStreamAllocate(rxdma,
-                                               12,  //IRQ Priority
-                                               (stm32_dmaisr_t)rxbuff_full_irq,
-                                               (void *)this);
-                    osalDbgAssert(!dma_allocated, "stream already allocated");
+                    rxdma = dmaStreamAllocI(sdef.dma_rx_stream_id,
+                                            12,  //IRQ Priority
+                                            (stm32_dmaisr_t)rxbuff_full_irq,
+                                            (void *)this);
+                    osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
 #if defined(STM32F7)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
@@ -315,13 +315,12 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 {
 #if HAL_USE_SERIAL == TRUE
     osalDbgAssert(txdma == nullptr, "double DMA allocation");
-    txdma = STM32_DMA_STREAM(sdef.dma_tx_stream_id);
     chSysLock();
-    bool dma_allocated = dmaStreamAllocate(txdma,
-                                           12,  //IRQ Priority
-                                           (stm32_dmaisr_t)tx_complete,
-                                           (void *)this);
-    osalDbgAssert(!dma_allocated, "stream already allocated");
+    txdma = dmaStreamAllocI(sdef.dma_tx_stream_id,
+                            12,  //IRQ Priority
+                            (stm32_dmaisr_t)tx_complete,
+                            (void *)this);
+    osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
 #if defined(STM32F7)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
@@ -334,7 +333,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
-    dmaStreamRelease(txdma);
+    dmaStreamFreeI(txdma);
     txdma = nullptr;
     chSysUnlock();
 }
