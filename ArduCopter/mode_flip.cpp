@@ -32,13 +32,6 @@
 #define FLIP_PITCH_BACK      1      // used to set flip_dir
 #define FLIP_PITCH_FORWARD  -1      // used to set flip_dir
 
-// FIXME? these should be instance variables?
-FlipState flip_state;               // current state of flip
-control_mode_t   flip_orig_control_mode;   // flight mode when flip was initated
-uint32_t  flip_start_time;          // time since flip began
-int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
-int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
-
 // flip_init - initialise flip controller
 bool Copter::ModeFlip::init(bool ignore_checks)
 {
@@ -66,139 +59,137 @@ bool Copter::ModeFlip::init(bool ignore_checks)
     }
 
     // capture original flight mode so that we can return to it after completion
-    flip_orig_control_mode = copter.control_mode;
+    orig_control_mode = copter.control_mode;
 
     // initialise state
-    flip_state = Flip_Start;
-    flip_start_time = millis();
+    _state = Flip_Start;
+    start_time_ms = millis();
 
-    flip_roll_dir = flip_pitch_dir = 0;
+    roll_dir = pitch_dir = 0;
 
     // choose direction based on pilot's roll and pitch sticks
     if (channel_pitch->get_control_in() > 300) {
-        flip_pitch_dir = FLIP_PITCH_BACK;
+        pitch_dir = FLIP_PITCH_BACK;
     } else if (channel_pitch->get_control_in() < -300) {
-        flip_pitch_dir = FLIP_PITCH_FORWARD;
+        pitch_dir = FLIP_PITCH_FORWARD;
     } else if (channel_roll->get_control_in() >= 0) {
-        flip_roll_dir = FLIP_ROLL_RIGHT;
+        roll_dir = FLIP_ROLL_RIGHT;
     } else {
-        flip_roll_dir = FLIP_ROLL_LEFT;
+        roll_dir = FLIP_ROLL_LEFT;
     }
 
     // log start of flip
     Log_Write_Event(DATA_FLIP_START);
 
     // capture current attitude which will be used during the Flip_Recovery stage
-    float angle_max = copter.aparm.angle_max;
-    flip_orig_attitude.x = constrain_float(ahrs.roll_sensor, -angle_max, angle_max);
-    flip_orig_attitude.y = constrain_float(ahrs.pitch_sensor, -angle_max, angle_max);
-    flip_orig_attitude.z = ahrs.yaw_sensor;
+    const float angle_max = copter.aparm.angle_max;
+    orig_attitude.x = constrain_float(ahrs.roll_sensor, -angle_max, angle_max);
+    orig_attitude.y = constrain_float(ahrs.pitch_sensor, -angle_max, angle_max);
+    orig_attitude.z = ahrs.yaw_sensor;
 
     return true;
 }
 
-// flip_run - runs the flip controller
+// run - runs the flip controller
 // should be called at 100hz or more
 void Copter::ModeFlip::run()
 {
-    float throttle_out;
-    float recovery_angle;
-
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - flip_start_time) > FLIP_TIMEOUT_MS)) {
-        flip_state = Flip_Abandon;
+    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+        _state = Flip_Abandon;
     }
 
     // get pilot's desired throttle
-    throttle_out = get_pilot_desired_throttle(channel_throttle->get_control_in());
+    float throttle_out = get_pilot_desired_throttle(channel_throttle->get_control_in());
 
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition
     int32_t flip_angle;
 
-    if (flip_roll_dir != 0) {
-        flip_angle = ahrs.roll_sensor * flip_roll_dir;
+    if (roll_dir != 0) {
+        flip_angle = ahrs.roll_sensor * roll_dir;
     } else {
-        flip_angle = ahrs.pitch_sensor * flip_pitch_dir;
+        flip_angle = ahrs.pitch_sensor * pitch_dir;
     }
 
     // state machine
-    switch (flip_state) {
+    switch (_state) {
 
     case Flip_Start:
         // under 45 degrees request 400deg/sec roll or pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * roll_dir, FLIP_ROTATION_RATE * pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
 
         // beyond 45deg lean angle move to next stage
         if (flip_angle >= 4500) {
-            if (flip_roll_dir != 0) {
+            if (roll_dir != 0) {
                 // we are rolling
-            flip_state = Flip_Roll;
+            _state = Flip_Roll;
             } else {
                 // we are pitching
-                flip_state = Flip_Pitch_A;
+                _state = Flip_Pitch_A;
         }
         }
         break;
 
     case Flip_Roll:
         // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * flip_roll_dir, 0.0, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(FLIP_ROTATION_RATE * roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // beyond -90deg move on to recovery
         if ((flip_angle < 4500) && (flip_angle > -9000)) {
-            flip_state = Flip_Recover;
+            _state = Flip_Recover;
         }
         break;
 
     case Flip_Pitch_A:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, FLIP_ROTATION_RATE * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // check roll for inversion
         if ((labs(ahrs.roll_sensor) > 9000) && (flip_angle > 4500)) {
-            flip_state = Flip_Pitch_B;
+            _state = Flip_Pitch_B;
         }
         break;
 
     case Flip_Pitch_B:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * flip_pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0, FLIP_ROTATION_RATE * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
         // check roll for inversion
         if ((labs(ahrs.roll_sensor) < 9000) && (flip_angle > -4500)) {
-            flip_state = Flip_Recover;
+            _state = Flip_Recover;
         }
         break;
 
-    case Flip_Recover:
+    case Flip_Recover: {
         // use originally captured earth-frame angle targets to recover
-        attitude_control->input_euler_angle_roll_pitch_yaw(flip_orig_attitude.x, flip_orig_attitude.y, flip_orig_attitude.z, false);
+        attitude_control->input_euler_angle_roll_pitch_yaw(orig_attitude.x, orig_attitude.y, orig_attitude.z, false);
 
         // increase throttle to gain any lost altitude
         throttle_out += FLIP_THR_INC;
 
-        if (flip_roll_dir != 0) {
+        float recovery_angle;
+        if (roll_dir != 0) {
             // we are rolling
-            recovery_angle = fabsf(flip_orig_attitude.x - (float)ahrs.roll_sensor);
+            recovery_angle = fabsf(orig_attitude.x - (float)ahrs.roll_sensor);
         } else {
             // we are pitching
-            recovery_angle = fabsf(flip_orig_attitude.y - (float)ahrs.pitch_sensor);
+            recovery_angle = fabsf(orig_attitude.y - (float)ahrs.pitch_sensor);
         }
 
         // check for successful recovery
         if (fabsf(recovery_angle) <= FLIP_RECOVERY_ANGLE) {
             // restore original flight mode
-            if (!copter.set_mode(flip_orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
+            if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
                 // this should never happen but just in case
                 copter.set_mode(STABILIZE, MODE_REASON_UNKNOWN);
             }
@@ -206,10 +197,10 @@ void Copter::ModeFlip::run()
             Log_Write_Event(DATA_FLIP_END);
         }
         break;
-
+    }
     case Flip_Abandon:
         // restore original flight mode
-        if (!copter.set_mode(flip_orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
+        if (!copter.set_mode(orig_control_mode, MODE_REASON_FLIP_COMPLETE)) {
             // this should never happen but just in case
             copter.set_mode(STABILIZE, MODE_REASON_UNKNOWN);
         }
