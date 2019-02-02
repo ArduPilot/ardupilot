@@ -588,8 +588,21 @@ protected:
 private:
 
     // Flip
-    Vector3f flip_orig_attitude;         // original vehicle attitude before flip
+    Vector3f orig_attitude;         // original vehicle attitude before flip
 
+    enum FlipState {
+        Flip_Start,
+        Flip_Roll,
+        Flip_Pitch_A,
+        Flip_Pitch_B,
+        Flip_Recover,
+        Flip_Abandon
+    };
+    FlipState _state;               // current state of flip
+    control_mode_t   orig_control_mode;   // flight mode when flip was initated
+    uint32_t  start_time_ms;          // time since flip began
+    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
