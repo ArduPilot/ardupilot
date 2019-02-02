@@ -6,7 +6,7 @@
 * Init and run calls for zigzag flight mode
 */
 
-#define ZIGZAG_WP_RADIUS_CM 300 // Ronny später umbenennen
+#define ZIGZAG_WP_RADIUS_CM 300 // DOTO: Rename
 
 // initialise rect controller
 bool Copter::ModeRect::init(bool ignore_checks)

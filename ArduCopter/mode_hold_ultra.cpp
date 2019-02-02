@@ -1,15 +1,14 @@
 #include "Copter.h"
 
 /*
- * Init and run calls for stabilize flight mode
+ * Init and run calls for Hold Ultra
  */
 
 // stabilize_init - initialise stabilize controller
 bool Copter::ModeHoldUltra::init(bool ignore_checks)
 {
-    // Ronny: Hier kann ich die Klasse initialisieren
-	// und angeben, was zum einschalten notwendig ist.
-	// Wenn false zurück gegeben wird, dann wird der Mode nicht eingeschaltet
+	// Define here, what kind of modes are nessesary to start this flightmode
+	// Give back false, if cannot start this mode
 	// if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     /*if (motors->armed() && ap.land_complete && !copter.flightmode->has_manual_throttle() &&
             (get_pilot_desired_throttle(channel_throttle->get_control_in()) > get_non_takeoff_throttle())) {
@@ -17,7 +16,7 @@ bool Copter::ModeHoldUltra::init(bool ignore_checks)
     }
 	*/
 	
-	// Hie könnte man einen 1kHz timer einschalten:
+	// Start 1 khz timer, if nessesary:
 	// hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_update));
     return true;
 }
@@ -48,7 +47,7 @@ void Copter::ModeHoldUltra::run()
     update_simple_mode();
 	*/
 	
-	// Piloten-Eingabe auslesen:
+	// Read out pilot's input
 	/*
 
     // convert pilot input to lean angles
@@ -61,8 +60,7 @@ void Copter::ModeHoldUltra::run()
     pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
 	*/
 	
-	// Ronny: UND HIER WIRD DIE STEUERUNG ÜBERNOMMEN DIE ICH ÜBERNEHMEN MUSS !!!!!!
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	// Here give the control commands to the system
 	
     // call attitude controller
 	// Lage in allen drei Achsen:
@@ -71,6 +69,5 @@ void Copter::ModeHoldUltra::run()
     // body-frame rate controller is run directly from 100hz loop
 
     // output pilot's throttle
-	// Gas:
     // attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
 }

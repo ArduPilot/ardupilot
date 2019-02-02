@@ -1199,13 +1199,10 @@ public:
     // inherit constructor
     using Copter::ModeGuided::Mode;
 
-	// Init und run werden überschrieben:
     bool init(bool ignore_checks) override;
     void run() override;
 
-	// Punkte, die erforderlich sind
-	// z.B. dass Ultraschall da ist
-    bool requires_GPS() const override { return false; } // Ronny auf false gesetzt
+    bool requires_GPS() const override { return false; } // Set to false
 	bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }

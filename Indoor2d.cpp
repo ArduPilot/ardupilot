@@ -10,12 +10,11 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-
 void setup()
 // The setup() function is called when the board boots
 {
-    hal.console->printf("Hallo, Ronny ist hier\n");
-	gcs().send_text(MAV_SEVERITY_CRITICAL, "hello ronny ist hier! %5.3f", (double)3.142f);
+    hal.console->printf("Initialize Indoor 2d\n");
+	gcs().send_text(MAV_SEVERITY_CRITICAL, "Initialize Indoor 2d! %5.3f", (double)3.142f);
 }
 
 // stabilize_init - initialise stabilize controller
@@ -57,15 +56,15 @@ bool Indoor2d::ModeHold2DIndoor::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
     // output pilots throttle
-	// Ronny: Hier könnte man das Gas manuell einstellen !!!! Huraaaa Hier kann ich eingreifen
+	// Control the throttle here !!!!!
     attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
 	
-	// Der Ultraschall-Pin könnte hier in einer Dauerschleife abgefragt werden, bis er anspricht:
-	// Die Zeit, die vergangen ist, wird mit dieser Funktion in Microsekunden abgefragt:
+	// Gives back the time since start
+	// You can here control the us time
 	hal.scheduler->micros();
 	hal.scheduler->millis();
 	
-	// Dies ist ein Sleep();
+	// This is a Sleep();
 	// hal.scheduler->delay() 
 	// hal.scheduler->delay_microseconds() 
 	// hal.gpio->pinMode(), hal.gpio->read() and hal.gpio->write() for accessing GPIO pins	
@@ -75,8 +74,7 @@ bool Indoor2d::ModeHold2DIndoor::run()
 hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&ModeHold2DIndoor::_update));
 
 void ModeHold2DIndoor::_update()
-// Dieser Timer wird 100 x pro Sekunde angesprungen
-// Mit 1 KHz also alle Millisekunden
+// 1 khz timer
 {
 	
 }
