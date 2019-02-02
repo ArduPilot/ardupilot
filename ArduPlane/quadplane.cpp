@@ -1064,7 +1064,8 @@ void QuadPlane::control_loiter()
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode) {
+    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
+        plane.arming.get_rudder_arming_type() != AP_Arming::ARMING_RUDDER_DISABLED) {
         // the user may be trying to disarm
         return 0;
     }
