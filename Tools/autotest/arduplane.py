@@ -730,10 +730,11 @@ class AutoTestPlane(AutoTest):
                          lambda: self.fly_mission(
                              os.path.join(testdir, "ap1.txt")))
 
-    def set_rc_default(self):
-        super(AutoTestPlane, self).set_rc_default()
-        self.set_rc(3, 1000)
-        self.set_rc(8, 1800)
+    def rc_defaults(self):
+        ret = super(AutoTestPlane, self).rc_defaults()
+        ret[3] = 1000
+        ret[8] = 1800
+        return ret
 
     def default_mode(self):
         return "MANUAL"
