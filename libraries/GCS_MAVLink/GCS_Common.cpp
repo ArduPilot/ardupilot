@@ -2910,6 +2910,37 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t* msg)
     }
 }
 
+// allow override of RC channel values for HIL or for complete GCS
+// control of switch position and RC PWM values.
+void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t *msg)
+{
+    if(msg->sysid != sysid_my_gcs()) {
+        return; // Only accept control from our gcs
+    }
+
+    const uint32_t tnow = AP_HAL::millis();
+
+    mavlink_rc_channels_override_t packet;
+    mavlink_msg_rc_channels_override_decode(msg, &packet);
+
+    RC_Channels::set_override(0, packet.chan1_raw, tnow);
+    RC_Channels::set_override(1, packet.chan2_raw, tnow);
+    RC_Channels::set_override(2, packet.chan3_raw, tnow);
+    RC_Channels::set_override(3, packet.chan4_raw, tnow);
+    RC_Channels::set_override(4, packet.chan5_raw, tnow);
+    RC_Channels::set_override(5, packet.chan6_raw, tnow);
+    RC_Channels::set_override(6, packet.chan7_raw, tnow);
+    RC_Channels::set_override(7, packet.chan8_raw, tnow);
+    RC_Channels::set_override(8, packet.chan9_raw, tnow);
+    RC_Channels::set_override(9, packet.chan10_raw, tnow);
+    RC_Channels::set_override(10, packet.chan11_raw, tnow);
+    RC_Channels::set_override(11, packet.chan12_raw, tnow);
+    RC_Channels::set_override(12, packet.chan13_raw, tnow);
+    RC_Channels::set_override(13, packet.chan14_raw, tnow);
+    RC_Channels::set_override(14, packet.chan15_raw, tnow);
+    RC_Channels::set_override(15, packet.chan16_raw, tnow);
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3066,8 +3097,11 @@ void GCS_MAVLINK::handle_common_message(mavlink_message_t *msg)
     case MAVLINK_MSG_ID_SYSTEM_TIME:
         handle_system_time_message(msg);
         break;
-    }
 
+    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
+        handle_rc_channels_override(msg);
+        break;
+    }
 }
 
 void GCS_MAVLINK::handle_common_mission_message(mavlink_message_t *msg)
