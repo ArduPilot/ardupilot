@@ -306,11 +306,9 @@ void AP_AHRS_NavEKF::update_SITL(void)
     const AP_InertialSensor &_ins = AP::ins();
 
     if (active_EKF_type() == EKF_TYPE_SITL) {
-        roll  = radians(fdm.rollDeg);
-        pitch = radians(fdm.pitchDeg);
-        yaw   = radians(fdm.yawDeg);
-
         fdm.quaternion.rotation_matrix(_dcm_matrix);
+        _dcm_matrix = _dcm_matrix * get_rotation_vehicle_body_to_autopilot_body();
+        _dcm_matrix.to_euler(&roll, &pitch, &yaw);
 
         update_cd_values();
         update_trig();
