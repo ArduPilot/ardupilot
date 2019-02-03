@@ -633,6 +633,22 @@ class AutoTest(ABC):
         _defaults = self.rc_defaults()
         self.set_rc_from_map(_defaults)
 
+    def check_rc_defaults(self):
+        """Ensure all rc outputs are at defaults"""
+        _defaults = self.rc_defaults()
+        m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
+        if m is None:
+            raise NotAchievedException("No RC_CHANNELS messages?!")
+        need_set = {}
+        for chan in _defaults:
+            default_value = _defaults[chan]
+            current_value = getattr(m, "chan" + str(chan) + "_raw")
+            if default_value != current_value:
+                self.progress("chan=%u needs resetting is=%u want=%u" %
+                              (chan, current_value, default_value))
+                need_set[chan] = default_value
+        self.set_rc_from_map(need_set)
+
     def set_rc(self, chan, pwm, timeout=2000):
         """Setup a simulated RC control to a PWM value"""
         self.drain_mav()
@@ -1503,6 +1519,7 @@ class AutoTest(ABC):
         self.context_push()
 
         try:
+            self.check_rc_defaults()
             self.change_mode(self.default_mode())
             test_function()
         except Exception as e:
