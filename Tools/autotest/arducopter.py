@@ -2574,9 +2574,10 @@ class AutoTestCopter(AutoTest):
     def default_mode(self):
         return "STABILIZE"
 
-    def set_rc_default(self):
-        super(AutoTestCopter, self).set_rc_default()
-        self.set_rc(3, 1000)
+    def rc_defaults(self):
+        ret = super(AutoTestCopter, self).rc_defaults()
+        ret[3] = 1000
+        return ret
 
     def tests(self):
         '''return list of all tests'''
@@ -2742,11 +2743,11 @@ class AutoTestHeli(AutoTestCopter):
                                      AVCHOME.heading)
         self.frame = 'heli'
 
-    def set_rc_default(self):
-        super(AutoTestCopter, self).set_rc_default()
-        self.progress("Lowering rotor speed")
-        self.set_rc(8, 1000)
-        self.set_rc(3, 1000) # collective
+    def rc_defaults(self):
+        ret = super(AutoTestHeli, self).rc_defaults()
+        ret[8] = 1000
+        ret[3] = 1000 # collective
+        return ret
 
     def tests(self):
         '''return list of all tests'''
