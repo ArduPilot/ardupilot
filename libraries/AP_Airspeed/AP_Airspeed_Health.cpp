@@ -6,9 +6,7 @@
 void AP_Airspeed::check_sensor_failures()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if(AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options) {
-            check_sensor_ahrs_wind_max_failures(i);
-        }
+        check_sensor_ahrs_wind_max_failures(i);
     }
 }
 
