@@ -125,6 +125,12 @@ public:
     }
     float get_EAS2TAS(void) const { return get_EAS2TAS(primary); }
 
+    // get the failure health probability
+    float get_health_failure_probability(uint8_t i) const {
+        return state[i].failures.health_probability;
+    }
+    float get_health_failure_probability(void) const { return get_health_failure_probability(primary); }
+
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
