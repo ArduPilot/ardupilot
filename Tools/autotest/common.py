@@ -602,10 +602,36 @@ class AutoTest(ABC):
         self.progress("num_wp: %d" % num_wp)
         return num_wp
 
+    def rc_defaults(self):
+        return {
+            1: 1500,
+            2: 1500,
+            3: 1500,
+            4: 1500,
+            5: 1500,
+            6: 1500,
+            7: 1500,
+            8: 1500,
+            9: 1500,
+            10: 1500,
+            11: 1500,
+            12: 1500,
+            13: 1500,
+            14: 1500,
+            15: 1500,
+            16: 1500,
+        }
+
+    def set_rc_from_map(self, _map):
+        for chan in _map:
+            value = _map[chan]
+            self.set_rc(chan, value)
+#            self.mavproxy.send('rc %u value\n' % (chan, value))
+
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
-        for chan in range(1, 16):
-            self.mavproxy.send('rc %u 1500\n' % chan)
+        _defaults = self.rc_defaults()
+        self.set_rc_from_map(_defaults)
 
     def set_rc(self, chan, pwm, timeout=2000):
         """Setup a simulated RC control to a PWM value"""
