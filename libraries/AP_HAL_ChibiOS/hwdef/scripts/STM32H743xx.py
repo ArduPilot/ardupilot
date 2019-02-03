@@ -1048,7 +1048,7 @@ AltFunction_map = {
 	"PH14:FDCAN1_RX"    	:	9,
 	"PH14:FMC_D22"      	:	12,
 	"PH14:LCD_G3"       	:	14,
-	"PH14:TIM8_μCH2N"  	:	3,
+    "PH14:TIM8_UCH2N"  		:	3,
 	"PH14:UART4_RX"     	:	8,
 	"PH15:DCMI_D11"     	:	13,
 	"PH15:EVENT-OUT"    	:	15,
