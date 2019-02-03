@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: RSC_MODE
     // @DisplayName: Rotor Speed Control Mode
     // @Description: Determines the method of rotor speed control
-    // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve
+    // @Values: 1:Ch8 Input, 2:SetPoint, 3:Throttle Curve, 4:Governor
     // @User: Standard
     AP_GROUPINFO("RSC_MODE", 8, AP_MotorsHeli, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
 
@@ -192,6 +192,38 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("RSC_THRCRV_100", 24, AP_MotorsHeli, _rsc_thrcrv[4], AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT),
+
+    // @Param: RSC_GOV_SET
+    // @DisplayName: Governor RPM Setting
+    // @Description: Main rotor rpm setting that governor maintains when engaged
+    // @Range: 800 3500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("RSC_GOV_SET", 25, AP_MotorsHeli, _rsc_governor_setpoint, AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT),
+    
+    // @Param: RSC_GOV_DISGAG
+    // @DisplayName: Throttle Percentage for Governor Disengage
+    // @Description: Percentage of throttle where the governor will disenage to allow return to flight idle power
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RSC_GOV_DISGAG", 26, AP_MotorsHeli, _rsc_governor_disengage, AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE),
+
+    // @Param: RSC_GOV_DROOP
+    // @DisplayName: Governor Droop Setting
+    // @Description: Governor droop response under load, 0-100%. Higher value is quicker response but may cause surging
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RSC_GOV_DROOP", 27, AP_MotorsHeli, _rsc_governor_droop_setting, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+
+    // @Param: RSC_GOV_TC
+    // @DisplayName: Governor Throttle Curve Gain
+    // @Description: Percentage of throttle curve gain in governor output
+    // @Range: 50 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RSC_GOV_TC", 28, AP_MotorsHeli, _rsc_governor_tc, AP_MOTORS_HELI_RSC_GOVERNOR_TC),
 
     AP_GROUPEND
 };
