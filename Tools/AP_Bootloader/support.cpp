@@ -12,6 +12,7 @@
 #include "support.h"
 #include "mcu_f4.h"
 #include "mcu_f7.h"
+#include "mcu_h7.h"
 
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
 #if HAL_USE_SERIAL == TRUE
@@ -113,6 +114,9 @@ void flash_func_erase_sector(uint32_t sector)
 // read one-time programmable memory
 uint32_t flash_func_read_otp(uint32_t idx)
 {
+#ifndef OTP_SIZE
+    return 0;
+#else
     if (idx & 3) {
         return 0;
     }
@@ -122,6 +126,7 @@ uint32_t flash_func_read_otp(uint32_t idx)
     }
 
     return *(uint32_t *)(idx + OTP_BASE);
+#endif
 }
 
 // read chip serial number
