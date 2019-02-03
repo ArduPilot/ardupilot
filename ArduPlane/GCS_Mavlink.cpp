@@ -1142,35 +1142,7 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
     }
 #endif // GEOFENCE_ENABLED
 
-    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
-    {
-        // allow override of RC channel values for HIL
-        // or for complete GCS control of switch position
-        // and RC PWM values.
-        if(msg->sysid != plane.g.sysid_my_gcs) {
-            break; // Only accept control from our gcs
-        }
-
-        uint32_t tnow = AP_HAL::millis();
-
-        mavlink_rc_channels_override_t packet;
-        mavlink_msg_rc_channels_override_decode(msg, &packet);
-
-        RC_Channels::set_override(0, packet.chan1_raw, tnow);
-        RC_Channels::set_override(1, packet.chan2_raw, tnow);
-        RC_Channels::set_override(2, packet.chan3_raw, tnow);
-        RC_Channels::set_override(3, packet.chan4_raw, tnow);
-        RC_Channels::set_override(4, packet.chan5_raw, tnow);
-        RC_Channels::set_override(5, packet.chan6_raw, tnow);
-        RC_Channels::set_override(6, packet.chan7_raw, tnow);
-        RC_Channels::set_override(7, packet.chan8_raw, tnow);
-
-        // a RC override message is consiered to be a 'heartbeat' from
-        // the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = tnow;
-        break;
-    }
-
+    
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
         if (msg->sysid != plane.g.sysid_my_gcs) {
@@ -1466,6 +1438,13 @@ void GCS_MAVLINK_Plane::handleMessage(mavlink_message_t* msg)
         break;
     } // end switch
 } // end handle mavlink
+
+// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+void GCS_MAVLINK_Plane::handle_rc_channels_override(const mavlink_message_t *msg)
+{
+    plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+    GCS_MAVLINK::handle_rc_channels_override(msg);
+}
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
