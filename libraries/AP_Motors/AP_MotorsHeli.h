@@ -37,6 +37,12 @@
 #define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    500
 #define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   1000
 
+// RSC governor defaults
+#define AP_MOTORS_HELI_RSC_GOVERNOR_SET_DEFAULT   1500
+#define AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE     25
+#define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT 30
+#define AP_MOTORS_HELI_RSC_GOVERNOR_TC            90
+
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
@@ -96,6 +102,9 @@ public:
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _rsc_setpoint * 0.001f; }
+    
+    // set_rpm - for rotor speed governor
+    virtual void set_rpm(int16_t rotor_rpm) = 0;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
@@ -103,7 +112,7 @@ public:
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
     virtual float get_desired_rotor_speed() const = 0;
 
-    // get_main_rotor_speed - gets estimated or measured main rotor speed
+    // get_main_rotor_speed - estimated rotor speed when no governor or speed sensor used
     virtual float get_main_rotor_speed() const = 0;
 
     // return true if the main rotor is up to speed
@@ -111,6 +120,12 @@ public:
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     virtual bool rotor_speed_above_critical() const = 0;
+    
+    //get rotor governor output
+    virtual float get_governor_output() const = 0;
+    
+    //get engine throttle output
+    virtual float get_control_output() const = 0;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -188,7 +203,7 @@ protected:
 
     // write to a swash servo. output value is pwm
     void rc_write_swash(uint8_t chan, float swash_in);
-    
+
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
@@ -202,8 +217,8 @@ protected:
     AP_Int16        _collective_min;            // Lowest possible servo position for the swashplate
     AP_Int16        _collective_max;            // Highest possible servo position for the swashplate
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
-    AP_Int8         _servo_mode;              // Pass radio inputs directly to servos during set-up through mission planner
-    AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabledv
+    AP_Int8         _servo_mode;                // Pass radio inputs directly to servos during set-up through mission planner
+    AP_Int16        _rsc_setpoint;              // rotor speed when RSC mode is set to is enabled
     AP_Int8         _rsc_mode;                  // Which main rotor ESC control mode is active
     AP_Int8         _rsc_ramp_time;             // Time in seconds for the output to the main rotor's ESC to reach setpoint
     AP_Int8         _rsc_runup_time;            // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
@@ -213,6 +228,10 @@ protected:
     AP_Int16        _rsc_thrcrv[5];             // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
     AP_Int16        _rsc_slewrate;              // throttle slew rate (percentage per second)
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
+    AP_Float        _rsc_governor_disengage;    // sets the throttle percent where the governor disengages for return to flight idle
+    AP_Int16        _rsc_governor_setpoint;     // sets rotor speed for governor
+    AP_Float        _rsc_governor_droop_setting;// governor response to droop under load
+    AP_Float        _rsc_governor_tc;           // governor throttle curve weighting, range 50-100%
 
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
