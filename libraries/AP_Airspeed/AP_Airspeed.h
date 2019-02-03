@@ -155,8 +155,8 @@ public:
                             PITOT_TUBE_ORDER_AUTO     = 2 };
 
     enum OptionsMask {
-        ON_FAILURE_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
-        ON_FAILURE_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
+        ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
+        ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
     };
 
     enum airspeed_type {
@@ -239,7 +239,7 @@ private:
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
     void check_sensor_failures();
-    void check_sensor_failures(uint8_t i);
+    void check_sensor_ahrs_wind_max_failures(uint8_t i);
 
     AP_Airspeed_Backend *sensor[AIRSPEED_MAX_SENSORS];
 };
