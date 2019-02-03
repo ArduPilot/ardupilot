@@ -222,7 +222,12 @@ jump_to_app()
     led_set(LED_OFF);
 
     // resetting the clocks is needed for loading NuttX
+#if defined(STM32H7)
+    rccDisableAPB1L(~0);
+    rccDisableAPB1H(~0);
+#else
     rccDisableAPB1(~0);
+#endif
     rccDisableAPB2(~0);
 #if HAL_USE_SERIAL_USB == TRUE    
     rccResetOTG_FS();
