@@ -2569,7 +2569,7 @@ class AutoTestCopter(AutoTest):
         return "STABILIZE"
 
     def initial_mode_switch_mode(self):
-        return "AUTO"
+        return "STABILIZE"
 
     def default_mode(self):
         return "STABILIZE"
@@ -2577,6 +2577,7 @@ class AutoTestCopter(AutoTest):
     def rc_defaults(self):
         ret = super(AutoTestCopter, self).rc_defaults()
         ret[3] = 1000
+        ret[5] = 1800 # mode switch
         return ret
 
     def tests(self):
