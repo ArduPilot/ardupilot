@@ -858,6 +858,7 @@ struct PACKED log_AIRSPEED {
     float   offset;
     bool    use;
     bool    healthy;
+    float   health_prob;
     uint8_t primary;
 };
 
@@ -1157,10 +1158,10 @@ struct PACKED log_DSTL {
 #define CURR_CELL_UNITS  "svvvvvvvvvvv"
 #define CURR_CELL_MULTS  "F00000000000"
 
-#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Primary"
-#define ARSP_FMT "QffcffBBB"
-#define ARSP_UNITS "snPOPP---"
-#define ARSP_MULTS "F00B00---"
+#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
+#define ARSP_FMT "QffcffBBfB"
+#define ARSP_UNITS "snPOPP----"
+#define ARSP_MULTS "F00B00----"
 
 /*
 Format characters in the format string for binary log messages
