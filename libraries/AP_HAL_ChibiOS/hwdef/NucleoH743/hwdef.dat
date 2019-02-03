@@ -1,0 +1,38 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_LSEDRV     (3U << 3U)
+define STM32_HSE_BYPASS
+
+define STM32_LSECLK 32768
+define STM32_PLL1_DIVM_VALUE 4
+define STM32_PLL2_DIVM_VALUE 4
+define STM32_PLL3_DIVM_VALUE 8
+
+# board ID for firmware load
+APJ_BOARD_ID 139
+
+FLASH_SIZE_KB 2048
+
+FLASH_RESERVE_START_KB 128
+
+# board voltage
+STM32_VDD 330U
+
+# order of UARTs (and USB)
+UART_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
