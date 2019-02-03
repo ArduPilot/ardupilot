@@ -6,11 +6,13 @@
 void AP_Airspeed::check_sensor_failures()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        check_sensor_failures(i);
+        if(AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options) {
+            check_sensor_ahrs_wind_max_failures(i);
+        }
     }
 }
 
-void AP_Airspeed::check_sensor_failures(uint8_t i)
+void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 {
     const uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - state[i].failures.last_check_ms) <= 200) {
@@ -55,7 +57,7 @@ void AP_Airspeed::check_sensor_failures(uint8_t i)
     static const float RE_ENABLE_PROB_THRESH_OK = 0.95f;
 
     // if "disable" option is allowed and sensor is enabled
-    if (param[i].use > 0 && (AP_Airspeed::OptionsMask::ON_FAILURE_DO_DISABLE & _options)) {
+    if (param[i].use > 0 && (AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options)) {
         // and is probably not healthy
         if (state[i].failures.health_probability < DISABLE_PROB_THRESH_CRIT) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Airspeed sensor %d failure. Disabling", i+1);
@@ -74,7 +76,7 @@ void AP_Airspeed::check_sensor_failures(uint8_t i)
 
     // if Re-Enable options is allowed, and sensor is disabled but was previously enabled, and is probably healthy
     } else if (param[i].use == 0 &&
-        (AP_Airspeed::OptionsMask::ON_FAILURE_RECOVERY_DO_REENABLE & _options) &&
+        (AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE & _options) &&
         state[i].failures.param_use_backup > 0 &&
         state[i].failures.health_probability > RE_ENABLE_PROB_THRESH_OK) {
 
