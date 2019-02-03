@@ -1533,6 +1533,7 @@ void AP_Logger::Write_Airspeed(AP_Airspeed &airspeed)
             offset        : airspeed.get_offset(i),
             use           : airspeed.use(i),
             healthy       : airspeed.healthy(i),
+            health_prob   : airspeed.get_health_failure_probability(i),
             primary       : airspeed.get_primary()
         };
         WriteBlock(&pkt, sizeof(pkt));
