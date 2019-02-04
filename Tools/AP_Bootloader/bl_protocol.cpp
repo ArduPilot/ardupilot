@@ -328,9 +328,51 @@ crc32(const uint8_t *src, unsigned len, unsigned state)
     return state;
 }
 
+#define TEST_FLASH 0
+
+#if TEST_FLASH
+static void test_flash()
+{
+    for (uint8_t i=0; i<10; i++) {
+        uprintf("waiting %u...\n", i);
+        delay(300);
+    }
+    uint32_t loop = 1;
+    while (true) {
+        uint32_t addr = 0;
+        for (uint8_t p=0; p<15; p++) {
+            uint32_t v[8];
+            for (uint8_t i=0; i<8; i++) {
+                v[i] = (p<<16) + loop;
+            }
+            if (flash_func_sector_size(p) == 0) {
+                continue;
+            }
+            uprintf("page %u size %u addr=0x%08x v=0x%08x\n", p, flash_func_sector_size(p), addr, v[0]); delay(10);
+            uprintf("CR1=0x%08x CR2=0x%08x SR1=0x%08x SR2=0x%08x\n",
+                    FLASH->CR1, FLASH->CR2, FLASH->SR1, FLASH->SR2); delay(100);
+            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(100);
+            flash_func_erase_sector(p);
+            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(10);
+            flash_func_write_words(addr, v, ARRAY_SIZE(v));
+            uprintf("page %u 0x%08x\n", p, flash_func_read_word(addr)); delay(10);
+            uprintf("CR1=0x%08x CR2=0x%08x SR1=0x%08x SR2=0x%08x\n",
+                    FLASH->CR1, FLASH->CR2, FLASH->SR1, FLASH->SR2);
+            addr += flash_func_sector_size(p);
+        }
+        delay(1000);
+        loop++;
+    }
+}
+#endif
+
 void
 bootloader(unsigned timeout)
 {
+#if TEST_FLASH
+    test_flash();
+#endif
+
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
     uint32_t	first_word = 0xffffffff;
     bool done_sync = false;
@@ -546,18 +588,10 @@ bootloader(unsigned timeout)
             }
 
             arg /= 4;
-            for (int i = 0; i < arg; i++) {
-                // program the word
-                flash_func_write_word(address, flash_buffer.w[i]);
-
-                // do immediate read-back verify
-                if (flash_func_read_word(address) != flash_buffer.w[i]) {
-                    goto cmd_fail;
-                }
-
-                address += 4;
+            // program the words
+            if (!flash_func_write_words(address, flash_buffer.w, arg)) {
+                goto cmd_fail;
             }
-
             break;
 
         // fetch CRC of the entire flash area
