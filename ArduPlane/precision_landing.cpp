@@ -7,7 +7,7 @@
 #if PRECISION_LANDING == ENABLED
 void Plane::init_precland()
 {
-    plane.precland.init(400);
+    plane.precland.init(scheduler.get_loop_rate_hz());
 }
 
 void Plane::update_precland()

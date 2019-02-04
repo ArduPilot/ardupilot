@@ -59,7 +59,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// PixyCam Precision Landing system
+// Precision Landing system
 //
 #ifndef PRECISION_LANDING
 #define PRECISION_LANDING ENABLED
