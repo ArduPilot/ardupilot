@@ -1090,12 +1090,6 @@ void GCS_MAVLINK_Rover::handleMessage(mavlink_message_t* msg)
             break;
         }
 
-    // send or receive fence points with GCS
-    case MAVLINK_MSG_ID_FENCE_POINT:  // MAV ID: 160
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        rover.g2.fence.handle_msg(*this, msg);
-        break;
-
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         rover.rangefinder.handle_msg(msg);
         rover.g2.proximity.handle_msg(msg);
