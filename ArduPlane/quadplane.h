@@ -239,6 +239,7 @@ private:
 
     // Quadplane trim, degrees
     AP_Float ahrs_trim_pitch;
+    float _last_ahrs_trim_pitch;
 
     // fw landing approach radius
     AP_Float fw_land_approach_radius;

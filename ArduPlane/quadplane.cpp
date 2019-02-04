@@ -491,7 +491,7 @@ bool QuadPlane::setup(void)
 
     enum AP_Motors::motor_frame_class motor_class;
     enum Rotation rotation = ROTATION_NONE;
-        
+
     /*
       cope with upgrade from old AP_Motors values for frame_class
      */
@@ -1457,7 +1457,12 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
-    
+
+    if ((ahrs_view != NULL) && !is_equal(_last_ahrs_trim_pitch, ahrs_trim_pitch.get())) {
+        _last_ahrs_trim_pitch = ahrs_trim_pitch.get();
+        ahrs_view->set_pitch_trim(_last_ahrs_trim_pitch);
+    }
+
     if (plane.afs.should_crash_vehicle()) {
         motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
         motors->output();
