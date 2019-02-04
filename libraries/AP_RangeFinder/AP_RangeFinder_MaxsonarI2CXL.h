@@ -12,7 +12,7 @@ class AP_RangeFinder_MaxsonarI2CXL : public AP_RangeFinder_Backend
 public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
-    										AP_RangeFinder_Params &_params,
+                                          AP_RangeFinder_Params &_params,
                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
     // update state

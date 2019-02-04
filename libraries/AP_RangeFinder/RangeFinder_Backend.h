@@ -22,7 +22,6 @@ class AP_RangeFinder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	//AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state);
 	AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     // we declare a virtual destructor so that RangeFinder drivers can

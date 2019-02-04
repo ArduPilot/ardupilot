@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_uLanding::AP_RangeFinder_uLanding(RangeFinder::RangeFinder_State &_state,
-													AP_RangeFinder_Params &_params,
+                                                 AP_RangeFinder_Params &_params,
                                                  AP_SerialManager &serial_manager,
                                                  uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
