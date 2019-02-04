@@ -1522,7 +1522,6 @@ class AutoTest(ABC):
             if text.lower() in m.text.lower():
                 self.progress("Received expected text : %s" % m.text.lower())
                 return True
-        self.progress()
         raise AutoTestTimeoutException("Failed to received text : %s" %
                                        text.lower())
 
