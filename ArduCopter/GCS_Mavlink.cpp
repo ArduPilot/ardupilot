@@ -1197,14 +1197,11 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
                 default:
-                    // pv_location_to_vector does not support absolute altitudes.
-                    // Convert the absolute altitude to a home-relative altitude before calling pv_location_to_vector
-                    loc.alt -= copter.ahrs.get_home().alt;
-                    loc.relative_alt = true;
-                    loc.terrain_alt = false;
                     break;
             }
-            pos_neu_cm = copter.pv_location_to_vector(loc);
+            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+                break;
+            }
         }
 
         // prepare yaw
