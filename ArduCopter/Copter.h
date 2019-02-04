@@ -807,10 +807,8 @@ private:
     void convert_lgr_parameters(void);
 
     // position_vector.cpp
-    Vector3f pv_location_to_vector(const Location& loc);
     float pv_alt_above_origin(float alt_above_home_cm);
     float pv_alt_above_home(float alt_above_origin_cm);
-    float pv_distance_to_home_cm(const Vector3f &destination);
 
     // precision_landing.cpp
     void init_precland();
