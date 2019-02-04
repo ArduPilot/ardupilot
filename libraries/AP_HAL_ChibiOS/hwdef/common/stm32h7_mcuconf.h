@@ -18,6 +18,27 @@
  */
 #pragma once
 
+
+#ifndef STM32_LSECLK
+#define STM32_LSECLK 32768U
+#endif
+
+#ifndef STM32_LSEDRV
+#define STM32_LSEDRV (3U << 3U)
+#endif
+
+#ifndef STM32_PLL1_DIVM_VALUE
+#define STM32_PLL1_DIVM_VALUE (STM32_HSECLK / 2000000U)
+#endif
+
+#ifndef STM32_PLL2_DIVM_VALUE
+#define STM32_PLL2_DIVM_VALUE (STM32_HSECLK / 2000000U)
+#endif
+
+#ifndef STM32_PLL3_DIVM_VALUE
+#define STM32_PLL3_DIVM_VALUE (STM32_HSECLK / 1000000U)
+#endif
+
 /*
  * General settings.
  */
