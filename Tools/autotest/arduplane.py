@@ -752,6 +752,8 @@ class AutoTestPlane(AutoTest):
 
             ("TestFlaps", "Flaps", self.fly_flaps),
 
+            ("ArmFeatures", "Arm features", self.test_arm_feature),
+
             ("MainFlight",
              "Lots of things in one flight",
              self.test_main_flight),
