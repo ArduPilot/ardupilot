@@ -223,6 +223,7 @@ def alarm_handler(signum, frame):
     """Handle test timeout."""
     global results, opts
     try:
+        print("Alarm handler called")
         results.add('TIMEOUT',
                     '<span class="failed-text">FAILED</span>',
                     opts.timeout)
