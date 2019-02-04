@@ -91,9 +91,14 @@ uint32_t flash_func_read_word(uint32_t offset)
     return *(const uint32_t *)(flash_base + offset);
 }
 
-void flash_func_write_word(uint32_t offset, uint32_t v)
+bool flash_func_write_word(uint32_t offset, uint32_t v)
 {
-    stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));
+    return stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));
+}
+
+bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n)
+{
+    return stm32_flash_write(uint32_t(flash_base+offset), v, n*sizeof(*v));
 }
 
 uint32_t flash_func_sector_size(uint32_t sector)
