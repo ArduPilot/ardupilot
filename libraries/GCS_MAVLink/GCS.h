@@ -335,6 +335,7 @@ protected:
     void handle_rally_fetch_point(mavlink_message_t *msg);
     void handle_rally_point(mavlink_message_t *msg);
     virtual void handle_mount_message(const mavlink_message_t *msg);
+    void handle_fence_message(mavlink_message_t *msg);
     void handle_param_value(mavlink_message_t *msg);
     void handle_radio_status(mavlink_message_t *msg, AP_Logger &dataflash, bool log_radio);
     void handle_serial_control(const mavlink_message_t *msg);
