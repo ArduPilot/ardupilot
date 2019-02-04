@@ -167,6 +167,11 @@ class AutoTestQuadPlane(AutoTest):
     def default_mode(self):
         return "FBWA"
 
+    def disabled_tests(self):
+        return {
+            "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
+        }
+
     def tests(self):
         '''return list of all tests'''
         m = os.path.join(testdir, "ArduPlane-Missions/Dalby-OBC2016.txt")
