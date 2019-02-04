@@ -48,6 +48,9 @@ public:
         return rot_body_to_ned;
     }
 
+    // apply pitch trim
+    void set_pitch_trim(float trim_deg);
+
     // helper trig value accessors
     float cos_roll() const {
         return trig.cos_roll;
@@ -190,4 +193,5 @@ private:
     } trig;
 
     float y_angle;
+    float _pitch_trim_deg;
 };
