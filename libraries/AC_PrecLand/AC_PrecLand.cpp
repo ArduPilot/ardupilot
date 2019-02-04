@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
 
     // @Param: LAG
     // @DisplayName: Precision Landing sensor lag
-    // @Description: Precision Landing sensor lag in ms, to cope with variable landing_target latency
+    // @Description: Precision Landing sensor lag, to cope with variable landing_target latency
     // @Range: 0.02 0.250
     // @Increment: 1
     // @Units: s
@@ -283,7 +283,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
             }
 
-            // Update if a new LOS measurement is available
+            // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
                 _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
@@ -310,7 +310,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 _ekf_y.predict(dt, -vehicleDelVel.y, _accel_noise*dt);
             }
 
-            // Update if a new LOS measurement is available
+            // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
                 if (!target_acquired()) {
