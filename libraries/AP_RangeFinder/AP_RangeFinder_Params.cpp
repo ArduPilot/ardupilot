@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: MIN_CM
     // @DisplayName: Rangefinder minimum distance
     // @Description: Minimum distance in centimeters that rangefinder can reliably read
-	// @Units: cm
+    // @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MIN_CM",  6, AP_RangeFinder_Params, min_distance_cm, 20),
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: MAX_CM
     // @DisplayName: Rangefinder maximum distance
     // @Description: Maximum distance in centimeters that rangefinder can reliably read
-	// @Units: cm
+    // @Units: cm
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MAX_CM",  7, AP_RangeFinder_Params, max_distance_cm, 700),
@@ -80,13 +80,13 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RMETRIC", 10, AP_RangeFinder_Params, ratiometric, 1),
 
-	// @Param: PWRRNG
-	// @DisplayName: Powersave range
-	// @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
-	// @Units: m
-	// @Range: 0 32767
-	// @User: Standard
-	AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
+    // @Param: PWRRNG
+    // @DisplayName: Powersave range
+    // @Description: This parameter sets the estimated terrain distance in meters above which the sensor will be put into a power saving mode (if available). A value of zero means power saving is not enabled
+    // @Units: m
+    // @Range: 0 32767
+    // @User: Standard
+    AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
 
     // @Param: GNDCLEAR
     // @DisplayName: Distance (in cm) from the range finder to the ground
@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
-    
+
     AP_GROUPEND
 };
 

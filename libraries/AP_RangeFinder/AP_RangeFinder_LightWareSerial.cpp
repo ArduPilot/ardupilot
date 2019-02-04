@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
    already know that we should setup the rangefinder
 */
 AP_RangeFinder_LightWareSerial::AP_RangeFinder_LightWareSerial(RangeFinder::RangeFinder_State &_state,
-																AP_RangeFinder_Params &_params,
+                                                               AP_RangeFinder_Params &_params,
                                                                AP_SerialManager &serial_manager,
                                                                uint8_t serial_instance) :
     AP_RangeFinder_Backend(_state, _params)
