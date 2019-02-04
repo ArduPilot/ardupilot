@@ -440,7 +440,7 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
         if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            float max_descent_speed = abs(g.land_speed)/2.0f;
+            float max_descent_speed = abs(g.land_speed)*0.5f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
