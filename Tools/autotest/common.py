@@ -1686,6 +1686,7 @@ class AutoTest(ABC):
         self.progress("disarm with mavproxy")
         if not self.mavproxy_disarm_vehicle():
             raise NotAchievedException("Failed to DISARM")
+
         if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
             self.progress("arm with rc input")
             if not self.arm_motors_with_rc_input():
@@ -1693,8 +1694,7 @@ class AutoTest(ABC):
             self.progress("disarm with rc input")
             if not self.disarm_motors_with_rc_input():
                 raise NotAchievedException("Failed to disarm with RC input")
-        # Sub has no 'switches'
-        if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
+
             self.start_test("Test arm and disarm with switch")
             arming_switch = 7
             self.set_parameter("RC%d_OPTION" % arming_switch, 41)
@@ -1707,31 +1707,30 @@ class AutoTest(ABC):
                 raise NotAchievedException("Failed to disarm with switch")
             self.set_rc(arming_switch, 1000)
 
-        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
-                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
-                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
-                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
-                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
-                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
-            self.start_test("Test arming failure with throttle too high")
-            self.set_rc(3, 1800)
-            try:
-                if self.arm_vehicle():
-                    raise NotAchievedException("Armed when throttle too high")
-            except AutoTestTimeoutException():
-                pass
-            except ValueError:
-                pass
-            if self.arm_motors_with_rc_input():
-                raise NotAchievedException(
-                    "Armed via RC when throttle too high")
-            if self.arm_motors_with_switch(arming_switch):
-                raise NotAchievedException("Armed via RC when switch too high")
-            self.set_throttle_zero()
-            self.set_rc(arming_switch, 1000)
+            if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                     mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                     mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                     mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                     mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                     mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+                self.start_test("Test arming failure with throttle too high")
+                self.set_rc(3, 1800)
+                try:
+                    if self.arm_vehicle():
+                        raise NotAchievedException("Armed when throttle too high")
+                except AutoTestTimeoutException():
+                    pass
+                except ValueError:
+                    pass
+                if self.arm_motors_with_rc_input():
+                    raise NotAchievedException(
+                        "Armed via RC when throttle too high")
+                if self.arm_motors_with_switch(arming_switch):
+                    raise NotAchievedException("Armed via RC when switch too high")
+                self.set_throttle_zero()
+                self.set_rc(arming_switch, 1000)
 
-        # Sub doesn't have 'stick commands'
-        if self.mav.mav_type != mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            # Sub doesn't have 'stick commands'
             self.start_test("Test arming failure with ARMING_RUDDER=0")
             self.set_parameter("ARMING_RUDDER", 0)
             if self.arm_motors_with_rc_input():
@@ -1754,50 +1753,50 @@ class AutoTest(ABC):
             self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
-        if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
-                                 mavutil.mavlink.MAV_TYPE_HELICOPTER,
-                                 mavutil.mavlink.MAV_TYPE_HEXAROTOR,
-                                 mavutil.mavlink.MAV_TYPE_OCTOROTOR,
-                                 mavutil.mavlink.MAV_TYPE_COAXIAL,
-                                 mavutil.mavlink.MAV_TYPE_TRICOPTER]:
-            self.start_test("Test arming failure with interlock enabled")
-            self.set_rc(interlock_channel, 2000)
-            if self.arm_motors_with_rc_input():
-                raise NotAchievedException(
-                    "Armed with RC input when interlock enabled")
-            if self.arm_motors_with_switch(arming_switch):
-                raise NotAchievedException(
-                    "Armed with switch when interlock enabled")
-            self.disarm_vehicle()
-            self.wait_heartbeat()
-            self.set_rc(arming_switch, 1000)
-            self.set_rc(interlock_channel, 1000)
-            if self.mav.mav_type is mavutil.mavlink.MAV_TYPE_HELICOPTER:
-                self.start_test("Test motor interlock enable can't be set while disarmed")
+            if self.mav.mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                                     mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                                     mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                                     mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                                     mavutil.mavlink.MAV_TYPE_COAXIAL,
+                                     mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+                self.start_test("Test arming failure with interlock enabled")
                 self.set_rc(interlock_channel, 2000)
-                channel_field = "servo%u_raw" % interlock_channel
-                interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
-                tstart = self.get_sim_time()
-                while True:
-                    if self.get_sim_time_cached() - tstart > 20:
-                        self.set_rc(interlock_channel, 1000)
-                        break # success!
-                    m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
-                                            blocking=True,
-                                            timeout=2)
-                    if m is None:
-                        continue
-                    m_value = getattr(m, channel_field, None)
-                    if m_value is None:
-                        self.set_rc(interlock_channel, 1000)
-                        raise ValueError("Message has no %s field" %
-                                         channel_field)
-                    self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
-                                  (channel_field, m_value, interlock_value))
-                    if m_value != interlock_value:
-                        self.set_rc(interlock_channel, 1000)
-                        raise NotAchievedException("Motor interlock was changed while disarmed")
-            self.set_rc(interlock_channel, 1000)
+                if self.arm_motors_with_rc_input():
+                    raise NotAchievedException(
+                        "Armed with RC input when interlock enabled")
+                if self.arm_motors_with_switch(arming_switch):
+                    raise NotAchievedException(
+                        "Armed with switch when interlock enabled")
+                self.disarm_vehicle()
+                self.wait_heartbeat()
+                self.set_rc(arming_switch, 1000)
+                self.set_rc(interlock_channel, 1000)
+                if self.mav.mav_type is mavutil.mavlink.MAV_TYPE_HELICOPTER:
+                    self.start_test("Test motor interlock enable can't be set while disarmed")
+                    self.set_rc(interlock_channel, 2000)
+                    channel_field = "servo%u_raw" % interlock_channel
+                    interlock_value = self.get_parameter("SERVO%u_MIN" % interlock_channel)
+                    tstart = self.get_sim_time()
+                    while True:
+                        if self.get_sim_time_cached() - tstart > 20:
+                            self.set_rc(interlock_channel, 1000)
+                            break # success!
+                        m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                                blocking=True,
+                                                timeout=2)
+                        if m is None:
+                            continue
+                        m_value = getattr(m, channel_field, None)
+                        if m_value is None:
+                            self.set_rc(interlock_channel, 1000)
+                            raise ValueError("Message has no %s field" %
+                                             channel_field)
+                        self.progress("SERVO_OUTPUT_RAW.%s=%u want=%u" %
+                                      (channel_field, m_value, interlock_value))
+                        if m_value != interlock_value:
+                            self.set_rc(interlock_channel, 1000)
+                            raise NotAchievedException("Motor interlock was changed while disarmed")
+                self.set_rc(interlock_channel, 1000)
         self.progress("ALL PASS")
         self.context_pop()
         # TODO : add failure test : arming check, wrong mode; Test arming magic; Same for disarm
