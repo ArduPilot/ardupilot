@@ -19,12 +19,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 class AP_ICEngine {
 public:
     // constructor
-    AP_ICEngine(const AP_RPM &_rpm, const AP_AHRS &_ahrs);
+    AP_ICEngine(const AP_RPM &_rpm);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -50,7 +49,6 @@ public:
     
 private:
     const AP_RPM &rpm;
-    const AP_AHRS &ahrs;
 
     enum ICE_State state;
 
