@@ -100,9 +100,7 @@ void show_stack_usage(void)
  */
 void memory_flush_all(void)
 {
-#if defined(STM32F7) && STM32_DMA_CACHE_HANDLING == TRUE
     cacheBufferFlush(HAL_RAM_BASE_ADDRESS, HAL_RAM_SIZE_KB * 1024U);
-#endif
 }
 
 /*
