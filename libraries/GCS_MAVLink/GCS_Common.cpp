@@ -3477,6 +3477,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_do_send_banner(packet);
         break;
 
+    case MAV_CMD_DO_FENCE_ENABLE:
+        result = handle_command_do_fence_enable(packet);
+        break;
+
     case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
         result = handle_preflight_reboot(packet);
         break;
