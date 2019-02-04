@@ -262,9 +262,9 @@ bool Util::flash_bootloader()
     const uint8_t max_attempts = 10;
     for (uint8_t i=0; i<max_attempts; i++) {
         void *context = hal.scheduler->disable_interrupts_save();
-        const int32_t written = stm32_flash_write(addr, fw, fw_size);
+        bool ok = stm32_flash_write(addr, fw, fw_size);
         hal.scheduler->restore_interrupts(context);
-        if (written == -1 || written < fw_size) {
+        if (!ok) {
             hal.console->printf("Flash failed! (attempt=%u/%u)\n",
                                 i+1,
                                 max_attempts);
