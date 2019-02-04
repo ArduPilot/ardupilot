@@ -250,7 +250,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 {
 #ifdef STORAGE_FLASH_PAGE
     size_t base_address = stm32_flash_getpageaddr(_flash_page+sector);
-    bool ret = stm32_flash_write(base_address+offset, data, length) == length;
+    bool ret = stm32_flash_write(base_address+offset, data, length);
     if (!ret && _flash_erase_ok()) {
         // we are getting flash write errors while disarmed. Try
         // re-writing all of flash
