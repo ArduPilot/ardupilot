@@ -108,3 +108,8 @@ parameters.edn
 ArduCopter/afs_copter.cpp
 ArduCopter/mode.h.bak
 ArduCopter/defines.h.bak
+ArduCopter/mode.h
+ArduCopter/mode_hold_ultra.cpp
+ArduCopter/mode_hold_ultra.cpp
+ArduCopter/mode_rect.cpp
+ArduCopter/mode_RF_loiter.cpp

@@ -230,6 +230,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Out of range detection with HC_PS04 rangefinder
+#ifndef OUT_OF_RANGE_DETECT
+ # define OUT_OF_RANGE_DETECT ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // gripper - enabled only on larger firmwares
 #ifndef GRIPPER_ENABLED
  # define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES

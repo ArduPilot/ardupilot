@@ -17,6 +17,7 @@
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
+#define OUT_OF_RANGE_DETECT  	DISABLE         	// disable out of range with HC_PS04 rangefinder 
 //#define VISUAL_ODOMETRY_ENABLED DISABLED          // disable visual odometry to save 2K of flash space
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
@@ -46,6 +47,7 @@
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
 //#define DEVO_TELEM_ENABLED DISABLED               // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 //#define MODE_HOLD_ULTRA_ENABLED DISABLED          // disable indoor hold with ultrasonic
+//#define MODE_RECT_ENABLED DISABLED          		// disable rect mode support
 //#define MODE_RECT_ENABLED DISABLED          		// disable rect mode support
 
 

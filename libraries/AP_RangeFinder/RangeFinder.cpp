@@ -36,6 +36,7 @@
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake.h"
 #include "AP_RangeFinder_PWM.h"
+#include "AP_RangeFinder_HC_SR04.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
@@ -45,16 +46,16 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM,23:HC_SR04
     // @User: Standard
-    AP_GROUPINFO("_TYPE",    0, RangeFinder, state[0].type, 0),
+    AP_GROUPINFO("_TYPE",    0, RangeFinder, state[0].type, RangeFinder_TYPE_HC_SR04),
 
     // @Param: _PIN
     // @DisplayName: Rangefinder pin
     // @Description: Pin that rangefinder is connected to, analogue pins for analogue sensors, GPIO pins for PWM sensors. Set to 11 on PX4 for the analog 'airspeed' port. Set to 15 on the Pixhawk for the analog 'airspeed' port.
     // @Values: -1:Not Used, 11:PX4-airspeed port, 15:Pixhawk-airspeed port, 50:GPIO1,51:GPIO2,52:GPIO3,53:GPIO4,54:GPIO5,55:GPIO6
     // @User: Standard
-    AP_GROUPINFO("_PIN",     1, RangeFinder, state[0].pin, -1),
+    AP_GROUPINFO("_PIN",     1, RangeFinder, state[0].pin, 54/*GPIO5*/),
 
     // @Param: _SCALING
     // @DisplayName: Rangefinder scaling
@@ -85,7 +86,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MIN_CM",  5, RangeFinder, state[0].min_distance_cm, 20),
+    AP_GROUPINFO("_MIN_CM",  5, RangeFinder, state[0].min_distance_cm, 2),
 
     // @Param: _MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -93,7 +94,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_MAX_CM",  6, RangeFinder, state[0].max_distance_cm, 700),
+    AP_GROUPINFO("_MAX_CM",  6, RangeFinder, state[0].max_distance_cm, 400),
 
     // @Param: _STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -134,13 +135,12 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_GNDCLEAR", 11, RangeFinder, state[0].ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
 
-    // @Param: _ADDR
     // @DisplayName: Bus address of sensor
     // @Description: This sets the bus address of the sensor, where applicable. Used for the LightWare I2C sensor to allow for multiple sensors on different addresses. A value of 0 disables the sensor.
     // @Range: 0 127
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("_ADDR", 23, RangeFinder, state[0].address, 0),
+    AP_GROUPINFO("_ADDR", 23, RangeFinder, state[0].address, 55/*GPIO6*/),
 
     // @Param: _POS_X
     // @DisplayName:  X position offset
@@ -179,9 +179,9 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM,23:HC_SR04
     // @User: Advanced
-    AP_GROUPINFO("2_TYPE",    12, RangeFinder, state[1].type, 0),
+    AP_GROUPINFO("2_TYPE",    12, RangeFinder, state[1].type, RangeFinder_TYPE_HC_SR04),
 
     // @Param: 2_PIN
     // @DisplayName: Rangefinder pin
@@ -219,7 +219,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, state[1].min_distance_cm, 20),
+    AP_GROUPINFO("2_MIN_CM",  17, RangeFinder, state[1].min_distance_cm, 2),
 
     // @Param: 2_MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -227,7 +227,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, state[1].max_distance_cm, 700),
+    AP_GROUPINFO("2_MAX_CM",  18, RangeFinder, state[1].max_distance_cm, 200),
 
     // @Param: 2_STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -295,7 +295,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Description: Orientation of 2nd rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("2_ORIENT", 54, RangeFinder, state[1].orientation, ROTATION_PITCH_270),
+    AP_GROUPINFO("2_ORIENT", 54, RangeFinder, state[1].orientation, 2:/*Right*/),
 
     // @Group: 2_
     // @Path: AP_RangeFinder_Wasp.cpp
@@ -307,9 +307,9 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     // @Param: 3_TYPE
     // @DisplayName: Third Rangefinder type
     // @Description: What type of rangefinder device that is connected
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLiteV2-I2C,5:PX4-PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:uLanding,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:BenewakeTFmini,21:LidarLiteV3HP-I2C,22:PWM,23:HC_SR04
     // @User: Advanced
-    AP_GROUPINFO("3_TYPE",    25, RangeFinder, state[2].type, 0),
+    AP_GROUPINFO("3_TYPE",    25, RangeFinder, state[2].type, RangeFinder_TYPE_HC_SR04),
 
     // @Param: 3_PIN
     // @DisplayName: Rangefinder pin
@@ -347,7 +347,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, state[2].min_distance_cm, 20),
+    AP_GROUPINFO("3_MIN_CM",  30, RangeFinder, state[2].min_distance_cm, 2),
 
     // @Param: 3_MAX_CM
     // @DisplayName: Rangefinder maximum distance
@@ -355,7 +355,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	// @Units: cm
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, state[2].max_distance_cm, 700),
+    AP_GROUPINFO("3_MAX_CM",  31, RangeFinder, state[2].max_distance_cm, 200),
 
     // @Param: 3_STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -780,6 +780,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case RangeFinder_TYPE_PWM:
         if (AP_RangeFinder_PWM::detect()) {
             drivers[instance] = new AP_RangeFinder_PWM(state[instance], _powersave_range, estimated_terrain_height);
+        }
+        break;
+	case RangeFinder_TYPE_HC_SR04:
+        if (AP_RangeFinder_HC_SR04::detect()) {
+            drivers[instance] = new AP_RangeFinder_HC_SR04(state[instance], _powersave_range, estimated_terrain_height);
         }
         break;
     default:
