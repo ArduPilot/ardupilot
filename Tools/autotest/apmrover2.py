@@ -523,7 +523,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         ex = None
         try:
-            self.mavproxy.send("fence load Tools/autotest/rover-fence-ac-avoid.txt\n")
+            avoid_filepath = os.path.join(self.mission_directory(),
+                                          "rover-fence-ac-avoid.txt")
+            self.mavproxy.send("fence load %s\n" % avoid_filepath)
             self.mavproxy.expect("Loaded 6 geo-fence")
             self.set_parameter("FENCE_ENABLE", 0)
             self.set_parameter("PRX_TYPE", 10)
