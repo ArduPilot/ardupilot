@@ -699,6 +699,15 @@ struct PACKED log_Current {
     float    resistance;
 };
 
+struct PACKED log_WheelEncoder {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float distance_0;
+    uint8_t quality_0;
+    float distance_1;
+    uint8_t quality_1;
+};
+
 struct PACKED log_Current_Cells {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1454,7 +1463,9 @@ Format characters in the format string for binary log messages
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" }, \
+    { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
+      "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" }
 
 
 // #if SBP_HW_LOGGING
@@ -1624,6 +1635,7 @@ enum LogMessages : uint8_t {
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,
+    LOG_WHEELENCODER_MSG,
     _LOG_LAST_MSG_
 };
 
