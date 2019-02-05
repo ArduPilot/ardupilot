@@ -123,3 +123,5 @@ for reviewing patches on their specific area.  See also the list of developers w
   - ***Subsystem***: Copter SITL, Rover SITL
 - [Víctor Mayoral Vilches](https://github.com/vmayoral):
   - ***Board***: PXF, Erle-Brain 2, PXFmini
+- [Amilcar Lucas](https://github.com/amilcarlucas):
+  - ***Subsystem***: Camera mount
