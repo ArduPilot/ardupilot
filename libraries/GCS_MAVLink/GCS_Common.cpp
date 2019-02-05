@@ -4305,6 +4305,28 @@ void GCS::passthru_timer(void)
     }
 }
 
+bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const uint8_t coordinate_frame, Location::ALT_FRAME &frame)
+{
+    switch (coordinate_frame) {
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT: // solo shot manager incorrectly sends RELATIVE_ALT instead of RELATIVE_ALT_INT
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+        frame = Location::ALT_FRAME_ABOVE_HOME;
+        return true;
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+        frame = Location::ALT_FRAME_ABOVE_TERRAIN;
+        return true;
+    case MAV_FRAME_GLOBAL:
+    case MAV_FRAME_GLOBAL_INT:
+        frame = Location::ALT_FRAME_ABSOLUTE;
+        return true;
+    default:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        gcs().send_text(MAV_SEVERITY_INFO, "Unknown mavlink coordinate frame %u", coordinate_frame);
+#endif
+        return false;
+    }
+}
 
 GCS &gcs()
 {
