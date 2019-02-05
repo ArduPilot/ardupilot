@@ -245,7 +245,7 @@ void Rover::update_logging2(void)
 
     if (should_log(MASK_LOG_RC)) {
         Log_Write_RC();
-        Log_Write_WheelEncoder();
+        g2.wheel_encoder.Log_Write();
     }
 
     if (should_log(MASK_LOG_IMU)) {
