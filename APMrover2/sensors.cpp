@@ -123,13 +123,6 @@ void Rover::update_wheel_encoder()
          * posOffset is the XYZ body frame position of the wheel hub (m)
          */
         EKF3.writeWheelOdom(delta_angle, delta_time, wheel_encoder_last_update_ms[i], g2.wheel_encoder.get_pos_offset(i), g2.wheel_encoder.get_wheel_radius(i));
-
-        // calculate rpm for reporting to GCS
-        if (is_positive(delta_time)) {
-            wheel_encoder_rpm[i] = (delta_angle / M_2PI) / (delta_time / 60.0f);
-        } else {
-            wheel_encoder_rpm[i] = 0.0f;
-        }
     }
 
     // record system time update for next iteration
