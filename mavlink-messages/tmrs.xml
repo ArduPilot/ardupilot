@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<mavlink>
+  <messages>
+    <message id="202" name="TMRS_TETHER_STATUS">
+      <description>TMRS system status</description>
+      <field type="float" name="high_voltage_voltage" units="volts">Tether High Voltage Voltage</field>
+      <field type="float" name="low_voltage_voltage" units="volts">Tether Low Voltage Voltage</field>
+      <field type="float" name="low_voltage_current" units="amps">Tether Low Voltage Current</field>
+    </message>
+    <message id="203" name="TMRS_MOTOR_STATUS">
+      <description>TMRS system status</description>
+      <field type="float[6]" name="motor_currents" units="amps">Motor Currents</field>
+    </message>
+    <message id="204" name="TMRS_PAYLOAD_CONTROL">
+      <description>TMRS system status bitmask</description>
+      <field type="uint8_t" name="control_bitmask">Payload controls</field>
+    </message>
+  </messages>
+</mavlink>
