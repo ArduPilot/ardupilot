@@ -1013,10 +1013,24 @@ class AutoTest(ABC):
             bearing += 360.00
         return bearing
 
-    def change_mode(self, mode):
+    def change_mode(self, mode, timeout=60):
         '''change vehicle flightmode'''
+        self.progress("Changing mode to %s" % mode)
         self.mavproxy.send('mode %s\n' % mode)
-        self.wait_mode(mode)
+        tstart = self.get_sim_time()
+        self.wait_heartbeat()
+        while self.mav.flightmode != mode:
+            custom_num = self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s custom=%u" % (
+                    self.mav.flightmode, mode, custom_num))
+            if (timeout is not None and
+                    self.get_sim_time() > tstart + timeout):
+                raise WaitModeTimeout("Did not change mode")
+            self.mavproxy.send('mode %s\n' % mode)
+            self.wait_heartbeat()
+        # self.progress("heartbeat mode %s Want: %s" % (
+        # self.mav.flightmode, mode))
+        self.progress("Got mode %s" % mode)
 
     def do_get_autopilot_capabilities(self):
         tstart = self.get_sim_time()
