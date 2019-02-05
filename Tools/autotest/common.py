@@ -573,7 +573,12 @@ class AutoTest(ABC):
             save_count = self.mavproxy.match.group(1)
             if save_count != request_count:
                 raise NotAchievedException("request count != load count")
-            saved_filepath = util.reltopdir(self.mavproxy.match.group(2))
+            # warning: this assumes MAVProxy was started in the CWD!
+            # on the autotest server we invoke autotest.py one-up from
+            # the git root, like this:
+            # timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+            # that means the MAVProxy log files are not reltopdir!
+            saved_filepath = self.mavproxy.match.group(2)
             saved_filepath = saved_filepath.rstrip()
             self.assert_mission_files_same(path, saved_filepath)
             break
