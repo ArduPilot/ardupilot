@@ -272,14 +272,6 @@ void Rover::send_pid_tuning(mavlink_channel_t chan)
     }
 }
 
-void Rover::send_wheel_encoder(mavlink_channel_t chan)
-{
-    // send wheel encoder data using rpm message
-    if (g2.wheel_encoder.enabled(0) || g2.wheel_encoder.enabled(1)) {
-        mavlink_msg_rpm_send(chan, wheel_encoder_rpm[0], wheel_encoder_rpm[1]);
-    }
-}
-
 void Rover::send_wheel_encoder_distance(mavlink_channel_t chan)
 {
     // send wheel encoder data using wheel_distance message
