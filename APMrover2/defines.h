@@ -29,7 +29,6 @@
 #define LOG_ARM_DISARM_MSG      0x08
 #define LOG_STEERING_MSG        0x0D
 #define LOG_GUIDEDTARGET_MSG    0x0E
-#define LOG_WHEELENCODER_MSG    0x0F
 #define LOG_ERROR_MSG           0x13
 
 #define TYPE_AIRSTART_MSG       0x00
