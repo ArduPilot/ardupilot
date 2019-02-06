@@ -2462,6 +2462,47 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def test_motortest(self, timeout=60):
+        self.start_subtest("Testing PWM output")
+        pwm_in = 1300
+        # default frame is "+" - start motor of 2 is "B", which is
+        # motor 1... see
+        # https://ardupilot.org/copter/docs/connect-escs-and-motors.html
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     2, # start motor
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
+                     pwm_in, # pwm-to-output
+                     1, # timeout in seconds
+                     2, # number of motors to output
+                     0, # compass learning
+                     0,
+                     timeout=timeout)
+        # long timeouts here because they're a pause before we start motors
+        self.wait_servo_channel_value(1, pwm_in, timeout=10)
+        self.wait_servo_channel_value(4, pwm_in, timeout=10)
+        self.wait_statustext("finished motor test")
+        self.end_subtest("Testing PWM output")
+
+        self.start_subtest("Testing percentage output")
+        percentage = 90.1
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     2, # start motor
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
+                     percentage, # pwm-to-output
+                     1, # timeout in seconds
+                     2, # number of motors to output
+                     0, # compass learning
+                     0,
+                     timeout=timeout)
+        # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
+        # min/max are used.
+        expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
+        self.progress("expected pwm=%f\n" % expected_pwm)
+        self.wait_servo_channel_value(1, expected_pwm, timeout=10)
+        self.wait_servo_channel_value(4, expected_pwm, timeout=10)
+        self.wait_statustext("finished motor test")
+        self.end_subtest("Testing percentage output")
+
     def fly_precision_sitl(self):
         """Use SITL PrecLand backend precision messages to land aircraft."""
 
@@ -5357,6 +5398,10 @@ class AutoTestCopter(AutoTest):
             ("CRSF",
              "Test RC CRSF",
              self.test_crsf),
+
+            ("MotorTest",
+             "Run Motor Tests",
+             self.test_motortest),
 
             ("LogUpload",
              "Log upload",
