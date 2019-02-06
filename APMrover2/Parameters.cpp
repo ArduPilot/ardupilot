@@ -592,8 +592,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: LOIT_TYPE
     // @DisplayName: Loiter type
-    // @Description: Loiter behaviour when around next to a taget point
-    // @Values: 0:Reverse to target point,1:Always face bow to target point
+    // @Description: Loiter behaviour when moving to the target point
+    // @Values: 0:Forward or reverse to target point,1:Always face bow towards target point
     // @User: Standard
     AP_GROUPINFO("LOIT_TYPE", 25, ParametersG2, loit_type, 0),
 
