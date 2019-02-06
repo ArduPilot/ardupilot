@@ -48,7 +48,6 @@ class AutoTestQuadPlane(AutoTest):
         self.logfile = None
 
         self.sitl = None
-        self.hasInit = False
 
     def init(self):
         if self.frame is None:
@@ -86,7 +85,6 @@ class AutoTestQuadPlane(AutoTest):
 
         self.get_mavlink_connection_going()
 
-        self.hasInit = True
         self.progress("Ready to start testing!")
 
     def is_plane(self):

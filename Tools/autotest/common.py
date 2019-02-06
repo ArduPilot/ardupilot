@@ -168,6 +168,7 @@ class AutoTest(ABC):
         self.last_wp_load = 0
         self.forced_post_test_sitl_reboots = 0
         self.skip_list = []
+        self.run_tests_called = False
 
     @staticmethod
     def progress(text):
@@ -2040,8 +2041,11 @@ switch value'''
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         self.check_test_syntax(test_file=os.path.realpath(__file__))
-        if not self.hasInit:
-            self.init()
+        if self.run_tests_called:
+            raise ValueError("run_tests called twice")
+        self.run_tests_called = True
+
+        self.init()
 
         self.fail_list = []
 

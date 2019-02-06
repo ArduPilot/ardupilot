@@ -61,7 +61,6 @@ class AutoTestCopter(AutoTest):
         self.log_name = "ArduCopter"
 
         self.sitl = None
-        self.hasInit = False
 
     def mavproxy_options(self):
         ret = super(AutoTestCopter, self).mavproxy_options()
@@ -113,7 +112,6 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Started simulator")
 
-        self.hasInit = True
         self.progress("Ready to start testing!")
 
     def close(self):
