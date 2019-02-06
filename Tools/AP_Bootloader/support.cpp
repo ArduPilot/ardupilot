@@ -109,11 +109,12 @@ uint32_t flash_func_sector_size(uint32_t sector)
     return stm32_flash_getpagesize(flash_base_page+sector);
 }
 
-void flash_func_erase_sector(uint32_t sector)
+bool flash_func_erase_sector(uint32_t sector)
 {
     if (!stm32_flash_ispageerased(flash_base_page+sector)) {
-        stm32_flash_erasepage(flash_base_page+sector);
+        return stm32_flash_erasepage(flash_base_page+sector);
     }
+    return true;
 }
 
 // read one-time programmable memory
