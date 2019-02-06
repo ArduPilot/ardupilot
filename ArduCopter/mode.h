@@ -1192,17 +1192,17 @@ private:
     uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
 };
 
-class ModeHoldUltra : public ModeGuided {
+class ModeHoldUltra : public Mode {
 
 public:
 
     // inherit constructor
-    using Copter::ModeGuided::Mode;
+     using Copter::Mode::Mode;
 
-    bool init(bool ignore_checks) override;
-    void run() override;
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
 
-    bool requires_GPS() const override { return false; } // Set to false
+    bool requires_GPS() const override { return false; } // set to false
 	bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
@@ -1211,11 +1211,13 @@ protected:
 
     const char *name() const override { return "HOLD-ULTRA"; }
     const char *name4() const override { return "HU"; }
-    // uint32_t wp_distance() const override;
-    // int32_t wp_bearing() const override;
-    // bool get_wp(Location &loc) override;
-
-    // uint32_t last_log_ms;   // system time of last time desired velocity was logging
+		
+private:
+	
+	float throttle;
+	float alt_target;  
+	float left_target; 
+	uint32_t _last_sample_time;
 };
 
 class ModeRect : public Mode {        
@@ -1250,14 +1252,18 @@ private:
     void manual_control();
     bool reached_destination();
     bool calculate_next_dest(uint8_t position_num, Vector3f& next_dest) const;
+    void manage_state(void);
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+	Vector3f start_pos;	// The position at the beginning of the mission
+	Vector3f last_pos;	// The position at the beginning of the current sequence
 
-    enum zigzag_state {
-        STORING_POINTS, // storing points A and B, pilot has manual control
-        AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
-        MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
+    enum rect_state {
+		NONE, 
+        UP,     // the vehicle climps up
+        DOWN,   // the vehicle goes down
+        RIGHT   // the vehicle goes to right
     } stage;
 
     uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)

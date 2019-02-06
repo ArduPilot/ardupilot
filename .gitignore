@@ -113,3 +113,4 @@ ArduCopter/mode_hold_ultra.cpp
 ArduCopter/mode_hold_ultra.cpp
 ArduCopter/mode_rect.cpp
 ArduCopter/mode_RF_loiter.cpp
+ArduCopter/mode_rect.cpp

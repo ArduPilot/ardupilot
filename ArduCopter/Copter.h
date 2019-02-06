@@ -254,7 +254,17 @@ private:
         LowPassFilterFloat alt_cm_filt; // altitude filter
         int8_t glitch_count;
     } rangefinder_state = { false, false, 0, 0 };
-
+	
+    RangeFinder rangefinder_left{serial_manager, ROTATION_YAW_270};
+    struct {
+        bool enabled:1;
+        bool left_healthy:1; // true if we can trust the altitude from the rangefinder
+        int16_t left_cm;     // tilt compensated altitude (in cm) from rangefinder
+        uint32_t last_healthy_ms;
+        LowPassFilterFloat left_cm_filt; // altitude filter
+        int8_t glitch_count;
+    } rangefinder_left_state = { false, false, 0, 0 };
+	
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif
@@ -833,6 +843,7 @@ private:
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
+    bool rangefinder_left_ok();
     void rpm_update();
     void init_compass();
     void init_compass_location();

@@ -1,8 +1,11 @@
 #include "Copter.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/Semaphore.h>
 
-/*
- * Init and run calls for Hold Ultra
- */
+#define LEAN_CENTIDEGREES_TO_CORRECT 20
+#define Throttle_TO_CORRECT 0,02f
+
+extern const AP_HAL::HAL& hal;
 
 // stabilize_init - initialise stabilize controller
 bool Copter::ModeHoldUltra::init(bool ignore_checks)
@@ -16,58 +19,80 @@ bool Copter::ModeHoldUltra::init(bool ignore_checks)
     }
 	*/
 	
-	// Start 1 khz timer, if nessesary:
-	// hal.scheduler->register_timer_process(AP_HAL_MEMBERPROC(&AP_Baro_MS5611::_update));
+	// Warning, when the RANGEFINDER is disabled in precomp
+	#ifndef RANGEFINDER_ENABLED
+		gcs().send_text(MAV_SEVERITY_CRITICAL, "Rangefinder is not enabled (pre compiler) %5.3f", (double)3.142f);
+		return false;
+	#endif
+	
+	// ... or in the stack
+	if (copter.rangefinder_state.enabled)
+	{(
+		gcs().send_text(MAV_SEVERITY_CRITICAL, "Rangefinder is not enabled! (runtime) %5.3f", (double)3.142f);
+		return false;
+	}
+	
+	hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &Copter::ModeHoldUltra::_timer, void));
+	throttle = motors->get_throttle();
     return true;
 }
 
-// stabilize_run - runs the main stabilize controller
+// hold_run - runs the main hold controller
 // should be called at 100hz or more
 void Copter::ModeHoldUltra::run()
 {
-    float target_roll, target_pitch;
+    float target_roll = 0;
+	float target_pitch;
     float target_yaw_rate;
     float pilot_throttle_scaled;
+	float left_distance_from_wall;
+	
+	alt_target = 40;  // 40 cm over ground
+	left_target = 20;  // 20 cm from left
 
-    // if not armed set throttle to zero and exit immediately
-	/*
-    if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+	// holds a fixed height
+	 if (copter.rangefinder_alt_ok()) {
+        alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
+	
+	    if (alt_above_ground > alt_target) {
+		    throttle =- Throttle_TO_CORRECT;
+			if (throttle < 0) {
+				throttle = 0;
+			}
+	    }
+	    if (alt_above_ground < alt_target) {
+		    throttle =+ Throttle_TO_CORRECT;
+			if (throttle > 1) {
+				throttle = 1;
+			}
+	    }
+	 }
+    attitude_control->set_throttle_out(throttle, true, g.throttle_filt);
+	  
+	// keeps a fixed distance to the left obstacle
+	 if (copter.rangefinder_left_ok()) {
+        left_distance_from_wall = copter.rangefinder_left_state.left_cm_filt.get();
+	
+	    if (left_distance_from_wall > left_target) {
+		    target_roll =- LEAN_CENTIDEGREES_TO_CORRECT;
+	    }
+	    if (left_distance_from_wall < left_target) {
+		    target_roll =+ LEAN_CENTIDEGREES_TO_CORRECT;
+	    }
+	 }
+	
+	// set attitude
+	target_pitch = 100;  // 100 centidegrees = 10°
+	target_yaw_rate = 0; // rate 0: hold the direction
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+}
+
+void Copter::ModeHoldUltra::_timer()
+{
+	// Sampled at 100Hz
+    uint32_t now = AP_HAL::millis();
+    if ((now - _last_sample_time) < 10) {
         return;
     }
-	*/
-
-	/*
-    // clear landing flag
-    set_land_complete(false);
-
-    motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-	*/
-	
-	// Read out pilot's input
-	/*
-
-    // convert pilot input to lean angles
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
-	
-    // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-
-    // get pilot's desired throttle
-    pilot_throttle_scaled = get_pilot_desired_throttle(channel_throttle->get_control_in());
-	*/
-	
-	// Here give the control commands to the system
-	
-    // call attitude controller
-	// Lage in allen drei Achsen:
-    // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-    // body-frame rate controller is run directly from 100hz loop
-
-    // output pilot's throttle
-    // attitude_control->set_throttle_out(pilot_throttle_scaled, true, g.throttle_filt);
+    _last_sample_time = now;
 }

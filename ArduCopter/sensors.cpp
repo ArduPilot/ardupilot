@@ -17,7 +17,13 @@ void Copter::init_rangefinder(void)
    rangefinder_state.alt_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
    rangefinder_state.enabled = rangefinder.has_orientation(ROTATION_PITCH_270);
 #endif
+
+#if RANGEFINDER_LEFT_ENABLED == ENABLED
+   rangefinder_left_state.left_cm_filt.set_cutoff_frequency(RANGEFINDER_WPNAV_FILT_HZ);
+   rangefinder_left_state.enabled = rangefinder.has_orientation(ROTATION_YAW_270);
+#endif
 }
+
 
 // return rangefinder altitude in centimeters
 void Copter::read_rangefinder(void)
@@ -33,7 +39,7 @@ void Copter::read_rangefinder(void)
     rangefinder_state.alt_healthy = ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count_orient(ROTATION_PITCH_270) >= RANGEFINDER_HEALTH_MAX));
 
     int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
-
+	
  #if RANGEFINDER_TILT_CORRECTION == ENABLED
     // correct alt for angle of the rangefinder
     temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
@@ -62,12 +68,54 @@ void Copter::read_rangefinder(void)
     rangefinder_state.alt_healthy = false;
     rangefinder_state.alt_cm = 0;
 #endif
+
+#if RANGEFINDER_LEFT_ENABLED == ENABLED
+
+    rangefinder_left_state.left_healthy = ((rangefinder.status_orient(ROTATION_YAW_270) == RangeFinder::RangeFinder_Left_Good) && (rangefinder.range_valid_count_orient(ROTATION_YAW_270) >= RANGEFINDER_HEALTH_MAX));
+
+    int16_t temp_left = rangefinder.distance_cm_orient(ROTATION_YAW_270);
+	
+
+ #if RANGEFINDER_TILT_CORRECTION == ENABLED
+    // correct left for angle of the rangefinder
+    // temp_left = (float)temp_left * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
+ #endif
+
+    rangefinder_left_state.left_cm = temp_left;
+
+    // filter rangefinder for use by AC_WPNav
+    uint32_t now = AP_HAL::millis();
+
+    if (rangefinder_left_state.left_healthy) {
+        if (now - rangefinder_left_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS) {
+            // reset filter if we haven't used it within the last second
+            rangefinder_left_state.left_cm_filt.reset(rangefinder_left_state.left_cm);
+        } else {
+            rangefinder_left_state.left_cm_filt.apply(rangefinder_left_state.left_cm, 0.05f);
+        }
+        rangefinder_left_state.last_healthy_ms = now;
+    }
+
+    // send rangefinder altitude and health to waypoint navigation library
+    // wp_nav->set_rangefinder_left(rangefinder_state.left_enabled, rangefinder_state.left_healthy, rangefinder_state.left_cm_filt.get());
+
+#else
+    rangefinder_left_state.enabled = false;
+    rangefinder_left_state.left_healthy = false;
+    rangefinder_left_state.left_cm = 0;
+#endif
 }
 
 // return true if rangefinder_alt can be used
 bool Copter::rangefinder_alt_ok()
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
+}
+
+// return true if rangefinder_left can be used
+bool Copter::rangefinder_left_ok()
+{
+    return (rangefinder_left_state.enabled && rangefinder_left_state.left_healthy);
 }
 
 /*
