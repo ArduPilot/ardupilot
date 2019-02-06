@@ -130,9 +130,9 @@ volatile unsigned timer[NTIMERS];
  */
 static void sys_tick_handler(void *ctx)
 {
-    chSysLock();
+    chSysLockFromISR();
     chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
-    chSysUnlock();
+    chSysUnlockFromISR();
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
